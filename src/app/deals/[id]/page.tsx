@@ -1,15 +1,18 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { BindForm } from "@/components/crm/bind-form";
+import { CompleteTaskForm } from "@/components/crm/complete-task-form";
+import { LifeHealthPanel } from "@/components/crm/life-health-panel";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { RiskForm } from "@/components/deal/risk-form";
 import { StagePill } from "@/components/fit-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
+import { formatTenure, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
+import { isCrmOnlyLine, LINE_LABELS } from "@/lib/crm/bind";
 import { getDealWorkspace } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -18,31 +21,17 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
-  const { deal, risk, docs, fields, quotes, logs, lead } = workspace;
-  const matches = risk ? await evaluateDealMarkets(risk) : [];
+  const { deal, risk, docs, fields, quotes, logs, lead, contact, boundPolicy, dealTasks } =
+    workspace;
+  const crmOnly = isCrmOnlyLine(deal.lineOfBusiness);
+  const matches = !crmOnly && risk ? await evaluateDealMarkets(risk) : [];
+  const bound = deal.pipelineStage === "bound";
 
   return (
-    <AppShell
-      title={deal.title}
-      actions={
-        deal.pipelineStage !== "bound" ? (
-          <form action={bindDeal} className="flex items-center gap-2">
-            <input type="hidden" name="dealId" value={deal.id} />
-            <Input
-              name="policyNumber"
-              placeholder="Policy # at bind"
-              className="h-8 w-36"
-            />
-            <Button type="submit" size="sm" variant="secondary">
-              Bind (creates contact + policy)
-            </Button>
-          </form>
-        ) : null
-      }
-    >
+    <AppShell title={deal.title}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
-        <span>{deal.lineOfBusiness}</span>
+        <span>{LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness}</span>
         <span className="text-muted-foreground">{deal.state}</span>
         {deal.primaryNamedInsured ? (
           <span className="text-muted-foreground">
@@ -50,9 +39,9 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             {deal.secondaryNamedInsured ? ` · ${deal.secondaryNamedInsured}` : ""}
           </span>
         ) : lead ? (
-          <span className="text-muted-foreground">
+          <Link href={`/leads/${lead.id}`} className="text-muted-foreground hover:text-primary">
             Lead {lead.lastName}, {lead.firstName}
-          </span>
+          </Link>
         ) : null}
         {risk?.city ? (
           <span className="text-muted-foreground">
@@ -61,7 +50,76 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         ) : null}
       </div>
 
-      {!risk ? (
+      {bound ? (
+        <section className="mb-4 ff-card p-4">
+          <h2 className="text-sm font-semibold text-navy">Bound</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Contact and policy exist because this deal was bound
+            {deal.boundAt ? ` on ${formatIsoDate(deal.boundAt)}` : ""}. Quotes on the shop did
+            not create the policy.
+          </p>
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="text-[11px] uppercase text-muted-foreground">Contact</dt>
+              <dd>
+                {contact ? (
+                  <Link href={`/contacts/${contact.id}`} className="font-medium text-primary hover:underline">
+                    {contact.lastName}, {contact.firstName}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase text-muted-foreground">Policy</dt>
+              <dd>
+                {boundPolicy ? (
+                  <Link
+                    href={`/policies/${boundPolicy.id}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {boundPolicy.policyNumber}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase text-muted-foreground">Tenure</dt>
+              <dd>{contact ? formatTenure(contact.tenureStart) : "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase text-muted-foreground">Policies on book</dt>
+              <dd>{contact?.policyCount ?? "—"}</dd>
+            </div>
+          </dl>
+          {dealTasks.length > 0 ? (
+            <ul className="mt-3 divide-y divide-border rounded-md border border-border">
+              {dealTasks.map((task) => (
+                <li key={task.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                  <div>
+                    <div>{task.title}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {taskKindLabel(task.kind)} · {formatIsoDate(task.dueDate)} · {task.status}
+                    </div>
+                  </div>
+                  {task.status === "open" ? <CompleteTaskForm taskId={task.id} /> : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : (
+        <div className="mb-4">
+          <BindForm dealId={deal.id} />
+        </div>
+      )}
+
+      {crmOnly ? (
+        <LifeHealthPanel deal={deal} />
+      ) : !risk ? (
         <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
       ) : (
         <SectionTabs

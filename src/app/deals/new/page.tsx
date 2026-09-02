@@ -1,16 +1,18 @@
 import { createDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { LineSelect } from "@/components/crm/line-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function NewDealPage() {
   return (
     <AppShell title="New shopping deal">
       <form action={createDeal} className="ff-card max-w-xl space-y-3 p-4">
         <p className="text-sm text-muted-foreground">
-          Creates a lead and a shopping deal with an empty master risk. Contact and policy wait
-          until bind.
+          Creates a lead and a shopping deal. Contact and policy wait until bind. Life and
+          health are CRM notes only — no rating worksheet.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -32,20 +34,16 @@ export default function NewDealPage() {
             <Input id="phone" name="phone" className="mt-1 h-8" />
           </div>
           <div>
+            <Label htmlFor="email" className="text-xs">
+              Email
+            </Label>
+            <Input id="email" name="email" type="email" className="mt-1 h-8" />
+          </div>
+          <div>
             <Label htmlFor="line" className="text-xs">
               Line
             </Label>
-            <select
-              id="line"
-              name="line"
-              defaultValue="HO"
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            >
-              <option value="HO">Homeowners</option>
-              <option value="AUTO">Auto</option>
-              <option value="FLOOD">Flood</option>
-              <option value="UMBRELLA">Umbrella</option>
-            </select>
+            <LineSelect />
           </div>
           <div>
             <Label htmlFor="city" className="text-xs">
@@ -59,6 +57,12 @@ export default function NewDealPage() {
             </Label>
             <Input id="county" name="county" className="mt-1 h-8" />
           </div>
+        </div>
+        <div>
+          <Label htmlFor="notes" className="text-xs">
+            CRM notes (used for life/health)
+          </Label>
+          <Textarea id="notes" name="notes" className="mt-1 min-h-20" />
         </div>
         <Button type="submit" size="sm">
           Open worksheet

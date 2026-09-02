@@ -49,6 +49,15 @@ Open [http://localhost:43147](http://localhost:43147).
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
+### CRM bind path
+
+1. **Leads** → save a person → **Start shop** (or convert from the lead record).
+2. The deal is shopping only. Quotes stay on the deal.
+3. **Bind (creates contact + policy)** writes the contact, policy, tenure, client history, in-app alerts, and 30/60/90 plus expiration tasks.
+4. Open **Contacts**, **Policies**, or **Reviews** to see tenure, policy count, and the review queue. Alerts stay in the desk — nothing emails the agent.
+
+Life and health deals are CRM notes with a rating placeholder. They still bind the same way.
+
 ## Schema
 
 Every table has `tenant_id` from day one. Runtime is single-tenant (`TENANT_ID` in `.env`). No multi-tenant isolation, credential vault, billing, or Zoho sync.

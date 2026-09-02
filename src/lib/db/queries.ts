@@ -147,7 +147,19 @@ export async function getDealWorkspace(dealId: string) {
     ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
     : [];
 
-  return { deal, risk, docs, fields, quotes: dealQuotes, logs, lead, contact };
+  const [boundPolicy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.dealId, dealId)))
+    .orderBy(desc(policies.createdAt));
+
+  const dealTasks = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.dealId, dealId)))
+    .orderBy(asc(reviewTasks.dueDate));
+
+  return { deal, risk, docs, fields, quotes: dealQuotes, logs, lead, contact, boundPolicy, dealTasks };
 }
 
 export async function dashboardStats() {
@@ -188,4 +200,84 @@ export async function historyForContact(contactId: string) {
     .from(clientHistory)
     .where(and(eq(clientHistory.tenantId, tenant()), eq(clientHistory.contactId, contactId)))
     .orderBy(desc(clientHistory.occurredAt));
+}
+
+export async function getLead(leadId: string) {
+  const [lead] = await db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.tenantId, tenant()), eq(leads.id, leadId)));
+  return lead ?? null;
+}
+
+export async function getContactWorkspace(contactId: string) {
+  const [contact] = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, tenant()), eq(contacts.id, contactId)));
+  if (!contact) return null;
+
+  const policyRows = await db
+    .select({
+      policy: policies,
+      carrier: carriers,
+    })
+    .from(policies)
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.contactId, contactId)))
+    .orderBy(asc(policies.expirationDate));
+
+  const history = await historyForContact(contactId);
+
+  const tasks = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.contactId, contactId)))
+    .orderBy(asc(reviewTasks.dueDate));
+
+  const relatedDeals = await db
+    .select()
+    .from(deals)
+    .where(and(eq(deals.tenantId, tenant()), eq(deals.contactId, contactId)))
+    .orderBy(desc(deals.updatedAt));
+
+  return { contact, policies: policyRows, history, tasks, deals: relatedDeals };
+}
+
+export async function getPolicyWorkspace(policyId: string) {
+  const [row] = await db
+    .select({
+      policy: policies,
+      contact: contacts,
+      carrier: carriers,
+      deal: deals,
+    })
+    .from(policies)
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .leftJoin(deals, eq(policies.dealId, deals.id))
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
+  if (!row) return null;
+
+  const tasks = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.policyId, policyId)))
+    .orderBy(asc(reviewTasks.dueDate));
+
+  return { ...row, tasks };
+}
+
+export async function listReviewQueue() {
+  return db
+    .select({
+      task: reviewTasks,
+      contact: contacts,
+      policy: policies,
+    })
+    .from(reviewTasks)
+    .leftJoin(contacts, eq(reviewTasks.contactId, contacts.id))
+    .leftJoin(policies, eq(reviewTasks.policyId, policies.id))
+    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.status, "open")))
+    .orderBy(asc(reviewTasks.dueDate));
 }

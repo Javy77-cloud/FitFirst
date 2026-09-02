@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { CompleteTaskForm } from "@/components/crm/complete-task-form";
+import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
@@ -25,7 +27,7 @@ export default async function HomePage() {
           ["Leads", stats?.leads ?? 0, "/leads"],
           ["Open shops", stats?.shopping ?? 0, "/deals"],
           ["Contacts", stats?.contacts ?? 0, "/contacts"],
-          ["Unread alerts", stats?.unreadAlerts ?? 0, "/alerts"],
+          ["Policies", stats?.policies ?? 0, "/policies"],
         ].map(([label, value, href]) => (
           <Link key={label} href={String(href)} className="ff-card p-4 hover:border-primary">
             <div className="text-xs text-muted-foreground">{label}</div>
@@ -85,29 +87,36 @@ export default async function HomePage() {
               Review tasks appear after bind. Nothing on the book yet besides the open shop.
             </p>
           ) : (
-            <table className="ff-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => (
-                  <tr key={task.id}>
-                    <td>{task.title}</td>
-                    <td>{task.dueDate.toISOString().slice(0, 10)}</td>
-                  </tr>
-                ))}
-                {expiring.map((policy) => (
-                  <tr key={policy.id}>
-                    <td>Policy {policy.policyNumber} expires</td>
-                    <td>{policy.expirationDate.toISOString().slice(0, 10)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="divide-y divide-border">
+              {tasks.map((task) => (
+                <li key={task.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div>
+                    <div className="text-sm">{task.title}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Due {task.dueDate.toISOString().slice(0, 10)}
+                    </div>
+                  </div>
+                  <CompleteTaskForm taskId={task.id} />
+                </li>
+              ))}
+              {expiring.map((policy) => (
+                <li key={policy.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="text-sm">
+                    <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
+                      {policy.policyNumber}
+                    </Link>{" "}
+                    expires
+                  </div>
+                  <ExpirationBadge date={policy.expirationDate} />
+                </li>
+              ))}
+            </ul>
           )}
+          <div className="border-t border-border px-4 py-2 text-xs">
+            <Link href="/reviews" className="text-primary hover:underline">
+              Open full review queue
+            </Link>
+          </div>
         </section>
       </div>
 

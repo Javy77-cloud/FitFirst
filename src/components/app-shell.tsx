@@ -3,6 +3,7 @@ import { isNull, eq, and, sql } from "drizzle-orm";
 import {
   Bell,
   Building2,
+  CalendarClock,
   ClipboardList,
   Contact,
   FileStack,
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/policies", label: "Policies", icon: Shield },
+  { href: "/reviews", label: "Reviews", icon: CalendarClock },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
@@ -42,7 +44,7 @@ export async function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+      <aside className="hidden w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="border-b border-sidebar-border px-4 py-4">
           <Link href="/" className="block">
             <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
@@ -78,7 +80,22 @@ export async function AppShell({
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3">
+        <div className="border-b border-border bg-card md:hidden">
+          <div className="px-4 py-2 text-sm font-semibold text-navy">FitFirst</div>
+          <nav className="flex gap-1 overflow-x-auto px-2 pb-2">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="shrink-0 rounded-md bg-muted px-2.5 py-1 text-xs text-navy"
+              >
+                {item.label}
+                {item.href === "/alerts" && unread > 0 ? ` (${unread})` : ""}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-3 md:px-5">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
               Personal lines worksheet
@@ -87,7 +104,7 @@ export async function AppShell({
           </div>
           <div className="flex items-center gap-2">{actions}</div>
         </header>
-        <main className="flex-1 p-5">{children}</main>
+        <main className="flex-1 p-4 md:p-5">{children}</main>
       </div>
     </div>
   );
