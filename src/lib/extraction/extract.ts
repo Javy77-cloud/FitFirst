@@ -120,7 +120,7 @@ const PATTERNS: Pattern[] = [
   {
     key: "address",
     re: /(?:location|property\s*address|insured\s*location)\s*[:#]?\s*([0-9].+)/i,
-    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+    normalize: (s) => streetFromLocation(s),
   },
   {
     key: "state",
@@ -315,6 +315,13 @@ function normalizeOccupancy(raw: string): string {
   if (/tenant|rental/.test(s)) return "tenant";
   if (/vacant/.test(s)) return "vacant";
   return s.trim();
+}
+
+function streetFromLocation(raw: string): string {
+  const cleaned = raw.replace(/\s+/g, " ").trim();
+  const withLocality = cleaned.match(/^(\d+.+?),\s*[A-Za-z .'-]+,\s*[A-Z]{2}\s+\d{5}/);
+  if (withLocality) return withLocality[1].trim();
+  return cleaned;
 }
 
 function titleCase(s: string): string {

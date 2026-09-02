@@ -43,7 +43,7 @@ describe("quote sheet fill — blanks only", () => {
     const result = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
     expect(result.values.year_built.value).toBe("2004");
     expect(result.values.year_built.status).toBe("check");
-    expect(result.values.address1.value).toContain("412 Harbor Isle");
+    expect(result.values.address1.value).toBe("412 Harbor Isle Dr");
     expect(result.values.address1.status).toBe("check");
     expect(result.values.coverage_a.value).toBe("275000");
     expect(result.values.coverage_a.status).toBe("check");

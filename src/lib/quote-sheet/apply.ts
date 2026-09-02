@@ -77,13 +77,17 @@ export function headerIsBlank(value: string | number | null | undefined): boolea
 export function propertyOnelinerFromSheet(
   values: Record<string, QuoteSheetFieldValue>,
 ): string | null {
-  const street = values.address1?.value?.trim() ?? "";
-  if (!street) return null;
+  const rawStreet = values.address1?.value?.trim() ?? "";
+  if (!rawStreet) return null;
   const city = values.city?.value?.trim() ?? "";
   const state = values.state?.value?.trim() ?? "";
   const zip = values.zip?.value?.trim() ?? "";
   const year = values.year_built?.value?.trim() ?? "";
   const construction = values.construction?.value?.trim() ?? "";
+  const street =
+    city && rawStreet.toLowerCase().includes(city.toLowerCase())
+      ? rawStreet.split(",")[0].trim()
+      : rawStreet;
   const locality = [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const head = locality ? `${street}, ${locality}` : street;
   const tail = [year, construction].filter(Boolean).join(" ");
