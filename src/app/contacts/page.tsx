@@ -1,14 +1,18 @@
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { OwnerSelect } from "@/components/owner-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { listContacts } from "@/lib/db/queries";
+import { canAssignOwner } from "@/lib/auth/rbac";
+import { getActor } from "@/lib/auth/session";
+import { listContacts, listUsers } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContactsPage() {
-  const rows = await listContacts();
+  const [rows, users, actor] = await Promise.all([listContacts(), listUsers(), getActor()]);
+  const assign = canAssignOwner(actor);
   return (
     <AppShell title="Contacts">
       <p className="mb-3 text-sm text-muted-foreground">
@@ -49,13 +53,14 @@ export default async function ContactsPage() {
                 <th>Name</th>
                 <th>Policies</th>
                 <th>Tenure start</th>
+                <th>Owner</th>
                 <th>Life / health</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                    <td colSpan={5} className="text-muted-foreground">
                     Empty book. Bind a deal or add an existing client.
                   </td>
                 </tr>
@@ -67,6 +72,15 @@ export default async function ContactsPage() {
                     </td>
                     <td>{c.policyCount}</td>
                     <td>{c.tenureStart ? c.tenureStart.toISOString().slice(0, 10) : "—"}</td>
+                    <td>
+                      <OwnerSelect
+                        entityType="contact"
+                        entityId={c.id}
+                        ownerId={c.ownerId}
+                        users={users}
+                        canAssign={assign}
+                      />
+                    </td>
                     <td className="text-xs">
                       {[c.lifeNotes, c.healthNotes].filter(Boolean).join(" · ") || "—"}
                     </td>

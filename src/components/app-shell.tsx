@@ -9,7 +9,10 @@ import {
   Home,
   Shield,
   Users,
+  Wallet,
 } from "lucide-react";
+import { ActorSwitcher } from "@/components/actor-switcher";
+import { getActor, listActors } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
@@ -20,6 +23,7 @@ const NAV = [
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/policies", label: "Policies", icon: Shield },
+  { href: "/commissions", label: "Commissions", icon: Wallet },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
@@ -39,6 +43,7 @@ export async function AppShell({
     .from(alerts)
     .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
+  const [actor, users] = await Promise.all([getActor(), listActors()]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -71,10 +76,13 @@ export async function AppShell({
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
-          Single-tenant demo
-          <br />
-          No Zoho sync · no portal logins
+        <div className="border-t border-sidebar-border px-4 py-3">
+          <ActorSwitcher actor={actor} users={users} />
+          <p className="mt-2 text-[11px] text-sidebar-foreground/60">
+            Dev session · {actor.role === "admin" ? "sees the desk" : "own book only"}
+            <br />
+            No Zoho sync · no portal logins
+          </p>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

@@ -139,3 +139,44 @@ export function formatMoney(value: number | string | null | undefined): string {
 export function formatPct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
+
+export const USER_ROLES = ["admin", "agent"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const COMMISSION_STATUSES = ["pending", "payable", "paid", "held"] as const;
+export type CommissionStatus = (typeof COMMISSION_STATUSES)[number];
+
+export const ASK_STATUSES = ["open", "done"] as const;
+export type AskStatus = (typeof ASK_STATUSES)[number];
+
+export const ASK_KINDS = ["question", "payout"] as const;
+export type AskKind = (typeof ASK_KINDS)[number];
+
+export const ASK_ENTITY_TYPES = ["commission", "policy"] as const;
+export type AskEntityType = (typeof ASK_ENTITY_TYPES)[number];
+
+export const OWNER_ENTITY_TYPES = ["lead", "contact", "deal", "policy"] as const;
+export type OwnerEntityType = (typeof OWNER_ENTITY_TYPES)[number];
+
+export const COMMISSION_RANGES = [
+  "all",
+  "pending",
+  "paid",
+  "last_30",
+  "last_quarter",
+  "fiscal_year",
+  "upcoming",
+] as const;
+export type CommissionRange = (typeof COMMISSION_RANGES)[number];
+
+export const COMMISSION_VIEWS = ["mine", "agency"] as const;
+export type CommissionView = (typeof COMMISSION_VIEWS)[number];
+
+export const DEFAULT_COMMISSION_RATE_PCT = 10;
+
+export function formatRatePct(value: number | string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  const n = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(n)) return "—";
+  return `${n.toFixed(Number.isInteger(n) ? 0 : 2)}%`;
+}

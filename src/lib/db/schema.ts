@@ -8,6 +8,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -34,6 +35,35 @@ export const tenants = pgTable("tenants", {
     .notNull(),
 });
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    role: text("role").notNull().default("agent"),
+    passwordHash: text("password_hash"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    index("users_tenant_idx").on(t.tenantId),
+    uniqueIndex("users_tenant_email_idx").on(t.tenantId, t.email),
+  ],
+);
+
+export const agencySettings = pgTable(
+  "agency_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
+);
+
 export const leads = pgTable(
   "leads",
   {
@@ -47,9 +77,13 @@ export const leads = pgTable(
     status: text("status").notNull().default("new"),
     notes: text("notes"),
     convertedDealId: uuid("converted_deal_id"),
+    ownerId: uuid("owner_id").references(() => users.id),
     ...timestamps,
   },
-  (t) => [index("leads_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("leads_tenant_idx").on(t.tenantId),
+    index("leads_owner_idx").on(t.tenantId, t.ownerId),
+  ],
 );
 
 export const contacts = pgTable(
@@ -70,9 +104,13 @@ export const contacts = pgTable(
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
+    ownerId: uuid("owner_id").references(() => users.id),
     ...timestamps,
   },
-  (t) => [index("contacts_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("contacts_tenant_idx").on(t.tenantId),
+    index("contacts_owner_idx").on(t.tenantId, t.ownerId),
+  ],
 );
 
 export const deals = pgTable(
@@ -90,11 +128,13 @@ export const deals = pgTable(
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
+    ownerId: uuid("owner_id").references(() => users.id),
     ...timestamps,
   },
   (t) => [
     index("deals_tenant_idx").on(t.tenantId),
     index("deals_stage_idx").on(t.tenantId, t.pipelineStage),
+    index("deals_owner_idx").on(t.tenantId, t.ownerId),
   ],
 );
 
@@ -176,11 +216,13 @@ export const policies = pgTable(
     expirationDate: timestamp("expiration_date", { withTimezone: true }).notNull(),
     premium: numeric("premium", { precision: 12, scale: 2 }),
     coverageA: integer("coverage_a"),
+    ownerId: uuid("owner_id").references(() => users.id),
     ...timestamps,
   },
   (t) => [
     index("policies_tenant_idx").on(t.tenantId),
     index("policies_exp_idx").on(t.tenantId, t.expirationDate),
+    index("policies_owner_idx").on(t.tenantId, t.ownerId),
   ],
 );
 
@@ -414,6 +456,56 @@ export const alerts = pgTable(
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
 );
 
+export const commissions = pgTable(
+  "commissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => users.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    lineOfBusiness: text("line_of_business").notNull(),
+    premium: numeric("premium", { precision: 12, scale: 2 }).notNull(),
+    ratePct: numeric("rate_pct", { precision: 5, scale: 2 }).notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    status: text("status").notNull().default("pending"),
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    paidDate: timestamp("paid_date", { withTimezone: true }),
+    period: text("period").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    index("commissions_tenant_idx").on(t.tenantId),
+    index("commissions_agent_idx").on(t.tenantId, t.agentId),
+    index("commissions_status_due_idx").on(t.tenantId, t.status, t.dueDate),
+  ],
+);
+
+export const recordAsks = pgTable(
+  "record_asks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind").notNull().default("question"),
+    body: text("body").notNull(),
+    status: text("status").notNull().default("open"),
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("record_asks_tenant_idx").on(t.tenantId),
+    index("record_asks_entity_idx").on(t.tenantId, t.entityType, t.entityId),
+  ],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -427,3 +519,7 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type Commission = typeof commissions.$inferSelect;
+export type RecordAsk = typeof recordAsks.$inferSelect;
+export type AgencySettings = typeof agencySettings.$inferSelect;

@@ -33,6 +33,14 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               placeholder="Policy # at bind"
               className="h-8 w-36"
             />
+            <Input
+              name="premium"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Premium"
+              className="h-8 w-28"
+            />
             <Button type="submit" size="sm" variant="secondary">
               Bind (creates contact + policy)
             </Button>

@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { createDealFromLead, createLead } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { OwnerSelect } from "@/components/owner-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { listLeads } from "@/lib/db/queries";
+import { canAssignOwner } from "@/lib/auth/rbac";
+import { getActor } from "@/lib/auth/session";
+import { listLeads, listUsers } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const rows = await listLeads();
+  const [rows, users, actor] = await Promise.all([listLeads(), listUsers(), getActor()]);
+  const assign = canAssignOwner(actor);
   return (
     <AppShell title="Leads">
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -51,13 +55,14 @@ export default async function LeadsPage() {
                 <th>Name</th>
                 <th>Status</th>
                 <th>Source</th>
+                <th>Owner</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                    <td colSpan={5} className="text-muted-foreground">
                     No leads yet.
                   </td>
                 </tr>
@@ -72,6 +77,15 @@ export default async function LeadsPage() {
                     </td>
                     <td className="uppercase">{lead.status}</td>
                     <td>{lead.source}</td>
+                    <td>
+                      <OwnerSelect
+                        entityType="lead"
+                        entityId={lead.id}
+                        ownerId={lead.ownerId}
+                        users={users}
+                        canAssign={assign}
+                      />
+                    </td>
                     <td>
                       {lead.convertedDealId ? (
                         <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">

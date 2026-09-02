@@ -2,13 +2,17 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
-import { listDeals } from "@/lib/db/queries";
+import { OwnerSelect } from "@/components/owner-select";
+import { canAssignOwner } from "@/lib/auth/rbac";
+import { getActor } from "@/lib/auth/session";
+import { listDeals, listUsers } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function DealsPage() {
-  const rows = await listDeals();
+  const [rows, users, actor] = await Promise.all([listDeals(), listUsers(), getActor()]);
+  const assign = canAssignOwner(actor);
   return (
     <AppShell
       title="Deals"
@@ -29,6 +33,7 @@ export default async function DealsPage() {
               <th>Stage</th>
               <th>Line</th>
               <th>State</th>
+              <th>Owner</th>
             </tr>
           </thead>
           <tbody>
@@ -44,6 +49,15 @@ export default async function DealsPage() {
                 </td>
                 <td>{deal.lineOfBusiness}</td>
                 <td>{deal.state}</td>
+                <td>
+                  <OwnerSelect
+                    entityType="deal"
+                    entityId={deal.id}
+                    ownerId={deal.ownerId}
+                    users={users}
+                    canAssign={assign}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>

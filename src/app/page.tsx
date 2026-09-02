@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { dashboardStats } from "@/lib/db/queries";
+import { widgetTotals } from "@/lib/commissions/rollups";
+import { formatMoney } from "@/lib/domain";
+import { dashboardStats, listCommissionWidgets } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { markAlertRead } from "@/app/actions/alerts";
 import { cn } from "@/lib/utils";
@@ -10,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const { stats, recentDeals, tasks, unread, expiring } = await dashboardStats();
+  const pay = widgetTotals(await listCommissionWidgets());
 
   return (
     <AppShell
@@ -30,6 +33,19 @@ export default async function HomePage() {
           <Link key={label} href={String(href)} className="ff-card p-4 hover:border-primary">
             <div className="text-xs text-muted-foreground">{label}</div>
             <div className="text-2xl font-semibold text-navy">{String(value)}</div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        {[
+          ["Pending commissions", formatMoney(pay.pending), "/commissions?range=pending"],
+          ["Paid last 30 days", formatMoney(pay.paidLast30), "/commissions?range=last_30"],
+          ["Upcoming due", formatMoney(pay.upcoming), "/commissions?range=upcoming"],
+        ].map(([label, value, href]) => (
+          <Link key={label} href={href} className="ff-card p-4 hover:border-primary">
+            <div className="text-xs text-muted-foreground">{label}</div>
+            <div className="text-2xl font-semibold text-navy">{value}</div>
           </Link>
         ))}
       </div>

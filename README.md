@@ -49,11 +49,20 @@ Open [http://localhost:43147](http://localhost:43147).
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
+## Roles and commissions
+
+The desk is solo-now / agency-later. Seed creates **Javy Rivera (Admin)** and **Maya Chen (Agent)**. The rail switcher is the existing dev session — no SSO or invite email. Passwords are hashed at seed time from `DEV_ADMIN_PASSWORD` (local default if unset) and never committed.
+
+- Admin sees every contact, deal, policy, and producer-pay row, and can assign an owner.
+- Agent sees only their own book and commissions.
+- **Commissions** is producer pay on bound policies (pending / payable / paid / held). Ana Dib quote floors are not paid commissions.
+- An **ask** is a short note on a commission or policy (`what about this?` / request payout). Open or done. Admin marks resolved. Not chat.
+
 ## Schema
 
 Every table has `tenant_id` from day one. Runtime is single-tenant (`TENANT_ID` in `.env`). No multi-tenant isolation, credential vault, billing, or Zoho sync.
 
-Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`.
+Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`. Additive migrations only.
 
 ## Tests
 
@@ -61,7 +70,7 @@ Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`.
 npm test
 ```
 
-Covers appetite matching (filter-first, learned declines, RCE floors) and extraction confidence (clean dec vs messy wind mit).
+Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence (clean dec vs messy wind mit), RBAC owner scope, and commission rollups.
 
 ## Restyle
 
