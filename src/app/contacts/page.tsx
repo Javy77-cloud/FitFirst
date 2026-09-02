@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,12 @@ export default async function ContactsPage() {
                 rows.map((c) => (
                   <tr key={c.id}>
                     <td className="font-medium">
-                      {c.lastName}, {c.firstName}
+                      <Link href={`/contacts/${c.id}`} className="text-primary hover:underline">
+                        {c.lastName}, {c.firstName}
+                      </Link>
+                      {(c.tags ?? []).length > 0 ? (
+                        <div className="text-[11px] text-muted-foreground">{c.tags.join(", ")}</div>
+                      ) : null}
                     </td>
                     <td>{c.policyCount}</td>
                     <td>{c.tenureStart ? c.tenureStart.toISOString().slice(0, 10) : "—"}</td>

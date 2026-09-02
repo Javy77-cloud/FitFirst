@@ -159,3 +159,21 @@
 .ff-table tr:hover td {
   background: #f4f8fc;
 }
+
+.ff-cal-task {
+  background: var(--ff-accent);
+  color: #ffffff;
+}
+.ff-cal-meeting {
+  background: var(--ff-green);
+  color: #ffffff;
+}
+.ff-cal-call {
+  background: var(--ff-yellow);
+  color: #ffffff;
+}
+.ff-stub {
+  background: var(--ff-flag-bg);
+  color: var(--ff-flag);
+  border: 1px solid color-mix(in srgb, var(--ff-flag) 25%, var(--ff-border));
+}

@@ -70,6 +70,7 @@ export const contacts = pgTable(
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [index("contacts_tenant_idx").on(t.tenantId)],
@@ -234,22 +235,26 @@ export const documents = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    riskId: uuid("risk_id")
-      .notNull()
-      .references(() => risks.id),
-    dealId: uuid("deal_id")
-      .notNull()
-      .references(() => deals.id),
+    riskId: uuid("risk_id").references(() => risks.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    policyId: uuid("policy_id").references(() => policies.id),
     filename: text("filename").notNull(),
     mimeType: text("mime_type").notNull(),
     storagePath: text("storage_path").notNull(),
     docType: text("doc_type").notNull().default("other"),
     status: text("status").notNull().default("uploaded"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (t) => [index("documents_tenant_risk_idx").on(t.tenantId, t.riskId)],
+  (t) => [
+    index("documents_tenant_risk_idx").on(t.tenantId, t.riskId),
+    index("documents_tenant_deal_idx").on(t.tenantId, t.dealId),
+    index("documents_tenant_contact_idx").on(t.tenantId, t.contactId),
+    index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
+  ],
 );
 
 export const extractedFields = pgTable(
@@ -414,6 +419,119 @@ export const alerts = pgTable(
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
 );
 
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    status: text("status").notNull().default("open"),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    startAt: timestamp("start_at", { withTimezone: true }),
+    endAt: timestamp("end_at", { withTimezone: true }),
+    assignee: text("assignee"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    ...timestamps,
+  },
+  (t) => [
+    index("activities_tenant_idx").on(t.tenantId),
+    index("activities_when_idx").on(t.tenantId, t.startAt, t.dueAt),
+    index("activities_status_idx").on(t.tenantId, t.status, t.kind),
+  ],
+);
+
+export const calendarConnections = pgTable(
+  "calendar_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull().default("google"),
+    connected: boolean("connected").notNull().default(false),
+    displayEmail: text("display_email"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastSyncDirection: text("last_sync_direction"),
+    lastSyncStatus: text("last_sync_status"),
+    ...timestamps,
+  },
+  (t) => [index("calendar_connections_tenant_idx").on(t.tenantId, t.provider)],
+);
+
+export const emailCampaigns = pgTable(
+  "email_campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    audienceType: text("audience_type").notNull(),
+    audienceValue: text("audience_value").notNull(),
+    status: text("status").notNull().default("draft"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("email_campaigns_tenant_idx").on(t.tenantId)],
+);
+
+export const campaignSendLogs = pgTable(
+  "campaign_send_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => emailCampaigns.id),
+    recipientEmail: text("recipient_email"),
+    recipientName: text("recipient_name"),
+    outcome: text("outcome").notNull().default("would_send"),
+    detail: text("detail"),
+    loggedAt: timestamp("logged_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("campaign_send_logs_campaign_idx").on(t.tenantId, t.campaignId)],
+);
+
+export const smsSettings = pgTable("sms_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  provider: text("provider").notNull().default("none"),
+  connected: boolean("connected").notNull().default(false),
+  displayFrom: text("display_from"),
+  notes: text("notes"),
+  lastConnectStatus: text("last_connect_status"),
+  ...timestamps,
+});
+
+export const signatureEnvelopes = pgTable(
+  "signature_envelopes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    provider: text("provider").notNull().default("docusign"),
+    status: text("status").notNull().default("draft"),
+    signerName: text("signer_name"),
+    signerEmail: text("signer_email"),
+    subject: text("subject"),
+    lastProviderResult: text("last_provider_result"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("signature_envelopes_tenant_idx").on(t.tenantId),
+    index("signature_envelopes_doc_idx").on(t.tenantId, t.documentId),
+  ],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -427,3 +545,9 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
+export type Activity = typeof activities.$inferSelect;
+export type CalendarConnection = typeof calendarConnections.$inferSelect;
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
+export type SmsSettings = typeof smsSettings.$inferSelect;
+export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;

@@ -49,6 +49,19 @@ Open [http://localhost:43147](http://localhost:43147).
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
+## Agency desk tools
+
+InsuredMine-class operating tools, in-app only. Integrations are interfaces.
+
+- **Calendar** — month / week / day for tasks, meetings, and calls. Create or open from a click. Colors use `--ff-*` tokens.
+- **Tasks** — list + create. Calendar is the home for the same records.
+- **Documents** — upload, tag, and list on a contact, deal, or policy (dec, wind mit, 4-point, photos, signed apps). Extraction confidence flags stay. No Zoho upload.
+- **Campaigns** — list, composer, audience by contact tag or pipeline stage. Send logs `would send`. No SMTP.
+- **E-sign** — envelopes with draft / sent / signed. Provider interface (DocuSign / Dropbox Sign / Zoho Sign) returns `not_implemented`.
+- **SMS settings** — “Connect SMS provider” stub for phase two. No Twilio, no numbers.
+
+Google Calendar has a Connect button and connected / not-connected state. OAuth and sync in/out return `not_implemented`. When stub-connected, FitFirst activities still show. No secrets in git.
+
 ## Schema
 
 Every table has `tenant_id` from day one. Runtime is single-tenant (`TENANT_ID` in `.env`). No multi-tenant isolation, credential vault, billing, or Zoho sync.

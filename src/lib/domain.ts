@@ -49,9 +49,43 @@ export const DOC_TYPES = [
   "wind_mit",
   "four_point",
   "photo",
+  "signed_app",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
+
+export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+
+export const ACTIVITY_STATUSES = ["open", "completed", "cancelled"] as const;
+export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
+
+export const RELATED_RECORD_TYPES = ["contact", "deal", "policy"] as const;
+export type RelatedRecordType = (typeof RELATED_RECORD_TYPES)[number];
+
+export const CAMPAIGN_AUDIENCE_TYPES = ["tag", "pipeline_stage"] as const;
+export type CampaignAudienceType = (typeof CAMPAIGN_AUDIENCE_TYPES)[number];
+
+export const CAMPAIGN_STATUSES = ["draft", "queued", "stub_sent"] as const;
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+
+export const ESIGN_PROVIDERS = ["docusign", "dropbox_sign", "zoho_sign"] as const;
+export type EsignProvider = (typeof ESIGN_PROVIDERS)[number];
+
+export const ESIGN_STATUSES = ["draft", "sent", "signed"] as const;
+export type EsignStatus = (typeof ESIGN_STATUSES)[number];
+
+export const SMS_PROVIDERS = ["none", "twilio"] as const;
+export type SmsProvider = (typeof SMS_PROVIDERS)[number];
+
+export const DOC_TYPE_LABELS: Record<DocType, string> = {
+  dec: "Declarations",
+  wind_mit: "Wind mitigation",
+  four_point: "4-point",
+  photo: "Photo",
+  signed_app: "Signed application",
+  other: "Other",
+};
 
 export const RISK_TYPES = ["property", "auto"] as const;
 export type RiskType = (typeof RISK_TYPES)[number];

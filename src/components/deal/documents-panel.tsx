@@ -6,17 +6,22 @@ import {
   uploadDocument,
   uploadSampleDocument,
 } from "@/app/actions/documents";
+import { SendForSignature } from "@/components/ops/entity-upload";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DOC_TYPE_LABELS, DOC_TYPES } from "@/lib/domain";
 
 export function DocumentsPanel({
   dealId,
   riskId,
+  contactId,
   docs,
   fields,
 }: {
   dealId: string;
   riskId: string;
+  contactId?: string | null;
   docs: Document[];
   fields: ExtractedFieldRow[];
 }) {
@@ -35,6 +40,7 @@ export function DocumentsPanel({
         <form action={uploadDocument} className="mb-3 space-y-2 rounded-md border border-border p-3">
           <input type="hidden" name="dealId" value={dealId} />
           <input type="hidden" name="riskId" value={riskId} />
+          {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
               <Label htmlFor="docType" className="text-xs">
@@ -46,11 +52,11 @@ export function DocumentsPanel({
                 className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
                 defaultValue="dec"
               >
-                <option value="dec">Declarations</option>
-                <option value="wind_mit">Wind mitigation</option>
-                <option value="four_point">4-point</option>
-                <option value="photo">Photo</option>
-                <option value="other">Other</option>
+                {DOC_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {DOC_TYPE_LABELS[t]}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -65,6 +71,12 @@ export function DocumentsPanel({
                 className="mt-1 block w-full text-xs"
               />
             </div>
+          </div>
+          <div>
+            <Label htmlFor="tags" className="text-xs">
+              Tags
+            </Label>
+            <Input id="tags" name="tags" className="mt-1 h-8" placeholder="dec, wind-mit, photos" />
           </div>
           <Button type="submit" size="sm">
             Upload and extract
@@ -101,6 +113,7 @@ export function DocumentsPanel({
               <tr>
                 <th>File</th>
                 <th>Type</th>
+                <th>Tags</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -109,9 +122,10 @@ export function DocumentsPanel({
               {docs.map((doc) => (
                 <tr key={doc.id}>
                   <td className="font-medium">{doc.filename}</td>
-                  <td className="uppercase">{doc.docType.replace("_", " ")}</td>
-                  <td>{doc.status.replace("_", " ")}</td>
-                  <td>
+                  <td className="uppercase">{doc.docType.replaceAll("_", " ")}</td>
+                  <td className="text-xs">{(doc.tags ?? []).join(", ") || "—"}</td>
+                  <td>{doc.status.replaceAll("_", " ")}</td>
+                  <td className="space-y-1">
                     <form action={extractExisting}>
                       <input type="hidden" name="documentId" value={doc.id} />
                       <input type="hidden" name="dealId" value={dealId} />
@@ -119,6 +133,7 @@ export function DocumentsPanel({
                         Re-extract
                       </Button>
                     </form>
+                    <SendForSignature document={doc} returnTo={`/deals/${dealId}`} compact />
                   </td>
                 </tr>
               ))}

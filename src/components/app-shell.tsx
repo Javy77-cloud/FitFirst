@@ -3,10 +3,16 @@ import { isNull, eq, and, sql } from "drizzle-orm";
 import {
   Bell,
   Building2,
+  CalendarDays,
   ClipboardList,
   Contact,
   FileStack,
+  Files,
   Home,
+  ListTodo,
+  Mail,
+  MessageSquare,
+  PenLine,
   Shield,
   Users,
 } from "lucide-react";
@@ -20,6 +26,10 @@ const NAV = [
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/policies", label: "Policies", icon: Shield },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/tasks", label: "Tasks", icon: ListTodo },
+  { href: "/documents", label: "Documents", icon: Files },
+  { href: "/campaigns", label: "Campaigns", icon: Mail },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
@@ -72,9 +82,17 @@ export async function AppShell({
           })}
         </nav>
         <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
-          Single-tenant demo
-          <br />
-          No Zoho sync · no portal logins
+          <Link href="/esign" className="flex items-center gap-1.5 hover:text-white">
+            <PenLine className="size-3" /> E-sign
+          </Link>
+          <Link href="/settings/sms" className="mt-1 flex items-center gap-1.5 hover:text-white">
+            <MessageSquare className="size-3" /> SMS settings
+          </Link>
+          <div className="mt-2">
+            Single-tenant demo
+            <br />
+            No Zoho · stubs only
+          </div>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "./index";
 import {
@@ -104,13 +104,18 @@ export async function getDealWorkspace(dealId: string) {
     .from(risks)
     .where(and(eq(risks.tenantId, tenant()), eq(risks.dealId, dealId)));
 
-  const docs = risk
-    ? await db
-        .select()
-        .from(documents)
-        .where(and(eq(documents.tenantId, tenant()), eq(documents.riskId, risk.id)))
-        .orderBy(desc(documents.createdAt))
-    : [];
+  const docs = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.tenantId, tenant()),
+        risk
+          ? or(eq(documents.dealId, dealId), eq(documents.riskId, risk.id))
+          : eq(documents.dealId, dealId),
+      ),
+    )
+    .orderBy(desc(documents.createdAt));
 
   const fields = risk
     ? await db

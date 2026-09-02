@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { formatMoney } from "@/lib/domain";
 import { listPolicies } from "@/lib/db/queries";
@@ -31,7 +32,11 @@ export default async function PoliciesPage() {
             <tbody>
               {rows.map(({ policy, contact, carrier }) => (
                 <tr key={policy.id}>
-                  <td className="font-medium">{policy.policyNumber}</td>
+                  <td className="font-medium">
+                    <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
+                      {policy.policyNumber}
+                    </Link>
+                  </td>
                   <td>
                     {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
                   </td>

@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { alerts, documents, extractedFields, risks } from "@/lib/db/schema";
+import { alerts, documents, extractedFields, policies, risks } from "@/lib/db/schema";
 import {
   coerceRiskValue,
   extractFieldsFromText,
@@ -23,56 +23,110 @@ import {
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
-async function persistFile(
-  dealId: string,
-  riskId: string,
-  filename: string,
-  mimeType: string,
-  buffer: Buffer,
-  docType: string,
-) {
+function parseTags(raw: FormDataEntryValue | null) {
+  return String(raw ?? "")
+    .split(/[,;]/)
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function optionalId(formData: FormData, key: string) {
+  const value = String(formData.get(key) ?? "").trim();
+  return value || null;
+}
+
+async function persistFile(input: {
+  dealId: string | null;
+  riskId: string | null;
+  contactId: string | null;
+  policyId: string | null;
+  filename: string;
+  mimeType: string;
+  buffer: Buffer;
+  docType: string;
+  tags: string[];
+}) {
   const id = randomUUID();
-  const storagePath = path.join(DEFAULT_TENANT_ID, dealId, `${id}-${filename}`);
+  const folder = input.dealId ?? input.policyId ?? input.contactId ?? "library";
+  const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
   const abs = path.join(uploadRoot, storagePath);
   await mkdir(path.dirname(abs), { recursive: true });
-  await writeFile(abs, buffer);
+  await writeFile(abs, input.buffer);
 
   const [doc] = await db
     .insert(documents)
     .values({
       id,
       tenantId: DEFAULT_TENANT_ID,
-      riskId,
-      dealId,
-      filename,
-      mimeType,
+      riskId: input.riskId,
+      dealId: input.dealId,
+      contactId: input.contactId,
+      policyId: input.policyId,
+      filename: input.filename,
+      mimeType: input.mimeType,
       storagePath,
-      docType,
+      docType: input.docType,
       status: "uploaded",
+      tags: input.tags,
     })
     .returning();
   return doc;
 }
 
+function revalidateDocumentPaths(doc: {
+  dealId: string | null;
+  contactId: string | null;
+  policyId: string | null;
+}) {
+  revalidatePath("/documents");
+  revalidatePath("/esign");
+  if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
+  if (doc.contactId) revalidatePath(`/contacts/${doc.contactId}`);
+  if (doc.policyId) revalidatePath(`/policies/${doc.policyId}`);
+}
+
 export async function uploadDocument(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "");
-  const riskId = String(formData.get("riskId") ?? "");
+  let dealId = optionalId(formData, "dealId");
+  let riskId = optionalId(formData, "riskId");
+  let contactId = optionalId(formData, "contactId");
+  let policyId = optionalId(formData, "policyId");
+  if (dealId && !riskId) {
+    const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+    riskId = risk?.id ?? null;
+    if (!contactId) contactId = risk?.contactId ?? null;
+  }
+  if (policyId && (!riskId || !dealId || !contactId)) {
+    const [policy] = await db.select().from(policies).where(eq(policies.id, policyId));
+    if (policy) {
+      riskId = riskId ?? policy.riskId ?? null;
+      dealId = dealId ?? policy.dealId ?? null;
+      contactId = contactId ?? policy.contactId ?? null;
+    }
+  }
   const docType = String(formData.get("docType") ?? "other");
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("Choose a file to upload.");
   }
+  if (!dealId && !contactId && !policyId) {
+    throw new Error("Attach the file to a contact, deal, or policy.");
+  }
   const buffer = Buffer.from(await file.arrayBuffer());
-  const doc = await persistFile(
+  const doc = await persistFile({
     dealId,
     riskId,
-    file.name,
-    file.type || "application/octet-stream",
+    contactId,
+    policyId,
+    filename: file.name,
+    mimeType: file.type || "application/octet-stream",
     buffer,
     docType,
-  );
-  await runExtraction(doc.id, dealId);
-  revalidatePath(`/deals/${dealId}`);
+    tags: parseTags(formData.get("tags")),
+  });
+  if (doc.riskId) {
+    await runExtraction(doc.id, doc.dealId ?? "");
+  }
+  revalidateDocumentPaths(doc);
 }
 
 export async function uploadSampleDocument(formData: FormData) {
@@ -83,16 +137,21 @@ export async function uploadSampleDocument(formData: FormData) {
   const filename = messy ? MESSY_WIND_MIT_FILENAME : CLEAN_DEC_FILENAME;
   const text = messy ? MESSY_WIND_MIT_TEXT : CLEAN_DEC_TEXT;
   const docType = messy ? "wind_mit" : "dec";
-  const doc = await persistFile(
+  const doc = await persistFile({
     dealId,
     riskId,
+    contactId: null,
+    policyId: null,
     filename,
-    "text/plain",
-    Buffer.from(text, "utf8"),
+    mimeType: "text/plain",
+    buffer: Buffer.from(text, "utf8"),
     docType,
-  );
-  await runExtraction(doc.id, dealId);
-  revalidatePath(`/deals/${dealId}`);
+    tags: [messy ? "wind-mit" : "dec"],
+  });
+  if (doc.riskId) {
+    await runExtraction(doc.id, dealId);
+  }
+  revalidateDocumentPaths(doc);
 }
 
 export async function extractExisting(formData: FormData) {
@@ -112,6 +171,11 @@ async function runExtraction(documentId: string, dealId: string) {
   const result = extractFieldsFromText(text);
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
+
+  if (!doc.riskId) {
+    await db.update(documents).set({ status: "uploaded" }).where(eq(documents.id, documentId));
+    return;
+  }
 
   const [risk] = await db.select().from(risks).where(eq(risks.id, doc.riskId));
   const applyPatch: Record<string, unknown> = {};

@@ -71,7 +71,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               id: "documents",
               label: "Documents",
               content: (
-                <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                <DocumentsPanel
+                  dealId={deal.id}
+                  riskId={risk.id}
+                  contactId={deal.contactId}
+                  docs={docs}
+                  fields={fields}
+                />
               ),
             },
             {

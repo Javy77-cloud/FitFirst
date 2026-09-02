@@ -4,8 +4,10 @@ import {
   alerts,
   appetiteRules,
   carriers,
+  activities,
   contacts,
   deals,
+  emailCampaigns,
   leads,
   quoteAttemptLogs,
   quotes,
@@ -14,7 +16,17 @@ import {
   tenants,
 } from "./schema";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
-import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import {
+  ACTIVITY_MEETING_ID,
+  ACTIVITY_TASK_ID,
+  CAMPAIGN_ID,
+  CARRIER_IDS,
+  CONTACT_ID,
+  DEAL_ID,
+  LEAD_ID,
+  RISK_ID,
+  TENANT_ID,
+} from "../fixtures/ids";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -74,6 +86,7 @@ export async function seed() {
       state: fixture.risk.state,
       zip: fixture.risk.zip,
       policyCount: 0,
+      tags: ["ho3", "palm-bay"],
       notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -86,6 +99,7 @@ export async function seed() {
         state: fixture.risk.state,
         zip: fixture.risk.zip,
         policyCount: 0,
+        tags: ["ho3", "palm-bay"],
         notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
         updatedAt: new Date(),
       },
@@ -308,4 +322,81 @@ export async function seed() {
     dueDate: new Date("2026-10-02T16:00:00.000Z"),
     status: "open",
   });
+
+  await db
+    .insert(activities)
+    .values({
+      id: ACTIVITY_TASK_ID,
+      tenantId: TENANT_ID,
+      kind: "task",
+      title: "Chase wind mit · Ana Dib HO3",
+      notes: "Need a clean wind mit before any market will bind at $321k.",
+      status: "open",
+      dueAt: new Date("2026-09-02T15:00:00.000Z"),
+      assignee: "Desk",
+      contactId: CONTACT_ID,
+      dealId: DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Chase wind mit · Ana Dib HO3",
+        notes: "Need a clean wind mit before any market will bind at $321k.",
+        dueAt: new Date("2026-09-02T15:00:00.000Z"),
+        contactId: CONTACT_ID,
+        dealId: DEAL_ID,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(activities)
+    .values({
+      id: ACTIVITY_MEETING_ID,
+      tenantId: TENANT_ID,
+      kind: "meeting",
+      title: "Market review with Ana Dib",
+      notes: "Walk the eight-market filter-first result. No bindable quote yet.",
+      status: "open",
+      startAt: new Date("2026-09-02T18:00:00.000Z"),
+      endAt: new Date("2026-09-02T18:45:00.000Z"),
+      assignee: "Desk",
+      contactId: CONTACT_ID,
+      dealId: DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Market review with Ana Dib",
+        notes: "Walk the eight-market filter-first result. No bindable quote yet.",
+        startAt: new Date("2026-09-02T18:00:00.000Z"),
+        endAt: new Date("2026-09-02T18:45:00.000Z"),
+        contactId: CONTACT_ID,
+        dealId: DEAL_ID,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(emailCampaigns)
+    .values({
+      id: CAMPAIGN_ID,
+      tenantId: TENANT_ID,
+      name: "Wind mit chase",
+      subject: "Need your wind mitigation inspection",
+      body: "Please send the wind mit so we can finish shopping the Palm Bay HO3. Sends from this screen are logged only — no SMTP.",
+      audienceType: "tag",
+      audienceValue: "ho3",
+      status: "draft",
+    })
+    .onConflictDoUpdate({
+      target: emailCampaigns.id,
+      set: {
+        name: "Wind mit chase",
+        subject: "Need your wind mitigation inspection",
+        audienceType: "tag",
+        audienceValue: "ho3",
+        updatedAt: new Date(),
+      },
+    });
 }
