@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fitfirst
+      POSTGRES_PASSWORD: fitfirst_dev
+      POSTGRES_DB: fitfirst
+    ports:
+      - "5432:5432"
+    volumes:
+      - fitfirst_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitfirst -d fitfirst"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    ports:
+      - "43147:43147"
+    environment:
+      DATABASE_URL: postgres://fitfirst:fitfirst_dev@db:5432/fitfirst
+      TENANT_ID: 11111111-1111-4111-8111-111111111111
+      UPLOAD_DIR: /app/uploads
+      PORT: 43147
+      HOST: 0.0.0.0
+      NODE_ENV: production
+    volumes:
+      - fitfirst_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  fitfirst_pg:
+  fitfirst_uploads:

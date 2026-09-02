@@ -1,0 +1,161 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Design tokens. Restyle the product here — application logic
+  never hardcodes these colors, radii, or densities.
+*/
+:root {
+  --ff-navy: #0c2340;
+  --ff-navy-mid: #163456;
+  --ff-navy-deep: #08182d;
+  --ff-sidebar-text: #d5e2f0;
+  --ff-sidebar-muted: #93a7be;
+  --ff-accent: #1d6fb8;
+  --ff-accent-hover: #185c99;
+  --ff-canvas: #eef1f5;
+  --ff-ink: #1c2430;
+  --ff-muted: #5c6b7a;
+  --ff-card: #ffffff;
+  --ff-border: #d5dde6;
+  --ff-green: #1f7a4d;
+  --ff-green-bg: #e4f5ec;
+  --ff-yellow: #8a6500;
+  --ff-yellow-bg: #fff4d1;
+  --ff-red: #b42318;
+  --ff-red-bg: #fde8e6;
+  --ff-flag: #c2410c;
+  --ff-flag-bg: #ffedd5;
+  --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
+  --ff-density: 0.875rem;
+
+  --background: var(--ff-canvas);
+  --foreground: var(--ff-ink);
+  --card: var(--ff-card);
+  --card-foreground: var(--ff-ink);
+  --popover: var(--ff-card);
+  --popover-foreground: var(--ff-ink);
+  --primary: var(--ff-accent);
+  --primary-foreground: #ffffff;
+  --secondary: #e4ebf3;
+  --secondary-foreground: var(--ff-navy);
+  --muted: #e4ebf3;
+  --muted-foreground: var(--ff-muted);
+  --accent: #e4ebf3;
+  --accent-foreground: var(--ff-navy);
+  --destructive: var(--ff-red);
+  --border: var(--ff-border);
+  --input: var(--ff-border);
+  --ring: var(--ff-accent);
+  --chart-1: var(--ff-accent);
+  --chart-2: var(--ff-green);
+  --chart-3: var(--ff-yellow);
+  --chart-4: var(--ff-red);
+  --chart-5: var(--ff-navy);
+  --radius: 0.4rem;
+  --sidebar: var(--ff-navy);
+  --sidebar-foreground: var(--ff-sidebar-text);
+  --sidebar-primary: var(--ff-accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--ff-navy-mid);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1c3b5c;
+  --sidebar-ring: var(--ff-accent);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-ibm-plex);
+  --font-mono: var(--font-ibm-plex-mono);
+  --font-heading: var(--font-ibm-plex);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-fit-green: var(--ff-green);
+  --color-fit-green-bg: var(--ff-green-bg);
+  --color-fit-yellow: var(--ff-yellow);
+  --color-fit-yellow-bg: var(--ff-yellow-bg);
+  --color-fit-red: var(--ff-red);
+  --color-fit-red-bg: var(--ff-red-bg);
+  --color-fit-flag: var(--ff-flag);
+  --color-fit-flag-bg: var(--ff-flag-bg);
+  --color-navy: var(--ff-navy);
+  --color-navy-mid: var(--ff-navy-mid);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    font-size: 15px;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+.ff-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--ff-shadow);
+}
+
+.ff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.ff-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ff-muted);
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  background: #f7f9fb;
+  white-space: nowrap;
+}
+.ff-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.ff-table tr:hover td {
+  background: #f4f8fc;
+}
