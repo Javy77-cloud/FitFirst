@@ -3,14 +3,24 @@ import { AppShell } from "@/components/app-shell";
 import { PipelineBoard } from "@/components/crm/pipeline-board";
 import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
-import { SectionTabs } from "@/components/section-tabs";
+import { QueryTabs, resolveQueryTab } from "@/components/crm/query-tabs";
 import { listDeals } from "@/lib/db/queries";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealsPage() {
+const VIEWS = [
+  { id: "pipeline", label: "Pipeline" },
+  { id: "list", label: "List" },
+] as const;
+
+export default async function DealsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view } = await searchParams;
   const rows = await listDeals();
   return (
     <AppShell
@@ -34,8 +44,10 @@ export default async function DealsPage() {
           .
         </section>
       ) : (
-        <SectionTabs
-          defaultValue="pipeline"
+        <QueryTabs
+          pathname="/deals"
+          param="view"
+          active={resolveQueryTab(VIEWS, view)}
           tabs={[
             {
               id: "pipeline",

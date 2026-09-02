@@ -9,7 +9,7 @@ import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { RiskForm } from "@/components/deal/risk-form";
 import { StagePill } from "@/components/fit-badge";
-import { SectionTabs } from "@/components/section-tabs";
+import { QueryTabs, resolveQueryTab } from "@/components/crm/query-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { formatTenure, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
 import { isCrmOnlyLine, LINE_LABELS } from "@/lib/crm/bind";
@@ -17,8 +17,22 @@ import { getDealWorkspace } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
+const DEAL_TABS = [
+  { id: "documents", label: "Documents" },
+  { id: "risk", label: "Master risk" },
+  { id: "markets", label: "Markets" },
+  { id: "quotes", label: "Quotes" },
+] as const;
+
+export default async function DealPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const { deal, risk, docs, fields, quotes, logs, lead, contact, boundPolicy, dealTasks } =
@@ -122,8 +136,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       ) : !risk ? (
         <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
       ) : (
-        <SectionTabs
-          defaultValue="documents"
+        <QueryTabs
+          pathname={`/deals/${deal.id}`}
+          param="tab"
+          active={resolveQueryTab(DEAL_TABS, tab)}
           tabs={[
             {
               id: "documents",

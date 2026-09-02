@@ -16,7 +16,7 @@ Owns the desk flow: lead → shopping deal → stub bind → contact + policy + 
 - `src/app/policies/**`
 - `src/app/reviews/**`
 - `src/app/deals/page.tsx`, `src/app/deals/new/page.tsx`
-- `src/components/crm/**`
+- `src/components/crm/**` — includes server `QueryTabs` for deal/pipeline views (URL `?tab=` / `?view=`)
 
 ### Shared files (additive only)
 
