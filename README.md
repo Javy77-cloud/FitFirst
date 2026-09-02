@@ -4,9 +4,11 @@ P&C insurance CRM and comparative quote rater for a Florida personal-lines desk.
 
 This is not a Zoho clone and does not call a live CRM. The domain follows a solo broker workflow:
 
-- Lead → Deal (shopping) → Contact + Policy **only after bind**
+- Lead → Deal (shopping) → **one Quote Sheet per line** → Contact + Policy **only after bind**
 - Quotes live on the deal. A quote never creates a policy.
-- One master risk worksheet per property/auto. Source PDFs stay attachments; extracted values land on the master record with a **confidence score**.
+- Agents hand over whatever they have (dec, wind mit, 4-point, photos, notes, competing quote). FitFirst produces **one editable master Quote Sheet per line**. That sheet is what Super-Copy / a rater uses. Raw PDFs stay on Files — they are never the copy packet.
+- Yellow = missing. Blue = CHECK (extracted, unconfirmed). A Javy-tested Cov A is confirmed, never CHECK.
+- People and DOB live on the Contact.
 - Shop **in-appetite / green** markets first. Yellow is a stretch override. Red is skip.
 - Internal alerts stay in-app.
 
@@ -39,13 +41,25 @@ Open [http://localhost:43147](http://localhost:43147).
 
 ## First path to exercise
 
-`npm run db:seed` loads the **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). It is required day-one data, not an optional demo.
+`npm run db:seed` loads two shops.
 
-1. Home → **Open Ana Dib HO3 shop**. 1098 Adige Ct SE, 1989 frame-stucco SFH, 8 mi coast, clay tile + metal, Cov A **$321,000** (broker-tested rebuild — do not change that number). Eight markets, zero bindable.
-2. **Documents** → **Sample handwritten wind mit**. Flagged fields stay off the worksheet until you click **Accept**.
-3. **Sample clean dec** applies high-confidence values automatically.
-4. **Markets** is filter-first: QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable. Floors are log attempts, not wins. No policy is created from these quotes.
-5. Carrier-wide rules (QBE frame+20 mi coast, Benchmark/Hadron aged clay, HOC no NB, VYRD takeout + Brevard $350k) stay distinct from one-house floors (Tailrow $354k, VAVE $418,491, GeoVera $363k, SageSure MSB $349,868). SageSure published min Cov A remains $100k in named counties.
+### Ana Dib HO3 (complete Home sheet)
+
+From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). Required day-one data. **Do not edit that fixture.**
+
+1. Home → **Open Ana Dib HO3 shop**.
+2. **Home** Quote Sheet is already filled from seed. Cov A **$321,000** is broker-tested (Javy) — confirmed, not CHECK, not a Zillow Zestimate.
+3. Header glance shows coverage amount and the property one-liner. Zillow / FEMA are address links only.
+4. **Super-Copy JSON** downloads the sheet the quoting bot would paste (`copy from this, not the PDFs`). Print / PDF is the same packet.
+5. **Markets** is still filter-first: QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable.
+
+### Ortega Melbourne fill demo
+
+1. Home → **Ortega fill-demo shop** (or Deals).
+2. Home Quote Sheet starts blank (yellow).
+3. A sample text dec is already on **Files**. Click **Fill Quote Sheet**.
+4. Year built (2004), address (412 Harbor Isle Dr), and Cov A ($275,000) land as **CHECK** (blue) on blanks only. Header glance picks up coverage, the property one-liner, and current carrier (Citizens) if those header fields were empty.
+5. You can also drop your own `.txt` / text PDF. Images create an OCR job with status `not_implemented`.
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
@@ -53,7 +67,9 @@ Create your own path from **Leads** or **New shopping deal**. Bind is what creat
 
 Every table has `tenant_id` from day one. Runtime is single-tenant (`TENANT_ID` in `.env`). No multi-tenant isolation, credential vault, billing, or Zoho sync.
 
-Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`.
+New desk tables: `quote_sheets` (one per deal per line) and `extraction_jobs`. Deal glance columns: `shop_lines`, `coverage_amount`, `property_oneliner`, `current_carrier`.
+
+Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`. See `COORDINATION.md`.
 
 ## Tests
 
@@ -61,12 +77,12 @@ Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`.
 npm test
 ```
 
-Covers appetite matching (filter-first, learned declines, RCE floors) and extraction confidence (clean dec vs messy wind mit).
+Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence (clean dec vs messy wind mit), Quote Sheet fill-blanks-only (including Javy Cov A), Super-Copy packet shape, OCR stub, and Zillow/FEMA link builders.
 
 ## Restyle
 
-Colors, radii, and density live in `src/app/globals.css` as `--ff-*` tokens mapped to shadcn variables. Do not hardcode palette values in feature logic.
+Colors, radii, and density live in `src/app/globals.css` as `--ff-*` tokens mapped to shadcn variables. Quote Sheet yellow/blue use `--ff-yellow-bg` and `--ff-check-bg`. Do not hardcode palette values in feature logic.
 
 ## Out of scope (intentionally)
 
-Multi-tenant isolation, credential vaults, billing, life/health rating, real carrier portal macros, Zoho sync.
+Multi-tenant isolation, credential vaults, billing, life/health rating, real carrier portal macros, Zoho sync, paid OCR vendors.

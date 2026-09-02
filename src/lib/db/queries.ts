@@ -12,7 +12,9 @@ import {
   extractedFields,
   leads,
   policies,
+  extractionJobs,
   quoteAttemptLogs,
+  quoteSheets,
   quotes,
   reviewTasks,
   risks,
@@ -147,7 +149,18 @@ export async function getDealWorkspace(dealId: string) {
     ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
     : [];
 
-  return { deal, risk, docs, fields, quotes: dealQuotes, logs, lead, contact };
+  const sheets = await db
+    .select()
+    .from(quoteSheets)
+    .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, dealId)));
+
+  const jobs = await db
+    .select()
+    .from(extractionJobs)
+    .where(and(eq(extractionJobs.tenantId, tenant()), eq(extractionJobs.dealId, dealId)))
+    .orderBy(desc(extractionJobs.createdAt));
+
+  return { deal, risk, docs, fields, quotes: dealQuotes, logs, lead, contact, sheets, jobs };
 }
 
 export async function dashboardStats() {

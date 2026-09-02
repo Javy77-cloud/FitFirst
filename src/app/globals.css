@@ -29,6 +29,8 @@
   --ff-red-bg: #fde8e6;
   --ff-flag: #c2410c;
   --ff-flag-bg: #ffedd5;
+  --ff-check: #155e9c;
+  --ff-check-bg: #dceeff;
   --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
   --ff-density: 0.875rem;
 
@@ -109,6 +111,8 @@
   --color-fit-red-bg: var(--ff-red-bg);
   --color-fit-flag: var(--ff-flag);
   --color-fit-flag-bg: var(--ff-flag-bg);
+  --color-fit-check: var(--ff-check);
+  --color-fit-check-bg: var(--ff-check-bg);
   --color-navy: var(--ff-navy);
   --color-navy-mid: var(--ff-navy-mid);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -158,4 +162,59 @@
 }
 .ff-table tr:hover td {
   background: #f4f8fc;
+}
+
+.ff-field-missing {
+  background: var(--ff-yellow-bg);
+  border-color: color-mix(in srgb, var(--ff-yellow) 35%, var(--ff-border));
+}
+.ff-field-check {
+  background: var(--ff-check-bg);
+  border-color: color-mix(in srgb, var(--ff-check) 35%, var(--ff-border));
+}
+
+.ff-address-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.6875rem;
+  line-height: 1.1;
+  color: var(--ff-muted);
+}
+.ff-address-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--ff-accent);
+  text-decoration: none;
+}
+.ff-address-links a:hover {
+  color: var(--ff-accent-hover);
+  text-decoration: underline;
+}
+.ff-address-links svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
+}
+
+@media print {
+  aside,
+  header,
+  .print\:hidden,
+  [role="tablist"] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .ff-field-missing {
+    background: #fff4d1 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .ff-field-check {
+    background: #dceeff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

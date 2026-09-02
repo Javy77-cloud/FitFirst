@@ -40,6 +40,9 @@ const FIELD_LABELS: Record<string, string> = {
   square_feet: "Square feet",
   mobile_home: "Mobile home",
   replacement_cost_estimate: "Replacement cost (RCE)",
+  current_carrier: "Current carrier",
+  state: "State",
+  zip: "ZIP",
 };
 
 type Pattern = {
@@ -120,6 +123,16 @@ const PATTERNS: Pattern[] = [
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
   {
+    key: "state",
+    re: /(?:location|property\s*address|insured\s*location).+,\s*([A-Z]{2})\s+\d{5}/i,
+    normalize: (s) => s.toUpperCase(),
+  },
+  {
+    key: "zip",
+    re: /(?:location|property\s*address|insured\s*location).+,\s*[A-Z]{2}\s+(\d{5})/i,
+    normalize: (s) => s,
+  },
+  {
     key: "square_feet",
     re: /(?:square\s*feet|sq\.?\s*ft\.?|living\s*area)\s*[:#]?\s*([\d,]+)/i,
     normalize: (s) => String(parseInt(s.replace(/,/g, ""), 10)),
@@ -133,6 +146,11 @@ const PATTERNS: Pattern[] = [
     key: "mobile_home",
     re: /(?:mobile\s*home|manufactured)\s*[:#]?\s*(yes|no|y|n)/i,
     normalize: (s) => (/^(y|yes)$/i.test(s) ? "true" : "false"),
+  },
+  {
+    key: "current_carrier",
+    re: /(?:current\s*carrier|incumbent(?:\s*carrier)?|expiring\s*carrier)\s*[:#]?\s*([a-z0-9 .&'-]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
 ];
 
@@ -204,6 +222,8 @@ export function fieldKeyToRiskColumn(fieldKey: string): string | null {
     address: "address1",
     city: "city",
     county: "county",
+    state: "state",
+    zip: "zip",
     year_built: "yearBuilt",
     construction: "construction",
     occupancy: "occupancy",

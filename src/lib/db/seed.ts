@@ -8,13 +8,34 @@ import {
   deals,
   leads,
   quoteAttemptLogs,
+  quoteSheets,
   quotes,
   reviewTasks,
   risks,
   tenants,
 } from "./schema";
+import { persistDealFile } from "../documents/store";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
-import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import {
+  ANA_HOME_SHEET_ID,
+  CARRIER_IDS,
+  CONTACT_ID,
+  DEAL_ID,
+  FILL_DEAL_ID,
+  FILL_DOC_ID,
+  FILL_HOME_SHEET_ID,
+  FILL_LEAD_ID,
+  FILL_RISK_ID,
+  LEAD_ID,
+  RISK_ID,
+  TENANT_ID,
+} from "../fixtures/ids";
+import {
+  MELBOURNE_DEC_FILENAME,
+  MELBOURNE_DEC_TEXT,
+} from "../fixtures/sample-melbourne-dec";
+import { anaHomeSheetValues, anaPropertyOneliner } from "../quote-sheet/ana-home";
+import { emptySheetValues } from "../quote-sheet/catalog";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -104,6 +125,10 @@ export async function seed() {
       state: "FL",
       primaryNamedInsured: fixture.insured.primary,
       secondaryNamedInsured: fixture.insured.namedInsured,
+      shopLines: ["home"],
+      coverageAmount: fixture.risk.coverageA,
+      propertyOneliner: anaPropertyOneliner(fixture.risk),
+      currentCarrier: null,
       notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -116,6 +141,10 @@ export async function seed() {
         lineOfBusiness: "HO",
         primaryNamedInsured: fixture.insured.primary,
         secondaryNamedInsured: fixture.insured.namedInsured,
+        shopLines: ["home"],
+        coverageAmount: fixture.risk.coverageA,
+        propertyOneliner: anaPropertyOneliner(fixture.risk),
+        currentCarrier: null,
         notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
         updatedAt: new Date(),
       },
@@ -171,6 +200,26 @@ export async function seed() {
         mobileHome: false,
         squareFeet: null,
         replacementCostEstimate: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  const anaHomeValues = anaHomeSheetValues(fixture.risk);
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: ANA_HOME_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: DEAL_ID,
+      line: "home",
+      values: anaHomeValues,
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: {
+        dealId: DEAL_ID,
+        line: "home",
+        values: anaHomeValues,
         updatedAt: new Date(),
       },
     });
@@ -307,5 +356,118 @@ export async function seed() {
     title: "30-day shop follow-up · Dib Palm Bay HO3",
     dueDate: new Date("2026-10-02T16:00:00.000Z"),
     status: "open",
+  });
+
+  await seedFillDemoDeal();
+}
+
+async function seedFillDemoDeal() {
+  await db
+    .insert(leads)
+    .values({
+      id: FILL_LEAD_ID,
+      tenantId: TENANT_ID,
+      firstName: "Maya",
+      lastName: "Ortega",
+      source: "demo",
+      status: "converted",
+      notes: "Blank Home Quote Sheet. Drop or use the sample Melbourne dec, then Fill Quote Sheet.",
+      convertedDealId: FILL_DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: leads.id,
+      set: {
+        firstName: "Maya",
+        lastName: "Ortega",
+        status: "converted",
+        convertedDealId: FILL_DEAL_ID,
+        notes: "Blank Home Quote Sheet. Drop or use the sample Melbourne dec, then Fill Quote Sheet.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(deals)
+    .values({
+      id: FILL_DEAL_ID,
+      tenantId: TENANT_ID,
+      leadId: FILL_LEAD_ID,
+      title: "Ortega · Melbourne HO fill demo",
+      pipelineStage: "shopping",
+      lineOfBusiness: "HO",
+      state: "FL",
+      primaryNamedInsured: "Maya Ortega",
+      shopLines: ["home"],
+      coverageAmount: null,
+      propertyOneliner: null,
+      currentCarrier: null,
+      notes: "Blank Home Quote Sheet. Sample Melbourne dec is attached as a source file — click Fill Quote Sheet to load year, address, and Cov A into blanks only.",
+    })
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        leadId: FILL_LEAD_ID,
+        title: "Ortega · Melbourne HO fill demo",
+        pipelineStage: "shopping",
+        lineOfBusiness: "HO",
+        primaryNamedInsured: "Maya Ortega",
+        shopLines: ["home"],
+        coverageAmount: null,
+        propertyOneliner: null,
+        currentCarrier: null,
+        notes: "Blank Home Quote Sheet. Sample Melbourne dec is attached as a source file — click Fill Quote Sheet to load year, address, and Cov A into blanks only.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(risks)
+    .values({
+      id: FILL_RISK_ID,
+      tenantId: TENANT_ID,
+      dealId: FILL_DEAL_ID,
+      riskType: "property",
+      state: "FL",
+    })
+    .onConflictDoUpdate({
+      target: risks.id,
+      set: {
+        dealId: FILL_DEAL_ID,
+        address1: null,
+        city: null,
+        county: null,
+        yearBuilt: null,
+        coverageA: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: FILL_HOME_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: FILL_DEAL_ID,
+      line: "home",
+      values: emptySheetValues("home"),
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: {
+        dealId: FILL_DEAL_ID,
+        line: "home",
+        values: emptySheetValues("home"),
+        updatedAt: new Date(),
+      },
+    });
+
+  await persistDealFile({
+    id: FILL_DOC_ID,
+    dealId: FILL_DEAL_ID,
+    riskId: FILL_RISK_ID,
+    filename: MELBOURNE_DEC_FILENAME,
+    mimeType: "text/plain",
+    buffer: Buffer.from(MELBOURNE_DEC_TEXT, "utf8"),
+    docType: "dec",
   });
 }

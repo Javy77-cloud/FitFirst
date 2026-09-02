@@ -8,6 +8,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -70,6 +71,7 @@ export const contacts = pgTable(
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
+    dateOfBirth: text("date_of_birth"),
     ...timestamps,
   },
   (t) => [index("contacts_tenant_idx").on(t.tenantId)],
@@ -89,6 +91,10 @@ export const deals = pgTable(
     notes: text("notes"),
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
+    shopLines: jsonb("shop_lines").$type<string[]>().notNull().default(["home"]),
+    coverageAmount: integer("coverage_amount"),
+    propertyOneliner: text("property_oneliner"),
+    currentCarrier: text("current_carrier"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -395,6 +401,52 @@ export const quotes = pgTable(
   (t) => [index("quotes_tenant_deal_idx").on(t.tenantId, t.dealId)],
 );
 
+export const quoteSheets = pgTable(
+  "quote_sheets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    line: text("line").notNull(),
+    values: jsonb("values").$type<Record<string, QuoteSheetFieldValue>>().notNull().default({}),
+    ...timestamps,
+  },
+  (t) => [
+    index("quote_sheets_tenant_idx").on(t.tenantId),
+    uniqueIndex("quote_sheets_deal_line_uidx").on(t.tenantId, t.dealId, t.line),
+  ],
+);
+
+export const extractionJobs = pgTable(
+  "extraction_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
+    engine: text("engine").notNull(),
+    status: text("status").notNull(),
+    filledKeys: jsonb("filled_keys").$type<string[]>().notNull().default([]),
+    skippedKeys: jsonb("skipped_keys").$type<string[]>().notNull().default([]),
+    message: text("message"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
+);
+
+export type QuoteSheetFieldValue = {
+  value: string;
+  status: "missing" | "check" | "confirmed";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy";
+};
+
 export const alerts = pgTable(
   "alerts",
   {
@@ -427,3 +479,5 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
+export type QuoteSheet = typeof quoteSheets.$inferSelect;
+export type ExtractionJob = typeof extractionJobs.$inferSelect;

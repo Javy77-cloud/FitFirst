@@ -31,6 +31,10 @@ export default async function ContactsPage() {
             <Input name="phone" className="mt-1 h-8" />
           </div>
           <div>
+            <Label className="text-xs">Date of birth</Label>
+            <Input name="dateOfBirth" placeholder="YYYY-MM-DD" className="mt-1 h-8" />
+          </div>
+          <div>
             <Label className="text-xs">Life notes (CRM only)</Label>
             <Input name="lifeNotes" className="mt-1 h-8" />
           </div>
@@ -49,13 +53,14 @@ export default async function ContactsPage() {
                 <th>Name</th>
                 <th>Policies</th>
                 <th>Tenure start</th>
+                <th>DOB</th>
                 <th>Life / health</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                    <td colSpan={5} className="text-muted-foreground">
                     Empty book. Bind a deal or add an existing client.
                   </td>
                 </tr>
@@ -67,6 +72,7 @@ export default async function ContactsPage() {
                     </td>
                     <td>{c.policyCount}</td>
                     <td>{c.tenureStart ? c.tenureStart.toISOString().slice(0, 10) : "—"}</td>
+                    <td>{c.dateOfBirth || "—"}</td>
                     <td className="text-xs">
                       {[c.lifeNotes, c.healthNotes].filter(Boolean).join(" · ") || "—"}
                     </td>

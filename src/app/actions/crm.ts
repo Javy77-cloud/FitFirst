@@ -11,9 +11,12 @@ import {
   deals,
   leads,
   policies,
+  quoteSheets,
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { LOB_TO_SHOP_LINE, SHOP_LINES, type ShopLine } from "@/lib/domain";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -43,6 +46,7 @@ export async function createDealFromLead(formData: FormData) {
   const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   if (!lead) throw new Error("Lead not found");
 
+  const shopLines = shopLinesFromForm(formData, str(formData, "line") || "HO");
   const [deal] = await db
     .insert(deals)
     .values({
@@ -52,6 +56,7 @@ export async function createDealFromLead(formData: FormData) {
       pipelineStage: "shopping",
       lineOfBusiness: str(formData, "line") || "HO",
       state: str(formData, "state") || "FL",
+      shopLines,
     })
     .returning();
 
@@ -61,6 +66,7 @@ export async function createDealFromLead(formData: FormData) {
     riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
     state: deal.state,
   });
+  await insertSheetsForDeal(deal.id, shopLines);
 
   await db
     .update(leads)
@@ -88,6 +94,7 @@ export async function createDeal(formData: FormData) {
     })
     .returning();
 
+  const shopLines = shopLinesFromForm(formData, str(formData, "line") || "HO");
   const [deal] = await db
     .insert(deals)
     .values({
@@ -97,6 +104,7 @@ export async function createDeal(formData: FormData) {
       pipelineStage: "shopping",
       lineOfBusiness: str(formData, "line") || "HO",
       state: str(formData, "state") || "FL",
+      shopLines,
     })
     .returning();
 
@@ -113,6 +121,7 @@ export async function createDeal(formData: FormData) {
     city: str(formData, "city") || null,
     county: str(formData, "county") || null,
   });
+  await insertSheetsForDeal(deal.id, shopLines);
 
   revalidatePath("/");
   revalidatePath("/deals");
@@ -180,6 +189,7 @@ export async function createContact(formData: FormData) {
       zip: str(formData, "zip") || null,
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
+      dateOfBirth: str(formData, "dateOfBirth") || null,
       notes: str(formData, "notes") || null,
     })
     .returning();
@@ -292,4 +302,31 @@ export async function bindDeal(formData: FormData) {
   revalidatePath("/policies");
   revalidatePath("/contacts");
   revalidatePath(`/deals/${dealId}`);
+}
+
+function shopLinesFromForm(formData: FormData, primaryLine: string): ShopLine[] {
+  const checked = formData
+    .getAll("shopLines")
+    .map((v) => String(v))
+    .filter((v): v is ShopLine => (SHOP_LINES as readonly string[]).includes(v));
+  const fromLob = LOB_TO_SHOP_LINE[primaryLine];
+  const next = new Set<ShopLine>(checked);
+  if (fromLob) next.add(fromLob);
+  if (next.size === 0) {
+    next.add("home");
+    next.add("auto");
+  }
+  return Array.from(next);
+}
+
+async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
+  if (lines.length === 0) return;
+  await db.insert(quoteSheets).values(
+    lines.map((line) => ({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      line,
+      values: emptySheetValues(line),
+    })),
+  );
 }

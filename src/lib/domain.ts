@@ -11,8 +11,79 @@ export const LINES = [
   "GL",
   "LIFE",
   "HEALTH",
+  "RV",
+  "WC",
 ] as const;
 export type LineOfBusiness = (typeof LINES)[number];
+
+/** Desk line tabs on a shop. Home + Auto are first-class; others are thinner. */
+export const SHOP_LINES = [
+  "home",
+  "auto",
+  "rec_rv",
+  "flood",
+  "umbrella",
+  "life",
+  "health",
+  "workers_comp",
+  "general_liability",
+] as const;
+export type ShopLine = (typeof SHOP_LINES)[number];
+
+export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
+  home: "Home",
+  auto: "Auto",
+  rec_rv: "Rec/RV",
+  flood: "Flood",
+  umbrella: "Umbrella",
+  life: "Life",
+  health: "Health",
+  workers_comp: "Workers Comp",
+  general_liability: "General Liability",
+};
+
+export const FIRST_CLASS_LINES: ShopLine[] = ["home", "auto"];
+
+export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
+  HO: "home",
+  AUTO: "auto",
+  RV: "rec_rv",
+  FLOOD: "flood",
+  UMBRELLA: "umbrella",
+  LIFE: "life",
+  HEALTH: "health",
+  WC: "workers_comp",
+  GL: "general_liability",
+};
+
+export const SHOP_LINE_TO_LOB: Record<ShopLine, string> = {
+  home: "HO",
+  auto: "AUTO",
+  rec_rv: "RV",
+  flood: "FLOOD",
+  umbrella: "UMBRELLA",
+  life: "LIFE",
+  health: "HEALTH",
+  workers_comp: "WC",
+  general_liability: "GL",
+};
+
+export const QUOTE_FIELD_STATUSES = ["missing", "check", "confirmed"] as const;
+export type QuoteFieldStatus = (typeof QUOTE_FIELD_STATUSES)[number];
+
+export const QUOTE_FIELD_SOURCES = ["blank", "agent", "extracted", "seed", "javy"] as const;
+export type QuoteFieldSource = (typeof QUOTE_FIELD_SOURCES)[number];
+
+export const EXTRACTION_ENGINES = ["pdf_text", "ocr"] as const;
+export type ExtractionEngine = (typeof EXTRACTION_ENGINES)[number];
+
+export const EXTRACTION_JOB_STATUSES = [
+  "pending",
+  "done",
+  "not_implemented",
+  "failed",
+] as const;
+export type ExtractionJobStatus = (typeof EXTRACTION_JOB_STATUSES)[number];
 
 export const DEAL_STAGES = [
   "shopping",

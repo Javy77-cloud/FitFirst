@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
-import { DEAL_ID } from "@/lib/fixtures/ids";
+import { DEAL_ID, FILL_DEAL_ID } from "@/lib/fixtures/ids";
 import { markAlertRead } from "@/app/actions/alerts";
 import { cn } from "@/lib/utils";
 
@@ -37,14 +37,17 @@ export default async function HomePage() {
       <div className="mb-4 ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Start here</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          FitFirst copies a solo Florida P&amp;C desk: lead → deal (shopping) → contact and
-          policy only after bind. Quotes live on the deal. Filter carriers by appetite and the
-          decline log before anyone opens a portal. The day-one fixture is Ana Dib&apos;s
-          2026-09-02 Palm Bay HO3 shop: eight markets, zero bindable at $321,000.
+          FitFirst copies a solo Florida P&amp;C desk: lead → deal (shopping) → one Quote Sheet
+          per line → contact and policy only after bind. Source PDFs stay on Files. Super-Copy
+          is the packet the rater pastes. The day-one fixture is Ana Dib&apos;s 2026-09-02 Palm
+          Bay HO3 shop: eight markets, zero bindable at $321,000.
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
             Open Ana Dib HO3 shop
+          </Link>
+          <Link href={`/deals/${FILL_DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
+            Ortega fill-demo shop
           </Link>
         </div>
       </div>

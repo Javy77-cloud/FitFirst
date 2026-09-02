@@ -17,7 +17,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "FitFirst — P&C CRM + filter-first rater",
   description:
-    "Lead to deal shopping, master risk worksheet, document extraction with confidence, and in-appetite carrier ranking.",
+    "Lead to deal shopping, one Quote Sheet per line, Super-Copy for the rater, and filter-first carrier ranking.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
