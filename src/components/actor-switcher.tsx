@@ -1,6 +1,5 @@
 "use client";
 
-import { switchActor } from "@/app/actions/session";
 import type { Actor } from "@/lib/auth/rbac";
 
 export function ActorSwitcher({
@@ -11,11 +10,12 @@ export function ActorSwitcher({
   users: Actor[];
 }) {
   return (
-    <form action={switchActor} className="space-y-1">
+    <form action="/api/session" method="post" className="space-y-1.5">
       <label htmlFor="ff-actor" className="block text-[10px] uppercase tracking-wide text-sidebar-foreground/50">
         Acting as
       </label>
       <select
+        key={actor.id}
         id="ff-actor"
         name="userId"
         defaultValue={actor.id}
@@ -28,6 +28,17 @@ export function ActorSwitcher({
           </option>
         ))}
       </select>
+      <div className="text-[11px] text-sidebar-foreground/80">
+        {actor.name}
+        {" · "}
+        {actor.role === "admin" ? "Admin · full desk" : "Agent · own book"}
+      </div>
+      <button
+        type="submit"
+        className="w-full rounded-md border border-sidebar-border px-2 py-1 text-[11px] text-sidebar-foreground/90 hover:bg-sidebar-accent"
+      >
+        Switch role
+      </button>
     </form>
   );
 }

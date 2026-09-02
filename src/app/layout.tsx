@@ -14,6 +14,8 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "FitFirst — P&C CRM + filter-first rater",
   description:

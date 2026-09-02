@@ -40,7 +40,12 @@ function ownerWhere(actor: Actor, column: AnyPgColumn): SQL | undefined {
 
 export async function listUsers() {
   return db
-    .select()
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+    })
     .from(users)
     .where(eq(users.tenantId, tenant()))
     .orderBy(asc(users.name));

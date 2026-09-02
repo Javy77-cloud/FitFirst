@@ -16,6 +16,7 @@ Owned by the roles / producer-pay slice. Touch these files for RBAC, commissions
 - `src/lib/fixtures/ids.ts` — additive user / demo-book IDs only
 - `src/lib/domain.ts` — additive role / commission / ask constants
 - `src/app/actions/session.ts`, `owners.ts`, `asks.ts`, `commissions.ts`
+- `src/app/api/session/route.ts` — POST sets the `ff_actor` cookie and 303s back (dev role switch)
 - `src/app/actions/crm.ts` — sets `owner_id` on create/bind; pending commission on bind when premium is present
 - `src/app/commissions/`
 - `src/components/actor-switcher.tsx`

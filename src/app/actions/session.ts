@@ -9,10 +9,18 @@ export async function switchActor(formData: FormData) {
   const user = id ? await findUser(id) : null;
   if (!user?.active) return;
   const jar = await cookies();
-  jar.set(ACTOR_COOKIE, user.id, {
+  jar.set({
+    name: ACTOR_COOKIE,
+    value: user.id,
     httpOnly: true,
     sameSite: "lax",
     path: "/",
+    maxAge: 60 * 60 * 24 * 30,
   });
   revalidatePath("/", "layout");
+  revalidatePath("/commissions");
+  revalidatePath("/contacts");
+  revalidatePath("/deals");
+  revalidatePath("/leads");
+  revalidatePath("/policies");
 }
