@@ -124,13 +124,16 @@ export function currentRoofAge(
   return asOfYear - roofYear;
 }
 
-export function formatMoney(value: number | null | undefined): string {
-  if (value == null) return "—";
+export function formatMoney(value: number | string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  const n = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(n)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 }
 
 export function formatPct(value: number): string {

@@ -1,0 +1,276 @@
+{
+  "shopDate": "2026-09-02",
+  "tenant": {
+    "name": "Garcia Personal Lines (demo)"
+  },
+  "insured": {
+    "primary": "Ana Dib",
+    "namedInsured": "George Dib",
+    "namedInsuredNote": "Portal sometimes dropped George on the quote."
+  },
+  "risk": {
+    "address1": "1098 Adige Ct SE",
+    "city": "Palm Bay",
+    "county": "Brevard",
+    "state": "FL",
+    "zip": "32909",
+    "line": "HO3",
+    "occupancy": "owner",
+    "occupancyNote": "owner-occupied primary, single family",
+    "stories": 1,
+    "yearBuilt": 1989,
+    "roofYear": 1989,
+    "roofCovering": "clay tile + metal",
+    "roofCoveringNote": "2023 noted on covering; roof year remains 1989",
+    "construction": "frame",
+    "constructionNote": "frame-stucco",
+    "openingProtection": "none",
+    "pool": false,
+    "protectionClass": "3",
+    "milesToCoast": 8,
+    "coverageA": 321000,
+    "coverageANote": "Broker-tested rebuild. Not PA market. Not Zillow Zestimate."
+  },
+  "outcome": {
+    "marketsRun": 8,
+    "bindableAt321k": 0
+  },
+  "carriers": [
+    {
+      "key": "tailrow",
+      "name": "Tailrow",
+      "portal": "Harmony",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "House-specific RCE floors appear on Harmony. TypTap is not a separate carrier on that portal. Do not promote a one-house RCE to published min Cov A.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "notes": "Carrier-wide: none from this shop. $354k on Adige Ct is that house's RCE floor only."
+      }
+    },
+    {
+      "key": "hoc",
+      "name": "Homeowners Choice",
+      "portal": "Harmony",
+      "writtenLines": ["HO"],
+      "portalStatus": "closed",
+      "dontWriteNotes": "No voluntary new business. HCPCI-17561 is the Harmony service/takeout account, not a quote.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "notes": "Carrier-wide: portal closed / takeout account only. No NB."
+      }
+    },
+    {
+      "key": "vyrd",
+      "name": "VYRD",
+      "writtenLines": ["HO"],
+      "portalStatus": "takeout_only",
+      "dontWriteNotes": "Voluntary NB closed. Citizens takeout only. Brevard dwelling min $350,000 is a county rule, not a universal min Cov A.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "countyMinCovA": { "Brevard": 350000 },
+        "notes": "Carrier-wide: takeout only. County-wide: Brevard min Cov A $350,000. Do not set a universal min Cov A from this shop."
+      }
+    },
+    {
+      "key": "qbe",
+      "name": "QBE",
+      "portal": "Swyfft",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Frame construction within 20 miles of coast. Ignore masonry-only premiums (e.g. $3,655) — those appear only when construction was entered wrong.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "minMilesToCoast": 20,
+        "allowedConstruction": ["masonry"],
+        "notes": "Carrier-wide: do not write frame within 20 miles of coast."
+      }
+    },
+    {
+      "key": "vave",
+      "name": "VAVE / Lloyd's",
+      "portal": "Swyfft",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Property-specific Home Value / roof type-age floors. Not a SageSure/Tailrow-style published min Cov A.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "notes": "Carrier-wide: none from this shop. $418,491 on Adige Ct is that house's Home Value floor only."
+      }
+    },
+    {
+      "key": "benchmark",
+      "name": "Benchmark",
+      "portal": "Swyfft",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Roof age 37 / clay tile.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "maxRoofAge": 20,
+        "allowedRoofCoverings": ["shingle", "metal"],
+        "notes": "Carrier-wide: aged clay tile is a decline."
+      }
+    },
+    {
+      "key": "hadron",
+      "name": "Hadron",
+      "portal": "Swyfft",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Roof age 37 / clay tile.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "maxRoofAge": 20,
+        "allowedRoofCoverings": ["shingle", "metal"],
+        "notes": "Carrier-wide: aged clay tile is a decline (same Swyfft shop as Benchmark)."
+      }
+    },
+    {
+      "key": "geovera",
+      "name": "GeoVera",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Will not decrease Cov A below that house's replacement cost estimate. House RCE is not a published min Cov A.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "notes": "Carrier-wide: none from this shop. $363,000 / RCE $362,942 on Adige Ct is that house's floor only."
+      }
+    },
+    {
+      "key": "sagesure",
+      "name": "SageSure (Markel)",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Published min Cov A is $100,000 in named counties. Do not overwrite that with a one-house MSB floor.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "minCovA": 100000,
+        "notes": "Published SageSure min Cov A $100k in named counties. Adige Ct MSB $349,868 / portal $350,000 is that house's floor only — not the carrier min."
+      }
+    },
+    {
+      "key": "americanIntegrity",
+      "name": "American Integrity",
+      "writtenLines": ["HO"],
+      "portalStatus": "open",
+      "dontWriteNotes": "Roof age + RCS combination requires UW approval. A quote at requested Cov A is not a bindable win.",
+      "rule": {
+        "lineOfBusiness": "HO",
+        "notes": "1989 clay tile + RCS goes to UW. Log the quote; do not treat it as bindable."
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "carrierKey": "tailrow",
+      "lineOfBusiness": "HO3",
+      "result": "floor_only",
+      "bindable": false,
+      "quoteNumber": "20-8099718-01",
+      "premium": 4118,
+      "covATried": 321000,
+      "covAForced": 354000,
+      "why": "Harmony HO3. Building RCE outside allowable range; UW/RCE review. Forced Cov A $354,000 (~$5,039). TypTap is not a separate carrier on that portal."
+    },
+    {
+      "carrierKey": "hoc",
+      "lineOfBusiness": "HO3",
+      "result": "portal_closed",
+      "bindable": false,
+      "quoteNumber": null,
+      "premium": null,
+      "covATried": 321000,
+      "covAForced": null,
+      "why": "Portal closed. HCPCI-17561 is the Harmony service/takeout account, not a quote. No voluntary new business."
+    },
+    {
+      "carrierKey": "vyrd",
+      "lineOfBusiness": "HO3",
+      "result": "takeout_only",
+      "bindable": false,
+      "quoteNumber": "5786556",
+      "premium": 4840,
+      "covATried": 321000,
+      "covAForced": 350000,
+      "why": "Voluntary NB closed; Citizens takeout only. Brevard dwelling min $350,000 (county rule, not a universal min Cov A)."
+    },
+    {
+      "carrierKey": "qbe",
+      "lineOfBusiness": "HO3",
+      "result": "declined",
+      "bindable": false,
+      "quoteNumber": null,
+      "premium": null,
+      "covATried": 321000,
+      "covAForced": null,
+      "why": "Frame construction within 20 miles of coast. Ignore $3,655 — that only appeared when construction was wrongly Masonry."
+    },
+    {
+      "carrierKey": "vave",
+      "lineOfBusiness": "HO3",
+      "result": "floor_only",
+      "bindable": false,
+      "quoteNumber": "51b607d3-d069-48a4-b0c4-cdeb37ad12c2",
+      "premium": 7157,
+      "covATried": 321000,
+      "covAForced": 418491,
+      "why": "Home Value min $418,491; roof type/age excluded. Property-specific RCE floor, not a SageSure/Tailrow-style published min."
+    },
+    {
+      "carrierKey": "benchmark",
+      "lineOfBusiness": "HO3",
+      "result": "declined",
+      "bindable": false,
+      "quoteNumber": null,
+      "premium": null,
+      "covATried": 321000,
+      "covAForced": null,
+      "why": "Roof age 37 / clay tile. Same Swyfft shop as Hadron."
+    },
+    {
+      "carrierKey": "hadron",
+      "lineOfBusiness": "HO3",
+      "result": "declined",
+      "bindable": false,
+      "quoteNumber": null,
+      "premium": null,
+      "covATried": 321000,
+      "covAForced": null,
+      "why": "Roof age 37 / clay tile. Same Swyfft shop as Benchmark."
+    },
+    {
+      "carrierKey": "geovera",
+      "lineOfBusiness": "HO3",
+      "result": "floor_only",
+      "bindable": false,
+      "quoteNumber": "QD40948442",
+      "premium": 4001.35,
+      "covATried": 321000,
+      "covAForced": 363000,
+      "why": "Cov A may not be decreased below replacement cost estimate. Forced Cov A $363,000 (RCE $362,942). House RCE floor, not a published min Cov A."
+    },
+    {
+      "carrierKey": "sagesure",
+      "lineOfBusiness": "HO3",
+      "result": "floor_only",
+      "bindable": false,
+      "quoteNumber": "CRU4Q-25519394",
+      "premium": 5127,
+      "covATried": 321000,
+      "covAForced": 349868,
+      "why": "HO3/HO5 program. Coverage A not sufficient based on MSB replacement cost. Forced/MSB $349,868 (portal asked $350,000). Published SageSure min Cov A remains $100k in named counties — do not overwrite with $350k."
+    },
+    {
+      "carrierKey": "americanIntegrity",
+      "lineOfBusiness": "HO3",
+      "result": "quoted",
+      "bindable": false,
+      "quoteNumber": "QT-21770008",
+      "premium": 5607.53,
+      "covATried": 321000,
+      "covAForced": null,
+      "why": "Quoted at $321,000 ($5,607.53 premium+fees) but not bindable. Roof age and roof loss settlement combination requires UW approval (1989 clay tile + RCS). George not on quote (portal joint-name glitch)."
+    }
+  ]
+}

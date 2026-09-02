@@ -39,13 +39,15 @@ Open [http://localhost:43147](http://localhost:43147).
 
 ## First path to exercise
 
-1. Home → **Open Palm Bay demo shop** (1989 frame SFH, Brevard, 8 mi to coast, clay tile + metal, Cov A $321k — fixture, not production data).
+`npm run db:seed` loads the **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). It is required day-one data, not an optional demo.
+
+1. Home → **Open Ana Dib HO3 shop**. 1098 Adige Ct SE, 1989 frame-stucco SFH, 8 mi coast, clay tile + metal, Cov A **$321,000** (broker-tested rebuild — do not change that number). Eight markets, zero bindable.
 2. **Documents** → **Sample handwritten wind mit**. Flagged fields stay off the worksheet until you click **Accept**.
 3. **Sample clean dec** applies high-confidence values automatically.
-4. **Markets** shows green / yellow / red from appetite rules + the decline log. The eight-market 2026-09-02 shop is encoded as skips; an example surplus market is the green fit.
-5. **Build stub quotes for green markets** writes ranked placeholder quotes. Portal adapters return `not_implemented`.
+4. **Markets** is filter-first: QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable. Floors are log attempts, not wins. No policy is created from these quotes.
+5. Carrier-wide rules (QBE frame+20 mi coast, Benchmark/Hadron aged clay, HOC no NB, VYRD takeout + Brevard $350k) stay distinct from one-house floors (Tailrow $354k, VAVE $418,491, GeoVera $363k, SageSure MSB $349,868). SageSure published min Cov A remains $100k in named counties.
 
-Create your own path from **Leads** or **New shopping deal**. Bind creates the contact, policy, client history, and 30/60/90 review tasks.
+Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
 ## Schema
 

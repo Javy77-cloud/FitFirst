@@ -44,7 +44,12 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         <StagePill stage={deal.pipelineStage} />
         <span>{deal.lineOfBusiness}</span>
         <span className="text-muted-foreground">{deal.state}</span>
-        {lead ? (
+        {deal.primaryNamedInsured ? (
+          <span className="text-muted-foreground">
+            {deal.primaryNamedInsured}
+            {deal.secondaryNamedInsured ? ` · ${deal.secondaryNamedInsured}` : ""}
+          </span>
+        ) : lead ? (
           <span className="text-muted-foreground">
             Lead {lead.lastName}, {lead.firstName}
           </span>

@@ -39,12 +39,12 @@ export default async function HomePage() {
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           FitFirst copies a solo Florida P&amp;C desk: lead → deal (shopping) → contact and
           policy only after bind. Quotes live on the deal. Filter carriers by appetite and the
-          decline log before anyone opens a portal. Open the Palm Bay fixture, upload the sample
-          handwritten wind mit, and watch low-confidence fields wait for a glance.
+          decline log before anyone opens a portal. The day-one fixture is Ana Dib&apos;s
+          2026-09-02 Palm Bay HO3 shop: eight markets, zero bindable at $321,000.
         </p>
         <div className="mt-3">
           <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
-            Open Palm Bay demo shop
+            Open Ana Dib HO3 shop
           </Link>
         </div>
       </div>

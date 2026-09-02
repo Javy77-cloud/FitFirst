@@ -1,21 +1,26 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
   alerts,
   appetiteRules,
   carriers,
+  contacts,
   deals,
   leads,
   quoteAttemptLogs,
+  quotes,
   reviewTasks,
   risks,
   tenants,
 } from "./schema";
-import { CARRIER_IDS, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
+import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+
+const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
+
+type CarrierKey = keyof typeof CARRIER_IDS;
 
 export async function seedIfEmpty() {
-  const existing = await db.select().from(tenants).where(eq(tenants.id, TENANT_ID));
-  if (existing.length > 0) return { seeded: false };
   await seed();
   return { seeded: true };
 }
@@ -26,25 +31,65 @@ export async function seed() {
     .values({
       id: TENANT_ID,
       tenantId: TENANT_ID,
-      name: "Garcia Personal Lines (demo)",
+      name: fixture.tenant.name,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: tenants.id,
+      set: { name: fixture.tenant.name, tenantId: TENANT_ID },
+    });
 
   await db
     .insert(leads)
     .values({
       id: LEAD_ID,
       tenantId: TENANT_ID,
-      firstName: "Maria",
-      lastName: "Alvarez",
-      email: "maria.alvarez@example.com",
-      phone: "321-555-0148",
-      source: "referral",
+      firstName: "Ana",
+      lastName: "Dib",
+      source: "book",
       status: "converted",
-      notes: "Palm Bay HO shop. Example fixture from a 2026-09-02 FL HO market pass — not production data.",
+      notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
       convertedDealId: DEAL_ID,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: leads.id,
+      set: {
+        firstName: "Ana",
+        lastName: "Dib",
+        status: "converted",
+        convertedDealId: DEAL_ID,
+        notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(contacts)
+    .values({
+      id: CONTACT_ID,
+      tenantId: TENANT_ID,
+      firstName: "Ana",
+      lastName: "Dib",
+      mailingAddress: fixture.risk.address1,
+      city: fixture.risk.city,
+      state: fixture.risk.state,
+      zip: fixture.risk.zip,
+      policyCount: 0,
+      notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
+    })
+    .onConflictDoUpdate({
+      target: contacts.id,
+      set: {
+        firstName: "Ana",
+        lastName: "Dib",
+        mailingAddress: fixture.risk.address1,
+        city: fixture.risk.city,
+        state: fixture.risk.state,
+        zip: fixture.risk.zip,
+        policyCount: 0,
+        notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
+        updatedAt: new Date(),
+      },
+    });
 
   await db
     .insert(deals)
@@ -52,14 +97,29 @@ export async function seed() {
       id: DEAL_ID,
       tenantId: TENANT_ID,
       leadId: LEAD_ID,
-      title: "Alvarez · Palm Bay HO",
+      contactId: CONTACT_ID,
+      title: "Dib · Palm Bay HO3",
       pipelineStage: "shopping",
       lineOfBusiness: "HO",
       state: "FL",
-      notes:
-        "1989 frame SFH, 8 mi coast, clay tile + metal, no opening protection, Cov A $321k. Eight markets, zero bindable on the source shop.",
+      primaryNamedInsured: fixture.insured.primary,
+      secondaryNamedInsured: fixture.insured.namedInsured,
+      notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        leadId: LEAD_ID,
+        contactId: CONTACT_ID,
+        title: "Dib · Palm Bay HO3",
+        pipelineStage: "shopping",
+        lineOfBusiness: "HO",
+        primaryNamedInsured: fixture.insured.primary,
+        secondaryNamedInsured: fixture.insured.namedInsured,
+        notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
+        updatedAt: new Date(),
+      },
+    });
 
   await db
     .insert(risks)
@@ -67,415 +127,185 @@ export async function seed() {
       id: RISK_ID,
       tenantId: TENANT_ID,
       dealId: DEAL_ID,
+      contactId: CONTACT_ID,
       riskType: "property",
-      address1: "1842 Seaver Street",
-      city: "Palm Bay",
-      county: "Brevard",
-      state: "FL",
-      zip: "32907",
-      yearBuilt: 1989,
-      construction: "frame",
-      occupancy: "owner",
-      stories: 1,
-      squareFeet: 1680,
-      coverageA: 321000,
-      roofYear: 1989,
-      roofCovering: "clay tile + metal",
-      openingProtection: "none",
-      pool: false,
-      protectionClass: "4",
-      milesToCoast: 8,
+      address1: fixture.risk.address1,
+      city: fixture.risk.city,
+      county: fixture.risk.county,
+      state: fixture.risk.state,
+      zip: fixture.risk.zip,
+      yearBuilt: fixture.risk.yearBuilt,
+      construction: fixture.risk.construction,
+      occupancy: fixture.risk.occupancy,
+      stories: fixture.risk.stories,
+      coverageA: fixture.risk.coverageA,
+      roofYear: fixture.risk.roofYear,
+      roofCovering: fixture.risk.roofCovering,
+      openingProtection: fixture.risk.openingProtection,
+      pool: fixture.risk.pool,
+      protectionClass: fixture.risk.protectionClass,
+      milesToCoast: fixture.risk.milesToCoast,
       mobileHome: false,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: risks.id,
+      set: {
+        dealId: DEAL_ID,
+        contactId: CONTACT_ID,
+        address1: fixture.risk.address1,
+        city: fixture.risk.city,
+        county: fixture.risk.county,
+        state: fixture.risk.state,
+        zip: fixture.risk.zip,
+        yearBuilt: fixture.risk.yearBuilt,
+        construction: fixture.risk.construction,
+        occupancy: fixture.risk.occupancy,
+        stories: fixture.risk.stories,
+        coverageA: fixture.risk.coverageA,
+        roofYear: fixture.risk.roofYear,
+        roofCovering: fixture.risk.roofCovering,
+        openingProtection: fixture.risk.openingProtection,
+        pool: fixture.risk.pool,
+        protectionClass: fixture.risk.protectionClass,
+        milesToCoast: fixture.risk.milesToCoast,
+        mobileHome: false,
+        squareFeet: null,
+        replacementCostEstimate: null,
+        updatedAt: new Date(),
+      },
+    });
 
-  const carrierRows = [
-    {
-      id: CARRIER_IDS.qbe,
-      name: "QBE",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Frame within 20 miles of coast.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.benchmark,
-      name: "Benchmark",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Aged clay tile roofs.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.hadron,
-      name: "Hadron",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Aged clay tile roofs.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.hoc,
-      name: "Homeowners Choice (HOC)",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Voluntary new business closed; takeout only.",
-      portalStatus: "takeout_only",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.vyrd,
-      name: "VYRD",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Voluntary NB closed. Brevard min Cov A $350k.",
-      portalStatus: "closed",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.tailrow,
-      name: "Tailrow",
-      writtenLines: ["HO"],
-      dontWriteNotes: "RCE / MSB floor — will not write requested Cov A.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.geovera,
-      name: "GeoVera",
-      writtenLines: ["HO"],
-      dontWriteNotes: "RCE / MSB floor.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.sagesure,
-      name: "SageSure",
-      writtenLines: ["HO"],
-      dontWriteNotes: "RCE / MSB floor.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.americanIntegrity,
-      name: "American Integrity",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Roof age + RCS referral; not bindable at desk.",
-      portalStatus: "open",
-      fixtureTag: "fl-ho-2026-09-02",
-    },
-    {
-      id: CARRIER_IDS.southernOak,
-      name: "Southern Oak Surplus (example)",
-      writtenLines: ["HO"],
-      dontWriteNotes: "Example surplus that will look at older coastal frame. Not a live appointment.",
-      portalStatus: "open",
-      fixtureTag: "example-green",
-    },
-  ];
+  for (const carrier of fixture.carriers) {
+    const id = CARRIER_IDS[carrier.key as CarrierKey];
+    await db
+      .insert(carriers)
+      .values({
+        id,
+        tenantId: TENANT_ID,
+        name: carrier.name,
+        writtenLines: carrier.writtenLines,
+        dontWriteNotes: carrier.dontWriteNotes,
+        portalStatus: carrier.portalStatus,
+        fixtureTag: "fl-ho3-2026-09-02",
+        active: true,
+      })
+      .onConflictDoUpdate({
+        target: carriers.id,
+        set: {
+          name: carrier.name,
+          writtenLines: carrier.writtenLines,
+          dontWriteNotes: carrier.dontWriteNotes,
+          portalStatus: carrier.portalStatus,
+          fixtureTag: "fl-ho3-2026-09-02",
+          active: true,
+          updatedAt: new Date(),
+        },
+      });
+  }
 
-  await db
-    .insert(carriers)
-    .values(
-      carrierRows.map((c) => ({
-        ...c,
-        tenantId: TENANT_ID,
-      })),
-    )
-    .onConflictDoNothing();
-
-  await db
-    .insert(appetiteRules)
-    .values([
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.qbe,
-        lineOfBusiness: "HO",
-        minCovA: 150000,
-        maxCovA: 1500000,
-        coastalAllowed: true,
-        minMilesToCoast: 20,
-        allowedConstruction: ["masonry"],
-        mobileAllowed: false,
-        notes: "No frame within 20 mi of coast.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.benchmark,
-        lineOfBusiness: "HO",
-        minCovA: 200000,
-        maxRoofAge: 20,
-        allowedRoofCoverings: ["shingle", "metal"],
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Clay tile over ~20 years is a decline.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.hadron,
-        lineOfBusiness: "HO",
-        minCovA: 200000,
-        maxRoofAge: 20,
-        allowedRoofCoverings: ["shingle", "metal"],
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Same roof story as Benchmark on this shop.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.hoc,
-        lineOfBusiness: "HO",
-        minCovA: 150000,
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Portal takeout only.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.vyrd,
-        lineOfBusiness: "HO",
-        minCovA: 250000,
-        countyMinCovA: { Brevard: 350000 },
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Voluntary NB closed; Brevard $350k minimum.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.tailrow,
-        lineOfBusiness: "HO",
-        minCovA: 250000,
-        requireReplacementCost: true,
-        rceFloorRatio: 0.95,
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Floor to RCE/MSB.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.geovera,
-        lineOfBusiness: "HO",
-        minCovA: 250000,
-        requireReplacementCost: true,
-        rceFloorRatio: 0.95,
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Floor to RCE/MSB.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.sagesure,
-        lineOfBusiness: "HO",
-        minCovA: 250000,
-        requireReplacementCost: true,
-        rceFloorRatio: 0.95,
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Floor to RCE/MSB.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.americanIntegrity,
-        lineOfBusiness: "HO",
-        minCovA: 200000,
-        maxRoofAge: 15,
-        coastalAllowed: true,
-        mobileAllowed: false,
-        notes: "Roof age + RCS goes to UW referral.",
-      },
-      {
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS.southernOak,
-        lineOfBusiness: "HO",
-        minCovA: 200000,
-        maxCovA: 750000,
-        minYearBuilt: 1970,
-        maxRoofAge: 50,
-        allowedRoofCoverings: ["clay tile", "metal", "shingle", "tile"],
-        allowedConstruction: ["frame", "masonry"],
-        coastalAllowed: true,
-        minMilesToCoast: 0,
-        mobileAllowed: false,
-        notes: "Example green market for filter-first ranking.",
-      },
-    ])
-    .onConflictDoNothing();
+  await db.delete(appetiteRules).where(eq(appetiteRules.tenantId, TENANT_ID));
+  await db.insert(appetiteRules).values(
+    fixture.carriers.map((carrier) => ({
+      tenantId: TENANT_ID,
+      carrierId: CARRIER_IDS[carrier.key as CarrierKey],
+      lineOfBusiness: carrier.rule.lineOfBusiness,
+      minCovA: "minCovA" in carrier.rule ? (carrier.rule.minCovA as number) : null,
+      maxCovA: null,
+      minYearBuilt: null,
+      maxRoofAge: "maxRoofAge" in carrier.rule ? (carrier.rule.maxRoofAge as number) : null,
+      allowedRoofCoverings:
+        "allowedRoofCoverings" in carrier.rule
+          ? (carrier.rule.allowedRoofCoverings as string[])
+          : null,
+      coastalAllowed: true,
+      minMilesToCoast:
+        "minMilesToCoast" in carrier.rule ? (carrier.rule.minMilesToCoast as number) : null,
+      maxMilesToCoast: null,
+      mobileAllowed: false,
+      requiresOpeningProtection: false,
+      allowedConstruction:
+        "allowedConstruction" in carrier.rule
+          ? (carrier.rule.allowedConstruction as string[])
+          : null,
+      countyMinCovA:
+        "countyMinCovA" in carrier.rule
+          ? (carrier.rule.countyMinCovA as Record<string, number>)
+          : null,
+      requireReplacementCost: false,
+      rceFloorRatio: null,
+      notes: carrier.rule.notes,
+    })),
+  );
 
   const snap = {
-    snapYearBuilt: 1989,
-    snapRoofYear: 1989,
-    snapRoofCovering: "clay tile + metal",
-    snapConstruction: "frame",
-    snapOpeningProtection: "none",
-    snapOccupancy: "owner",
-    snapStories: 1,
-    snapPool: false,
-    snapProtectionClass: "4",
-    snapMilesToCoast: 8,
-    snapCity: "Palm Bay",
-    snapCounty: "Brevard",
-    snapCoverageA: 321000,
+    snapYearBuilt: fixture.risk.yearBuilt,
+    snapRoofYear: fixture.risk.roofYear,
+    snapRoofCovering: fixture.risk.roofCovering,
+    snapConstruction: fixture.risk.construction,
+    snapOpeningProtection: fixture.risk.openingProtection,
+    snapOccupancy: fixture.risk.occupancy,
+    snapStories: fixture.risk.stories,
+    snapPool: fixture.risk.pool,
+    snapProtectionClass: fixture.risk.protectionClass,
+    snapMilesToCoast: fixture.risk.milesToCoast,
+    snapCity: fixture.risk.city,
+    snapCounty: fixture.risk.county,
+    snapCoverageA: fixture.risk.coverageA,
   };
 
-  await db
-    .insert(quoteAttemptLogs)
-    .values([
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.qbe,
-        lineOfBusiness: "HO",
-        result: "declined",
-        bindable: false,
-        covATried: 321000,
-        why: "Frame within 20 miles of coast",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.benchmark,
-        lineOfBusiness: "HO",
-        result: "declined",
-        bindable: false,
-        covATried: 321000,
-        why: "37-year clay tile",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.hadron,
-        lineOfBusiness: "HO",
-        result: "declined",
-        bindable: false,
-        covATried: 321000,
-        why: "37-year clay tile",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.hoc,
-        lineOfBusiness: "HO",
-        result: "takeout_only",
-        bindable: false,
-        covATried: 321000,
-        why: "Portal closed / takeout only",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.vyrd,
-        lineOfBusiness: "HO",
-        result: "portal_closed",
-        bindable: false,
-        covATried: 321000,
-        why: "Voluntary NB closed + Brevard min $350k",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.tailrow,
-        lineOfBusiness: "HO",
-        result: "floor_only",
-        bindable: false,
-        covATried: 321000,
-        why: "RCE / MSB floor",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.geovera,
-        lineOfBusiness: "HO",
-        result: "floor_only",
-        bindable: false,
-        covATried: 321000,
-        why: "RCE / MSB floor",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.sagesure,
-        lineOfBusiness: "HO",
-        result: "floor_only",
-        bindable: false,
-        covATried: 321000,
-        why: "RCE / MSB floor",
-        ...snap,
-      },
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        riskId: RISK_ID,
-        carrierId: CARRIER_IDS.americanIntegrity,
-        lineOfBusiness: "HO",
-        result: "declined",
-        bindable: false,
-        covATried: 321000,
-        why: "UW referral on roof age + RCS — not bindable",
-        ...snap,
-      },
-    ])
-    .onConflictDoNothing();
+  await db.delete(quotes).where(eq(quotes.dealId, DEAL_ID));
+  await db.delete(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, DEAL_ID));
+  await db.insert(quoteAttemptLogs).values(
+    fixture.attempts.map((attempt) => ({
+      tenantId: TENANT_ID,
+      dealId: DEAL_ID,
+      riskId: RISK_ID,
+      carrierId: CARRIER_IDS[attempt.carrierKey as CarrierKey],
+      attemptedAt: SHOP_AT,
+      lineOfBusiness: attempt.lineOfBusiness,
+      result: attempt.result,
+      bindable: attempt.bindable,
+      quoteNumber: attempt.quoteNumber,
+      premium: attempt.premium == null ? null : String(attempt.premium),
+      covATried: attempt.covATried,
+      covAForced: attempt.covAForced,
+      why: attempt.why,
+      ...snap,
+    })),
+  );
+
+  await db.delete(alerts).where(eq(alerts.tenantId, TENANT_ID));
+  await db.insert(alerts).values([
+    {
+      tenantId: TENANT_ID,
+      kind: "appetite_warning",
+      title: "Ana Dib HO3 · 8 markets, 0 bindable at $321,000",
+      body: "2026-09-02 Palm Bay shop. Filter-first skips QBE (frame within 20 mi of coast), Benchmark/Hadron (37yr clay), HOC (no NB), VYRD (takeout + Brevard $350k), and the house RCE/MSB floors (Tailrow, VAVE, GeoVera, SageSure). American Integrity quoted $321k but is not bindable (roof age + RCS). Floors are attempts, not wins. No policy from these quotes.",
+      severity: "warning",
+      entityType: "deal",
+      entityId: DEAL_ID,
+    },
+    {
+      tenantId: TENANT_ID,
+      kind: "extraction_flag",
+      title: "Wind mit handwriting needs a 30-second glance",
+      body: "Use the sample handwritten wind mit on the Dib deal. Fields under 80% confidence stay off the master record until you accept them.",
+      severity: "info",
+      entityType: "deal",
+      entityId: DEAL_ID,
+    },
+  ]);
 
   await db
-    .insert(alerts)
-    .values([
-      {
-        tenantId: TENANT_ID,
-        kind: "appetite_warning",
-        title: "Eight markets, zero bindable",
-        body: "Palm Bay Alvarez HO: filter-first would have skipped QBE (frame/coast), Benchmark/Hadron (clay tile age), HOC/VYRD (closed), and the RCE floors. Upload the dec + wind mit, then shop only green markets.",
-        severity: "warning",
-        entityType: "deal",
-        entityId: DEAL_ID,
-      },
-      {
-        tenantId: TENANT_ID,
-        kind: "extraction_flag",
-        title: "Wind mit handwriting needs a 30-second glance",
-        body: "Use the sample handwritten wind mit on the deal. Fields under 80% confidence stay off the master record until you accept them.",
-        severity: "info",
-        entityType: "deal",
-        entityId: DEAL_ID,
-      },
-    ])
-    .onConflictDoNothing();
-
-  await db
-    .insert(reviewTasks)
-    .values([
-      {
-        tenantId: TENANT_ID,
-        dealId: DEAL_ID,
-        kind: "30_day",
-        title: "30-day shop follow-up · Alvarez Palm Bay",
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        status: "open",
-      },
-    ])
-    .onConflictDoNothing();
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedIfEmpty()
-    .then((r) => {
-      console.log(r.seeded ? "Seeded demo tenant and Palm Bay fixture." : "Already seeded.");
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
+    .delete(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, TENANT_ID), eq(reviewTasks.dealId, DEAL_ID)));
+  await db.insert(reviewTasks).values({
+    tenantId: TENANT_ID,
+    contactId: CONTACT_ID,
+    dealId: DEAL_ID,
+    kind: "30_day",
+    title: "30-day shop follow-up · Dib Palm Bay HO3",
+    dueDate: new Date("2026-10-02T16:00:00.000Z"),
+    status: "open",
+  });
 }

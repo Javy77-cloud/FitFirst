@@ -53,6 +53,17 @@ function inList(value: string | null, allowed: string[] | null): boolean {
   return allowed.some((a) => v.includes(a.toLowerCase()) || a.toLowerCase().includes(v));
 }
 
+function roofCoveringAllowed(value: string, allowed: string[]): boolean {
+  const parts = value
+    .split(/[+/,]/)
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+  if (parts.length === 0) return inList(value, allowed);
+  return parts.every((part) =>
+    allowed.some((a) => part.includes(a.toLowerCase()) || a.toLowerCase().includes(part)),
+  );
+}
+
 export function matchCarrier(
   risk: RiskSnapshot,
   rule: AppetiteRuleInput,
@@ -65,7 +76,7 @@ export function matchCarrier(
   const learned = prior.find(
     (p) =>
       p.carrierId === rule.carrierId &&
-      p.result !== "quoted" &&
+      !p.bindable &&
       similarSnapshot(p, risk),
   );
   if (learned) {
@@ -168,7 +179,7 @@ export function matchCarrier(
   }
 
   if (risk.roofCovering && rule.allowedRoofCoverings) {
-    if (!inList(risk.roofCovering, rule.allowedRoofCoverings)) {
+    if (!roofCoveringAllowed(risk.roofCovering, rule.allowedRoofCoverings)) {
       reasons.push({
         code: "roof_covering",
         message: `${risk.roofCovering} not in appetite`,

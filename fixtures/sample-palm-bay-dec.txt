@@ -1,18 +1,18 @@
 HOMEOWNERS DECLARATIONS
-Named Insured: Maria Alvarez
-Location: 1842 Seaver Street, Palm Bay, FL 32907
+Named Insured: Ana Dib
+Additional Named Insured: George Dib
+Location: 1098 Adige Ct SE, Palm Bay, FL 32909
 City: Palm Bay
 County: Brevard
 Year Built: 1989
 Construction: Frame
 Occupancy: Owner Occupied
 Stories: 1
-Square Feet: 1680
 Coverage A Dwelling: $321,000
 Roof Year: 1989
 Roof Covering: Clay Tile / Metal
 Opening Protection: None
-Protection Class: 4
+Protection Class: 3
 Miles to Coast: 8
 Pool: No
 Mobile Home: No

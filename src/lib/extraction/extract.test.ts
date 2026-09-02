@@ -17,6 +17,8 @@ describe("document extraction confidence", () => {
     expect(byKey.roof_covering.normalizedValue).toContain("clay tile");
     expect(byKey.opening_protection.normalizedValue).toBe("none");
     expect(byKey.miles_to_coast.normalizedValue).toBe("8");
+    expect(byKey.protection_class.normalizedValue).toBe("3");
+    expect(byKey.address.normalizedValue).toContain("1098 Adige");
     expect(byKey.year_built.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLD);
     expect(result.fields.every((f) => !f.flagged)).toBe(true);
   });
