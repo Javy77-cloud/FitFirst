@@ -1,4 +1,4 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "./index";
 import {
@@ -7,6 +7,7 @@ import {
   campaignSendLogs,
   contacts,
   deals,
+  documentFolders,
   documents,
   emailCampaigns,
   extractedFields,
@@ -66,6 +67,70 @@ export async function getGoogleCalendarConnection() {
       and(eq(calendarConnections.tenantId, tenant()), eq(calendarConnections.provider, "google")),
     );
   return row ?? null;
+}
+
+export async function listFolders() {
+  return db
+    .select()
+    .from(documentFolders)
+    .where(eq(documentFolders.tenantId, tenant()))
+    .orderBy(asc(documentFolders.sortOrder), asc(documentFolders.name));
+}
+
+export async function getFolder(id: string) {
+  const [row] = await db
+    .select()
+    .from(documentFolders)
+    .where(and(eq(documentFolders.tenantId, tenant()), eq(documentFolders.id, id)));
+  return row ?? null;
+}
+
+export async function listFolderChildren(parentId: string | null, kind?: string) {
+  const filters = [
+    eq(documentFolders.tenantId, tenant()),
+    parentId ? eq(documentFolders.parentId, parentId) : isNull(documentFolders.parentId),
+    kind ? eq(documentFolders.kind, kind) : undefined,
+  ];
+  return db
+    .select()
+    .from(documentFolders)
+    .where(and(...filters))
+    .orderBy(asc(documentFolders.sortOrder), asc(documentFolders.name));
+}
+
+export async function listDocumentsInFolder(folderId: string | null) {
+  if (!folderId) {
+    return db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.tenantId, tenant()), isNull(documents.folderId)))
+      .orderBy(desc(documents.createdAt));
+  }
+  return db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.tenantId, tenant()), eq(documents.folderId, folderId)))
+    .orderBy(desc(documents.createdAt));
+}
+
+export async function folderFileCounts() {
+  const rows = await db
+    .select({
+      folderId: documents.folderId,
+      id: documents.id,
+    })
+    .from(documents)
+    .where(eq(documents.tenantId, tenant()));
+  const counts = new Map<string, number>();
+  let unfiled = 0;
+  for (const row of rows) {
+    if (!row.folderId) {
+      unfiled += 1;
+      continue;
+    }
+    counts.set(row.folderId, (counts.get(row.folderId) ?? 0) + 1);
+  }
+  return { counts, unfiled };
 }
 
 export async function listDocumentsWithExtracted() {

@@ -22,6 +22,13 @@
       "when": 1788389203918,
       "tag": "0002_agency_ops_activities_campaigns_esign",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788389807793,
+      "tag": "0003_document_manager_folders",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
@@ -7,6 +9,8 @@ import {
   activities,
   contacts,
   deals,
+  documentFolders,
+  documents,
   emailCampaigns,
   leads,
   quoteAttemptLogs,
@@ -23,6 +27,14 @@ import {
   CARRIER_IDS,
   CONTACT_ID,
   DEAL_ID,
+  DOC_ACORD_80_ID,
+  DOC_FLYER_ID,
+  DOC_HURRICANE_ID,
+  FOLDER_ACORD_ID,
+  FOLDER_DIB_ACCOUNT_ID,
+  FOLDER_DIB_DEAL_ID,
+  FOLDER_FLYERS_ID,
+  FOLDER_MARKETING_ID,
   LEAD_ID,
   RISK_ID,
   TENANT_ID,
@@ -399,4 +411,126 @@ export async function seed() {
         updatedAt: new Date(),
       },
     });
+
+  await seedDocumentManager();
+}
+
+async function seedDocumentManager() {
+  const folders = [
+    {
+      id: FOLDER_ACORD_ID,
+      name: "ACORD",
+      kind: "agency_library",
+      slug: "acord",
+      description: "Blank ACORD applications for the desk. Demo forms only.",
+      sortOrder: 0,
+    },
+    {
+      id: FOLDER_FLYERS_ID,
+      name: "Carrier flyers",
+      kind: "agency_library",
+      slug: "carrier-flyers",
+      description: "In-appetite market one-pagers. No live carrier login.",
+      sortOrder: 1,
+    },
+    {
+      id: FOLDER_MARKETING_ID,
+      name: "Marketing",
+      kind: "agency_library",
+      slug: "marketing",
+      description: "Seasonal checklists and agency handouts.",
+      sortOrder: 2,
+    },
+    {
+      id: FOLDER_DIB_ACCOUNT_ID,
+      name: "Dib, Ana",
+      kind: "account",
+      slug: "dib-ana",
+      description: "Demo account folder for the Palm Bay shop. Seed name only.",
+      contactId: CONTACT_ID,
+      sortOrder: 0,
+    },
+    {
+      id: FOLDER_DIB_DEAL_ID,
+      name: "Dib · Palm Bay HO3",
+      kind: "deal",
+      slug: "dib-palm-bay-ho3",
+      description: "Per-deal files for the 2026-09-02 shop.",
+      contactId: CONTACT_ID,
+      dealId: DEAL_ID,
+      sortOrder: 0,
+    },
+  ] as const;
+
+  for (const folder of folders) {
+    await db
+      .insert(documentFolders)
+      .values({ tenantId: TENANT_ID, ...folder })
+      .onConflictDoUpdate({
+        target: documentFolders.id,
+        set: {
+          name: folder.name,
+          kind: folder.kind,
+          description: folder.description,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+  const files = [
+    {
+      id: DOC_ACORD_80_ID,
+      folderId: FOLDER_ACORD_ID,
+      filename: "ACORD 80 homeowners application.pdf",
+      docType: "acord",
+      tags: ["acord", "ho"],
+      body: "FitFirst demo ACORD 80 — blank homeowners application. Not a real insured record.",
+    },
+    {
+      id: DOC_FLYER_ID,
+      folderId: FOLDER_FLYERS_ID,
+      filename: "American Integrity HO3 flyer.pdf",
+      docType: "flyer",
+      tags: ["flyer", "american-integrity"],
+      body: "Demo carrier flyer. American Integrity HO3 talking points. No live quote.",
+    },
+    {
+      id: DOC_HURRICANE_ID,
+      folderId: FOLDER_MARKETING_ID,
+      filename: "Hurricane season checklist.pdf",
+      docType: "marketing",
+      tags: ["marketing", "hurricane"],
+      body: "Demo marketing handout. Review deductibles and opening protection before storm season.",
+    },
+  ];
+
+  for (const file of files) {
+    const storagePath = path.join(TENANT_ID, "library", `${file.id}-${file.filename}`);
+    const abs = path.join(uploadRoot, storagePath);
+    await mkdir(path.dirname(abs), { recursive: true });
+    await writeFile(abs, file.body, "utf8");
+    await db
+      .insert(documents)
+      .values({
+        id: file.id,
+        tenantId: TENANT_ID,
+        folderId: file.folderId,
+        filename: file.filename,
+        mimeType: "application/pdf",
+        storagePath,
+        docType: file.docType,
+        status: "uploaded",
+        tags: file.tags,
+      })
+      .onConflictDoUpdate({
+        target: documents.id,
+        set: {
+          folderId: file.folderId,
+          filename: file.filename,
+          docType: file.docType,
+          tags: file.tags,
+        },
+      });
+  }
 }

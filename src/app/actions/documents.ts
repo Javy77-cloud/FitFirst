@@ -4,10 +4,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { alerts, documents, extractedFields, policies, risks } from "@/lib/db/schema";
+import { alerts, documentFolders, documents, extractedFields, policies, risks } from "@/lib/db/schema";
 import {
   coerceRiskValue,
   extractFieldsFromText,
@@ -35,11 +35,47 @@ function optionalId(formData: FormData, key: string) {
   return value || null;
 }
 
+async function resolveFolderId(input: {
+  folderId: string | null;
+  dealId: string | null;
+  contactId: string | null;
+}) {
+  if (input.folderId) return input.folderId;
+  if (input.dealId) {
+    const [folder] = await db
+      .select()
+      .from(documentFolders)
+      .where(
+        and(
+          eq(documentFolders.tenantId, DEFAULT_TENANT_ID),
+          eq(documentFolders.dealId, input.dealId),
+          eq(documentFolders.kind, "deal"),
+        ),
+      );
+    if (folder) return folder.id;
+  }
+  if (input.contactId) {
+    const [folder] = await db
+      .select()
+      .from(documentFolders)
+      .where(
+        and(
+          eq(documentFolders.tenantId, DEFAULT_TENANT_ID),
+          eq(documentFolders.contactId, input.contactId),
+          eq(documentFolders.kind, "account"),
+        ),
+      );
+    if (folder) return folder.id;
+  }
+  return null;
+}
+
 async function persistFile(input: {
   dealId: string | null;
   riskId: string | null;
   contactId: string | null;
   policyId: string | null;
+  folderId: string | null;
   filename: string;
   mimeType: string;
   buffer: Buffer;
@@ -47,7 +83,7 @@ async function persistFile(input: {
   tags: string[];
 }) {
   const id = randomUUID();
-  const folder = input.dealId ?? input.policyId ?? input.contactId ?? "library";
+  const folder = input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? "library";
   const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
   const abs = path.join(uploadRoot, storagePath);
   await mkdir(path.dirname(abs), { recursive: true });
@@ -62,6 +98,7 @@ async function persistFile(input: {
       dealId: input.dealId,
       contactId: input.contactId,
       policyId: input.policyId,
+      folderId: input.folderId,
       filename: input.filename,
       mimeType: input.mimeType,
       storagePath,
@@ -90,6 +127,15 @@ export async function uploadDocument(formData: FormData) {
   let riskId = optionalId(formData, "riskId");
   let contactId = optionalId(formData, "contactId");
   let policyId = optionalId(formData, "policyId");
+  let folderId = optionalId(formData, "folderId");
+  if (folderId) {
+    const [folder] = await db.select().from(documentFolders).where(eq(documentFolders.id, folderId));
+    if (folder) {
+      dealId = dealId ?? folder.dealId ?? null;
+      contactId = contactId ?? folder.contactId ?? null;
+      policyId = policyId ?? folder.policyId ?? null;
+    }
+  }
   if (dealId && !riskId) {
     const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
     riskId = risk?.id ?? null;
@@ -108,8 +154,8 @@ export async function uploadDocument(formData: FormData) {
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("Choose a file to upload.");
   }
-  if (!dealId && !contactId && !policyId) {
-    throw new Error("Attach the file to a contact, deal, or policy.");
+  if (!dealId && !contactId && !policyId && !folderId) {
+    throw new Error("Choose a folder or attach the file to a contact, deal, or policy.");
   }
   const buffer = Buffer.from(await file.arrayBuffer());
   const doc = await persistFile({
@@ -117,6 +163,7 @@ export async function uploadDocument(formData: FormData) {
     riskId,
     contactId,
     policyId,
+    folderId: await resolveFolderId({ folderId, dealId, contactId }),
     filename: file.name,
     mimeType: file.type || "application/octet-stream",
     buffer,
@@ -142,6 +189,7 @@ export async function uploadSampleDocument(formData: FormData) {
     riskId,
     contactId: null,
     policyId: null,
+    folderId: await resolveFolderId({ folderId: null, dealId, contactId: null }),
     filename,
     mimeType: "text/plain",
     buffer: Buffer.from(text, "utf8"),

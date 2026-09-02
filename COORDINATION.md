@@ -21,7 +21,9 @@ First-class tasks / meetings / calls, calendar (month/week/day), Google Calendar
 - `src/app/actions/contacts-ops.ts`
 - `src/app/calendar/**`
 - `src/app/tasks/**`
-- `src/app/documents/**`
+- `src/app/documents/**` — Document Manager (agency library + account/deal folders)
+- `src/app/actions/folders.ts`
+- `drizzle/0003_document_manager_folders.sql`
 - `src/app/campaigns/**`
 - `src/app/esign/**`
 - `src/app/settings/sms/**`
@@ -32,7 +34,7 @@ First-class tasks / meetings / calls, calendar (month/week/day), Google Calendar
 
 ### Shared files touched (additive only)
 
-- `src/lib/db/schema.ts` — new ops tables + nullable document parent ids, `tags` on contacts/documents
+- `src/lib/db/schema.ts` — ops tables + `document_folders` + `documents.folder_id` + tags
 - `src/lib/domain.ts` — activity / campaign / e-sign / SMS / `signed_app` constants
 - `src/lib/db/queries.ts` — deal documents also match `deal_id`
 - `src/lib/db/seed.ts` — Ana Dib tags + one task + one meeting + draft campaign (fixture JSON untouched)

@@ -230,6 +230,28 @@ export const reviewTasks = pgTable(
   ],
 );
 
+export const documentFolders = pgTable(
+  "document_folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    kind: text("kind").notNull().default("custom"),
+    slug: text("slug"),
+    description: text("description"),
+    parentId: uuid("parent_id"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index("document_folders_tenant_idx").on(t.tenantId, t.kind),
+    index("document_folders_parent_idx").on(t.tenantId, t.parentId),
+  ],
+);
+
 export const documents = pgTable(
   "documents",
   {
@@ -239,6 +261,7 @@ export const documents = pgTable(
     dealId: uuid("deal_id").references(() => deals.id),
     contactId: uuid("contact_id").references(() => contacts.id),
     policyId: uuid("policy_id").references(() => policies.id),
+    folderId: uuid("folder_id").references(() => documentFolders.id),
     filename: text("filename").notNull(),
     mimeType: text("mime_type").notNull(),
     storagePath: text("storage_path").notNull(),
@@ -254,6 +277,7 @@ export const documents = pgTable(
     index("documents_tenant_deal_idx").on(t.tenantId, t.dealId),
     index("documents_tenant_contact_idx").on(t.tenantId, t.contactId),
     index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
+    index("documents_tenant_folder_idx").on(t.tenantId, t.folderId),
   ],
 );
 
@@ -537,6 +561,7 @@ export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type Risk = typeof risks.$inferSelect;
+export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;

@@ -11,8 +11,39 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function CampaignsPage() {
+const TEMPLATES = [
+  {
+    name: "Wind mit chase",
+    subject: "Need your wind mitigation inspection",
+    body: "Please send the wind mit so we can finish shopping. This campaign is a stub — FitFirst only logs would send.",
+    audienceType: "tag",
+    audienceValue: "ho3",
+  },
+  {
+    name: "Hurricane season reminder",
+    subject: "Review your deductible before storm season",
+    body: "A short reminder to review hurricane deductibles. No SMTP in this build.",
+    audienceType: "pipeline_stage",
+    audienceValue: "shopping",
+  },
+  {
+    name: "Renewal-watch note",
+    subject: "We will shop your renewal 60 days out",
+    body: "Placeholder renewal template. Audience is the renewal-watch tag when you add it.",
+    audienceType: "tag",
+    audienceValue: "renewal-watch",
+  },
+] as const;
+
+export default async function CampaignsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
   const [rows, tags] = await Promise.all([listCampaigns(), listContactTags()]);
+  const templateName = typeof params.template === "string" ? params.template : "";
+  const preset = TEMPLATES.find((t) => t.name === templateName) ?? TEMPLATES[0];
 
   return (
     <AppShell
@@ -24,19 +55,30 @@ export default async function CampaignsPage() {
       }
     >
       <StubBanner>
-        Email sends are stubbed. Pressing send logs “would send” for each audience member. No SMTP
-        and no provider API.
+        Stub hub only: lists, templates, and create campaign. Sends log “would send”. No SMTP, no
+        drip builder.
       </StubBanner>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {TEMPLATES.map((tpl) => (
+          <Link
+            key={tpl.name}
+            href={`/campaigns?template=${encodeURIComponent(tpl.name)}`}
+            className={cn(buttonVariants({ size: "sm", variant: preset.name === tpl.name ? "default" : "outline" }))}
+          >
+            {tpl.name}
+          </Link>
+        ))}
+      </div>
       <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <form action={upsertCampaign} className="ff-card space-y-3 p-4">
-          <h2 className="text-sm font-semibold text-navy">Composer</h2>
+          <h2 className="text-sm font-semibold text-navy">Create campaign</h2>
           <div>
             <Label className="text-xs">Campaign name</Label>
-            <Input name="name" required className="mt-1 h-8" placeholder="Wind mit chase" />
+            <Input name="name" required className="mt-1 h-8" defaultValue={preset.name} />
           </div>
           <div>
             <Label className="text-xs">Subject</Label>
-            <Input name="subject" required className="mt-1 h-8" placeholder="Need your wind mit this week" />
+            <Input name="subject" required className="mt-1 h-8" defaultValue={preset.subject} />
           </div>
           <div>
             <Label className="text-xs">Body</Label>
@@ -45,14 +87,14 @@ export default async function CampaignsPage() {
               required
               rows={6}
               className="mt-1 w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm"
-              placeholder="Hi — please send the wind mitigation inspection so we can finish shopping."
+              defaultValue={preset.body}
             />
           </div>
           <div>
             <Label className="text-xs">Audience</Label>
             <select
               name="audienceType"
-              defaultValue="tag"
+              defaultValue={preset.audienceType}
               className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
             >
               {CAMPAIGN_AUDIENCE_TYPES.map((t) => (
@@ -68,6 +110,7 @@ export default async function CampaignsPage() {
               name="audienceValue"
               required
               className="mt-1 h-8"
+              defaultValue={preset.audienceValue}
               placeholder={tags[0] ?? "ho3"}
               list="audience-presets"
             />

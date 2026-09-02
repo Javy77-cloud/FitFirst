@@ -50,9 +50,29 @@ export const DOC_TYPES = [
   "four_point",
   "photo",
   "signed_app",
+  "acord",
+  "flyer",
+  "marketing",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
+
+export const FOLDER_KINDS = [
+  "agency_library",
+  "account",
+  "deal",
+  "policy",
+  "custom",
+] as const;
+export type FolderKind = (typeof FOLDER_KINDS)[number];
+
+export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
+  agency_library: "Agency library",
+  account: "Account",
+  deal: "Deal",
+  policy: "Policy",
+  custom: "Folder",
+};
 
 export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
@@ -84,6 +104,9 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   four_point: "4-point",
   photo: "Photo",
   signed_app: "Signed application",
+  acord: "ACORD form",
+  flyer: "Carrier flyer",
+  marketing: "Marketing",
   other: "Other",
 };
 
