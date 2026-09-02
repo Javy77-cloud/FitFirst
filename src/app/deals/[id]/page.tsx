@@ -8,7 +8,7 @@ import { RiskForm } from "@/components/deal/risk-form";
 import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace } from "@/lib/db/queries";
 
@@ -64,26 +64,33 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       {!risk ? (
         <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
       ) : (
-        <Tabs defaultValue="documents">
-          <TabsList>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-            <TabsTrigger value="risk">Master risk</TabsTrigger>
-            <TabsTrigger value="markets">Markets</TabsTrigger>
-            <TabsTrigger value="quotes">Quotes</TabsTrigger>
-          </TabsList>
-          <TabsContent value="documents" className="mt-4">
-            <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
-          </TabsContent>
-          <TabsContent value="risk" className="mt-4">
-            <RiskForm risk={risk} dealId={deal.id} />
-          </TabsContent>
-          <TabsContent value="markets" className="mt-4">
-            <MarketsPanel dealId={deal.id} matches={matches} />
-          </TabsContent>
-          <TabsContent value="quotes" className="mt-4">
-            <QuotesPanel quotes={quotes} logs={logs} />
-          </TabsContent>
-        </Tabs>
+        <SectionTabs
+          defaultValue="documents"
+          tabs={[
+            {
+              id: "documents",
+              label: "Documents",
+              content: (
+                <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+              ),
+            },
+            {
+              id: "risk",
+              label: "Master risk",
+              content: <RiskForm risk={risk} dealId={deal.id} />,
+            },
+            {
+              id: "markets",
+              label: "Markets",
+              content: <MarketsPanel dealId={deal.id} matches={matches} />,
+            },
+            {
+              id: "quotes",
+              label: "Quotes",
+              content: <QuotesPanel quotes={quotes} logs={logs} />,
+            },
+          ]}
+        />
       )}
     </AppShell>
   );
