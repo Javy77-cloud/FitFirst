@@ -17,7 +17,7 @@ export type ExtractionResult = {
   glanceRequired: boolean;
 };
 
-const UNCERTAIN_VALUE = /[?]|unk(?:nown)?|illegible|n\/?a|tbd/i;
+const UNCERTAIN_VALUE = /\?|\bunk(?:nown)?\b|\billegible\b|\bn\/?a\b|\btbd\b/i;
 const OCR_CONFUSION = /\b(?:1q\d{2}|t1le|n0ne|cl4y|m3tal|fr4me)\b/i;
 const MESSY_MARKERS =
   /handwritten|low ocr|poor scan|illegible|messy handwriting|\[handwritten/i;
