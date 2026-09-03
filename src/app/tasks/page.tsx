@@ -63,7 +63,7 @@ export default async function TasksPage() {
           <Label htmlFor="dueDate" className="text-xs">
             Due
           </Label>
-          <Input id="dueDate" name="dueDate" type="date" className="mt-1 h-8" />
+          <Input id="dueDate" name="dueDate" type="date" className="mt-1 h-8" placeholder="YYYY-MM-DD" />
         </div>
         <div>
           <Label htmlFor="contactId" className="text-xs">

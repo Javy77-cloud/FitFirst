@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import { deleteTask, updateTask } from "@/app/actions/alerts";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { Button } from "@/components/ui/button";
@@ -19,57 +16,50 @@ export function TaskRowEditor({
     dueDate: string;
   };
 }) {
-  const [editing, setEditing] = useState(false);
-
-  if (!editing) {
-    return (
-      <div className="flex flex-wrap gap-1">
-        <Button type="button" size="xs" variant="outline" onClick={() => setEditing(true)}>
+  return (
+    <div className="flex flex-wrap items-start gap-1">
+      <details className="relative">
+        <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-2 py-0.5 text-xs font-medium text-navy hover:bg-muted">
           Edit
-        </Button>
-        <form action={deleteTask}>
+        </summary>
+        <form
+          action={updateTask}
+          className="absolute right-0 z-30 mt-1 w-56 space-y-1.5 rounded-md border border-border bg-card p-2 shadow-md"
+        >
           <input type="hidden" name="taskId" value={task.id} />
-          <Button type="submit" size="xs" variant="destructive">
-            Delete
+          <Input name="title" defaultValue={task.title} className="h-7 text-xs" />
+          <select
+            name="kind"
+            defaultValue={task.kind}
+            className="h-7 w-full rounded-md border border-input bg-card px-1.5 text-xs"
+          >
+            {KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {kind.replaceAll("_", " ")}
+              </option>
+            ))}
+          </select>
+          <select
+            name="status"
+            defaultValue={task.status}
+            className="h-7 w-full rounded-md border border-input bg-card px-1.5 text-xs"
+          >
+            <option value="open">open</option>
+            <option value="done">done</option>
+          </select>
+          <Input name="dueDate" type="date" defaultValue={task.dueDate} className="h-7 text-xs" />
+          <Button type="submit" size="xs">
+            Save
           </Button>
         </form>
-        {task.status === "open" ? <CompleteTaskForm taskId={task.id} /> : null}
-      </div>
-    );
-  }
-
-  return (
-    <form action={updateTask} className="min-w-56 space-y-1.5" onSubmit={() => setEditing(false)}>
-      <input type="hidden" name="taskId" value={task.id} />
-      <Input name="title" defaultValue={task.title} className="h-7 text-xs" />
-      <select
-        name="kind"
-        defaultValue={task.kind}
-        className="h-7 w-full rounded-md border border-input bg-card px-1.5 text-xs"
-      >
-        {KINDS.map((kind) => (
-          <option key={kind} value={kind}>
-            {kind.replaceAll("_", " ")}
-          </option>
-        ))}
-      </select>
-      <select
-        name="status"
-        defaultValue={task.status}
-        className="h-7 w-full rounded-md border border-input bg-card px-1.5 text-xs"
-      >
-        <option value="open">open</option>
-        <option value="done">done</option>
-      </select>
-      <Input name="dueDate" type="date" defaultValue={task.dueDate} className="h-7 text-xs" />
-      <div className="flex gap-1">
-        <Button type="submit" size="xs">
-          Save
+      </details>
+      <form action={deleteTask}>
+        <input type="hidden" name="taskId" value={task.id} />
+        <Button type="submit" size="xs" variant="destructive">
+          Delete
         </Button>
-        <Button type="button" size="xs" variant="ghost" onClick={() => setEditing(false)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+      </form>
+      {task.status === "open" ? <CompleteTaskForm taskId={task.id} /> : null}
+    </div>
   );
 }

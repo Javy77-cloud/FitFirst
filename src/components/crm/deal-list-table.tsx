@@ -12,6 +12,7 @@ import type { PipelineStageRow } from "@/lib/db/schema";
 
 const COLUMNS = [
   { id: "deal", header: "Deal", defaultVisible: true, hideable: false },
+  { id: "actions", header: "Call / SMS / Email / Task", defaultVisible: true, hideable: false },
   { id: "insured", header: "Insured / contact name", defaultVisible: true },
   { id: "stage", header: "Stage", defaultVisible: true },
   { id: "line", header: "Line", defaultVisible: true },
@@ -23,7 +24,6 @@ const COLUMNS = [
   { id: "updated", header: "Updated", defaultVisible: false },
   { id: "bound", header: "Bound", defaultVisible: false },
   { id: "account", header: "Account", defaultVisible: false },
-  { id: "actions", header: "Call / SMS / Email / Task", defaultVisible: true, hideable: false },
 ];
 
 export function DealListTable({
@@ -71,6 +71,9 @@ export function DealListTable({
                         {deal.title}
                       </Link>
                     </td>
+                    <td data-col="actions">
+                      <DealRowActions dealId={deal.id} />
+                    </td>
                     <td data-col="insured">
                       <InsuredLink href={href} name={insured} />
                     </td>
@@ -92,9 +95,6 @@ export function DealListTable({
                     <td data-col="bound">{deal.boundAt ? formatIsoDate(deal.boundAt) : "Unbound"}</td>
                     <td data-col="account" className="capitalize">
                       {contact?.accountKind === "commercial" ? "Business" : contact ? "Personal" : "Lead"}
-                    </td>
-                    <td data-col="actions">
-                      <DealRowActions dealId={deal.id} />
                     </td>
                   </tr>
                 );
