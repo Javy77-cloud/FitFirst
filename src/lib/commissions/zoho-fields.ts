@@ -140,6 +140,16 @@ export function policyTypesFor(insuranceType: string | null | undefined): readon
   return POLICY_TYPES;
 }
 
+export function subTypeFitsLine(
+  policySubType: string | null | undefined,
+  insuranceType: string | null | undefined,
+  policyType: string | null | undefined,
+): boolean {
+  const sub = (policySubType ?? "").trim();
+  if (!sub) return false;
+  return policySubTypesFor(insuranceType, policyType).includes(sub);
+}
+
 export function policySubTypesFor(
   insuranceType: string | null | undefined,
   policyType: string | null | undefined,

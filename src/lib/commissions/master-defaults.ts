@@ -1,4 +1,5 @@
 import { healthKind, normalizeSellingAgency } from "./policy-math";
+import { policyTypesFor, subTypeFitsLine } from "./zoho-fields";
 
 /**
  * Live Zoho master_commission defaults from the 2026-09-03 Policies packets.
@@ -125,6 +126,36 @@ export function suggestPremiumFrequency(input: {
   }
   if (type === "P&C") return "Annual";
   return null;
+}
+
+export function coerceLine(input: {
+  insuranceType?: string | null;
+  policyType?: string | null;
+  policySubType?: string | null;
+  changed?: "insuranceType" | "policyType" | "policySubType";
+}): { insuranceType: string; policyType: string; policySubType: string } {
+  let insuranceType = (input.insuranceType ?? "").trim();
+  let policyType = (input.policyType ?? "").trim();
+  let policySubType = (input.policySubType ?? "").trim();
+
+  if (input.changed === "policySubType" && policySubType) {
+    insuranceType = inferInsuranceType(policyType, policySubType) ?? insuranceType;
+    policyType = inferPolicyType(insuranceType, policySubType) ?? policyType;
+  } else if (input.changed === "insuranceType") {
+    const allowed = policyTypesFor(insuranceType);
+    if (!allowed.includes(policyType)) {
+      policyType = inferPolicyType(insuranceType, policySubType) ?? allowed[0] ?? "";
+    }
+    if (!subTypeFitsLine(policySubType, insuranceType, policyType)) {
+      policySubType = "";
+    }
+  } else if (input.changed === "policyType") {
+    if (!subTypeFitsLine(policySubType, insuranceType, policyType)) {
+      policySubType = "";
+    }
+  }
+
+  return { insuranceType, policyType, policySubType };
 }
 
 export function suggestMasterDefaults(input: {

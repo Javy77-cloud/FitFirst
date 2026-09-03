@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  coerceLine,
   inferInsuranceType,
   inferPolicyType,
   suggestCommission4,
@@ -273,6 +274,18 @@ describe("master_commission defaults from live packets", () => {
     ).toBeNull();
     expect(inferInsuranceType(null, "Marketplace")).toBe("Health");
     expect(inferPolicyType("P&C", "DP3")).toBe("Renter & Landord");
+  });
+
+  it("clears a Life subtype when Insurance Type switches to Health", () => {
+    const next = coerceLine({
+      insuranceType: "Health",
+      policyType: "Life",
+      policySubType: "Accidental Death",
+      changed: "insuranceType",
+    });
+    expect(next.insuranceType).toBe("Health");
+    expect(next.policyType).toBe("Health");
+    expect(next.policySubType).toBe("");
   });
 });
 

@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SELLING_AGENCIES, formatMoney, formatRatePct } from "@/lib/domain";
 import {
-  inferInsuranceType,
-  inferPolicyType,
+  coerceLine,
   suggestCommission4,
   suggestPremiumFrequency,
 } from "@/lib/commissions/master-defaults";
@@ -57,11 +56,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block text-[11px] text-muted-foreground">
-      {label}
+    <div className="block text-[11px] text-muted-foreground">
+      <div className="mb-0">{label}</div>
       {children}
       {hint ? <span className="mt-1 block text-[10px] leading-snug">{hint}</span> : null}
-    </label>
+    </div>
   );
 }
 
@@ -77,16 +76,21 @@ function applyLineDefaults(
   freqLocked: boolean,
 ): PolicyCommissionBlockValues {
   const sellingAgency = next.sellingAgency ?? prev.sellingAgency;
-  let insuranceType = next.insuranceType ?? prev.insuranceType;
-  let policyType = next.policyType ?? prev.policyType;
-  const policySubType = next.policySubType ?? prev.policySubType;
-
-  if (next.policySubType !== undefined) {
-    insuranceType = inferInsuranceType(policyType, policySubType) ?? insuranceType;
-    policyType = inferPolicyType(insuranceType, policySubType) ?? policyType;
-  } else if (next.insuranceType !== undefined) {
-    policyType = inferPolicyType(insuranceType, policySubType) ?? policyType;
-  }
+  const changed =
+    next.insuranceType !== undefined
+      ? "insuranceType"
+      : next.policyType !== undefined
+        ? "policyType"
+        : next.policySubType !== undefined
+          ? "policySubType"
+          : undefined;
+  const line = coerceLine({
+    insuranceType: next.insuranceType ?? prev.insuranceType,
+    policyType: next.policyType ?? prev.policyType,
+    policySubType: next.policySubType ?? prev.policySubType,
+    changed,
+  });
+  const { insuranceType, policyType, policySubType } = line;
 
   const rate = suggestCommission4({ sellingAgency, insuranceType, policySubType });
   const frequency = suggestPremiumFrequency({ insuranceType, policySubType });
@@ -177,6 +181,7 @@ export function PolicyCommissionBlock({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Selling agency">
             <select
+              aria-label="Selling agency"
               className={selectClass}
               value={form.sellingAgency}
               disabled={readOnly}
@@ -191,6 +196,7 @@ export function PolicyCommissionBlock({
           </Field>
           <Field label="Insurance type">
             <select
+              aria-label="Insurance type"
               className={selectClass}
               value={form.insuranceType}
               disabled={readOnly}
@@ -206,6 +212,7 @@ export function PolicyCommissionBlock({
           </Field>
           <Field label="Policy type">
             <select
+              aria-label="Policy type"
               className={selectClass}
               value={form.policyType}
               disabled={readOnly}
@@ -221,6 +228,7 @@ export function PolicyCommissionBlock({
           </Field>
           <Field label="Policy sub type">
             <select
+              aria-label="Policy sub type"
               className={selectClass}
               value={form.policySubType}
               disabled={readOnly}
