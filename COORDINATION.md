@@ -22,10 +22,22 @@ Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep
 ## Ingest
 
 - Upload / drop stores a `documents` row. It does not write the sheet.
-- Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`.
-- Images create an `extraction_jobs` row with engine `ocr` and status `not_implemented`. No paid OCR vendor.
-- Job rows must exist even when OCR is stubbed.
-- Photo-a-dec is a selling point. Fill already has a first-class OCR hook (image upload + `extraction_jobs` row, status `not_implemented`). **Photo OCR is the next slice** — tesseract or equivalent, no paid vendor. Do not block Fill on photos this pass.
+- Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`. **This path is done.**
+- Images always go through `classifyIngest` → engine `ocr` → `extractFromImage` → an `extraction_jobs` row. Job rows must exist even when OCR is stubbed.
+
+## Photo OCR (next slice)
+
+Photo-a-dec is a selling point. **Do not block Fill on photos this pass.**
+
+This pass (done):
+- First-class hook on Fill Quote Sheet: image upload / drop, `docType=photo`, `ocr` job row.
+- Hook returns `not_implemented` and invents no fields.
+- A photo on the deal does not stop the text/PDF parser from filling blanks.
+
+Next slice:
+- Implement Photo OCR in `extractFromImage` (tesseract or equivalent WASM/local).
+- No paid OCR vendor.
+- Still blanks-only. Still never overwrite agent-typed or Javy-tested Cov A.
 
 ## Fill vs copy vs portals (locked)
 

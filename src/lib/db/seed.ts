@@ -25,6 +25,7 @@ import {
   FILL_DOC_ID,
   FILL_HOME_SHEET_ID,
   FILL_LEAD_ID,
+  FILL_PHOTO_ID,
   FILL_RISK_ID,
   LEAD_ID,
   RISK_ID,
@@ -34,6 +35,10 @@ import {
   MELBOURNE_DEC_FILENAME,
   MELBOURNE_DEC_TEXT,
 } from "../fixtures/sample-melbourne-dec";
+import {
+  SAMPLE_PHOTO_DEC_FILENAME,
+  SAMPLE_PHOTO_DEC_PNG,
+} from "../fixtures/sample-photo-dec";
 import { anaHomeSheetValues, anaPropertyOneliner } from "../quote-sheet/ana-home";
 import { emptySheetValues } from "../quote-sheet/catalog";
 
@@ -401,7 +406,7 @@ async function seedFillDemoDeal() {
       coverageAmount: null,
       propertyOneliner: null,
       currentCarrier: null,
-      notes: "Blank Home Quote Sheet. Sample Melbourne dec is attached as a source file — click Fill Quote Sheet to load year, address, and Cov A into blanks only.",
+      notes: "Blank Home Quote Sheet. Sample Melbourne text dec + a photo-a-dec PNG are on Files. Fill writes year/address/Cov A from the text file. The photo opens an OCR job (not_implemented) and does not block Fill.",
     })
     .onConflictDoUpdate({
       target: deals.id,
@@ -415,7 +420,7 @@ async function seedFillDemoDeal() {
         coverageAmount: null,
         propertyOneliner: null,
         currentCarrier: null,
-        notes: "Blank Home Quote Sheet. Sample Melbourne dec is attached as a source file — click Fill Quote Sheet to load year, address, and Cov A into blanks only.",
+        notes: "Blank Home Quote Sheet. Sample Melbourne text dec + a photo-a-dec PNG are on Files. Fill writes year/address/Cov A from the text file. The photo opens an OCR job (not_implemented) and does not block Fill.",
         updatedAt: new Date(),
       },
     });
@@ -469,5 +474,15 @@ async function seedFillDemoDeal() {
     mimeType: "text/plain",
     buffer: Buffer.from(MELBOURNE_DEC_TEXT, "utf8"),
     docType: "dec",
+  });
+
+  await persistDealFile({
+    id: FILL_PHOTO_ID,
+    dealId: FILL_DEAL_ID,
+    riskId: FILL_RISK_ID,
+    filename: SAMPLE_PHOTO_DEC_FILENAME,
+    mimeType: "image/png",
+    buffer: SAMPLE_PHOTO_DEC_PNG,
+    docType: "photo",
   });
 }

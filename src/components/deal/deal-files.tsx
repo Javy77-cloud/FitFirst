@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { attachSampleMelbourneDec, fillQuoteSheet } from "@/app/actions/quote-sheet";
+import { attachSampleMelbourneDec, attachSamplePhotoDec, fillQuoteSheet } from "@/app/actions/quote-sheet";
 import { uploadDocument, uploadSampleDocument } from "@/app/actions/documents";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,8 +35,10 @@ export function DealFiles({
           Dec pages, wind mit, 4-point, competing quotes, photos, and notes stay attachments.
           They are never the copy packet. <span className="font-medium">Fill Quote Sheet</span>{" "}
           is in this product — it writes extracted values into{" "}
-          <span className="font-medium">blank</span> fields only. Photos open an OCR job
-          (status not_implemented this pass). Do not expect a TypTap login from here.
+          <span className="font-medium">blank</span> fields only. Photo-a-dec is a selling
+          point: drop a photo and Fill still opens a first-class OCR job. This pass the job is{" "}
+          <span className="font-mono">not_implemented</span> (no paid vendor). Photos do not
+          block the text/PDF path.
         </p>
 
         <form
@@ -91,6 +93,7 @@ export function DealFiles({
                 id="file"
                 name="file"
                 type="file"
+                accept=".pdf,.txt,.md,image/*"
                 required
                 className="mt-1 block w-full text-xs"
               />
@@ -136,6 +139,13 @@ export function DealFiles({
               Attach handwritten wind mit
             </Button>
           </form>
+          <form action={attachSamplePhotoDec}>
+            <input type="hidden" name="dealId" value={dealId} />
+            <input type="hidden" name="riskId" value={riskId} />
+            <Button type="submit" variant="outline" size="sm">
+              Attach sample photo-a-dec
+            </Button>
+          </form>
         </div>
 
         {docs.length === 0 ? (
@@ -165,10 +175,12 @@ export function DealFiles({
       </section>
 
       <section className="ff-card p-4">
-        <h3 className="mb-1 text-sm font-semibold text-navy">Fill jobs</h3>
+        <h3 className="mb-1 text-sm font-semibold text-navy">Fill jobs · photo OCR hook</h3>
         <p className="mb-3 text-xs text-muted-foreground">
-          Text PDFs and .txt files run the real parser. Scanned photos open an OCR job row with
-          status <span className="font-mono">not_implemented</span>.
+          Text PDFs and .txt run the real parser. A photo-a-dec always gets an{" "}
+          <span className="font-mono">ocr</span> job row. This pass that row is{" "}
+          <span className="font-mono">not_implemented</span> — Photo OCR is the next slice,
+          not a paid vendor. Fill is not blocked when a photo is on the deal.
         </p>
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No fill jobs yet.</p>

@@ -17,12 +17,16 @@ import {
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
 import { extractFieldsFromText, fieldKeyToRiskColumn, coerceRiskValue } from "@/lib/extraction/extract";
-import { extractFromImage, isImageUpload } from "@/lib/extraction/ocr";
+import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
 import { ImageOcrNotImplementedError, textFromUpload } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
   MELBOURNE_DEC_TEXT,
 } from "@/lib/fixtures/sample-melbourne-dec";
+import {
+  SAMPLE_PHOTO_DEC_FILENAME,
+  SAMPLE_PHOTO_DEC_PNG,
+} from "@/lib/fixtures/sample-photo-dec";
 import {
   applyExtractedToSheet,
   confirmField,
@@ -135,6 +139,20 @@ export async function attachSampleMelbourneDec(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
+export async function attachSamplePhotoDec(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const riskId = str(formData, "riskId");
+  await persistDealFile({
+    dealId,
+    riskId,
+    filename: SAMPLE_PHOTO_DEC_FILENAME,
+    mimeType: "image/png",
+    buffer: SAMPLE_PHOTO_DEC_PNG,
+    docType: "photo",
+  });
+  revalidatePath(`/deals/${dealId}`);
+}
+
 export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
   const sheet = await ensureQuoteSheet(dealId, line);
   const docs = await db
@@ -156,14 +174,15 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         dealId,
         documentId: doc.id,
         quoteSheetId: sheet.id,
-        engine: isImageUpload(doc.mimeType, doc.filename) ? "ocr" : "pdf_text",
+        engine: classifyIngest(doc.mimeType, doc.filename).engine,
         status: "failed",
         message: `Could not read ${doc.filename} from storage.`,
       });
       continue;
     }
 
-    if (isImageUpload(doc.mimeType, doc.filename)) {
+    const plan = classifyIngest(doc.mimeType, doc.filename);
+    if (plan.engine === "ocr") {
       const ocr = extractFromImage(buffer, doc.filename);
       await db.insert(extractionJobs).values({
         tenantId: DEFAULT_TENANT_ID,

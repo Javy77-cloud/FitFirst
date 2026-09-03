@@ -59,7 +59,7 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 2. Home Quote Sheet starts blank (yellow).
 3. A sample text dec is already on **Files**. Click **Fill Quote Sheet**.
 4. Year built (2004), address (412 Harbor Isle Dr), and Cov A ($275,000) land as **CHECK** (blue) on blanks only. Header glance picks up coverage, the property one-liner, and current carrier (Citizens) if those header fields were empty.
-5. You can also drop your own `.txt` / text PDF. Images create an OCR job with status `not_implemented`.
+5. A sample photo-a-dec PNG is also on Files. Fill still works. The photo opens an **ocr** job with status `not_implemented` — Photo OCR is the next slice, not a paid vendor. You can also drop your own `.txt` / text PDF / photo.
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
