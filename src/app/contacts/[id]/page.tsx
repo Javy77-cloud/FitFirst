@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getContactWorkspace, listRelatedOptions } from "@/lib/db/ops-queries";
+import {
+  ActivityStatusActions,
+  AssignmentLinks,
+  PhoneButton,
+} from "@/components/ops/activity-extras";
 import { formatWhen, kindClass } from "@/lib/ops/calendar";
+import { statusLabel } from "@/lib/ops/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -52,25 +58,40 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         </section>
         <section className="space-y-4">
           <div className="ff-card p-4">
-            <h2 className="mb-2 text-sm font-semibold text-navy">Activity</h2>
+            <h2 className="mb-2 text-sm font-semibold text-navy">Activities</h2>
+            <p className="mb-2 text-xs text-muted-foreground">
+              First-class on this contact. Assign a policy too when one exists.
+            </p>
+            {contact.phone ? (
+              <div className="mb-2">
+                <PhoneButton phone={contact.phone} />
+              </div>
+            ) : null}
             <ActivityForm
               related={related}
               defaults={{ kind: "task", contactId: contact.id }}
               returnTo={`/contacts/${contact.id}`}
-              submitLabel="Add task or meeting"
+              submitLabel="Add to this contact"
             />
             {activities.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">No tasks, calls, or meetings yet.</p>
             ) : (
-              <ul className="mt-3 space-y-1">
+              <ul className="mt-3 space-y-2">
                 {activities.map((a) => (
-                  <li key={a.id}>
-                    <Link href={`/calendar?activity=${a.id}`} className="text-sm hover:underline">
+                  <li key={a.id} className="rounded-md border border-border p-2">
+                    <Link href={`/calendar?activity=${a.id}`} className="text-sm font-medium hover:underline">
                       <span className={`mr-2 rounded px-1.5 py-0.5 text-[10px] ${kindClass(a.kind)}`}>
                         {a.kind}
                       </span>
-                      {a.title} · {formatWhen(a)}
+                      {a.title}
                     </Link>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      {formatWhen(a)} · {statusLabel(a.status)}
+                    </div>
+                    <AssignmentLinks contactId={a.contactId} policyId={a.policyId} dealId={a.dealId} />
+                    <div className="mt-2">
+                      <ActivityStatusActions activity={a} returnTo={`/contacts/${contact.id}`} />
+                    </div>
                   </li>
                 ))}
               </ul>

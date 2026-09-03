@@ -19,6 +19,8 @@ import {
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
+import { listDueCalls } from "@/lib/db/ops-queries";
+import { PhoneButton } from "@/components/ops/activity-extras";
 
 const NAV = [
   { href: "/", label: "Home", icon: Home },
@@ -49,6 +51,7 @@ export async function AppShell({
     .from(alerts)
     .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
+  const dueCalls = await listDueCalls();
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -105,6 +108,28 @@ export async function AppShell({
           </div>
           <div className="flex items-center gap-2">{actions}</div>
         </header>
+        {dueCalls.length > 0 ? (
+          <div className="border-b border-border bg-fit-flag-bg px-5 py-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-fit-flag">
+              Due calls — in-app only, no Twilio
+            </div>
+            <ul className="mt-1 space-y-1">
+              {dueCalls.map(({ activity, contact }) => (
+                <li key={activity.id} className="flex flex-wrap items-center gap-2 text-sm">
+                  <Link href={`/calendar?activity=${activity.id}`} className="font-medium text-navy hover:underline">
+                    {activity.title}
+                  </Link>
+                  {contact ? (
+                    <Link href={`/contacts/${contact.id}`} className="text-xs text-muted-foreground hover:underline">
+                      {contact.lastName}, {contact.firstName}
+                    </Link>
+                  ) : null}
+                  <PhoneButton phone={contact?.phone} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <main className="flex-1 p-5">{children}</main>
       </div>
     </div>

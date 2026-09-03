@@ -77,8 +77,38 @@ export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
 export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
-export const ACTIVITY_STATUSES = ["open", "completed", "cancelled"] as const;
+export const ACTIVITY_STATUSES = [
+  "incomplete",
+  "completed",
+  "delayed",
+  "moved",
+] as const;
 export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
+
+export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
+  incomplete: "Incomplete",
+  completed: "Completed",
+  delayed: "Delayed",
+  moved: "Moved to another day",
+};
+
+export const TASK_PIPELINE = ["incomplete", "delayed", "moved", "completed"] as const;
+
+export const ACTIVITY_LOG_EVENTS = [
+  "created",
+  "updated",
+  "status_changed",
+  "rescheduled",
+  "call_logged",
+] as const;
+export type ActivityLogEvent = (typeof ACTIVITY_LOG_EVENTS)[number];
+
+export function normalizeActivityStatus(value: string | null | undefined): ActivityStatus {
+  if (value === "completed") return "completed";
+  if (value === "delayed") return "delayed";
+  if (value === "moved") return "moved";
+  return "incomplete";
+}
 
 export const RELATED_RECORD_TYPES = ["contact", "deal", "policy"] as const;
 export type RelatedRecordType = (typeof RELATED_RECORD_TYPES)[number];

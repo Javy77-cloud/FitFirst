@@ -29,6 +29,13 @@
       "when": 1788389807793,
       "tag": "0003_document_manager_folders",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788394529182,
+      "tag": "0004_activity_logs_and_status",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "./index";
 import {
   activities,
+  activityLogs,
   calendarConnections,
   campaignSendLogs,
   contacts,
@@ -34,10 +35,42 @@ export async function getActivity(id: string) {
   return row ?? null;
 }
 
+export async function listActivityLogs(activityId: string) {
+  return db
+    .select()
+    .from(activityLogs)
+    .where(and(eq(activityLogs.tenantId, tenant()), eq(activityLogs.activityId, activityId)))
+    .orderBy(desc(activityLogs.occurredAt));
+}
+
+export async function listDueCalls() {
+  const rows = await db
+    .select({
+      activity: activities,
+      contact: contacts,
+      policy: policies,
+    })
+    .from(activities)
+    .leftJoin(contacts, eq(activities.contactId, contacts.id))
+    .leftJoin(policies, eq(activities.policyId, policies.id))
+    .where(and(eq(activities.tenantId, tenant()), eq(activities.kind, "call")));
+  const now = new Date();
+  return rows.filter(({ activity }) => {
+    if (activity.status === "completed") return false;
+    const when = activity.startAt ?? activity.dueAt;
+    return Boolean(when && when.getTime() <= now.getTime());
+  });
+}
+
 export async function listRelatedOptions() {
   const [contactRows, dealRows, policyRows] = await Promise.all([
     db
-      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName })
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        phone: contacts.phone,
+      })
       .from(contacts)
       .where(eq(contacts.tenantId, tenant()))
       .orderBy(contacts.lastName),

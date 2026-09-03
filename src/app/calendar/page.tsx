@@ -4,12 +4,26 @@ import {
   disconnectGoogleCalendar,
   syncGoogleCalendar,
 } from "@/app/actions/connectors";
-import { setActivityStatus } from "@/app/actions/activities";
 import { AppShell } from "@/components/app-shell";
 import { ActivityForm } from "@/components/ops/activity-form";
+import {
+  ActivityLogList,
+  ActivityStatusActions,
+  AssignmentLinks,
+  LogCallForm,
+  MoveDayForm,
+  PhoneButton,
+} from "@/components/ops/activity-extras";
 import { Notice, StubBanner } from "@/components/ops/stub-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { getActivity, getGoogleCalendarConnection, listActivities, listRelatedOptions } from "@/lib/db/ops-queries";
+import {
+  getActivity,
+  getGoogleCalendarConnection,
+  listActivities,
+  listActivityLogs,
+  listRelatedOptions,
+} from "@/lib/db/ops-queries";
+import { statusLabel } from "@/lib/ops/activity";
 import { cn } from "@/lib/utils";
 import {
   activitiesOnDay,
@@ -49,6 +63,13 @@ export default async function CalendarPage({
     getGoogleCalendarConnection(),
     activityId ? getActivity(activityId) : Promise.resolve(null),
   ]);
+  const selectedLogs = selected ? await listActivityLogs(selected.id) : [];
+  const selectedContact = selected?.contactId
+    ? related.contacts.find((c) => c.id === selected.contactId)
+    : undefined;
+  const selectedPolicy = selected?.policyId
+    ? related.policies.find((p) => p.id === selected.policyId)
+    : undefined;
 
   const href = (next: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
@@ -183,22 +204,39 @@ export default async function CalendarPage({
               <h2 className="text-sm font-semibold text-navy">{selected.title}</h2>
               <p className="mt-1 text-xs text-muted-foreground">{formatWhen(selected)}</p>
               <p className="mt-1 text-xs">Assignee: {selected.assignee ?? "—"}</p>
-              <p className="mt-1 text-xs capitalize">Status: {selected.status}</p>
+              <p className="mt-1 text-xs">Status: {statusLabel(selected.status)}</p>
+              <div className="mt-2">
+                <AssignmentLinks
+                  contactId={selected.contactId}
+                  contactName={
+                    selectedContact
+                      ? `${selectedContact.lastName}, ${selectedContact.firstName}`
+                      : null
+                  }
+                  policyId={selected.policyId}
+                  policyNumber={selectedPolicy?.policyNumber}
+                  dealId={selected.dealId}
+                />
+              </div>
+              {selected.kind === "call" ? (
+                <div className="mt-2">
+                  <PhoneButton phone={selectedContact?.phone} />
+                </div>
+              ) : null}
               {selected.notes ? <p className="mt-2 text-sm">{selected.notes}</p> : null}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {selected.status === "open" ? (
-                  <form action={setActivityStatus}>
-                    <input type="hidden" name="id" value={selected.id} />
-                    <input type="hidden" name="status" value="completed" />
-                    <input type="hidden" name="returnTo" value={href({})} />
-                    <Button type="submit" size="xs">
-                      Complete
-                    </Button>
-                  </form>
+              <div className="mt-3 space-y-2">
+                <ActivityStatusActions activity={selected} returnTo={href({ activity: selected.id })} />
+                <MoveDayForm activityId={selected.id} returnTo={href({ activity: selected.id })} />
+                {selected.kind === "call" ? (
+                  <LogCallForm activityId={selected.id} returnTo={href({ activity: selected.id })} />
                 ) : null}
                 <Link href={href({})} className="text-xs text-primary hover:underline">
                   Close
                 </Link>
+              </div>
+              <div className="mt-3 border-t border-border pt-3">
+                <div className="mb-1 text-xs font-semibold text-navy">Durable log</div>
+                <ActivityLogList logs={selectedLogs} />
               </div>
               <div className="mt-4 border-t border-border pt-3">
                 <ActivityForm
@@ -229,9 +267,8 @@ export default async function CalendarPage({
             <div>
               <h2 className="text-sm font-semibold text-navy">Desk calendar</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tasks, meetings, and calls live here together. Click an item to open it, or a
-                day to create one. Calendar is the home for activity — the Tasks list is a
-                filter.
+                Tasks, meetings, and calls are first-class records on contacts and policies.
+                This calendar is one surface over the same <code>activities</code> table.
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                 <span className="ff-cal-task rounded px-2 py-0.5">Task</span>

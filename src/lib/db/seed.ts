@@ -7,6 +7,7 @@ import {
   appetiteRules,
   carriers,
   activities,
+  activityLogs,
   contacts,
   deals,
   documentFolders,
@@ -21,6 +22,7 @@ import {
 } from "./schema";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import {
+  ACTIVITY_CALL_ID,
   ACTIVITY_MEETING_ID,
   ACTIVITY_TASK_ID,
   CAMPAIGN_ID,
@@ -97,6 +99,7 @@ export async function seed() {
       city: fixture.risk.city,
       state: fixture.risk.state,
       zip: fixture.risk.zip,
+      phone: "321-555-0148",
       policyCount: 0,
       tags: ["ho3", "palm-bay"],
       notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
@@ -110,6 +113,7 @@ export async function seed() {
         city: fixture.risk.city,
         state: fixture.risk.state,
         zip: fixture.risk.zip,
+        phone: "321-555-0148",
         policyCount: 0,
         tags: ["ho3", "palm-bay"],
         notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
@@ -343,8 +347,8 @@ export async function seed() {
       kind: "task",
       title: "Chase wind mit · Ana Dib HO3",
       notes: "Need a clean wind mit before any market will bind at $321k.",
-      status: "open",
-      dueAt: new Date("2026-09-02T15:00:00.000Z"),
+        status: "incomplete",
+        dueAt: new Date("2026-09-02T15:00:00.000Z"),
       assignee: "Desk",
       contactId: CONTACT_ID,
       dealId: DEAL_ID,
@@ -354,6 +358,7 @@ export async function seed() {
       set: {
         title: "Chase wind mit · Ana Dib HO3",
         notes: "Need a clean wind mit before any market will bind at $321k.",
+        status: "incomplete",
         dueAt: new Date("2026-09-02T15:00:00.000Z"),
         contactId: CONTACT_ID,
         dealId: DEAL_ID,
@@ -369,8 +374,8 @@ export async function seed() {
       kind: "meeting",
       title: "Market review with Ana Dib",
       notes: "Walk the eight-market filter-first result. No bindable quote yet.",
-      status: "open",
-      startAt: new Date("2026-09-02T18:00:00.000Z"),
+        status: "incomplete",
+        startAt: new Date("2026-09-02T18:00:00.000Z"),
       endAt: new Date("2026-09-02T18:45:00.000Z"),
       assignee: "Desk",
       contactId: CONTACT_ID,
@@ -381,6 +386,7 @@ export async function seed() {
       set: {
         title: "Market review with Ana Dib",
         notes: "Walk the eight-market filter-first result. No bindable quote yet.",
+        status: "incomplete",
         startAt: new Date("2026-09-02T18:00:00.000Z"),
         endAt: new Date("2026-09-02T18:45:00.000Z"),
         contactId: CONTACT_ID,
@@ -388,6 +394,66 @@ export async function seed() {
         updatedAt: new Date(),
       },
     });
+
+  await db
+    .insert(activities)
+    .values({
+      id: ACTIVITY_CALL_ID,
+      tenantId: TENANT_ID,
+      kind: "call",
+      title: "Follow-up call · Ana Dib HO3",
+      notes: "In-app due call. Phone button uses tel: — no Twilio.",
+      status: "incomplete",
+      startAt: new Date("2026-09-02T16:00:00.000Z"),
+      endAt: new Date("2026-09-02T16:15:00.000Z"),
+      assignee: "Desk",
+      contactId: CONTACT_ID,
+      dealId: DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Follow-up call · Ana Dib HO3",
+        status: "incomplete",
+        startAt: new Date("2026-09-02T16:00:00.000Z"),
+        contactId: CONTACT_ID,
+        dealId: DEAL_ID,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db.delete(activityLogs).where(eq(activityLogs.tenantId, TENANT_ID));
+  await db.insert(activityLogs).values([
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_TASK_ID,
+      eventType: "created",
+      body: "Created task \"Chase wind mit · Ana Dib HO3\" on contact Dib, Ana",
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_MEETING_ID,
+      eventType: "created",
+      body: "Created meeting \"Market review with Ana Dib\" on contact Dib, Ana",
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_CALL_ID,
+      eventType: "created",
+      body: "Created call \"Follow-up call · Ana Dib HO3\" on contact Dib, Ana",
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_CALL_ID,
+      eventType: "call_logged",
+      body: "Call logged (180s). In-app only — no Twilio.",
+      durationSeconds: 180,
+      toStatus: "incomplete",
+    },
+  ]);
 
   await db
     .insert(emailCampaigns)

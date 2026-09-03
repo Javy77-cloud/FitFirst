@@ -451,7 +451,7 @@ export const activities = pgTable(
     kind: text("kind").notNull(),
     title: text("title").notNull(),
     notes: text("notes"),
-    status: text("status").notNull().default("open"),
+    status: text("status").notNull().default("incomplete"),
     dueAt: timestamp("due_at", { withTimezone: true }),
     startAt: timestamp("start_at", { withTimezone: true }),
     endAt: timestamp("end_at", { withTimezone: true }),
@@ -570,7 +570,31 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
+export const activityLogs = pgTable(
+  "activity_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id),
+    eventType: text("event_type").notNull(),
+    body: text("body").notNull(),
+    durationSeconds: integer("duration_seconds"),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("activity_logs_tenant_idx").on(t.tenantId, t.activityId),
+    index("activity_logs_occurred_idx").on(t.tenantId, t.occurredAt),
+  ],
+);
+
 export type Activity = typeof activities.$inferSelect;
+export type ActivityLog = typeof activityLogs.$inferSelect;
 export type CalendarConnection = typeof calendarConnections.$inferSelect;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;

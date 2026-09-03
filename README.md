@@ -53,8 +53,8 @@ Create your own path from **Leads** or **New shopping deal**. Bind is what creat
 
 InsuredMine-class operating tools, in-app only. Integrations are interfaces.
 
-- **Calendar** — month / week / day for tasks, meetings, and calls. Create or open from a click. Colors use `--ff-*` tokens.
-- **Tasks** — list + create. Calendar is the home for the same records.
+- **Activities** — first-class tasks, meetings, and calls on contacts **and** policies (same `activities` table). Statuses: incomplete, completed, delayed, moved to another day. Task pipeline on Tasks. Durable `activity_logs` (call duration). Due calls show an in-app bar with a `tel:` button — no Twilio.
+- **Calendar** — month / week / day over those same records. Colors use `--ff-*` tokens.
 - **Document Manager** — agency library folders (ACORD, carrier flyers, marketing) plus per-account and per-deal files. New Folder + Upload. Grid with type icons. Demo names only. Extraction confidence flags stay. No Zoho upload.
 - **Campaigns** — stub hub: lists, templates, create campaign. Audience by tag or pipeline stage. Send logs `would send`. No SMTP, no drip builder.
 - **E-sign** — envelopes with draft / sent / signed. Provider interface (DocuSign / Dropbox Sign / Zoho Sign) returns `not_implemented`.

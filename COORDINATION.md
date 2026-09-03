@@ -6,7 +6,18 @@ Parallel agents share this repo. Do not rewrite tables another slice owns. Addit
 
 Owner: agency operating tools agent (`cursor/agency-operating-tools-e272`).
 
-First-class tasks / meetings / calls, calendar (month/week/day), Google Calendar **interface only**, document tagging on contact/deal/policy, stub email campaigns, SMS connector stub, e-sign envelope stub.
+First-class tasks / meetings / calls on the **same** `activities` table (contact **and** policy assignment), calendar + Document Manager surfaces, Google Calendar / SMS / e-sign / campaign stubs.
+
+### Shared activity model (do not fork)
+
+Softphone / activities agents: **do not create a second task table.** Use:
+
+- `activities` — `kind` task|meeting|call; `status` incomplete|completed|delayed|moved; `contact_id` **and** `policy_id` may both be set; `due_at` / `start_at` / `end_at`; `assignee`
+- `activity_logs` — durable log for every create/update/status/reschedule; `duration_seconds` on `call_logged`
+- Helpers: `src/lib/ops/activity.ts`, `src/lib/db/activity-log.ts` (`writeActivityLog`)
+- In-app due calls: `listDueCalls()` + `tel:` phone button. **Do not buy Twilio.** Softphone may replace the `tel:` button later; still write duration to `activity_logs`.
+
+Calendar, Tasks (pipeline), contact/policy pages, and Document Manager are owned here. Additive migrations `0002`–`0004`.
 
 ### Files owned
 
@@ -31,6 +42,8 @@ First-class tasks / meetings / calls, calendar (month/week/day), Google Calendar
 - `src/app/policies/[id]/**`
 - `src/components/ops/**`
 - `drizzle/0002_agency_ops_activities_campaigns_esign.sql`
+- `drizzle/0004_activity_logs_and_status.sql`
+- `src/lib/db/activity-log.ts`
 
 ### Shared files touched (additive only)
 

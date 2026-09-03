@@ -7,17 +7,10 @@ import { ACTIVITY_KINDS, ACTIVITY_STATUSES } from "@/lib/domain";
 import { toDateTimeLocal } from "@/lib/ops/calendar";
 
 export type RelatedOptions = {
-  contacts: { id: string; firstName: string; lastName: string }[];
+  contacts: { id: string; firstName: string; lastName: string; phone?: string | null }[];
   deals: { id: string; title: string }[];
   policies: { id: string; policyNumber: string }[];
 };
-
-function relatedValue(activity?: Partial<Activity> | null) {
-  if (activity?.policyId) return `policy:${activity.policyId}`;
-  if (activity?.dealId) return `deal:${activity.dealId}`;
-  if (activity?.contactId) return `contact:${activity.contactId}`;
-  return "";
-}
 
 export function ActivityForm({
   activity,
@@ -69,12 +62,18 @@ export function ActivityForm({
           <Label className="text-xs">Status</Label>
           <select
             name="status"
-            defaultValue={activity?.status ?? "open"}
+            defaultValue={activity?.status === "open" ? "incomplete" : (activity?.status ?? "incomplete")}
             className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
           >
             {ACTIVITY_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {s === "incomplete"
+                  ? "Incomplete"
+                  : s === "completed"
+                    ? "Completed"
+                    : s === "delayed"
+                      ? "Delayed"
+                      : "Moved to another day"}
               </option>
             ))}
           </select>
@@ -122,36 +121,55 @@ export function ActivityForm({
           />
         </div>
       </div>
-      <div>
-        <Label className="text-xs">Related record</Label>
-        <select
-          name="relatedId"
-          defaultValue={relatedValue(seed)}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        >
-          <option value="">None</option>
-          <optgroup label="Contacts">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">Contact</Label>
+          <select
+            name="contactId"
+            defaultValue={seed.contactId ?? ""}
+            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+          >
+            <option value="">—</option>
             {related.contacts.map((c) => (
-              <option key={c.id} value={`contact:${c.id}`}>
+              <option key={c.id} value={c.id}>
                 {c.lastName}, {c.firstName}
               </option>
             ))}
-          </optgroup>
-          <optgroup label="Deals">
-            {related.deals.map((d) => (
-              <option key={d.id} value={`deal:${d.id}`}>
-                {d.title}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Policies">
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">Policy</Label>
+          <select
+            name="policyId"
+            defaultValue={seed.policyId ?? ""}
+            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+          >
+            <option value="">—</option>
             {related.policies.map((p) => (
-              <option key={p.id} value={`policy:${p.id}`}>
+              <option key={p.id} value={p.id}>
                 {p.policyNumber}
               </option>
             ))}
-          </optgroup>
+          </select>
+        </div>
+      </div>
+      <div>
+        <Label className="text-xs">Deal (optional)</Label>
+        <select
+          name="dealId"
+          defaultValue={seed.dealId ?? ""}
+          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+        >
+          <option value="">—</option>
+          {related.deals.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.title}
+            </option>
+          ))}
         </select>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Assign to a contact and a policy at the same time. Calendar is a view, not the record.
+        </p>
       </div>
       <div>
         <Label className="text-xs">Notes</Label>
