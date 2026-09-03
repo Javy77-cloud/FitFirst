@@ -12,10 +12,11 @@ First-class tasks / meetings / calls on the **same** `activities` table (contact
 
 Softphone / activities agents: **do not create a second task table.** Use:
 
-- `activities` — `kind` task|meeting|call; `status` incomplete|completed|delayed|moved; `contact_id` **and** `policy_id` may both be set; `due_at` / `start_at` / `end_at`; `assignee`
-- `activity_logs` — durable log for every create/update/status/reschedule; `duration_seconds` on `call_logged`
+- `activities` — `kind` task|meeting|call|sms|email; `status` incomplete|completed|delayed|moved; `contact_id` **and** `policy_id` may both be set; `due_at` / `start_at` / `end_at`; `assignee`
+- `activity_logs` — durable log for every create/update/status/reschedule; `duration_seconds` on `call_logged`; `sms_logged` / `email_logged` for comms (would send — no Twilio / SMTP)
 - Helpers: `src/lib/ops/activity.ts`, `src/lib/db/activity-log.ts` (`writeActivityLog`)
 - In-app due calls: `listDueCalls()` + `tel:` phone button. **Do not buy Twilio.** Softphone may replace the `tel:` button later; still write duration to `activity_logs`.
+- Calendar + global `+` quick-add (Task / Meeting / Call / SMS / Email) owned here. Comms-logging sibling writes `sms_logged` / `email_logged` to the **same** `activity_logs` table — do not fork.
 
 Calendar, Tasks (pipeline), contact/policy pages, and Document Manager are owned here. Additive migrations `0002`–`0004`.
 

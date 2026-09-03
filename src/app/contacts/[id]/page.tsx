@@ -13,13 +13,24 @@ import {
   AssignmentLinks,
   PhoneButton,
 } from "@/components/ops/activity-extras";
-import { formatWhen, kindClass } from "@/lib/ops/calendar";
+import { QuickAddForm, QuickAddLinks } from "@/components/ops/quick-add";
+import { type ActivityKind } from "@/lib/domain";
+import { formatWhen, kindClass, isActivityKind } from "@/lib/ops/calendar";
 import { statusLabel } from "@/lib/ops/activity";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ContactDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
+  const kindParam = typeof query.kind === "string" ? query.kind : "";
+  const newKind: ActivityKind = isActivityKind(kindParam) ? kindParam : "task";
   const workspace = await getContactWorkspace(id);
   if (!workspace) notFound();
   const related = await listRelatedOptions();
@@ -60,21 +71,33 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <div className="ff-card p-4">
             <h2 className="mb-2 text-sm font-semibold text-navy">Activities</h2>
             <p className="mb-2 text-xs text-muted-foreground">
-              First-class on this contact. Assign a policy too when one exists.
+              Same <code>activities</code> table as the calendar. SMS and email log here — would send, no Twilio / SMTP.
             </p>
+            <div className="mb-3">
+              <QuickAddLinks hrefFor={(k) => `/contacts/${contact.id}?kind=${k}#schedule`} />
+            </div>
             {contact.phone ? (
               <div className="mb-2">
                 <PhoneButton phone={contact.phone} />
               </div>
             ) : null}
-            <ActivityForm
-              related={related}
-              defaults={{ kind: "task", contactId: contact.id }}
-              returnTo={`/contacts/${contact.id}`}
-              submitLabel="Add to this contact"
-            />
+            <div id="schedule" className="space-y-3">
+              {(newKind === "sms" || newKind === "email") && (
+                <QuickAddForm
+                  kind={newKind}
+                  contactId={contact.id}
+                  returnTo={`/contacts/${contact.id}`}
+                />
+              )}
+              <ActivityForm
+                related={related}
+                defaults={{ kind: newKind, contactId: contact.id }}
+                returnTo={`/contacts/${contact.id}`}
+                submitLabel="Add to this contact"
+              />
+            </div>
             {activities.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">No tasks, calls, or meetings yet.</p>
+              <p className="mt-3 text-sm text-muted-foreground">No tasks, calls, meetings, SMS, or email yet.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {activities.map((a) => (

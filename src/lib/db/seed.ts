@@ -23,7 +23,9 @@ import {
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import {
   ACTIVITY_CALL_ID,
+  ACTIVITY_EMAIL_ID,
   ACTIVITY_MEETING_ID,
+  ACTIVITY_SMS_ID,
   ACTIVITY_TASK_ID,
   CAMPAIGN_ID,
   CARRIER_IDS,
@@ -422,6 +424,60 @@ export async function seed() {
       },
     });
 
+  await db
+    .insert(activities)
+    .values({
+      id: ACTIVITY_SMS_ID,
+      tenantId: TENANT_ID,
+      kind: "sms",
+      title: "Text Ana for the wind mit",
+      notes: "Would send SMS. Logged only — no Twilio.",
+      status: "incomplete",
+      dueAt: new Date("2026-09-02T17:00:00.000Z"),
+      assignee: "Desk",
+      contactId: CONTACT_ID,
+      dealId: DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Text Ana for the wind mit",
+        notes: "Would send SMS. Logged only — no Twilio.",
+        status: "incomplete",
+        dueAt: new Date("2026-09-02T17:00:00.000Z"),
+        contactId: CONTACT_ID,
+        dealId: DEAL_ID,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(activities)
+    .values({
+      id: ACTIVITY_EMAIL_ID,
+      tenantId: TENANT_ID,
+      kind: "email",
+      title: "Email Ana the eight-market result",
+      notes: "Would send email. Logged only — no SMTP.",
+      status: "incomplete",
+      dueAt: new Date("2026-09-02T17:30:00.000Z"),
+      assignee: "Desk",
+      contactId: CONTACT_ID,
+      dealId: DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Email Ana the eight-market result",
+        notes: "Would send email. Logged only — no SMTP.",
+        status: "incomplete",
+        dueAt: new Date("2026-09-02T17:30:00.000Z"),
+        contactId: CONTACT_ID,
+        dealId: DEAL_ID,
+        updatedAt: new Date(),
+      },
+    });
+
   await db.delete(activityLogs).where(eq(activityLogs.tenantId, TENANT_ID));
   await db.insert(activityLogs).values([
     {
@@ -451,6 +507,34 @@ export async function seed() {
       eventType: "call_logged",
       body: "Call logged (180s). In-app only — no Twilio.",
       durationSeconds: 180,
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_SMS_ID,
+      eventType: "created",
+      body: "Created sms \"Text Ana for the wind mit\" on contact Dib, Ana",
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_SMS_ID,
+      eventType: "sms_logged",
+      body: 'would send SMS "Text Ana for the wind mit". No Twilio.',
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_EMAIL_ID,
+      eventType: "created",
+      body: "Created email \"Email Ana the eight-market result\" on contact Dib, Ana",
+      toStatus: "incomplete",
+    },
+    {
+      tenantId: TENANT_ID,
+      activityId: ACTIVITY_EMAIL_ID,
+      eventType: "email_logged",
+      body: 'would send email "Email Ana the eight-market result". No SMTP.',
       toStatus: "incomplete",
     },
   ]);

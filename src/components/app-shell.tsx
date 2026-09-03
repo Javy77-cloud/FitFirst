@@ -21,6 +21,7 @@ import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
 import { listDueCalls } from "@/lib/db/ops-queries";
 import { PhoneButton } from "@/components/ops/activity-extras";
+import { QuickAddLinks } from "@/components/ops/quick-add";
 
 const NAV = [
   { href: "/", label: "Home", icon: Home },
@@ -106,7 +107,10 @@ export async function AppShell({
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>
-          <div className="flex items-center gap-2">{actions}</div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <QuickAddLinks hrefFor={(kind) => `/calendar?new=1&kind=${kind}`} />
+            {actions}
+          </div>
         </header>
         {dueCalls.length > 0 ? (
           <div className="border-b border-border bg-fit-flag-bg px-5 py-2">

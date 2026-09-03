@@ -108,11 +108,19 @@ export function activitiesOnDay(activities: CalendarActivity[], day: Date): Cale
 export function kindClass(kind: string): string {
   if (kind === "meeting") return "ff-cal-meeting";
   if (kind === "call") return "ff-cal-call";
+  if (kind === "sms") return "ff-cal-sms";
+  if (kind === "email") return "ff-cal-email";
   return "ff-cal-task";
 }
 
 export function isActivityKind(value: string): value is ActivityKind {
-  return value === "task" || value === "meeting" || value === "call";
+  return (
+    value === "task" ||
+    value === "meeting" ||
+    value === "call" ||
+    value === "sms" ||
+    value === "email"
+  );
 }
 
 export function parseTags(raw: string | null | undefined): string[] {
@@ -137,7 +145,7 @@ export function formatTime(value: Date | string | null | undefined): string {
 }
 
 export function formatWhen(activity: CalendarActivity): string {
-  if (activity.kind === "task") {
+  if (activity.kind === "task" || activity.kind === "sms" || activity.kind === "email") {
     const due = toDate(activity.dueAt);
     return due
       ? `Due ${due.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`

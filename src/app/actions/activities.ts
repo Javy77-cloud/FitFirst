@@ -40,10 +40,13 @@ export async function upsertActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
   const title = str(formData, "title") || (kind === "task" ? "Untitled task" : `Untitled ${kind}`);
   const status = normalizeActivityStatus(str(formData, "status") || "incomplete");
-  const dueAt = when(formData, "dueAt");
+  let dueAt = when(formData, "dueAt");
   const startAt = when(formData, "startAt");
   const endAt = when(formData, "endAt");
   const related = relatedIds(formData);
+  if ((kind === "sms" || kind === "email" || kind === "task") && !dueAt && !startAt) {
+    dueAt = new Date();
+  }
   const values = {
     tenantId: DEFAULT_TENANT_ID,
     kind,
@@ -106,6 +109,18 @@ export async function upsertActivity(formData: FormData) {
       body: `Created ${kind} "${title}" assigned to contact and/or policy`,
       toStatus: status,
     });
+    if (kind === "sms" || kind === "email") {
+      const notes = str(formData, "notes");
+      await writeActivityLog({
+        activityId: row.id,
+        eventType: kind === "sms" ? "sms_logged" : "email_logged",
+        body:
+          kind === "sms"
+            ? `would send SMS "${title}"${notes ? `: ${notes}` : ""}. No Twilio.`
+            : `would send email "${title}"${notes ? `: ${notes}` : ""}. No SMTP.`,
+        toStatus: status,
+      });
+    }
   }
 
   const returnTo = str(formData, "returnTo") || "/calendar";

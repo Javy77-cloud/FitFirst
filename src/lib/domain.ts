@@ -74,8 +74,16 @@ export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
   custom: "Folder",
 };
 
-export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+export const ACTIVITY_KINDS = ["task", "meeting", "call", "sms", "email"] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+
+export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
+  task: "Task",
+  meeting: "Meeting",
+  call: "Call",
+  sms: "SMS",
+  email: "Email",
+};
 
 export const ACTIVITY_STATUSES = [
   "incomplete",
@@ -100,6 +108,8 @@ export const ACTIVITY_LOG_EVENTS = [
   "status_changed",
   "rescheduled",
   "call_logged",
+  "sms_logged",
+  "email_logged",
 ] as const;
 export type ActivityLogEvent = (typeof ACTIVITY_LOG_EVENTS)[number];
 

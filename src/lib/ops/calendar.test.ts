@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   activitiesOnDay,
   activityOnDay,
+  formatWhen,
   isActivityKind,
   kindClass,
   monthCells,
@@ -61,8 +62,18 @@ describe("calendar helpers", () => {
     expect(kindClass("task")).toBe("ff-cal-task");
     expect(kindClass("meeting")).toBe("ff-cal-meeting");
     expect(kindClass("call")).toBe("ff-cal-call");
-    expect(isActivityKind("task")).toBe(true);
+    expect(kindClass("sms")).toBe("ff-cal-sms");
+    expect(kindClass("email")).toBe("ff-cal-email");
+    expect(isActivityKind("sms")).toBe(true);
+    expect(isActivityKind("email")).toBe(true);
     expect(isActivityKind("quote")).toBe(false);
+  });
+
+  it("formats sms and email as due items like tasks", () => {
+    const sms = { ...task, id: "s1", kind: "sms", title: "Text Ana" };
+    const email = { ...task, id: "e1", kind: "email", title: "Email Ana" };
+    expect(formatWhen(sms)).toMatch(/^Due /);
+    expect(formatWhen(email)).toMatch(/^Due /);
   });
 
   it("parses date params and week days", () => {

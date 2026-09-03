@@ -172,6 +172,14 @@
   background: var(--ff-yellow);
   color: #ffffff;
 }
+.ff-cal-sms {
+  background: var(--ff-flag);
+  color: #ffffff;
+}
+.ff-cal-email {
+  background: var(--ff-navy);
+  color: #ffffff;
+}
 .ff-stub {
   background: var(--ff-flag-bg);
   color: var(--ff-flag);

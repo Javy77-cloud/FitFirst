@@ -24,6 +24,9 @@ import {
   listRelatedOptions,
 } from "@/lib/db/ops-queries";
 import { statusLabel } from "@/lib/ops/activity";
+import { CalendarLegend, QuickAddLinks } from "@/components/ops/quick-add";
+import { ACTIVITY_KIND_LABELS, type ActivityKind } from "@/lib/domain";
+import { isActivityKind } from "@/lib/ops/calendar";
 import { cn } from "@/lib/utils";
 import {
   activitiesOnDay,
@@ -54,7 +57,8 @@ export default async function CalendarPage({
   const dateParam = toDateParam(date);
   const activityId = typeof params.activity === "string" ? params.activity : "";
   const creating = params.new === "1" || params.new === "true";
-  const newKind = typeof params.kind === "string" ? params.kind : "task";
+  const kindParam = typeof params.kind === "string" ? params.kind : "";
+  const newKind: ActivityKind = isActivityKind(kindParam) ? kindParam : "task";
   const notice = typeof params.notice === "string" ? params.notice : undefined;
 
   const [items, related, connection, selected] = await Promise.all([
@@ -99,17 +103,7 @@ export default async function CalendarPage({
     <AppShell
       title="Calendar"
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={href({ new: "1", kind: "task" })} className={cn(buttonVariants({ size: "sm" }))}>
-            New task
-          </Link>
-          <Link href={href({ new: "1", kind: "meeting" })} className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-            New meeting
-          </Link>
-          <Link href={href({ new: "1", kind: "call" })} className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-            New call
-          </Link>
-        </div>
+        <QuickAddLinks hrefFor={(kind) => href({ new: "1", kind })} />
       }
     >
       <Notice code={notice} />
@@ -154,8 +148,8 @@ export default async function CalendarPage({
       </div>
       {connected ? (
         <StubBanner>
-          Stub-connected only. Sync in/out return not_implemented. FitFirst tasks, calls, and
-          meetings still show on this calendar.
+          Stub-connected only. Sync in/out return not_implemented. FitFirst tasks, calls, meetings,
+          SMS, and email still show on this calendar.
         </StubBanner>
       ) : null}
 
@@ -223,6 +217,13 @@ export default async function CalendarPage({
                   <PhoneButton phone={selectedContact?.phone} />
                 </div>
               ) : null}
+              {selected.kind === "sms" || selected.kind === "email" ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Logged comms only — would send. No{" "}
+                  {selected.kind === "sms" ? "Twilio" : "SMTP"}. Same <code>activity_logs</code>{" "}
+                  table as the record-page comms logger.
+                </p>
+              ) : null}
               {selected.notes ? <p className="mt-2 text-sm">{selected.notes}</p> : null}
               <div className="mt-3 space-y-2">
                 <ActivityStatusActions activity={selected} returnTo={href({ activity: selected.id })} />
@@ -250,30 +251,28 @@ export default async function CalendarPage({
           ) : creating ? (
             <div>
               <h2 className="mb-2 text-sm font-semibold text-navy">
-                New {newKind}
+                New {ACTIVITY_KIND_LABELS[newKind]}
               </h2>
               <ActivityForm
                 related={related}
                 defaults={{
                   kind: newKind,
-                  startAt: newKind === "task" ? "" : slot,
-                  dueAt: newKind === "task" ? slot : "",
+                  startAt: newKind === "meeting" || newKind === "call" ? slot : "",
+                  dueAt: newKind === "meeting" || newKind === "call" ? "" : slot,
                 }}
                 returnTo={href({ date: dateParam })}
-                submitLabel={`Create ${newKind}`}
+                submitLabel={`Create ${ACTIVITY_KIND_LABELS[newKind]}`}
               />
             </div>
           ) : (
             <div>
               <h2 className="text-sm font-semibold text-navy">Desk calendar</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tasks, meetings, and calls are first-class records on contacts and policies.
-                This calendar is one surface over the same <code>activities</code> table.
+                Tasks, meetings, calls, SMS, and email are first-class records on contacts and
+                policies. This calendar is one surface over the same <code>activities</code> table.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                <span className="ff-cal-task rounded px-2 py-0.5">Task</span>
-                <span className="ff-cal-meeting rounded px-2 py-0.5">Meeting</span>
-                <span className="ff-cal-call rounded px-2 py-0.5">Call</span>
+              <div className="mt-3">
+                <CalendarLegend />
               </div>
             </div>
           )}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Activity } from "@/lib/db/schema";
-import { ACTIVITY_KINDS, ACTIVITY_STATUSES } from "@/lib/domain";
+import { ACTIVITY_KIND_LABELS, ACTIVITY_KINDS, ACTIVITY_STATUSES } from "@/lib/domain";
 import { toDateTimeLocal } from "@/lib/ops/calendar";
 
 export type RelatedOptions = {
@@ -53,7 +53,7 @@ export function ActivityForm({
           >
             {ACTIVITY_KINDS.map((k) => (
               <option key={k} value={k}>
-                {k[0].toUpperCase() + k.slice(1)}
+                {ACTIVITY_KIND_LABELS[k]}
               </option>
             ))}
           </select>
@@ -93,7 +93,7 @@ export function ActivityForm({
         />
       </div>
       <div>
-        <Label className="text-xs">Due (tasks)</Label>
+        <Label className="text-xs">Due (tasks / SMS / email)</Label>
         <Input
           type="datetime-local"
           name="dueAt"

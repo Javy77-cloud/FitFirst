@@ -9,6 +9,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { listActivities, listRelatedOptions } from "@/lib/db/ops-queries";
 import { TASK_PIPELINE, ACTIVITY_STATUS_LABELS } from "@/lib/domain";
+import { QuickAddLinks } from "@/components/ops/quick-add";
 import { formatWhen, kindClass } from "@/lib/ops/calendar";
 import { normalizeActivityStatus } from "@/lib/ops/activity";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,9 @@ export default async function TasksPage({
     >
       <p className="mb-3 text-sm text-muted-foreground">
         First-class <code>activities</code> records — not calendar-only. Assign each item to a
-        contact and a policy. Same table the softphone agent should use. No second task model.
+        contact and a policy. Same table the softphone and comms-logging agents should use. No
+        second task model. SMS and email write <code>sms_logged</code> / <code>email_logged</code>
+        to <code>activity_logs</code> (would send — no Twilio / SMTP).
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {[
@@ -44,6 +47,8 @@ export default async function TasksPage({
           ["task", "Tasks"],
           ["meeting", "Meetings"],
           ["call", "Calls"],
+          ["sms", "SMS"],
+          ["email", "Email"],
         ].map(([value, label]) => (
           <Link
             key={label}
@@ -98,13 +103,16 @@ export default async function TasksPage({
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <section className="ff-card p-4">
           <h2 className="mb-2 text-sm font-semibold text-navy">Create</h2>
+          <div className="mb-3">
+            <QuickAddLinks hrefFor={(k) => `/calendar?new=1&kind=${k}`} />
+          </div>
           <ActivityForm related={related} returnTo="/tasks" submitLabel="Save activity" />
         </section>
         <section className="ff-card overflow-hidden">
           {rows.length === 0 ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">
-              Nothing yet. Create a task, meeting, or call — it lands on the contact, policy, and
-              calendar.
+              Nothing yet. Create a task, meeting, call, SMS, or email — it lands on the contact,
+              policy, and calendar.
             </p>
           ) : (
             <table className="ff-table">
