@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -7,16 +8,20 @@ export type SectionTab = {
   id: string;
   label: string;
   content: React.ReactNode;
+  href?: string;
 };
 
 export function SectionTabs({
   tabs,
   defaultValue,
+  value,
 }: {
   tabs: SectionTab[];
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
 }) {
-  const [active, setActive] = useState(defaultValue);
+  const [uncontrolled, setUncontrolled] = useState(defaultValue ?? tabs[0]?.id ?? "");
+  const active = value ?? uncontrolled;
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
 
   return (
@@ -27,19 +32,33 @@ export function SectionTabs({
       >
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
+          const className = cn(
+            "rounded-sm px-2.5 py-1 text-sm font-medium",
+            selected
+              ? "bg-card text-navy shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          );
+          if (tab.href) {
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                role="tab"
+                aria-selected={selected}
+                className={className}
+              >
+                {tab.label}
+              </Link>
+            );
+          }
           return (
             <button
               key={tab.id}
               type="button"
               role="tab"
               aria-selected={selected}
-              onClick={() => setActive(tab.id)}
-              className={cn(
-                "rounded-sm px-2.5 py-1 text-sm font-medium",
-                selected
-                  ? "bg-card text-navy shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              onClick={() => setUncontrolled(tab.id)}
+              className={className}
             >
               {tab.label}
             </button>

@@ -72,6 +72,13 @@ export default async function DealPage({
       updatedAt: new Date(),
     };
 
+  const SECTION_TABS = ["sheet", "files", "markets", "quotes"] as const;
+  const activeTab = SECTION_TABS.includes(query.tab as (typeof SECTION_TABS)[number])
+    ? (query.tab as (typeof SECTION_TABS)[number])
+    : "sheet";
+  const dealHref = (line: ShopLine, tab: string) =>
+    `/deals/${deal.id}?line=${line}&tab=${tab}`;
+
   const unusedLines = SHOP_LINES.filter((line) => !lines.includes(line));
   const address = {
     address1: sheet.values.address1?.value || risk?.address1,
@@ -146,7 +153,7 @@ export default async function DealPage({
           return (
             <Link
               key={line}
-              href={`/deals/${deal.id}?line=${line}`}
+              href={dealHref(line, activeTab)}
               className={
                 selected
                   ? "rounded-sm bg-card px-2.5 py-1 text-sm font-medium text-navy shadow-sm"
@@ -214,11 +221,12 @@ export default async function DealPage({
         <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
       ) : (
         <SectionTabs
-          defaultValue="sheet"
+          value={activeTab}
           tabs={[
             {
               id: "sheet",
               label: "Quote Sheet",
+              href: dealHref(activeLine, "sheet"),
               content: (
                 <QuoteSheetForm
                   dealId={deal.id}
@@ -232,6 +240,7 @@ export default async function DealPage({
             {
               id: "files",
               label: "Files",
+              href: dealHref(activeLine, "files"),
               content: (
                 <DealFiles
                   dealId={deal.id}
@@ -246,11 +255,13 @@ export default async function DealPage({
             {
               id: "markets",
               label: "Markets",
+              href: dealHref(activeLine, "markets"),
               content: <MarketsPanel dealId={deal.id} matches={matches} />,
             },
             {
               id: "quotes",
               label: "Quotes",
+              href: dealHref(activeLine, "quotes"),
               content: <QuotesPanel quotes={quotes} logs={logs} />,
             },
           ]}
