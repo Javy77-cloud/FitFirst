@@ -10,15 +10,23 @@ import {
   DEFAULT_COMMISSION_RATE_PCT,
   DEFAULT_PRODUCER_SPLIT_PCT,
   DEFAULT_TENANT_ID,
+  LINES,
+  LOB_TO_SHOP_LINE,
+  SHOP_LINES,
   type QuoteSheetFieldValue,
+  type ShopLine,
 } from "@/lib/domain";
+import { persistFile } from "@/app/actions/documents";
+import { BindBlockedError } from "@/lib/crm/bind";
+import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { db } from "@/lib/db";
-import { refreshPartyCounts } from "@/lib/db/queries";
+import { ensurePipelineStages, refreshPartyCounts } from "@/lib/db/queries";
 import {
   accounts,
   activities,
   activityLogs,
   clientHistory,
+  commissions,
   contactAccounts,
   contacts,
   deals,
@@ -26,12 +34,14 @@ import {
   emailTriggers,
   leads,
   pipelines,
+  pipelineStages,
   policies,
   quoteSheets,
   quotes,
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
@@ -46,6 +56,16 @@ import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
+}
+
+function revalidateCrm(extra: string[] = []) {
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/deals");
+  revalidatePath("/pipeline");
+  revalidatePath("/contacts");
+  revalidatePath("/policies");
+  for (const path of extra) revalidatePath(path);
 }
 
 export async function findMatchingLead(input: LeadIdentity) {
@@ -121,7 +141,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   const dealState = state || lead.state || "FL";
   const riskCopy = leadOntoRisk(lead, dealState);
 
-  const shopLines = shopLinesFromForm(formData, str(formData, "line") || "HO");
+  const shopLines = shopLinesFromLine(line);
   const [deal] = await db
     .insert(deals)
     .values({
@@ -194,7 +214,8 @@ export async function createDeal(formData: FormData) {
     redirect(`/deals/${lead.convertedDealId}`);
   }
 
-  const shopLines = shopLinesFromForm(formData, str(formData, "line") || "HO");
+  const line = str(formData, "line") || "HO";
+  const shopLines = shopLinesFromForm(formData, line);
   const [deal] = await db
     .insert(deals)
     .values({
@@ -292,15 +313,14 @@ export async function createDealFromDecDrop(formData: FormData) {
     .returning();
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const doc = await persistFile(
-    deal.id,
-    risk.id,
-    file.name,
-    file.type || "application/octet-stream",
+  await persistFile({
+    dealId: deal.id,
+    riskId: risk.id,
+    filename: file.name,
+    mimeType: file.type || "application/octet-stream",
     buffer,
-    "dec",
-  );
-  await extractDocument(doc.id, deal.id);
+    docType: "dec",
+  });
 
   revalidateCrm([`/deals/${deal.id}`, `/leads/${lead.id}`]);
   redirect(`/deals/${deal.id}`);
@@ -337,12 +357,14 @@ export async function createPipelineStage(formData: FormData) {
     throw new Error("That stage already exists");
   }
   const sortOrder = stages.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1;
+  const pipelineId = stages[0]?.pipelineId;
+  if (!pipelineId) throw new Error("No pipeline seeded");
   await db.insert(pipelineStages).values({
     tenantId: DEFAULT_TENANT_ID,
+    pipelineId,
     slug,
-    label,
+    name: label,
     sortOrder,
-    locked: false,
   });
   revalidateCrm();
 }
@@ -351,7 +373,7 @@ export async function relabelPipelineStage(formData: FormData) {
   const stageId = str(formData, "stageId");
   const label = str(formData, "label");
   if (!label) throw new Error("Stage label is required");
-  await db.update(pipelineStages).set({ label }).where(eq(pipelineStages.id, stageId));
+  await db.update(pipelineStages).set({ name: label }).where(eq(pipelineStages.id, stageId));
   revalidateCrm();
 }
 
@@ -359,7 +381,7 @@ export async function deletePipelineStage(formData: FormData) {
   const stageId = str(formData, "stageId");
   const [stage] = await db.select().from(pipelineStages).where(eq(pipelineStages.id, stageId));
   if (!stage) throw new Error("Stage not found");
-  if (stage.locked || stage.slug === "bound") {
+  if (stage.slug === "bound" || stage.slug === "closed_won") {
     throw new Error("Bound is reserved for bind and cannot be deleted");
   }
   await db
@@ -711,16 +733,13 @@ export async function bindDeal(formData: FormData) {
     );
     await db.insert(commissions).values({
       tenantId: DEFAULT_TENANT_ID,
-      agentId: ownerId,
+      agentId: actor.id,
       policyId: policy.id,
       carrierId: policy.carrierId,
       lineOfBusiness: deal.lineOfBusiness,
       premium: premiumNum.toFixed(2),
       ratePct: DEFAULT_COMMISSION_RATE_PCT.toFixed(2),
       amount: split.producerAmount.toFixed(2),
-      agencyAmount: split.agencyAmount.toFixed(2),
-      producerAmount: split.producerAmount.toFixed(2),
-      sellingAgency: "afa",
       status: "pending",
       dueDate: due,
       period: periodKey(effective),
@@ -739,7 +758,7 @@ export async function bindDeal(formData: FormData) {
       wonAt,
       archiveScheduledAt: nextMorning(wonAt),
       updatedAt: new Date(),
-      ownerId,
+      ownerId: deal.ownerId ?? actor.id,
     })
     .where(eq(deals.id, dealId));
 
@@ -867,6 +886,11 @@ export async function archiveDeal(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath(`/deals/${dealId}`);
   if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
+}
+
+function shopLinesFromLine(primaryLine: string): ShopLine[] {
+  const fromLob = LOB_TO_SHOP_LINE[primaryLine];
+  return fromLob ? [fromLob] : ["home"];
 }
 
 function shopLinesFromForm(formData: FormData, primaryLine: string): ShopLine[] {

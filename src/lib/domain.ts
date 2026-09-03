@@ -111,6 +111,32 @@ export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 export const ACTIVITY_STATUSES = ["open", "completed", "cancelled"] as const;
 export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
 
+export const ACTIVITY_KIND_LABELS: Record<string, string> = {
+  task: "Task",
+  meeting: "Meeting",
+  call: "Call",
+  email: "Email",
+  sms: "SMS",
+};
+
+export const ACTIVITY_STATUS_LABELS: Record<string, string> = {
+  open: "Open",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  incomplete: "Open",
+  delayed: "Open",
+  canceled: "Cancelled",
+  rescheduled: "Open",
+};
+
+export function normalizeActivityStatus(status: string | null | undefined): ActivityStatus {
+  const raw = (status ?? "open").trim().toLowerCase();
+  if (raw === "incomplete" || raw === "delayed" || raw === "rescheduled") return "open";
+  if (raw === "canceled") return "cancelled";
+  if ((ACTIVITY_STATUSES as readonly string[]).includes(raw)) return raw as ActivityStatus;
+  return "open";
+}
+
 export const ACTIVITY_LOG_EVENTS = [
   "created",
   "completed",

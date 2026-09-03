@@ -1,5 +1,8 @@
 "use server";
 
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -20,15 +23,48 @@ import {
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
-export async function persistFile(
-  dealId: string,
-  riskId: string,
-  filename: string,
-  mimeType: string,
-  buffer: Buffer,
-  docType: string,
-  slot = "source_doc",
-) {
+function optionalId(form: FormData, key: string): string | null {
+  const value = String(form.get(key) ?? "").trim();
+  return value || null;
+}
+
+function parseTags(raw: FormDataEntryValue | null): string[] {
+  if (!raw) return [];
+  return String(raw)
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+async function resolveFolderId(input: {
+  folderId?: string | null;
+  dealId?: string | null;
+  contactId?: string | null;
+}): Promise<string | null> {
+  if (input.folderId) return input.folderId;
+  if (input.dealId) {
+    const [folder] = await db
+      .select()
+      .from(documentFolders)
+      .where(and(eq(documentFolders.tenantId, DEFAULT_TENANT_ID), eq(documentFolders.dealId, input.dealId)));
+    return folder?.id ?? null;
+  }
+  return null;
+}
+
+export async function persistFile(input: {
+  dealId?: string | null;
+  riskId?: string | null;
+  contactId?: string | null;
+  policyId?: string | null;
+  folderId?: string | null;
+  filename: string;
+  mimeType: string;
+  buffer: Buffer;
+  docType: string;
+  slot?: string;
+  tags?: string[];
+}) {
   const id = randomUUID();
   const folder = input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? "library";
   const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
@@ -41,15 +77,17 @@ export async function persistFile(
     .values({
       id,
       tenantId: DEFAULT_TENANT_ID,
-      riskId: riskId || null,
-      dealId,
-      filename,
-      mimeType,
+      riskId: input.riskId || null,
+      dealId: input.dealId || null,
+      contactId: input.contactId || null,
+      policyId: input.policyId || null,
+      filename: input.filename,
+      mimeType: input.mimeType,
       storagePath,
-      docType,
-      slot,
+      docType: input.docType,
+      slot: input.slot ?? "source_doc",
       status: "uploaded",
-      tags: input.tags,
+      tags: input.tags ?? [],
     })
     .returning();
   return doc;

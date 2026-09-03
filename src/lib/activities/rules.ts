@@ -20,7 +20,7 @@ export function normalizeStatus(status: string | null | undefined): ActivityStat
   if ((ACTIVITY_STATUSES as readonly string[]).includes(aliased)) {
     return aliased as ActivityStatus;
   }
-  return "incomplete";
+  return "open";
 }
 
 export function assertContactOrPolicy(related: RelatedIds): void {
@@ -36,7 +36,7 @@ export function canDeleteActivity(): false {
 }
 
 export function cancelInsteadOfDelete(): { status: ActivityStatus } {
-  return { status: "canceled" };
+  return { status: "cancelled" };
 }
 
 export type RescheduleRecord = {
@@ -56,7 +56,7 @@ export function rescheduleFields(input: {
   return {
     previousDueAt: input.oldDueAt,
     dueAt: input.newDueAt,
-    status: "rescheduled",
+    status: "open",
     actorId: input.actorId ?? null,
     actorName: input.actorName ?? null,
   };

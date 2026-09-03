@@ -249,6 +249,9 @@ export const ACTIVITY_STATUS_ALIASES: Record<string, string> = {
   completed: "completed",
   cancelled: "cancelled",
   canceled: "cancelled",
+  incomplete: "open",
+  delayed: "open",
+  rescheduled: "open",
 };
 
 export function formatDuration(totalSeconds: number | null | undefined): string {

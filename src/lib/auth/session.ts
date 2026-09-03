@@ -14,6 +14,16 @@ export const SESSION_COOKIES = {
   name: "ff_actor_name",
 } as const;
 
+export const ACTOR_COOKIE = SESSION_COOKIES.actorId;
+
+export async function findUser(id: string): Promise<User | null> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, id)));
+  return user ?? null;
+}
+
 export type DeskSession = {
   user: User | null;
   role: DeskRole;

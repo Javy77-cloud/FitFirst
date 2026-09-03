@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import { isAdmin, type Actor } from "@/lib/auth/rbac";
+import { canSeeOwned, isAdmin, type Actor } from "@/lib/auth/rbac";
 import { getActor } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
@@ -323,6 +323,8 @@ export async function listDeals(filter: DealListFilter = {}) {
 }
 
 export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {
+  const actor = await getActor();
+  const scope = ownerWhere(actor, contacts.ownerId);
   const rows = await db
     .select()
     .from(contacts)
@@ -394,6 +396,8 @@ export type PolicyListFilter = {
 };
 
 export async function listPolicies(filter: PolicyListFilter = {}) {
+  const actor = await getActor();
+  const scope = ownerWhere(actor, policies.ownerId);
   const rows = await db
     .select({
       policy: policies,
@@ -607,6 +611,31 @@ export async function getLastQuoteSheetDealId() {
     .orderBy(desc(quoteSheets.updatedAt))
     .limit(1);
   return sheet?.dealId ?? null;
+}
+
+export async function getPolicyRecord(id: string) {
+  if (!isUuid(id)) return null;
+  const actor = await getActor();
+  const [row] = await db
+    .select({
+      policy: policies,
+      contact: contacts,
+      carrier: carriers,
+      owner: users,
+    })
+    .from(policies)
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .leftJoin(users, eq(policies.ownerId, users.id))
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.id, id)));
+  if (!row) return null;
+  if (!canSeeOwned(actor, row.policy.ownerId)) return null;
+  const commissionRows = await db
+    .select({ commission: commissions })
+    .from(commissions)
+    .where(and(eq(commissions.tenantId, tenant()), eq(commissions.policyId, id)))
+    .orderBy(desc(commissions.updatedAt));
+  return { actor, ...row, commissions: commissionRows };
 }
 
 export async function getPolicyWorkspace(id: string) {
@@ -890,6 +919,21 @@ export async function dashboardStats() {
     .limit(8);
 
   return { stats: row, recentDeals, tasks, unread, expiring };
+}
+
+export type DealListRow = {
+  deal: typeof deals.$inferSelect;
+  lead: typeof leads.$inferSelect | null;
+  contact: typeof contacts.$inferSelect | null;
+  risk: typeof risks.$inferSelect | null;
+};
+
+export async function ensurePipelineStages() {
+  return db
+    .select()
+    .from(pipelineStages)
+    .where(eq(pipelineStages.tenantId, tenant()))
+    .orderBy(asc(pipelineStages.sortOrder));
 }
 
 export async function listPipelines() {

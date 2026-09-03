@@ -52,6 +52,13 @@ export async function markCommissionStatus(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function savePolicyCommission(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  if (!policyId) return;
+  revalidatePath(`/policies/${policyId}`);
+  revalidatePath("/commissions");
+}
+
 export async function markCommissionPaid(formData: FormData) {
   const id = str(formData, "commissionId");
   if (!id) return;

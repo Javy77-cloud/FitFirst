@@ -85,6 +85,10 @@ export async function saveCallOutcome(formData: FormData) {
   return saveDeskCallOutcome(formData);
 }
 
+export async function logCallDuration(formData: FormData) {
+  return saveDeskCallOutcome(formData);
+}
+
 export async function finishCall(formData: FormData) {
   const { returnTo } = await saveDeskCallOutcome(formData);
   redirect(returnTo);

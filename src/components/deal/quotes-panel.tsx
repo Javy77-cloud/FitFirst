@@ -8,11 +8,13 @@ export function QuotesPanel({
   quotes,
   logs,
   quoteResultsNote,
+  quoteDocs = [],
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
   quoteResultsNote?: string | null;
+  quoteDocs?: Document[];
 }) {
   return (
     <div className="space-y-4">
