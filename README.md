@@ -64,7 +64,7 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 
 Zoho Contact `6742853000009315243` (email javyspain2004@gmail.com, DOB 1977-07-11, mobile 801-400-6160). Zoho had **no mailing street**. Seeded as a shopping deal with a full-page HO3 + auto sample dec on Files so you can click Fill and see the whole-page mapper. No policy.
 
-Create your own path from the **desk drop** (dec → Lead → Deal → filled Quote Sheet), **Leads**, or **New shopping deal**. Source docs never create a policy. Bind is what creates Contact + Policy.
+Create your own path from the **desk drop** (dec → Lead → Deal → filled Quote Sheet), **Leads**, or **New shopping deal**. Source docs never create a policy. Bind copies matching sheet values onto Contact + Policy **blanks only** — nothing he typed is overwritten.
 
 ## Schema
 

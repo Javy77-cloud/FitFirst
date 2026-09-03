@@ -29,7 +29,7 @@ export function DealFiles({
       <section className="ff-card p-4">
         <h3 className="text-sm font-semibold text-navy">Source files</h3>
         <p className="mb-3 text-xs text-muted-foreground">
-          Decs, wind mits, photos stay here. They are never the copy packet.
+          Decs, wind mits, 4-points, and photos stay here. They are never the copy packet.
         </p>
         {docs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No attachments yet. Drop a dec above.</p>
