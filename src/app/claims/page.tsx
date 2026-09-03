@@ -30,6 +30,7 @@ export default async function ClaimsPage() {
             <thead>
               <tr>
                 <th>Status</th>
+                <th>Carrier claim</th>
                 <th>Cause</th>
                 <th>Policy</th>
                 <th>Party</th>
@@ -43,6 +44,7 @@ export default async function ClaimsPage() {
                       {claim.status}
                     </Link>
                   </td>
+                  <td className="font-mono text-xs">{claim.carrierClaimNumber ?? "—"}</td>
                   <td>{claim.causeType ?? "—"}</td>
                   <td>{policy?.policyNumber ?? "—"}</td>
                   <td>

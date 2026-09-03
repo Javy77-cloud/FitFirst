@@ -27,6 +27,10 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
             <dd>{row.claim.causeType ?? "—"}</dd>
           </div>
           <div>
+            <dt className="text-xs text-muted-foreground">Carrier claim</dt>
+            <dd>{row.claim.carrierClaimNumber ?? "—"}</dd>
+          </div>
+          <div>
             <dt className="text-xs text-muted-foreground">Policy</dt>
             <dd>{row.policy?.policyNumber ?? "—"}</dd>
           </div>
