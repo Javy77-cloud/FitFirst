@@ -19,7 +19,10 @@ import {
   documents,
   emailCampaigns,
   leads,
+  extractedFields,
+  extractionJobs,
   quoteAttemptLogs,
+  quoteSheets,
   quotes,
   reviewTasks,
   risks,
@@ -147,6 +150,10 @@ export async function seed() {
       state: "FL",
       primaryNamedInsured: fixture.insured.primary,
       secondaryNamedInsured: fixture.insured.namedInsured,
+      shopLines: ["home"],
+      coverageAmount: fixture.risk.coverageA,
+      propertyOneliner: anaPropertyOneliner(fixture.risk),
+      currentCarrier: null,
       notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -159,6 +166,10 @@ export async function seed() {
         lineOfBusiness: "HO",
         primaryNamedInsured: fixture.insured.primary,
         secondaryNamedInsured: fixture.insured.namedInsured,
+        shopLines: ["home"],
+        coverageAmount: fixture.risk.coverageA,
+        propertyOneliner: anaPropertyOneliner(fixture.risk),
+        currentCarrier: null,
         notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
         updatedAt: new Date(),
       },
@@ -214,6 +225,26 @@ export async function seed() {
         mobileHome: false,
         squareFeet: null,
         replacementCostEstimate: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  const anaHomeValues = anaHomeSheetValues(fixture.risk);
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: ANA_HOME_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: DEAL_ID,
+      line: "home",
+      values: anaHomeValues,
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: {
+        dealId: DEAL_ID,
+        line: "home",
+        values: anaHomeValues,
         updatedAt: new Date(),
       },
     });

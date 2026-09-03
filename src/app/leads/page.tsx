@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { visibleColumns } from "@/components/brand/column-layout-fields";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listLeads } from "@/lib/db/queries";
+import { DeskDrop } from "@/components/desk-drop";
 
 export const dynamic = "force-dynamic";
 

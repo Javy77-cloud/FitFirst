@@ -12,6 +12,8 @@ export const LINES = [
   "BOP",
   "LIFE",
   "HEALTH",
+  "RV",
+  "WC",
 ] as const;
 export type LineOfBusiness = (typeof LINES)[number];
 

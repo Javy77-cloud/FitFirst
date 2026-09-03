@@ -1,8 +1,5 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -150,7 +147,7 @@ export async function uploadSampleDocument(formData: FormData) {
   revalidateDocumentPaths(doc);
 }
 
-export async function extractExisting(formData: FormData) {
+export async function markDocumentType(formData: FormData) {
   const documentId = String(formData.get("documentId") ?? "");
   const dealId = String(formData.get("dealId") ?? "");
   await runExtraction(documentId, dealId);

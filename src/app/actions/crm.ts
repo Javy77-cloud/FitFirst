@@ -119,6 +119,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   const dealState = state || lead.state || "FL";
   const riskCopy = leadOntoRisk(lead, dealState);
 
+  const shopLines = shopLinesFromForm(formData, str(formData, "line") || "HO");
   const [deal] = await db
     .insert(deals)
     .values({
@@ -152,6 +153,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
     values: sheetValues,
   });
+  await insertSheetsForDeal(deal.id, shopLines);
 
   await db
     .update(leads)
@@ -190,6 +192,7 @@ export async function createDeal(formData: FormData) {
     redirect(`/deals/${lead.convertedDealId}`);
   }
 
+  const shopLines = shopLinesFromForm(formData, str(formData, "line") || "HO");
   const [deal] = await db
     .insert(deals)
     .values({
@@ -226,6 +229,7 @@ export async function createDeal(formData: FormData) {
     line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
     values: fillSheetFromLead(lead),
   });
+  await insertSheetsForDeal(deal.id, shopLines);
 
   revalidatePath("/");
   revalidatePath("/deals");
@@ -314,6 +318,15 @@ export async function createContact(formData: FormData) {
     .returning();
   revalidatePath("/contacts");
   redirect(`/contacts/${row.id}`);
+}
+
+async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteSheetFieldValue>> {
+  const sheets = await db
+    .select()
+    .from(quoteSheets)
+    .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
+  const home = sheets.find((s) => s.line === "home");
+  return (home ?? sheets[0])?.values ?? {};
 }
 
 export async function bindDeal(formData: FormData) {
@@ -661,4 +674,31 @@ export async function archiveDeal(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath(`/deals/${dealId}`);
   if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
+}
+
+function shopLinesFromForm(formData: FormData, primaryLine: string): ShopLine[] {
+  const checked = formData
+    .getAll("shopLines")
+    .map((v) => String(v))
+    .filter((v): v is ShopLine => (SHOP_LINES as readonly string[]).includes(v));
+  const fromLob = LOB_TO_SHOP_LINE[primaryLine];
+  const next = new Set<ShopLine>(checked);
+  if (fromLob) next.add(fromLob);
+  if (next.size === 0) {
+    next.add("home");
+    next.add("auto");
+  }
+  return Array.from(next);
+}
+
+async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
+  if (lines.length === 0) return;
+  await db.insert(quoteSheets).values(
+    lines.map((line) => ({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      line,
+      values: emptySheetValues(line),
+    })),
+  );
 }

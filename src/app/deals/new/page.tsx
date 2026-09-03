@@ -33,7 +33,7 @@ export default function NewDealPage() {
           </div>
           <div>
             <Label htmlFor="line" className="text-xs">
-              Line
+              Primary line
             </Label>
             <select
               id="line"
@@ -43,8 +43,11 @@ export default function NewDealPage() {
             >
               <option value="HO">Homeowners</option>
               <option value="AUTO">Auto</option>
+              <option value="RV">Rec / RV</option>
               <option value="FLOOD">Flood</option>
               <option value="UMBRELLA">Umbrella</option>
+              <option value="WC">Workers Comp</option>
+              <option value="GL">General Liability</option>
             </select>
           </div>
           <div>
@@ -60,8 +63,37 @@ export default function NewDealPage() {
             <Input id="county" name="county" className="mt-1 h-8" />
           </div>
         </div>
+        <fieldset className="rounded-md border border-border p-3">
+          <legend className="px-1 text-xs font-medium text-navy">Shop lines (tabs)</legend>
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            Home and Auto are first-class. Add only the lines that apply.
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {[
+              ["home", "Home"],
+              ["auto", "Auto"],
+              ["rec_rv", "Rec/RV"],
+              ["flood", "Flood"],
+              ["umbrella", "Umbrella"],
+              ["life", "Life"],
+              ["health", "Health"],
+              ["workers_comp", "Workers Comp"],
+              ["general_liability", "General Liability"],
+            ].map(([id, label]) => (
+              <label key={id} className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="shopLines"
+                  value={id}
+                  defaultChecked={id === "home" || id === "auto"}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <Button type="submit" size="sm">
-          Open worksheet
+          Open Quote Sheet
         </Button>
       </form>
     </AppShell>

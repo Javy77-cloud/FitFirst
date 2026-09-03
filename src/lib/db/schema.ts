@@ -204,6 +204,11 @@ export const deals = pgTable(
     quoteResultsNote: text("quote_results_note"),
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
+    shopLines: jsonb("shop_lines").$type<string[]>().notNull().default(["home"]),
+    coverageAmount: integer("coverage_amount"),
+    propertyOneliner: text("property_oneliner"),
+    currentCarrier: text("current_carrier"),
+    accountKind: text("account_kind").notNull().default("personal"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
     pipelineId: uuid("pipeline_id"),
     pipelineStageSlug: text("pipeline_stage_slug"),
@@ -693,6 +698,54 @@ export const quotes = pgTable(
   },
   (t) => [index("quotes_tenant_deal_idx").on(t.tenantId, t.dealId)],
 );
+
+export const quoteSheets = pgTable(
+  "quote_sheets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    line: text("line").notNull(),
+    values: jsonb("values").$type<Record<string, QuoteSheetFieldValue>>().notNull().default({}),
+    ...timestamps,
+  },
+  (t) => [
+    index("quote_sheets_tenant_idx").on(t.tenantId),
+    uniqueIndex("quote_sheets_deal_line_uidx").on(t.tenantId, t.dealId, t.line),
+  ],
+);
+
+export const extractionJobs = pgTable(
+  "extraction_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
+    engine: text("engine").notNull(),
+    status: text("status").notNull(),
+    filledKeys: jsonb("filled_keys").$type<string[]>().notNull().default([]),
+    skippedKeys: jsonb("skipped_keys").$type<string[]>().notNull().default([]),
+    message: text("message"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
+);
+
+export type QuoteSheetFieldValue = {
+  value: string;
+  status: "missing" | "check" | "confirmed";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public";
+  /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
+  sourceLabel?: string;
+};
 
 export const alerts = pgTable(
   "alerts",
