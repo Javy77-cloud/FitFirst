@@ -13,11 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace } from "@/lib/db/queries";
+import { getDealWorkspace, listEmailTemplates } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { HealthStrip } from "@/components/completeness/health-strip";
 import { reportFromSheet } from "@/lib/completeness/report";
 import type { ShopLine } from "@/lib/domain";
+import { ActivityTimeline } from "@/components/activity-timeline";
+import { RecordSection } from "@/components/record-section";
+import { RelatedPolicies } from "@/components/related-tables";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +33,7 @@ export default async function DealPage({
 }) {
   const { id } = await params;
   const { tab, riskTab } = await searchParams;
-  const workspace = await getDealWorkspace(id);
+  const [workspace, templates] = await Promise.all([getDealWorkspace(id), listEmailTemplates()]);
   if (!workspace) notFound();
   const {
     deal,
@@ -44,6 +47,7 @@ export default async function DealPage({
     account,
     quoteSheet,
     boundPolicies,
+    timeline,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
   const isAna = deal.id === DEAL_ID;
@@ -112,68 +116,101 @@ export default async function DealPage({
         </div>
       ) : null}
 
-      {health ? (
-        <HealthStrip
-          report={health}
-          title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
-          href={`/deals/${deal.id}?tab=quote-sheet`}
-        />
-      ) : null}
+      <RecordSection id="record" title="This deal" summary="Shopping, quotes, and communications on this record">
+        {health ? (
+          <HealthStrip
+            report={health}
+            title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
+            href={`/deals/${deal.id}?tab=quote-sheet`}
+          />
+        ) : null}
 
-      {!risk ? (
-        <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
-      ) : (
-        <SectionTabs
-          defaultValue="documents"
-          active={tab}
-          tabs={[
-            {
-              id: "documents",
-              label: "Documents",
-              content: (
-                <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
-              ),
-            },
-            {
-              id: "quote-sheet",
-              label: "Quote Sheet",
-              content: (
-                <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
-              ),
-            },
-            {
-              id: "risk",
-              label: "Master risk",
-              content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
-            },
-            {
-              id: "markets",
-              label: "Markets",
-              content: <MarketsPanel dealId={deal.id} matches={matches} />,
-            },
-            {
-              id: "quotes",
-              label: "Quotes",
-              content: (
-                <QuotesPanel
-                  dealId={deal.id}
-                  quotes={quotes}
-                  logs={logs}
-                  quoteResultsNote={deal.quoteResultsNote}
-                />
-              ),
-            },
-          ]}
-        />
-      )}
+        {!risk ? (
+          <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
+        ) : (
+          <SectionTabs
+            defaultValue="documents"
+            active={tab}
+            tabs={[
+              {
+                id: "documents",
+                label: "Documents",
+                content: (
+                  <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                ),
+              },
+              {
+                id: "quote-sheet",
+                label: "Quote Sheet",
+                content: (
+                  <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
+                ),
+              },
+              {
+                id: "risk",
+                label: "Master risk",
+                content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
+              },
+              {
+                id: "markets",
+                label: "Markets",
+                content: <MarketsPanel dealId={deal.id} matches={matches} />,
+              },
+              {
+                id: "quotes",
+                label: "Quotes",
+                content: (
+                  <QuotesPanel
+                    dealId={deal.id}
+                    quotes={quotes}
+                    logs={logs}
+                    quoteResultsNote={deal.quoteResultsNote}
+                  />
+                ),
+              },
+            ]}
+          />
+        )}
+        <div className="mt-6">
+          <ActivityTimeline
+            items={timeline}
+            dealId={deal.id}
+            contactId={contact?.id}
+            accountId={account?.id}
+            policyId={boundPolicies[0]?.id}
+            leadId={lead?.id}
+            phone={contact?.phone ?? account?.phone}
+            email={contact?.email ?? account?.email}
+            templates={templates}
+          />
+        </div>
+      </RecordSection>
 
-      <p className="mt-4 text-xs text-muted-foreground">
-        Shopping lives here.{" "}
-        <Link href="/get-started" className="text-primary hover:underline">
-          Run the test path
-        </Link>
-        .
-      </p>
+      <RecordSection id="related" title="Related" summary="Lead, contact, business, bound policies">
+        <div className="mb-3 flex flex-wrap gap-3 text-sm">
+          {lead ? (
+            <RecordLink href={`/leads/${lead.id}`}>
+              Lead {lead.lastName}, {lead.firstName}
+            </RecordLink>
+          ) : null}
+          {contact ? (
+            <RecordLink href={`/contacts/${contact.id}`}>
+              Contact {contact.lastName}, {contact.firstName}
+            </RecordLink>
+          ) : null}
+          {account ? <RecordLink href={`/accounts/${account.id}`}>Business {account.name}</RecordLink> : null}
+        </div>
+        <RelatedPolicies
+          rows={boundPolicies.map((policy) => ({ policy, carrier: null, deal }))}
+        />
+        <p className="mt-4 text-xs text-muted-foreground">
+          Shopping lives here.{" "}
+          <Link href="/get-started" className="text-primary hover:underline">
+            Run the test path
+          </Link>
+          .
+        </p>
+      </RecordSection>
     </AppShell>
   );
 }

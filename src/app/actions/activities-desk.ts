@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, activityLogs } from "@/lib/db/schema";
-import { activityLogBody, assertRelatedRecord } from "@/lib/lifecycle/activity";
+import { activityLogBody, assertRelatedRecord, hasCommsRecord } from "@/lib/lifecycle/activity";
+import { writeDeskComms } from "@/lib/desk/write-comms";
 import { and, eq } from "drizzle-orm";
 
 function str(form: FormData, key: string) {
@@ -18,13 +19,21 @@ function when(form: FormData, key: string) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function relatedFromForm(form: FormData) {
-  return assertRelatedRecord({
+function relatedFromForm(form: FormData, kind: string) {
+  const related = {
     contactId: str(form, "contactId") || null,
     accountId: str(form, "accountId") || null,
     policyId: str(form, "policyId") || null,
     dealId: str(form, "dealId") || null,
-  });
+    leadId: str(form, "leadId") || null,
+  };
+  if (kind === "email" || kind === "sms" || kind === "call") {
+    if (!hasCommsRecord(related)) {
+      throw new Error("Call, email, and text need a Deal, Contact, Policy, Business, or Lead.");
+    }
+    return related;
+  }
+  return assertRelatedRecord(related);
 }
 
 function revalidateRelated(related: {
@@ -32,48 +41,40 @@ function revalidateRelated(related: {
   accountId?: string | null;
   policyId?: string | null;
   dealId?: string | null;
+  leadId?: string | null;
 }) {
   if (related.contactId) revalidatePath(`/contacts/${related.contactId}`);
   if (related.accountId) revalidatePath(`/accounts/${related.accountId}`);
   if (related.policyId) revalidatePath(`/policies/${related.policyId}`);
   if (related.dealId) revalidatePath(`/deals/${related.dealId}`);
+  if (related.leadId) revalidatePath(`/leads/${related.leadId}`);
+  revalidatePath("/calendar");
+  revalidatePath("/tasks");
 }
 
 export async function logDeskActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
   const title =
     str(formData, "title") ||
-    (kind === "call" ? "Logged call" : kind === "meeting" ? "Meeting" : "Task");
-  const related = relatedFromForm(formData);
-  const eventType = kind === "call" ? "logged" : "created";
-  const status = kind === "call" ? "completed" : str(formData, "status") || "open";
+    (kind === "call" ? "Logged call" : kind === "meeting" ? "Meeting" : kind === "email" ? "Email" : kind === "sms" ? "Text" : "Task");
+  const related = relatedFromForm(formData, kind);
 
-  const [activity] = await db
-    .insert(activities)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      kind,
-      title,
-      notes: str(formData, "notes") || null,
-      status,
-      dueAt: when(formData, "dueAt"),
-      startAt: when(formData, "startAt"),
-      endAt: when(formData, "endAt"),
-      assignee: str(formData, "assignee") || null,
-      ...related,
-    })
-    .returning();
-
-  await db.insert(activityLogs).values({
-    tenantId: DEFAULT_TENANT_ID,
-    activityId: activity.id,
+  await writeDeskComms({
     kind,
-    eventType,
-    body: activityLogBody(kind, eventType, title),
-    contactId: related.contactId,
-    accountId: related.accountId,
-    policyId: related.policyId,
-    dealId: related.dealId,
+    title,
+    notes: str(formData, "notes") || str(formData, "body") || null,
+    body: str(formData, "body") || str(formData, "notes") || null,
+    subject: str(formData, "subject") || null,
+    fromAddress: str(formData, "fromAddress") || null,
+    toAddress: str(formData, "toAddress") || null,
+    direction: str(formData, "direction") || undefined,
+    eventType: str(formData, "eventType") || null,
+    status: kind === "call" || kind === "email" || kind === "sms" ? "completed" : str(formData, "status") || "open",
+    dueAt: when(formData, "dueAt"),
+    startAt: when(formData, "startAt"),
+    endAt: when(formData, "endAt"),
+    assignee: str(formData, "assignee") || null,
+    ...related,
   });
 
   revalidateRelated(related);
@@ -102,6 +103,8 @@ export async function completeDeskActivity(formData: FormData) {
     accountId: activity.accountId,
     policyId: activity.policyId,
     dealId: activity.dealId,
+    leadId: activity.leadId,
+    direction: "internal",
   });
 
   revalidateRelated(activity);

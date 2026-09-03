@@ -3,8 +3,11 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
+import { RecordSection } from "@/components/record-section";
+import { RelatedDeals, RelatedPolicies } from "@/components/related-tables";
 import { formatMoney } from "@/lib/domain";
-import { getAccountWorkspace } from "@/lib/db/queries";
+import { getAccountWorkspace, listEmailTemplates } from "@/lib/db/queries";
+import { toNumber } from "@/lib/commissions/math";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +17,7 @@ export default async function AccountDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const workspace = await getAccountWorkspace(id);
+  const [workspace, templates] = await Promise.all([getAccountWorkspace(id), listEmailTemplates()]);
   if (!workspace) notFound();
   const {
     account,
@@ -28,129 +31,92 @@ export default async function AccountDetailPage({
     locations,
     certificates,
   } = workspace;
+  const premium = policies.reduce((sum, row) => sum + toNumber(row.policy.premium), 0);
 
   return (
     <AppShell title={account.name}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <ClientStatusPill status={clientStatus} />
         <span>
-          Lifetime policies <strong>{policyCount}</strong>
+          Lifetime <strong>{policyCount}</strong>
         </span>
         <span>
-          Active / bound / pending <strong>{activePolicyCount}</strong>
+          In-force <strong>{activePolicyCount}</strong>
         </span>
       </div>
-      <section className="ff-card mb-4 p-4 text-sm">
-        <h2 className="text-sm font-semibold text-navy">Account 360 · commercial profile</h2>
-        <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+
+      <RecordSection id="record" title="This business" summary={`${account.ein ?? "No EIN"} · comms stay on this record`}>
+        <dl className="mb-4 grid gap-2 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-muted-foreground">EIN / FEIN</dt>
+            <dt className="text-xs text-muted-foreground">EIN / FEIN</dt>
             <dd>{account.ein ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Entity</dt>
+            <dt className="text-xs text-muted-foreground">Entity</dt>
             <dd>{account.entityType ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Employees</dt>
+            <dt className="text-xs text-muted-foreground">Employees</dt>
             <dd>{account.employeeCount ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Annual sales</dt>
+            <dt className="text-xs text-muted-foreground">Annual sales</dt>
             <dd>{formatMoney(account.annualSales)}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">W-2 payroll</dt>
-            <dd>{formatMoney(account.payrollW2)}</dd>
+            <dt className="text-xs text-muted-foreground">Phone</dt>
+            <dd>{account.phone ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">1099 / subcontracted</dt>
-            <dd>{formatMoney(account.payroll1099)}</dd>
+            <dt className="text-xs text-muted-foreground">Email</dt>
+            <dd>{account.email ?? "—"}</dd>
           </div>
         </dl>
-        {account.operations ? (
-          <p className="mt-3 text-xs text-muted-foreground">{account.operations}</p>
-        ) : null}
-      </section>
-      <section className="ff-card mb-4 p-4 text-sm">
-        <h2 className="text-sm font-semibold text-navy">Linked people</h2>
-        {contacts.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No contacts linked.</p>
-        ) : (
-          <ul className="mt-2 space-y-1">
-            {contacts.map((contact) => (
-              <li key={contact.id}>
-                <RecordLink href={`/contacts/${contact.id}`}>
-                  {contact.lastName}, {contact.firstName}
-                </RecordLink>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  personal policies stay on the contact
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <LocationsList locations={locations} />
-      <CertificatesList accountId={account.id} certificates={certificates} />
-
-      <section className="ff-card mb-4 overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-          Commercial policies
-        </div>
-        {policies.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No commercial policies. This account is not a client until a bound/pending/active
-            policy is attached here.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Status</th>
-                <th>Carrier</th>
-                <th>Premium</th>
-              </tr>
-            </thead>
-            <tbody>
-              {policies.map(({ policy, carrier }) => (
-                <tr key={policy.id}>
-                  <td>
-                    <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                  </td>
-                  <td className="uppercase">{policy.status}</td>
-                  <td>{carrier?.name ?? "—"}</td>
-                  <td>{formatMoney(policy.premium)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-      <div className="mb-4">
+        {account.operations ? <p className="mb-4 text-xs text-muted-foreground">{account.operations}</p> : null}
         <ActivityTimeline
           items={timeline}
           accountId={account.id}
           contactId={contacts[0]?.id}
           policyId={policies[0]?.policy.id}
           dealId={deals[0]?.id}
+          phone={account.phone}
+          email={account.email}
+          templates={templates}
         />
-      </div>
-      {deals.length > 0 ? (
-        <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-            Deals
-          </div>
-          <ul className="divide-y divide-border">
-            {deals.map((deal) => (
-              <li key={deal.id} className="px-4 py-2 text-sm">
-                <RecordLink href={`/deals/${deal.id}`}>{deal.title}</RecordLink>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      </RecordSection>
+
+      <RecordSection
+        id="related"
+        title="Related"
+        summary={`${policies.length} commercial policies · ${formatMoney(premium)}`}
+      >
+        <LocationsList locations={locations} />
+        <CertificatesList accountId={account.id} certificates={certificates} />
+        <div className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold text-navy">Linked people</h3>
+          {contacts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No contacts linked.</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {contacts.map((contact) => (
+                <li key={contact.id}>
+                  <RecordLink href={`/contacts/${contact.id}`}>
+                    {contact.lastName}, {contact.firstName}
+                  </RecordLink>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold text-navy">Commercial policies</h3>
+          <RelatedPolicies rows={policies} />
+        </div>
+        <div className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold text-navy">Deals</h3>
+          <RelatedDeals deals={deals} />
+        </div>
+      </RecordSection>
     </AppShell>
   );
 }

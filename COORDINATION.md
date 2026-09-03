@@ -222,6 +222,26 @@ Camila Auto `QBE-PA-66103` still has an empty vehicle schedule. The intended Aut
 
 Deal `Dib · Palm Bay HO3` = **shopping**. Contact policies = **0**. Cov A = **$321,000** javy/confirmed. Fixture file not edited.
 
+## Live desk walkthrough (this branch)
+
+Additive on the fixer + overnight re-QA book. No live Zoho writes. Ana stays shopping / 0 policies / Cov A $321,000.
+
+Shipped on `cursor/live-desk-walkthrough-531d`:
+
+- Larger global type and left menu. Agency name + logo slot (Settings, Admin) — not hardcoded FitFirst in chrome.
+- Admin (Javy) vs Agent (Maya) login. Unauthenticated still behaves as Admin so click-paths work.
+- Home: compact mix + cross-sell from in-force policies only.
+- Deals / Contacts / Businesses / Policies / Carriers / Tasks: column picker, richer defaults, Deals row comms.
+- Policies list: Insured (not Party), P&C / Life / Health + Home/Auto/Flood/Commercial subfilter. Name click is the policy record (UUID 500 on empty `convertedDealId` fixed).
+- Two-section collapsible records (this record + related on the same page) for Contact, Business, Lead, Deal, Policy, Carrier.
+- **Communications timeline on the record:** every send/receive writes `activity_logs` (direction, thread, full body). Email inbound + outbound share a thread (`Re:`/`Fwd:` stripped). SMS sent/received on the same thread. Uses existing email template stubs. No Twilio/SendGrid, no second mailbox.
+- Pipeline: create deal, Admin add/relabel/delete stages, columns + table view.
+- Tasks CRUD. Calendar lists colored activities + quick-add. Google Calendar stays stub.
+- Policy record: Effective + X-Date, Selling Agency (AFA / First Connect / Agentero / Agility / BackNine), Zoho commission math (Life 9/12+3/12, P&C TAC, Marketplace PMPM on the policy, MA TAC=GWP). **No Medicare new/renewal field.** Renewal tasks 30/60 on, 90 off. OEP stay-put is an internal task only.
+- Client status remains computed: Client / Former client / Not a client (Ana).
+
+Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

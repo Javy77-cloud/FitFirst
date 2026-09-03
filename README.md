@@ -15,7 +15,11 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (paper + terracotta). Click path and leftover bugs live in `COORDINATION.md`.
+Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (paper + terracotta). Demo login: `javy@fitfirst.local` / `javy` (Admin, all book) or `maya@fitfirst.local` / `maya` (Agent, own book).
+
+Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No Twilio or SendGrid.
+
+Click path and leftover bugs live in `COORDINATION.md`.
 
 Docker: `docker compose up --build` (same port).
 

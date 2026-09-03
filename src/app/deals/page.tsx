@@ -2,7 +2,11 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
-import { listBoundPendingDeals, listDeals, type DealListFilter } from "@/lib/db/queries";
+import { ColumnPicker, Col } from "@/components/column-picker";
+import { DealRowComms } from "@/components/deal-row-comms";
+import { defaultColumns } from "@/lib/desk/columns";
+import { formatDay, formatMoney } from "@/lib/domain";
+import { listBoundPendingDeals, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -29,20 +33,24 @@ export default async function DealsPage({
   };
   const rows =
     filter.attention === "bound_pending" ? await listBoundPendingDeals() : await listDeals(filter);
+  const users = await listUsersById();
   const hint =
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
       : filter.stage
         ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
-        : "Shopping lives on the deal. Quotes attach here. A policy is not created from a quote.";
+        : "Shopping lives on the deal. Quotes attach here. A policy is not created from a quote. Call, SMS, and email from the row write a durable log on the deal.";
 
   return (
     <AppShell
       title="Deals"
       actions={
-        <Link href="/deals/new" className={cn(buttonVariants())}>
-          New shopping deal
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />
+          <Link href="/deals/new" className={cn(buttonVariants())}>
+            New shopping deal
+          </Link>
+        </div>
       }
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
@@ -51,52 +59,73 @@ export default async function DealsPage({
           <Link href="/deals" className="text-primary hover:underline">
             Clear filter
           </Link>
-          {" · "}
-          <Link href="/" className="text-primary hover:underline">
-            Back to home
-          </Link>
         </p>
       ) : null}
-      <section className="ff-card overflow-hidden">
-        <table className="ff-table">
-          <thead>
-            <tr>
-              <th>Deal</th>
-              <th>Stage</th>
-              <th>Line</th>
-              <th>State</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((deal) => (
-              <tr key={deal.id}>
-                <td>
-                  <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                    {deal.title}
-                  </Link>
-                  {deal.contactId ? (
-                    <div className="text-[11px]">
-                      <Link href={`/contacts/${deal.contactId}`} className="text-primary">
-                        Contact
-                      </Link>
-                    </div>
-                  ) : deal.leadId ? (
-                    <div className="text-[11px]">
-                      <Link href={`/leads/${deal.leadId}`} className="text-primary">
-                        Lead
-                      </Link>
-                    </div>
-                  ) : null}
-                </td>
-                <td>
-                  <StagePill stage={deal.pipelineStage} />
-                </td>
-                <td>{deal.lineOfBusiness}</td>
-                <td>{deal.state}</td>
+      <section className="ff-card overflow-x-auto">
+        {rows.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">No deals match.</p>
+        ) : (
+          <table className="ff-table">
+            <thead>
+              <tr>
+                <Col table="deals" col="title" as="th">Deal</Col>
+                <Col table="deals" col="stage" as="th">Stage</Col>
+                <Col table="deals" col="line" as="th">Line</Col>
+                <Col table="deals" col="state" as="th">State</Col>
+                <Col table="deals" col="contact" as="th">Contact</Col>
+                <Col table="deals" col="phone" as="th">Phone</Col>
+                <Col table="deals" col="email" as="th">Email</Col>
+                <Col table="deals" col="assigned" as="th">Assigned</Col>
+                <Col table="deals" col="premium" as="th">Coverage $</Col>
+                <Col table="deals" col="updated" as="th">Updated</Col>
+                <Col table="deals" col="comms" as="th">Comms</Col>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map(({ deal, contact, account }) => (
+                <tr key={deal.id}>
+                  <Col table="deals" col="title">
+                    <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
+                      {deal.title}
+                    </Link>
+                  </Col>
+                  <Col table="deals" col="stage">
+                    <StagePill stage={deal.pipelineStage} />
+                  </Col>
+                  <Col table="deals" col="line">{deal.lineOfBusiness}</Col>
+                  <Col table="deals" col="state">{deal.state}</Col>
+                  <Col table="deals" col="contact">
+                    {contact ? (
+                      <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
+                        {contact.lastName}, {contact.firstName}
+                      </Link>
+                    ) : account ? (
+                      <Link href={`/accounts/${account.id}`} className="text-primary hover:underline">
+                        {account.name}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </Col>
+                  <Col table="deals" col="phone">{contact?.phone ?? account?.phone ?? "—"}</Col>
+                  <Col table="deals" col="email">{contact?.email ?? account?.email ?? "—"}</Col>
+                  <Col table="deals" col="assigned">{deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—"}</Col>
+                  <Col table="deals" col="premium">{formatMoney(deal.coverageAmount)}</Col>
+                  <Col table="deals" col="updated">{formatDay(deal.updatedAt)}</Col>
+                  <Col table="deals" col="comms">
+                    <DealRowComms
+                      dealId={deal.id}
+                      contactId={contact?.id ?? deal.contactId}
+                      accountId={account?.id ?? deal.accountId}
+                      phone={contact?.phone ?? account?.phone}
+                      email={contact?.email ?? account?.email}
+                    />
+                  </Col>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </AppShell>
   );

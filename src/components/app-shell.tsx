@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Contact,
   FileStack,
+  Calendar,
   Home,
   Kanban,
   ListChecks,
@@ -18,6 +19,9 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
 import { SmartSearch } from "@/components/smart-search";
+import { currentDeskSession } from "@/lib/auth/session";
+import { logoutDesk } from "@/app/actions/auth";
+import { loadAgencyBrand } from "@/lib/desk/brand";
 
 const NAV = [
   { href: "/get-started", label: "Get Started", icon: ListChecks },
@@ -35,9 +39,10 @@ const NAV = [
   { href: "/claims", label: "Claims log", icon: FileStack },
   { href: "/commissions", label: "Commissions", icon: Briefcase },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
-  { href: "/logs", label: "Decline log", icon: FileStack },
+  { href: "/settings", label: "Settings", icon: ClipboardList },
   { href: "/alerts", label: "Alerts", icon: Bell },
 ];
 
@@ -57,16 +62,28 @@ export async function AppShell({
     .from(alerts)
     .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
+  const session = await currentDeskSession();
+  const brand = await loadAgencyBrand();
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="border-b border-sidebar-border px-4 py-4">
-          <Link href="/" className="block">
-            <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
-            <div className="text-[11px] text-sidebar-foreground/70">
-              Owner desk · filter-first P&amp;C
-            </div>
+          <Link href="/" className="flex items-center gap-3">
+            {brand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brand.logoUrl} alt="" className="size-10 rounded-md bg-white object-contain p-0.5" />
+            ) : (
+              <span className="flex size-10 items-center justify-center rounded-md border border-sidebar-border text-xs text-sidebar-foreground/60">
+                Logo
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-base font-semibold tracking-tight text-white">
+                {brand.name}
+              </span>
+              <span className="block text-xs text-sidebar-foreground/70">Owner desk</span>
+            </span>
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
@@ -76,7 +93,7 @@ export async function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white"
+                className="flex items-center gap-2 rounded-md px-2.5 py-2 text-[15px] text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white"
               >
                 <Icon className="size-3.5 opacity-80" />
                 <span className="flex-1">{item.label}</span>
@@ -89,10 +106,21 @@ export async function AppShell({
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
-          Single-tenant demo
-          <br />
-          No Zoho sync · no portal logins
+        <div className="border-t border-sidebar-border px-4 py-3 text-xs text-sidebar-foreground/70">
+          <div className="font-medium text-white">{session.name}</div>
+          <div className="capitalize">{session.role === "agent" ? "Agent · own book" : "Admin · all book"}</div>
+          <div className="mt-2 flex gap-2">
+            <Link href="/login" className="text-sidebar-foreground/90 hover:text-white">
+              {session.user ? "Switch" : "Sign in"}
+            </Link>
+            {session.user ? (
+              <form action={logoutDesk}>
+                <button type="submit" className="text-sidebar-foreground/90 hover:text-white">
+                  Sign out
+                </button>
+              </form>
+            ) : null}
+          </div>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

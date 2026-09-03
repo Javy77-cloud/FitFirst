@@ -198,6 +198,11 @@ export const carriers = pgTable(
     writtenLines: jsonb("written_lines").$type<string[]>().notNull().default([]),
     dontWriteNotes: text("dont_write_notes"),
     portalStatus: text("portal_status").notNull().default("open"),
+    portalUrl: text("portal_url"),
+    customerServicePhone: text("customer_service_phone"),
+    agentPhone: text("agent_phone"),
+    website: text("website"),
+    carrierInfo: text("carrier_info"),
     active: boolean("active").notNull().default(true),
     fixtureTag: text("fixture_tag"),
     ...timestamps,
@@ -268,6 +273,13 @@ export const policies = pgTable(
     formType: text("form_type"),
     originalEffectiveDate: timestamp("original_effective_date", { withTimezone: true }),
     billingFrequency: text("billing_frequency"),
+    renewalDate: timestamp("renewal_date", { withTimezone: true }),
+    commissionFamily: text("commission_family"),
+    sellingAgency: text("selling_agency"),
+    policySubType: text("policy_sub_type"),
+    insuredCount: integer("insured_count"),
+    commission4Pct: numeric("commission4_pct", { precision: 6, scale: 3 }),
+    oepStart: timestamp("oep_start", { withTimezone: true }),
     termMonths: integer("term_months"),
     producer: text("producer"),
     premisesAddress: text("premises_address"),
@@ -665,6 +677,12 @@ export const activityLogs = pgTable(
     accountId: uuid("account_id"),
     policyId: uuid("policy_id").references(() => policies.id),
     dealId: uuid("deal_id").references(() => deals.id),
+    leadId: uuid("lead_id").references(() => leads.id),
+    direction: text("direction"),
+    threadKey: text("thread_key"),
+    subject: text("subject"),
+    fromAddress: text("from_address"),
+    toAddress: text("to_address"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -674,6 +692,8 @@ export const activityLogs = pgTable(
     index("activity_logs_contact_idx").on(t.tenantId, t.contactId),
     index("activity_logs_account_idx").on(t.tenantId, t.accountId),
     index("activity_logs_policy_idx").on(t.tenantId, t.policyId),
+    index("activity_logs_deal_idx").on(t.tenantId, t.dealId),
+    index("activity_logs_thread_idx").on(t.tenantId, t.threadKey),
   ],
 );
 
@@ -991,8 +1011,52 @@ export const agencySettings = pgTable("agency_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenantId: tenantCol(),
   fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
+  agencyName: text("agency_name"),
+  logoPath: text("logo_path"),
+  emailSignature: text("email_signature"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const deskColumnPrefs = pgTable(
+  "desk_column_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id"),
+    tableKey: text("table_key").notNull(),
+    columns: jsonb("columns").$type<string[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("desk_column_prefs_uidx").on(t.tenantId, t.userId, t.tableKey)],
+);
+
+/** Configurable commission rates. No official carrier/CMS rates hardcoded. */
+export const commissionRateSettings = pgTable("commission_rate_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  lineFamily: text("line_family").notNull(),
+  ratePct: numeric("rate_pct", { precision: 6, scale: 3 }),
+  perPersonMonth: numeric("per_person_month", { precision: 10, scale: 2 }),
+  medicareNew: numeric("medicare_new", { precision: 10, scale: 2 }),
+  medicareRenewal: numeric("medicare_renewal", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  ...timestamps,
+});
+
+export const policyAutomations = pgTable(
+  "policy_automations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id").references(() => policies.id),
+    kind: text("kind").notNull(),
+    fireOn: timestamp("fire_on", { withTimezone: true }),
+    status: text("status").notNull().default("open"),
+    body: text("body"),
+    ...timestamps,
+  },
+  (t) => [index("policy_automations_tenant_idx").on(t.tenantId, t.policyId, t.kind)],
+);
 
 export const recordAsks = pgTable("record_asks", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1187,3 +1251,6 @@ export type Vehicle = typeof vehicles.$inferSelect;
 export type PolicyTerm = typeof policyTerms.$inferSelect;
 export type RenewalCompareLog = typeof renewalCompareLogs.$inferSelect;
 export type PolicyWorkItem = typeof policyWorkItems.$inferSelect;
+export type DeskColumnPref = typeof deskColumnPrefs.$inferSelect;
+export type CommissionRateSetting = typeof commissionRateSettings.$inferSelect;
+export type PolicyAutomation = typeof policyAutomations.$inferSelect;

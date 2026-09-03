@@ -8,7 +8,6 @@ import {
   Layers,
   RefreshCcw,
   Shield,
-  Split,
 } from "lucide-react";
 import { formatMoney } from "@/lib/domain";
 import type { OwnerHomeSnapshot } from "@/lib/home/aggregate";
@@ -18,6 +17,7 @@ import { DEAL_ID } from "@/lib/fixtures/ids";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MixBars } from "./mix-bars";
+import { CrossSellPanel } from "./cross-sell";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -171,59 +171,25 @@ export function OwnerDesk({
         </section>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="ff-card p-4">
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="ff-card p-3">
           <Header title="Line mix" href="/policies?status=in_force" action="Policies" />
-          <p className="mb-3 mt-1 text-[11px] text-muted-foreground">
-            Home, Auto, Flood, Commercial, Health, Life — in-force premium. Empty lines stay at zero.
+          <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
+            Compact in-force premium by line. Quotes are not written.
           </p>
-          <MixBars slices={snapshot.lineMix} empty="No in-force lines yet. Bind a policy or load the owner-book seed." />
+          <MixBars compact slices={snapshot.lineMix} empty="No in-force lines yet." />
         </section>
-        <section className="ff-card p-4">
+        <section className="ff-card p-3">
           <Header title="Carrier mix" href="/policies?status=in_force" action="Policies" />
-          <p className="mb-3 mt-1 text-[11px] text-muted-foreground">
-            Writing companies on Active / Bound terms. Not a production goal chart.
+          <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
+            Top writing companies. Compact — not a production goal chart.
           </p>
-          <MixBars slices={snapshot.carrierMix} empty="No in-force carriers yet." />
+          <MixBars compact slices={snapshot.carrierMix} empty="No in-force carriers yet." />
         </section>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="ff-card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Split className="size-3.5 text-primary" />
-              <div>
-                <h3 className="text-sm font-semibold text-navy">Cross-sell gaps</h3>
-                <p className="text-[11px] text-muted-foreground">
-                  {tables.opportunities
-                    ? "From the Opportunities table when it is present"
-                    : "Households missing Home, Auto, or Flood — not a score"}
-                </p>
-              </div>
-            </div>
-            <Link
-              href={tables.opportunities ? "/opportunities" : "/contacts"}
-              className="text-lg font-semibold tabular-nums text-navy hover:text-primary"
-            >
-              {fmt(snapshot.gapCount)}
-            </Link>
-          </div>
-          {snapshot.gaps.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
-              No personal-lines companion gaps on the in-force book.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {snapshot.gaps.map((gap) => (
-                <li key={gap.contactId} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                  <span className="font-medium text-navy">{gap.name}</span>
-                  <span className="text-[12px] text-muted-foreground">Needs {gap.missing.join(", ")}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <CrossSellPanel rows={snapshot.holders} />
 
         <section className="ff-card p-4">
           <h3 className="text-sm font-semibold text-navy">Ana Dib shop</h3>

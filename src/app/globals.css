@@ -35,7 +35,7 @@
   --ff-check: #1d4e89;
   --ff-check-bg: #dbeafe;
   --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
-  --ff-density: 0.875rem;
+  --ff-density: 1rem;
 
   --background: var(--ff-canvas);
   --foreground: var(--ff-ink);
@@ -130,7 +130,7 @@
   }
   html {
     @apply font-sans;
-    font-size: 15px;
+    font-size: 16px;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -147,7 +147,7 @@
 .ff-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 0.9rem;
 }
 .ff-table th {
   text-align: left;

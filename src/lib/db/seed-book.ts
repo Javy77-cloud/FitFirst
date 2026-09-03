@@ -269,10 +269,16 @@ export async function seedUsersAndBook() {
       id: AGENCY_SETTINGS_ID,
       tenantId: TENANT_ID,
       fiscalYearStartMonth: 1,
+      agencyName: "FitFirst Insurance",
+      emailSignature: "Javy Rivera\nFitFirst Insurance",
     })
     .onConflictDoUpdate({
       target: agencySettings.id,
-      set: { fiscalYearStartMonth: 1 },
+      set: {
+        fiscalYearStartMonth: 1,
+        agencyName: "FitFirst Insurance",
+        emailSignature: "Javy Rivera\nFitFirst Insurance",
+      },
     });
 
   await db.update(leads).set({ ownerId: ADMIN_USER_ID, updatedAt: new Date() }).where(eq(leads.id, LEAD_ID));

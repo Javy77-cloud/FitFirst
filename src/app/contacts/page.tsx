@@ -1,22 +1,53 @@
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { ColumnPicker, Col } from "@/components/column-picker";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { listContacts } from "@/lib/db/queries";
+import { defaultColumns } from "@/lib/desk/columns";
+import { listContacts, listUsersById } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContactsPage() {
-  const rows = await listContacts();
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ContactsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const status = first(params.status);
+  const city = first(params.city);
+  const rows = await listContacts({ status, city });
+  const users = await listUsersById();
+
   return (
-    <AppShell title="Contacts">
+    <AppShell
+      title="Contacts"
+      actions={<ColumnPicker tableKey="contacts" initial={defaultColumns("contacts")} />}
+    >
       <p className="mb-3 text-sm text-muted-foreground">
-        Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
-        policy is Active, Bound, or Pending. Ana is on the book for the shop only — not a client.
+        Client = at least one Active / Bound / Pending policy. Former client = lifetime ≥ 1 and
+        in-force = 0. Ana (0 policies) is Not a client. Status is computed from policies, not a
+        stored flag.
       </p>
-      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <form className="mb-3 flex flex-wrap gap-2 text-sm">
+        <select name="status" defaultValue={status ?? ""} className="h-8 rounded-md border border-input bg-card px-2">
+          <option value="">All statuses</option>
+          <option value="client">Client</option>
+          <option value="former_client">Former client</option>
+          <option value="not_a_client">Not a client</option>
+        </select>
+        <Input name="city" defaultValue={city ?? ""} placeholder="City" className="h-8 w-36" />
+        <Button type="submit" size="sm" variant="outline">
+          Filter
+        </Button>
+      </form>
+      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <form action={createContact} className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">Add contact</h2>
           <div>
@@ -32,47 +63,51 @@ export default async function ContactsPage() {
             <Input name="phone" className="mt-1 h-8" />
           </div>
           <div>
-            <Label className="text-xs">Life notes (CRM only)</Label>
-            <Input name="lifeNotes" className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Health notes (CRM only)</Label>
-            <Input name="healthNotes" className="mt-1 h-8" />
+            <Label className="text-xs">Email</Label>
+            <Input name="email" type="email" className="mt-1 h-8" />
           </div>
           <Button type="submit" size="sm">
             Save contact
           </Button>
         </form>
-        <section className="ff-card overflow-hidden">
+        <section className="ff-card overflow-x-auto">
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Lifetime</th>
-                <th>In-force</th>
+                <Col table="contacts" col="name" as="th">Name</Col>
+                <Col table="contacts" col="status" as="th">Status</Col>
+                <Col table="contacts" col="phone" as="th">Phone</Col>
+                <Col table="contacts" col="email" as="th">Email</Col>
+                <Col table="contacts" col="city" as="th">City</Col>
+                <Col table="contacts" col="assigned" as="th">Assigned</Col>
+                <Col table="contacts" col="lifetime" as="th">Lifetime</Col>
+                <Col table="contacts" col="inForce" as="th">In-force</Col>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                  <td colSpan={8} className="text-muted-foreground">
                     Empty book. Bind a deal or add an existing client.
                   </td>
                 </tr>
               ) : (
                 rows.map((c) => (
                   <tr key={c.id}>
-                    <td className="font-medium">
+                    <Col table="contacts" col="name">
                       <RecordLink href={`/contacts/${c.id}`}>
                         {c.lastName}, {c.firstName}
                       </RecordLink>
-                    </td>
-                    <td>
+                    </Col>
+                    <Col table="contacts" col="status">
                       <ClientStatusPill status={c.clientStatus} />
-                    </td>
-                    <td>{c.policyCount}</td>
-                    <td>{c.activePolicyCount}</td>
+                    </Col>
+                    <Col table="contacts" col="phone">{c.phone ?? "—"}</Col>
+                    <Col table="contacts" col="email">{c.email ?? "—"}</Col>
+                    <Col table="contacts" col="city">{c.city ?? "—"}</Col>
+                    <Col table="contacts" col="assigned">{c.ownerId ? users.get(c.ownerId) ?? "—" : "—"}</Col>
+                    <Col table="contacts" col="lifetime">{c.policyCount}</Col>
+                    <Col table="contacts" col="inForce">{c.activePolicyCount}</Col>
                   </tr>
                 ))
               )}

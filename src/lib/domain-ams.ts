@@ -3,7 +3,7 @@
 export const APPOINTMENT_LINES = ["HO", "AUTO", "FLOOD", "UMBRELLA"] as const;
 export type AppointmentLine = (typeof APPOINTMENT_LINES)[number];
 
-export const SELLING_AGENCIES = ["AFA", "First Connect", "Agentero"] as const;
+export const SELLING_AGENCIES = ["AFA", "First Connect", "Agentero", "Agility", "BackNine"] as const;
 export type SellingAgency = (typeof SELLING_AGENCIES)[number];
 
 export const WRITTEN_LINE_LABELS: Record<string, string> = {
@@ -132,6 +132,8 @@ export function sellingAgencyLabel(value: string | null | undefined): string {
     afa: "AFA",
     first_connect: "First Connect",
     agentero: "Agentero",
+    agility: "Agility",
+    backnine: "BackNine",
   };
   return map[value] ?? value;
 }

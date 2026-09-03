@@ -87,7 +87,7 @@ export type ClientStatus = (typeof CLIENT_STATUSES)[number];
 export const BIND_TARGETS = ["contact", "account"] as const;
 
 /** Consumed from agency-ops. Softphone / calendar UI stays on that slice. */
-export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+export const ACTIVITY_KINDS = ["task", "meeting", "call", "email", "sms"] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
 export const ACTIVITY_STATUSES = ["open", "completed", "cancelled"] as const;

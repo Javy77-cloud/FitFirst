@@ -17,6 +17,7 @@ import {
 } from "@/lib/home/aggregate";
 import { detectOwnerHomeTables } from "@/lib/home/optional-tables";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
+import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
 import { db, sql as rawSql } from "./index";
 import {
   accounts,
@@ -31,6 +32,7 @@ import {
   deals,
   documents,
   emailSendJobs,
+  emailTemplates,
   extractedFields,
   formTemplates,
   claimAttachments,
@@ -49,6 +51,7 @@ import {
   reviewTasks,
   risks,
   tenants,
+  users,
   vehicles,
 } from "./schema";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
@@ -75,24 +78,35 @@ export type TimelineItem = {
   accountId: string | null;
   policyId: string | null;
   dealId: string | null;
+  leadId: string | null;
   activityTitle: string | null;
   activityStatus: string | null;
+  direction: string | null;
+  threadKey: string | null;
+  subject: string | null;
+  fromAddress: string | null;
+  toAddress: string | null;
 };
 
 export async function listActivityTimeline(filter: {
   contactId?: string | null;
   accountId?: string | null;
   policyId?: string | null;
+  dealId?: string | null;
+  leadId?: string | null;
 }): Promise<TimelineItem[]> {
   const logClauses = [
     filter.contactId ? eq(activityLogs.contactId, filter.contactId) : undefined,
     filter.accountId ? eq(activityLogs.accountId, filter.accountId) : undefined,
     filter.policyId ? eq(activityLogs.policyId, filter.policyId) : undefined,
+    filter.dealId ? eq(activityLogs.dealId, filter.dealId) : undefined,
+    filter.leadId ? eq(activityLogs.leadId, filter.leadId) : undefined,
   ].filter((clause): clause is SQL => Boolean(clause));
   const historyClauses = [
     filter.contactId ? eq(clientHistory.contactId, filter.contactId) : undefined,
     filter.accountId ? eq(clientHistory.accountId, filter.accountId) : undefined,
     filter.policyId ? eq(clientHistory.policyId, filter.policyId) : undefined,
+    filter.dealId ? eq(clientHistory.dealId, filter.dealId) : undefined,
   ].filter((clause): clause is SQL => Boolean(clause));
 
   const logs = logClauses.length
@@ -125,8 +139,14 @@ export async function listActivityTimeline(filter: {
       accountId: log.accountId,
       policyId: log.policyId,
       dealId: log.dealId,
+      leadId: log.leadId,
       activityTitle: activity.title,
       activityStatus: activity.status,
+      direction: log.direction,
+      threadKey: log.threadKey,
+      subject: log.subject,
+      fromAddress: log.fromAddress,
+      toAddress: log.toAddress,
     })),
     ...history.map((row) => ({
       id: row.id,
@@ -140,12 +160,56 @@ export async function listActivityTimeline(filter: {
       accountId: row.accountId,
       policyId: row.policyId,
       dealId: row.dealId,
+      leadId: null,
       activityTitle: null,
       activityStatus: null,
+      direction: "internal" as const,
+      threadKey: null,
+      subject: null,
+      fromAddress: null,
+      toAddress: null,
     })),
   ];
   items.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   return items;
+}
+
+export async function listCommsForRecord(filter: {
+  contactId?: string | null;
+  accountId?: string | null;
+  policyId?: string | null;
+  dealId?: string | null;
+  leadId?: string | null;
+}): Promise<TimelineItem[]> {
+  const all = await listActivityTimeline(filter);
+  return all.filter((item) =>
+    ["email", "sms", "call", "meeting", "task"].includes(item.kind.toLowerCase()),
+  );
+}
+
+export async function listEmailTemplates() {
+  return db
+    .select()
+    .from(emailTemplates)
+    .where(eq(emailTemplates.tenantId, tenant()))
+    .orderBy(asc(emailTemplates.name));
+}
+
+export async function getCarrier(id: string) {
+  const [row] = await db
+    .select({ carrier: carriers, rule: appetiteRules })
+    .from(carriers)
+    .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
+    .where(and(eq(carriers.tenantId, tenant()), eq(carriers.id, id)));
+  return row ?? null;
+}
+
+export async function listCalendarActivities(_from: Date, _to: Date) {
+  return db
+    .select()
+    .from(activities)
+    .where(eq(activities.tenantId, tenant()))
+    .orderBy(asc(activities.startAt), asc(activities.dueAt));
 }
 
 const tenant = () => DEFAULT_TENANT_ID;
@@ -157,16 +221,24 @@ export async function listLeads() {
 export type DealListFilter = {
   stage?: string;
   attention?: string;
+  ownerId?: string;
 };
 
 export async function listDeals(filter: DealListFilter = {}) {
   const rows = await db
-    .select()
+    .select({
+      deal: deals,
+      contact: contacts,
+      account: accounts,
+    })
     .from(deals)
+    .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .leftJoin(accounts, eq(deals.accountId, accounts.id))
     .where(eq(deals.tenantId, tenant()))
     .orderBy(desc(deals.updatedAt));
-  return rows.filter((deal) => {
+  return rows.filter(({ deal }) => {
     const stage = deal.pipelineStage.toLowerCase();
+    if (filter.ownerId && deal.ownerId !== filter.ownerId) return false;
     if (filter.attention === "bound_pending") return WON_STAGES.has(stage);
     if (filter.stage === "open") return OPEN_QUOTE_STAGES.has(stage);
     if (filter.stage === "quote_sent") return QUOTE_SENT_STAGES.has(stage);
@@ -176,7 +248,7 @@ export async function listDeals(filter: DealListFilter = {}) {
   });
 }
 
-export async function listContacts() {
+export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {
   const rows = await db
     .select()
     .from(contacts)
@@ -198,10 +270,15 @@ export async function listContacts() {
       activePolicyCount: counts.inForce,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
+  }).filter((row) => {
+    if (filter.ownerId && row.ownerId !== filter.ownerId) return false;
+    if (filter.status && row.clientStatus !== filter.status) return false;
+    if (filter.city && (row.city ?? "").toLowerCase() !== filter.city.toLowerCase()) return false;
+    return true;
   });
 }
 
-export async function listAccounts() {
+export async function listAccounts(filter: { status?: string; city?: string } = {}) {
   const rows = await db
     .select()
     .from(accounts)
@@ -223,6 +300,10 @@ export async function listAccounts() {
       activePolicyCount: counts.inForce,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
+  }).filter((row) => {
+    if (filter.status && row.clientStatus !== filter.status) return false;
+    if (filter.city && (row.city ?? "").toLowerCase() !== filter.city.toLowerCase()) return false;
+    return true;
   });
 }
 
@@ -233,6 +314,9 @@ export type PolicyListFilter = {
   line?: string;
   carrier?: string;
   attention?: string;
+  family?: string;
+  pcSub?: string;
+  ownerId?: string;
 };
 
 export async function listPolicies(filter: PolicyListFilter = {}) {
@@ -278,6 +362,11 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
         policy.expirationDate <= addUtcDays(asOf, days)
       );
     }
+    if (filter.ownerId && policy.ownerId !== filter.ownerId) return false;
+    if (filter.family && bookFamily(policy.lineOfBusiness) !== filter.family) return false;
+    if (filter.pcSub && filter.pcSub !== "all" && !isPcSubLine(policy.lineOfBusiness, filter.pcSub)) {
+      return false;
+    }
     if (filter.line) return policy.lineOfBusiness.toUpperCase() === filter.line.toUpperCase();
     if (filter.carrier) return policy.carrierId === filter.carrier;
     return true;
@@ -293,7 +382,12 @@ export async function getLead(id: string) {
   const [deal] = lead.convertedDealId
     ? await db.select().from(deals).where(eq(deals.id, lead.convertedDealId))
     : [];
-  return { lead, deal: deal ?? null };
+  return {
+    lead,
+    deal: deal ?? null,
+    timeline: await listActivityTimeline({ leadId: id }),
+    comms: await listCommsForRecord({ leadId: id }),
+  };
 }
 
 export async function getContactWorkspace(id: string) {
@@ -319,10 +413,13 @@ export async function getContactWorkspace(id: string) {
     .from(contactAccounts)
     .innerJoin(accounts, eq(contactAccounts.accountId, accounts.id))
     .where(and(eq(contactAccounts.tenantId, tenant()), eq(contactAccounts.contactId, id)));
-  const [originLead] = await db
-    .select()
-    .from(leads)
-    .where(and(eq(leads.tenantId, tenant()), eq(leads.convertedDealId, relatedDeals[0]?.id ?? "")));
+  const originDealId = relatedDeals[0]?.id;
+  const [originLead] = originDealId
+    ? await db
+        .select()
+        .from(leads)
+        .where(and(eq(leads.tenantId, tenant()), eq(leads.convertedDealId, originDealId)))
+    : [];
   const lifetime = relatedPolicies.length;
   const inForce = relatedPolicies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
   return {
@@ -335,6 +432,7 @@ export async function getContactWorkspace(id: string) {
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
     timeline: await listActivityTimeline({ contactId: id }),
+    comms: await listCommsForRecord({ contactId: id }),
     locations: await db
       .select()
       .from(locations)
@@ -376,6 +474,7 @@ export async function getAccountWorkspace(id: string) {
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
     timeline: await listActivityTimeline({ accountId: id }),
+    comms: await listCommsForRecord({ accountId: id }),
     locations: await db
       .select()
       .from(locations)
@@ -461,6 +560,7 @@ export async function getPolicyWorkspace(id: string) {
     ...row,
     files,
     timeline: await listActivityTimeline({ policyId: id }),
+    comms: await listCommsForRecord({ policyId: id }),
     terms,
     compareLogs,
     vehicles: vehicleRows,
@@ -500,12 +600,29 @@ export async function listAlerts(unreadOnly = false) {
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 }
 
-export async function listReviewTasks() {
+export async function listReviewTasks(opts: { all?: boolean } = {}) {
   return db
     .select()
     .from(reviewTasks)
-    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.status, "open")))
+    .where(
+      opts.all
+        ? eq(reviewTasks.tenantId, tenant())
+        : and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.status, "open")),
+    )
     .orderBy(asc(reviewTasks.dueDate));
+}
+
+export async function getReviewTask(id: string) {
+  const [row] = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.id, id)));
+  return row ?? null;
+}
+
+export async function listUsersById() {
+  const rows = await db.select().from(users).where(eq(users.tenantId, tenant()));
+  return new Map(rows.map((u) => [u.id, u.name]));
 }
 
 export async function getDealWorkspace(dealId: string) {
@@ -584,6 +701,8 @@ export async function getDealWorkspace(dealId: string) {
     account: account ?? null,
     quoteSheet: quoteSheet ?? null,
     boundPolicies,
+    timeline: await listActivityTimeline({ dealId }),
+    comms: await listCommsForRecord({ dealId }),
   };
 }
 
@@ -871,15 +990,14 @@ export async function ownerHomeDashboard() {
 }
 
 export async function listBoundPendingDeals() {
-  const [dealRows, policyRows] = await Promise.all([
-    db.select().from(deals).where(eq(deals.tenantId, tenant())),
-    db.select({ contactId: policies.contactId }).from(policies).where(eq(policies.tenantId, tenant())),
-  ]);
+  const rows = await listDeals({ attention: "bound_pending" });
+  const policyRows = await db
+    .select({ contactId: policies.contactId })
+    .from(policies)
+    .where(eq(policies.tenantId, tenant()));
   const covered = new Set(policyRows.map((p) => p.contactId));
-  return dealRows.filter(
-    (deal) =>
-      WON_STAGES.has(deal.pipelineStage.toLowerCase()) &&
-      (!deal.contactId || !covered.has(deal.contactId)),
+  return rows.filter(
+    ({ deal }) => !deal.contactId || !covered.has(deal.contactId),
   );
 }
 

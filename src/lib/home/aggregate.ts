@@ -84,6 +84,13 @@ export type CrossSellGap = {
   missing: string[];
 };
 
+export type BookHolder = {
+  contactId: string;
+  name: string;
+  href: string;
+  has: HomeLineKey[];
+};
+
 export type CommissionTotals = {
   pending: number;
   paid: number;
@@ -276,6 +283,25 @@ export function crossSellGaps(policies: HomePolicy[]): CrossSellGap[] {
   return gaps.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export function bookHolders(policies: HomePolicy[]): BookHolder[] {
+  const byContact = new Map<string, { name: string; lines: Set<HomeLineKey> }>();
+  for (const policy of inForcePolicies(policies)) {
+    const key = homeLineKey(policy.lineOfBusiness);
+    if (!key || !policy.contactId) continue;
+    const existing = byContact.get(policy.contactId);
+    if (existing) existing.lines.add(key);
+    else byContact.set(policy.contactId, { name: policy.contactName, lines: new Set([key]) });
+  }
+  return [...byContact.entries()]
+    .map(([contactId, row]) => ({
+      contactId,
+      name: row.name,
+      href: `/contacts/${contactId}`,
+      has: HOME_LINE_KEYS.filter((k) => row.lines.has(k)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function filterByAssignee<T extends { ownerId?: string | null }>(
   rows: T[],
   agentUserId: string | null,
@@ -299,6 +325,7 @@ export type OwnerHomeSnapshot = {
   attention: AttentionItem[];
   gaps: CrossSellGap[];
   gapCount: number;
+  holders: BookHolder[];
 };
 
 export function buildOwnerHome(input: {
@@ -327,5 +354,6 @@ export function buildOwnerHome(input: {
     }),
     gaps: crossSellGaps(input.policies),
     gapCount: crossSellGaps(input.policies).length,
+    holders: bookHolders(input.policies),
   };
 }
