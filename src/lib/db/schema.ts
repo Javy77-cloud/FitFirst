@@ -70,6 +70,7 @@ export const contacts = pgTable(
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
+    preferredLanguage: text("preferred_language"),
     ...timestamps,
   },
   (t) => [index("contacts_tenant_idx").on(t.tenantId)],
@@ -90,6 +91,8 @@ export const deals = pgTable(
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
+    wonAt: timestamp("won_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -414,6 +417,110 @@ export const alerts = pgTable(
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
 );
 
+export const emailTemplates = pgTable(
+  "email_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    kind: text("kind").notNull().default("custom"),
+    subjectEn: text("subject_en").notNull(),
+    bodyEn: text("body_en").notNull(),
+    subjectEs: text("subject_es").notNull(),
+    bodyEs: text("body_es").notNull(),
+    isSeeded: boolean("is_seeded").notNull().default(false),
+    isExampleCopy: boolean("is_example_copy").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    index("email_templates_tenant_idx").on(t.tenantId),
+    index("email_templates_slug_idx").on(t.tenantId, t.slug),
+  ],
+);
+
+export const emailSendAccounts = pgTable(
+  "email_send_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    status: text("status").notNull().default("disconnected"),
+    accountEmail: text("account_email"),
+    ...timestamps,
+  },
+  (t) => [
+    index("email_send_accounts_tenant_idx").on(t.tenantId),
+    index("email_send_accounts_provider_idx").on(t.tenantId, t.provider),
+  ],
+);
+
+export const emailTriggers = pgTable(
+  "email_triggers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    eventKind: text("event_kind").notNull(),
+    delayAmount: integer("delay_amount").notNull(),
+    delayUnit: text("delay_unit").notNull().default("days"),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => emailTemplates.id),
+    sendFromProvider: text("send_from_provider").notNull().default("google"),
+    enabled: boolean("enabled").notNull().default(true),
+    emailClient: boolean("email_client").notNull().default(true),
+    createBrokerTask: boolean("create_broker_task").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    index("email_triggers_tenant_idx").on(t.tenantId),
+    index("email_triggers_event_idx").on(t.tenantId, t.eventKind),
+  ],
+);
+
+export const emailSendJobs = pgTable(
+  "email_send_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    triggerId: uuid("trigger_id").references(() => emailTriggers.id),
+    templateId: uuid("template_id").references(() => emailTemplates.id),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    toEmail: text("to_email"),
+    locale: text("locale").notNull().default("en"),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    sendFromProvider: text("send_from_provider").notNull().default("google"),
+    status: text("status").notNull().default("queued"),
+    holdReason: text("hold_reason"),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+    anchorKind: text("anchor_kind").notNull(),
+    anchorAt: timestamp("anchor_at", { withTimezone: true }).notNull(),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("email_send_jobs_tenant_idx").on(t.tenantId),
+    index("email_send_jobs_due_idx").on(t.tenantId, t.status, t.scheduledFor),
+    index("email_send_jobs_contact_idx").on(t.tenantId, t.contactId),
+    index("email_send_jobs_deal_idx").on(t.tenantId, t.dealId),
+    index("email_send_jobs_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -427,3 +534,7 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type EmailTrigger = typeof emailTriggers.$inferSelect;
+export type EmailSendJob = typeof emailSendJobs.$inferSelect;
+export type EmailSendAccount = typeof emailSendAccounts.$inferSelect;

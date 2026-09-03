@@ -29,6 +29,7 @@ export default async function DealsPage() {
               <th>Stage</th>
               <th>Line</th>
               <th>State</th>
+              <th>Archive</th>
             </tr>
           </thead>
           <tbody>
@@ -44,6 +45,7 @@ export default async function DealsPage() {
                 </td>
                 <td>{deal.lineOfBusiness}</td>
                 <td>{deal.state}</td>
+                <td>{deal.archivedAt ? "Archived" : "—"}</td>
               </tr>
             ))}
           </tbody>

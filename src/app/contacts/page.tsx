@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +29,25 @@ export default async function ContactsPage() {
             <Input name="lastName" required className="mt-1 h-8" />
           </div>
           <div>
+            <Label className="text-xs">Email</Label>
+            <Input name="email" type="email" className="mt-1 h-8" />
+          </div>
+          <div>
             <Label className="text-xs">Phone</Label>
             <Input name="phone" className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">Preferred language</Label>
+            <select
+              name="preferredLanguage"
+              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              defaultValue=""
+            >
+              <option value="">English (default)</option>
+              <option value="english">English</option>
+              <option value="spanish">Spanish</option>
+              <option value="creole">Creole</option>
+            </select>
           </div>
           <div>
             <Label className="text-xs">Life notes (CRM only)</Label>
@@ -47,6 +66,8 @@ export default async function ContactsPage() {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Email</th>
+                <th>Language</th>
                 <th>Policies</th>
                 <th>Tenure start</th>
                 <th>Life / health</th>
@@ -55,7 +76,7 @@ export default async function ContactsPage() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                  <td colSpan={6} className="text-muted-foreground">
                     Empty book. Bind a deal or add an existing client.
                   </td>
                 </tr>
@@ -63,10 +84,14 @@ export default async function ContactsPage() {
                 rows.map((c) => (
                   <tr key={c.id}>
                     <td className="font-medium">
-                      {c.lastName}, {c.firstName}
+                      <Link href={`/contacts/${c.id}`} className="text-primary hover:underline">
+                        {c.lastName}, {c.firstName}
+                      </Link>
                     </td>
+                    <td>{c.email ?? "—"}</td>
+                    <td>{c.preferredLanguage || "—"}</td>
                     <td>{c.policyCount}</td>
-                    <td>{c.tenureStart ? c.tenureStart.toISOString().slice(0, 10) : "—"}</td>
+                    <td>{formatDay(c.tenureStart)}</td>
                     <td className="text-xs">
                       {[c.lifeNotes, c.healthNotes].filter(Boolean).join(" · ") || "—"}
                     </td>

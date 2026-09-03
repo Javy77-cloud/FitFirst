@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import { listPolicies } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -31,13 +32,23 @@ export default async function PoliciesPage() {
             <tbody>
               {rows.map(({ policy, contact, carrier }) => (
                 <tr key={policy.id}>
-                  <td className="font-medium">{policy.policyNumber}</td>
+                  <td className="font-medium">
+                    <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
+                      {policy.policyNumber}
+                    </Link>
+                  </td>
                   <td>
-                    {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
+                    {contact ? (
+                      <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
+                        {contact.lastName}, {contact.firstName}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td>{carrier?.name ?? "—"}</td>
                   <td>{formatMoney(policy.premium)}</td>
-                  <td>{policy.expirationDate.toISOString().slice(0, 10)}</td>
+                  <td>{formatDay(policy.expirationDate)}</td>
                 </tr>
               ))}
             </tbody>

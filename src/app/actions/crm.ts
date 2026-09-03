@@ -9,11 +9,13 @@ import {
   clientHistory,
   contacts,
   deals,
+  emailSendJobs,
   leads,
   policies,
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { schedulePolicyRenewalEmails, scheduleWonClientEmails } from "@/lib/templates/schedule";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -180,6 +182,7 @@ export async function createContact(formData: FormData) {
       zip: str(formData, "zip") || null,
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
+      preferredLanguage: str(formData, "preferredLanguage") || null,
       notes: str(formData, "notes") || null,
     })
     .returning();
@@ -252,6 +255,7 @@ export async function bindDeal(formData: FormData) {
       contactId,
       pipelineStage: "bound",
       boundAt: new Date(),
+      wonAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
@@ -288,8 +292,57 @@ export async function bindDeal(formData: FormData) {
     });
   }
 
+  const wonAt = new Date();
+  await scheduleWonClientEmails({
+    contactId,
+    dealId,
+    policyId: policy.id,
+    wonAt,
+    policyType: deal.lineOfBusiness,
+  });
+  await schedulePolicyRenewalEmails({
+    contactId,
+    dealId,
+    policyId: policy.id,
+    expirationDate: expiration,
+    policyType: deal.lineOfBusiness,
+    policyNumber: policy.policyNumber,
+  });
+
   revalidatePath("/");
   revalidatePath("/policies");
   revalidatePath("/contacts");
   revalidatePath(`/deals/${dealId}`);
+}
+
+/** Sets archived_at only. Client email jobs hang off won / policy dates and stay queued. */
+export async function archiveDeal(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) throw new Error("Deal not found");
+
+  await db
+    .update(deals)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(eq(deals.id, dealId));
+
+  const stillQueued = await db
+    .select({ id: emailSendJobs.id })
+    .from(emailSendJobs)
+    .where(eq(emailSendJobs.dealId, dealId));
+
+  if (deal.contactId) {
+    await db.insert(clientHistory).values({
+      tenantId: DEFAULT_TENANT_ID,
+      contactId: deal.contactId,
+      dealId,
+      eventType: "deal_archived",
+      body: `Deal archived. ${stillQueued.length} client email job(s) remain on the won / policy dates.`,
+    });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
 }

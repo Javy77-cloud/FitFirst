@@ -139,3 +139,67 @@ export function formatMoney(value: number | string | null | undefined): string {
 export function formatPct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
+
+export const AGENCY_BRAND = {
+  name: "Javier Garcia Insurance",
+  phone: "321-429-1182",
+  reviewLinkPlaceholder: "[Google review link]",
+} as const;
+
+export const CONTACT_LANGUAGES = ["english", "spanish", "creole", ""] as const;
+export type ContactLanguage = (typeof CONTACT_LANGUAGES)[number];
+
+export const EMAIL_LOCALES = ["en", "es"] as const;
+export type EmailLocale = (typeof EMAIL_LOCALES)[number];
+
+export const SEND_FROM_PROVIDERS = [
+  "google",
+  "outlook",
+  "yahoo",
+  "zoho_mail",
+  "imap",
+] as const;
+export type SendFromProvider = (typeof SEND_FROM_PROVIDERS)[number];
+
+export const SEND_FROM_LABELS: Record<SendFromProvider, string> = {
+  google: "Google",
+  outlook: "Outlook",
+  yahoo: "Yahoo",
+  zoho_mail: "Zoho Mail",
+  imap: "IMAP",
+};
+
+export const EMAIL_TEMPLATE_KINDS = [
+  "google_review",
+  "checkin_4mo",
+  "renewal_awareness",
+  "custom",
+] as const;
+export type EmailTemplateKind = (typeof EMAIL_TEMPLATE_KINDS)[number];
+
+export const EMAIL_TRIGGER_EVENTS = ["closed_won", "policy_renewal"] as const;
+export type EmailTriggerEvent = (typeof EMAIL_TRIGGER_EVENTS)[number];
+
+export const EMAIL_DELAY_UNITS = ["days", "months"] as const;
+export type EmailDelayUnit = (typeof EMAIL_DELAY_UNITS)[number];
+
+export const EMAIL_JOB_STATUSES = ["queued", "sent", "failed"] as const;
+export type EmailJobStatus = (typeof EMAIL_JOB_STATUSES)[number];
+
+export const EMAIL_JOB_HOLD = "connect_email_to_send";
+
+export const MERGE_FIELDS = [
+  { key: "contact_first_name", label: "Contact first name" },
+  { key: "agency_name", label: "Agency name" },
+  { key: "policy_type", label: "Policy type" },
+  { key: "won_date", label: "Won date" },
+  { key: "review_link", label: "Review link" },
+  { key: "agent_phone", label: "Agent phone" },
+] as const;
+
+export function formatDay(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toISOString().slice(0, 10);
+}

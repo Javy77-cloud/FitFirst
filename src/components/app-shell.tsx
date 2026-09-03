@@ -7,6 +7,8 @@ import {
   Contact,
   FileStack,
   Home,
+  Mail,
+  Settings,
   Shield,
   Users,
 } from "lucide-react";
@@ -23,6 +25,8 @@ const NAV = [
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings/email-templates", label: "Email templates", icon: Mail },
 ];
 
 export async function AppShell({

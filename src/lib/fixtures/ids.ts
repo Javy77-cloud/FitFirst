@@ -19,3 +19,33 @@ export const CARRIER_IDS = {
   americanIntegrity: "33333333-3333-4333-8333-333333333309",
   vave: "33333333-3333-4333-8333-333333333310",
 } as const;
+
+/** Templates + triggers slice. e011* avoids Ana, roles, email-inbox, and reports IDs. */
+export const EMAIL_TEMPLATE_IDS = {
+  googleReview: "e0111111-e011-4111-8111-e01111111101",
+  checkin4mo: "e0111111-e011-4111-8111-e01111111102",
+  renewal: "e0111111-e011-4111-8111-e01111111103",
+} as const;
+
+export const EMAIL_TRIGGER_IDS = {
+  wonReview: "e0111111-e011-4111-8111-e01111111111",
+  wonCheckin: "e0111111-e011-4111-8111-e01111111112",
+  renewal60: "e0111111-e011-4111-8111-e01111111113",
+  renewal30: "e0111111-e011-4111-8111-e01111111114",
+} as const;
+
+export const EMAIL_SEND_ACCOUNT_IDS = {
+  google: "e0111111-e011-4111-8111-e01111111121",
+  outlook: "e0111111-e011-4111-8111-e01111111122",
+  yahoo: "e0111111-e011-4111-8111-e01111111123",
+  zoho_mail: "e0111111-e011-4111-8111-e01111111124",
+  imap: "e0111111-e011-4111-8111-e01111111125",
+} as const;
+
+export const DEMO_CLIENT = {
+  leadId: "e0111111-e011-4111-8111-e01111111131",
+  contactId: "e0111111-e011-4111-8111-e01111111132",
+  dealId: "e0111111-e011-4111-8111-e01111111133",
+  policyId: "e0111111-e011-4111-8111-e01111111134",
+  reviewJobId: "e0111111-e011-4111-8111-e01111111141",
+} as const;

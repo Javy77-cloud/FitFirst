@@ -8,7 +8,7 @@ This is not a Zoho clone and does not call a live CRM. The domain follows a solo
 - Quotes live on the deal. A quote never creates a policy.
 - One master risk worksheet per property/auto. Source PDFs stay attachments; extracted values land on the master record with a **confidence score**.
 - Shop **in-appetite / green** markets first. Yellow is a stretch override. Red is skip.
-- Internal alerts stay in-app.
+- Internal alerts stay in-app. Client mail (review, check-in, renewal) goes through whichever inbox the tenant connected.
 
 Life and health are CRM notes only. Carrier portal automation is an empty adapter interface — no real logins.
 
@@ -48,6 +48,24 @@ Open [http://localhost:43147](http://localhost:43147).
 5. Carrier-wide rules (QBE frame+20 mi coast, Benchmark/Hadron aged clay, HOC no NB, VYRD takeout + Brevard $350k) stay distinct from one-house floors (Tailrow $354k, VAVE $418,491, GeoVera $363k, SageSure MSB $349,868). SageSure published min Cov A remains $100k in named counties.
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
+
+## Email templates and triggers
+
+**Settings → Email templates** is the client-mail library. Every template has English and Spanish. Spanish-preferring contacts get ES; English, Creole, or blank get EN.
+
+Seeded example copy (edit in your voice — no street address is invented):
+
+1. Google review request — Closed Won + 4 days
+2. Four-month check-in
+3. Renewal awareness (P&C 60 / 30)
+
+**Settings → Email triggers** turns each job on or off, edits the delay, picks the template, and picks send-from (Google / Outlook / Yahoo / Zoho Mail / IMAP). If no inbox is connected, the send stays **queued** with **connect email to send**.
+
+Jobs hang off the **won date** and **policy expiration**. Archiving a deal does not cancel them. Attempted sends land on the contact / deal / policy activity timeline. The broker is never emailed for CRM chores. Ana Dib is never emailed.
+
+Bind (Closed Won) schedules the review and four-month check-in. Seed loads one queued demo on Marcus Bell — not a mass send.
+
+Live OAuth is not implemented. Use **Connect demo** on the triggers page, or the work-email inbox slice when that branch is merged.
 
 ## Schema
 
