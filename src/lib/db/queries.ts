@@ -1179,3 +1179,129 @@ export async function historyForContact(contactId: string) {
     .where(and(eq(clientHistory.tenantId, tenant()), eq(clientHistory.contactId, contactId)))
     .orderBy(desc(clientHistory.occurredAt));
 }
+
+function contactName(contact: { firstName: string; lastName: string } | null): string {
+  if (!contact) return "Unknown account";
+  if (contact.firstName.includes(" ")) return `${contact.firstName} ${contact.lastName}`.trim();
+  return `${contact.lastName}, ${contact.firstName}`;
+}
+
+async function loadCommissionTotals(scope: OwnerHomeScope): Promise<CommissionTotals> {
+  const tables = await detectOwnerHomeTables();
+  if (!tables.commissions) return null;
+  try {
+    const rows = await rawSql<{ pending: string; paid: string }[]>`
+      select
+        coalesce(sum(amount) filter (where status = 'pending'), 0)::text as pending,
+        coalesce(sum(amount) filter (where status = 'paid'), 0)::text as paid
+      from commissions
+      where tenant_id = ${scope.tenantId}
+        and (
+          ${scope.agentUserId}::uuid is null
+          or agent_id = ${scope.agentUserId}::uuid
+        )
+    `;
+    const row = rows[0];
+    return {
+      pending: Number(row?.pending ?? 0),
+      paid: Number(row?.paid ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function ownerHomeDashboard() {
+  const scope = await currentOwnerHomeScope();
+  const tables = await detectOwnerHomeTables();
+
+  const policyRows = await db
+    .select({
+      policy: policies,
+      contact: contacts,
+      carrier: carriers,
+    })
+    .from(policies)
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .where(eq(policies.tenantId, scope.tenantId));
+
+  const dealRows = await db
+    .select()
+    .from(deals)
+    .where(eq(deals.tenantId, scope.tenantId));
+
+  const taskRows = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, scope.tenantId), eq(reviewTasks.status, "open")))
+    .orderBy(asc(reviewTasks.dueDate));
+
+  const homePolicies: HomePolicy[] = policyRows.map(({ policy, contact, carrier }) => ({
+    id: policy.id,
+    contactId: policy.contactId,
+    carrierId: policy.carrierId,
+    carrierName: carrier?.name ?? null,
+    contactName: contactName(contact),
+    policyNumber: policy.policyNumber,
+    lineOfBusiness: policy.lineOfBusiness,
+    status: policy.status,
+    premium: policy.premium == null ? 0 : Number(policy.premium),
+    effectiveDate: policy.effectiveDate,
+    expirationDate: policy.expirationDate,
+    ownerId: null,
+  }));
+
+  const homeDeals: HomeDeal[] = dealRows.map((deal) => ({
+    id: deal.id,
+    title: deal.title,
+    pipelineStage: deal.pipelineStage,
+    lineOfBusiness: deal.lineOfBusiness,
+    boundAt: deal.boundAt,
+    updatedAt: deal.updatedAt,
+    contactId: deal.contactId,
+    ownerId: null,
+  }));
+
+  const homeTasks: HomeTask[] = taskRows.map((task) => ({
+    id: task.id,
+    title: task.title,
+    dueDate: task.dueDate,
+    kind: task.kind,
+    dealId: task.dealId,
+    policyId: task.policyId,
+    contactId: task.contactId,
+  }));
+
+  const scopedPolicies = filterByAssignee(homePolicies, scope.agentUserId, Boolean(tables.assigneeColumn));
+  const scopedDeals = filterByAssignee(homeDeals, scope.agentUserId, Boolean(tables.dealAssigneeColumn));
+
+  const commissions = await loadCommissionTotals(scope);
+
+  const snapshot = buildOwnerHome({
+    asOf: DESK_AS_OF,
+    policies: scopedPolicies,
+    deals: scopedDeals,
+    tasks: homeTasks,
+    commissions,
+  });
+
+  return {
+    snapshot,
+    scope,
+    tables,
+    hasOpportunitiesRoute: tables.opportunities,
+    hasCommissionsRoute: tables.commissions,
+  };
+}
+
+export async function listBoundPendingDeals() {
+  const [dealRows, policyRows] = await Promise.all([
+    db.select().from(deals).where(eq(deals.tenantId, tenant())),
+    db.select({ contactId: policies.contactId }).from(policies).where(eq(policies.tenantId, tenant())),
+  ]);
+  const covered = new Set(policyRows.map((p) => p.contactId));
+  return dealRows.filter(
+    (deal) => WON_STAGES.has(deal.pipelineStage.toLowerCase()) && (!deal.contactId || !covered.has(deal.contactId)),
+  );
+}

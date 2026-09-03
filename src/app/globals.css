@@ -7,6 +7,10 @@
 /*
   Design tokens. Restyle the product here — application logic
   never hardcodes these colors, radii, or densities.
+
+  Locked desk: light paper, ink/slate text, muted terracotta.
+  --ff-bg is always off-white — never charcoal, navy, or dark mode.
+  Not InsuredMine #ff6a00. CHECK blue and Quote Sheet yellow stay status-only.
 */
 :root {
   --ff-navy: #0c2340;
@@ -37,7 +41,7 @@
   --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
   --ff-density: 1rem;
 
-  --background: var(--ff-canvas);
+  --background: var(--ff-bg);
   --foreground: var(--ff-ink);
   --card: var(--ff-card);
   --card-foreground: var(--ff-ink);
@@ -61,18 +65,19 @@
   --chart-4: var(--ff-red);
   --chart-5: var(--ff-navy);
   --radius: 0.4rem;
-  --sidebar: var(--ff-navy);
+  --sidebar: var(--ff-sidebar);
   --sidebar-foreground: var(--ff-sidebar-text);
   --sidebar-primary: var(--ff-accent);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--ff-navy-mid);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1c3b5c;
+  --sidebar-primary-foreground: #fffdfb;
+  --sidebar-accent: var(--ff-sidebar-wash);
+  --sidebar-accent-foreground: var(--ff-accent);
+  --sidebar-border: var(--ff-sidebar-line);
   --sidebar-ring: var(--ff-accent);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-ff-bg: var(--ff-bg);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ibm-plex);
   --font-mono: var(--font-ibm-plex-mono);
@@ -84,6 +89,7 @@
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--ff-sidebar-muted);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -102,6 +108,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--ff-accent-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -118,6 +125,7 @@
   --color-fit-check-bg: var(--ff-check-bg);
   --color-navy: var(--ff-navy);
   --color-navy-mid: var(--ff-navy-mid);
+  --color-ink: var(--ff-ink);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -134,6 +142,9 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+  }
+  a {
+    text-underline-offset: 0.15em;
   }
 }
 

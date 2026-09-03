@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { isNull, eq, and, sql } from "drizzle-orm";
 import {
@@ -54,7 +55,7 @@ export async function AppShell({
   eyebrow,
   actions,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   title: string;
   eyebrow?: string;
   actions?: React.ReactNode;

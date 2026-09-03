@@ -240,3 +240,48 @@ export const CARRIER_IDS = {
   americanIntegrity: "33333333-3333-4333-8333-333333333309",
   vave: "33333333-3333-4333-8333-333333333310",
 } as const;
+
+/**
+ * Owner-home book. Ruiz / Patel / Grant IDs match the opportunities slice
+ * (`aa11…` / `aa22…`) so a merge does not duplicate those households.
+ * Harbor Key and pipeline-only shops use `bb11…` / `bb22…` / `bb33…`.
+ */
+export const OWNER_CONTACT_IDS = {
+  ruiz: "aa111111-1111-4111-8111-000000000006",
+  patel: "aa111111-1111-4111-8111-000000000003",
+  grant: "aa111111-1111-4111-8111-000000000004",
+  harborKey: "bb111111-1111-4111-8111-000000000001",
+  pike: "bb111111-1111-4111-8111-000000000002",
+  soto: "bb111111-1111-4111-8111-000000000003",
+  nguyen: "bb111111-1111-4111-8111-000000000004",
+  reyes: "bb111111-1111-4111-8111-000000000005",
+} as const;
+
+export const OWNER_POLICY_IDS = {
+  ruizHo: "aa222222-2222-4222-8222-000000000006",
+  ruizAuto: "aa222222-2222-4222-8222-000000000007",
+  patelFlood: "aa222222-2222-4222-8222-000000000003",
+  grantHo: "aa222222-2222-4222-8222-000000000004",
+  /** Prior-book HO3 on Ana. Not the 2026-09-02 shop. */
+  dibHoPrior: "aa222222-2222-4222-8222-000000000005",
+  harborGl: "bb222222-2222-4222-8222-000000000001",
+  pikeAuto: "bb222222-2222-4222-8222-000000000002",
+  sotoLapsed: "bb222222-2222-4222-8222-000000000003",
+} as const;
+
+export const OWNER_DEAL_IDS = {
+  harbor: "bb333333-3333-4333-8333-000000000001",
+  nguyen: "bb333333-3333-4333-8333-000000000002",
+  reyes: "bb333333-3333-4333-8333-000000000003",
+} as const;
+
+export const OWNER_LEAD_IDS = {
+  harbor: "bb444444-4444-4444-8444-000000000001",
+  nguyen: "bb444444-4444-4444-8444-000000000002",
+  reyes: "bb444444-4444-4444-8444-000000000003",
+} as const;
+
+export const OWNER_TASK_IDS = {
+  reyesIssue: "bb555555-5555-4555-8555-000000000001",
+  sotoLapse: "bb555555-5555-4555-8555-000000000002",
+} as const;
