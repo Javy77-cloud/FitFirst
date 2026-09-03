@@ -39,7 +39,7 @@ export default async function EditEmailTemplatePage({
           columns.
         </p>
       )}
-      {template.isExampleCopy ? (
+      {"isExampleCopy" in template && template.isExampleCopy ? (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
           Example copy for Javier Garcia Insurance (321-429-1182). Edit the body, then uncheck
           “example copy” so a later seed does not overwrite your voice. Mail sends from the
