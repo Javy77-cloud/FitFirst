@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, LINES } from "@/lib/domain";
@@ -346,6 +347,15 @@ export async function createDealOutreach(formData: FormData) {
   }
 
   revalidateCrm([`/deals/${deal.id}`, "/tasks"]);
+  const referer = (await headers()).get("referer");
+  if (referer) {
+    try {
+      redirect(new URL(referer).pathname + new URL(referer).search);
+    } catch (error) {
+      if (typeof error === "object" && error && "digest" in error) throw error;
+    }
+  }
+  redirect("/deals");
 }
 
 export async function updateDealCrmNotes(formData: FormData) {
