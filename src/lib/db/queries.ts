@@ -1,5 +1,9 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { isAdmin, type Actor } from "@/lib/auth/rbac";
+import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { isUuid } from "@/lib/ids";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { addUtcDays, DESK_AS_OF, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
@@ -23,6 +27,7 @@ import { db, sql as rawSql } from "./index";
 import {
   accounts,
   activities,
+  agencySettings,
   activityLogs,
   alerts,
   appetiteRules,
@@ -250,9 +255,25 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
     .orderBy(asc(activities.startAt), asc(activities.dueAt));
 }
 
-const paidByUsers = alias(users, "paid_by_users");
-
 const tenant = () => DEFAULT_TENANT_ID;
+
+async function getActor(): Promise<Actor> {
+  const session = await currentDeskSession();
+  if (session.user) {
+    return {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      role: session.user.role === "agent" ? "agent" : "admin",
+    };
+  }
+  return {
+    id: session.userId ?? ADMIN_USER_ID,
+    name: session.name,
+    email: session.isAgent ? "maya@fitfirst.local" : "javy@fitfirst.local",
+    role: session.isAgent ? "agent" : "admin",
+  };
+}
 
 function ownerWhere(actor: Actor, column: AnyPgColumn): SQL | undefined {
   if (isAdmin(actor)) return undefined;
@@ -711,6 +732,10 @@ export async function listAlerts(unreadOnly = false) {
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 }
 
+export async function listReviewQueue() {
+  return listReviewTasks();
+}
+
 export async function listReviewTasks(opts: { all?: boolean } = {}) {
   return db
     .select()
@@ -743,6 +768,7 @@ export async function getDealWorkspace(dealId: string) {
     .from(deals)
     .where(and(eq(deals.tenantId, tenant()), eq(deals.id, dealId)));
   if (!deal) return null;
+  const actor = await getActor();
   if (!isAdmin(actor) && deal.ownerId !== actor.id) return null;
 
   const [risk] = await db

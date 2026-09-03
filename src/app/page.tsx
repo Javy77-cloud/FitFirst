@@ -4,6 +4,7 @@ import { OwnerDesk } from "@/components/home/owner-desk";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { markAlertRead } from "@/app/actions/alerts";
 import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
+import { entityHref } from "@/lib/crm/display";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
