@@ -46,7 +46,7 @@ Open [http://localhost:43147](http://localhost:43147).
 3. **Sample clean dec** applies high-confidence values automatically.
 4. **Markets** is filter-first: ten markets, **0 green / 10 skip**. QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable. Floors are log attempts, not wins. No policy is created from these quotes.
 5. Carrier-wide rules (QBE frame+20 mi coast, Benchmark/Hadron aged clay, HOC no NB, VYRD takeout + Brevard $350k) stay distinct from one-house floors (Tailrow $354k, VAVE $418,491, GeoVera $363k, SageSure MSB $349,868). SageSure published min Cov A remains $100k in named counties.
-6. **Carriers** lists appointments by written line (Home / Auto / Flood / Umbrella) and selling agency (AFA, First Connect, Agentero). First-wave Home is appointed for the seeded shop carriers. Markets may skip an explicit not-appointed row; a missing row is unknown, not a skip.
+6. **Carriers** is the desk book: portal login, customer-service phone, agent phone, website/agent portal, carrier info. Use **Columns** to show Appointments. Appetite / don't-write / Cov A / roof / coast / mobile stay behind **Appetite** on the row. **Decline log** lives under Carriers (not the left rail). First-wave Home is appointed for the seeded shop carriers. Markets may skip an explicit not-appointed row; a missing row is unknown, not a skip. Ana stays unbound at Cov A **$321,000**.
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 

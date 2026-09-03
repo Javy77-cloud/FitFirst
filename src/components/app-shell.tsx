@@ -5,7 +5,6 @@ import {
   Building2,
   ClipboardList,
   Contact,
-  FileStack,
   Home,
   Shield,
   Users,
@@ -21,7 +20,6 @@ const NAV = [
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/policies", label: "Policies", icon: Shield },
   { href: "/carriers", label: "Carriers", icon: Building2 },
-  { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
 ];
 

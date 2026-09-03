@@ -22,6 +22,13 @@
       "when": 1788398953111,
       "tag": "0002_carrier_appointments",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788463696374,
+      "tag": "0003_carrier_desk_contacts",
+      "breakpoints": true
     }
   ]
 }

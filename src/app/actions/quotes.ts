@@ -131,5 +131,6 @@ export async function recordManualAttempt(formData: FormData) {
   });
 
   revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/carriers/logs");
   revalidatePath("/logs");
 }

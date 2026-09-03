@@ -1,12 +1,17 @@
 import { updateCarrierAppointment } from "@/app/actions/appointments";
 import { Button } from "@/components/ui/button";
 import { SELLING_AGENCIES, writtenLineLabel } from "@/lib/domain";
-import type { CarrierAppointment } from "@/lib/db/schema";
+export type AppointmentRowInput = {
+  id: string;
+  writtenLine: string;
+  appointed: boolean;
+  sellingAgency: string;
+};
 
 export function AppointmentRows({
   appointments,
 }: {
-  appointments: CarrierAppointment[];
+  appointments: AppointmentRowInput[];
 }) {
   if (appointments.length === 0) {
     return (

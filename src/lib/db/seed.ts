@@ -18,6 +18,7 @@ import {
   risks,
   tenants,
 } from "./schema";
+import { CARRIER_DESK } from "@/lib/carriers/desk";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
 
@@ -195,7 +196,9 @@ export async function seed() {
     });
 
   for (const carrier of fixture.carriers) {
-    const id = CARRIER_IDS[carrier.key as CarrierKey];
+    const key = carrier.key as CarrierKey;
+    const id = CARRIER_IDS[key];
+    const desk = CARRIER_DESK[key];
     await db
       .insert(carriers)
       .values({
@@ -205,6 +208,12 @@ export async function seed() {
         writtenLines: carrier.writtenLines,
         dontWriteNotes: carrier.dontWriteNotes,
         portalStatus: carrier.portalStatus,
+        portalLogin: desk.portalLogin,
+        customerServicePhone: desk.customerServicePhone,
+        agentPhone: desk.agentPhone,
+        website: desk.website,
+        agentPortalUrl: desk.agentPortalUrl,
+        carrierInfo: desk.carrierInfo,
         fixtureTag: "fl-ho3-2026-09-02",
         active: true,
       })
@@ -215,6 +224,12 @@ export async function seed() {
           writtenLines: carrier.writtenLines,
           dontWriteNotes: carrier.dontWriteNotes,
           portalStatus: carrier.portalStatus,
+          portalLogin: desk.portalLogin,
+          customerServicePhone: desk.customerServicePhone,
+          agentPhone: desk.agentPhone,
+          website: desk.website,
+          agentPortalUrl: desk.agentPortalUrl,
+          carrierInfo: desk.carrierInfo,
           fixtureTag: "fl-ho3-2026-09-02",
           active: true,
           updatedAt: new Date(),

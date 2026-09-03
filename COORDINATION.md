@@ -23,7 +23,7 @@ Seed (Ana fixture untouched):
 
 Quote Sheet / Markets may skip non-appointed lines using the extra red. Keep Ana at 0 green / 10 skip — Home is appointed, so this slice does not change her shop.
 
-Migration: `0002_carrier_appointments.sql`. Next schema change is `0003_*`.
+Migrations: `0002_carrier_appointments.sql`, `0003_carrier_desk_contacts.sql`. Next schema change is `0004_*`.
 
 ### Files owned
 
@@ -31,6 +31,7 @@ Migration: `0002_carrier_appointments.sql`. Next schema change is `0003_*`.
 - `src/components/carriers/appointment-rows.tsx`
 - `src/lib/appetite/rule-input.ts`
 - `drizzle/0002_carrier_appointments.sql`
+- `drizzle/0003_carrier_desk_contacts.sql`
 
 ### Shared files (additive only)
 
@@ -40,7 +41,11 @@ Migration: `0002_carrier_appointments.sql`. Next schema change is `0003_*`.
 - `src/lib/domain.ts` — selling agencies + written-line labels
 - `src/lib/appetite/match.ts` — optional `not_appointed` extra red only
 - `src/lib/appetite/evaluate-deal.ts` / `src/app/actions/quotes.ts` — pass `appointed` when a row exists
-- `src/app/carriers/page.tsx` — show appointments
+- `src/app/carriers/page.tsx` — desk columns + column picker; appetite is a drill-in
+- `src/app/carriers/logs/page.tsx` — decline log parked here; `/logs` redirects
+- `src/lib/carriers/desk.ts` — seeded portal / phone / website book (Ana JSON untouched)
+
+Walkthrough (Javy): left rail **Carriers**. Main table = portal login, CS phone, agent phone, website/agent portal, carrier info. **Columns** toggles those plus Appointments. **Appetite** on a row opens write/don't-write, Cov A, roof/coast/mobile. **Decline log** is the header button on Carriers — not a left-rail item. Ana remains unbound at Cov A **$321,000**.
 
 ## Other slices (do not revert)
 

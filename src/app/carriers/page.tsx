@@ -1,7 +1,9 @@
-import { AppointmentRows } from "@/components/carriers/appointment-rows";
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { formatMoney } from "@/lib/domain";
+import { CarriersTable, type CarrierTableRow } from "@/components/carriers/carriers-table";
+import { buttonVariants } from "@/components/ui/button";
 import { listCarrierAppointments, listCarriers } from "@/lib/db/queries";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -15,69 +17,50 @@ export default async function CarriersPage() {
     byCarrier.set(row.carrierId, list);
   }
 
+  const tableRows: CarrierTableRow[] = rows.map(({ carrier, rule }) => ({
+    id: carrier.id,
+    name: carrier.name,
+    portalLogin: carrier.portalLogin,
+    customerServicePhone: carrier.customerServicePhone,
+    agentPhone: carrier.agentPhone,
+    website: carrier.website,
+    agentPortalUrl: carrier.agentPortalUrl,
+    carrierInfo: carrier.carrierInfo,
+    dontWriteNotes: carrier.dontWriteNotes,
+    rule: rule
+      ? {
+          minCovA: rule.minCovA,
+          maxCovA: rule.maxCovA,
+          maxRoofAge: rule.maxRoofAge,
+          minMilesToCoast: rule.minMilesToCoast,
+          mobileAllowed: rule.mobileAllowed,
+          notes: rule.notes,
+        }
+      : null,
+    appointments: (byCarrier.get(carrier.id) ?? []).map((row) => ({
+      id: row.id,
+      writtenLine: row.writtenLine,
+      appointed: row.appointed,
+      sellingAgency: row.sellingAgency,
+    })),
+  }));
+
   return (
-    <AppShell title="Carriers & appetite">
+    <AppShell
+      title="Carriers"
+      actions={
+        <Link href="/carriers/logs" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Decline log
+        </Link>
+      }
+    >
       <p className="mb-3 text-sm text-muted-foreground">
-        Structured appetite plus appointments — which lines this agency can write, and
-        through which selling agency (AFA, First Connect, or Agentero). Shop appointed
-        lines only. Markets treats an explicit not-appointed row as skip. The 2026-09-02
-        Palm Bay shop is a fixture, not production underwriting.
+        Desk book: how this agency logs in and who to call. Appetite, don&apos;t-write, Cov A,
+        roof, coast, and mobile stay internal for matching — open Appetite on a row. Use
+        Columns to show or hide fields. Appointments stay off the main table unless you turn
+        that column on.
       </p>
-      <section className="ff-card overflow-x-auto">
-        <table className="ff-table">
-          <thead>
-            <tr>
-              <th>Carrier</th>
-              <th>Portal</th>
-              <th>Cov A</th>
-              <th>Roof / coast / mobile</th>
-              <th>Appointments</th>
-              <th>Don&apos;t write</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-6 text-sm text-muted-foreground">
-                  No carriers seeded. Run <code>npm run db:seed</code>.
-                </td>
-              </tr>
-            ) : (
-              rows.map(({ carrier, rule }) => (
-                <tr key={`${carrier.id}-${rule?.id ?? "none"}`}>
-                  <td className="font-medium">
-                    {carrier.name}
-                    <div className="text-[11px] text-muted-foreground">
-                      {(carrier.writtenLines ?? []).join(", ") || "No written lines"}
-                    </div>
-                  </td>
-                  <td className="uppercase">{carrier.portalStatus.replaceAll("_", " ")}</td>
-                  <td className="text-xs">
-                    {rule
-                      ? `${formatMoney(rule.minCovA)} – ${formatMoney(rule.maxCovA)}`
-                      : "—"}
-                  </td>
-                  <td className="text-xs">
-                    {rule ? (
-                      <>
-                        max roof {rule.maxRoofAge ?? "—"}y · coast{" "}
-                        {rule.minMilesToCoast ?? 0}+ mi · mobile{" "}
-                        {rule.mobileAllowed ? "yes" : "no"}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td>
-                    <AppointmentRows appointments={byCarrier.get(carrier.id) ?? []} />
-                  </td>
-                  <td className="text-xs">{carrier.dontWriteNotes}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
+      <CarriersTable rows={tableRows} />
     </AppShell>
   );
 }
