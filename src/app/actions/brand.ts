@@ -20,6 +20,7 @@ import {
   type DeskRole,
   type FontPreset,
 } from "@/lib/domain";
+import { mergeOneList } from "@/lib/brand/column-layout";
 import { DESK_ROLE_COOKIE, getDeskActor, isAdminActor } from "@/lib/brand/desk-role";
 import { db } from "@/lib/db";
 import { agencyBrand, agentUiPrefs, emailSignatures } from "@/lib/db/schema";
@@ -198,6 +199,59 @@ export async function saveMyDeskPrefs(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       actorKey: actor.key,
       ...values,
+    });
+  }
+  refreshBrand();
+}
+
+/**
+ * Persist one list's column keys. CRM UI picker (bc-1fc5b3be) should call this
+ * instead of creating a second picker/store.
+ * - Admin saving agency default → agency_brand.default_column_layout
+ * - Anyone saving their desk → agent_ui_prefs.column_layout for that actor
+ */
+export async function saveListColumnLayout(formData: FormData) {
+  const listKey = str(formData, "listKey");
+  const scope = str(formData, "scope") === "agency" ? "agency" : "agent";
+  const keys = formData.getAll("keys").map((v) => String(v)).filter(Boolean);
+  if (!LIST_COLUMN_CATALOG[listKey]) return;
+
+  if (scope === "agency") {
+    await requireAdmin();
+    const [existing] = await db
+      .select()
+      .from(agencyBrand)
+      .where(eq(agencyBrand.tenantId, DEFAULT_TENANT_ID));
+    const next = mergeOneList(existing?.defaultColumnLayout, listKey, keys);
+    if (existing) {
+      await db
+        .update(agencyBrand)
+        .set({ defaultColumnLayout: next, updatedAt: new Date() })
+        .where(eq(agencyBrand.id, existing.id));
+    }
+    refreshBrand();
+    return;
+  }
+
+  const actor = await getDeskActor();
+  const [existing] = await db
+    .select()
+    .from(agentUiPrefs)
+    .where(
+      and(eq(agentUiPrefs.tenantId, DEFAULT_TENANT_ID), eq(agentUiPrefs.actorKey, actor.key)),
+    );
+  const next = mergeOneList(existing?.columnLayout, listKey, keys);
+  if (existing) {
+    await db
+      .update(agentUiPrefs)
+      .set({ columnLayout: next, updatedAt: new Date() })
+      .where(eq(agentUiPrefs.id, existing.id));
+  } else {
+    await db.insert(agentUiPrefs).values({
+      id: actor.key === "admin" ? AGENT_PREF_IDS.admin : AGENT_PREF_IDS.agent,
+      tenantId: DEFAULT_TENANT_ID,
+      actorKey: actor.key,
+      columnLayout: next,
     });
   }
   refreshBrand();

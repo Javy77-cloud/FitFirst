@@ -52,12 +52,20 @@ function initials(name: string) {
   return ((parts[0]?.[0] ?? "J") + (parts[1]?.[0] ?? "G")).toUpperCase();
 }
 
-export function DeskRoleSwitcher({ actor }: { actor: DeskActor }) {
+export function DeskRoleSwitcher({
+  actor,
+  compact = false,
+}: {
+  actor: DeskActor;
+  compact?: boolean;
+}) {
   return (
-    <div className="space-y-1.5">
-      <div className="text-[10px] uppercase tracking-wide text-sidebar-foreground/50">
-        Acting as
-      </div>
+    <div className={compact ? "flex items-center gap-1" : "space-y-1.5"}>
+      {compact ? null : (
+        <div className="text-[10px] uppercase tracking-wide text-sidebar-foreground/50">
+          Acting as
+        </div>
+      )}
       <div className="flex gap-1">
         <form action={switchDeskRole} className="flex-1">
           <input type="hidden" name="role" value="admin" />
@@ -82,10 +90,12 @@ export function DeskRoleSwitcher({ actor }: { actor: DeskActor }) {
           </Button>
         </form>
       </div>
-      <p className="text-[11px] text-sidebar-foreground/70">
-        {actor.name} · {actor.label}
-        {actor.role === "admin" ? " sets agency chrome" : " — your desk only"}
-      </p>
+      {compact ? null : (
+        <p className="text-[11px] text-sidebar-foreground/70">
+          {actor.name} · {actor.label}
+          {actor.role === "admin" ? " sets agency chrome" : " — your desk only"}
+        </p>
+      )}
     </div>
   );
 }

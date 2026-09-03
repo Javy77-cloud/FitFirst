@@ -48,17 +48,37 @@ export async function AppShell({
   const desk = await getResolvedDesk().catch(() => null);
   const agencyName = desk?.agencyName ?? "Javier Garcia Insurance";
 
+  const mark = <AgencyMark agencyName={agencyName} logoUrl={desk?.logoUrl ?? null} />;
+
   return (
     <div
-      className="flex min-h-screen bg-background"
+      className="flex min-h-screen flex-col bg-background md:flex-row"
       data-ff-color={desk?.colorPreset ?? "agency"}
       data-ff-font={desk?.fontPreset ?? "plex"}
       data-ff-density={desk?.density ?? "comfortable"}
     >
-      <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+      <header className="flex items-center justify-between bg-sidebar px-3 py-2 md:hidden">
+        <Link href="/" className="min-w-0">
+          {mark}
+        </Link>
+        {desk ? <DeskRoleSwitcher actor={desk.actor} compact /> : null}
+      </header>
+      <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card px-2 py-2 md:hidden">
+        {NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="shrink-0 rounded-md px-2 py-1 text-xs text-navy hover:bg-muted"
+          >
+            {item.label}
+            {item.href === "/alerts" && unread > 0 ? ` (${unread})` : ""}
+          </Link>
+        ))}
+      </nav>
+      <aside className="hidden w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="border-b border-sidebar-border px-4 py-4">
           <Link href="/" className="block">
-            <AgencyMark agencyName={agencyName} logoUrl={desk?.logoUrl ?? null} />
+            {mark}
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
@@ -91,7 +111,7 @@ export async function AppShell({
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3">
+        <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 sm:px-5">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
               Personal lines worksheet
@@ -100,7 +120,7 @@ export async function AppShell({
           </div>
           <div className="flex items-center gap-2">{actions}</div>
         </header>
-        <main className="flex-1 p-5">{children}</main>
+        <main className="flex-1 p-4 sm:p-5">{children}</main>
       </div>
     </div>
   );

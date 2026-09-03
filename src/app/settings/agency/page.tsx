@@ -13,6 +13,7 @@ import {
   DENSITY_PRESETS,
   FONT_PRESET_LABELS,
   FONT_PRESETS,
+  defaultColumnLayout,
 } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
@@ -96,8 +97,8 @@ export default async function AgencySettingsPage() {
             </div>
             <ColumnLayoutFields
               prefix="agencyCol_"
-              layout={desk.columnLayout}
-              note="Agency default columns. The CRM list picker (sibling) should write this same JSON — do not fork a second picker on the lists."
+              layout={brand?.defaultColumnLayout ?? defaultColumnLayout()}
+              note="Agency default columns — not your personal override. The CRM list picker writes this same JSON on agency_brand.default_column_layout."
             />
             {desk.isAdmin ? (
               <Button type="submit" size="sm">

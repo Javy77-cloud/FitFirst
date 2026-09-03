@@ -69,4 +69,4 @@ Work-email / Zoho Mail own `email_connections` and `src/lib/email/*`. This slice
 - Reports + automations — `would_send_logs` is in-app would-send, not this client mail path.
 - Agency ops — campaigns / SMS stubs. Client review / check-in / renewal mail lives here, not in Campaigns.
 - Roles + commissions — `users` / `ff_actor` / full login. This slice uses a **minimum Admin/Agent cookie** (`ff_desk_role`) until that lands. Prefer `getActor` when present. Do not recreate `users`.
-- CRM UI column picker (`bc-1fc5b3be`) — owns the in-list picker. Persist to `agency_brand.default_column_layout` (Admin default) or `agent_ui_prefs.column_layout` (agent override). Do not fork a second picker.
+- CRM UI column picker (`bc-1fc5b3be`) — owns the in-list picker. Persist via `saveListColumnLayout` (`listKey`, `scope=agency|agent`, `keys`) to `agency_brand.default_column_layout` or `agent_ui_prefs.column_layout`. Settings checkboxes write the same JSON. Do not fork a second picker or a second store.
