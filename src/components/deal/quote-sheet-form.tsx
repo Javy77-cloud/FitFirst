@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
-import { sheetCounts } from "@/lib/quote-sheet/apply";
+import { sheetCounts, sourceTag } from "@/lib/quote-sheet/apply";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { SheetDrop } from "@/components/deal/sheet-drop";

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fixture from "@/lib/fixtures/ana-dib-ho3-2026-09-02.json";
 import { MELBOURNE_DEC_TEXT } from "@/lib/fixtures/sample-melbourne-dec";
+import { PHOTO_DEC_TEXT } from "@/lib/fixtures/sample-photo-dec";
 import { extractFieldsFromText } from "@/lib/extraction/extract";
 import { anaHomeSheetValues } from "./ana-home";
 import {

@@ -37,7 +37,7 @@ type Pattern = {
 const PATTERNS: Pattern[] = [
   {
     key: "year_built",
-    re: /(?:year\s*built|yr\.?\s*blt\.?|yr\s*built|built)\s*[:#]?\s*([0-9lIOqQ]{4})/i,
+    re: /(?:year\s*(?:built|of\s*construction)|yr\.?\s*blt\.?|yr\s*built|constructed)\s*[:#]?\s*([0-9lIOqQ]{4})/i,
     normalize: normalizeYear,
   },
   {
@@ -147,12 +147,12 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "state",
-    re: /(?:location|property\s*address|insured\s*location).+,\s*([A-Z]{2})\s+\d{5}/i,
+    re: /(?:location|property\s*address|insured\s*location|residence\s*premises|premises(?:\s*address)?).+,\s*([A-Z]{2})\s+\d{5}/i,
     normalize: (s) => s.toUpperCase(),
   },
   {
     key: "zip",
-    re: /(?:location|property\s*address|insured\s*location).+,\s*[A-Z]{2}\s+(\d{5})/i,
+    re: /(?:location|property\s*address|insured\s*location|residence\s*premises|premises(?:\s*address)?).+,\s*[A-Z]{2}\s+(\d{5})/i,
     normalize: (s) => s,
   },
   {

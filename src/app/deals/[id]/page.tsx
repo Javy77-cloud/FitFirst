@@ -90,6 +90,10 @@ export default async function DealPage({
     `/deals/${deal.id}?line=${line}&tab=${tab}`;
 
   const unusedLines = SHOP_LINES.filter((line) => !lines.includes(line));
+  const requestedTab = query.tab ?? "sheet";
+  const activeTab = ["sheet", "files", "markets", "quotes"].includes(requestedTab)
+    ? requestedTab
+    : "sheet";
   const address = {
     address1: sheet.values.address1?.value || risk?.address1,
     city: sheet.values.city?.value || risk?.city,

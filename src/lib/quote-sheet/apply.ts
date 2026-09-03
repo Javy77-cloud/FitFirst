@@ -37,14 +37,42 @@ export function neverCheckCoverageA(fieldKey: string, existing?: QuoteSheetField
   return existing?.source === "javy";
 }
 
+/** Public-records gap-fill loses to a value read from the dec / photo. */
+export function isPublicRecordsSource(field?: QuoteSheetFieldValue | null): boolean {
+  return field?.source === "public" || field?.source === "public-records";
+}
+
+/** Desk label for a cell source — dec/photo beat public records. */
+export function sourceTag(cell: QuoteSheetFieldValue): string | null {
+  if (cell.source === "javy") return "Javy-tested";
+  if (!cell.value.trim() && cell.status === "missing") return null;
+  if (cell.source === "photo-ocr") {
+    return cell.status === "check" ? "CHECK · photo-OCR" : "photo-OCR";
+  }
+  if (cell.source === "extracted") {
+    return cell.status === "check" ? "CHECK · dec" : "dec";
+  }
+  if (cell.source === "public" || cell.source === "public-records") {
+    return cell.status === "check" ? "CHECK · public" : "public";
+  }
+  if (cell.status === "check") return "CHECK";
+  return null;
+}
+
+export type ApplyFillOptions = {
+  source?: QuoteSheetFieldValue["source"];
+};
+
 export function applyExtractedToSheet(
   line: ShopLine,
   existing: Record<string, QuoteSheetFieldValue>,
   extracted: ExtractedInput[],
+  options?: ApplyFillOptions,
 ): ApplyFillResult {
   const values: Record<string, QuoteSheetFieldValue> = { ...existing };
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
+  const source = options?.source ?? "extracted";
 
   for (const item of extracted) {
     const key = extractKeyToSheetKey(line, item.fieldKey);
@@ -54,7 +82,7 @@ export function applyExtractedToSheet(
       skippedKeys.push(key);
       continue;
     }
-    if (!fieldIsBlank(current)) {
+    if (!fieldIsBlank(current) && !isPublicRecordsSource(current)) {
       skippedKeys.push(key);
       continue;
     }
@@ -303,7 +331,9 @@ export function mergeAgentEdits(
       continue;
     }
     const unchangedCheck =
-      current?.status === "check" && current.value === typed && current.source === "extracted";
+      current?.status === "check" &&
+      current.value === typed &&
+      (current.source === "extracted" || current.source === "photo-ocr");
     if (unchangedCheck) {
       next[field.key] = current;
       continue;
@@ -327,7 +357,14 @@ export function confirmField(
   }
   return {
     ...existing,
-    [fieldKey]: { ...current, status: "confirmed", source: current.source === "extracted" ? "agent" : current.source },
+    [fieldKey]: {
+      ...current,
+      status: "confirmed",
+      source:
+        current.source === "extracted" || current.source === "photo-ocr"
+          ? "agent"
+          : current.source,
+    },
   };
 }
 
