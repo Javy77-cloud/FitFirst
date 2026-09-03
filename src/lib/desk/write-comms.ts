@@ -26,6 +26,8 @@ export type WriteCommsInput = RelatedRecordIds & {
   assignee?: string | null;
   threadKey?: string | null;
   occurredAt?: Date | null;
+  durationSeconds?: number | null;
+  outcome?: string | null;
   id?: string;
   logEmailJob?: boolean;
 };
@@ -52,7 +54,10 @@ export async function writeDeskComms(input: WriteCommsInput) {
   const threadKey =
     input.threadKey ||
     commsThreadKey({ channel: kind, subject, related });
-  const stamp = activityLogBody(kind, eventType, input.title);
+  const stamp = activityLogBody(kind, eventType, input.title, {
+    durationSeconds: input.durationSeconds,
+    outcome: input.outcome,
+  });
   const logBody = fullBody ? `${stamp}\n\n${fullBody}` : stamp;
 
   const [activity] = await db
@@ -67,6 +72,8 @@ export async function writeDeskComms(input: WriteCommsInput) {
       dueAt: input.dueAt ?? null,
       startAt: input.startAt ?? null,
       endAt: input.endAt ?? null,
+      durationSeconds: input.durationSeconds ?? null,
+      outcome: input.outcome ?? null,
       assignee: input.assignee ?? null,
       contactId: related.contactId,
       accountId: related.accountId,

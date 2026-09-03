@@ -642,6 +642,8 @@ export const activities = pgTable(
     dueAt: timestamp("due_at", { withTimezone: true }),
     startAt: timestamp("start_at", { withTimezone: true }),
     endAt: timestamp("end_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    outcome: text("outcome"),
     assignee: text("assignee"),
     contactId: uuid("contact_id").references(() => contacts.id),
     accountId: uuid("account_id"),

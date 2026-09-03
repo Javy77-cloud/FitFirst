@@ -31,7 +31,12 @@ export function assertRelatedRecord(related: RelatedRecordIds): RelatedRecordIds
   };
 }
 
-export function activityLogBody(kind: string, eventType: string, title: string): string {
+export function activityLogBody(
+  kind: string,
+  eventType: string,
+  title: string,
+  extras?: { durationSeconds?: number | null; outcome?: string | null },
+): string {
   const noun =
     kind === "call"
       ? "Call"
@@ -42,12 +47,30 @@ export function activityLogBody(kind: string, eventType: string, title: string):
           : kind === "sms"
             ? "Text"
             : "Task";
-  if (eventType === "created") return `${noun} created: ${title}`;
-  if (eventType === "completed") return `${noun} completed: ${title}`;
-  if (eventType === "cancelled") return `${noun} cancelled: ${title}`;
-  if (eventType === "logged") return `${noun} logged: ${title}`;
-  if (eventType === "sent") return `${noun} sent: ${title}`;
-  if (eventType === "received") return `${noun} received: ${title}`;
-  if (eventType === "bind") return title;
-  return `${noun}: ${title}`;
+  let line =
+    eventType === "created"
+      ? `${noun} created: ${title}`
+      : eventType === "completed"
+        ? `${noun} completed: ${title}`
+        : eventType === "cancelled"
+          ? `${noun} cancelled: ${title}`
+          : eventType === "logged"
+            ? `${noun} logged: ${title}`
+            : eventType === "sent"
+              ? `${noun} sent: ${title}`
+              : eventType === "received"
+                ? `${noun} received: ${title}`
+                : eventType === "bind"
+                  ? title
+                  : `${noun}: ${title}`;
+  if (kind === "call") {
+    const mins =
+      extras?.durationSeconds != null
+        ? Math.max(0, Math.round(extras.durationSeconds / 60))
+        : null;
+    const outcome = extras?.outcome?.replaceAll("_", " ");
+    if (mins != null) line += ` · ${mins} min`;
+    if (outcome) line += ` · ${outcome}`;
+  }
+  return line;
 }

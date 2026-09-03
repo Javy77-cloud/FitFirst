@@ -282,6 +282,20 @@ Shipped on `cursor/live-desk-walkthrough-531d`:
 
 Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI. Alerts list the Elena status ask with Open record.
 
+## Communication QA (`cursor/comms-qa-9e37`)
+
+Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live Zoho.
+
+- Ask a teammate (admin v1) on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown required. Seeded Javy → Maya on `HO3-ELENA-2026` (`record_asks` + activity log + Alerts).
+- Activity form logs duration + outcome on calls.
+- Click-to-call is an in-app Alerts ping (`click_to_call`). `/phone` stays a stub.
+- Settings shows email template library + trigger stubs. Nothing sends.
+- Alerts list includes the Elena ask and a work-queue ping. In-app only.
+
+## Errors smoke QA (`cursor/errors-smoke-qa-74df`)
+
+Invalid record UUIDs return 404 instead of a Postgres 22P02 500. `isUuid` guards live in loaders.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

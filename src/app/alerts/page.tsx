@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { markAlertRead } from "@/app/actions/alerts";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
@@ -34,6 +35,14 @@ export default async function AlertsPage() {
                   {alert.severity} · {alert.kind}
                   {alert.readAt ? " · read" : " · unread"}
                 </div>
+                {recordHref(alert.entityType, alert.entityId) ? (
+                  <Link
+                    href={recordHref(alert.entityType, alert.entityId)!}
+                    className="mt-1 inline-block text-xs text-primary hover:underline"
+                  >
+                    Open record
+                  </Link>
+                ) : null}
               </div>
               {!alert.readAt ? (
                 <form action={markAlertRead}>

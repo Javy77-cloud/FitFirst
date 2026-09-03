@@ -3,6 +3,7 @@ import { updateAccountRecord } from "@/app/actions/record-edit";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
+import { ClickToCall } from "@/components/click-to-call";
 import { RecordAskPanel } from "@/components/record-ask";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
@@ -62,6 +63,12 @@ export default async function AccountDetailPage({
         <span>
           In-force <strong>{activePolicyCount}</strong>
         </span>
+        <ClickToCall
+          entityType="account"
+          entityId={account.id}
+          name={account.name}
+          phone={account.phone}
+        />
       </div>
 
       <RecordSection id="record" title="This business" summary={`${account.ein ?? "No EIN"} · comms stay on this record`}>

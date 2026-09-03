@@ -4,7 +4,7 @@ import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDay } from "@/lib/domain";
+import { CALL_OUTCOMES, formatDay } from "@/lib/domain";
 import type { TimelineItem } from "@/lib/db/queries";
 import type { EmailTemplate } from "@/lib/db/schema";
 import { RecordComms } from "@/components/record-comms";
@@ -70,6 +70,21 @@ export function ActivityTimeline({
           <div>
             <Label className="text-xs">Title</Label>
             <Input name="title" required className="mt-1 h-8" placeholder="30-day check-in" />
+          </div>
+          <div>
+            <Label className="text-xs">Duration (minutes)</Label>
+            <Input name="durationMinutes" type="number" min="1" step="1" className="mt-1 h-8" placeholder="Required for a call" />
+          </div>
+          <div>
+            <Label className="text-xs">Call outcome</Label>
+            <select name="outcome" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm" defaultValue="">
+              <option value="">Not a call / pick when logging a call</option>
+              {CALL_OUTCOMES.map((outcome) => (
+                <option key={outcome} value={outcome}>
+                  {outcome.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Notes / full message</Label>

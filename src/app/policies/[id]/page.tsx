@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { formatMoney, SELLING_AGENCIES } from "@/lib/domain";
 import { getPolicyWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
+import { ClickToCall } from "@/components/click-to-call";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RelatedRollups } from "@/components/related-tables";
 import { inferLineFamily, LINE_FAMILIES, LINE_FAMILY_LABEL, previewCommission } from "@/lib/desk/commission-line";
@@ -65,6 +66,12 @@ export default async function PolicyDetailPage({
         <span className="uppercase">{policy.status}</span>
         <span>{policy.policyNumber}</span>
         <span>{formatMoney(policy.premium)}</span>
+        <ClickToCall
+          entityType="policy"
+          entityId={policy.id}
+          name={displayName}
+          phone={contact?.phone ?? account?.phone}
+        />
       </div>
 
       <RecordSection id="record" title="This policy" summary="Effective, X-Date, commission, files, comms">

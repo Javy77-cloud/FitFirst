@@ -26,5 +26,11 @@ describe("activity related-record FKs", () => {
     expect(activityLogBody("call", "logged", "Bind confirmation")).toBe(
       "Call logged: Bind confirmation",
     );
+    expect(
+      activityLogBody("call", "logged", "Bind confirmation", {
+        durationSeconds: 180,
+        outcome: "connected",
+      }),
+    ).toBe("Call logged: Bind confirmation · 3 min · connected");
   });
 });

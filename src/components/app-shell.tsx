@@ -44,6 +44,8 @@ const NAV = [
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/settings", label: "Settings", icon: ClipboardList },
   { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/phone", label: "Phone", icon: ListChecks },
+  { href: "/settings", label: "Settings", icon: Building2 },
 ];
 
 export async function AppShell({

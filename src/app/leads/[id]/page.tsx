@@ -3,6 +3,7 @@ import { createDealFromLead } from "@/app/actions/crm";
 import { updateLeadRecord } from "@/app/actions/record-edit";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { ClickToCall } from "@/components/click-to-call";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
@@ -34,6 +35,12 @@ export default async function LeadDetailPage({
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <span className="uppercase text-muted-foreground">{lead.status}</span>
         <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
+        <ClickToCall
+          entityType="lead"
+          entityId={lead.id}
+          name={`${lead.firstName} ${lead.lastName}`}
+          phone={lead.phone}
+        />
       </div>
 
       <RecordSection id="record" title="This lead" summary="Info already on the lead — do not retype">

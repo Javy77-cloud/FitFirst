@@ -52,12 +52,25 @@ function revalidateRelated(related: {
   revalidatePath("/tasks");
 }
 
+function durationSecondsFromForm(form: FormData) {
+  const raw = str(form, "durationMinutes") || str(form, "durationSeconds");
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return str(form, "durationMinutes") ? Math.round(n * 60) : Math.round(n);
+}
+
 export async function logDeskActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
   const title =
     str(formData, "title") ||
     (kind === "call" ? "Logged call" : kind === "meeting" ? "Meeting" : kind === "email" ? "Email" : kind === "sms" ? "Text" : "Task");
   const related = relatedFromForm(formData, kind);
+  const durationSeconds = durationSecondsFromForm(formData);
+  const outcome = str(formData, "outcome") || null;
+  if (kind === "call" && (!durationSeconds || !outcome)) {
+    throw new Error("Call log needs a duration and an outcome.");
+  }
 
   await writeDeskComms({
     kind,
@@ -68,11 +81,13 @@ export async function logDeskActivity(formData: FormData) {
     fromAddress: str(formData, "fromAddress") || null,
     toAddress: str(formData, "toAddress") || null,
     direction: str(formData, "direction") || undefined,
-    eventType: str(formData, "eventType") || null,
+    eventType: str(formData, "eventType") || (kind === "call" ? "logged" : null),
     status: kind === "call" || kind === "email" || kind === "sms" ? "completed" : str(formData, "status") || "open",
     dueAt: when(formData, "dueAt"),
     startAt: when(formData, "startAt"),
     endAt: when(formData, "endAt"),
+    durationSeconds,
+    outcome,
     assignee: str(formData, "assignee") || null,
     ...related,
   });

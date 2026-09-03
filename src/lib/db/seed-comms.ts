@@ -5,10 +5,15 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   ADMIN_USER_ID,
   AGENT_USER_ID,
+  ELENA_ASK_ACTIVITY_ID,
+  ELENA_ASK_ALERT_ID,
+  ELENA_ASK_BODY,
+  ELENA_ASK_ID,
   ELENA_CONTACT_ID,
   ELENA_DEAL_ID,
   ELENA_EMAIL_JOB_ID,
   ELENA_POLICY_ID,
+  ELENA_WORK_ALERT_ID,
   HARBOR_ACCOUNT_ID,
   HARBOR_CONTACT_ID,
   HARBOR_DEAL_ID,
@@ -16,11 +21,6 @@ import {
 } from "@/lib/fixtures/ids";
 import { commsThreadKey } from "@/lib/desk/comms";
 import { writeDeskComms } from "@/lib/desk/write-comms";
-
-const ELENA_ASK_ID = "88888888-8888-4888-8888-888888888803";
-const ELENA_ASK_ACTIVITY_ID = "88888888-8888-4888-8888-888888888804";
-const ELENA_ASK_ALERT_ID = "88888888-8888-4888-8888-888888888805";
-const ELENA_ASK_BODY = "What's the status on HO3-ELENA-2026?";
 
 const ELENA_EMAIL_OUT_ID = "44444444-4444-4444-8444-444444444461";
 const ELENA_EMAIL_IN_ID = "44444444-4444-4444-8444-444444444462";
@@ -199,6 +199,18 @@ export async function seedCommsDesk() {
     title: "Javy Rivera asked Maya Chen for status",
     body: ELENA_ASK_BODY,
     severity: "info",
+    entityType: "policy",
+    entityId: ELENA_POLICY_ID,
+  });
+
+  await db.delete(alerts).where(eq(alerts.id, ELENA_WORK_ALERT_ID));
+  await db.insert(alerts).values({
+    id: ELENA_WORK_ALERT_ID,
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "work_ping",
+    title: "Work ping · HO3-ELENA-2026",
+    body: "In-desk reminder on the Melbourne HO3 file. Queue ping only — no broker email.",
+    severity: "warning",
     entityType: "policy",
     entityId: ELENA_POLICY_ID,
   });

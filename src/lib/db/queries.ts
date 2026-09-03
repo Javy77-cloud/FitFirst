@@ -34,6 +34,7 @@ import {
   documents,
   emailSendJobs,
   emailTemplates,
+  emailTriggers,
   extractedFields,
   formTemplates,
   claimAttachments,
@@ -221,6 +222,14 @@ export async function listEmailTemplates() {
     .from(emailTemplates)
     .where(eq(emailTemplates.tenantId, tenant()))
     .orderBy(asc(emailTemplates.name));
+}
+
+export async function listEmailTriggers() {
+  return db
+    .select()
+    .from(emailTriggers)
+    .where(eq(emailTriggers.tenantId, tenant()))
+    .orderBy(asc(emailTriggers.delayDays));
 }
 
 export async function getCarrier(id: string) {

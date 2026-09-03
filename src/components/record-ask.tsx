@@ -3,39 +3,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { currentDeskSession } from "@/lib/auth/session";
+import { listDeskUsers, listRecordAsks } from "@/lib/db/queries";
 import type { RecordAsk, User } from "@/lib/db/schema";
 
-export async function RecordAskPanel({
-  entityType,
-  entityId,
-  asks,
-  users,
-  contactId,
-  accountId,
-  policyId,
-  dealId,
-  leadId,
-}: {
+type AskProps = {
   entityType: string;
   entityId: string;
-  asks: RecordAsk[];
-  users: User[];
+  asks?: RecordAsk[];
+  users?: User[];
   contactId?: string | null;
   accountId?: string | null;
   policyId?: string | null;
   dealId?: string | null;
   leadId?: string | null;
-}) {
+};
+
+/** Ask a teammate — admin tags from a required dropdown. In-app ping + log. */
+export async function RecordAskPanel({
+  entityType,
+  entityId,
+  asks: asksProp,
+  users: usersProp,
+  contactId,
+  accountId,
+  policyId,
+  dealId,
+  leadId,
+}: AskProps) {
   const session = await currentDeskSession();
-  const names = new Map(users.map((u) => [u.id, u.name]));
+  const [asks, users] = await Promise.all([
+    asksProp ? Promise.resolve(asksProp) : listRecordAsks(entityType, entityId),
+    usersProp ? Promise.resolve(usersProp) : listDeskUsers(),
+  ]);
+  const names = new Map(users.map((user) => [user.id, user.name]));
+
   return (
-    <div className="mt-4 rounded-md border border-border p-3">
-      <h3 className="text-sm font-semibold text-navy">Ask a teammate</h3>
-      <p className="text-[11px] text-muted-foreground">
-        Tag someone for status. In-app ping + log on this record. Not a chat product.
+    <section className="ff-card mt-4 p-4">
+      <h2 className="text-sm font-semibold text-navy">Ask a teammate</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Admin v1: tag someone from the dropdown (required). Typing a name does not submit.
+        In-app ping + durable log. Not a chat product.
       </p>
       {session.isAdmin ? (
-        <form action={createRecordAsk} className="mt-2 grid gap-2 sm:grid-cols-2">
+        <form action={createRecordAsk} className="mt-3 grid gap-2 sm:grid-cols-2">
           <input type="hidden" name="entityType" value={entityType} />
           <input type="hidden" name="entityId" value={entityId} />
           {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
@@ -45,8 +55,15 @@ export async function RecordAskPanel({
           {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
           <div>
             <Label className="text-xs">Tag</Label>
-            <select name="assigneeId" required className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm">
-              <option value="">Choose person</option>
+            <select
+              name="assigneeId"
+              required
+              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Choose person
+              </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
@@ -76,7 +93,7 @@ export async function RecordAskPanel({
                 @{names.get(ask.assigneeId ?? "") ?? "teammate"} — {ask.body}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                Asked by {names.get(ask.authorId) ?? "admin"}
+                Asked by {names.get(ask.authorId ?? "") ?? "admin"}
               </p>
               {ask.status === "open" ? (
                 <form action={resolveRecordAsk} className="mt-1">
@@ -90,6 +107,8 @@ export async function RecordAskPanel({
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
+
+export const AskOnRecord = RecordAskPanel;

@@ -8,27 +8,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
-import { listEmailTemplates } from "@/lib/db/queries";
+import { listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await currentDeskSession();
-  const [brand, templates] = await Promise.all([loadAgencyBrand(), listEmailTemplates()]);
+  const [brand, templates, triggers] = await Promise.all([
+    loadAgencyBrand(),
+    listEmailTemplates(),
+    listEmailTriggers(),
+  ]);
 
   return (
     <AppShell title="Settings">
       <section className="ff-card mb-4 max-w-2xl p-4">
         <h2 className="text-sm font-semibold text-navy">Phone line</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The in-desk softphone uses this computer&apos;s microphone and stores call duration on
-          hangup. There is no Twilio, Vonage, or other PSTN vendor in this repo.
+          Click-to-call on a record writes an in-app Alerts ping only. There is no Twilio, Vonage,
+          or email. Call duration and outcome log on Contact or Policy 360. The softphone stays a stub.
         </p>
         <div className="mt-4 rounded-md border border-dashed border-border px-3 py-4 text-sm">
           <div className="font-medium text-navy">Connect your phone line later</div>
           <p className="mt-1 text-muted-foreground">
-            Bring-your-own trunk. Click-to-call already opens the softphone shell and a{" "}
-            <code className="text-xs">tel:</code> fallback.
+            Bring-your-own trunk. Do not paste vendor keys into the app.
           </p>
           <button
             type="button"
@@ -106,6 +109,28 @@ export default async function SettingsPage() {
                 </Button>
               </form>
             ))}
+          </section>
+
+          <section className="ff-card mb-4 max-w-2xl space-y-3 p-4">
+            <h2 className="text-sm font-semibold text-navy">Triggers (stubs only)</h2>
+            <p className="text-xs text-muted-foreground">
+              Hung on won date, not pipeline stage. ARCHIVE does not cancel these. No SendGrid.
+            </p>
+            {triggers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No trigger stubs.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {triggers.map((trigger) => (
+                  <li key={trigger.id} className="rounded-md border border-dashed border-border px-3 py-2">
+                    <div className="font-medium text-navy">{trigger.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {trigger.kind} · +{trigger.delayDays} day · hang off {trigger.hangOff} ·{" "}
+                      {trigger.enabled ? "enabled stub" : "off"}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </>
       ) : (

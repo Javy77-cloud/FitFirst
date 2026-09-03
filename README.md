@@ -36,6 +36,14 @@ Docker: `docker compose up --build` (same port).
 
 Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row.
 
+## Communication (this desk)
+
+- **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
+- **Activities** on Account 360: task / meeting / call. Calls need duration + outcome.
+- **Click-to-call** writes an in-app Alerts ping only (`/phone` is a stub). No email.
+- **Email templates + triggers** live under Settings as stubs. Nothing sends.
+- **Alerts** stay in-desk (asks + work-queue pings).
+
 ## Tests
 
 ```bash
