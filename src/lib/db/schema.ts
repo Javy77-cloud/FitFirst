@@ -470,9 +470,13 @@ export const commissions = pgTable(
     premium: numeric("premium", { precision: 12, scale: 2 }).notNull(),
     ratePct: numeric("rate_pct", { precision: 5, scale: 2 }).notNull(),
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    agencyAmount: numeric("agency_amount", { precision: 12, scale: 2 }),
+    producerAmount: numeric("producer_amount", { precision: 12, scale: 2 }),
+    sellingAgency: text("selling_agency").notNull().default("afa"),
     status: text("status").notNull().default("pending"),
     dueDate: timestamp("due_date", { withTimezone: true }),
     paidDate: timestamp("paid_date", { withTimezone: true }),
+    paidByUserId: uuid("paid_by_user_id").references(() => users.id),
     period: text("period").notNull(),
     ...timestamps,
   },
@@ -480,6 +484,50 @@ export const commissions = pgTable(
     index("commissions_tenant_idx").on(t.tenantId),
     index("commissions_agent_idx").on(t.tenantId, t.agentId),
     index("commissions_status_due_idx").on(t.tenantId, t.status, t.dueDate),
+    index("commissions_selling_idx").on(t.tenantId, t.sellingAgency),
+  ],
+);
+
+export const commissionEvents = pgTable(
+  "commission_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => users.id),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status").notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("commission_events_tenant_idx").on(t.tenantId, t.commissionId),
+  ],
+);
+
+export const carrierGoals = pgTable(
+  "carrier_goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id),
+    year: integer("year").notNull(),
+    premiumGoal: numeric("premium_goal", { precision: 12, scale: 2 }).notNull(),
+    policyGoal: integer("policy_goal"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("carrier_goals_tenant_idx").on(t.tenantId),
+    uniqueIndex("carrier_goals_year_uidx").on(t.tenantId, t.carrierId, t.year),
   ],
 );
 
@@ -521,5 +569,7 @@ export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
+export type CommissionEvent = typeof commissionEvents.$inferSelect;
+export type CarrierGoalRow = typeof carrierGoals.$inferSelect;
 export type RecordAsk = typeof recordAsks.$inferSelect;
 export type AgencySettings = typeof agencySettings.$inferSelect;

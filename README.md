@@ -55,8 +55,11 @@ The desk is solo-now / agency-later. Seed creates **Javy Rivera (Admin)** and **
 
 - Admin sees every contact, deal, policy, and producer-pay row, and can assign an owner.
 - Agent sees only their own book and commissions.
-- **Commissions** is producer pay on bound policies (pending / payable / paid / held). Ana Dib quote floors are not paid commissions.
-- An **ask** is a short note on a commission or policy (`what about this?` / request payout). Open or done. Admin marks resolved. Not chat.
+- **Commissions** is producer pay on bound policies (pending / payable / paid / held). Each row stores premium, rate, agency $, producer split $, selling agency (AFA / First Connect / Agentero), and paid date. Ana Dib quote floors are not paid commissions — she stays at $0.
+- Admin can **mark paid**. That logs who did it on `commission_events` and leaves Policy status alone. This is not QuickBooks, Applied Pay, or insured premium collection.
+- Filters: date, carrier, line, agent, selling agency, plus the existing 30-day / quarter / FY windows. Per-agent report is `/commissions/agents/[id]`.
+- Switch to **Maya Chen (Agent)** in the rail to see only her paid/unpaid rows (Ruiz HO pending, Ruiz auto paid). Harbor Key Marine is commercial (GL pending, BOP paid) on Javy's book.
+- An **ask** is a short note on a commission or policy (`what about this?` / request payout). Open or done. Admin marks resolved. Not chat. No emails to the broker or agents.
 
 ## Schema
 

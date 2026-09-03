@@ -4,8 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getActor } from "@/lib/auth/session";
-import { commissionAmount, periodKey } from "@/lib/commissions/math";
-import { DEFAULT_COMMISSION_RATE_PCT, DEFAULT_TENANT_ID } from "@/lib/domain";
+import { periodKey, splitCommission } from "@/lib/commissions/math";
+import {
+  DEFAULT_COMMISSION_RATE_PCT,
+  DEFAULT_PRODUCER_SPLIT_PCT,
+  DEFAULT_TENANT_ID,
+} from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   clientHistory,
@@ -258,6 +262,11 @@ export async function bindDeal(formData: FormData) {
   if (premiumNum > 0) {
     const due = new Date(effective);
     due.setUTCDate(due.getUTCDate() + 30);
+    const split = splitCommission(
+      premiumNum,
+      DEFAULT_COMMISSION_RATE_PCT,
+      DEFAULT_PRODUCER_SPLIT_PCT,
+    );
     await db.insert(commissions).values({
       tenantId: DEFAULT_TENANT_ID,
       agentId: ownerId,
@@ -266,7 +275,10 @@ export async function bindDeal(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness,
       premium: premiumNum.toFixed(2),
       ratePct: DEFAULT_COMMISSION_RATE_PCT.toFixed(2),
-      amount: commissionAmount(premiumNum, DEFAULT_COMMISSION_RATE_PCT).toFixed(2),
+      amount: split.producerAmount.toFixed(2),
+      agencyAmount: split.agencyAmount.toFixed(2),
+      producerAmount: split.producerAmount.toFixed(2),
+      sellingAgency: "afa",
       status: "pending",
       dueDate: due,
       period: periodKey(effective),

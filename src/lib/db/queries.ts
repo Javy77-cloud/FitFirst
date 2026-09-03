@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lte, sql, type SQL } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { getActor } from "@/lib/auth/session";
 import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import {
@@ -13,8 +13,10 @@ import {
   agencySettings,
   alerts,
   appetiteRules,
+  carrierGoals,
   carriers,
   clientHistory,
+  commissionEvents,
   commissions,
   contacts,
   deals,
@@ -30,6 +32,8 @@ import {
   tenants,
   users,
 } from "./schema";
+
+const paidByUsers = alias(users, "paid_by_users");
 
 const tenant = () => DEFAULT_TENANT_ID;
 
@@ -244,31 +248,59 @@ export async function dashboardStats() {
   return { stats: row, recentDeals, tasks, unread, expiring };
 }
 
-export async function listCommissions(opts: {
+export type CommissionListFilters = {
   view: CommissionView;
   range: CommissionRange;
   now?: Date;
-}) {
+  from?: string | null;
+  to?: string | null;
+  carrierId?: string | null;
+  line?: string | null;
+  agentId?: string | null;
+  sellingAgency?: string | null;
+};
+
+function parseDayStart(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function parseDayEnd(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T23:59:59.999Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export async function listCommissions(opts: CommissionListFilters) {
   const actor = await getActor();
   const settings = await getAgencySettings();
   const now = opts.now ?? new Date();
   const window = rangeWindow(opts.range, now, settings.fiscalYearStartMonth);
 
   const filters: Array<SQL | undefined> = [eq(commissions.tenantId, tenant())];
-  if (!isAdmin(actor) || opts.view === "mine") {
-    filters.push(eq(commissions.agentId, actor.id));
-  }
+  const scopedAgentId =
+    !isAdmin(actor) || opts.view === "mine" ? actor.id : opts.agentId || null;
+  if (scopedAgentId) filters.push(eq(commissions.agentId, scopedAgentId));
+  if (opts.carrierId) filters.push(eq(commissions.carrierId, opts.carrierId));
+  if (opts.line) filters.push(eq(commissions.lineOfBusiness, opts.line));
+  if (opts.sellingAgency) filters.push(eq(commissions.sellingAgency, opts.sellingAgency));
   if (window.statuses?.length) {
     filters.push(inArray(commissions.status, window.statuses));
   }
-  if (window.upcoming) {
+  const from = opts.from ? parseDayStart(opts.from) : null;
+  const to = opts.to ? parseDayEnd(opts.to) : null;
+  if (window.upcoming && !from && !to) {
     filters.push(gte(commissions.dueDate, window.start ?? now));
   } else {
-    const dateCol = window.statuses?.length === 1 && window.statuses[0] === "paid"
-      ? commissions.paidDate
-      : commissions.createdAt;
-    if (window.start) filters.push(gte(dateCol, window.start));
-    if (window.end) filters.push(lte(dateCol, window.end));
+    const dateCol =
+      window.statuses?.length === 1 && window.statuses[0] === "paid"
+        ? commissions.paidDate
+        : commissions.createdAt;
+    const start = from ?? window.start;
+    const end = to ?? window.end;
+    if (start) filters.push(gte(dateCol, start));
+    if (end) filters.push(lte(dateCol, end));
   }
 
   const rows = await db
@@ -278,25 +310,28 @@ export async function listCommissions(opts: {
       policy: policies,
       contact: contacts,
       carrier: carriers,
+      paidBy: paidByUsers,
     })
     .from(commissions)
     .innerJoin(users, eq(commissions.agentId, users.id))
     .leftJoin(policies, eq(commissions.policyId, policies.id))
     .leftJoin(contacts, eq(policies.contactId, contacts.id))
     .leftJoin(carriers, eq(commissions.carrierId, carriers.id))
+    .leftJoin(paidByUsers, eq(commissions.paidByUserId, paidByUsers.id))
     .where(and(...filters))
     .orderBy(desc(commissions.dueDate), desc(commissions.createdAt));
 
   return { rows, actor, fiscalYearStartMonth: settings.fiscalYearStartMonth };
 }
 
-export async function listCommissionWidgets() {
+export async function listCommissionWidgets(view: CommissionView = "agency") {
   const actor = await getActor();
   const filters: Array<SQL | undefined> = [eq(commissions.tenantId, tenant())];
-  if (!isAdmin(actor)) filters.push(eq(commissions.agentId, actor.id));
+  if (!isAdmin(actor) || view === "mine") filters.push(eq(commissions.agentId, actor.id));
   return db
     .select({
       amount: commissions.amount,
+      agencyAmount: commissions.agencyAmount,
       status: commissions.status,
       dueDate: commissions.dueDate,
       paidDate: commissions.paidDate,
@@ -314,16 +349,67 @@ export async function getCommission(id: string) {
       policy: policies,
       contact: contacts,
       carrier: carriers,
+      paidBy: paidByUsers,
     })
     .from(commissions)
     .innerJoin(users, eq(commissions.agentId, users.id))
     .leftJoin(policies, eq(commissions.policyId, policies.id))
     .leftJoin(contacts, eq(policies.contactId, contacts.id))
     .leftJoin(carriers, eq(commissions.carrierId, carriers.id))
+    .leftJoin(paidByUsers, eq(commissions.paidByUserId, paidByUsers.id))
     .where(and(eq(commissions.tenantId, tenant()), eq(commissions.id, id)));
   if (!row) return null;
   if (!isAdmin(actor) && row.commission.agentId !== actor.id) return null;
   return row;
+}
+
+export async function listCommissionEvents(commissionIds: string[]) {
+  if (commissionIds.length === 0) return [];
+  return db
+    .select({
+      event: commissionEvents,
+      actor: users,
+    })
+    .from(commissionEvents)
+    .innerJoin(users, eq(commissionEvents.actorId, users.id))
+    .where(
+      and(
+        eq(commissionEvents.tenantId, tenant()),
+        inArray(commissionEvents.commissionId, commissionIds),
+      ),
+    )
+    .orderBy(desc(commissionEvents.createdAt));
+}
+
+export async function listCarrierGoals(year?: number) {
+  const filters: Array<SQL | undefined> = [eq(carrierGoals.tenantId, tenant())];
+  if (year) filters.push(eq(carrierGoals.year, year));
+  return db
+    .select({
+      goal: carrierGoals,
+      carrier: carriers,
+    })
+    .from(carrierGoals)
+    .innerJoin(carriers, eq(carrierGoals.carrierId, carriers.id))
+    .where(and(...filters))
+    .orderBy(asc(carriers.name));
+}
+
+export async function getAgentForReport(agentId: string) {
+  const actor = await getActor();
+  if (!isAdmin(actor) && agentId !== actor.id) {
+    return { actor, agent: null };
+  }
+  const [row] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+    })
+    .from(users)
+    .where(and(eq(users.tenantId, tenant()), eq(users.id, agentId)));
+  return { actor, agent: row ?? null };
 }
 
 export async function listAsksFor(entityType: "commission" | "policy", entityId: string) {

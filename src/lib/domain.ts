@@ -9,6 +9,7 @@ export const LINES = [
   "FLOOD",
   "UMBRELLA",
   "GL",
+  "BOP",
   "LIFE",
   "HEALTH",
 ] as const;
@@ -173,6 +174,19 @@ export const COMMISSION_VIEWS = ["mine", "agency"] as const;
 export type CommissionView = (typeof COMMISSION_VIEWS)[number];
 
 export const DEFAULT_COMMISSION_RATE_PCT = 10;
+export const DEFAULT_PRODUCER_SPLIT_PCT = 100;
+
+export const SELLING_AGENCIES = [
+  { key: "afa", label: "AFA" },
+  { key: "first_connect", label: "First Connect" },
+  { key: "agentero", label: "Agentero" },
+] as const;
+export type SellingAgency = (typeof SELLING_AGENCIES)[number]["key"];
+
+export function sellingAgencyLabel(value: string | null | undefined): string {
+  const match = SELLING_AGENCIES.find((row) => row.key === value);
+  return match?.label ?? value ?? "—";
+}
 
 export function formatRatePct(value: number | string | null | undefined): string {
   if (value == null || value === "") return "—";

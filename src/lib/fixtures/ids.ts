@@ -48,3 +48,40 @@ export const DEMO_COMMISSION = {
 export const DEMO_ASK_SHAH = "88888888-8888-4888-8888-888888888801";
 export const DEMO_ASK_HALE = "88888888-8888-4888-8888-888888888802";
 export const AGENCY_SETTINGS_ID = "99999999-9999-4999-8999-999999999901";
+
+/** Shared with the opportunities book so Ruiz is one contact after merge. */
+export const OPP_CONTACT_IDS = {
+  ruiz: "aa111111-1111-4111-8111-000000000006",
+} as const;
+
+export const OPP_POLICY_IDS = {
+  ruizHo: "aa222222-2222-4222-8222-000000000006",
+  ruizAuto: "aa222222-2222-4222-8222-000000000007",
+} as const;
+
+/** Harbor Key commercial — distinct from dashboard / opportunities ID blocks. */
+export const DEMO_CONTACT_HARBOR_KEY = "bb111111-1111-4111-8111-000000000001";
+export const DEMO_POLICY_HARBOR_GL = "bb222222-2222-4222-8222-000000000001";
+export const DEMO_POLICY_HARBOR_BOP = "bb222222-2222-4222-8222-000000000002";
+
+export const EARNINGS_COMMISSION = {
+  ruizHo: "bb333333-3333-4333-8333-000000000001",
+  ruizAuto: "bb333333-3333-4333-8333-000000000002",
+  harborGl: "bb333333-3333-4333-8333-000000000003",
+  harborBop: "bb333333-3333-4333-8333-000000000004",
+} as const;
+
+export const EARNINGS_EVENT = {
+  ruizAuto: "bb444444-4444-4444-8444-000000000001",
+  harborBop: "bb444444-4444-4444-8444-000000000002",
+  reedAuto: "bb444444-4444-4444-8444-000000000003",
+  bellAuto: "bb444444-4444-4444-8444-000000000004",
+  javyQ2: "bb444444-4444-4444-8444-000000000005",
+} as const;
+
+/** Same rows the book-dashboard slice seeds — do not invent other goal numbers. */
+export const CARRIER_GOAL_IDS = {
+  americanIntegrity2026: "77777777-7777-4777-8777-777777777701",
+  geovera2026: "77777777-7777-4777-8777-777777777702",
+  tailrow2026: "77777777-7777-4777-8777-777777777703",
+} as const;

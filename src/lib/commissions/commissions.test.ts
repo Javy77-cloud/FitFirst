@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { commissionAmount, periodKey } from "./math";
+import { commissionAmount, periodKey, splitCommission } from "./math";
 import {
+  earningsTotals,
+  goalProgress,
   rollupByAgent,
   rollupByCarrier,
   rollupByLine,
+  rollupPendingPaidBy,
   widgetTotals,
   type CommissionRollupRow,
 } from "./rollups";
@@ -49,6 +52,16 @@ describe("commission math", () => {
     expect(commissionAmount(2184, 12)).toBe(262.08);
     expect(commissionAmount(1420, 10)).toBe(142);
     expect(periodKey(new Date("2026-09-02T00:00:00.000Z"))).toBe("2026-09");
+  });
+
+  it("splits agency commission from the producer share", () => {
+    const full = splitCommission(3340, 12, 100);
+    expect(full.agencyAmount).toBe(400.8);
+    expect(full.producerAmount).toBe(400.8);
+
+    const half = splitCommission(1910, 10, 50);
+    expect(half.agencyAmount).toBe(191);
+    expect(half.producerAmount).toBe(95.5);
   });
 });
 
@@ -113,5 +126,49 @@ describe("agency rollups", () => {
     expect(totals.pending).toBeCloseTo(262.08);
     expect(totals.paidLast30).toBeCloseTo(184);
     expect(totals.upcoming).toBeCloseTo(358.08);
+  });
+
+  it("separates pending vs paid for agency and producer dollars", () => {
+    const totals = earningsTotals([
+      { amount: "200.00", agencyAmount: "400.00", status: "pending" },
+      { amount: "95.50", agencyAmount: "191.00", status: "paid" },
+      { amount: "50.00", agencyAmount: "80.00", status: "held" },
+    ]);
+    expect(totals.pendingProducer).toBeCloseTo(250);
+    expect(totals.paidProducer).toBeCloseTo(95.5);
+    expect(totals.pendingAgency).toBeCloseTo(480);
+    expect(totals.paidAgency).toBeCloseTo(191);
+    expect(totals.pendingCount).toBe(2);
+    expect(totals.paidCount).toBe(1);
+  });
+
+  it("rolls pending vs paid by carrier without inventing extra scores", () => {
+    const byCarrier = rollupPendingPaidBy(rows, (row) => ({
+      key: row.carrierId ?? "none",
+      label: row.carrierName,
+    }));
+    const ai = byCarrier.find((row) => row.key === "ai");
+    expect(ai?.pending).toBeCloseTo(262.08);
+    expect(ai?.paid).toBe(0);
+    const bm = byCarrier.find((row) => row.key === "bm");
+    expect(bm?.paid).toBeCloseTo(142);
+    expect(bm?.pending).toBe(0);
+  });
+
+  it("reports written premium against existing carrier goals only", () => {
+    expect(goalProgress(rows, [])).toEqual([]);
+    const progress = goalProgress(rows, [
+      {
+        carrierId: "ai",
+        carrierName: "American Integrity",
+        year: 2026,
+        premiumGoal: "8000.00",
+        policyGoal: 4,
+      },
+    ]);
+    expect(progress).toHaveLength(1);
+    expect(progress[0]?.writtenPremium).toBeCloseTo(2184);
+    expect(progress[0]?.writtenPolicies).toBe(1);
+    expect(progress[0]?.premiumGoal).toBe(8000);
   });
 });

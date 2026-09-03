@@ -8,6 +8,7 @@ export type CommissionRollupRow = {
   lineOfBusiness: string;
   premium: number | string;
   amount: number | string;
+  agencyAmount?: number | string | null;
   status: string;
 };
 
@@ -76,4 +77,122 @@ export function widgetTotals(
     }
   }
   return { pending, paidLast30, upcoming };
+}
+
+export type EarningsTotals = {
+  pendingAgency: number;
+  paidAgency: number;
+  pendingProducer: number;
+  paidProducer: number;
+  pendingCount: number;
+  paidCount: number;
+};
+
+/** Pending = not paid (pending / payable / held). Paid is status paid only. */
+export function earningsTotals(
+  rows: Array<{
+    amount: number | string;
+    agencyAmount?: number | string | null;
+    status: string;
+  }>,
+): EarningsTotals {
+  const totals: EarningsTotals = {
+    pendingAgency: 0,
+    paidAgency: 0,
+    pendingProducer: 0,
+    paidProducer: 0,
+    pendingCount: 0,
+    paidCount: 0,
+  };
+  for (const row of rows) {
+    const producer = toNumber(row.amount);
+    const agency = toNumber(row.agencyAmount ?? row.amount);
+    if (row.status === "paid") {
+      totals.paidProducer += producer;
+      totals.paidAgency += agency;
+      totals.paidCount += 1;
+    } else {
+      totals.pendingProducer += producer;
+      totals.pendingAgency += agency;
+      totals.pendingCount += 1;
+    }
+  }
+  return totals;
+}
+
+export type PendingPaidTotal = {
+  key: string;
+  label: string;
+  pending: number;
+  paid: number;
+  pendingCount: number;
+  paidCount: number;
+};
+
+export function rollupPendingPaidBy(
+  rows: CommissionRollupRow[],
+  keyOf: (row: CommissionRollupRow) => { key: string; label: string },
+): PendingPaidTotal[] {
+  const map = new Map<string, PendingPaidTotal>();
+  for (const row of rows) {
+    const { key, label } = keyOf(row);
+    const current = map.get(key) ?? {
+      key,
+      label,
+      pending: 0,
+      paid: 0,
+      pendingCount: 0,
+      paidCount: 0,
+    };
+    const value = toNumber(row.amount);
+    if (row.status === "paid") {
+      current.paid += value;
+      current.paidCount += 1;
+    } else {
+      current.pending += value;
+      current.pendingCount += 1;
+    }
+    map.set(key, current);
+  }
+  return [...map.values()].sort((a, b) => b.paid + b.pending - (a.paid + a.pending));
+}
+
+export type CarrierGoalInput = {
+  carrierId: string;
+  carrierName: string;
+  year: number;
+  premiumGoal: number | string;
+  policyGoal: number | null;
+};
+
+export type GoalProgressRow = {
+  carrierId: string;
+  label: string;
+  year: number;
+  premiumGoal: number;
+  writtenPremium: number;
+  policyGoal: number | null;
+  writtenPolicies: number;
+};
+
+export function goalProgress(
+  rows: Array<{
+    carrierId: string | null;
+    premium: number | string;
+  }>,
+  goals: CarrierGoalInput[],
+): GoalProgressRow[] {
+  if (goals.length === 0) return [];
+  return goals.map((goal) => {
+    const matching = rows.filter((row) => row.carrierId === goal.carrierId);
+    return {
+      carrierId: goal.carrierId,
+      label: goal.carrierName,
+      year: goal.year,
+      premiumGoal: toNumber(goal.premiumGoal),
+      writtenPremium: matching.reduce((sum, row) => sum + toNumber(row.premium), 0),
+      policyGoal: goal.policyGoal,
+      writtenPolicies: matching.length,
+    };
+  });
 }
