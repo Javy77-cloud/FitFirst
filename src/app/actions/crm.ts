@@ -30,7 +30,9 @@ export async function findMatchingLead(input: LeadIdentity) {
   return rows.find((row) => isSameLead(row, input)) ?? null;
 }
 
-export async function findOrCreateLead(input: LeadIdentity & { source?: string; notes?: string }) {
+export async function findOrCreateLead(
+  input: LeadIdentity & { source?: string | null; notes?: string | null },
+) {
   const existing = await findMatchingLead(input);
   if (existing) return { lead: existing, created: false };
   const [lead] = await db
@@ -234,7 +236,6 @@ export async function createContact(formData: FormData) {
     .returning();
   revalidatePath("/contacts");
   redirect(`/contacts/${row.id}`);
-  return row;
 }
 
 export async function bindDeal(formData: FormData) {

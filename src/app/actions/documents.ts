@@ -115,6 +115,14 @@ async function runExtraction(documentId: string, dealId: string) {
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
 
+  if (!doc.riskId) {
+    await db
+      .update(documents)
+      .set({ status: result.glanceRequired ? "needs_glance" : "extracted" })
+      .where(eq(documents.id, documentId));
+    return;
+  }
+
   const [risk] = await db.select().from(risks).where(eq(risks.id, doc.riskId));
   const applyPatch: Record<string, unknown> = {};
 
