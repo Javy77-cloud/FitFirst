@@ -13,10 +13,17 @@ const KIND_LABEL: Record<EmailTemplateKind, string> = {
   custom: "Custom",
 };
 
-export function TemplateForm({ template }: { template?: EmailTemplate }) {
+export function TemplateForm({
+  template,
+  readOnly = false,
+}: {
+  template?: EmailTemplate;
+  readOnly?: boolean;
+}) {
   return (
     <form action={saveEmailTemplate} className="space-y-4">
       {template ? <input type="hidden" name="id" value={template.id} /> : null}
+      <fieldset disabled={readOnly} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="name" className="text-xs">
@@ -124,9 +131,12 @@ export function TemplateForm({ template }: { template?: EmailTemplate }) {
           </div>
         </fieldset>
       </div>
-      <Button type="submit" size="sm">
-        {template ? "Save template" : "Create template"}
-      </Button>
+      {readOnly ? null : (
+        <Button type="submit" size="sm">
+          {template ? "Save template" : "Create template"}
+        </Button>
+      )}
+      </fieldset>
     </form>
   );
 }

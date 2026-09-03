@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { SettingsSubnav } from "@/components/templates/email-activity";
 import { TemplateForm } from "@/components/templates/template-form";
 import { Button } from "@/components/ui/button";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { getEmailTemplate } from "@/lib/db/template-queries";
 
 export const dynamic = "force-dynamic";
@@ -14,22 +15,30 @@ export default async function EditEmailTemplatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const template = await getEmailTemplate(id);
+  const [template, desk] = await Promise.all([getEmailTemplate(id), getResolvedDesk()]);
   if (!template) notFound();
 
   return (
     <AppShell
       title={template.name}
       actions={
-        <form action={duplicateEmailTemplate}>
-          <input type="hidden" name="id" value={template.id} />
-          <Button type="submit" size="sm" variant="outline">
-            Duplicate
-          </Button>
-        </form>
+        desk.isAdmin ? (
+          <form action={duplicateEmailTemplate}>
+            <input type="hidden" name="id" value={template.id} />
+            <Button type="submit" size="sm" variant="outline">
+              Duplicate
+            </Button>
+          </form>
+        ) : null
       }
     >
       <SettingsSubnav current="templates" />
+      {desk.isAdmin ? null : (
+        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Templates are Admin-only. Agents can read the library; use My desk for colors and
+          columns.
+        </p>
+      )}
       {template.isExampleCopy ? (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
           Example copy for Javier Garcia Insurance (321-429-1182). Edit the body, then uncheck
@@ -41,7 +50,7 @@ export default async function EditEmailTemplatePage({
           Your edited copy. Seed will not overwrite this template.
         </p>
       )}
-      <TemplateForm template={template} />
+      <TemplateForm template={template} readOnly={!desk.isAdmin} />
     </AppShell>
   );
 }
