@@ -33,6 +33,7 @@ import {
   emailSendJobs,
   extractedFields,
   formTemplates,
+  claimAttachments,
   issuedCertificates,
   leads,
   locations,
@@ -400,6 +401,14 @@ export async function getIssuedCertificate(accountId: string, certId: string) {
     account: workspace.account,
     certificate,
   };
+}
+
+export async function getClaimAttachment(id: string) {
+  const [row] = await db
+    .select()
+    .from(claimAttachments)
+    .where(and(eq(claimAttachments.tenantId, tenant()), eq(claimAttachments.id, id)));
+  return row ?? null;
 }
 
 export async function getLastQuoteSheetDealId() {

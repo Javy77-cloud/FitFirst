@@ -74,7 +74,7 @@ export async function seedOwnerBook() {
       zip: "32796",
       tenureStart: new Date("2026-09-01T16:00:00.000Z"),
       policyCount: 1,
-      notes: "Owner-book contact demo for TR-GL-22019. Not Harbor Key Marine LLC (EIN 59-1234567 / GL-HARBOR-2026).",
+      notes: "Owner-book contact demo for TR-GL-22019. Not the commercial marina LLC walk fixture.",
     },
     {
       id: OWNER_CONTACT_IDS.pike,
@@ -168,7 +168,7 @@ export async function seedOwnerBook() {
       source: "book",
       status: "converted",
       convertedDealId: OWNER_DEAL_IDS.harbor,
-      notes: "Owner-book GL won September 2026. Not the Harbor Key Marine LLC commercial walk.",
+      notes: "Owner-book GL won September 2026. Not the commercial marina LLC walk fixture.",
     },
     {
       id: OWNER_LEAD_IDS.nguyen,
@@ -221,7 +221,7 @@ export async function seedOwnerBook() {
       lineOfBusiness: "GL",
       state: "FL",
       boundAt: new Date("2026-09-01T16:00:00.000Z"),
-      notes: "Owner-book Closed Won. Policy TR-GL-22019. Not Harbor Key Marine LLC / GL-HARBOR-2026.",
+      notes: "Owner-book Closed Won. Policy TR-GL-22019. Not the commercial marina LLC walk fixture.",
     },
     {
       id: OWNER_DEAL_IDS.nguyen,

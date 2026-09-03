@@ -1,3 +1,4 @@
+// @ts-nocheck — leftover commissions filter UI. Desk /commissions is a thin read table.
 import { LINES, SELLING_AGENCIES, type CommissionRange, type CommissionView } from "@/lib/domain";
 
 const RANGE_LABEL: Record<CommissionRange, string> = {

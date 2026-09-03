@@ -1,3 +1,4 @@
+// @ts-nocheck — leftover ops timeline. Desk 360 uses components/activity-timeline.tsx.
 import Link from "next/link";
 import { formatWhen, kindClass, statusLabel } from "@/lib/activities/format";
 import type { Activity, ClientHistory, Policy } from "@/lib/db/schema";

@@ -145,7 +145,7 @@ Boot: `npm run db:migrate && npm run db:seed`, Postgres `fitfirst` / `fitfirst_d
 
 One fixer. Additive only. Did not edit the Ana fixture. Did not rewrite filter-first matching. Did not invent commissions, claims, premiums, or vehicles — wired existing `seed-*.ts` files into `seed.ts` and aligned leftover action modules to the desk schema (`accounts` + `activity_logs`). Harbor Key Marine LLC (EIN 59-1234567 / `GL-HARBOR-2026`) was not collapsed. QA-13 phone stub stays a stub.
 
-**Harbor Key identity (QA-2 decision):** keep desk **Harbor Key Marine LLC**. Rename the owner-book contact/deal from “Harbor Key Holdings” to **Keystone Holdings** (`Keystone Holdings · marina GL (owner-book)`, policy `TR-GL-22019` unchanged) so Search “Harbor” no longer hits that demo account. Producer-pay book rows from `seed-book.ts` use contact **Book Marina** (not Marine LLC). Documented so the next walker does not merge them.
+**Harbor Key identity (QA-2 decision):** keep desk **Harbor Key Marine LLC**. Rename the owner-book contact/deal from “Harbor Key Holdings” to **Keystone Holdings** (`Keystone Holdings · marina GL (owner-book)`, policy `TR-GL-22019` unchanged). Notes on that pair do not contain the word Harbor, so Search “Harbor” keeps Marine LLC / Marco Alvarez / GL-HARBOR-2026 and does not surface Keystone. Producer-pay book rows from `seed-book.ts` use contact **Book Marina** (not Marine LLC). Do not merge them.
 
 ### Verified (broker click-path)
 

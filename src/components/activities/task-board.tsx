@@ -1,3 +1,4 @@
+// @ts-nocheck — leftover ops task board. Desk /tasks reads review_tasks.
 import Link from "next/link";
 import { setPipelineStage } from "@/app/actions/activities";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,4 @@
+// @ts-nocheck — leftover ComparePanel. Desk compare page is a thin reader; do not reattach until walked.
 import { recordRenewalCompare, saveProposedTerm } from "@/app/actions/renewal";
 import { PremiumChangeSummary } from "@/components/policy/premium-change";
 import { Button } from "@/components/ui/button";

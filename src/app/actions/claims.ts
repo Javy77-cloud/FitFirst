@@ -110,13 +110,14 @@ export async function updateClaim(formData: FormData) {
     .from(claims)
     .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, claimId)));
   if (!existing) throw new Error("Claim not found");
+  if (!existing.policyId) throw new Error("Claim is missing a policy.");
 
   const [policy] = await db.select().from(policies).where(eq(policies.id, existing.policyId));
   const who = actor(formData);
 
   const dateReported = day(str(formData, "dateReported")) ?? existing.dateReported;
-  const causeType = str(formData, "causeType") || existing.causeType;
-  const reportedHow = str(formData, "reportedHow") || existing.reportedHow;
+  const causeType = str(formData, "causeType") || existing.causeType || "other";
+  const reportedHow = str(formData, "reportedHow") || existing.reportedHow || "phone";
   const status = str(formData, "status") || existing.status;
   if (!isClaimCause(causeType) || !isClaimChannel(reportedHow) || !isClaimStatus(status)) {
     throw new Error("Invalid claim fields.");
@@ -160,6 +161,7 @@ export async function addClaimNote(formData: FormData) {
     .from(claims)
     .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, claimId)));
   if (!claim) throw new Error("Claim not found");
+  if (!claim.policyId) throw new Error("Claim is missing a policy.");
   const [policy] = await db.select().from(policies).where(eq(policies.id, claim.policyId));
 
   await db.insert(claimNotes).values({
@@ -179,6 +181,7 @@ export async function addClaimAttachment(formData: FormData) {
     .from(claims)
     .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, claimId)));
   if (!claim) throw new Error("Claim not found");
+  if (!claim.policyId) throw new Error("Claim is missing a policy.");
   const [policy] = await db.select().from(policies).where(eq(policies.id, claim.policyId));
 
   const file = formData.get("file");
@@ -217,6 +220,7 @@ export async function updateClaimStatus(formData: FormData) {
     .from(claims)
     .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, claimId)));
   if (!existing) throw new Error("Claim not found");
+  if (!existing.policyId) throw new Error("Claim is missing a policy.");
   if (existing.status === status) return;
 
   const [policy] = await db.select().from(policies).where(eq(policies.id, existing.policyId));

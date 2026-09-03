@@ -335,7 +335,7 @@ export async function seedUsersAndBook() {
       city: "Titusville",
       ownerId: ADMIN_USER_ID,
       policyCount: 2,
-      notes: "Producer-pay book demo (QBE-GL-44021 / SS-BOP-44022). Not Harbor Key Marine LLC and not Keystone Holdings.",
+      notes: "Producer-pay book demo (QBE-GL-44021 / SS-BOP-44022). Not the commercial marina LLC and not Keystone Holdings.",
     },
   ] as const;
 
