@@ -167,11 +167,38 @@ One fixer. Additive only. Did not edit the Ana fixture. Did not rewrite filter-f
    - Renewal compare `/policies/<id>/compare` (no terms seeded).
    - Quote tracker `/quotes`: Ana 1 quoted / 3 declined / 6 skip / 0 bound; cheapest quoted American Integrity $5,607.53 not bindable.
 
-### Open bugs (fixer titles)
+### Re-QA (`cursor/overnight-re-qa-531d`) after fixer `cursor/qa-fix-desk-19d2`
 
-**QA-13 No live phone.** `/phone` and Settings “Connect phone line” are stubs. Softphone JS exists but is not mounted. Task/Call on 360 is the working path. Accepted — do not build a live softphone.
+Owner: re-QA. Additive only. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Did not rewrite filter-first matching. Did not bind Ana. Did not merge Rosa Keene. No emails, no rater APIs, no Zoho writes. Did not build a live phone.
 
-Camila Auto `QBE-PA-66103` still has an empty vehicle schedule. The intended Auto seed is Soto `FF-PA-4401` (2 vehicles / 2 drivers). Do not invent Camila vehicles.
+Boot: `npm run db:migrate && npm run db:seed` succeeded on Postgres `fitfirst` / `fitfirst_dev`. App at port **43147**. Pages on the feel-pass returned 200 (aliases `/queue` and `/businesses/:id` 307 as designed). No 500s.
+
+**Pass / fail per fixer title (clicked + SQL + fill/search APIs)**
+
+| Title | Result | What I saw |
+| --- | --- | --- |
+| QA-2 Keystone Holdings rename | **PASS** | Owner-book deal is `Keystone Holdings · marina GL (owner-book)`, policy `TR-GL-22019`. Search `Harbor` returns Harbor Key Marine LLC / `GL-HARBOR-2026` / Marco Alvarez — **not** Keystone or “Harbor Key Holdings”. (Rosa Keene / Elena / Nia Patel also hit because their streets contain Harbor.) |
+| QA-3 Harbor COI stub | **PASS** | Business 360 lists `COI-20260820-0001` issued to Palm Bay Marina Dockage. Preview route renders the stub. Harbor Key Marine is **not** “waiting on issue.” |
+| QA-4 seed-book commissions | **PASS** | `/commissions` Pending **$1,132.28** / Paid **$804.50** (11 seeded rows). Not $0/$0. |
+| QA-5 seed-claims | **PASS** | Claims log shows Ruiz water `AI-CLM-19044` on `AI-HO-66102`. |
+| QA-6 seed-auto | **PASS** | Soto `FF-PA-4401` policy page lists 2 vehicles (CR-V + Camry). 2 drivers are in the seed. Ana stays 0 policies. |
+| QA-7 seed renewals | **PASS** | Hale `HP-FL-88421` compare has current $2,184 / 2% vs proposed $2,547 / 5%. Nair `PA-FL-22910` has $1,428 vs $1,356. Thin reader only. |
+| QA-8 Elena + Harbor locations | **PASS** | Elena 360: Harbor Isle Dr. Harbor Key Marine: Harbor Key Blvd shop. Rosa Keene Harbor Lane stays. |
+| QA-9 Camila deal retitle | **PASS** | Elena deal stays `Ruiz · Melbourne HO3`. Camila is `Camila Ruiz · Melbourne HO3 (bound)`. Ana not retitled. |
+| QA-10 Reyes pending | **PASS** | `REYES-HO3-PENDING` status pending on Reyes · Cocoa HO3. Work queue lists the issue packet. |
+| QA-11 actions compile | **PASS** | Desk pages load. Task / Meeting / Call form is on Elena Contact and Policy 360. Calendar/phone stay stubs. |
+| QA-12 forms catalog | **PASS** | `/forms` catalog links `?dealId=` (last `quote_sheets` row, not a hardcoded Elena id). `/forms/fl-ho3?dealId=<ana>` fills Ana / Cov A **321000**. Elena dealId fills Elena / 385000. Same `quote_sheets` row as Send to Fill. |
+| QA-13 phone stub | **leftover (accepted)** | `/phone` is still a stub. Do not build a live softphone. |
+
+**Feel-pass also confirmed:** Home is owner desk (paper `#f7f3ec` + terracotta `#b4532a`). Copy says Ana’s $321,000 HO3 is pipeline, not written. KPI links: `/policies?status=in_force`, `written=this_month`, `/deals?stage=open`, renewals 30/60, Work queue `/work-queue`. Ana markets **0 green / 0 yellow / 10 red (skip)**. Sheet health **18 confirmed / 0 CHECK / 15 missing** (not 100%). Ortega auto-shops **8 green / 1 yellow / 1 red**. Rosa Keene email pair still **open**. Quotes board: Ana 1 quoted / 3 declined / 6 skip / **0 bound**; cheapest American Integrity $5,607.53 not bindable. Search hits Mario Cromartie, Virginia Palacios, Fritzs Seraphin, VP Painting & Construction.
+
+Observed, **not filed** (pre-existing / accepted, not a fixer miss): Search is substring, so `Ana` also lists the Camila deal (`Camila` contains `ana`). Soto’s 2 drivers are seeded; the thin policy page only lists vehicles (same leftover pattern as ComparePanel not reattached). Do not invent Camila vehicles.
+
+### Open bugs (leftovers only)
+
+**QA-13 No live phone.** `/phone` is a stub. Softphone JS is not mounted. Task/Call on 360 is the working path. Accepted — do not build a live softphone.
+
+Camila Auto `QBE-PA-66103` still has an empty vehicle schedule. The intended Auto seed is Soto `FF-PA-4401` (2 vehicles on the policy page; 2 drivers seeded). Do not invent Camila vehicles.
 
 ### Fixed on this run (do not re-file)
 
