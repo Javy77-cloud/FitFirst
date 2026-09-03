@@ -14,17 +14,20 @@ export function SectionTabs({
   tabs,
   defaultValue,
   activeId,
-  hrefFor,
+  basePath,
+  queryParams,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
-  /** When set (URL tab), clicks are links and survive Fill / refresh. */
+  /** When set with basePath, clicks are links and survive Fill / refresh. */
   activeId?: string;
-  hrefFor?: (id: string) => string;
+  basePath?: string;
+  queryParams?: Record<string, string>;
 }) {
   const [local, setLocal] = useState(defaultValue);
   const active = activeId ?? local;
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
+  const urlTabs = Boolean(basePath);
 
   return (
     <div>
@@ -40,11 +43,12 @@ export function SectionTabs({
               ? "bg-card text-navy shadow-sm"
               : "text-muted-foreground hover:text-foreground",
           );
-          if (hrefFor) {
+          if (basePath) {
+            const params = new URLSearchParams({ ...queryParams, tab: tab.id });
             return (
               <Link
                 key={tab.id}
-                href={hrefFor(tab.id)}
+                href={`${basePath}?${params.toString()}`}
                 role="tab"
                 aria-selected={selected}
                 scroll={false}
@@ -68,7 +72,7 @@ export function SectionTabs({
           );
         })}
       </div>
-      {hrefFor ? (
+      {urlTabs ? (
         <div role="tabpanel" className="mt-4">
           {current.content}
         </div>

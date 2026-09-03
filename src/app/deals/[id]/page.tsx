@@ -77,8 +77,6 @@ export default async function DealPage({
   const activeTab = ["sheet", "files", "markets", "quotes"].includes(requestedTab)
     ? requestedTab
     : "sheet";
-  const dealTabHref = (tab: string) =>
-    `/deals/${deal.id}?line=${activeLine}&tab=${tab}`;
   const address = {
     address1: sheet.values.address1?.value || risk?.address1,
     city: sheet.values.city?.value || risk?.city,
@@ -222,7 +220,8 @@ export default async function DealPage({
         <SectionTabs
           defaultValue="sheet"
           activeId={activeTab}
-          hrefFor={dealTabHref}
+          basePath={`/deals/${deal.id}`}
+          queryParams={{ line: activeLine }}
           tabs={[
             {
               id: "sheet",
