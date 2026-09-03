@@ -3,6 +3,7 @@ import { DEFAULT_TENANT_ID, SELLING_AGENCIES } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { commissions, policies } from "@/lib/db/schema";
 import { periodKey } from "./math";
+import { suggestMasterDefaults } from "./master-defaults";
 import {
   computePolicyCommission,
   normalizeSellingAgency,
@@ -49,15 +50,27 @@ export async function savePolicyCommissionFields(
   if (!policy) return null;
 
   const sellingAgency = sellingAgencyKey(fields.sellingAgency);
-  const computed = computePolicyCommission({ ...fields, sellingAgency });
-  const gwp = nullableNumber(fields.gwp);
-  const commission4 = nullableNumber(fields.commission4);
+  const suggested = suggestMasterDefaults({ ...fields, sellingAgency });
+  const insuranceType = fields.insuranceType || suggested.insuranceType;
+  const policyType = fields.policyType || suggested.policyType;
+  const commission4 = nullableNumber(fields.commission4) ?? suggested.commission4;
+  const premiumFrequency = fields.premiumFrequency || suggested.premiumFrequency;
+  const gwp = nullableNumber(fields.gwp) ?? nullableNumber(policy.gwp) ?? nullableNumber(policy.premium);
+  const computed = computePolicyCommission({
+    ...fields,
+    sellingAgency,
+    insuranceType,
+    policyType,
+    commission4,
+    premiumFrequency,
+    gwp,
+  });
   const insured = nullableNumber(fields.numberOfInsured);
   const gwpStr = gwp == null ? null : money(gwp);
   const c4Str = commission4 == null ? null : money(commission4);
   const line = lineOfBusinessFromZoho(
-    fields.insuranceType,
-    fields.policyType,
+    insuranceType,
+    policyType,
     fields.policySubType,
   );
   const tac = money(computed.totalAnnualCommission);
@@ -68,15 +81,15 @@ export async function savePolicyCommissionFields(
   await db
     .update(policies)
     .set({
-      insuranceType: fields.insuranceType || null,
-      policyType: fields.policyType || null,
+      insuranceType: insuranceType || null,
+      policyType: policyType || null,
       policySubType: fields.policySubType || null,
-      premiumFrequency: fields.premiumFrequency || null,
+      premiumFrequency: premiumFrequency || null,
       numberOfInsured: insured == null ? null : Math.trunc(insured),
       gwp: gwpStr,
       commission4: c4Str,
       premium: gwpStr ?? policy.premium,
-      lineOfBusiness: fields.insuranceType ? line : policy.lineOfBusiness,
+      lineOfBusiness: insuranceType ? line : policy.lineOfBusiness,
       updatedAt: now,
     })
     .where(and(eq(policies.id, policyId), eq(policies.tenantId, DEFAULT_TENANT_ID)));
@@ -88,7 +101,7 @@ export async function savePolicyCommissionFields(
     .orderBy(desc(commissions.updatedAt));
 
   const payload = {
-    lineOfBusiness: fields.insuranceType ? line : (existing?.lineOfBusiness ?? policy.lineOfBusiness),
+    lineOfBusiness: insuranceType ? line : (existing?.lineOfBusiness ?? policy.lineOfBusiness),
     premium: gwpStr ?? existing?.premium ?? "0.00",
     ratePct: c4Str ?? existing?.ratePct ?? "0.00",
     amount: tac,
@@ -97,10 +110,10 @@ export async function savePolicyCommissionFields(
     sellingAgency,
     dueDate,
     paidDate,
-    insuranceType: fields.insuranceType || null,
-    policyType: fields.policyType || null,
+    insuranceType: insuranceType || null,
+    policyType: policyType || null,
     policySubType: fields.policySubType || null,
-    premiumFrequency: fields.premiumFrequency || null,
+    premiumFrequency: premiumFrequency || null,
     numberOfInsured: insured == null ? null : Math.trunc(insured),
     gwp: gwpStr,
     commission4: c4Str,

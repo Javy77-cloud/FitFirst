@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  inferInsuranceType,
+  inferPolicyType,
+  suggestCommission4,
+  suggestMasterDefaults,
+  suggestPremiumFrequency,
+} from "./master-defaults";
+import {
   computePolicyCommission,
   effectivePcRatePct,
   healthKind,
@@ -210,6 +217,62 @@ describe("Health — live Marketplace / MA / Supplemental", () => {
     expect(result.rule).toBe("health_other");
     expect(result.totalAnnualCommission).toBe(0);
     expect(result.monthlyCommission).toBe(0);
+  });
+});
+
+describe("master_commission defaults from live packets", () => {
+  it("fills Life 80% and Annual from BackNine + Accidental Death", () => {
+    const suggested = suggestMasterDefaults({
+      sellingAgency: "backnine",
+      policySubType: "Accidental Death",
+    });
+    expect(suggested.insuranceType).toBe("Life");
+    expect(suggested.policyType).toBe("Life");
+    expect(suggested.commission4).toBe(80);
+    expect(suggested.premiumFrequency).toBe("Annual");
+    const result = computePolicyCommission({
+      ...suggested,
+      sellingAgency: "backnine",
+      policySubType: "Accidental Death",
+      gwp: 620.4,
+    });
+    expect(result.totalAnnualCommission).toBe(496.32);
+    expect(result.initialCommission).toBe(372.24);
+    expect(result.deferredCommission).toBe(124.08);
+    expect(result.monthlyCommission).toBe(0);
+  });
+
+  it("fills AFA P&C 10% so TAC is GWP × 5% without typing the split", () => {
+    expect(suggestCommission4({ sellingAgency: "afa", insuranceType: "P&C" }).value).toBe(10);
+    expect(suggestPremiumFrequency({ insuranceType: "P&C" })).toBe("Annual");
+    const result = computePolicyCommission({
+      insuranceType: "P&C",
+      sellingAgency: "afa",
+      policySubType: "DP3",
+      gwp: 3158,
+      commission4: 10,
+      premiumFrequency: "Annual",
+    });
+    expect(result.totalAnnualCommission).toBe(157.9);
+  });
+
+  it("fills Supplemental 25% and Marketplace has no rate", () => {
+    expect(
+      suggestCommission4({
+        sellingAgency: "pimsco_agility",
+        insuranceType: "Health",
+        policySubType: "Supplemental Health",
+      }).value,
+    ).toBe(25);
+    expect(
+      suggestCommission4({
+        sellingAgency: "pimsco_agility",
+        insuranceType: "Health",
+        policySubType: "Marketplace",
+      }).value,
+    ).toBeNull();
+    expect(inferInsuranceType(null, "Marketplace")).toBe("Health");
+    expect(inferPolicyType("P&C", "DP3")).toBe("Renter & Landord");
   });
 });
 

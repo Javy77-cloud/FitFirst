@@ -56,7 +56,7 @@ The desk is solo-now / agency-later. Seed creates **Javy Rivera (Admin)** and **
 - Admin sees every contact, deal, policy, and producer-pay row, and can assign an owner.
 - Agent sees only their own book and commissions.
 - **Commissions** is producer pay on bound policies (pending / payable / paid / held). Each row stores premium, rate, agency $, producer split $, selling agency (AFA / First Connect / Agentero / Pimsco/Agility / BackNine), and paid date. Ana Dib quote floors are not paid commissions — she stays at $0.
-- **Policy commission math** copies live Zoho Policies. Open **Policies** and click a seeded live-copy number. One layout switches by Insurance Type + Policy Type + Policy Sub Type. There is no New-vs-Renewal field. Saving recalculates Initial / Deferred / Monthly / TAC locally — it does not write to Zoho. Mark paid does not change Policy status.
+- **Policy commission math** copies live Zoho Policies. Open **Policies** and click a seeded live-copy number. Enter Selling Agency, line, and GWP. Rate % fills from the live desk (agency + line). TAC / initial / deferred / monthly fill themselves — do not retype them. There is no New-vs-Renewal field. Saving stores the inputs locally — it does not write to Zoho. Mark paid does not change Policy status.
 
 ### What to click (commission math)
 

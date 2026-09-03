@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SELLING_AGENCIES, formatMoney, formatRatePct } from "@/lib/domain";
 import {
+  inferInsuranceType,
+  inferPolicyType,
+  suggestCommission4,
+  suggestPremiumFrequency,
+} from "@/lib/commissions/master-defaults";
+import {
   computePolicyCommission,
   policyCommissionVisibility,
 } from "@/lib/commissions/policy-math";
@@ -35,6 +41,7 @@ export type PolicyCommissionBlockValues = {
   paymentReferenceBatch: string;
   dueDate: string;
   paidDate: string;
+  bookPremium?: string;
 };
 
 const selectClass =
@@ -42,15 +49,18 @@ const selectClass =
 
 function Field({
   label,
+  hint,
   children,
 }: {
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="block text-[11px] text-muted-foreground">
       {label}
       {children}
+      {hint ? <span className="mt-1 block text-[10px] leading-snug">{hint}</span> : null}
     </label>
   );
 }
@@ -60,6 +70,38 @@ function withCurrent(options: readonly string[], current: string): string[] {
   return [...options];
 }
 
+function applyLineDefaults(
+  prev: PolicyCommissionBlockValues,
+  next: Partial<Pick<PolicyCommissionBlockValues, "insuranceType" | "policyType" | "policySubType" | "sellingAgency">>,
+  rateLocked: boolean,
+  freqLocked: boolean,
+): PolicyCommissionBlockValues {
+  const sellingAgency = next.sellingAgency ?? prev.sellingAgency;
+  let insuranceType = next.insuranceType ?? prev.insuranceType;
+  let policyType = next.policyType ?? prev.policyType;
+  const policySubType = next.policySubType ?? prev.policySubType;
+
+  if (next.policySubType !== undefined) {
+    insuranceType = inferInsuranceType(policyType, policySubType) ?? insuranceType;
+    policyType = inferPolicyType(insuranceType, policySubType) ?? policyType;
+  } else if (next.insuranceType !== undefined) {
+    policyType = inferPolicyType(insuranceType, policySubType) ?? policyType;
+  }
+
+  const rate = suggestCommission4({ sellingAgency, insuranceType, policySubType });
+  const frequency = suggestPremiumFrequency({ insuranceType, policySubType });
+
+  return {
+    ...prev,
+    sellingAgency,
+    insuranceType,
+    policyType,
+    policySubType,
+    commission4: rateLocked ? prev.commission4 : rate.value == null ? "" : String(rate.value),
+    premiumFrequency: freqLocked ? prev.premiumFrequency : frequency ?? prev.premiumFrequency,
+  };
+}
+
 export function PolicyCommissionBlock({
   values,
   readOnly,
@@ -67,7 +109,17 @@ export function PolicyCommissionBlock({
   values: PolicyCommissionBlockValues;
   readOnly?: boolean;
 }) {
-  const [form, setForm] = useState(values);
+  const [rateLocked, setRateLocked] = useState(false);
+  const [freqLocked, setFreqLocked] = useState(false);
+  const [form, setForm] = useState(() => {
+    const gwp = values.gwp || values.bookPremium || "";
+    const base = { ...values, gwp };
+    if (!values.commission4 && (values.insuranceType || values.policySubType)) {
+      return applyLineDefaults(base, {}, false, Boolean(values.premiumFrequency));
+    }
+    return base;
+  });
+
   const computed = useMemo(
     () =>
       computePolicyCommission({
@@ -83,17 +135,17 @@ export function PolicyCommissionBlock({
     [form],
   );
   const visibility = policyCommissionVisibility(form);
+  const rateHint = suggestCommission4(form).source;
   const typeOptions = withCurrent(policyTypesFor(form.insuranceType), form.policyType);
   const subOptions = withCurrent(
     policySubTypesFor(form.insuranceType, form.policyType),
     form.policySubType,
   );
 
-  function set<K extends keyof PolicyCommissionBlockValues>(
-    key: K,
-    value: PolicyCommissionBlockValues[K],
+  function setLine(
+    patch: Partial<Pick<PolicyCommissionBlockValues, "insuranceType" | "policyType" | "policySubType" | "sellingAgency">>,
   ) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => applyLineDefaults(prev, patch, rateLocked, freqLocked));
   }
 
   return (
@@ -102,9 +154,9 @@ export function PolicyCommissionBlock({
         <div>
           <h2 className="text-sm font-semibold text-navy">Policy commission</h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            One layout. Fields switch with Insurance Type, Policy Type, and Policy Sub
-            Type. Math is copied from live Zoho Policies — this screen does not write
-            to Zoho. There is no New-vs-Renewal field.
+            Enter Selling Agency, line, and GWP. Rate % fills from the live desk
+            (agency + line). TAC, initial, deferred, and monthly fill themselves —
+            do not retype them. No New-vs-Renewal field. Nothing writes to Zoho.
           </p>
         </div>
         {form.commissionId && form.producerStatus ? (
@@ -121,13 +173,28 @@ export function PolicyCommissionBlock({
         <input type="hidden" name="premiumFrequency" value={form.premiumFrequency} />
         <input type="hidden" name="paymentStatus" value={form.paymentStatus} />
 
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-navy">You enter</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Selling agency">
+            <select
+              className={selectClass}
+              value={form.sellingAgency}
+              disabled={readOnly}
+              onChange={(e) => setLine({ sellingAgency: e.target.value })}
+            >
+              {SELLING_AGENCIES.map((row) => (
+                <option key={row.key} value={row.key}>
+                  {row.label}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Insurance type">
             <select
               className={selectClass}
               value={form.insuranceType}
               disabled={readOnly}
-              onChange={(e) => set("insuranceType", e.target.value)}
+              onChange={(e) => setLine({ insuranceType: e.target.value })}
             >
               <option value="">Select…</option>
               {INSURANCE_TYPES.map((value) => (
@@ -142,7 +209,7 @@ export function PolicyCommissionBlock({
               className={selectClass}
               value={form.policyType}
               disabled={readOnly}
-              onChange={(e) => set("policyType", e.target.value)}
+              onChange={(e) => setLine({ policyType: e.target.value })}
             >
               <option value="">Select…</option>
               {typeOptions.map((value) => (
@@ -157,7 +224,7 @@ export function PolicyCommissionBlock({
               className={selectClass}
               value={form.policySubType}
               disabled={readOnly}
-              onChange={(e) => set("policySubType", e.target.value)}
+              onChange={(e) => setLine({ policySubType: e.target.value })}
             >
               <option value="">Select…</option>
               {subOptions.map((value) => (
@@ -167,24 +234,10 @@ export function PolicyCommissionBlock({
               ))}
             </select>
           </Field>
-          <Field label="Selling agency">
-            <select
-              className={selectClass}
-              value={form.sellingAgency}
-              disabled={readOnly}
-              onChange={(e) => set("sellingAgency", e.target.value)}
-            >
-              {SELLING_AGENCIES.map((row) => (
-                <option key={row.key} value={row.key}>
-                  {row.label}
-                </option>
-              ))}
-            </select>
-          </Field>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label={visibility.gwpLabel}>
+          <Field label={visibility.gwpLabel} hint={visibility.gwpHint}>
             <Input
               name="gwp"
               type="number"
@@ -192,12 +245,15 @@ export function PolicyCommissionBlock({
               min="0"
               value={form.gwp}
               disabled={readOnly}
-              onChange={(e) => set("gwp", e.target.value)}
+              onChange={(e) => setForm((prev) => ({ ...prev, gwp: e.target.value }))}
               className="mt-1"
             />
           </Field>
           {visibility.showCommission4 ? (
-            <Field label="Commission4 (%)">
+            <Field
+              label="Rate % (Commission4)"
+              hint={rateLocked ? "Override — typed on this record." : (rateHint ?? undefined)}
+            >
               <Input
                 name="commission4"
                 type="number"
@@ -205,7 +261,10 @@ export function PolicyCommissionBlock({
                 min="0"
                 value={form.commission4}
                 disabled={readOnly}
-                onChange={(e) => set("commission4", e.target.value)}
+                onChange={(e) => {
+                  setRateLocked(true);
+                  setForm((prev) => ({ ...prev, commission4: e.target.value }));
+                }}
                 className="mt-1"
               />
             </Field>
@@ -217,7 +276,10 @@ export function PolicyCommissionBlock({
               className={selectClass}
               value={form.premiumFrequency}
               disabled={readOnly}
-              onChange={(e) => set("premiumFrequency", e.target.value)}
+              onChange={(e) => {
+                setFreqLocked(true);
+                setForm((prev) => ({ ...prev, premiumFrequency: e.target.value }));
+              }}
             >
               <option value="">Select…</option>
               {PREMIUM_FREQUENCIES.map((value) => (
@@ -236,7 +298,7 @@ export function PolicyCommissionBlock({
                 step="1"
                 value={form.numberOfInsured}
                 disabled={readOnly}
-                onChange={(e) => set("numberOfInsured", e.target.value)}
+                onChange={(e) => setForm((prev) => ({ ...prev, numberOfInsured: e.target.value }))}
                 className="mt-1"
               />
             </Field>
@@ -245,36 +307,32 @@ export function PolicyCommissionBlock({
           )}
         </div>
 
-        <p className="text-[12px] text-muted-foreground">{visibility.gwpHint}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-navy">
+          Filled for you
+        </p>
         <p className="rounded-md bg-secondary px-3 py-2 text-[12px] text-navy">
           {computed.caption}
           {computed.effectiveRatePct != null
             ? ` Applied rate ${formatRatePct(computed.effectiveRatePct)}.`
             : ""}
         </p>
-
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {visibility.showLifeSplit ? (
-            <>
-              <Computed label="Initial commission" value={computed.initialCommission} />
-              <Computed label="Deferred commission" value={computed.deferredCommission} />
-            </>
-          ) : null}
-          <Computed
-            label="Monthly commission"
-            value={computed.monthlyCommission}
-            muted={!visibility.showMonthly && computed.monthlyCommission === 0}
-          />
+          <Computed label="Initial commission" value={computed.initialCommission} />
+          <Computed label="Deferred commission" value={computed.deferredCommission} />
+          <Computed label="Monthly commission" value={computed.monthlyCommission} />
           <Computed label="Total annual commission" value={computed.totalAnnualCommission} />
         </div>
 
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-navy">
+          Due / paid
+        </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Payment status">
             <select
               className={selectClass}
               value={form.paymentStatus}
               disabled={readOnly}
-              onChange={(e) => set("paymentStatus", e.target.value)}
+              onChange={(e) => setForm((prev) => ({ ...prev, paymentStatus: e.target.value }))}
             >
               <option value="">Select…</option>
               {PAYMENT_STATUSES.map((value) => (
@@ -289,7 +347,9 @@ export function PolicyCommissionBlock({
               name="paymentReferenceBatch"
               value={form.paymentReferenceBatch}
               disabled={readOnly}
-              onChange={(e) => set("paymentReferenceBatch", e.target.value)}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, paymentReferenceBatch: e.target.value }))
+              }
               className="mt-1"
             />
           </Field>
@@ -299,7 +359,7 @@ export function PolicyCommissionBlock({
               type="date"
               value={form.dueDate}
               disabled={readOnly}
-              onChange={(e) => set("dueDate", e.target.value)}
+              onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))}
               className="mt-1"
             />
           </Field>
@@ -309,7 +369,7 @@ export function PolicyCommissionBlock({
               type="date"
               value={form.paidDate}
               disabled={readOnly}
-              onChange={(e) => set("paidDate", e.target.value)}
+              onChange={(e) => setForm((prev) => ({ ...prev, paidDate: e.target.value }))}
               className="mt-1"
             />
           </Field>
@@ -320,7 +380,7 @@ export function PolicyCommissionBlock({
             <p className="text-[12px] text-muted-foreground">View only on this book.</p>
           ) : (
             <Button type="submit" size="sm">
-              Save commission math
+              Save inputs
             </Button>
           )}
           {form.commissionId ? (
@@ -335,21 +395,11 @@ export function PolicyCommissionBlock({
   );
 }
 
-function Computed({
-  label,
-  value,
-  muted,
-}: {
-  label: string;
-  value: number;
-  muted?: boolean;
-}) {
+function Computed({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-md border border-border bg-secondary/60 px-3 py-2">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-sm font-semibold ${muted ? "text-muted-foreground" : "text-navy"}`}>
-        {formatMoney(value)}
-      </div>
+      <div className="mt-0.5 text-sm font-semibold text-navy">{formatMoney(value)}</div>
     </div>
   );
 }

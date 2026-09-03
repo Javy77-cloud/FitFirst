@@ -111,6 +111,7 @@ export default async function PolicyRecordPage({
           policySubType: policy.policySubType ?? primary?.commission.policySubType ?? "",
           sellingAgency: primary?.commission.sellingAgency ?? "afa",
           gwp: String(policy.gwp ?? primary?.commission.gwp ?? ""),
+          bookPremium: String(policy.premium ?? ""),
           commission4: String(policy.commission4 ?? primary?.commission.commission4 ?? ""),
           premiumFrequency:
             policy.premiumFrequency ?? primary?.commission.premiumFrequency ?? "",

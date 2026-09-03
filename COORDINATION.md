@@ -38,6 +38,7 @@ Do **not** edit:
 Owned here. Copy **live Zoho Policies** field values and formulas. Do not invent rates. Do not look up vendor `P_C_Comm_*` tables.
 
 - `src/lib/commissions/policy-math.ts` — Life / P&C / Marketplace / Medicare Advantage / Supplemental
+- `src/lib/commissions/master-defaults.ts` — live 2026-09-03 packet defaults (agency + line → Commission4 / frequency). TAC / initial / deferred / monthly are never typed.
 - `src/lib/commissions/zoho-fields.ts` — live picklists (including Zoho typos)
 - `src/lib/commissions/persist.ts` + `GET|POST /api/policies/[id]/commission`
 - `src/components/commissions/policy-commission-block.tsx` — one layout; UI switches by Insurance_Type + Policy_Type + Policy_Sub_Type. Mount this on the sibling policy chrome when that page lands.
