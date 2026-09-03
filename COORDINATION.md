@@ -18,6 +18,7 @@ This file is the handshake for additive desk work. Do not invent a second CRM sh
 
 Tabs: Home, Auto, Rec/RV, Flood, Umbrella, Life, Health, Workers Comp, General Liability.
 Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep enough to shop FL HO / auto). WC / GL / RV are thinner.
+Desk sections (Quote Sheet / Files / Markets / Quotes) are URL-driven: `?line=home&tab=files`. Source files stay on Files.
 
 ## Ingest path (locked) — Lead → Deal
 
