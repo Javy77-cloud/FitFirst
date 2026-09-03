@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  Columns3,
   Contact,
   FileStack,
   Calendar,
@@ -18,11 +19,8 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { ActorSwitcher } from "@/components/actor-switcher";
-import { getActor, listActors } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { alerts } from "@/lib/db/schema";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";

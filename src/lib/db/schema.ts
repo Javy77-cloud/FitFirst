@@ -221,10 +221,6 @@ export const deals = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     archiveScheduledAt: timestamp("archive_scheduled_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
-    shopLines: jsonb("shop_lines").$type<string[] | null>(),
-    coverageAmount: integer("coverage_amount"),
-    propertyOneliner: text("property_oneliner"),
-    currentCarrier: text("current_carrier"),
     ...timestamps,
   },
   (t) => [

@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
@@ -11,15 +9,9 @@ import {
   appetiteRules,
   carrierAppointments,
   carriers,
-  activities,
-  activityLogs,
   contacts,
   deals,
-  documentFolders,
-  documents,
   leads,
-  extractedFields,
-  extractionJobs,
   quoteAttemptLogs,
   quoteSheets,
   quotes,
@@ -29,7 +21,16 @@ import {
 } from "./schema";
 import { CARRIER_DESK } from "@/lib/carriers/desk";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
-import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import {
+  ANA_HOME_SHEET_ID,
+  CARRIER_IDS,
+  CONTACT_ID,
+  DEAL_ID,
+  LEAD_ID,
+  RISK_ID,
+  TENANT_ID,
+} from "../fixtures/ids";
+import { anaHomeSheetValues, anaPropertyOneliner } from "@/lib/quote-sheet/ana-home";
 import { seedLifecycleDemo } from "./seed-lifecycle";
 import { seedWireDesk } from "./seed-wire";
 import { seedOwnerBook } from "./seed-owner-book";
@@ -79,43 +80,6 @@ export async function seed() {
       set: { name: fixture.tenant.name, tenantId: TENANT_ID },
     });
 
-  const defaultStages = [
-    { slug: "shopping", label: "Shopping", sortOrder: 0, locked: false },
-    { slug: "quoting", label: "Quoting", sortOrder: 1, locked: false },
-    { slug: "comparing", label: "Comparing", sortOrder: 2, locked: false },
-    { slug: "bound", label: "Bound", sortOrder: 3, locked: true },
-    { slug: "lost", label: "Lost", sortOrder: 4, locked: false },
-  ];
-  const existingStages = await db
-    .select()
-    .from(pipelineStages)
-    .where(eq(pipelineStages.tenantId, TENANT_ID));
-  const haveStage = new Set(existingStages.map((row) => row.slug));
-  const missingStages = defaultStages.filter((row) => !haveStage.has(row.slug));
-  if (missingStages.length > 0) {
-    await db.insert(pipelineStages).values(
-      missingStages.map((row) => ({
-        tenantId: TENANT_ID,
-        ...row,
-      })),
-    );
-  }
-
-  const existingAgents = await db
-    .select()
-    .from(deskAgents)
-    .where(eq(deskAgents.tenantId, TENANT_ID));
-  const haveAgent = new Set(existingAgents.map((row) => row.slug));
-  const missingAgents = SEEDED_DESK_AGENTS.filter((row) => !haveAgent.has(row.slug));
-  if (missingAgents.length > 0) {
-    await db.insert(deskAgents).values(
-      missingAgents.map((row) => ({
-        tenantId: TENANT_ID,
-        ...row,
-      })),
-    );
-  }
-
   await db
     .insert(leads)
     .values({
@@ -157,7 +121,6 @@ export async function seed() {
       city: fixture.risk.city,
       state: fixture.risk.state,
       zip: fixture.risk.zip,
-      phone: "321-555-0148",
       policyCount: 0,
       activePolicyCount: 0,
       notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
@@ -173,7 +136,6 @@ export async function seed() {
         city: fixture.risk.city,
         state: fixture.risk.state,
         zip: fixture.risk.zip,
-        phone: "321-555-0148",
         policyCount: 0,
         activePolicyCount: 0,
         notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
@@ -198,6 +160,7 @@ export async function seed() {
       coverageAmount: fixture.risk.coverageA,
       propertyOneliner: anaPropertyOneliner(fixture.risk),
       currentCarrier: null,
+      accountKind: "personal",
       notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -214,6 +177,7 @@ export async function seed() {
         coverageAmount: fixture.risk.coverageA,
         propertyOneliner: anaPropertyOneliner(fixture.risk),
         currentCarrier: null,
+        accountKind: "personal",
         notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
         updatedAt: new Date(),
       },

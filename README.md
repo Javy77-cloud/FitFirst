@@ -15,6 +15,34 @@ npm run db:seed
 npm run dev
 ```
 
+If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.
+
+**Docker Postgres (this repo):**
+
+```bash
+docker compose down -v
+docker compose up -d db
+# wait until healthy, then:
+cp .env.example .env
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+**Local Homebrew / Postgres.app:**
+
+```bash
+dropdb -h 127.0.0.1 -U fitfirst fitfirst || true
+createdb -h 127.0.0.1 -U fitfirst fitfirst
+# or, as the postgres superuser:
+# psql -h 127.0.0.1 -U postgres -c "DROP DATABASE IF EXISTS fitfirst;"
+# psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE fitfirst OWNER fitfirst;"
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
 Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (paper + terracotta). Demo login: `javy@fitfirst.local` / `javy` (Admin, all book) or `maya@fitfirst.local` / `maya` (Agent, own book).
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No Twilio or SendGrid.

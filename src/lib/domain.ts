@@ -17,44 +17,6 @@ export const LINES = [
 ] as const;
 export type LineOfBusiness = (typeof LINES)[number];
 
-/** First-wave personal lines that get an explicit appointment row per carrier. */
-export const APPOINTMENT_LINES = ["HO", "AUTO", "FLOOD", "UMBRELLA"] as const;
-export type AppointmentLine = (typeof APPOINTMENT_LINES)[number];
-
-export const SELLING_AGENCIES = ["AFA", "First Connect", "Agentero"] as const;
-export type SellingAgency = (typeof SELLING_AGENCIES)[number];
-
-export const WRITTEN_LINE_LABELS: Record<string, string> = {
-  HO: "Home",
-  AUTO: "Auto",
-  FLOOD: "Flood",
-  UMBRELLA: "Umbrella",
-  GL: "General liability",
-  LIFE: "Life",
-  HEALTH: "Health",
-};
-
-export function appointmentLine(lineOfBusiness: string): string {
-  const raw = lineOfBusiness.trim().toUpperCase();
-  if (
-    raw === "HO3" ||
-    raw === "HO5" ||
-    raw === "HO6" ||
-    raw === "HOME" ||
-    raw === "HOMEOWNERS"
-  ) {
-    return "HO";
-  }
-  if (raw === "PA" || raw === "PERSONAL_AUTO") return "AUTO";
-  if (raw === "PU" || raw === "PUP") return "UMBRELLA";
-  return raw;
-}
-
-export function writtenLineLabel(code: string): string {
-  const line = appointmentLine(code);
-  return WRITTEN_LINE_LABELS[line] ?? line;
-}
-
 export const DEAL_STAGES = [
   "shopping",
   "quoting",
