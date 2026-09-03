@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
-import { DEAL_ID, ELENA_CONTACT_ID, ELENA_DEAL_ID, ELENA_LEAD_ID, ELENA_POLICY_ID } from "@/lib/fixtures/ids";
+import { DEAL_ID, ELENA_ACCOUNT_ID, ELENA_CONTACT_ID, ELENA_DEAL_ID, ELENA_LEAD_ID, ELENA_POLICY_ID } from "@/lib/fixtures/ids";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     title: "3. Click every record on that path",
-    body: "Lead → Deal (Ruiz · Melbourne HO3) → Contact → Policy HO3-ELENA-2026. Issued policy files are dec + ID, not shopping docs.",
+    body: "Lead → Deal (Ruiz · Melbourne HO3) → Contact → Policy HO3-ELENA-2026. Issued policy files are dec + ID, not shopping docs. Activity timeline on Contact, Policy, and Ruiz Tile LLC: task + meeting + logged call (no softphone) each have a log with FKs.",
     href: `/deals/${ELENA_DEAL_ID}`,
     cta: "Open Melbourne HO3 deal",
   },
@@ -64,6 +64,12 @@ export default function GetStartedPage() {
             className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
           >
             Elena HO3 policy
+          </Link>
+          <Link
+            href={`/accounts/${ELENA_ACCOUNT_ID}`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Ruiz Tile LLC
           </Link>
         </div>
       </div>

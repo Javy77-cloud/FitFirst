@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { refreshPartyCounts } from "@/lib/db/queries";
 import {
   accounts,
+  activities,
+  activityLogs,
   clientHistory,
   contactAccounts,
   contacts,
@@ -18,6 +20,7 @@ import {
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { activityLogBody } from "@/lib/lifecycle/activity";
 import { emptySheetValues } from "@/lib/lifecycle/quote-sheet";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 
@@ -344,16 +347,43 @@ export async function bindDeal(formData: FormData) {
     await db.update(risks).set({ contactId, updatedAt: new Date() }).where(eq(risks.id, risk.id));
   }
 
-  if (contactId) {
-    await db.insert(clientHistory).values({
+  await db.insert(clientHistory).values({
+    tenantId: DEFAULT_TENANT_ID,
+    contactId: contactId ?? null,
+    accountId: accountId ?? null,
+    dealId,
+    policyId: policy.id,
+    eventType: "bind",
+    body: `Bound ${deal.lineOfBusiness} ${policy.policyNumber}. Policy created only after bind — quotes stayed on the deal.`,
+  });
+
+  const followUpTitle = `30-day review · ${policy.policyNumber}`;
+  const [followUp] = await db
+    .insert(activities)
+    .values({
       tenantId: DEFAULT_TENANT_ID,
-      contactId,
-      dealId,
+      kind: "task",
+      title: followUpTitle,
+      notes: "Created at bind. Assigned to the new Contact/Business and Policy.",
+      status: "open",
+      dueAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      contactId: contactId ?? null,
+      accountId: bindTarget === "account" ? accountId : null,
       policyId: policy.id,
-      eventType: "bind",
-      body: `Bound ${deal.lineOfBusiness} ${policy.policyNumber}. Policy created only after bind — quotes stayed on the deal.`,
-    });
-  }
+      dealId,
+    })
+    .returning();
+  await db.insert(activityLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    activityId: followUp.id,
+    kind: "task",
+    eventType: "created",
+    body: activityLogBody("task", "created", followUpTitle),
+    contactId: contactId ?? null,
+    accountId: bindTarget === "account" ? accountId : null,
+    policyId: policy.id,
+    dealId,
+  });
 
   for (const [kind, days] of [
     ["30_day", 30],
@@ -366,6 +396,7 @@ export async function bindDeal(formData: FormData) {
     await db.insert(reviewTasks).values({
       tenantId: DEFAULT_TENANT_ID,
       contactId,
+      accountId: bindTarget === "account" ? accountId : null,
       policyId: policy.id,
       dealId,
       kind,

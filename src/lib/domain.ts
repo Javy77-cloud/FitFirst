@@ -81,6 +81,22 @@ export const CLIENT_STATUSES = ["client", "former_client", "not_a_client"] as co
 export type ClientStatus = (typeof CLIENT_STATUSES)[number];
 
 export const BIND_TARGETS = ["contact", "account"] as const;
+
+/** Consumed from agency-ops. Softphone / calendar UI stays on that slice. */
+export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+
+export const ACTIVITY_STATUSES = ["open", "completed", "cancelled"] as const;
+export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
+
+export const ACTIVITY_LOG_EVENTS = [
+  "created",
+  "completed",
+  "cancelled",
+  "logged",
+  "bind",
+] as const;
+export type ActivityLogEvent = (typeof ACTIVITY_LOG_EVENTS)[number];
 export type BindTarget = (typeof BIND_TARGETS)[number];
 
 /** Desk line tabs — consumed by Quote Sheet ingest. Home is first-class here. */

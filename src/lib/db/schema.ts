@@ -200,9 +200,8 @@ export const clientHistory = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    contactId: uuid("contact_id")
-      .notNull()
-      .references(() => contacts.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
     dealId: uuid("deal_id").references(() => deals.id),
     policyId: uuid("policy_id").references(() => policies.id),
     eventType: text("event_type").notNull(),
@@ -223,6 +222,7 @@ export const reviewTasks = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
     policyId: uuid("policy_id").references(() => policies.id),
     dealId: uuid("deal_id").references(() => deals.id),
     kind: text("kind").notNull(),
@@ -490,6 +490,65 @@ export const alerts = pgTable(
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
 );
 
+/** Consumed from agency-ops: task / meeting / call. TEST-DESK adds account_id. */
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    status: text("status").notNull().default("open"),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    startAt: timestamp("start_at", { withTimezone: true }),
+    endAt: timestamp("end_at", { withTimezone: true }),
+    assignee: text("assignee"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    ...timestamps,
+  },
+  (t) => [
+    index("activities_tenant_idx").on(t.tenantId),
+    index("activities_when_idx").on(t.tenantId, t.startAt, t.dueAt),
+    index("activities_status_idx").on(t.tenantId, t.status, t.kind),
+    index("activities_account_idx").on(t.tenantId, t.accountId),
+  ],
+);
+
+/** Every task / meeting / call writes a log. FKs keep logs off orphan records. */
+export const activityLogs = pgTable(
+  "activity_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id),
+    kind: text("kind").notNull(),
+    eventType: text("event_type").notNull(),
+    body: text("body").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
+    policyId: uuid("policy_id").references(() => policies.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("activity_logs_activity_idx").on(t.tenantId, t.activityId),
+    index("activity_logs_contact_idx").on(t.tenantId, t.contactId),
+    index("activity_logs_account_idx").on(t.tenantId, t.accountId),
+    index("activity_logs_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -506,3 +565,5 @@ export type Quote = typeof quotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
+export type Activity = typeof activities.$inferSelect;
+export type ActivityLog = typeof activityLogs.$inferSelect;

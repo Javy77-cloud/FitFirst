@@ -1,9 +1,11 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { db } from "./index";
 import {
   accounts,
+  activities,
+  activityLogs,
   alerts,
   appetiteRules,
   carriers,
@@ -22,6 +24,91 @@ import {
   risks,
   tenants,
 } from "./schema";
+
+export type TimelineItem = {
+  id: string;
+  source: "activity_log" | "client_history";
+  kind: string;
+  eventType: string;
+  body: string;
+  occurredAt: Date;
+  activityId: string | null;
+  contactId: string | null;
+  accountId: string | null;
+  policyId: string | null;
+  dealId: string | null;
+  activityTitle: string | null;
+  activityStatus: string | null;
+};
+
+export async function listActivityTimeline(filter: {
+  contactId?: string | null;
+  accountId?: string | null;
+  policyId?: string | null;
+}): Promise<TimelineItem[]> {
+  const logClauses = [
+    filter.contactId ? eq(activityLogs.contactId, filter.contactId) : undefined,
+    filter.accountId ? eq(activityLogs.accountId, filter.accountId) : undefined,
+    filter.policyId ? eq(activityLogs.policyId, filter.policyId) : undefined,
+  ].filter((clause): clause is SQL => Boolean(clause));
+  const historyClauses = [
+    filter.contactId ? eq(clientHistory.contactId, filter.contactId) : undefined,
+    filter.accountId ? eq(clientHistory.accountId, filter.accountId) : undefined,
+    filter.policyId ? eq(clientHistory.policyId, filter.policyId) : undefined,
+  ].filter((clause): clause is SQL => Boolean(clause));
+
+  const logs = logClauses.length
+    ? await db
+        .select({ log: activityLogs, activity: activities })
+        .from(activityLogs)
+        .innerJoin(activities, eq(activityLogs.activityId, activities.id))
+        .where(and(eq(activityLogs.tenantId, tenant()), or(...logClauses)))
+        .orderBy(desc(activityLogs.occurredAt))
+    : [];
+
+  const history = historyClauses.length
+    ? await db
+        .select()
+        .from(clientHistory)
+        .where(and(eq(clientHistory.tenantId, tenant()), or(...historyClauses)))
+        .orderBy(desc(clientHistory.occurredAt))
+    : [];
+
+  const items: TimelineItem[] = [
+    ...logs.map(({ log, activity }) => ({
+      id: log.id,
+      source: "activity_log" as const,
+      kind: log.kind,
+      eventType: log.eventType,
+      body: log.body,
+      occurredAt: log.occurredAt,
+      activityId: log.activityId,
+      contactId: log.contactId,
+      accountId: log.accountId,
+      policyId: log.policyId,
+      dealId: log.dealId,
+      activityTitle: activity.title,
+      activityStatus: activity.status,
+    })),
+    ...history.map((row) => ({
+      id: row.id,
+      source: "client_history" as const,
+      kind: row.eventType,
+      eventType: row.eventType,
+      body: row.body,
+      occurredAt: row.occurredAt,
+      activityId: null,
+      contactId: row.contactId,
+      accountId: row.accountId,
+      policyId: row.policyId,
+      dealId: row.dealId,
+      activityTitle: null,
+      activityStatus: null,
+    })),
+  ];
+  items.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+  return items;
+}
 
 const tenant = () => DEFAULT_TENANT_ID;
 
@@ -149,6 +236,7 @@ export async function getContactWorkspace(id: string) {
     policyCount: lifetime,
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
+    timeline: await listActivityTimeline({ contactId: id }),
   };
 }
 
@@ -185,6 +273,7 @@ export async function getAccountWorkspace(id: string) {
     policyCount: lifetime,
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
+    timeline: await listActivityTimeline({ accountId: id }),
   };
 }
 
@@ -209,7 +298,11 @@ export async function getPolicyWorkspace(id: string) {
     .from(documents)
     .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, id)))
     .orderBy(desc(documents.createdAt));
-  return { ...row, files };
+  return {
+    ...row,
+    files,
+    timeline: await listActivityTimeline({ policyId: id }),
+  };
 }
 
 export async function listCarriers() {

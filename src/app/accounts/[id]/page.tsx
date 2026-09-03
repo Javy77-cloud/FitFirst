@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
@@ -14,8 +15,16 @@ export default async function AccountDetailPage({
   const { id } = await params;
   const workspace = await getAccountWorkspace(id);
   if (!workspace) notFound();
-  const { account, policies, deals, contacts, policyCount, activePolicyCount, clientStatus } =
-    workspace;
+  const {
+    account,
+    policies,
+    deals,
+    contacts,
+    policyCount,
+    activePolicyCount,
+    clientStatus,
+    timeline,
+  } = workspace;
 
   return (
     <AppShell title={account.name}>
@@ -81,6 +90,15 @@ export default async function AccountDetailPage({
           </table>
         )}
       </section>
+      <div className="mb-4">
+        <ActivityTimeline
+          items={timeline}
+          accountId={account.id}
+          contactId={contacts[0]?.id}
+          policyId={policies[0]?.policy.id}
+          dealId={deals[0]?.id}
+        />
+      </div>
       {deals.length > 0 ? (
         <section className="ff-card overflow-hidden">
           <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">

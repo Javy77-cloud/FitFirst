@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ export default async function PolicyDetailPage({
   const { id } = await params;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const { policy, contact, account, carrier, deal, files } = workspace;
+  const { policy, contact, account, carrier, deal, files, timeline } = workspace;
 
   return (
     <AppShell title={policy.policyNumber}>
@@ -91,6 +92,16 @@ export default async function PolicyDetailPage({
           </table>
         )}
       </section>
+
+      <div className="mt-4">
+        <ActivityTimeline
+          items={timeline}
+          policyId={policy.id}
+          contactId={contact?.id}
+          accountId={account?.id}
+          dealId={deal?.id}
+        />
+      </div>
     </AppShell>
   );
 }

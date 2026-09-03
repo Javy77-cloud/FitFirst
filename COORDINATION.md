@@ -12,6 +12,7 @@ Runtime stays single-tenant (`TENANT_ID`). New tables carry `tenant_id`. Checked
 4. Bind / Closed Won: Deal produces a Contact (personal lines) or a Business/Account (commercial). Copy matching fields so the agent does not retype. Then create **one Policy per bound line**, attached to that Contact or Business. Policy exists only after accept/apply (status Bound / Pending / Active — never Quote-only).
 5. Every Policy is its own record. Contact and Business show policy counts: **lifetime** + **active/bound/pending**. Same person can have personal Contact policies **and** be linked to a Business.
 6. Client status: Contact/Business is **Client** if any related policy is Active, Bound, or Pending; otherwise not a client. **Former Client** only if they once had one and now have zero in-force.
+7. Tasks, Meetings, and Calls assign to a **Contact and/or Policy (and Business)**. Every one writes an `activity_logs` row with those FKs so the log is not an orphan. Bind/lifecycle screens show the activity timeline on Contact, Business, and Policy. **Do not build a softphone** — agency-ops owns dialing / calendar UI.
 
 ## TEST-DESK owns (this slice)
 
@@ -24,6 +25,7 @@ Owner: TEST-DESK (`cursor/test-desk-lifecycle-63b0`).
 - Thin Quote Sheet **display + blanks-only fill from already-extracted fields** (extension point)
 - Get Started click-path checklist (`/get-started`)
 - Personal HO click-through seed **besides Ana** (Elena Ruiz, Melbourne)
+- Activity timeline on Contact / Business / Policy: consume ops `activities` (task / meeting / call) + require `activity_logs` with related-record FKs. Add `account_id` so a Business can own the same activity.
 
 ### Files owned
 
@@ -36,6 +38,9 @@ Owner: TEST-DESK (`cursor/test-desk-lifecycle-63b0`).
 - `src/app/accounts/**`
 - `src/app/policies/[id]/**`
 - `drizzle/0002_test_desk_lifecycle.sql`
+- `drizzle/0003_test_desk_activity_fks.sql`
+- `src/app/actions/activities-desk.ts`
+- `src/components/activity-timeline.tsx`
 - `fixtures/sample-melbourne-ho-dec.txt`
 
 ### Shared files (additive only)
@@ -65,6 +70,7 @@ Consume their types. Leave extension points. Do **not** restyle `src/lib/quote-s
 | QA + Settings Get Started (`cursor/qa-settings-get-started-12e1`) | They own `desk_settings` / `onboarding_items`. This slice’s `/get-started` is the **lifecycle click path**. On merge, keep both checklists or nest theirs under Settings. |
 | Account 360 | Reuse `documents` + `review_tasks`. `documents.contact_id` is additive. Do not fork a files table. |
 | CRM UI bind/history | Bind remains the **only** path that inserts a policy from a deal. |
+| Agency operating tools (`cursor/agency-operating-tools-e272`) | Owns `/calendar`, `/tasks`, Google Calendar stub, **softphone / dialer**. Consume `activities` `{ kind: task\|meeting\|call, contact_id, deal_id, policy_id }`. TEST-DESK adds `account_id` + `activity_logs` (required). Do not restyle their calendar or build a phone. On merge, keep one `activities` table and add `account_id` if missing. |
 
 Ana Home Coverage A **$321,000** (`source: javy`) is confirmed. Never flag it CHECK. Never overwrite it. Do not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Do not change `src/lib/appetite/match.ts`.
 
@@ -87,7 +93,8 @@ After `npm run db:migrate && npm run db:seed` (or `docker compose up --build`):
 7. **Quotes** tab: ranked quote-results note, cheapest first. Two quote PDF slots. No policy was created from those quotes.
 8. Deal stage is **bound**. Click **Contact** → Elena Ruiz. Status **Client**. Counts: lifetime **1**, in-force **1**. Linked business **Ruiz Tile LLC** (commercial book is empty — she can hold personal policies and a business link).
 9. Click the **HO3 policy** → issued policy files (dec / ID). These slots are not shopping docs.
-10. **Ana Dib** remains the HO3-only shop: Home → **Open Ana Dib HO3 shop**. Cov A **$321,000**. Eight markets, zero bindable. **Do not bind Ana.** No policy from those quotes.
+10. On **Contact**, **Policy**, and **Business** scroll to **Activity timeline**. Seeded: bind log, 30-day task (Contact+Policy), meeting, logged call (not a dialer), and a Ruiz Tile LLC task (Contact+Business, no commercial policy). Every row links back. Log a new task/meeting/call from the form — it must appear on the records you assigned.
+11. **Ana Dib** remains the HO3-only shop: Home → **Open Ana Dib HO3 shop**. Cov A **$321,000**. Eight markets, zero bindable. **Do not bind Ana.** No policy from those quotes.
 
 ### Run-it-yourself path (proves match + bind)
 
@@ -106,3 +113,4 @@ After `npm run db:migrate && npm run db:seed` (or `docker compose up --build`):
 - Change appetite matching or the Ana fixture
 - Create a Policy from a quote
 - Fork a second CRM / files table / tasks table
+- Build a softphone, dialer, or live Google Calendar sync

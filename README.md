@@ -10,6 +10,7 @@ This is not a Zoho clone and does not call a live CRM. The locked lifecycle is:
 4. Bind / Closed Won: Deal produces a Contact (personal) or a Business/Account (commercial), copies matching fields, then one Policy per bound line (Bound / Pending / Active only).
 5. Every Policy is its own record. Contact and Business show lifetime + active/bound/pending counts. Same person can hold personal policies and be linked to a Business.
 6. Client = any related policy is Active, Bound, or Pending. Former Client only if they once had one and now have zero.
+7. Tasks, meetings, and calls assign to a Contact and/or Policy (and Business). Every one has a log. Softphone is out of scope.
 
 ## Run locally
 

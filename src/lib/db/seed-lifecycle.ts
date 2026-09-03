@@ -4,6 +4,9 @@ import { eq } from "drizzle-orm";
 import { db } from "./index";
 import {
   accounts,
+  activities,
+  activityLogs,
+  clientHistory,
   contactAccounts,
   contacts,
   deals,
@@ -17,16 +20,21 @@ import {
 import {
   CARRIER_IDS,
   ELENA_ACCOUNT_ID,
+  ELENA_BIZ_TASK_ID,
+  ELENA_CALL_ID,
   ELENA_CONTACT_ID,
   ELENA_DEAL_ID,
   ELENA_LEAD_ID,
+  ELENA_MEETING_ID,
   ELENA_POLICY_ID,
   ELENA_QUOTE_AI_ID,
   ELENA_QUOTE_TAILROW_ID,
   ELENA_RISK_ID,
   ELENA_SHEET_ID,
+  ELENA_TASK_ID,
   TENANT_ID,
 } from "../fixtures/ids";
+import { activityLogBody } from "../lifecycle/activity";
 import {
   MELBOURNE_HO_DEC_FILENAME,
   MELBOURNE_HO_DEC_TEXT,
@@ -472,4 +480,132 @@ export async function seedLifecycleDemo() {
       status: "uploaded",
     },
   ]);
+
+  await db
+    .insert(clientHistory)
+    .values({
+      id: "44444444-4444-4444-8444-444444444460",
+      tenantId: TENANT_ID,
+      contactId: ELENA_CONTACT_ID,
+      accountId: ELENA_ACCOUNT_ID,
+      dealId: ELENA_DEAL_ID,
+      policyId: ELENA_POLICY_ID,
+      eventType: "bind",
+      body: "Bound HO HO3-ELENA-2026. Policy created only after bind — quotes stayed on the deal.",
+      occurredAt: new Date("2026-09-01T15:05:00.000Z"),
+    })
+    .onConflictDoUpdate({
+      target: clientHistory.id,
+      set: {
+        contactId: ELENA_CONTACT_ID,
+        accountId: ELENA_ACCOUNT_ID,
+        policyId: ELENA_POLICY_ID,
+        body: "Bound HO HO3-ELENA-2026. Policy created only after bind — quotes stayed on the deal.",
+      },
+    });
+
+  const seededActivities = [
+    {
+      id: ELENA_TASK_ID,
+      kind: "task",
+      title: "30-day HO3 check-in",
+      notes: "Assigned to Elena + HO3-ELENA-2026.",
+      status: "open",
+      dueAt: new Date("2026-10-01T15:00:00.000Z"),
+      contactId: ELENA_CONTACT_ID,
+      accountId: null as string | null,
+      policyId: ELENA_POLICY_ID,
+      dealId: ELENA_DEAL_ID,
+      eventType: "created",
+      at: new Date("2026-09-01T15:10:00.000Z"),
+    },
+    {
+      id: ELENA_MEETING_ID,
+      kind: "meeting",
+      title: "Review bound HO3 with Elena",
+      notes: "In-desk meeting, not a calendar sync.",
+      status: "completed",
+      dueAt: new Date("2026-09-02T14:00:00.000Z"),
+      contactId: ELENA_CONTACT_ID,
+      accountId: null,
+      policyId: ELENA_POLICY_ID,
+      dealId: ELENA_DEAL_ID,
+      eventType: "created",
+      at: new Date("2026-09-01T16:00:00.000Z"),
+    },
+    {
+      id: ELENA_CALL_ID,
+      kind: "call",
+      title: "Bind confirmation call",
+      notes: "Logged call — not a softphone. Sibling agent owns dialing.",
+      status: "completed",
+      dueAt: null,
+      contactId: ELENA_CONTACT_ID,
+      accountId: null,
+      policyId: ELENA_POLICY_ID,
+      dealId: ELENA_DEAL_ID,
+      eventType: "logged",
+      at: new Date("2026-09-01T15:20:00.000Z"),
+    },
+    {
+      id: ELENA_BIZ_TASK_ID,
+      kind: "task",
+      title: "Ask Elena about GL for Ruiz Tile LLC",
+      notes: "Business-linked task. No commercial policy yet.",
+      status: "open",
+      dueAt: new Date("2026-09-15T15:00:00.000Z"),
+      contactId: ELENA_CONTACT_ID,
+      accountId: ELENA_ACCOUNT_ID,
+      policyId: null,
+      dealId: ELENA_DEAL_ID,
+      eventType: "created",
+      at: new Date("2026-09-01T17:00:00.000Z"),
+    },
+  ];
+
+  for (const row of seededActivities) {
+    await db
+      .insert(activities)
+      .values({
+        id: row.id,
+        tenantId: TENANT_ID,
+        kind: row.kind,
+        title: row.title,
+        notes: row.notes,
+        status: row.status,
+        dueAt: row.dueAt,
+        contactId: row.contactId,
+        accountId: row.accountId,
+        policyId: row.policyId,
+        dealId: row.dealId,
+      })
+      .onConflictDoUpdate({
+        target: activities.id,
+        set: {
+          title: row.title,
+          notes: row.notes,
+          status: row.status,
+          contactId: row.contactId,
+          accountId: row.accountId,
+          policyId: row.policyId,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  await db.delete(activityLogs).where(eq(activityLogs.dealId, ELENA_DEAL_ID));
+  await db.insert(activityLogs).values(
+    seededActivities.map((row) => ({
+      tenantId: TENANT_ID,
+      activityId: row.id,
+      kind: row.kind,
+      eventType: row.eventType,
+      body: activityLogBody(row.kind, row.eventType, row.title),
+      occurredAt: row.at,
+      contactId: row.contactId,
+      accountId: row.accountId,
+      policyId: row.policyId,
+      dealId: row.dealId,
+    })),
+  );
 }
