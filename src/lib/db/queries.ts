@@ -394,6 +394,8 @@ export type PolicyListFilter = {
 };
 
 export async function listPolicies(filter: PolicyListFilter = {}) {
+  const actor = await getActor();
+  const scope = ownerWhere(actor, policies.ownerId);
   const rows = await db
     .select({
       policy: policies,
