@@ -58,6 +58,12 @@ export default async function DealsPage({
         </p>
       ) : null}
       <section className="ff-card overflow-hidden">
+        {rows.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">
+            No deals match this filter. Shopping stays on the deal list — quotes are not
+            policies.
+          </p>
+        ) : (
         <table className="ff-table">
           <thead>
             <tr>
@@ -97,6 +103,7 @@ export default async function DealsPage({
             ))}
           </tbody>
         </table>
+        )}
       </section>
     </AppShell>
   );
