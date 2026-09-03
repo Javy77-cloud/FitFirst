@@ -323,6 +323,8 @@ export async function listDeals(filter: DealListFilter = {}) {
 }
 
 export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {
+  const actor = await getActor();
+  const scope = ownerWhere(actor, contacts.ownerId);
   const rows = await db
     .select()
     .from(contacts)
@@ -394,6 +396,8 @@ export type PolicyListFilter = {
 };
 
 export async function listPolicies(filter: PolicyListFilter = {}) {
+  const actor = await getActor();
+  const scope = ownerWhere(actor, policies.ownerId);
   const rows = await db
     .select({
       policy: policies,
