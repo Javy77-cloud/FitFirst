@@ -22,6 +22,13 @@
       "when": 1788390000000,
       "tag": "0002_crm_account_kind_and_quote_docs",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788392000000,
+      "tag": "0003_pipeline_stages",
+      "breakpoints": true
     }
   ]
 }

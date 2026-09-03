@@ -54,7 +54,15 @@ Create your own path from **Leads** or **New shopping deal**. Bind is what creat
 1. **Leads** → save a person → **Start shop**, or **Dec drop → deal** (same funnel).
 2. The deal is shopping only. When stub quotes are finalized, quote PDFs attach on the deal. A quote never creates a policy.
 3. **Bind** writes a personal contact or a commercial business, then **one policy per line**, linked back to the deal. Lifetime and active counts live on the account.
-4. Open **Accounts**, **Policies**, or **Reviews** for tenure, counts, and 30/60/90 tasks. Alerts stay in the desk.
+4. Open **Contacts**, **Businesses**, **Policies**, or **Tasks**. Use **Columns** on every table to persist extra fields. Alerts stay in the desk.
+
+### Pipeline and lists
+
+1. **Pipeline** → Columns (kanban) or List. **Create deal** is on the board. **Admin stage editor** adds / relabels / deletes columns. Bound cannot be deleted; bind is the only way in.
+2. **Deals** list starts with deal, insured/contact name, stage, line, state, city, Cov A, and row actions. Click **Columns** for phone, email, updated, bound. From the row, log Call / SMS / Email / Task without opening the deal (desk only — nothing is sent).
+3. **Contacts** is the personal book; **Businesses** is commercial. Filter by name or state. Click the name — it goes to `/contacts/[id]`.
+4. **Policies** → P&C / Life / Health, then Home / Auto / Commercial. The name column is **Insured / contact name**, not Party.
+5. **Tasks** → add, edit, delete. Reviews remains the open queue + 90-day expirations.
 
 Life and health deals are CRM notes with a rating placeholder. They still bind the same way.
 

@@ -4,7 +4,14 @@ import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
+import { ColumnPicker } from "@/components/crm/data-table";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
+
+const EXPIRING_COLUMNS = [
+  { id: "policy", header: "Policy", defaultVisible: true },
+  { id: "client", header: "Insured / contact name", defaultVisible: true },
+  { id: "expires", header: "Expires", defaultVisible: true },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -70,23 +77,26 @@ export default async function ReviewsPage() {
               No in-window expirations. Policies appear here after bind.
             </p>
           ) : (
+            <ColumnPicker tableId="reviews-expiring" columns={EXPIRING_COLUMNS}>
             <table className="ff-table">
               <thead>
                 <tr>
-                  <th>Policy</th>
-                  <th>Client</th>
-                  <th>Expires</th>
+                  {EXPIRING_COLUMNS.map((col) => (
+                    <th key={col.id} data-col={col.id}>
+                      {col.header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {expiring.map(({ policy, contact }) => (
                   <tr key={policy.id}>
-                    <td>
+                    <td data-col="policy">
                       <Link href={`/policies/${policy.id}`} className="font-medium text-primary hover:underline">
                         {policy.policyNumber}
                       </Link>
                     </td>
-                    <td>
+                    <td data-col="client">
                       {contact ? (
                         <Link href={`/contacts/${contact.id}`} className="hover:underline">
                           {accountDisplayName(contact)}
@@ -95,13 +105,14 @@ export default async function ReviewsPage() {
                         "—"
                       )}
                     </td>
-                    <td>
+                    <td data-col="expires">
                       <ExpirationBadge date={policy.expirationDate} />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </ColumnPicker>
           )}
         </section>
       </div>

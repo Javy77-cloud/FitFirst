@@ -7,7 +7,10 @@ export type QueryTab = {
   content: React.ReactNode;
 };
 
-export function resolveQueryTab(tabs: Pick<QueryTab, "id">[], requested: string | undefined) {
+export function resolveQueryTab(
+  tabs: readonly Pick<QueryTab, "id">[],
+  requested: string | undefined,
+) {
   if (requested && tabs.some((tab) => tab.id === requested)) return requested;
   return tabs[0]?.id ?? "";
 }

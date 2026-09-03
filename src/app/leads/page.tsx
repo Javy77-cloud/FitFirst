@@ -7,7 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ColumnPicker } from "@/components/crm/data-table";
+import { formatIsoDate } from "@/lib/crm/display";
 import { listLeads } from "@/lib/db/queries";
+
+const LEAD_COLUMNS = [
+  { id: "name", header: "Name", defaultVisible: true, hideable: false },
+  { id: "status", header: "Status", defaultVisible: true },
+  { id: "source", header: "Source", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: false },
+  { id: "email", header: "Email", defaultVisible: false },
+  { id: "created", header: "Created", defaultVisible: false },
+  { id: "action", header: "Shop", defaultVisible: true, hideable: false },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -66,37 +78,41 @@ export default async function LeadsPage() {
 
         <div className="space-y-4">
         <DecDropForm />
+        <ColumnPicker tableId="leads" columns={LEAD_COLUMNS}>
         <section className="ff-card overflow-x-auto">
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Source</th>
-                <th></th>
+                {LEAD_COLUMNS.map((col) => (
+                  <th key={col.id} data-col={col.id}>
+                    {col.header}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                  <td colSpan={LEAD_COLUMNS.length} className="text-muted-foreground">
                     No leads yet. Save one on the left.
                   </td>
                 </tr>
               ) : (
                 rows.map((lead) => (
                   <tr key={lead.id}>
-                    <td className="font-medium">
+                    <td data-col="name" className="font-medium">
                       <Link href={`/leads/${lead.id}`} className="text-primary hover:underline">
                         {lead.lastName}, {lead.firstName}
                       </Link>
-                      <div className="text-[11px] text-muted-foreground">
-                        {lead.phone ?? lead.email ?? "No phone or email"}
-                      </div>
                     </td>
-                    <td className="uppercase">{lead.status}</td>
-                    <td>{lead.source ?? "—"}</td>
-                    <td>
+                    <td data-col="status" className="uppercase">
+                      {lead.status}
+                    </td>
+                    <td data-col="source">{lead.source ?? "—"}</td>
+                    <td data-col="phone">{lead.phone ?? "—"}</td>
+                    <td data-col="email">{lead.email ?? "—"}</td>
+                    <td data-col="created">{formatIsoDate(lead.createdAt)}</td>
+                    <td data-col="action">
                       {lead.convertedDealId ? (
                         <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
                           Open deal
@@ -117,6 +133,7 @@ export default async function LeadsPage() {
             </tbody>
           </table>
         </section>
+        </ColumnPicker>
         </div>
       </div>
     </AppShell>

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { DEAL_STAGES, DEFAULT_TENANT_ID, LINES, type DealStage } from "@/lib/domain";
+import { DEFAULT_TENANT_ID, LINES } from "@/lib/domain";
+import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import {
   BindBlockedError,
   defaultAccountKind,
@@ -12,12 +13,14 @@ import {
   stubPolicyNumber,
 } from "@/lib/crm/bind";
 import { db } from "@/lib/db";
+import { ensurePipelineStages } from "@/lib/db/queries";
 import {
   alerts,
   clientHistory,
   contacts,
   deals,
   leads,
+  pipelineStages,
   policies,
   reviewTasks,
   risks,
@@ -34,8 +37,11 @@ function revalidateCrm(extra: string[] = []) {
     "/leads",
     "/deals",
     "/contacts",
+    "/businesses",
     "/policies",
     "/reviews",
+    "/tasks",
+    "/pipeline",
     "/alerts",
     ...extra,
   ]) {
@@ -239,8 +245,9 @@ export async function createDealFromDecDrop(formData: FormData) {
 
 export async function updateDealStage(formData: FormData) {
   const dealId = str(formData, "dealId");
-  const stage = str(formData, "stage") as DealStage;
-  if (!DEAL_STAGES.includes(stage)) throw new Error("Unknown pipeline stage");
+  const stage = str(formData, "stage");
+  const stages = await ensurePipelineStages();
+  if (!stages.some((row) => row.slug === stage)) throw new Error("Unknown pipeline stage");
   if (stage === "bound") {
     throw new BindBlockedError("Use Bind to move a deal to bound. That is the only path that creates a policy.");
   }
@@ -256,6 +263,86 @@ export async function updateDealStage(formData: FormData) {
     .set({ pipelineStage: stage, updatedAt: new Date() })
     .where(eq(deals.id, dealId));
   revalidateCrm([`/deals/${dealId}`]);
+}
+
+export async function createPipelineStage(formData: FormData) {
+  const label = str(formData, "label");
+  if (!label) throw new Error("Stage label is required");
+  const slug = slugifyStage(label);
+  const stages = await ensurePipelineStages();
+  if (slug === "bound" || stages.some((row) => row.slug === slug)) {
+    throw new Error("That stage already exists");
+  }
+  const sortOrder = stages.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1;
+  await db.insert(pipelineStages).values({
+    tenantId: DEFAULT_TENANT_ID,
+    slug,
+    label,
+    sortOrder,
+    locked: false,
+  });
+  revalidateCrm();
+}
+
+export async function relabelPipelineStage(formData: FormData) {
+  const stageId = str(formData, "stageId");
+  const label = str(formData, "label");
+  if (!label) throw new Error("Stage label is required");
+  await db.update(pipelineStages).set({ label }).where(eq(pipelineStages.id, stageId));
+  revalidateCrm();
+}
+
+export async function deletePipelineStage(formData: FormData) {
+  const stageId = str(formData, "stageId");
+  const [stage] = await db.select().from(pipelineStages).where(eq(pipelineStages.id, stageId));
+  if (!stage) throw new Error("Stage not found");
+  if (stage.locked || stage.slug === "bound") {
+    throw new Error("Bound is reserved for bind and cannot be deleted");
+  }
+  await db
+    .update(deals)
+    .set({ pipelineStage: "shopping", updatedAt: new Date() })
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.pipelineStage, stage.slug)));
+  await db.delete(pipelineStages).where(eq(pipelineStages.id, stageId));
+  revalidateCrm();
+}
+
+export async function createDealOutreach(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const kind = str(formData, "kind");
+  if (!isOutreachKind(kind)) throw new Error("Unknown outreach kind");
+  const note = str(formData, "note");
+  const dueRaw = str(formData, "dueDate");
+  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) throw new Error("Deal not found");
+
+  const title = note
+    ? `${outreachLabel(kind)} · ${deal.title}: ${note}`
+    : `${outreachLabel(kind)} · ${deal.title}`;
+
+  await db.insert(reviewTasks).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId: deal.id,
+    contactId: deal.contactId,
+    kind,
+    title,
+    dueDate,
+    status: "open",
+  });
+
+  if (deal.contactId) {
+    await db.insert(clientHistory).values({
+      tenantId: DEFAULT_TENANT_ID,
+      contactId: deal.contactId,
+      dealId: deal.id,
+      eventType: kind,
+      body: note || `${outreachLabel(kind)} logged from the deals list. Nothing was sent outside the desk.`,
+    });
+  }
+
+  revalidateCrm([`/deals/${deal.id}`, "/tasks"]);
 }
 
 export async function updateDealCrmNotes(formData: FormData) {

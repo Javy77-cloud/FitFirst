@@ -159,3 +159,7 @@
 .ff-table tr:hover td {
   background: #f4f8fc;
 }
+.ff-table th[hidden],
+.ff-table td[hidden] {
+  display: none;
+}

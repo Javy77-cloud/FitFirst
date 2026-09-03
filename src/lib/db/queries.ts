@@ -11,6 +11,7 @@ import {
   documents,
   extractedFields,
   leads,
+  pipelineStages,
   policies,
   quoteAttemptLogs,
   quotes,
@@ -18,6 +19,7 @@ import {
   risks,
   tenants,
 } from "./schema";
+import type { Contact, Deal, Lead, PipelineStageRow, Risk } from "./schema";
 
 const tenant = () => DEFAULT_TENANT_ID;
 
@@ -27,6 +29,69 @@ export async function listLeads() {
 
 export async function listDeals() {
   return db.select().from(deals).where(eq(deals.tenantId, tenant())).orderBy(desc(deals.updatedAt));
+}
+
+const DEFAULT_PIPELINE: Array<Pick<PipelineStageRow, "slug" | "label" | "sortOrder" | "locked">> = [
+  { slug: "shopping", label: "Shopping", sortOrder: 0, locked: false },
+  { slug: "quoting", label: "Quoting", sortOrder: 1, locked: false },
+  { slug: "comparing", label: "Comparing", sortOrder: 2, locked: false },
+  { slug: "bound", label: "Bound", sortOrder: 3, locked: true },
+  { slug: "lost", label: "Lost", sortOrder: 4, locked: false },
+];
+
+export async function listPipelineStages() {
+  return db
+    .select()
+    .from(pipelineStages)
+    .where(eq(pipelineStages.tenantId, tenant()))
+    .orderBy(asc(pipelineStages.sortOrder), asc(pipelineStages.label));
+}
+
+export async function ensurePipelineStages() {
+  const existing = await listPipelineStages();
+  const have = new Set(existing.map((row) => row.slug));
+  const missing = DEFAULT_PIPELINE.filter((row) => !have.has(row.slug));
+  if (missing.length > 0) {
+    await db.insert(pipelineStages).values(
+      missing.map((row) => ({
+        tenantId: tenant(),
+        ...row,
+      })),
+    );
+  }
+  return listPipelineStages();
+}
+
+export type DealListRow = {
+  deal: Deal;
+  lead: Lead | null;
+  contact: Contact | null;
+  risk: Risk | null;
+};
+
+export async function listDealRows(): Promise<DealListRow[]> {
+  const rows = await db
+    .select({
+      deal: deals,
+      lead: leads,
+      contact: contacts,
+      risk: risks,
+    })
+    .from(deals)
+    .leftJoin(leads, eq(deals.leadId, leads.id))
+    .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .leftJoin(risks, eq(risks.dealId, deals.id))
+    .where(eq(deals.tenantId, tenant()))
+    .orderBy(desc(deals.updatedAt));
+
+  const seen = new Set<string>();
+  const out: DealListRow[] = [];
+  for (const row of rows) {
+    if (seen.has(row.deal.id)) continue;
+    seen.add(row.deal.id);
+    out.push(row);
+  }
+  return out;
 }
 
 export async function listContacts() {
@@ -283,5 +348,21 @@ export async function listReviewQueue() {
     .leftJoin(contacts, eq(reviewTasks.contactId, contacts.id))
     .leftJoin(policies, eq(reviewTasks.policyId, policies.id))
     .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.status, "open")))
+    .orderBy(asc(reviewTasks.dueDate));
+}
+
+export async function listAllTasks() {
+  return db
+    .select({
+      task: reviewTasks,
+      contact: contacts,
+      policy: policies,
+      deal: deals,
+    })
+    .from(reviewTasks)
+    .leftJoin(contacts, eq(reviewTasks.contactId, contacts.id))
+    .leftJoin(policies, eq(reviewTasks.policyId, policies.id))
+    .leftJoin(deals, eq(reviewTasks.dealId, deals.id))
+    .where(eq(reviewTasks.tenantId, tenant()))
     .orderBy(asc(reviewTasks.dueDate));
 }

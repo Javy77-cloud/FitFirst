@@ -2,12 +2,15 @@ import Link from "next/link";
 import { isNull, eq, and, sql } from "drizzle-orm";
 import {
   Bell,
+  Briefcase,
   Building2,
   CalendarClock,
+  CheckSquare,
   ClipboardList,
   Contact,
   FileStack,
   Home,
+  Columns3,
   Shield,
   Users,
 } from "lucide-react";
@@ -18,9 +21,12 @@ import { alerts } from "@/lib/db/schema";
 const NAV = [
   { href: "/", label: "Home", icon: Home },
   { href: "/leads", label: "Leads", icon: Users },
+  { href: "/pipeline", label: "Pipeline", icon: Columns3 },
   { href: "/deals", label: "Deals", icon: ClipboardList },
-  { href: "/contacts", label: "Accounts", icon: Contact },
+  { href: "/contacts", label: "Contacts", icon: Contact },
+  { href: "/businesses", label: "Businesses", icon: Briefcase },
   { href: "/policies", label: "Policies", icon: Shield },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/reviews", label: "Reviews", icon: CalendarClock },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },

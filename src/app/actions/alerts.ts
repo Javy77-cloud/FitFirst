@@ -13,6 +13,19 @@ export async function markAlertRead(formData: FormData) {
   revalidatePath("/alerts");
 }
 
+function revalidateTasks(task?: { contactId?: string | null; policyId?: string | null; dealId?: string | null }) {
+  revalidatePath("/");
+  revalidatePath("/reviews");
+  revalidatePath("/tasks");
+  revalidatePath("/alerts");
+  revalidatePath("/policies");
+  revalidatePath("/contacts");
+  revalidatePath("/deals");
+  if (task?.contactId) revalidatePath(`/contacts/${task.contactId}`);
+  if (task?.policyId) revalidatePath(`/policies/${task.policyId}`);
+  if (task?.dealId) revalidatePath(`/deals/${task.dealId}`);
+}
+
 export async function completeTask(formData: FormData) {
   const id = String(formData.get("taskId") ?? "");
   const [task] = await db.select().from(reviewTasks).where(eq(reviewTasks.id, id));
@@ -32,12 +45,60 @@ export async function completeTask(formData: FormData) {
     });
   }
 
-  revalidatePath("/");
-  revalidatePath("/reviews");
-  revalidatePath("/alerts");
-  revalidatePath("/policies");
-  revalidatePath("/contacts");
-  if (task?.contactId) revalidatePath(`/contacts/${task.contactId}`);
-  if (task?.policyId) revalidatePath(`/policies/${task.policyId}`);
-  if (task?.dealId) revalidatePath(`/deals/${task.dealId}`);
+  revalidateTasks(task);
+}
+
+function str(form: FormData, key: string) {
+  return String(form.get(key) ?? "").trim();
+}
+
+export async function createTask(formData: FormData) {
+  const title = str(formData, "title") || "Follow-up";
+  const kind = str(formData, "kind") || "task";
+  const dueRaw = str(formData, "dueDate");
+  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+  const dealId = str(formData, "dealId") || null;
+  const contactId = str(formData, "contactId") || null;
+  const policyId = str(formData, "policyId") || null;
+
+  await db.insert(reviewTasks).values({
+    tenantId: DEFAULT_TENANT_ID,
+    title,
+    kind,
+    dueDate,
+    status: "open",
+    dealId,
+    contactId,
+    policyId,
+  });
+  revalidateTasks({ dealId, contactId, policyId });
+}
+
+export async function updateTask(formData: FormData) {
+  const id = str(formData, "taskId");
+  const title = str(formData, "title") || "Follow-up";
+  const kind = str(formData, "kind") || "task";
+  const status = str(formData, "status") || "open";
+  const dueRaw = str(formData, "dueDate");
+  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+
+  const [task] = await db.select().from(reviewTasks).where(eq(reviewTasks.id, id));
+  await db
+    .update(reviewTasks)
+    .set({
+      title,
+      kind,
+      status,
+      dueDate,
+      completedAt: status === "done" ? (task?.completedAt ?? new Date()) : null,
+    })
+    .where(eq(reviewTasks.id, id));
+  revalidateTasks(task);
+}
+
+export async function deleteTask(formData: FormData) {
+  const id = str(formData, "taskId");
+  const [task] = await db.select().from(reviewTasks).where(eq(reviewTasks.id, id));
+  await db.delete(reviewTasks).where(eq(reviewTasks.id, id));
+  revalidateTasks(task);
 }

@@ -8,7 +8,7 @@ import { listContacts } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContactsPage({
+export default async function BusinessesPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; state?: string }>;
@@ -16,30 +16,36 @@ export default async function ContactsPage({
   const { q = "", state = "" } = await searchParams;
   const all = await listContacts();
   const rows = filterAccounts(
-    all.filter((row) => row.accountKind !== "commercial"),
+    all.filter((row) => row.accountKind === "commercial"),
     q,
     state,
   );
 
   return (
-    <AppShell title="Contacts">
+    <AppShell title="Businesses">
       <p className="mb-3 text-sm text-muted-foreground">
-        Personal book only. Commercial accounts live under Businesses. Bind still creates the
-        contact — this form is for an existing-book client.
+        Commercial accounts only. Same contact table, <code>account_kind = commercial</code>. A GL
+        bind writes the business, then one policy for that line.
       </p>
       <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <form action={createContact} className="ff-card space-y-3 p-4">
-          <h2 className="text-sm font-semibold text-navy">Add personal contact</h2>
-          <input type="hidden" name="accountKind" value="personal" />
+          <h2 className="text-sm font-semibold text-navy">Add business</h2>
+          <input type="hidden" name="accountKind" value="commercial" />
+          <div>
+            <Label htmlFor="legalName" className="text-xs">
+              Legal / DBA name
+            </Label>
+            <Input id="legalName" name="legalName" required className="mt-1 h-8" />
+          </div>
           <div>
             <Label htmlFor="firstName" className="text-xs">
-              First name
+              Contact first
             </Label>
             <Input id="firstName" name="firstName" required className="mt-1 h-8" />
           </div>
           <div>
             <Label htmlFor="lastName" className="text-xs">
-              Last name
+              Contact last
             </Label>
             <Input id="lastName" name="lastName" required className="mt-1 h-8" />
           </div>
@@ -70,15 +76,15 @@ export default async function ContactsPage({
             </div>
           </div>
           <Button type="submit" size="sm">
-            Save contact
+            Save business
           </Button>
         </form>
         <div className="space-y-3">
-          <AccountFilters pathname="/contacts" q={q} state={state} />
+          <AccountFilters pathname="/businesses" q={q} state={state} />
           <AccountListTable
             rows={rows}
-            kind="personal"
-            empty="No personal contacts match. Bind a deal or add a client."
+            kind="commercial"
+            empty="No businesses match. Bind a commercial deal or add one here."
           />
         </div>
       </div>
