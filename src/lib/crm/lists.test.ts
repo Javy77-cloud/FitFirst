@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   insuredContactName,
   insuredHref,
+  matchesDealFilters,
   matchesPolicyFilters,
+  mailtoHref,
   moveColumn,
   pcSubfilter,
   policyBook,
   resolveColumnLayout,
   resolveVisibleColumns,
+  riskAddress,
   slugifyStage,
+  telHref,
 } from "./lists";
 
 describe("resolveVisibleColumns", () => {
@@ -136,6 +140,39 @@ describe("insured / contact name", () => {
     expect(insuredHref({ contactId: "c1", leadId: "l1" })).toBe("/contacts/c1");
     expect(insuredHref({ contactId: null, leadId: "l1" })).toBe("/leads/l1");
     expect(insuredHref({ contactId: null, leadId: null })).toBe(null);
+  });
+});
+
+describe("list shortcuts", () => {
+  it("builds a copyable address and dial/mail links without opening a record", () => {
+    expect(
+      riskAddress({
+        address1: "1098 Adige Ct SE",
+        city: "Palm Bay",
+        state: "FL",
+        zip: "32909",
+      }),
+    ).toBe("1098 Adige Ct SE · Palm Bay, FL · 32909");
+    expect(telHref("(321) 555-0144")).toBe("tel:3215550144");
+    expect(mailtoHref("ana@example.com")).toBe("mailto:ana@example.com");
+  });
+
+  it("filters shops by stage, line, and a typed query", () => {
+    const ana = {
+      title: "Dib · Palm Bay HO3",
+      pipelineStage: "shopping",
+      lineOfBusiness: "HO",
+      state: "FL",
+      insured: "Ana Dib",
+      phone: "321-555-0100",
+      email: null,
+      city: "Palm Bay",
+    };
+    expect(matchesDealFilters(ana, { stage: "shopping", line: "all" })).toBe(true);
+    expect(matchesDealFilters(ana, { stage: "bound" })).toBe(false);
+    expect(matchesDealFilters(ana, { q: "palm" })).toBe(true);
+    expect(matchesDealFilters(ana, { q: "321-555" })).toBe(true);
+    expect(matchesDealFilters(ana, { q: "miami" })).toBe(false);
   });
 });
 

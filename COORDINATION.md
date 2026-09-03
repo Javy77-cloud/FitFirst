@@ -22,10 +22,12 @@ Owns screens and bind. Additive columns: `contacts.account_kind`, `contacts.lega
 
 ### Lists / pipeline chrome (this slice)
 
-- Pipeline (`/pipeline`): kanban columns, Create, admin stage editor (add / delete / relabel). Bound is locked. View switcher: Columns + List of the same shops.
-- Sitewide `ColumnPicker` on Deals, Contacts, Businesses, Policies, Carriers, Tasks, Leads, decline log. Layout is **per desk agent** (`column_layouts`). Agency/admin may save a default; that agent’s override wins. Colors/fonts stay on the admin-branding sibling.
-- Deals list is a full worksheet (not 3 columns) with row-level call / SMS / email / task (in-desk only).
-- Contacts = personal; Businesses = `account_kind = commercial`. Policies: P&C / Life / Health, then P&C Home / Auto / Commercial. Column is **Insured / contact name** (never Party); link uses `insuredHref`.
+- North star: fewer clicks than Zoho. Phone, email, address, and policy number are on the row with dial / mail / Copy — never open a record just to grab a field.
+- Pipeline (`/pipeline`): kanban columns, Create, admin stage editor (add / delete / relabel). Bound is locked. View switcher: Columns + List of the same shops. Filters (q / stage / line / state) apply to both views.
+- Sitewide `ColumnPicker` on Deals, Contacts, Businesses, Policies, Carriers, Tasks, Leads, decline log. Layout is **per desk agent** (`column_layouts`). Checkbox change auto-saves. Agency/admin may save a default; that agent’s override wins. Colors/fonts stay on the admin-branding sibling.
+- Deals list is a full worksheet with default-visible phone / email / address and one-click Call / SMS / Email / Task (desk log only; Dial / Mail sit next to Call / Email when the field exists).
+- Enter once: `createDeal`, `createDealFromLead`, and `createDealFromDecDrop` set `primaryNamedInsured` from first + last. Bind still copies lead phone / email / address onto the contact.
+- Contacts = personal; Businesses = `account_kind = commercial`. Policies: P&C / Life / Health, then P&C Home / Auto / Commercial. Column is **Insured / contact name** (never Party); link uses `insuredHref`. Policy number and contact phone are copyable on the row.
 - Tasks (`/tasks`): add / edit / delete. Reviews stays the open queue.
 - Additive: `pipeline_stages` (`drizzle/0003_pipeline_stages.sql`), `desk_agents` + `column_layouts` (`drizzle/0004_desk_agents_column_layouts.sql`).
 

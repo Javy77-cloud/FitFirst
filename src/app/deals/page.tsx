@@ -4,6 +4,7 @@ import { DealListTable } from "@/components/crm/deal-list-table";
 import { PipelineBoard } from "@/components/crm/pipeline-board";
 import { QueryTabs, resolveQueryTab } from "@/components/crm/query-tabs";
 import { buttonVariants } from "@/components/ui/button";
+import { parseDealFilter } from "@/lib/crm/lists";
 import { ensurePipelineStages, listDealRows } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
@@ -17,9 +18,16 @@ const VIEWS = [
 export default async function DealsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; q?: string; stage?: string; line?: string; state?: string }>;
 }) {
-  const { view } = await searchParams;
+  const params = await searchParams;
+  const filter = parseDealFilter(params);
+  const extra = {
+    q: filter.q,
+    stage: filter.stage,
+    line: filter.line,
+    state: filter.state,
+  };
   const [rows, stages] = await Promise.all([listDealRows(), ensurePipelineStages()]);
 
   return (
@@ -32,10 +40,9 @@ export default async function DealsPage({
       }
     >
       <p className="mb-3 text-sm text-muted-foreground">
-        Open the column picker to show phone, email, Cov A, city, and more — saved for the desk
-        agent in the sidebar, not as a global setting. Agency admin can set a default; your
-        override wins. Log a call, SMS, email, or task from the row. Nothing is sent outside the
-        desk.
+        Phone, email, and address sit on the row — dial, mail, or copy without opening the shop.
+        Call / SMS / Email / Task logs in one click. Name typed on the lead is the insured name.
+        Columns stay per desk agent.
       </p>
       {rows.length === 0 ? (
         <section className="ff-card px-4 py-8 text-sm text-muted-foreground">
@@ -49,17 +56,26 @@ export default async function DealsPage({
         <QueryTabs
           pathname="/deals"
           param="view"
-          active={resolveQueryTab(VIEWS, view)}
+          extra={extra}
+          active={resolveQueryTab(VIEWS, params.view)}
           tabs={[
             {
               id: "list",
               label: "List",
-              content: <DealListTable rows={rows} stages={stages} />,
+              content: (
+                <DealListTable
+                  rows={rows}
+                  stages={stages}
+                  filter={filter}
+                  filterPath="/deals"
+                  filterView="list"
+                />
+              ),
             },
             {
               id: "pipeline",
               label: "Pipeline",
-              content: <PipelineBoard deals={rows.map((row) => row.deal)} stages={stages} />,
+              content: <PipelineBoard rows={rows} stages={stages} filter={filter} />,
             },
           ]}
         />

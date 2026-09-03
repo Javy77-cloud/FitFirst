@@ -20,11 +20,13 @@ export function QueryTabs({
   param,
   active,
   tabs,
+  extra,
 }: {
   pathname: string;
   param: string;
   active: string;
   tabs: QueryTab[];
+  extra?: Record<string, string | undefined>;
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
   if (!current) return null;
@@ -34,8 +36,13 @@ export function QueryTabs({
       <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
-          const href =
-            tab.id === tabs[0]?.id ? pathname : `${pathname}?${encodeURIComponent(param)}=${encodeURIComponent(tab.id)}`;
+          const params = new URLSearchParams();
+          if (tab.id !== tabs[0]?.id) params.set(param, tab.id);
+          for (const [key, value] of Object.entries(extra ?? {})) {
+            if (value && value !== "all") params.set(key, value);
+          }
+          const qs = params.toString();
+          const href = qs ? `${pathname}?${qs}` : pathname;
           return (
             <Link
               key={tab.id}

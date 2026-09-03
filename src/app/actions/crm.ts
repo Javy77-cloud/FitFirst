@@ -104,6 +104,7 @@ export async function createDealFromLead(formData: FormData) {
       pipelineStage: "shopping",
       lineOfBusiness: line,
       state: str(formData, "state") || "FL",
+      primaryNamedInsured: `${lead.firstName} ${lead.lastName}`.trim(),
       notes: lead.notes,
     })
     .returning();
@@ -154,6 +155,7 @@ export async function createDeal(formData: FormData) {
       pipelineStage: "shopping",
       lineOfBusiness: line,
       state: str(formData, "state") || "FL",
+      primaryNamedInsured: `${firstName} ${lastName}`.trim(),
       notes: str(formData, "notes") || null,
     })
     .returning();
@@ -210,6 +212,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       pipelineStage: "shopping",
       lineOfBusiness: line,
       state: str(formData, "state") || "FL",
+      primaryNamedInsured: `${firstName} ${lastName}`.trim(),
     })
     .returning();
 

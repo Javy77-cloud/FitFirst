@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ColumnPicker } from "@/components/crm/column-picker";
+import { LinkedValue } from "@/components/crm/linked-value";
 import { formatIsoDate } from "@/lib/crm/display";
 import { listLeads } from "@/lib/db/queries";
 
@@ -15,8 +16,8 @@ const LEAD_COLUMNS = [
   { id: "name", header: "Name", defaultVisible: true, hideable: false },
   { id: "status", header: "Status", defaultVisible: true },
   { id: "source", header: "Source", defaultVisible: true },
-  { id: "phone", header: "Phone", defaultVisible: false },
-  { id: "email", header: "Email", defaultVisible: false },
+  { id: "phone", header: "Phone", defaultVisible: true },
+  { id: "email", header: "Email", defaultVisible: true },
   { id: "created", header: "Created", defaultVisible: false },
   { id: "action", header: "Shop", defaultVisible: true, hideable: false },
 ];
@@ -28,7 +29,9 @@ export default async function LeadsPage() {
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-sm text-muted-foreground">
-        A lead is not a client. Convert to a shopping deal; contact and policy wait until bind.
+        A lead is not a client. Type the name once — Start shop copies it onto the deal as the
+        insured. Phone and email stay on the row so you dial, mail, or copy without opening the
+        record. Contact and policy wait until bind.
       </p>
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <form action={createLead} className="ff-card space-y-3 p-4">
@@ -109,8 +112,12 @@ export default async function LeadsPage() {
                       {lead.status}
                     </td>
                     <td data-col="source">{lead.source ?? "—"}</td>
-                    <td data-col="phone">{lead.phone ?? "—"}</td>
-                    <td data-col="email">{lead.email ?? "—"}</td>
+                    <td data-col="phone">
+                      <LinkedValue value={lead.phone} kind="tel" />
+                    </td>
+                    <td data-col="email">
+                      <LinkedValue value={lead.email} kind="email" />
+                    </td>
                     <td data-col="created">{formatIsoDate(lead.createdAt)}</td>
                     <td data-col="action">
                       {lead.convertedDealId ? (

@@ -28,6 +28,18 @@ export function DecDropForm() {
           <Input id="decLastName" name="lastName" required className="mt-1 h-8" />
         </div>
         <div>
+          <Label htmlFor="decPhone" className="text-xs">
+            Phone
+          </Label>
+          <Input id="decPhone" name="phone" className="mt-1 h-8" />
+        </div>
+        <div>
+          <Label htmlFor="decEmail" className="text-xs">
+            Email
+          </Label>
+          <Input id="decEmail" name="email" type="email" className="mt-1 h-8" />
+        </div>
+        <div>
           <Label htmlFor="decLine" className="text-xs">
             Line
           </Label>

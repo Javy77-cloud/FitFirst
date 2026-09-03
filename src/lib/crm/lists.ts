@@ -124,6 +124,78 @@ export function columnStorageKey(tableId: string, agentId?: string): string {
   return agentId ? `ff-cols:${agentId}:${tableId}` : `ff-cols:${tableId}`;
 }
 
+export function riskAddress(risk: {
+  address1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+} | null | undefined): string | null {
+  if (!risk) return null;
+  const line = [risk.address1, [risk.city, risk.state].filter(Boolean).join(", "), risk.zip]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" · ");
+  return line || null;
+}
+
+export type DealListFilter = {
+  q?: string;
+  stage?: string;
+  line?: string;
+  state?: string;
+};
+
+export function parseDealFilter(input: {
+  q?: string;
+  stage?: string;
+  line?: string;
+  state?: string;
+}): DealListFilter {
+  return {
+    q: input.q?.trim() || undefined,
+    stage: input.stage && input.stage !== "all" ? input.stage : undefined,
+    line: input.line && input.line !== "all" ? input.line : undefined,
+    state: input.state?.trim() || undefined,
+  };
+}
+
+export function matchesDealFilters(
+  input: {
+    title: string;
+    pipelineStage: string;
+    lineOfBusiness: string;
+    state: string;
+    insured: string;
+    phone?: string | null;
+    email?: string | null;
+    city?: string | null;
+  },
+  filter: DealListFilter,
+): boolean {
+  if (filter.stage && filter.stage !== "all" && input.pipelineStage !== filter.stage) return false;
+  if (filter.line && filter.line !== "all" && input.lineOfBusiness !== filter.line) return false;
+  if (filter.state?.trim() && input.state.toUpperCase() !== filter.state.trim().toUpperCase()) {
+    return false;
+  }
+  const q = filter.q?.trim().toLowerCase();
+  if (!q) return true;
+  const hay = [input.title, input.insured, input.phone, input.email, input.city]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(q);
+}
+
+export function telHref(phone?: string | null): string | null {
+  if (!phone?.trim()) return null;
+  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+}
+
+export function mailtoHref(email?: string | null): string | null {
+  if (!email?.trim()) return null;
+  return `mailto:${email.trim()}`;
+}
+
 export function insuredHref(input: {
   contactId?: string | null;
   leadId?: string | null;

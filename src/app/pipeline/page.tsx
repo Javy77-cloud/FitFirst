@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DealFilters } from "@/components/crm/deal-filters";
 import { DealListTable } from "@/components/crm/deal-list-table";
 import { PipelineBoard } from "@/components/crm/pipeline-board";
 import { QueryTabs, resolveQueryTab } from "@/components/crm/query-tabs";
 import { StageEditor } from "@/components/crm/stage-editor";
 import { buttonVariants } from "@/components/ui/button";
+import { parseDealFilter } from "@/lib/crm/lists";
 import { ensurePipelineStages, listDealRows } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
@@ -18,11 +20,18 @@ const VIEWS = [
 export default async function PipelinePage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; q?: string; stage?: string; line?: string; state?: string }>;
 }) {
-  const { view } = await searchParams;
+  const params = await searchParams;
+  const filter = parseDealFilter(params);
+  const extra = {
+    q: filter.q,
+    stage: filter.stage,
+    line: filter.line,
+    state: filter.state,
+  };
   const [rows, stages] = await Promise.all([listDealRows(), ensurePipelineStages()]);
-  const deals = rows.map((row) => row.deal);
+  const active = resolveQueryTab(VIEWS, params.view);
 
   return (
     <AppShell
@@ -34,23 +43,36 @@ export default async function PipelinePage({
       }
     >
       <p className="mb-3 text-sm text-muted-foreground">
-        Kanban columns and the list are the same shops. Create a deal without leaving this page.
-        Bound stays locked so a quote cannot mint a policy.
+        Same shops as the list. Filter once. Dial or copy from the card — do not open a record to
+        grab a phone number. Bound is locked.
       </p>
+      <div className="mb-3">
+        <DealFilters pathname="/pipeline" view={active} filter={filter} stages={stages} />
+      </div>
       <QueryTabs
         pathname="/pipeline"
         param="view"
-        active={resolveQueryTab(VIEWS, view)}
+        extra={extra}
+        active={active}
         tabs={[
           {
             id: "columns",
             label: "Columns",
-            content: <PipelineBoard deals={deals} stages={stages} />,
+            content: <PipelineBoard rows={rows} stages={stages} filter={filter} />,
           },
           {
             id: "list",
             label: "List",
-            content: <DealListTable rows={rows} stages={stages} />,
+            content: (
+              <DealListTable
+                rows={rows}
+                stages={stages}
+                filter={filter}
+                filterPath="/pipeline"
+                filterView="list"
+                showFilters={false}
+              />
+            ),
           },
         ]}
       />

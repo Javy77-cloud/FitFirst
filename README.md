@@ -58,11 +58,12 @@ Create your own path from **Leads** or **New shopping deal**. Bind is what creat
 
 ### Pipeline and lists
 
-1. **Pipeline** → Columns (kanban) or List. **Create deal** is on the board. **Admin stage editor** adds / relabels / deletes columns. Bound cannot be deleted; bind is the only way in.
-2. **Deals** list starts with deal, insured/contact name, stage, line, state, city, Cov A, and row actions. Click **Columns** for phone, email, updated, bound. From the row, log Call / SMS / Email / Task without opening the deal (desk only — nothing is sent).
-3. **Contacts** is the personal book; **Businesses** is commercial. Filter by name or state. Click the name — it goes to `/contacts/[id]`.
-4. **Policies** → P&C / Life / Health, then Home / Auto / Commercial. The name column is **Insured / contact name**, not Party.
-5. **Tasks** → add, edit, delete. Reviews remains the open queue + 90-day expirations.
+1. **Pipeline** → Columns (kanban) or List. Filter by name / phone / stage / line / state. **Create deal** is on the board. **Admin stage editor** adds / relabels / deletes columns. Bound cannot be deleted; bind is the only way in.
+2. **Deals** list starts with deal, Call / SMS / Email / Task, insured name, phone, email, address, stage, line, state, city, and Cov A. Dial or Copy from the row — do not open the shop just to grab a number. Call / SMS / Email / Task log in one click (desk only — nothing is sent). **Columns** persist per desk agent and save when you toggle a checkbox.
+3. Type a name once on a lead or new deal. It becomes the insured name. Bind copies phone, email, and address onto the contact — no second entry.
+4. **Contacts** is the personal book; **Businesses** is commercial. Phone and email are linked (`tel:` / `mailto:`) with Copy.
+5. **Policies** → P&C / Life / Health, then Home / Auto / Commercial. The name column is **Insured / contact name**, not Party. Policy number and phone copy from the row.
+6. **Tasks** → add, edit, delete. Reviews remains the open queue + 90-day expirations.
 
 Life and health deals are CRM notes with a rating placeholder. They still bind the same way.
 

@@ -4,6 +4,7 @@ import {
   saveAgentColumnLayout,
   moveAgentColumn,
 } from "@/app/actions/desk";
+import { AutoSaveForm } from "@/components/crm/auto-save-form";
 import { getCurrentAgent, isAdminAgent, loadColumnLayout } from "@/lib/crm/desk-agent";
 import type { PickerColumn } from "@/components/crm/data-table";
 
@@ -48,7 +49,7 @@ export async function ColumnPicker({
             <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {sourceLabel}
             </p>
-            <form action={saveAgentColumnLayout} className="space-y-0.5">
+            <AutoSaveForm action={saveAgentColumnLayout} className="space-y-0.5">
               <input type="hidden" name="tableId" value={tableId} />
               {columns.map((col) => {
                 const on = layout.ids.includes(col.id);
@@ -77,7 +78,7 @@ export async function ColumnPicker({
               >
                 Save my columns
               </button>
-            </form>
+            </AutoSaveForm>
             <div className="mt-2 flex flex-wrap gap-1 px-1">
               {layout.ids.map((id) => {
                 const col = columns.find((column) => column.id === id);

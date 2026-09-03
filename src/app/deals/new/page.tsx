@@ -11,8 +11,8 @@ export default function NewDealPage() {
     <AppShell title="New shopping deal">
       <form action={createDeal} className="ff-card max-w-xl space-y-3 p-4">
         <p className="text-sm text-muted-foreground">
-          Creates a lead and a shopping deal. Contact and policy wait until bind. Life and
-          health are CRM notes only — no rating worksheet.
+          Type the name once. It becomes the lead and the deal’s insured name. Contact and
+          policy wait until bind. Life and health are CRM notes only — no rating worksheet.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>

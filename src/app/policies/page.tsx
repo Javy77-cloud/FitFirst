@@ -4,6 +4,7 @@ import { ColumnPicker } from "@/components/crm/column-picker";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { FilterLinks } from "@/components/crm/filter-links";
 import { InsuredLink } from "@/components/crm/insured-link";
+import { LinkedValue } from "@/components/crm/linked-value";
 import {
   insuredContactName,
   insuredHref,
@@ -22,6 +23,8 @@ export const dynamic = "force-dynamic";
 const COLUMNS = [
   { id: "policy", header: "Policy", defaultVisible: true, hideable: false },
   { id: "insured", header: "Insured / contact name", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: true },
+  { id: "email", header: "Email", defaultVisible: false },
   { id: "line", header: "Line", defaultVisible: true },
   { id: "book", header: "Book", defaultVisible: true },
   { id: "status", header: "Status", defaultVisible: true },
@@ -47,8 +50,9 @@ export default async function PoliciesPage({
   return (
     <AppShell title="Policies">
       <p className="mb-3 text-sm text-muted-foreground">
-        Policies exist only after bind. Filter the book first (P&amp;C / Life / Health), then the
-        P&amp;C line. The insured / contact name opens the contact — never a blank party link.
+        Policies exist only after bind. Copy the policy number or dial the insured from the row —
+        do not open the record just to grab them. Filter the book first (P&amp;C / Life / Health),
+        then the P&amp;C line. The insured / contact name opens the contact.
       </p>
       <div className="mb-3 space-y-2">
         <FilterLinks
@@ -104,12 +108,16 @@ export default async function PoliciesPage({
                   return (
                     <tr key={policy.id}>
                       <td data-col="policy" className="font-medium">
-                        <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
-                          {policy.policyNumber}
-                        </Link>
+                        <LinkedValue value={policy.policyNumber} href={`/policies/${policy.id}`} />
                       </td>
                       <td data-col="insured">
                         <InsuredLink href={href} name={name} />
+                      </td>
+                      <td data-col="phone">
+                        <LinkedValue value={contact?.phone} kind="tel" />
+                      </td>
+                      <td data-col="email">
+                        <LinkedValue value={contact?.email} kind="email" />
                       </td>
                       <td data-col="line">{policy.lineOfBusiness}</td>
                       <td data-col="book">{bookLabel}</td>

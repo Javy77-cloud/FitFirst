@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ColumnPicker } from "@/components/crm/column-picker";
+import { LinkedValue } from "@/components/crm/linked-value";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { formatTenure } from "@/lib/crm/display";
 import type { Contact } from "@/lib/db/schema";
@@ -72,8 +73,12 @@ export function AccountListTable({
                     <td data-col="contact">
                       {c.lastName}, {c.firstName}
                     </td>
-                    <td data-col="phone">{c.phone ?? "—"}</td>
-                    <td data-col="email">{c.email ?? "—"}</td>
+                    <td data-col="phone">
+                      <LinkedValue value={c.phone} kind="tel" />
+                    </td>
+                    <td data-col="email">
+                      <LinkedValue value={c.email} kind="email" />
+                    </td>
                     <td data-col="city">{c.city ?? "—"}</td>
                     <td data-col="state">{c.state ?? "—"}</td>
                     <td data-col="lifetime">{c.policyCount}</td>
@@ -87,8 +92,12 @@ export function AccountListTable({
                         {accountDisplayName(c)}
                       </Link>
                     </td>
-                    <td data-col="phone">{c.phone ?? "—"}</td>
-                    <td data-col="email">{c.email ?? "—"}</td>
+                    <td data-col="phone">
+                      <LinkedValue value={c.phone} kind="tel" />
+                    </td>
+                    <td data-col="email">
+                      <LinkedValue value={c.email} kind="email" />
+                    </td>
                     <td data-col="city">{c.city ?? "—"}</td>
                     <td data-col="state">{c.state ?? "—"}</td>
                     <td data-col="lifetime">{c.policyCount}</td>
