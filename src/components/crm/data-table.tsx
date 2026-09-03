@@ -3,4 +3,5 @@ export type PickerColumn = {
   header: string;
   defaultVisible?: boolean;
   hideable?: boolean;
+  promoteIfMissing?: boolean;
 };

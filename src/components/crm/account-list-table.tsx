@@ -7,8 +7,8 @@ import type { Contact } from "@/lib/db/schema";
 
 const PERSONAL = [
   { id: "name", header: "Contact name", defaultVisible: true, hideable: false },
-  { id: "phone", header: "Phone", defaultVisible: true },
-  { id: "email", header: "Email", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
+  { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
   { id: "city", header: "City", defaultVisible: true },
   { id: "state", header: "State", defaultVisible: true },
   { id: "lifetime", header: "Lifetime policies", defaultVisible: true },
@@ -20,8 +20,8 @@ const PERSONAL = [
 const BUSINESS = [
   { id: "legal", header: "Business name", defaultVisible: true, hideable: false },
   { id: "contact", header: "Contact name", defaultVisible: true },
-  { id: "phone", header: "Phone", defaultVisible: true },
-  { id: "email", header: "Email", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
+  { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
   { id: "city", header: "City", defaultVisible: true },
   { id: "state", header: "State", defaultVisible: true },
   { id: "lifetime", header: "Lifetime policies", defaultVisible: true },

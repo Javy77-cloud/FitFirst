@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 const COLUMNS = [
   { id: "policy", header: "Policy", defaultVisible: true, hideable: false },
   { id: "insured", header: "Insured / contact name", defaultVisible: true },
-  { id: "phone", header: "Phone", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
   { id: "email", header: "Email", defaultVisible: false },
   { id: "line", header: "Line", defaultVisible: true },
   { id: "book", header: "Book", defaultVisible: true },

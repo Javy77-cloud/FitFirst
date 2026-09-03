@@ -81,6 +81,19 @@ describe("resolveColumnLayout", () => {
   it("rearranges a saved order", () => {
     expect(moveColumn(["deal", "stage", "phone"], "phone", -1)).toEqual(["deal", "phone", "stage"]);
   });
+
+  it("promotes new linked columns onto an existing agent layout", () => {
+    const cols = [
+      { id: "deal", defaultVisible: true, hideable: false },
+      { id: "phone", defaultVisible: true, promoteIfMissing: true },
+      { id: "email", defaultVisible: true, promoteIfMissing: true },
+      { id: "address", defaultVisible: true, promoteIfMissing: true },
+      { id: "updated", defaultVisible: false },
+    ];
+    expect(
+      resolveColumnLayout(cols, { agentIds: ["deal", "phone"], agencyIds: null }).ids,
+    ).toEqual(["deal", "phone", "email", "address"]);
+  });
 });
 
 describe("policy filters", () => {

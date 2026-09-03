@@ -4,6 +4,8 @@ export type ColumnSpec = {
   id: string;
   label?: string;
   defaultVisible?: boolean;
+  /** New linked fields join an existing saved layout so agents do not hide them by accident. */
+  promoteIfMissing?: boolean;
 };
 
 export type LayoutSource = "agent" | "agency" | "code";
@@ -14,7 +16,12 @@ function codeDefaultIds(columns: Array<{ id: string; defaultVisible?: boolean }>
 }
 
 function sanitizeColumnIds(
-  columns: Array<{ id: string; defaultVisible?: boolean; hideable?: boolean }>,
+  columns: Array<{
+    id: string;
+    defaultVisible?: boolean;
+    hideable?: boolean;
+    promoteIfMissing?: boolean;
+  }>,
   storedIds: string[] | null | undefined,
 ): string[] | null {
   if (!storedIds || storedIds.length === 0) return null;
@@ -25,6 +32,11 @@ function sanitizeColumnIds(
   const next = [...picked];
   for (const id of required) {
     if (!next.includes(id)) next.unshift(id);
+  }
+  for (const column of columns) {
+    if (column.promoteIfMissing && column.defaultVisible !== false && !next.includes(column.id)) {
+      next.push(column.id);
+    }
   }
   return next;
 }

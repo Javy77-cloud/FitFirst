@@ -16,8 +16,8 @@ const LEAD_COLUMNS = [
   { id: "name", header: "Name", defaultVisible: true, hideable: false },
   { id: "status", header: "Status", defaultVisible: true },
   { id: "source", header: "Source", defaultVisible: true },
-  { id: "phone", header: "Phone", defaultVisible: true },
-  { id: "email", header: "Email", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
+  { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
   { id: "created", header: "Created", defaultVisible: false },
   { id: "action", header: "Shop", defaultVisible: true, hideable: false },
 ];
