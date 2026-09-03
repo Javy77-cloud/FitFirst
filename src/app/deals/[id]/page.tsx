@@ -14,8 +14,20 @@ import { getDealWorkspace } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
+const DEAL_TABS = ["documents", "risk", "markets", "quotes"] as const;
+
+export default async function DealPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab } = await searchParams;
+  const activeTab = DEAL_TABS.includes(tab as (typeof DEAL_TABS)[number])
+    ? (tab as (typeof DEAL_TABS)[number])
+    : "documents";
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const { deal, risk, docs, fields, quotes, logs, lead } = workspace;
@@ -65,11 +77,12 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
       ) : (
         <SectionTabs
-          defaultValue="documents"
+          defaultValue={activeTab}
           tabs={[
             {
               id: "documents",
               label: "Documents",
+              href: `/deals/${deal.id}?tab=documents`,
               content: (
                 <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
               ),
@@ -77,16 +90,19 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             {
               id: "risk",
               label: "Master risk",
+              href: `/deals/${deal.id}?tab=risk`,
               content: <RiskForm risk={risk} dealId={deal.id} />,
             },
             {
               id: "markets",
               label: "Markets",
+              href: `/deals/${deal.id}?tab=markets`,
               content: <MarketsPanel dealId={deal.id} matches={matches} />,
             },
             {
               id: "quotes",
               label: "Quotes",
+              href: `/deals/${deal.id}?tab=quotes`,
               content: <QuotesPanel quotes={quotes} logs={logs} />,
             },
           ]}
