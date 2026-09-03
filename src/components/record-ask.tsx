@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { currentDeskSession } from "@/lib/auth/session";
-import { listDeskUsers, listRecordAsks } from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
+import { listRecordAsks } from "@/lib/db/queries";
 import type { RecordAsk, User } from "@/lib/db/schema";
 
 type AskProps = {

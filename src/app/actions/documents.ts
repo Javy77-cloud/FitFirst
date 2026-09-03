@@ -154,6 +154,11 @@ export async function markDocumentType(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
+/** Re-run extraction on an already-uploaded source doc. */
+export async function extractExisting(formData: FormData) {
+  return markDocumentType(formData);
+}
+
 async function runExtraction(documentId: string, dealId: string) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) throw new Error("Document not found");

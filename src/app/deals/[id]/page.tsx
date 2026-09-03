@@ -7,19 +7,20 @@ import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
-import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
+import { RiskForm } from "@/components/deal/risk-form";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
+import { LINE_LABELS } from "@/lib/crm/bind";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { toNumber } from "@/lib/commissions/math";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { HealthStrip } from "@/components/completeness/health-strip";
 import { reportFromSheet } from "@/lib/completeness/report";
@@ -67,39 +68,6 @@ export default async function DealPage({
     : null;
   const premium = boundPolicies.reduce((sum, policy) => sum + toNumber(policy.premium), 0);
   const commission = await sumCommissionsForPolicies(boundPolicies.map((p) => p.id));
-
-  const lines = visibleLines(deal.shopLines ?? ["home"]);
-  const requested = query.line ? asShopLine(query.line) : null;
-  const activeLine = requested && lines.includes(requested) ? requested : lines[0];
-  const sheet =
-    sheets.find((s) => s.line === activeLine) ?? {
-      id: "pending",
-      tenantId: deal.tenantId,
-      dealId: deal.id,
-      line: activeLine,
-      values: emptySheetValues(activeLine),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-  const SECTION_TABS = ["sheet", "files", "markets", "quotes"] as const;
-  const activeTab = SECTION_TABS.includes(query.tab as (typeof SECTION_TABS)[number])
-    ? (query.tab as (typeof SECTION_TABS)[number])
-    : "sheet";
-  const dealHref = (line: ShopLine, tab: string) =>
-    `/deals/${deal.id}?line=${line}&tab=${tab}`;
-
-  const unusedLines = SHOP_LINES.filter((line) => !lines.includes(line));
-  const requestedTab = query.tab ?? "sheet";
-  const activeTab = ["sheet", "files", "markets", "quotes"].includes(requestedTab)
-    ? requestedTab
-    : "sheet";
-  const address = {
-    address1: sheet.values.address1?.value || risk?.address1,
-    city: sheet.values.city?.value || risk?.city,
-    state: sheet.values.state?.value || risk?.state,
-    zip: sheet.values.zip?.value || risk?.zip,
-  };
 
   return (
     <AppShell

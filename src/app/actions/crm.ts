@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getActor } from "@/lib/auth/session";
 import { periodKey, splitCommission } from "@/lib/commissions/math";
 import {
   DEFAULT_COMMISSION_RATE_PCT,
   DEFAULT_PRODUCER_SPLIT_PCT,
   DEFAULT_TENANT_ID,
+  type QuoteSheetFieldValue,
 } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { refreshPartyCounts } from "@/lib/db/queries";
@@ -503,11 +504,8 @@ export async function createContact(formData: FormData) {
       city: str(formData, "city") || null,
       state: str(formData, "state") || "FL",
       zip: str(formData, "zip") || null,
-      accountKind: parseAccountKind(str(formData, "accountKind")),
-      legalName: str(formData, "legalName") || null,
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
-      preferredLanguage: str(formData, "preferredLanguage") || null,
       notes: str(formData, "notes") || null,
     })
     .returning();
@@ -647,6 +645,7 @@ export async function bindDeal(formData: FormData) {
         .returning();
       contactId = contact.id;
     }
+  }
 
   if (contactId && accountId) {
     const existingLink = await db

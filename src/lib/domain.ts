@@ -65,6 +65,19 @@ export const DOC_TYPES = [
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
+export const DOC_TYPE_LABELS: Record<DocType, string> = {
+  dec: "Dec page",
+  wind_mit: "Wind mit",
+  four_point: "4-point",
+  inspection: "Inspection",
+  photo: "Photo",
+  quote_pdf: "Quote PDF",
+  policy_dec: "Policy dec",
+  policy_complete: "Complete policy",
+  policy_id: "ID card",
+  other: "Other",
+};
+
 export const DOC_SLOTS = ["source_doc", "quote_pdf", "policy_file"] as const;
 export type DocSlot = (typeof DOC_SLOTS)[number];
 

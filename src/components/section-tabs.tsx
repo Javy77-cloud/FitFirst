@@ -81,22 +81,9 @@ export function SectionTabs({
           );
         })}
       </div>
-      {urlTabs ? (
-        <div role="tabpanel" className="mt-4">
-          {current.content}
-        </div>
-      ) : (
-        tabs.map((tab) => (
-          <div
-            key={tab.id}
-            role="tabpanel"
-            hidden={tab.id !== current.id}
-            className={cn("mt-4", tab.id !== current.id && "hidden")}
-          >
-            {tab.content}
-          </div>
-        ))
-      )}
+      <div role="tabpanel" className="mt-4">
+        {current?.content}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
+import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
@@ -83,3 +84,23 @@ export async function currentDeskSession(): Promise<DeskSession> {
 export function scopeOwnerId(session: DeskSession): string | null {
   return session.isAgent ? session.userId : null;
 }
+
+export async function getActor(): Promise<Actor> {
+  const session = await currentDeskSession();
+  if (session.user) {
+    return {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      role: session.user.role === "agent" ? "agent" : "admin",
+    };
+  }
+  return {
+    id: session.userId ?? ADMIN_USER_ID,
+    name: session.name,
+    email: session.isAgent ? "maya@fitfirst.local" : "javy@fitfirst.local",
+    role: session.isAgent ? "agent" : "admin",
+  };
+}
+
+export { isAdmin };
