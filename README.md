@@ -19,6 +19,8 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No Twilio or SendGrid.
 
+Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
+
 Click path and leftover bugs live in `COORDINATION.md`.
 
 Docker: `docker compose up --build` (same port).

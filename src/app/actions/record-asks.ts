@@ -6,26 +6,19 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, recordAsks, users } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
+import { recordHref } from "@/lib/desk/record-href";
 import { writeDeskComms } from "@/lib/desk/write-comms";
+import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { hasCommsRecord } from "@/lib/lifecycle/activity";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
-function recordHref(entityType: string, entityId: string) {
-  if (entityType === "contact") return `/contacts/${entityId}`;
-  if (entityType === "account") return `/accounts/${entityId}`;
-  if (entityType === "lead") return `/leads/${entityId}`;
-  if (entityType === "deal") return `/deals/${entityId}`;
-  if (entityType === "policy") return `/policies/${entityId}`;
-  if (entityType === "carrier") return `/carriers/${entityId}`;
-  return "/";
-}
-
 /** Tag a teammate on this record. In-app ping + durable log. Not a chat product. */
 export async function createRecordAsk(formData: FormData) {
   const session = await currentDeskSession();
+  if (!session.isAdmin) return;
   const entityType = str(formData, "entityType");
   const entityId = str(formData, "entityId");
   const assigneeId = str(formData, "assigneeId");
@@ -43,7 +36,7 @@ export async function createRecordAsk(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       entityType,
       entityId,
-      authorId: session.userId,
+      authorId: session.userId ?? ADMIN_USER_ID,
       assigneeId,
       kind: "status",
       body,
@@ -65,6 +58,7 @@ export async function createRecordAsk(formData: FormData) {
       body: `@${assignee?.name ?? "teammate"}: ${body}`,
       direction: "internal",
       eventType: "logged",
+      assignee: assignee?.name ?? null,
       ...related,
     });
   }
@@ -73,13 +67,14 @@ export async function createRecordAsk(formData: FormData) {
     tenantId: DEFAULT_TENANT_ID,
     kind: "record_ask",
     title: `${session.name} asked ${assignee?.name ?? "you"} for status`,
-    body: `${body} — ${recordHref(entityType, entityId)}`,
+    body,
     severity: "info",
     entityType,
     entityId,
   });
 
-  revalidatePath(recordHref(entityType, entityId));
+  const href = recordHref(entityType, entityId);
+  if (href) revalidatePath(href);
   revalidatePath("/alerts");
   return ask.id;
 }
@@ -97,5 +92,7 @@ export async function resolveRecordAsk(formData: FormData) {
     .update(recordAsks)
     .set({ status: "resolved", resolvedBy: session.userId, resolvedAt: new Date() })
     .where(eq(recordAsks.id, id));
-  revalidatePath(recordHref(ask.entityType, ask.entityId));
+  const href = recordHref(ask.entityType, ask.entityId);
+  if (href) revalidatePath(href);
+  revalidatePath("/alerts");
 }

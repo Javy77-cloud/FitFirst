@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "./index";
-import { activities, activityLogs, emailSendJobs, recordAsks } from "./schema";
+import { activities, activityLogs, alerts, emailSendJobs, recordAsks } from "./schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   ADMIN_USER_ID,
@@ -15,6 +15,12 @@ import {
   HARBOR_POLICY_ID,
 } from "@/lib/fixtures/ids";
 import { commsThreadKey } from "@/lib/desk/comms";
+import { writeDeskComms } from "@/lib/desk/write-comms";
+
+const ELENA_ASK_ID = "88888888-8888-4888-8888-888888888803";
+const ELENA_ASK_ACTIVITY_ID = "88888888-8888-4888-8888-888888888804";
+const ELENA_ASK_ALERT_ID = "88888888-8888-4888-8888-888888888805";
+const ELENA_ASK_BODY = "What's the status on HO3-ELENA-2026?";
 
 const ELENA_EMAIL_OUT_ID = "44444444-4444-4444-8444-444444444461";
 const ELENA_EMAIL_IN_ID = "44444444-4444-4444-8444-444444444462";
@@ -150,22 +156,50 @@ export async function seedCommsDesk() {
   await db
     .insert(recordAsks)
     .values({
-      id: "88888888-8888-4888-8888-888888888803",
+      id: ELENA_ASK_ID,
       tenantId: DEFAULT_TENANT_ID,
       entityType: "policy",
       entityId: ELENA_POLICY_ID,
       authorId: ADMIN_USER_ID,
       assigneeId: AGENT_USER_ID,
       kind: "status",
-      body: "What's the status on HO3-ELENA-2026?",
+      body: ELENA_ASK_BODY,
       status: "open",
     })
     .onConflictDoUpdate({
       target: recordAsks.id,
       set: {
-        body: "What's the status on HO3-ELENA-2026?",
+        body: ELENA_ASK_BODY,
         assigneeId: AGENT_USER_ID,
         status: "open",
       },
     });
+
+  await db.delete(activityLogs).where(eq(activityLogs.activityId, ELENA_ASK_ACTIVITY_ID));
+  await db.delete(activities).where(eq(activities.id, ELENA_ASK_ACTIVITY_ID));
+  await writeDeskComms({
+    id: ELENA_ASK_ACTIVITY_ID,
+    kind: "task",
+    title: "Ask · Maya Chen",
+    body: `@Maya Chen: ${ELENA_ASK_BODY}`,
+    direction: "internal",
+    eventType: "logged",
+    assignee: "Maya Chen",
+    contactId: ELENA_CONTACT_ID,
+    dealId: ELENA_DEAL_ID,
+    policyId: ELENA_POLICY_ID,
+    occurredAt: new Date("2026-09-03T15:00:00.000Z"),
+  });
+
+  await db.delete(alerts).where(eq(alerts.id, ELENA_ASK_ALERT_ID));
+  await db.insert(alerts).values({
+    id: ELENA_ASK_ALERT_ID,
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "record_ask",
+    title: "Javy Rivera asked Maya Chen for status",
+    body: ELENA_ASK_BODY,
+    severity: "info",
+    entityType: "policy",
+    entityId: ELENA_POLICY_ID,
+  });
 }
