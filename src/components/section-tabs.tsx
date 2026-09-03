@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -7,17 +8,22 @@ export type SectionTab = {
   id: string;
   label: string;
   content: React.ReactNode;
+  href?: string;
 };
 
 export function SectionTabs({
   tabs,
   defaultValue,
+  activeId,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
+  /** When set (URL `?tab=`), selection is server-driven and does not rely on client state. */
+  activeId?: string;
 }) {
   const [active, setActive] = useState(defaultValue);
-  const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
+  const currentId = activeId ?? active;
+  const current = tabs.find((tab) => tab.id === currentId) ?? tabs[0];
 
   return (
     <div>
@@ -27,6 +33,25 @@ export function SectionTabs({
       >
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
+          const className = cn(
+            "rounded-sm px-2.5 py-1 text-sm font-medium",
+            selected
+              ? "bg-card text-navy shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          );
+          if (tab.href) {
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                role="tab"
+                aria-selected={selected}
+                className={className}
+              >
+                {tab.label}
+              </Link>
+            );
+          }
           return (
             <button
               key={tab.id}
@@ -34,12 +59,7 @@ export function SectionTabs({
               role="tab"
               aria-selected={selected}
               onClick={() => setActive(tab.id)}
-              className={cn(
-                "rounded-sm px-2.5 py-1 text-sm font-medium",
-                selected
-                  ? "bg-card text-navy shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              className={className}
             >
               {tab.label}
             </button>

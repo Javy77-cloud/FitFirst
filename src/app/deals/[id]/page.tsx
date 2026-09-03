@@ -17,8 +17,20 @@ import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
+const DEAL_TABS = ["documents", "risk", "markets", "quotes"] as const;
+
+export default async function DealPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab } = await searchParams;
+  const activeTab = DEAL_TABS.includes(tab as (typeof DEAL_TABS)[number])
+    ? (tab as (typeof DEAL_TABS)[number])
+    : "documents";
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const { deal, risk, docs, fields, quotes, logs, lead, contact } = workspace;
@@ -93,10 +105,12 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       ) : (
         <SectionTabs
           defaultValue="documents"
+          activeId={activeTab}
           tabs={[
             {
               id: "documents",
               label: "Documents",
+              href: `/deals/${id}?tab=documents`,
               content: (
                 <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
               ),
@@ -104,16 +118,19 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             {
               id: "risk",
               label: "Master risk",
+              href: `/deals/${id}?tab=risk`,
               content: <RiskForm risk={risk} dealId={deal.id} />,
             },
             {
               id: "markets",
               label: "Markets",
+              href: `/deals/${id}?tab=markets`,
               content: <MarketsPanel dealId={deal.id} matches={matches} />,
             },
             {
               id: "quotes",
               label: "Quotes",
+              href: `/deals/${id}?tab=quotes`,
               content: <QuotesPanel quotes={quotes} logs={logs} />,
             },
           ]}
