@@ -173,7 +173,11 @@ function SheetField({
           {javy ? (
             <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
           ) : cell.status === "check" ? (
-            <span className="ml-1 font-normal text-fit-check">CHECK</span>
+            <span className="ml-1 font-normal text-fit-check">
+              CHECK{cell.source === "photo-ocr" ? " · photo-OCR" : ""}
+            </span>
+          ) : cell.source === "photo-ocr" ? (
+            <span className="ml-1 font-normal text-fit-check">photo-OCR</span>
           ) : null}
         </Label>
         {cell.status === "check" && !readOnly ? (

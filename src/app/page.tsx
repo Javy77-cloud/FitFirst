@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
-import { DEAL_ID, FILL_DEAL_ID } from "@/lib/fixtures/ids";
+import { DEAL_ID, FILL_DEAL_ID, PHOTO_DEAL_ID } from "@/lib/fixtures/ids";
 import { markAlertRead } from "@/app/actions/alerts";
 import { cn } from "@/lib/utils";
 
@@ -38,10 +38,11 @@ export default async function HomePage() {
         <h2 className="text-sm font-semibold text-navy">Start here</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           FitFirst copies a solo Florida P&amp;C desk: lead → deal (shopping) → one Quote Sheet
-          per line → contact and policy only after bind. Fill Quote Sheet is in the product.
-          Copy sheet is the in-desk paste packet. Pasting into a carrier portal stays you or a
-          bot — no TypTap login here. The day-one fixture is Ana Dib&apos;s 2026-09-02 Palm Bay
-          HO3 shop: eight markets, zero bindable at $321,000.
+          per line → contact and policy only after bind. Fill Quote Sheet is in the product —
+          text PDFs and phone photos of a dec, wind mit, or 4-point. Copy sheet is the in-desk
+          paste packet. Pasting into a carrier portal stays you or a bot — no TypTap login here.
+          The day-one fixture is Ana Dib&apos;s 2026-09-02 Palm Bay HO3 shop: eight markets,
+          zero bindable at $321,000.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
@@ -49,6 +50,9 @@ export default async function HomePage() {
           </Link>
           <Link href={`/deals/${FILL_DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
             Ortega fill-demo shop
+          </Link>
+          <Link href={`/deals/${PHOTO_DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
+            Vega photo-a-dec shop
           </Link>
         </div>
       </div>

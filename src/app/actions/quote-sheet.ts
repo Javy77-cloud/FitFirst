@@ -14,9 +14,14 @@ import {
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
-import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import type { Document, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
-import { extractFieldsFromText, fieldKeyToRiskColumn, coerceRiskValue } from "@/lib/extraction/extract";
+import {
+  coerceRiskValue,
+  extractFieldsFromText,
+  fieldKeyToRiskColumn,
+  type ExtractedField,
+} from "@/lib/extraction/extract";
 import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
 import { ImageOcrNotImplementedError, textFromUpload } from "@/lib/extraction/pdf";
 import {
@@ -25,7 +30,7 @@ import {
 } from "@/lib/fixtures/sample-melbourne-dec";
 import {
   SAMPLE_PHOTO_DEC_FILENAME,
-  SAMPLE_PHOTO_DEC_PNG,
+  loadSamplePhotoDecPng,
 } from "@/lib/fixtures/sample-photo-dec";
 import {
   applyExtractedToSheet,
@@ -147,7 +152,7 @@ export async function attachSamplePhotoDec(formData: FormData) {
     riskId,
     filename: SAMPLE_PHOTO_DEC_FILENAME,
     mimeType: "image/png",
-    buffer: SAMPLE_PHOTO_DEC_PNG,
+    buffer: loadSamplePhotoDecPng(),
     docType: "photo",
   });
   revalidatePath(`/deals/${dealId}`);
@@ -183,20 +188,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
     const plan = classifyIngest(doc.mimeType, doc.filename);
     if (plan.engine === "ocr") {
-      const ocr = extractFromImage(buffer, doc.filename);
-      await db.insert(extractionJobs).values({
-        tenantId: DEFAULT_TENANT_ID,
+      values = await fillSheetFromPhoto({
         dealId,
-        documentId: doc.id,
-        quoteSheetId: sheet.id,
-        engine: "ocr",
-        status: ocr.status,
-        message: ocr.message,
+        line,
+        doc,
+        sheetId: sheet.id,
+        buffer,
+        values,
       });
-      await db
-        .update(documents)
-        .set({ status: "not_implemented" })
-        .where(eq(documents.id, doc.id));
       continue;
     }
 
@@ -243,14 +242,13 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         .where(eq(documents.id, doc.id));
     } catch (error) {
       if (error instanceof ImageOcrNotImplementedError) {
-        await db.insert(extractionJobs).values({
-          tenantId: DEFAULT_TENANT_ID,
+        values = await fillSheetFromPhoto({
           dealId,
-          documentId: doc.id,
-          quoteSheetId: sheet.id,
-          engine: "ocr",
-          status: "not_implemented",
-          message: error.message,
+          line,
+          doc,
+          sheetId: sheet.id,
+          buffer,
+          values,
         });
         continue;
       }
@@ -286,6 +284,74 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");
+}
+
+async function fillSheetFromPhoto(input: {
+  dealId: string;
+  line: ShopLine;
+  doc: Document;
+  sheetId: string;
+  buffer: Buffer;
+  values: Record<string, QuoteSheetFieldValue>;
+}): Promise<Record<string, QuoteSheetFieldValue>> {
+  const ocr = await extractFromImage(input.buffer, input.doc.filename, input.doc.mimeType);
+  const applied = applyExtractedToSheet(input.line, input.values, ocr.fields, {
+    source: "photo-ocr",
+  });
+
+  await db.delete(extractedFields).where(eq(extractedFields.documentId, input.doc.id));
+  for (const field of ocr.fields) {
+    await db.insert(extractedFields).values({
+      tenantId: DEFAULT_TENANT_ID,
+      documentId: input.doc.id,
+      riskId: input.doc.riskId,
+      fieldKey: field.fieldKey,
+      rawValue: field.rawValue,
+      normalizedValue: field.normalizedValue,
+      confidence: field.confidence.toFixed(3),
+      flagged: field.flagged,
+      appliedToRisk:
+        applied.filledKeys.includes(field.fieldKey) ||
+        applied.filledKeys.includes(field.fieldKey === "address" ? "address1" : field.fieldKey),
+    });
+  }
+
+  await db.insert(extractionJobs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId: input.dealId,
+    documentId: input.doc.id,
+    quoteSheetId: input.sheetId,
+    engine: "ocr",
+    status: ocr.status,
+    filledKeys: applied.filledKeys,
+    skippedKeys: applied.skippedKeys,
+    message: ocr.message,
+  });
+  await db
+    .update(documents)
+    .set({
+      status:
+        ocr.status === "failed"
+          ? "failed"
+          : ocr.fields.some((field) => field.flagged)
+            ? "needs_glance"
+            : "extracted",
+    })
+    .where(eq(documents.id, input.doc.id));
+
+  await syncNamedInsuredFromExtract(input.dealId, ocr.fields);
+  return applied.values;
+}
+
+async function syncNamedInsuredFromExtract(dealId: string, fields: ExtractedField[]) {
+  const named = fields.find((field) => field.fieldKey === "named_insured")?.normalizedValue.trim();
+  if (!named) return;
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal || deal.primaryNamedInsured?.trim()) return;
+  await db
+    .update(deals)
+    .set({ primaryNamedInsured: named, updatedAt: new Date() })
+    .where(eq(deals.id, dealId));
 }
 
 async function syncHeaderFromSheet(

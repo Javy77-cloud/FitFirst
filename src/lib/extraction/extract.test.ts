@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import { CLEAN_DEC_TEXT, MESSY_WIND_MIT_TEXT } from "@/lib/fixtures/sample-docs";
+import { PHOTO_DEC_TEXT } from "@/lib/fixtures/sample-photo-dec";
 import { extractFieldsFromText } from "./extract";
 
 describe("document extraction confidence", () => {
@@ -51,5 +52,16 @@ describe("document extraction confidence", () => {
     const flagged = result.fields.filter((f) => f.flagged);
     expect(flagged.length).toBeGreaterThan(0);
     expect(flagged.every((f) => f.confidence < CONFIDENCE_THRESHOLD)).toBe(true);
+  });
+
+  it("reads named insured, premises, deductibles from a photo-dec transcript", () => {
+    const result = extractFieldsFromText(PHOTO_DEC_TEXT);
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.fieldKey, f]));
+    expect(byKey.named_insured.normalizedValue).toBe("Luis Vega");
+    expect(byKey.address.normalizedValue).toBe("88 Sandpiper Ln");
+    expect(byKey.year_built.normalizedValue).toBe("2011");
+    expect(byKey.coverage_a.normalizedValue).toBe("245000");
+    expect(byKey.hurricane_deductible.normalizedValue).toBe("2%");
+    expect(byKey.aop_deductible.normalizedValue).toBe("2500");
   });
 });

@@ -43,7 +43,13 @@ const FIELD_LABELS: Record<string, string> = {
   current_carrier: "Current carrier",
   state: "State",
   zip: "ZIP",
+  named_insured: "Named insured",
+  hurricane_deductible: "Hurricane deductible",
+  aop_deductible: "AOP deductible",
 };
+
+const MARKET_VALUE_NOISE =
+  /zestimate|zillow|list\s*price|estimated\s*(?:market\s*)?value|\bavm\b/i;
 
 type Pattern = {
   key: keyof typeof FIELD_LABELS;
@@ -152,6 +158,21 @@ const PATTERNS: Pattern[] = [
     re: /(?:current\s*carrier|incumbent(?:\s*carrier)?|expiring\s*carrier)\s*[:#]?\s*([a-z0-9 .&'-]+)/i,
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
+  {
+    key: "named_insured",
+    re: /(?:named\s*insured|insured\s*name|primary\s*named\s*insured)\s*[:#]?\s*([^\n]+)/i,
+    normalize: (s) => titleCase(s.replace(/\s+/g, " ").trim()),
+  },
+  {
+    key: "hurricane_deductible",
+    re: /(?:hurricane\s*ded(?:uctible)?|named\s*storm\s*ded(?:uctible)?)\s*[:#]?\s*(\$?\s*[\d,]+%?|\d+\s*%)/i,
+    normalize: normalizeDeductible,
+  },
+  {
+    key: "aop_deductible",
+    re: /(?:aop\s*ded(?:uctible)?|all\s*other\s*perils(?:\s*ded(?:uctible)?)?)\s*[:#]?\s*(\$?\s*[\d,]+)/i,
+    normalize: normalizeDeductible,
+  },
 ];
 
 export function assessDocumentQuality(text: string): {
@@ -184,6 +205,7 @@ export function extractFieldsFromText(text: string): ExtractionResult {
   for (const pattern of PATTERNS) {
     const match = pattern.re.exec(text);
     if (!match?.[1]) continue;
+    if (isMarketValueNoise(text, match, pattern.key)) continue;
     const rawValue = match[1].trim();
     const normalizedValue = pattern.normalize(rawValue);
     const uncertain =
@@ -281,6 +303,30 @@ function normalizeYear(raw: string): string {
 function normalizeMoney(raw: string): string {
   const n = parseInt(raw.replace(/[, $]/g, ""), 10);
   return Number.isFinite(n) ? String(n) : raw;
+}
+
+function normalizeDeductible(raw: string): string {
+  const compact = raw.replace(/\s+/g, "").trim();
+  if (/%/.test(compact)) return compact.replace(/[$,]/g, "");
+  const n = parseInt(compact.replace(/[$,]/g, ""), 10);
+  return Number.isFinite(n) ? String(n) : raw.trim();
+}
+
+/** Never take Cov A / RCE from a Zestimate, Zillow list price, or AVM line. */
+function isMarketValueNoise(
+  text: string,
+  match: RegExpExecArray,
+  key: string,
+): boolean {
+  if (key !== "coverage_a" && key !== "replacement_cost_estimate") return false;
+  if (MARKET_VALUE_NOISE.test(match[0])) return true;
+  const lineStart = text.lastIndexOf("\n", match.index) + 1;
+  const lineEnd = text.indexOf("\n", match.index);
+  const line = text.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  if (!MARKET_VALUE_NOISE.test(line)) return false;
+  return !/(?:coverage\s*a|cov\.?\s*a|dwelling(?:\s*limit)?|replacement\s*cost|rce|msb)/i.test(
+    line,
+  );
 }
 
 function normalizeConstruction(raw: string): string {

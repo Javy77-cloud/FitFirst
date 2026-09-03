@@ -49,8 +49,18 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number" },
   { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number" },
   { key: "coverage_d", label: "Coverage D (loss of use)", group: "Coverages", input: "number" },
-  { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages" },
-  { key: "aop_deductible", label: "AOP deductible", group: "Coverages" },
+  {
+    key: "hurricane_deductible",
+    label: "Hurricane deductible",
+    group: "Coverages",
+    extractKey: "hurricane_deductible",
+  },
+  {
+    key: "aop_deductible",
+    label: "AOP deductible",
+    group: "Coverages",
+    extractKey: "aop_deductible",
+  },
   {
     key: "replacement_cost_estimate",
     label: "RCE / MSB (not Zillow)",

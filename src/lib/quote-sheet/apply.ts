@@ -28,14 +28,20 @@ export function neverCheckCoverageA(fieldKey: string, existing?: QuoteSheetField
   return existing?.source === "javy";
 }
 
+export type ApplyFillOptions = {
+  source?: QuoteSheetFieldValue["source"];
+};
+
 export function applyExtractedToSheet(
   line: ShopLine,
   existing: Record<string, QuoteSheetFieldValue>,
   extracted: ExtractedInput[],
+  options?: ApplyFillOptions,
 ): ApplyFillResult {
   const values: Record<string, QuoteSheetFieldValue> = { ...existing };
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
+  const source = options?.source ?? "extracted";
 
   for (const item of extracted) {
     const key = extractKeyToSheetKey(line, item.fieldKey);
@@ -54,7 +60,7 @@ export function applyExtractedToSheet(
     values[key] = {
       value: nextValue,
       status: "check",
-      source: "extracted",
+      source,
     };
     filledKeys.push(key);
   }
@@ -147,7 +153,9 @@ export function mergeAgentEdits(
       continue;
     }
     const unchangedCheck =
-      current?.status === "check" && current.value === typed && current.source === "extracted";
+      current?.status === "check" &&
+      current.value === typed &&
+      (current.source === "extracted" || current.source === "photo-ocr");
     if (unchangedCheck) {
       next[field.key] = current;
       continue;
@@ -171,7 +179,14 @@ export function confirmField(
   }
   return {
     ...existing,
-    [fieldKey]: { ...current, status: "confirmed", source: current.source === "extracted" ? "agent" : current.source },
+    [fieldKey]: {
+      ...current,
+      status: "confirmed",
+      source:
+        current.source === "extracted" || current.source === "photo-ocr"
+          ? "agent"
+          : current.source,
+    },
   };
 }
 

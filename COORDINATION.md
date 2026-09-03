@@ -23,21 +23,17 @@ Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep
 
 - Upload / drop stores a `documents` row. It does not write the sheet.
 - Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`. **This path is done.**
-- Images always go through `classifyIngest` → engine `ocr` → `extractFromImage` → an `extraction_jobs` row. Job rows must exist even when OCR is stubbed.
-
-## Photo OCR (next slice)
-
-Photo-a-dec is a selling point. **Do not block Fill on photos this pass.**
-
-This pass (done):
-- First-class hook on Fill Quote Sheet: image upload / drop, `docType=photo`, `ocr` job row.
-- Hook returns `not_implemented` and invents no fields.
+- Images always go through `classifyIngest` → engine `ocr` → `extractFromImage` → an `extraction_jobs` row. Job rows must exist even when OCR fails.
+- `extractFromImage` is **implemented** (tesseract.js, no paid vendor). It OCRs jpg/png/webp/heic and shares `extractFieldsFromText` + `applyExtractedToSheet` with the PDF path.
+- Photo fills use source `photo-ocr` and land as CHECK (blue). Missing stays yellow. Never invent Cov A from a Zestimate or guess.
 - A photo on the deal does not stop the text/PDF parser from filling blanks.
 
-Next slice:
-- Implement Photo OCR in `extractFromImage` (tesseract or equivalent WASM/local).
-- No paid OCR vendor.
-- Still blanks-only. Still never overwrite agent-typed or Javy-tested Cov A.
+## Photo OCR (done)
+
+Photo-a-dec is a selling point. Fill Quote Sheet works on a phone photo / scan, not just a clean text PDF.
+
+- Fixture: `fixtures/sample-photo-dec.png` (Luis Vega / Cocoa Beach). Seeded on the Vega photo-a-dec shop. **Do not put it on Ana Dib.**
+- Still blanks-only. Still never overwrite agent-typed or Javy-tested Cov A ($321,000).
 
 ## Fill vs copy vs portals (locked)
 

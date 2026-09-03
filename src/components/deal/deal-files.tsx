@@ -35,10 +35,11 @@ export function DealFiles({
           Dec pages, wind mit, 4-point, competing quotes, photos, and notes stay attachments.
           They are never the copy packet. <span className="font-medium">Fill Quote Sheet</span>{" "}
           is in this product — it writes extracted values into{" "}
-          <span className="font-medium">blank</span> fields only. Photo-a-dec is a selling
-          point: drop a photo and Fill still opens a first-class OCR job. This pass the job is{" "}
-          <span className="font-mono">not_implemented</span> (no paid vendor). Photos do not
-          block the text/PDF path.
+          <span className="font-medium">blank</span> fields only. Drop a phone photo or scan
+          (JPG, PNG, WebP, HEIC) of a dec, wind mit, or 4-point. In-desk tesseract OCR maps
+          labeled fields onto the same Quote Sheet as the text/PDF path and tags them{" "}
+          <span className="font-mono">photo-ocr</span>. CHECK (blue) until you confirm. Missing
+          stays yellow. Cov A is never guessed from a Zestimate.
         </p>
 
         <form
@@ -86,14 +87,14 @@ export function DealFiles({
             </div>
             <div>
               <Label htmlFor="file" className="text-xs">
-                File (PDF, text, or image)
+                File (PDF, text, or photo)
               </Label>
               <input
                 ref={inputRef}
                 id="file"
                 name="file"
                 type="file"
-                accept=".pdf,.txt,.md,image/*"
+                accept=".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
                 required
                 className="mt-1 block w-full text-xs"
               />
@@ -143,14 +144,15 @@ export function DealFiles({
             <input type="hidden" name="dealId" value={dealId} />
             <input type="hidden" name="riskId" value={riskId} />
             <Button type="submit" variant="outline" size="sm">
-              Attach sample photo-a-dec
+              Attach sample photo-a-dec PNG
             </Button>
           </form>
         </div>
 
         {docs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No attachments yet. Drop a dec or attach the sample Melbourne text dec.
+            No attachments yet. Drop a dec, wind mit, 4-point, or a phone photo, or attach a
+            sample.
           </p>
         ) : (
           <table className="ff-table">
@@ -175,12 +177,11 @@ export function DealFiles({
       </section>
 
       <section className="ff-card p-4">
-        <h3 className="mb-1 text-sm font-semibold text-navy">Fill jobs · photo OCR hook</h3>
+        <h3 className="mb-1 text-sm font-semibold text-navy">Fill jobs · photo OCR</h3>
         <p className="mb-3 text-xs text-muted-foreground">
-          Text PDFs and .txt run the real parser. A photo-a-dec always gets an{" "}
-          <span className="font-mono">ocr</span> job row. This pass that row is{" "}
-          <span className="font-mono">not_implemented</span> — Photo OCR is the next slice,
-          not a paid vendor. Fill is not blocked when a photo is on the deal.
+          Text PDFs and .txt stay on the pdf-parse path. Photos go through in-desk tesseract
+          and the same mapper. Both write blanks only. A photo on the deal does not block the
+          text/PDF parser.
         </p>
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No fill jobs yet.</p>

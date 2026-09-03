@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fixture from "@/lib/fixtures/ana-dib-ho3-2026-09-02.json";
 import { MELBOURNE_DEC_TEXT } from "@/lib/fixtures/sample-melbourne-dec";
+import { PHOTO_DEC_TEXT } from "@/lib/fixtures/sample-photo-dec";
 import { extractFieldsFromText } from "@/lib/extraction/extract";
 import { anaHomeSheetValues } from "./ana-home";
 import {
@@ -92,6 +93,17 @@ describe("quote sheet fill — blanks only", () => {
     expect(skipped.coverageAmount).toBe(321000);
     expect(skipped.propertyOneliner).toBe("already set");
     expect(skipped.currentCarrier).toBe("American Integrity");
+  });
+
+  it("tags photo fills as photo-ocr CHECK and leaves missing yellow", () => {
+    const extracted = extractFieldsFromText(PHOTO_DEC_TEXT);
+    const result = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields, {
+      source: "photo-ocr",
+    });
+    expect(result.values.coverage_a.source).toBe("photo-ocr");
+    expect(result.values.coverage_a.status).toBe("check");
+    expect(result.values.four_point_date.status).toBe("missing");
+    expect(result.values.four_point_date.value).toBe("");
   });
 
   it("keeps Javy Cov A confirmed when the agent saves the same number", () => {

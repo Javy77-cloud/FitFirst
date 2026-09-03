@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM. The domain follows a solo
 
 - Lead → Deal (shopping) → **one Quote Sheet per line** → Contact + Policy **only after bind**
 - Quotes live on the deal. A quote never creates a policy.
-- Agents hand over whatever they have (dec, wind mit, 4-point, photos, notes, competing quote). **Fill Quote Sheet is in the product** (no bot) and writes extracted values into blank fields. **Copy sheet** puts a labeled pack on the clipboard for Gaya or the agent. Super-Copy JSON stays as a download. Pasting into TypTap or any carrier portal is a human or a quoting bot — FitFirst does not log into carriers. Raw PDFs stay on Files.
+- Agents hand over whatever they have (dec, wind mit, 4-point, **phone photos / scans**, notes, competing quote). **Fill Quote Sheet is in the product** (no bot) and writes extracted values into blank fields. Photos run **in-desk tesseract OCR** (no paid vendor) and share the same Quote Sheet mapper as text PDFs. Source tag is `photo-ocr`. **Copy sheet** puts a labeled pack on the clipboard for Gaya or the agent. Super-Copy JSON stays as a download. Pasting into TypTap or any carrier portal is a human or a quoting bot — FitFirst does not log into carriers. Raw PDFs stay on Files.
 - Yellow = missing. Blue = CHECK (extracted, unconfirmed). A Javy-tested Cov A is confirmed, never CHECK.
 - People and DOB live on the Contact.
 - Shop **in-appetite / green** markets first. Yellow is a stretch override. Red is skip.
@@ -41,7 +41,7 @@ Open [http://localhost:43147](http://localhost:43147).
 
 ## First path to exercise
 
-`npm run db:seed` loads two shops.
+`npm run db:seed` loads three shops.
 
 ### Ana Dib HO3 (complete Home sheet)
 
@@ -59,9 +59,16 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 2. Home Quote Sheet starts blank (yellow).
 3. A sample text dec is already on **Files**. Click **Fill Quote Sheet**.
 4. Year built (2004), address (412 Harbor Isle Dr), and Cov A ($275,000) land as **CHECK** (blue) on blanks only. Header glance picks up coverage, the property one-liner, and current carrier (Citizens) if those header fields were empty.
-5. A sample photo-a-dec PNG is also on Files. Fill still works. The photo opens an **ocr** job with status `not_implemented` — Photo OCR is the next slice, not a paid vendor. You can also drop your own `.txt` / text PDF / photo.
+5. You can also drop your own `.txt` / text PDF. Photos belong on the Vega shop (or any blank sheet) so this text dec is not mixed with another house.
 
-Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
+### Vega Cocoa Beach photo-a-dec
+
+1. Home → **Vega photo-a-dec shop**.
+2. Home Quote Sheet starts blank (yellow). `fixtures/sample-photo-dec.png` is already on **Files** (phone-scan of a printed dec — not Ana Dib).
+3. Click **Fill Quote Sheet**. In-desk tesseract maps named insured (deal header if blank), premises, year built (2011), roof year (2019), Cov A **$245,000**, masonry, 1840 sqft, and deductibles.
+4. Filled cells are **CHECK · photo-OCR** (blue). Missing stays yellow. Cov A is from the dec, never a Zestimate. Ana Dib $321,000 is untouched.
+
+Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy. Drop a jpg/png/webp/heic of a dec, wind mit, or 4-point on Files, then Fill.
 
 ## Schema
 
@@ -77,7 +84,7 @@ Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`. See 
 npm test
 ```
 
-Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence (clean dec vs messy wind mit), Quote Sheet fill-blanks-only (including Javy Cov A), Super-Copy packet shape, OCR stub, and Zillow/FEMA link builders.
+Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence (clean dec vs messy wind mit), Quote Sheet fill-blanks-only (including Javy Cov A), Super-Copy packet shape, in-desk photo OCR (tesseract + photo-ocr source tags, no Zestimate Cov A), and Zillow/FEMA link builders.
 
 ## Restyle
 

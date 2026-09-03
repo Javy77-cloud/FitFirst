@@ -25,9 +25,13 @@ import {
   FILL_DOC_ID,
   FILL_HOME_SHEET_ID,
   FILL_LEAD_ID,
-  FILL_PHOTO_ID,
   FILL_RISK_ID,
   LEAD_ID,
+  PHOTO_DEAL_ID,
+  PHOTO_DOC_ID,
+  PHOTO_HOME_SHEET_ID,
+  PHOTO_LEAD_ID,
+  PHOTO_RISK_ID,
   RISK_ID,
   TENANT_ID,
 } from "../fixtures/ids";
@@ -37,7 +41,7 @@ import {
 } from "../fixtures/sample-melbourne-dec";
 import {
   SAMPLE_PHOTO_DEC_FILENAME,
-  SAMPLE_PHOTO_DEC_PNG,
+  loadSamplePhotoDecPng,
 } from "../fixtures/sample-photo-dec";
 import { anaHomeSheetValues, anaPropertyOneliner } from "../quote-sheet/ana-home";
 import { emptySheetValues } from "../quote-sheet/catalog";
@@ -376,7 +380,7 @@ async function seedFillDemoDeal() {
       lastName: "Ortega",
       source: "demo",
       status: "converted",
-      notes: "Blank Home Quote Sheet. Drop or use the sample Melbourne dec, then Fill Quote Sheet.",
+      notes: "Blank Home Quote Sheet. Use the sample Melbourne text dec, then Fill Quote Sheet.",
       convertedDealId: FILL_DEAL_ID,
     })
     .onConflictDoUpdate({
@@ -386,7 +390,7 @@ async function seedFillDemoDeal() {
         lastName: "Ortega",
         status: "converted",
         convertedDealId: FILL_DEAL_ID,
-        notes: "Blank Home Quote Sheet. Drop or use the sample Melbourne dec, then Fill Quote Sheet.",
+        notes: "Blank Home Quote Sheet. Use the sample Melbourne text dec, then Fill Quote Sheet.",
         updatedAt: new Date(),
       },
     });
@@ -406,7 +410,7 @@ async function seedFillDemoDeal() {
       coverageAmount: null,
       propertyOneliner: null,
       currentCarrier: null,
-      notes: "Blank Home Quote Sheet. Sample Melbourne text dec + a photo-a-dec PNG are on Files. Fill writes year/address/Cov A from the text file. The photo opens an OCR job (not_implemented) and does not block Fill.",
+      notes: "Blank Home Quote Sheet. Sample Melbourne text dec is on Files. Fill writes year/address/Cov A from the text/PDF path. Photo-a-dec lives on the Vega shop so OCR is not mixed with this text dec.",
     })
     .onConflictDoUpdate({
       target: deals.id,
@@ -420,7 +424,7 @@ async function seedFillDemoDeal() {
         coverageAmount: null,
         propertyOneliner: null,
         currentCarrier: null,
-        notes: "Blank Home Quote Sheet. Sample Melbourne text dec + a photo-a-dec PNG are on Files. Fill writes year/address/Cov A from the text file. The photo opens an OCR job (not_implemented) and does not block Fill.",
+        notes: "Blank Home Quote Sheet. Sample Melbourne text dec is on Files. Fill writes year/address/Cov A from the text/PDF path. Photo-a-dec lives on the Vega shop so OCR is not mixed with this text dec.",
         updatedAt: new Date(),
       },
     });
@@ -476,13 +480,119 @@ async function seedFillDemoDeal() {
     docType: "dec",
   });
 
+  await seedPhotoOcrDemoDeal();
+}
+
+async function seedPhotoOcrDemoDeal() {
+  await db
+    .insert(leads)
+    .values({
+      id: PHOTO_LEAD_ID,
+      tenantId: TENANT_ID,
+      firstName: "Luis",
+      lastName: "Vega",
+      source: "demo",
+      status: "converted",
+      notes: "Photo-a-dec demo. Sample phone-scan PNG is on Files. Fill Quote Sheet runs in-desk tesseract OCR.",
+      convertedDealId: PHOTO_DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: leads.id,
+      set: {
+        firstName: "Luis",
+        lastName: "Vega",
+        status: "converted",
+        convertedDealId: PHOTO_DEAL_ID,
+        notes: "Photo-a-dec demo. Sample phone-scan PNG is on Files. Fill Quote Sheet runs in-desk tesseract OCR.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(deals)
+    .values({
+      id: PHOTO_DEAL_ID,
+      tenantId: TENANT_ID,
+      leadId: PHOTO_LEAD_ID,
+      title: "Vega · Cocoa Beach photo-a-dec",
+      pipelineStage: "shopping",
+      lineOfBusiness: "HO",
+      state: "FL",
+      primaryNamedInsured: null,
+      shopLines: ["home"],
+      coverageAmount: null,
+      propertyOneliner: null,
+      currentCarrier: null,
+      notes: "Blank Home Quote Sheet. fixtures/sample-photo-dec.png is on Files. Fill Quote Sheet OCRs named insured, premises, year built, roof year, Cov A $245,000, construction, sqft, and deductibles. Source tag photo-ocr. CHECK (blue) until confirmed. Not Ana Dib — Cov A is not 321000 and is not a Zestimate.",
+    })
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        leadId: PHOTO_LEAD_ID,
+        title: "Vega · Cocoa Beach photo-a-dec",
+        pipelineStage: "shopping",
+        lineOfBusiness: "HO",
+        primaryNamedInsured: null,
+        shopLines: ["home"],
+        coverageAmount: null,
+        propertyOneliner: null,
+        currentCarrier: null,
+        notes: "Blank Home Quote Sheet. fixtures/sample-photo-dec.png is on Files. Fill Quote Sheet OCRs named insured, premises, year built, roof year, Cov A $245,000, construction, sqft, and deductibles. Source tag photo-ocr. CHECK (blue) until confirmed. Not Ana Dib — Cov A is not 321000 and is not a Zestimate.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(risks)
+    .values({
+      id: PHOTO_RISK_ID,
+      tenantId: TENANT_ID,
+      dealId: PHOTO_DEAL_ID,
+      riskType: "property",
+      state: "FL",
+    })
+    .onConflictDoUpdate({
+      target: risks.id,
+      set: {
+        dealId: PHOTO_DEAL_ID,
+        address1: null,
+        city: null,
+        county: null,
+        yearBuilt: null,
+        coverageA: null,
+        roofYear: null,
+        construction: null,
+        squareFeet: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: PHOTO_HOME_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: PHOTO_DEAL_ID,
+      line: "home",
+      values: emptySheetValues("home"),
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: {
+        dealId: PHOTO_DEAL_ID,
+        line: "home",
+        values: emptySheetValues("home"),
+        updatedAt: new Date(),
+      },
+    });
+
   await persistDealFile({
-    id: FILL_PHOTO_ID,
-    dealId: FILL_DEAL_ID,
-    riskId: FILL_RISK_ID,
+    id: PHOTO_DOC_ID,
+    dealId: PHOTO_DEAL_ID,
+    riskId: PHOTO_RISK_ID,
     filename: SAMPLE_PHOTO_DEC_FILENAME,
     mimeType: "image/png",
-    buffer: SAMPLE_PHOTO_DEC_PNG,
+    buffer: loadSamplePhotoDecPng(),
     docType: "photo",
   });
 }

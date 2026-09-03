@@ -55,12 +55,13 @@ export function DocumentsPanel({
             </div>
             <div>
               <Label htmlFor="file" className="text-xs">
-                File (PDF or text)
+                File (PDF, text, or photo)
               </Label>
               <input
                 id="file"
                 name="file"
                 type="file"
+                accept=".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
                 required
                 className="mt-1 block w-full text-xs"
               />
