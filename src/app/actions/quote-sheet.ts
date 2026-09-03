@@ -33,6 +33,10 @@ import {
   loadSamplePhotoDecPng,
 } from "@/lib/fixtures/sample-photo-dec";
 import {
+  FRANCISCO_GARCIA_DEC_FILENAME,
+  FRANCISCO_GARCIA_DEC_TEXT,
+} from "@/lib/fixtures/sample-francisco-garcia-dec";
+import {
   applyExtractedToSheet,
   confirmField,
   fillDealHeaderBlanks,
@@ -139,6 +143,20 @@ export async function attachSampleMelbourneDec(formData: FormData) {
     filename: MELBOURNE_DEC_FILENAME,
     mimeType: "text/plain",
     buffer: Buffer.from(MELBOURNE_DEC_TEXT, "utf8"),
+    docType: "dec",
+  });
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function attachSampleFranciscoGarciaDec(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const riskId = str(formData, "riskId");
+  await persistDealFile({
+    dealId,
+    riskId,
+    filename: FRANCISCO_GARCIA_DEC_FILENAME,
+    mimeType: "text/plain",
+    buffer: Buffer.from(FRANCISCO_GARCIA_DEC_TEXT, "utf8"),
     docType: "dec",
   });
   revalidatePath(`/deals/${dealId}`);

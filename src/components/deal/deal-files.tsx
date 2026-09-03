@@ -1,7 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { attachSampleMelbourneDec, attachSamplePhotoDec, fillQuoteSheet } from "@/app/actions/quote-sheet";
+import {
+  attachSampleFranciscoGarciaDec,
+  attachSampleMelbourneDec,
+  attachSamplePhotoDec,
+  fillQuoteSheet,
+} from "@/app/actions/quote-sheet";
 import { uploadDocument, uploadSampleDocument } from "@/app/actions/documents";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -145,6 +150,13 @@ export function DealFiles({
             <input type="hidden" name="riskId" value={riskId} />
             <Button type="submit" variant="outline" size="sm">
               Attach sample photo-a-dec PNG
+            </Button>
+          </form>
+          <form action={attachSampleFranciscoGarciaDec}>
+            <input type="hidden" name="dealId" value={dealId} />
+            <input type="hidden" name="riskId" value={riskId} />
+            <Button type="submit" variant="outline" size="sm">
+              Attach Francisco Garcia full dec
             </Button>
           </form>
         </div>

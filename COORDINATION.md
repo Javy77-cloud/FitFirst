@@ -28,12 +28,14 @@ Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep
 - Photo fills use source `photo-ocr` and land as CHECK (blue). Missing stays yellow. Never invent Cov A from a Zestimate or guess.
 - A photo on the deal does not stop the text/PDF parser from filling blanks.
 
-## Photo OCR (done)
+## Photo OCR + dec coverage (this desk)
 
 Photo-a-dec is a selling point. Fill Quote Sheet works on a phone photo / scan, not just a clean text PDF.
 
 - Fixture: `fixtures/sample-photo-dec.png` (Luis Vega / Cocoa Beach). Seeded on the Vega photo-a-dec shop. **Do not put it on Ana Dib.**
-- Still blanks-only. Still never overwrite agent-typed or Javy-tested Cov A ($321,000).
+- Full-dec coverage fixture: `fixtures/sample-francisco-garcia-dec.txt` (Francisco / Javier Garcia). Maps named insured, premises, carrier, policy #, form, term, Cov A–F, deductibles, construction, year/roof, occupancy, premium. **Cov A is $280,000 from the dec — not Ana $321k, not a Zestimate.**
+- Shared mapper: `extractFieldsFromText` + `applyExtractedToSheet`. Ingest sibling owns upload UX, Lead→Deal, and public-records gap-fill. **Doc / photo-OCR wins over `public` / `public-records`.** Never invent SSN or claims. Never use Zestimate as Cov A.
+- Still blanks-only for agent/javy/seed. Still never overwrite Javy-tested Ana Cov A ($321,000).
 
 ## Fill vs copy vs portals (locked)
 

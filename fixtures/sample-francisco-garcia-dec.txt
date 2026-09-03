@@ -1,0 +1,41 @@
+HOMEOWNERS DECLARATIONS
+Form: HO-3
+Company: Citizens Property Insurance
+Policy Number: FG-HO3-2026-4411
+Named insured: Francisco Garcia
+Additional named insured: Javier Garcia
+Residence premises: 2140 Tropic Breeze Ave, Melbourne, FL 32935
+City: Melbourne
+County: Brevard
+Policy Period: 03/01/2026 to 03/01/2027
+Effective date: 03/01/2026
+Expiration date: 03/01/2027
+Occupancy: Owner Occupied
+Construction: masonry
+Year built: 1998
+Stories: 2
+Square feet: 2100
+Roof year: 2018
+Roof covering: shingle
+Roof shape: hip
+Opening protection: partial
+Protection class: 4
+Miles to coast: 6
+Pool: No
+Mobile Home: No
+A. Dwelling                         $280,000
+B. Other Structures                  $28,000
+C. Personal Property                $140,000
+D. Loss of Use                       $56,000
+E. Personal Liability               $300,000
+F. Medical Payments                   $2,000
+Hurricane deductible: 2%
+AOP deductible: $2,500
+Wind/hail deductible: 2%
+Annual premium: $4,200
+Current carrier: Citizens
+Zestimate: $410,000
+List price: $399,000
+Social Security Number: 123-45-6789
+Claim number: CLM-999-2024
+Dwelling limit from the dec. Do not use Zillow list price.

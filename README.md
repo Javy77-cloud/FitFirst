@@ -67,6 +67,7 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 2. Home Quote Sheet starts blank (yellow). `fixtures/sample-photo-dec.png` is already on **Files** (phone-scan of a printed dec — not Ana Dib).
 3. Click **Fill Quote Sheet**. In-desk tesseract maps named insured (deal header if blank), premises, year built (2011), roof year (2019), Cov A **$245,000**, masonry, 1840 sqft, and deductibles.
 4. Filled cells are **CHECK · photo-OCR** (blue). Missing stays yellow. Cov A is from the dec, never a Zestimate. Ana Dib $321,000 is untouched.
+5. **Attach Francisco Garcia full dec** (or `fixtures/sample-francisco-garcia-dec.txt`) then Fill — named insured, policy #, term, Cov A–F, deductibles, construction, roof, occupancy, and premium should land (24+ fields vs the ~12-field miss). Francisco Cov A is **$280,000**, not Ana’s $321,000. SSN / claims lines are ignored.
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy. Drop a jpg/png/webp/heic of a dec, wind mit, or 4-point on Files, then Fill.
 

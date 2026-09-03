@@ -46,6 +46,18 @@ const FIELD_LABELS: Record<string, string> = {
   named_insured: "Named insured",
   hurricane_deductible: "Hurricane deductible",
   aop_deductible: "AOP deductible",
+  wind_hail_deductible: "Wind / hail deductible",
+  coverage_b: "Coverage B",
+  coverage_c: "Coverage C",
+  coverage_d: "Coverage D",
+  coverage_e: "Coverage E",
+  coverage_f: "Coverage F",
+  policy_number: "Policy number",
+  form: "Form",
+  effective_date: "Effective date",
+  expiration_date: "Expiration date",
+  current_premium: "Current premium",
+  roof_shape: "Roof shape",
 };
 
 const MARKET_VALUE_NOISE =
@@ -60,7 +72,7 @@ type Pattern = {
 const PATTERNS: Pattern[] = [
   {
     key: "year_built",
-    re: /(?:year\s*built|yr\.?\s*blt\.?|yr\s*built|built)\s*[:#]?\s*([0-9lIOqQ]{4})/i,
+    re: /(?:year\s*(?:built|of\s*construction)|yr\.?\s*blt\.?|yr\s*built|constructed)\s*[:#]?\s*([0-9lIOqQ]{4})/i,
     normalize: normalizeYear,
   },
   {
@@ -70,7 +82,32 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "coverage_a",
-    re: /(?:coverage\s*a|cov\.?\s*a|dwelling(?:\s*limit)?)\s*[:#]?\s*\$?\s*([\d,]{3,})/i,
+    re: /(?:coverage\s*a|cov\.?\s*a|(?:^|\n)\s*A[\.\)]\s*dwelling|dwelling(?:\s*limit)?)\s*[:#]?\s*\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_b",
+    re: /(?:coverage\s*b|cov\.?\s*b|(?:^|\n)\s*B[\.\)]\s*other\s*structures|other\s*structures)\s*[:#]?\s*\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_c",
+    re: /(?:coverage\s*c|cov\.?\s*c|(?:^|\n)\s*C[\.\)]\s*personal\s*property|personal\s*property|contents(?:\s*limit)?)\s*[:#]?\s*\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_d",
+    re: /(?:coverage\s*d|cov\.?\s*d|(?:^|\n)\s*D[\.\)]\s*loss\s*of\s*use|loss\s*of\s*use)\s*[:#]?\s*\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_e",
+    re: /(?:coverage\s*e|cov\.?\s*e|(?:^|\n)\s*E[\.\)]\s*personal\s*liability|personal\s*liability)\s*[:#]?\s*\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_f",
+    re: /(?:coverage\s*f|cov\.?\s*f|(?:^|\n)\s*F[\.\)]\s*medical\s*payments|medical\s*payments|med\s*pay)\s*[:#]?\s*\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
   },
   {
@@ -125,17 +162,17 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "address",
-    re: /(?:location|property\s*address|insured\s*location)\s*[:#]?\s*([0-9].+)/i,
+    re: /(?:location|property\s*address|insured\s*location|residence\s*premises|premises(?:\s*address)?|location\s*of\s*property)\s*[:#]?\s*([0-9].+)/i,
     normalize: (s) => streetFromLocation(s),
   },
   {
     key: "state",
-    re: /(?:location|property\s*address|insured\s*location).+,\s*([A-Z]{2})\s+\d{5}/i,
+    re: /(?:location|property\s*address|insured\s*location|residence\s*premises|premises(?:\s*address)?).+,\s*([A-Z]{2})\s+\d{5}/i,
     normalize: (s) => s.toUpperCase(),
   },
   {
     key: "zip",
-    re: /(?:location|property\s*address|insured\s*location).+,\s*[A-Z]{2}\s+(\d{5})/i,
+    re: /(?:location|property\s*address|insured\s*location|residence\s*premises|premises(?:\s*address)?).+,\s*[A-Z]{2}\s+(\d{5})/i,
     normalize: (s) => s,
   },
   {
@@ -155,7 +192,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "current_carrier",
-    re: /(?:current\s*carrier|incumbent(?:\s*carrier)?|expiring\s*carrier)\s*[:#]?\s*([a-z0-9 .&'-]+)/i,
+    re: /(?:current\s*carrier|incumbent(?:\s*carrier)?|expiring\s*carrier|company(?:\s*name)?|insurer|issued\s*by)\s*[:#]?\s*([a-z0-9 .&'-]+)/i,
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
   {
@@ -172,6 +209,41 @@ const PATTERNS: Pattern[] = [
     key: "aop_deductible",
     re: /(?:aop\s*ded(?:uctible)?|all\s*other\s*perils(?:\s*ded(?:uctible)?)?)\s*[:#]?\s*(\$?\s*[\d,]+)/i,
     normalize: normalizeDeductible,
+  },
+  {
+    key: "wind_hail_deductible",
+    re: /(?:wind\s*(?:\/|and)?\s*hail\s*ded(?:uctible)?|wind\s*ded(?:uctible)?)\s*[:#]?\s*(\$?\s*[\d,]+%?|\d+\s*%)/i,
+    normalize: normalizeDeductible,
+  },
+  {
+    key: "policy_number",
+    re: /(?:policy\s*(?:number|no\.?|#)|pol(?:icy)?\s*#)\s*[:#]?\s*([A-Z0-9][A-Z0-9\-]{4,})/i,
+    normalize: (s) => s.replace(/\s+/g, "").toUpperCase(),
+  },
+  {
+    key: "form",
+    re: /(?:form(?:\s*type)?|policy\s*form)\s*[:#]?\s*(HO[-\s]?[3458]|DP[-\s]?\d)/i,
+    normalize: (s) => s.replace(/\s+/g, "").toUpperCase().replace(/^(HO|DP)(\d)/, "$1-$2"),
+  },
+  {
+    key: "effective_date",
+    re: /(?:effective(?:\s*date)?|inception|policy\s*period)\s*[:#]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+    normalize: normalizeDate,
+  },
+  {
+    key: "expiration_date",
+    re: /(?:expir(?:ation|es|y)(?:\s*date)?|policy\s*period\s*[:#]?\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*(?:to|through|[–-]))\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+    normalize: normalizeDate,
+  },
+  {
+    key: "current_premium",
+    re: /(?:annual\s*premium|total\s*premium|premium)\s*[:#]?\s*\$?\s*([\d,]{3,})/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "roof_shape",
+    re: /(?:roof\s*shape|roof\s*geometry)\s*[:#]?\s*([a-z]+)/i,
+    normalize: (s) => s.toLowerCase().trim(),
   },
 ];
 
@@ -205,6 +277,7 @@ export function extractFieldsFromText(text: string): ExtractionResult {
   for (const pattern of PATTERNS) {
     const match = pattern.re.exec(text);
     if (!match?.[1]) continue;
+    if (isForbiddenLine(text, match)) continue;
     if (isMarketValueNoise(text, match, pattern.key)) continue;
     const rawValue = match[1].trim();
     const normalizedValue = pattern.normalize(rawValue);
@@ -310,6 +383,25 @@ function normalizeDeductible(raw: string): string {
   if (/%/.test(compact)) return compact.replace(/[$,]/g, "");
   const n = parseInt(compact.replace(/[$,]/g, ""), 10);
   return Number.isFinite(n) ? String(n) : raw.trim();
+}
+
+function normalizeDate(raw: string): string {
+  const parts = raw.split(/[\/\-]/).map((p) => p.trim());
+  if (parts.length !== 3) return raw.trim();
+  const [a, b, c] = parts;
+  const year = c.length === 2 ? `20${c}` : c;
+  const mm = a.padStart(2, "0");
+  const dd = b.padStart(2, "0");
+  if (!/^\d{2}$/.test(mm) || !/^\d{2}$/.test(dd) || !/^\d{4}$/.test(year)) return raw.trim();
+  return `${mm}/${dd}/${year}`;
+}
+
+/** Never invent SSN or claims — skip those lines even if a dollar/id pattern matches. */
+function isForbiddenLine(text: string, match: RegExpExecArray): boolean {
+  const lineStart = text.lastIndexOf("\n", match.index) + 1;
+  const lineEnd = text.indexOf("\n", match.index);
+  const line = text.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  return /social\s*security|\bssn\b|\btin\b|claim\s*(?:number|#|no)/i.test(line);
 }
 
 /** Never take Cov A / RCE from a Zestimate, Zillow list price, or AVM line. */

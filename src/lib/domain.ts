@@ -76,6 +76,8 @@ export const QUOTE_FIELD_SOURCES = [
   "agent",
   "extracted",
   "photo-ocr",
+  "public",
+  "public-records",
   "seed",
   "javy",
 ] as const;

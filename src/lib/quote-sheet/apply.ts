@@ -28,6 +28,11 @@ export function neverCheckCoverageA(fieldKey: string, existing?: QuoteSheetField
   return existing?.source === "javy";
 }
 
+/** Public-records gap-fill loses to a value read from the dec / photo. */
+export function isPublicRecordsSource(field?: QuoteSheetFieldValue | null): boolean {
+  return field?.source === "public" || field?.source === "public-records";
+}
+
 export type ApplyFillOptions = {
   source?: QuoteSheetFieldValue["source"];
 };
@@ -51,7 +56,7 @@ export function applyExtractedToSheet(
       skippedKeys.push(key);
       continue;
     }
-    if (!fieldIsBlank(current)) {
+    if (!fieldIsBlank(current) && !isPublicRecordsSource(current)) {
       skippedKeys.push(key);
       continue;
     }

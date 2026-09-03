@@ -35,7 +35,7 @@ describe("photo OCR ingest", () => {
     const filled = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields, {
       source: "photo-ocr",
     });
-    expect(filled.values.named_insured).toBeUndefined();
+    expect(filled.values.named_insured.value).toBe("Luis Vega");
     expect(extracted.fields.find((f) => f.fieldKey === "named_insured")?.normalizedValue).toBe(
       "Luis Vega",
     );
