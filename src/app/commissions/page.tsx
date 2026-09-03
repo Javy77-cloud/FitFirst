@@ -321,7 +321,18 @@ export default async function CommissionsPage({
                         </td>
                       ) : null}
                       <td>
-                        <div className="font-medium">{policy?.policyNumber ?? "—"}</div>
+                        <div className="font-medium">
+                          {policy ? (
+                            <Link
+                              href={`/policies/${policy.id}`}
+                              className="text-primary hover:underline"
+                            >
+                              {policy.policyNumber}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
                         <div className="text-[11px] text-muted-foreground">
                           {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
                         </div>

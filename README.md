@@ -55,7 +55,21 @@ The desk is solo-now / agency-later. Seed creates **Javy Rivera (Admin)** and **
 
 - Admin sees every contact, deal, policy, and producer-pay row, and can assign an owner.
 - Agent sees only their own book and commissions.
-- **Commissions** is producer pay on bound policies (pending / payable / paid / held). Each row stores premium, rate, agency $, producer split $, selling agency (AFA / First Connect / Agentero), and paid date. Ana Dib quote floors are not paid commissions — she stays at $0.
+- **Commissions** is producer pay on bound policies (pending / payable / paid / held). Each row stores premium, rate, agency $, producer split $, selling agency (AFA / First Connect / Agentero / Pimsco/Agility / BackNine), and paid date. Ana Dib quote floors are not paid commissions — she stays at $0.
+- **Policy commission math** copies live Zoho Policies. Open **Policies** and click a seeded live-copy number. One layout switches by Insurance Type + Policy Type + Policy Sub Type. There is no New-vs-Renewal field. Saving recalculates Initial / Deferred / Monthly / TAC locally — it does not write to Zoho. Mark paid does not change Policy status.
+
+### What to click (commission math)
+
+Stay **Javy Rivera (Admin)**. Ana Dib is unbound and is not in this list (Cov A stays **$321,000**).
+
+1. **Policies** → **359207-97** (Ochoa, Life / Accidental Death / BackNine). TAC $496.32, Initial $372.24, Deferred $124.08, Monthly $0. Change Insurance Type to Health or P&C to see the same layout switch fields (Save writes the new math).
+2. **PFL677036-00** (Cromartie, AFA DP3). Commission4 10 → TAC $157.90 (half rate).
+3. **WC PC 924909-000** (Palacios, First Connect WC, Monthly). TAC $1,420, Monthly $118.33.
+4. **CSG-00544929-00** (Logan, Agentero GL). Commission4 14 → TAC $50.26 (full %, not halved).
+5. **Marketplace** (Mcalister). PMPM $30 × 2 insured = Monthly $60, TAC $720. Commission4 hidden.
+6. **Medicare** (Seraphin). One-time TAC $363. Monthly $0.
+7. **451188218** (Valencia, Supplemental). Commission4 25 → Monthly $28.87, TAC $346.47.
+8. **Commissions** still lists Hale / Ruiz / Harbor Key. **Mark paid** logs producer pay only.
 - Admin can **mark paid**. That logs who did it on `commission_events` and leaves Policy status alone. This is not QuickBooks, Applied Pay, or insured premium collection.
 - Filters: date, carrier, line, agent, selling agency, plus the existing 30-day / quarter / FY windows. Per-agent report is `/commissions/agents/[id]`.
 - Switch to **Maya Chen (Agent)** in the rail to see only her paid/unpaid rows (Ruiz HO pending, Ruiz auto paid). Harbor Key Marine is commercial (GL pending, BOP paid) on Javy's book.

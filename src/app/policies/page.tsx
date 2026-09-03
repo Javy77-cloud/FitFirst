@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { AskThread } from "@/components/ask-thread";
 import { OwnerSelect } from "@/components/owner-select";
@@ -25,8 +26,9 @@ export default async function PoliciesPage() {
   return (
     <AppShell title="Policies">
       <p className="mb-3 text-sm text-muted-foreground">
-        Policies exist only after bind. Expiration tracking and 30/60/90 tasks hang off these
-        records. Producer pay lives on Commissions — quote floors are not policies.
+        Policies exist only after bind. Open a row for Zoho-style commission math
+        (Life / Health / P&amp;C). Ana Dib has no policy. Quote floors are not
+        commissions.
       </p>
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
@@ -39,6 +41,7 @@ export default async function PoliciesPage() {
               <tr>
                 <th>Policy</th>
                 <th>Client</th>
+                <th>Type</th>
                 <th>Carrier</th>
                 <th>Premium</th>
                 <th>Expires</th>
@@ -49,7 +52,12 @@ export default async function PoliciesPage() {
               {rows.map(({ policy, contact, carrier }) => (
                 <tr key={policy.id}>
                   <td>
-                    <div className="font-medium">{policy.policyNumber}</div>
+                    <Link
+                      href={`/policies/${policy.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {policy.policyNumber}
+                    </Link>
                     <div className="mt-1">
                       <AskThread
                         entityType="policy"
@@ -62,6 +70,12 @@ export default async function PoliciesPage() {
                   </td>
                   <td>
                     {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
+                  </td>
+                  <td>
+                    <div>{policy.insuranceType ?? "—"}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {policy.policySubType ?? policy.policyType ?? policy.lineOfBusiness}
+                    </div>
                   </td>
                   <td>{carrier?.name ?? "—"}</td>
                   <td>{formatMoney(policy.premium)}</td>

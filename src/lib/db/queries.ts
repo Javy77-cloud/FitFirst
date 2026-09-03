@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lte, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { getActor } from "@/lib/auth/session";
-import { isAdmin, type Actor } from "@/lib/auth/rbac";
+import { canSeeOwned, isAdmin, type Actor } from "@/lib/auth/rbac";
 import {
   DEFAULT_TENANT_ID,
   type CommissionRange,
@@ -461,4 +461,36 @@ export async function historyForContact(contactId: string) {
     .from(clientHistory)
     .where(and(eq(clientHistory.tenantId, tenant()), eq(clientHistory.contactId, contactId)))
     .orderBy(desc(clientHistory.occurredAt));
+}
+
+export async function getPolicyRecord(id: string) {
+  const actor = await getActor();
+  const [row] = await db
+    .select({
+      policy: policies,
+      contact: contacts,
+      carrier: carriers,
+      owner: users,
+    })
+    .from(policies)
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .leftJoin(users, eq(policies.ownerId, users.id))
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.id, id)));
+  if (!row) return null;
+  if (!canSeeOwned(actor, row.policy.ownerId)) return null;
+
+  const commissionRows = await db
+    .select({
+      commission: commissions,
+      agent: users,
+      paidBy: paidByUsers,
+    })
+    .from(commissions)
+    .innerJoin(users, eq(commissions.agentId, users.id))
+    .leftJoin(paidByUsers, eq(commissions.paidByUserId, paidByUsers.id))
+    .where(and(eq(commissions.tenantId, tenant()), eq(commissions.policyId, id)))
+    .orderBy(desc(commissions.updatedAt), desc(commissions.createdAt));
+
+  return { actor, ...row, commissions: commissionRows };
 }

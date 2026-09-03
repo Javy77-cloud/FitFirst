@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getActor } from "@/lib/auth/session";
-import { isAdmin } from "@/lib/auth/rbac";
+import { canSeeOwned, isAdmin } from "@/lib/auth/rbac";
 import { COMMISSION_STATUSES, DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { commissionEvents, commissions } from "@/lib/db/schema";
+import { commissionEvents, commissions, policies } from "@/lib/db/schema";
+import { fieldsFromForm, savePolicyCommissionFields } from "@/lib/commissions/persist";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -22,6 +23,7 @@ async function writeStatus(
     .select({
       id: commissions.id,
       status: commissions.status,
+      policyId: commissions.policyId,
     })
     .from(commissions)
     .where(and(eq(commissions.id, commissionId), eq(commissions.tenantId, DEFAULT_TENANT_ID)));
@@ -57,8 +59,34 @@ export async function markCommissionStatus(formData: FormData) {
     return;
   }
   await writeStatus(id, status, actor.id, `Status set to ${status}`);
+  revalidatePaths(id);
+}
+
+async function revalidatePaths(commissionId: string) {
+  const [row] = await db
+    .select({ policyId: commissions.policyId })
+    .from(commissions)
+    .where(eq(commissions.id, commissionId));
   revalidatePath("/commissions");
   revalidatePath("/");
+  revalidatePath("/policies");
+  if (row?.policyId) revalidatePath(`/policies/${row.policyId}`);
+}
+
+export async function savePolicyCommission(formData: FormData) {
+  const actor = await getActor();
+  const policyId = str(formData, "policyId");
+  if (!policyId) return;
+  const [policy] = await db
+    .select({ id: policies.id, ownerId: policies.ownerId })
+    .from(policies)
+    .where(and(eq(policies.id, policyId), eq(policies.tenantId, DEFAULT_TENANT_ID)));
+  if (!policy || !canSeeOwned(actor, policy.ownerId)) return;
+  await savePolicyCommissionFields(policyId, fieldsFromForm(formData), actor.id);
+  revalidatePath("/commissions");
+  revalidatePath("/");
+  revalidatePath("/policies");
+  revalidatePath(`/policies/${policyId}`);
 }
 
 export async function markCommissionPaid(formData: FormData) {
@@ -67,6 +95,5 @@ export async function markCommissionPaid(formData: FormData) {
   const id = str(formData, "commissionId");
   if (!id) return;
   await writeStatus(id, "paid", actor.id, "Marked paid — policy status unchanged");
-  revalidatePath("/commissions");
-  revalidatePath("/");
+  revalidatePaths(id);
 }

@@ -180,6 +180,8 @@ export const SELLING_AGENCIES = [
   { key: "afa", label: "AFA" },
   { key: "first_connect", label: "First Connect" },
   { key: "agentero", label: "Agentero" },
+  { key: "pimsco_agility", label: "Pimsco/Agility" },
+  { key: "backnine", label: "BackNine" },
 ] as const;
 export type SellingAgency = (typeof SELLING_AGENCIES)[number]["key"];
 

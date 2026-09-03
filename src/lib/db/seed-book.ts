@@ -33,6 +33,7 @@ import {
   TENANT_ID,
 } from "../fixtures/ids";
 import { db } from "./index";
+import { seedZohoPolicyCommissions } from "./seed-zoho-commissions";
 import {
   agencySettings,
   carrierGoals,
@@ -719,4 +720,6 @@ export async function seedUsersAndBook() {
         },
       });
   }
+
+  await seedZohoPolicyCommissions();
 }

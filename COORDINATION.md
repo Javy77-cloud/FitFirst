@@ -33,7 +33,21 @@ Do **not** edit:
 - `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`
 - `src/lib/appetite/*`
 
-## Per-policy earnings (this slice)
+## Policy commission math (this slice)
+
+Owned here. Copy **live Zoho Policies** field values and formulas. Do not invent rates. Do not look up vendor `P_C_Comm_*` tables.
+
+- `src/lib/commissions/policy-math.ts` — Life / P&C / Marketplace / Medicare Advantage / Supplemental
+- `src/lib/commissions/zoho-fields.ts` — live picklists (including Zoho typos)
+- `src/lib/commissions/persist.ts` + `GET|POST /api/policies/[id]/commission`
+- `src/components/commissions/policy-commission-block.tsx` — one layout; UI switches by Insurance_Type + Policy_Type + Policy_Sub_Type. Mount this on the sibling policy chrome when that page lands.
+- `src/app/policies/[id]/page.tsx` — thin record page so the block is clickable on this branch
+- `drizzle/0004_policy_commission_math.sql` — additive columns on `policies` and `commissions`
+- `src/lib/db/seed-zoho-commissions.ts` — live copies (Ochoa, Cromartie, Palacios, Logan, Mcalister, Seraphin, Valencia). **Ana Dib stays 0 commission / 0 policies.**
+
+Selling agency picklist: AFA, First Connect, Agentero, Pimsco/Agility (Zoho display “Agility”), BackNine. AFA P&C halves Commission4; others use the full %. No New-vs-Renewal field. No live Zoho writes.
+
+## Per-policy earnings (prior slice)
 
 Additive on the commissions module. Do not turn this into QuickBooks, Applied Pay, or premium-trust accounting. Do not take insured premium payments.
 

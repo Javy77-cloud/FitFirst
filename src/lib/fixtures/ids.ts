@@ -79,6 +79,39 @@ export const EARNINGS_EVENT = {
   javyQ2: "bb444444-4444-4444-8444-000000000005",
 } as const;
 
+/** Live Zoho Policy copies for commission math. Not Ana Dib. */
+export const ZOHO_CONTACT_IDS = {
+  ochoa: "cc111111-1111-4111-8111-000000000001",
+  cromartie: "cc111111-1111-4111-8111-000000000002",
+  palacios: "cc111111-1111-4111-8111-000000000003",
+  logan: "cc111111-1111-4111-8111-000000000004",
+  mcalister: "cc111111-1111-4111-8111-000000000005",
+  seraphin: "cc111111-1111-4111-8111-000000000006",
+  valencia: "cc111111-1111-4111-8111-000000000007",
+} as const;
+
+export const ZOHO_POLICY_IDS = {
+  ochoaLife: "cc222222-2222-4222-8222-000000000001",
+  cromartieDp3: "cc222222-2222-4222-8222-000000000002",
+  palaciosWc: "cc222222-2222-4222-8222-000000000003",
+  palaciosGl: "cc222222-2222-4222-8222-000000000004",
+  loganGl: "cc222222-2222-4222-8222-000000000005",
+  mcalisterMkt: "cc222222-2222-4222-8222-000000000006",
+  seraphinMa: "cc222222-2222-4222-8222-000000000007",
+  valenciaSupp: "cc222222-2222-4222-8222-000000000008",
+} as const;
+
+export const ZOHO_COMMISSION_IDS = {
+  ochoaLife: "cc333333-3333-4333-8333-000000000001",
+  cromartieDp3: "cc333333-3333-4333-8333-000000000002",
+  palaciosWc: "cc333333-3333-4333-8333-000000000003",
+  palaciosGl: "cc333333-3333-4333-8333-000000000004",
+  loganGl: "cc333333-3333-4333-8333-000000000005",
+  mcalisterMkt: "cc333333-3333-4333-8333-000000000006",
+  seraphinMa: "cc333333-3333-4333-8333-000000000007",
+  valenciaSupp: "cc333333-3333-4333-8333-000000000008",
+} as const;
+
 /** Same rows the book-dashboard slice seeds — do not invent other goal numbers. */
 export const CARRIER_GOAL_IDS = {
   americanIntegrity2026: "77777777-7777-4777-8777-777777777701",
