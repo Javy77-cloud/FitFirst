@@ -71,6 +71,18 @@ export default function GetStartedPage() {
           >
             Ruiz Tile LLC
           </Link>
+          <Link
+            href={`/deals/${ELENA_DEAL_ID}?tab=quote-sheet`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Quote Sheet
+          </Link>
+          <Link
+            href={`/deals/${ELENA_DEAL_ID}?tab=quotes`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Ranked quotes
+          </Link>
         </div>
       </div>
       <ol className="space-y-3">

@@ -88,9 +88,9 @@ After `npm run db:migrate && npm run db:seed` (or `docker compose up --build`):
 2. **Leads** → open **Ruiz, Elena** (Melbourne HO drop). Status converted. Phone + email present.
 3. Click **Open deal** → **Ruiz · Melbourne HO3** (`/deals/<elena-deal>`).
 4. Confirm breadcrumb: Lead Ruiz → this Deal → Contact Ruiz → HO3 Policy.
-5. **Documents** tab: **Source documents** (dec + wind mit) are labeled separately from **Issued quote PDFs**.
-6. **Quote Sheet** tab: yellow = missing, blue = CHECK. Seeded dwelling fields are confirmed. `coverage_a` is on the sheet for Elena only — Ana’s $321,000 is untouched.
-7. **Quotes** tab: ranked quote-results note, cheapest first. Two quote PDF slots. No policy was created from those quotes.
+5. **Documents** tab (`?tab=documents`): **Source documents** (dec + wind mit) are labeled separately from **Issued quote PDFs**. Tabs are URL links so they work without client JS.
+6. **Quote Sheet** tab (`?tab=quote-sheet`): yellow = missing, blue = CHECK. Seeded dwelling fields are confirmed. `coverage_a` is on the sheet for Elena only — Ana’s $321,000 is untouched.
+7. **Quotes** tab (`?tab=quotes`): ranked quote-results note, cheapest first. Two quote PDF slots. No policy was created from those quotes.
 8. Deal stage is **bound**. Click **Contact** → Elena Ruiz. Status **Client**. Counts: lifetime **1**, in-force **1**. Linked business **Ruiz Tile LLC** (commercial book is empty — she can hold personal policies and a business link).
 9. Click the **HO3 policy** → issued policy files (dec / ID). These slots are not shopping docs.
 10. On **Contact**, **Policy**, and **Business** scroll to **Activity timeline**. Seeded: bind log, 30-day task (Contact+Policy), meeting, logged call (not a dialer), and a Ruiz Tile LLC task (Contact+Business, no commercial policy). Every row links back. Log a new task/meeting/call from the form — it must appear on the records you assigned.

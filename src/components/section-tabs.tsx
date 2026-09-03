@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type SectionTab = {
@@ -9,31 +7,48 @@ export type SectionTab = {
   content: React.ReactNode;
 };
 
+/**
+ * Server-rendered tabs. Switching is a real navigation (`?tab=`), so Quote Sheet
+ * and Quotes stay reachable even when client hydration / HMR is down.
+ */
 export function SectionTabs({
   tabs,
   defaultValue,
+  active,
+  param = "tab",
+  extraQuery,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
+  active?: string | null;
+  param?: string;
+  extraQuery?: Record<string, string | undefined>;
 }) {
-  const [active, setActive] = useState(defaultValue);
-  const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
+  const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
+
+  function hrefFor(id: string) {
+    const query = new URLSearchParams();
+    if (extraQuery) {
+      for (const [key, value] of Object.entries(extraQuery)) {
+        if (value) query.set(key, value);
+      }
+    }
+    query.set(param, id);
+    return `?${query.toString()}`;
+  }
 
   return (
     <div>
-      <div
-        role="tablist"
-        className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1"
-      >
+      <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
           return (
-            <button
+            <Link
               key={tab.id}
-              type="button"
+              href={hrefFor(tab.id)}
+              scroll={false}
               role="tab"
               aria-selected={selected}
-              onClick={() => setActive(tab.id)}
               className={cn(
                 "rounded-sm px-2.5 py-1 text-sm font-medium",
                 selected
@@ -42,7 +57,7 @@ export function SectionTabs({
               )}
             >
               {tab.label}
-            </button>
+            </Link>
           );
         })}
       </div>

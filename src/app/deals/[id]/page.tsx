@@ -18,8 +18,15 @@ import { DEAL_ID } from "@/lib/fixtures/ids";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DealPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string }>;
+}) {
   const { id } = await params;
+  const { tab, riskTab } = await searchParams;
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -101,6 +108,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       ) : (
         <SectionTabs
           defaultValue="documents"
+          active={tab}
           tabs={[
             {
               id: "documents",
@@ -119,7 +127,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             {
               id: "risk",
               label: "Master risk",
-              content: <RiskForm risk={risk} dealId={deal.id} />,
+              content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
             },
             {
               id: "markets",

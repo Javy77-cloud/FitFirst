@@ -32,13 +32,24 @@ function Field({
   );
 }
 
-export function RiskForm({ risk, dealId }: { risk: Risk; dealId: string }) {
+export function RiskForm({
+  risk,
+  dealId,
+  activeTab,
+}: {
+  risk: Risk;
+  dealId: string;
+  activeTab?: string | null;
+}) {
   return (
     <form action={updateRisk} className="ff-card p-4">
       <input type="hidden" name="riskId" value={risk.id} />
       <input type="hidden" name="dealId" value={dealId} />
       <SectionTabs
+        param="riskTab"
         defaultValue="home"
+        active={activeTab}
+        extraQuery={{ tab: "risk" }}
         tabs={[
           {
             id: "home",
