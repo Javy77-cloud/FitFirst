@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { isNull, eq, and, sql } from "drizzle-orm";
 import {
@@ -7,6 +8,7 @@ import {
   Contact,
   FileStack,
   Home,
+  ListChecks,
   Shield,
   Users,
 } from "lucide-react";
@@ -20,6 +22,7 @@ const NAV = [
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/policies", label: "Policies", icon: Shield },
+  { href: "/queue", label: "Queue", icon: ListChecks },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
@@ -30,9 +33,9 @@ export async function AppShell({
   title,
   actions,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   title: string;
-  actions?: React.ReactNode;
+  actions?: ReactNode;
 }) {
   const [count] = await db
     .select({ n: sql<number>`count(*)` })
@@ -45,9 +48,9 @@ export async function AppShell({
       <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-4 py-4">
           <Link href="/" className="block">
-            <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
-            <div className="text-[11px] text-sidebar-foreground/70">
-              Filter-first P&amp;C rater
+            <div className="text-lg font-semibold tracking-tight text-sidebar-foreground">FitFirst</div>
+            <div className="text-[11px] text-sidebar-muted">
+              Filter-first P&amp;C desk
             </div>
           </Link>
         </div>
@@ -58,7 +61,7 @@ export async function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white"
+                className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <Icon className="size-3.5 opacity-80" />
                 <span className="flex-1">{item.label}</span>
@@ -71,7 +74,7 @@ export async function AppShell({
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
+        <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-muted">
           Single-tenant demo
           <br />
           No Zoho sync · no portal logins
@@ -81,7 +84,7 @@ export async function AppShell({
         <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Personal lines worksheet
+              Agency desk
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>

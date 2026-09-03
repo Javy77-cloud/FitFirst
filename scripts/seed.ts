@@ -3,7 +3,7 @@ import { sql } from "../src/lib/db";
 
 async function main() {
   const result = await seedIfEmpty();
-  console.log("Loaded Ana Dib HO3 shop (2026-09-02 Palm Bay fixture).");
+  console.log("Loaded Ana Dib HO3 shop (2026-09-02 Palm Bay fixture) plus owner-book rows.");
   await sql.end({ timeout: 5 });
 }
 

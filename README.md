@@ -37,9 +37,24 @@ npm run dev
 
 Open [http://localhost:43147](http://localhost:43147).
 
+## Owner home
+
+After seed, `/` is the agency-owner desk. It reads **real book rows**, not scores:
+
+- In-force count and written premium this month vs last (Active / Bound only)
+- Pipeline: open quotes, Quote Sent, Closed Won this month
+- Renewals in 30 and 60 days
+- Line mix (Home, Auto, Flood, Commercial, Health, Life) and carrier mix
+- Needs attention (work-queue tasks, lapses, Bound waiting on issue)
+- Cross-sell gaps from household lines
+
+Ana Dib stays an unbound shop — $321,000 is Coverage A on the worksheet, not in-force premium. Ruiz, Harbor Key Holdings (commercial GL), and the other owner-book rows populate the in-force widgets. Click a tile to open the filtered list.
+
+Desk math uses a fixed clock of **2026-09-03** so the seed and the home numbers stay aligned.
+
 ## First path to exercise
 
-`npm run db:seed` loads the **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). It is required day-one data, not an optional demo.
+`npm run db:seed` loads the **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). It is required day-one data, not an optional demo. It also loads the owner-book households used on Home. Do not edit the Ana fixture.
 
 1. Home → **Open Ana Dib HO3 shop**. 1098 Adige Ct SE, 1989 frame-stucco SFH, 8 mi coast, clay tile + metal, Cov A **$321,000** (broker-tested rebuild — do not change that number). Eight markets, zero bindable.
 2. **Documents** → **Sample handwritten wind mit**. Flagged fields stay off the worksheet until you click **Accept**.
@@ -65,7 +80,7 @@ Covers appetite matching (filter-first, learned declines, RCE floors) and extrac
 
 ## Restyle
 
-Colors, radii, and density live in `src/app/globals.css` as `--ff-*` tokens mapped to shadcn variables. Do not hardcode palette values in feature logic.
+Colors, radii, and density live in `src/app/globals.css` as `--ff-*` tokens mapped to shadcn variables. The desk is **light paper + muted terracotta**. `--ff-bg` stays off-white. Do not hardcode palette values in feature logic.
 
 ## Out of scope (intentionally)
 
