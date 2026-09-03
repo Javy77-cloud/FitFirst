@@ -1,7 +1,9 @@
+import { eq } from "drizzle-orm";
 import { db } from "./index";
 import { contacts, deals, leads, policies, reviewTasks } from "./schema";
 import {
   CARRIER_IDS,
+  CONTACT_ID,
   OWNER_CONTACT_IDS,
   OWNER_DEAL_IDS,
   OWNER_LEAD_IDS,
@@ -307,6 +309,19 @@ export async function seedOwnerBook() {
       premium: "712.00",
     },
     {
+      id: OWNER_POLICY_IDS.dibHoPrior,
+      tenantId: TENANT_ID,
+      contactId: CONTACT_ID,
+      carrierId: CARRIER_IDS.geovera,
+      policyNumber: "FF-BK-HO-1044",
+      lineOfBusiness: "HO",
+      status: "active",
+      effectiveDate: new Date("2025-10-01T16:00:00.000Z"),
+      expirationDate: new Date("2027-04-01T16:00:00.000Z"),
+      premium: "2890.00",
+      coverageA: 321000,
+    },
+    {
       id: OWNER_POLICY_IDS.grantHo,
       tenantId: TENANT_ID,
       contactId: OWNER_CONTACT_IDS.grant,
@@ -421,4 +436,14 @@ export async function seedOwnerBook() {
         },
       });
   }
+
+  await db
+    .update(contacts)
+    .set({
+      policyCount: 1,
+      notes:
+        "Prior-book HO3 (FF-BK-HO-1044) is in force. The 2026-09-02 Palm Bay shop is still unbound — Cov A $321,000 is the worksheet, not a new policy. Auto, flood, and umbrella are open gaps.",
+      updatedAt: new Date(),
+    })
+    .where(eq(contacts.id, CONTACT_ID));
 }

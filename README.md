@@ -48,7 +48,9 @@ After seed, `/` is the agency-owner desk. It reads **real book rows**, not score
 - Needs attention (work-queue tasks, lapses, Bound waiting on issue)
 - Cross-sell gaps from household lines
 
-Ana Dib stays an unbound shop — $321,000 is Coverage A on the worksheet, not in-force premium. Ruiz, Harbor Key Holdings (commercial GL), and the other owner-book rows populate the in-force widgets. Click a tile to open the filtered list.
+Ana Dib's **2026-09-02 shop** stays unbound — $321,000 is Coverage A on the worksheet. A prior-book HO3 (`FF-BK-HO-1044`) is in force so Home cross-sell can prove HO3-only: Auto, Flood, and Umbrella stay open. Ruiz, Harbor Key Holdings (commercial GL), and the other owner-book rows populate the rest of the book.
+
+**Walkthrough on Home:** open `/` → Cross-sell → click **Auto** (or Flood / Umbrella) → Ana Dib is on the list. Mix charts are the compact stacked bars under Line mix / Carrier mix.
 
 Desk math uses a fixed clock of **2026-09-03** so the seed and the home numbers stay aligned.
 

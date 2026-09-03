@@ -4,12 +4,23 @@ import { OwnerDesk } from "@/components/home/owner-desk";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { markAlertRead } from "@/app/actions/alerts";
 import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
+import { parseSellableLine } from "@/lib/home/aggregate";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const [{ snapshot, scope, tables }, { recentDeals, unread }] = await Promise.all([
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const need = parseSellableLine(first(params.need));
+  const [{ snapshot, scope }, { recentDeals, unread }] = await Promise.all([
     ownerHomeDashboard(),
     dashboardStats(),
   ]);
@@ -23,7 +34,7 @@ export default async function HomePage() {
         </Link>
       }
     >
-      <OwnerDesk snapshot={snapshot} scope={scope} tables={tables} />
+      <OwnerDesk snapshot={snapshot} scope={scope} need={need} />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden">

@@ -296,22 +296,6 @@ async function loadCommissionTotals(scope: OwnerHomeScope): Promise<CommissionTo
   }
 }
 
-async function loadOpportunityGapCount(scope: OwnerHomeScope): Promise<number | null> {
-  const tables = await detectOwnerHomeTables();
-  if (!tables.opportunities) return null;
-  try {
-    const rows = await rawSql<{ n: number }[]>`
-      select count(*)::int as n
-      from opportunities
-      where tenant_id = ${scope.tenantId}
-        and coalesce(status, 'open') not in ('closed', 'won', 'lost', 'dismissed')
-    `;
-    return Number(rows[0]?.n ?? 0);
-  } catch {
-    return null;
-  }
-}
-
 export async function ownerHomeDashboard() {
   const scope = await currentOwnerHomeScope();
   const tables = await detectOwnerHomeTables();
@@ -377,10 +361,7 @@ export async function ownerHomeDashboard() {
   const scopedPolicies = filterByAssignee(homePolicies, scope.agentUserId, Boolean(tables.assigneeColumn));
   const scopedDeals = filterByAssignee(homeDeals, scope.agentUserId, Boolean(tables.dealAssigneeColumn));
 
-  const [commissions, opportunityCount] = await Promise.all([
-    loadCommissionTotals(scope),
-    loadOpportunityGapCount(scope),
-  ]);
+  const commissions = await loadCommissionTotals(scope);
 
   const snapshot = buildOwnerHome({
     asOf: DESK_AS_OF,
@@ -389,10 +370,6 @@ export async function ownerHomeDashboard() {
     tasks: homeTasks,
     commissions,
   });
-
-  if (opportunityCount != null) {
-    snapshot.gapCount = opportunityCount;
-  }
 
   return {
     snapshot,

@@ -1,10 +1,23 @@
-export const HOME_LINE_KEYS = ["HO", "AUTO", "FLOOD", "COMMERCIAL", "HEALTH", "LIFE"] as const;
+export const HOME_LINE_KEYS = [
+  "HO",
+  "AUTO",
+  "FLOOD",
+  "UMBRELLA",
+  "COMMERCIAL",
+  "HEALTH",
+  "LIFE",
+] as const;
 export type HomeLineKey = (typeof HOME_LINE_KEYS)[number];
+
+/** Personal products the desk can still place on an in-force household. */
+export const SELLABLE_LINE_KEYS = ["HO", "AUTO", "FLOOD", "UMBRELLA"] as const;
+export type SellableLineKey = (typeof SELLABLE_LINE_KEYS)[number];
 
 export const HOME_LINE_LABEL: Record<HomeLineKey, string> = {
   HO: "Home",
   AUTO: "Auto",
   FLOOD: "Flood",
+  UMBRELLA: "Umbrella",
   COMMERCIAL: "Commercial",
   HEALTH: "Health",
   LIFE: "Life",
@@ -17,6 +30,7 @@ export function homeLineKey(lineOfBusiness: string): HomeLineKey | null {
   if (raw === "HO" || raw === "HO3" || raw === "HO6" || raw === "HOME" || raw === "HOMEOWNERS") return "HO";
   if (raw === "AUTO" || raw === "PA" || raw === "PERSONAL_AUTO") return "AUTO";
   if (raw === "FLOOD" || raw === "NFIP") return "FLOOD";
+  if (raw === "UMBRELLA" || raw === "PUM" || raw === "PU") return "UMBRELLA";
   if (raw === "HEALTH" || raw === "ACCIDENT") return "HEALTH";
   if (raw === "LIFE") return "LIFE";
   if (COMMERCIAL_CODES.has(raw)) return "COMMERCIAL";

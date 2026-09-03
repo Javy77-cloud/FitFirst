@@ -10,40 +10,48 @@ const COLORS = [
   "var(--ff-sidebar-muted)",
 ];
 
-export function MixBars({
+export function CompactMix({
   slices,
   empty,
 }: {
   slices: MixSlice[];
   empty: string;
 }) {
-  const max = Math.max(...slices.map((s) => s.premium), 0);
-  if (!max) {
-    return <p className="px-1 py-6 text-sm text-muted-foreground">{empty}</p>;
+  const live = slices.filter((slice) => slice.premium > 0);
+  const total = live.reduce((sum, slice) => sum + slice.premium, 0);
+  if (!total) {
+    return <p className="text-sm text-muted-foreground">{empty}</p>;
   }
 
   return (
-    <ul className="space-y-2.5">
-      {slices.map((slice, index) => {
-        const width = max ? Math.max(4, (slice.premium / max) * 100) : 0;
-        const color = COLORS[index % COLORS.length];
-        return (
-          <li key={slice.key}>
-            <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]">
-              <span className="font-medium text-navy">{slice.label}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {slice.count} · {formatMoney(slice.premium)}
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-secondary">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${width}%`, background: color }}
-              />
-            </div>
+    <div>
+      <div className="flex h-2 overflow-hidden rounded-full bg-secondary" role="img" aria-label="Premium mix">
+        {live.map((slice, index) => (
+          <div
+            key={slice.key}
+            className="h-full"
+            style={{
+              width: `${(slice.premium / total) * 100}%`,
+              background: COLORS[index % COLORS.length],
+            }}
+            title={`${slice.label} ${formatMoney(slice.premium)}`}
+          />
+        ))}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+        {live.map((slice, index) => (
+          <li key={slice.key} className="inline-flex items-center gap-1.5 text-navy">
+            <span
+              className="size-1.5 shrink-0 rounded-full"
+              style={{ background: COLORS[index % COLORS.length] }}
+            />
+            <span className="font-medium">{slice.label}</span>
+            <span className="tabular-nums text-muted-foreground">
+              {slice.count} · {formatMoney(slice.premium)}
+            </span>
           </li>
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+    </div>
   );
 }

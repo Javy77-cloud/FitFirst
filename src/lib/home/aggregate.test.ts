@@ -6,7 +6,9 @@ import {
   filterByAssignee,
   inForcePolicies,
   isInForce,
+  parseSellableLine,
   pipelineCounts,
+  whoNeedsLine,
   writtenInMonth,
 } from "./aggregate";
 import type { HomeDeal, HomePolicy, HomeTask } from "./aggregate";
@@ -138,6 +140,7 @@ describe("owner-home book math", () => {
       ["Home", 3340],
       ["Auto", 1910],
       ["Flood", 712],
+      ["Umbrella", 0],
       ["Commercial", 8640],
       ["Health", 0],
       ["Life", 0],
@@ -196,8 +199,45 @@ describe("owner-home book math", () => {
     ];
     const snap = buildOwnerHome({ asOf, policies: rows, deals: [], tasks: [] });
     expect(snap.gapCount).toBe(2);
-    expect(snap.gaps.find((g) => g.contactId === "ruiz")?.missing).toEqual(["Flood"]);
-    expect(snap.gaps.find((g) => g.contactId === "patel")?.missing).toEqual(["Home", "Auto"]);
+    expect(snap.gaps.find((g) => g.contactId === "ruiz")?.missing).toEqual(["FLOOD", "UMBRELLA"]);
+    expect(snap.gaps.find((g) => g.contactId === "patel")?.missing).toEqual(["HO", "AUTO", "UMBRELLA"]);
+  });
+
+  it("lists who needs a sellable line from in-force households only", () => {
+    const rows = [
+      policy({
+        id: "ana-ho",
+        status: "active",
+        premium: 2890,
+        contactId: "ana",
+        contactName: "Dib, Ana",
+        lineOfBusiness: "HO",
+      }),
+      policy({
+        id: "ana-quote",
+        status: "quoted",
+        premium: 321000,
+        contactId: "ana",
+        contactName: "Dib, Ana",
+        lineOfBusiness: "AUTO",
+      }),
+      policy({
+        id: "shop-only",
+        status: "shopping",
+        premium: 0,
+        contactId: "reyes",
+        contactName: "Reyes, Elena",
+        lineOfBusiness: "HO",
+      }),
+    ];
+    const snap = buildOwnerHome({ asOf, policies: rows, deals: [], tasks: [] });
+    expect(parseSellableLine("auto")).toBe("AUTO");
+    const needAuto = whoNeedsLine(snap.gaps, "AUTO");
+    expect(needAuto.map((g) => g.contactId)).toEqual(["ana"]);
+    expect(needAuto[0]?.missing).toEqual(["AUTO", "FLOOD", "UMBRELLA"]);
+    expect(needAuto[0]?.held).toEqual(["HO"]);
+    expect(snap.sellableChips.find((c) => c.key === "AUTO")?.count).toBe(1);
+    expect(whoNeedsLine(snap.gaps, "HO")).toHaveLength(0);
   });
 
   it("scopes an agent to assignee rows when that column exists", () => {

@@ -1,5 +1,12 @@
 import { addUtcDays, sameUtcMonth } from "./as-of";
-import { HOME_LINE_KEYS, HOME_LINE_LABEL, homeLineKey, type HomeLineKey } from "./lines";
+import {
+  HOME_LINE_KEYS,
+  HOME_LINE_LABEL,
+  SELLABLE_LINE_KEYS,
+  homeLineKey,
+  type HomeLineKey,
+  type SellableLineKey,
+} from "./lines";
 
 export const IN_FORCE_STATUSES = new Set(["active", "bound"]);
 export const LAPSE_STATUSES = new Set(["lapsed", "lapse", "cancelled", "canceled", "expired"]);
@@ -80,7 +87,14 @@ export type AttentionItem = {
 export type CrossSellGap = {
   contactId: string;
   name: string;
-  missing: string[];
+  held: SellableLineKey[];
+  missing: SellableLineKey[];
+};
+
+export type SellableChip = {
+  key: SellableLineKey;
+  label: string;
+  count: number;
 };
 
 export type CommissionTotals = {
@@ -250,28 +264,51 @@ export function attentionItems(input: {
   return items;
 }
 
-const PERSONAL_COMPANIONS: HomeLineKey[] = ["HO", "AUTO", "FLOOD"];
+function isSellable(key: HomeLineKey | null): key is SellableLineKey {
+  return key != null && (SELLABLE_LINE_KEYS as readonly string[]).includes(key);
+}
 
-export function crossSellGaps(policies: HomePolicy[]): CrossSellGap[] {
-  const byContact = new Map<string, { name: string; lines: Set<HomeLineKey> }>();
+export function parseSellableLine(raw: string | null | undefined): SellableLineKey | null {
+  if (!raw) return null;
+  const mapped = homeLineKey(raw) ?? (raw.trim().toUpperCase() as HomeLineKey);
+  return isSellable(mapped) ? mapped : null;
+}
+
+/** In-force personal households only. Quotes and commercial-only files never appear. */
+export function householdBooks(policies: HomePolicy[]): CrossSellGap[] {
+  const byContact = new Map<string, { name: string; lines: Set<SellableLineKey> }>();
   for (const policy of inForcePolicies(policies)) {
     const key = homeLineKey(policy.lineOfBusiness);
-    if (!key || key === "COMMERCIAL" || key === "HEALTH" || key === "LIFE") continue;
+    if (!isSellable(key)) continue;
     const existing = byContact.get(policy.contactId);
     if (existing) existing.lines.add(key);
     else byContact.set(policy.contactId, { name: policy.contactName, lines: new Set([key]) });
   }
 
-  const gaps: CrossSellGap[] = [];
+  const rows: CrossSellGap[] = [];
   for (const [contactId, row] of byContact) {
-    const missing = PERSONAL_COMPANIONS.filter((line) => !row.lines.has(line)).map(
-      (line) => HOME_LINE_LABEL[line],
-    );
-    if (missing.length > 0 && missing.length < PERSONAL_COMPANIONS.length) {
-      gaps.push({ contactId, name: row.name, missing });
-    }
+    const held = SELLABLE_LINE_KEYS.filter((line) => row.lines.has(line));
+    const missing = SELLABLE_LINE_KEYS.filter((line) => !row.lines.has(line));
+    if (held.length === 0 || missing.length === 0) continue;
+    rows.push({ contactId, name: row.name, held, missing });
   }
-  return gaps.sort((a, b) => a.name.localeCompare(b.name));
+  return rows.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function crossSellGaps(policies: HomePolicy[]): CrossSellGap[] {
+  return householdBooks(policies);
+}
+
+export function whoNeedsLine(households: CrossSellGap[], line: SellableLineKey): CrossSellGap[] {
+  return households.filter((row) => row.missing.includes(line));
+}
+
+export function sellableChips(households: CrossSellGap[]): SellableChip[] {
+  return SELLABLE_LINE_KEYS.map((key) => ({
+    key,
+    label: HOME_LINE_LABEL[key],
+    count: households.filter((row) => row.missing.includes(key)).length,
+  }));
 }
 
 export function filterByAssignee<T extends { ownerId?: string | null }>(
@@ -297,6 +334,7 @@ export type OwnerHomeSnapshot = {
   attention: AttentionItem[];
   gaps: CrossSellGap[];
   gapCount: number;
+  sellableChips: SellableChip[];
 };
 
 export function buildOwnerHome(input: {
@@ -307,6 +345,7 @@ export function buildOwnerHome(input: {
   commissions?: CommissionTotals;
 }): OwnerHomeSnapshot {
   const inForce = inForcePolicies(input.policies);
+  const households = householdBooks(input.policies);
   return {
     asOf: input.asOf,
     inForceCount: inForce.length,
@@ -323,7 +362,8 @@ export function buildOwnerHome(input: {
       policies: input.policies,
       deals: input.deals,
     }),
-    gaps: crossSellGaps(input.policies),
-    gapCount: crossSellGaps(input.policies).length,
+    gaps: households,
+    gapCount: households.length,
+    sellableChips: sellableChips(households),
   };
 }

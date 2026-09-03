@@ -48,9 +48,13 @@ Home is the agency-owner glance at the book. Numbers come from seed rows (polici
 | Needs attention | `review_tasks`, lapsed policies, bound deals with no policy | — |
 | Cross-sell gaps | household lines, or `opportunities` count | — |
 
+### Cross-sell on Home
+
+Filter chips: Home, Auto, Flood, Umbrella. `/?need=auto#cross-sell` lists in-force households missing that line. Quotes never count. Ana's **prior-book** HO3 (`FF-BK-HO-1044`) is the HO3-only proof (auto / flood / umbrella open). The 2026-09-02 shop stays unbound at Cov A $321,000.
+
 ### Do not
 
-- Bind Ana's 2026-09-02 shop quotes. Do not add `FF-BK-HO-1044` or any HO policy on her contact from this slice.
+- Bind Ana's 2026-09-02 shop quotes. Prior-book HO3 is not that shop.
 - Copy `/dashboard` (AMS book board). Extend Home; leave `src/lib/dashboard/**` to the AMS dashboard slice.
 - Add fake AI scores or sparklines.
 
