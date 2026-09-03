@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createDealFromLead, createLead } from "@/app/actions/crm";
+import { dropLeadPacket, dropSampleDecPacket, stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
+import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,37 +14,71 @@ export default async function LeadsPage() {
   const rows = await listLeads();
   return (
     <AppShell title="Leads">
-      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <form action={createLead} className="ff-card space-y-3 p-4">
-          <h2 className="text-sm font-semibold text-navy">New lead</h2>
-          <div>
-            <Label htmlFor="firstName" className="text-xs">
-              First name
-            </Label>
-            <Input id="firstName" name="firstName" required className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label htmlFor="lastName" className="text-xs">
-              Last name
-            </Label>
-            <Input id="lastName" name="lastName" required className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label htmlFor="phone" className="text-xs">
-              Phone
-            </Label>
-            <Input id="phone" name="phone" className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label htmlFor="email" className="text-xs">
-              Email
-            </Label>
-            <Input id="email" name="email" type="email" className="mt-1 h-8" />
-          </div>
-          <Button type="submit" size="sm">
-            Save lead
+      <p className="mb-3 text-sm text-muted-foreground">
+        Create or match by name + phone or email. Never duplicate. A dropped dec becomes a lead
+        first; the deal is the shop. Quotes still do not create a policy.
+      </p>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <form action={dropSampleDecPacket}>
+          <Button type="submit" size="sm" variant="outline">
+            Drop Melbourne dec (matches Elena)
           </Button>
         </form>
+        <form action={stubEmailLead}>
+          <Button type="submit" size="sm" variant="outline">
+            Stub email lead
+          </Button>
+        </form>
+        <form action={stubSocialLead}>
+          <Button type="submit" size="sm" variant="outline">
+            Stub social lead
+          </Button>
+        </form>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="space-y-4">
+          <form action={createLead} className="ff-card space-y-3 p-4">
+            <h2 className="text-sm font-semibold text-navy">New lead</h2>
+            <div>
+              <Label htmlFor="firstName" className="text-xs">
+                First name
+              </Label>
+              <Input id="firstName" name="firstName" required className="mt-1 h-8" />
+            </div>
+            <div>
+              <Label htmlFor="lastName" className="text-xs">
+                Last name
+              </Label>
+              <Input id="lastName" name="lastName" required className="mt-1 h-8" />
+            </div>
+            <div>
+              <Label htmlFor="phone" className="text-xs">
+                Phone
+              </Label>
+              <Input id="phone" name="phone" className="mt-1 h-8" />
+            </div>
+            <div>
+              <Label htmlFor="email" className="text-xs">
+                Email
+              </Label>
+              <Input id="email" name="email" type="email" className="mt-1 h-8" />
+            </div>
+            <Button type="submit" size="sm">
+              Save lead
+            </Button>
+          </form>
+          <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
+            <h2 className="text-sm font-semibold text-navy">Drop a dec packet</h2>
+            <p className="text-xs text-muted-foreground">
+              PDF or text. Named insured + phone or email matches an existing lead. Empty file
+              uses the Melbourne sample.
+            </p>
+            <input name="file" type="file" className="block w-full text-xs" />
+            <Button type="submit" size="sm">
+              Import packet
+            </Button>
+          </form>
+        </div>
 
         <section className="ff-card overflow-hidden">
           <table className="ff-table">
@@ -65,7 +101,9 @@ export default async function LeadsPage() {
                 rows.map((lead) => (
                   <tr key={lead.id}>
                     <td className="font-medium">
-                      {lead.lastName}, {lead.firstName}
+                      <RecordLink href={`/leads/${lead.id}`}>
+                        {lead.lastName}, {lead.firstName}
+                      </RecordLink>
                       <div className="text-[11px] text-muted-foreground">
                         {lead.phone ?? lead.email}
                       </div>

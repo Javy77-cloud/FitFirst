@@ -15,6 +15,13 @@
       "when": 1788385944256,
       "tag": "0001_ana_dib_named_insureds_and_premium_numeric",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788395000000,
+      "tag": "0002_test_desk_lifecycle",
+      "breakpoints": true
     }
   ]
 }

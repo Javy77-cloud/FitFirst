@@ -34,5 +34,47 @@ Miles to coast: 8
 Pool: no
 `;
 
+export const MELBOURNE_HO_DEC_TEXT = `HOMEOWNERS DECLARATIONS
+Named Insured: Elena Ruiz
+Phone: (321) 555-0188
+Email: elena.ruiz@example.com
+Location: 412 Harbor Isle Dr, Melbourne, FL 32935
+City: Melbourne
+County: Brevard
+Year Built: 2014
+Construction: Masonry
+Occupancy: Owner Occupied
+Stories: 1
+Coverage A Dwelling: $385,000
+Roof Year: 2019
+Roof Covering: Architectural Shingle
+Opening Protection: Full impact
+Protection Class: 3
+Miles to Coast: 18
+Pool: No
+Mobile Home: No
+Current Carrier: Citizens
+Hurricane Deductible: 2%
+AOP Deductible: $2,500
+`;
+
+export const MELBOURNE_WIND_MIT_TEXT = `WIND MITIGATION INSPECTION
+Named Insured: Elena Ruiz
+Location: 412 Harbor Isle Dr, Melbourne, FL 32935
+City: Melbourne
+County: Brevard
+Year Built: 2014
+Roof Year: 2019
+Roof Covering: Architectural Shingle
+Opening Protection: Full impact
+Construction: Masonry
+Occupancy: Owner
+Stories: 1
+Miles to Coast: 18
+Pool: No
+`;
+
 export const CLEAN_DEC_FILENAME = "sample-palm-bay-dec.txt";
 export const MESSY_WIND_MIT_FILENAME = "sample-palm-bay-wind-mit-handwritten.txt";
+export const MELBOURNE_HO_DEC_FILENAME = "sample-melbourne-ho-dec.txt";
+export const MELBOURNE_WIND_MIT_FILENAME = "sample-melbourne-wind-mit.txt";

@@ -1,0 +1,475 @@
+import path from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { eq } from "drizzle-orm";
+import { db } from "./index";
+import {
+  accounts,
+  contactAccounts,
+  contacts,
+  deals,
+  documents,
+  leads,
+  policies,
+  quoteSheets,
+  quotes,
+  risks,
+} from "./schema";
+import {
+  CARRIER_IDS,
+  ELENA_ACCOUNT_ID,
+  ELENA_CONTACT_ID,
+  ELENA_DEAL_ID,
+  ELENA_LEAD_ID,
+  ELENA_POLICY_ID,
+  ELENA_QUOTE_AI_ID,
+  ELENA_QUOTE_TAILROW_ID,
+  ELENA_RISK_ID,
+  ELENA_SHEET_ID,
+  TENANT_ID,
+} from "../fixtures/ids";
+import {
+  MELBOURNE_HO_DEC_FILENAME,
+  MELBOURNE_HO_DEC_TEXT,
+  MELBOURNE_WIND_MIT_FILENAME,
+  MELBOURNE_WIND_MIT_TEXT,
+} from "../fixtures/sample-docs";
+import type { QuoteSheetFieldValue } from "../domain";
+import { buildQuoteResultsNote } from "../lifecycle/quote-results";
+import { emptySheetValues } from "../lifecycle/quote-sheet";
+
+const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+
+function field(
+  value: string,
+  status: QuoteSheetFieldValue["status"],
+  source: QuoteSheetFieldValue["source"],
+): QuoteSheetFieldValue {
+  return { value, status, source };
+}
+
+async function writeAttachment(
+  id: string,
+  filename: string,
+  body: string,
+  dealId: string,
+): Promise<string> {
+  const storagePath = path.join(TENANT_ID, dealId, `${id}-${filename}`);
+  const abs = path.join(uploadRoot, storagePath);
+  await mkdir(path.dirname(abs), { recursive: true });
+  await writeFile(abs, body, "utf8");
+  return storagePath;
+}
+
+/** Personal HO path besides Ana. Does not touch Ana IDs, Cov A, or appetite. */
+export async function seedLifecycleDemo() {
+  const sheetValues = emptySheetValues();
+  Object.assign(sheetValues, {
+    address1: field("412 Harbor Isle Dr", "confirmed", "seed"),
+    city: field("Melbourne", "confirmed", "seed"),
+    county: field("Brevard", "confirmed", "seed"),
+    state: field("FL", "confirmed", "seed"),
+    zip: field("32935", "confirmed", "seed"),
+    year_built: field("2014", "confirmed", "seed"),
+    stories: field("1", "confirmed", "seed"),
+    construction: field("masonry", "confirmed", "seed"),
+    occupancy: field("owner", "confirmed", "seed"),
+    roof_year: field("2019", "confirmed", "seed"),
+    roof_covering: field("architectural shingle", "confirmed", "seed"),
+    opening_protection: field("full", "check", "extracted"),
+    protection_class: field("3", "confirmed", "seed"),
+    miles_to_coast: field("18", "confirmed", "seed"),
+    pool: field("false", "confirmed", "seed"),
+    coverage_a: field("385000", "confirmed", "seed"),
+    current_carrier: field("Citizens", "check", "extracted"),
+    hurricane_deductible: field("2%", "confirmed", "seed"),
+    aop_deductible: field("$2,500", "confirmed", "seed"),
+    notes: field("Bound HO3 click-through. Quotes stayed on the deal.", "confirmed", "seed"),
+  } satisfies Record<string, QuoteSheetFieldValue>);
+
+  await db
+    .insert(leads)
+    .values({
+      id: ELENA_LEAD_ID,
+      tenantId: TENANT_ID,
+      firstName: "Elena",
+      lastName: "Ruiz",
+      email: "elena.ruiz@example.com",
+      phone: "(321) 555-0188",
+      source: "dropped_dec",
+      status: "converted",
+      notes:
+        "Personal HO path. Arrived as a dropped dec packet. Converted to a deal; policy waited for bind.",
+      convertedDealId: ELENA_DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: leads.id,
+      set: {
+        firstName: "Elena",
+        lastName: "Ruiz",
+        email: "elena.ruiz@example.com",
+        phone: "(321) 555-0188",
+        source: "dropped_dec",
+        status: "converted",
+        convertedDealId: ELENA_DEAL_ID,
+        notes:
+          "Personal HO path. Arrived as a dropped dec packet. Converted to a deal; policy waited for bind.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(contacts)
+    .values({
+      id: ELENA_CONTACT_ID,
+      tenantId: TENANT_ID,
+      firstName: "Elena",
+      lastName: "Ruiz",
+      email: "elena.ruiz@example.com",
+      phone: "(321) 555-0188",
+      mailingAddress: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      tenureStart: new Date("2026-09-01T15:00:00.000Z"),
+      policyCount: 1,
+      activePolicyCount: 1,
+      notes:
+        "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
+    })
+    .onConflictDoUpdate({
+      target: contacts.id,
+      set: {
+        firstName: "Elena",
+        lastName: "Ruiz",
+        email: "elena.ruiz@example.com",
+        phone: "(321) 555-0188",
+        mailingAddress: "412 Harbor Isle Dr",
+        city: "Melbourne",
+        state: "FL",
+        zip: "32935",
+        tenureStart: new Date("2026-09-01T15:00:00.000Z"),
+        policyCount: 1,
+        activePolicyCount: 1,
+        notes:
+          "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(accounts)
+    .values({
+      id: ELENA_ACCOUNT_ID,
+      tenantId: TENANT_ID,
+      name: "Ruiz Tile LLC",
+      email: "office@ruiztile.example",
+      phone: "(321) 555-0188",
+      mailingAddress: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      policyCount: 0,
+      activePolicyCount: 0,
+      notes:
+        "Commercial account linked to Elena Ruiz. No commercial policy yet — personal HO3 stays on the Contact.",
+    })
+    .onConflictDoUpdate({
+      target: accounts.id,
+      set: {
+        name: "Ruiz Tile LLC",
+        email: "office@ruiztile.example",
+        phone: "(321) 555-0188",
+        policyCount: 0,
+        activePolicyCount: 0,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(contactAccounts)
+    .values({
+      id: "44444444-4444-4444-8444-444444444450",
+      tenantId: TENANT_ID,
+      contactId: ELENA_CONTACT_ID,
+      accountId: ELENA_ACCOUNT_ID,
+      role: "principal",
+    })
+    .onConflictDoNothing();
+
+  const quoteResultsNote = buildQuoteResultsNote([
+    { carrierName: "American Integrity", premium: "2840", bindable: true },
+    { carrierName: "Tailrow", premium: "3120", bindable: true },
+  ]);
+
+  await db
+    .insert(deals)
+    .values({
+      id: ELENA_DEAL_ID,
+      tenantId: TENANT_ID,
+      leadId: ELENA_LEAD_ID,
+      contactId: ELENA_CONTACT_ID,
+      accountId: ELENA_ACCOUNT_ID,
+      title: "Ruiz · Melbourne HO3",
+      pipelineStage: "bound",
+      lineOfBusiness: "HO",
+      bindTarget: "contact",
+      state: "FL",
+      primaryNamedInsured: "Elena Ruiz",
+      quoteResultsNote,
+      notes:
+        "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
+      boundAt: new Date("2026-09-01T15:00:00.000Z"),
+    })
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        leadId: ELENA_LEAD_ID,
+        contactId: ELENA_CONTACT_ID,
+        accountId: ELENA_ACCOUNT_ID,
+        title: "Ruiz · Melbourne HO3",
+        pipelineStage: "bound",
+        lineOfBusiness: "HO",
+        bindTarget: "contact",
+        quoteResultsNote,
+        notes:
+          "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
+        boundAt: new Date("2026-09-01T15:00:00.000Z"),
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(risks)
+    .values({
+      id: ELENA_RISK_ID,
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      riskType: "property",
+      address1: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      county: "Brevard",
+      state: "FL",
+      zip: "32935",
+      yearBuilt: 2014,
+      construction: "masonry",
+      occupancy: "owner",
+      stories: 1,
+      coverageA: 385000,
+      roofYear: 2019,
+      roofCovering: "architectural shingle",
+      openingProtection: "full",
+      pool: false,
+      protectionClass: "3",
+      milesToCoast: 18,
+      mobileHome: false,
+    })
+    .onConflictDoUpdate({
+      target: risks.id,
+      set: {
+        dealId: ELENA_DEAL_ID,
+        contactId: ELENA_CONTACT_ID,
+        address1: "412 Harbor Isle Dr",
+        city: "Melbourne",
+        county: "Brevard",
+        coverageA: 385000,
+        yearBuilt: 2014,
+        construction: "masonry",
+        roofYear: 2019,
+        roofCovering: "architectural shingle",
+        openingProtection: "full",
+        milesToCoast: 18,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: ELENA_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      line: "home",
+      values: sheetValues,
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: { values: sheetValues, updatedAt: new Date() },
+    });
+
+  await db.delete(quotes).where(eq(quotes.dealId, ELENA_DEAL_ID));
+  await db.insert(quotes).values([
+    {
+      id: ELENA_QUOTE_AI_ID,
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      riskId: ELENA_RISK_ID,
+      carrierId: CARRIER_IDS.americanIntegrity,
+      quoteNumber: "Q-AI-MEL-2840",
+      premium: "2840.00",
+      hurricaneDeductible: "2%",
+      aopDeductible: "$2,500",
+      coverageA: 385000,
+      bindable: true,
+      coverageGaps: [],
+      notes: "Stub quote. Cheapest. Did not create a policy.",
+      stub: true,
+    },
+    {
+      id: ELENA_QUOTE_TAILROW_ID,
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      riskId: ELENA_RISK_ID,
+      carrierId: CARRIER_IDS.tailrow,
+      quoteNumber: "Q-TR-MEL-3120",
+      premium: "3120.00",
+      hurricaneDeductible: "2%",
+      aopDeductible: "$2,500",
+      coverageA: 385000,
+      bindable: true,
+      coverageGaps: [],
+      notes: "Stub quote. Second cheapest. Did not create a policy.",
+      stub: true,
+    },
+  ]);
+
+  await db
+    .insert(policies)
+    .values({
+      id: ELENA_POLICY_ID,
+      tenantId: TENANT_ID,
+      contactId: ELENA_CONTACT_ID,
+      dealId: ELENA_DEAL_ID,
+      riskId: ELENA_RISK_ID,
+      carrierId: CARRIER_IDS.americanIntegrity,
+      policyNumber: "HO3-ELENA-2026",
+      lineOfBusiness: "HO",
+      status: "active",
+      effectiveDate: new Date("2026-09-01T05:00:00.000Z"),
+      expirationDate: new Date("2027-09-01T05:00:00.000Z"),
+      premium: "2840.00",
+      coverageA: 385000,
+    })
+    .onConflictDoUpdate({
+      target: policies.id,
+      set: {
+        contactId: ELENA_CONTACT_ID,
+        dealId: ELENA_DEAL_ID,
+        status: "active",
+        premium: "2840.00",
+        coverageA: 385000,
+        updatedAt: new Date(),
+      },
+    });
+
+  const decPath = await writeAttachment(
+    "src-dec",
+    MELBOURNE_HO_DEC_FILENAME,
+    MELBOURNE_HO_DEC_TEXT,
+    ELENA_DEAL_ID,
+  );
+  const windPath = await writeAttachment(
+    "src-wind",
+    MELBOURNE_WIND_MIT_FILENAME,
+    MELBOURNE_WIND_MIT_TEXT,
+    ELENA_DEAL_ID,
+  );
+  const quoteAiPath = await writeAttachment(
+    "q-ai",
+    "american-integrity-quote-2840.txt",
+    "ISSUED QUOTE PDF (stub)\nAmerican Integrity HO3\nElena Ruiz · 412 Harbor Isle Dr, Melbourne FL\nPremium $2,840 · Cov A $385,000\nThis is a shopping quote. It is not a policy.\n",
+    ELENA_DEAL_ID,
+  );
+  const quoteTrPath = await writeAttachment(
+    "q-tr",
+    "tailrow-quote-3120.txt",
+    "ISSUED QUOTE PDF (stub)\nTailrow HO3\nElena Ruiz · 412 Harbor Isle Dr, Melbourne FL\nPremium $3,120 · Cov A $385,000\nThis is a shopping quote. It is not a policy.\n",
+    ELENA_DEAL_ID,
+  );
+  const polDecPath = await writeAttachment(
+    "pol-dec",
+    "ho3-elena-2026-dec.txt",
+    "ISSUED POLICY DECLARATIONS\nPolicy HO3-ELENA-2026\nAmerican Integrity · Elena Ruiz\n412 Harbor Isle Dr, Melbourne FL 32935\nEffective 2026-09-01 · Premium $2,840 · Cov A $385,000\nIssued after bind. Not a shopping document.\n",
+    ELENA_DEAL_ID,
+  );
+  const polIdPath = await writeAttachment(
+    "pol-id",
+    "ho3-elena-2026-id-card.txt",
+    "INSURANCE ID CARD\nElena Ruiz\nHO3-ELENA-2026\nAmerican Integrity\nEffective 2026-09-01 to 2027-09-01\nIssued after bind.\n",
+    ELENA_DEAL_ID,
+  );
+
+  await db.delete(documents).where(eq(documents.dealId, ELENA_DEAL_ID));
+  await db.insert(documents).values([
+    {
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: MELBOURNE_HO_DEC_FILENAME,
+      mimeType: "text/plain",
+      storagePath: decPath,
+      docType: "dec",
+      slot: "source_doc",
+      status: "extracted",
+    },
+    {
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: MELBOURNE_WIND_MIT_FILENAME,
+      mimeType: "text/plain",
+      storagePath: windPath,
+      docType: "wind_mit",
+      slot: "source_doc",
+      status: "extracted",
+    },
+    {
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      filename: "american-integrity-quote-2840.txt",
+      mimeType: "text/plain",
+      storagePath: quoteAiPath,
+      docType: "quote_pdf",
+      slot: "quote_pdf",
+      status: "uploaded",
+    },
+    {
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      filename: "tailrow-quote-3120.txt",
+      mimeType: "text/plain",
+      storagePath: quoteTrPath,
+      docType: "quote_pdf",
+      slot: "quote_pdf",
+      status: "uploaded",
+    },
+    {
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      policyId: ELENA_POLICY_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: "ho3-elena-2026-dec.txt",
+      mimeType: "text/plain",
+      storagePath: polDecPath,
+      docType: "policy_dec",
+      slot: "policy_file",
+      status: "uploaded",
+    },
+    {
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      policyId: ELENA_POLICY_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: "ho3-elena-2026-id-card.txt",
+      mimeType: "text/plain",
+      storagePath: polIdPath,
+      docType: "policy_id",
+      slot: "policy_file",
+      status: "uploaded",
+    },
+  ]);
+}

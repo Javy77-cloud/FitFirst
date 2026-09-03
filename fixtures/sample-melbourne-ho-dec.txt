@@ -1,0 +1,22 @@
+HOMEOWNERS DECLARATIONS
+Named Insured: Elena Ruiz
+Phone: (321) 555-0188
+Email: elena.ruiz@example.com
+Location: 412 Harbor Isle Dr, Melbourne, FL 32935
+City: Melbourne
+County: Brevard
+Year Built: 2014
+Construction: Masonry
+Occupancy: Owner Occupied
+Stories: 1
+Coverage A Dwelling: $385,000
+Roof Year: 2019
+Roof Covering: Architectural Shingle
+Opening Protection: Full impact
+Protection Class: 3
+Miles to Coast: 18
+Pool: No
+Mobile Home: No
+Current Carrier: Citizens
+Hurricane Deductible: 2%
+AOP Deductible: $2,500

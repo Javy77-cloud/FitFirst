@@ -1,15 +1,48 @@
+import { finalizeQuoteResults } from "@/app/actions/lifecycle";
+import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 
 export function QuotesPanel({
+  dealId,
   quotes,
   logs,
+  quoteResultsNote,
 }: {
+  dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
+  quoteResultsNote?: string | null;
 }) {
   return (
     <div className="space-y-4">
+      <section className="ff-card p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-navy">Ranked quote results</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cheapest first. This note stays on the deal. Quotes never become policies — bind is
+              the only path that writes a policy.
+            </p>
+          </div>
+          <form action={finalizeQuoteResults}>
+            <input type="hidden" name="dealId" value={dealId} />
+            <Button type="submit" size="sm" variant="outline">
+              Finalize quote results
+            </Button>
+          </form>
+        </div>
+        {quoteResultsNote ? (
+          <pre className="mt-3 whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-xs">
+            {quoteResultsNote}
+          </pre>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No ranked note yet. Build stub quotes, then finalize.
+          </p>
+        )}
+      </section>
+
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
           Quote comparison

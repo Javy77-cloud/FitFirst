@@ -2,11 +2,13 @@ import Link from "next/link";
 import { isNull, eq, and, sql } from "drizzle-orm";
 import {
   Bell,
+  Briefcase,
   Building2,
   ClipboardList,
   Contact,
   FileStack,
   Home,
+  ListChecks,
   Shield,
   Users,
 } from "lucide-react";
@@ -15,10 +17,12 @@ import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
 
 const NAV = [
+  { href: "/get-started", label: "Get Started", icon: ListChecks },
   { href: "/", label: "Home", icon: Home },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
+  { href: "/accounts", label: "Businesses", icon: Briefcase },
   { href: "/policies", label: "Policies", icon: Shield },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
@@ -42,7 +46,7 @@ export async function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+      <aside className="hidden w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="border-b border-sidebar-border px-4 py-4">
           <Link href="/" className="block">
             <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
@@ -78,6 +82,13 @@ export async function AppShell({
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
+        <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
+          {NAV.map((item) => (
+            <Link key={item.href} href={item.href} className="whitespace-nowrap text-primary">
+              {item.label}
+            </Link>
+          ))}
+        </nav>
         <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">

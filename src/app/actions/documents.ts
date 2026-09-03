@@ -30,6 +30,7 @@ async function persistFile(
   mimeType: string,
   buffer: Buffer,
   docType: string,
+  slot = "source_doc",
 ) {
   const id = randomUUID();
   const storagePath = path.join(DEFAULT_TENANT_ID, dealId, `${id}-${filename}`);
@@ -42,12 +43,13 @@ async function persistFile(
     .values({
       id,
       tenantId: DEFAULT_TENANT_ID,
-      riskId,
+      riskId: riskId || null,
       dealId,
       filename,
       mimeType,
       storagePath,
       docType,
+      slot,
       status: "uploaded",
     })
     .returning();

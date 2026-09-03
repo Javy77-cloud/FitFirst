@@ -2,15 +2,14 @@
 
 P&C insurance CRM and comparative quote rater for a Florida personal-lines desk. The differentiator is an **appetite-learning log**: filter carriers first, skip known declines, and only rank markets that fit.
 
-This is not a Zoho clone and does not call a live CRM. The domain follows a solo broker workflow:
+This is not a Zoho clone and does not call a live CRM. The locked lifecycle is:
 
-- Lead → Deal (shopping) → Contact + Policy **only after bind**
-- Quotes live on the deal. A quote never creates a policy.
-- One master risk worksheet per property/auto. Source PDFs stay attachments; extracted values land on the master record with a **confidence score**.
-- Shop **in-appetite / green** markets first. Yellow is a stretch override. Red is skip.
-- Internal alerts stay in-app.
-
-Life and health are CRM notes only. Carrier portal automation is an empty adapter interface — no real logins.
+1. Lead arrives (manual, email/social stub, or a dropped dec / wind mit / 4-point / inspection). Match name + phone or email; never duplicate.
+2. Convert Lead → Deal. The Deal is the shopping record. Source docs live on the deal. Fill Quote Sheet blanks (yellow missing / blue CHECK). **Do not create a Policy from a quote.**
+3. Finalize quotes: issued-quote PDFs + a ranked quote-results note (cheapest first).
+4. Bind / Closed Won: Deal produces a Contact (personal) or a Business/Account (commercial), copies matching fields, then one Policy per bound line (Bound / Pending / Active only).
+5. Every Policy is its own record. Contact and Business show lifetime + active/bound/pending counts. Same person can hold personal policies and be linked to a Business.
+6. Client = any related policy is Active, Bound, or Pending. Former Client only if they once had one and now have zero.
 
 ## Run locally
 
@@ -35,19 +34,16 @@ npm test
 npm run dev
 ```
 
-Open [http://localhost:43147](http://localhost:43147).
+Open [http://localhost:43147](http://localhost:43147). Start at **Get Started**.
 
 ## First path to exercise
 
-`npm run db:seed` loads the **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). It is required day-one data, not an optional demo.
+`npm run db:seed` loads two required records:
 
-1. Home → **Open Ana Dib HO3 shop**. 1098 Adige Ct SE, 1989 frame-stucco SFH, 8 mi coast, clay tile + metal, Cov A **$321,000** (broker-tested rebuild — do not change that number). Eight markets, zero bindable.
-2. **Documents** → **Sample handwritten wind mit**. Flagged fields stay off the worksheet until you click **Accept**.
-3. **Sample clean dec** applies high-confidence values automatically.
-4. **Markets** is filter-first: QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable. Floors are log attempts, not wins. No policy is created from these quotes.
-5. Carrier-wide rules (QBE frame+20 mi coast, Benchmark/Hadron aged clay, HOC no NB, VYRD takeout + Brevard $350k) stay distinct from one-house floors (Tailrow $354k, VAVE $418,491, GeoVera $363k, SageSure MSB $349,868). SageSure published min Cov A remains $100k in named counties.
+- **Elena Ruiz · Melbourne HO3** — personal-lines click-through. Dropped dec → Lead → Deal (Quote Sheet + source docs + quote PDFs + ranked note) → bind → Contact + one HO3 Policy. Lifetime 1, in-force 1, status Client. Linked business **Ruiz Tile LLC** has no commercial policy.
+- **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). HO3-only seed. Cov A **$321,000**. Eight markets, zero bindable. **Do not bind Ana. Do not change that number.**
 
-Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
+Exact click path is in `COORDINATION.md`.
 
 ## Schema
 
@@ -61,7 +57,7 @@ Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`.
 npm test
 ```
 
-Covers appetite matching (filter-first, learned declines, RCE floors) and extraction confidence (clean dec vs messy wind mit).
+Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence, lead match (never duplicate), client status, ranked quote notes, and Quote Sheet blanks-only fill.
 
 ## Restyle
 
@@ -69,4 +65,4 @@ Colors, radii, and density live in `src/app/globals.css` as `--ff-*` tokens mapp
 
 ## Out of scope (intentionally)
 
-Multi-tenant isolation, credential vaults, billing, life/health rating, real carrier portal macros, Zoho sync.
+Multi-tenant isolation, credential vaults, billing, life/health rating, real carrier portal macros, Zoho sync, rater APIs, fake AI scores.

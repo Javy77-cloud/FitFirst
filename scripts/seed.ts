@@ -2,8 +2,9 @@ import { seedIfEmpty } from "../src/lib/db/seed";
 import { sql } from "../src/lib/db";
 
 async function main() {
-  const result = await seedIfEmpty();
+  await seedIfEmpty();
   console.log("Loaded Ana Dib HO3 shop (2026-09-02 Palm Bay fixture).");
+  console.log("Loaded Elena Ruiz Melbourne HO3 click-through (bound personal path).");
   await sql.end({ timeout: 5 });
 }
 

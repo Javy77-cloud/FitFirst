@@ -1,5 +1,6 @@
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +13,8 @@ export default async function ContactsPage() {
   return (
     <AppShell title="Contacts">
       <p className="mb-3 text-sm text-muted-foreground">
-        Bound clients live here, with tenure and policy count. You can also add an existing-book
-        contact. Shopping still starts as a deal, not a policy.
+        Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
+        policy is Active, Bound, or Pending. Ana is on the book for the shop only — not a client.
       </p>
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <form action={createContact} className="ff-card space-y-3 p-4">
@@ -47,9 +48,9 @@ export default async function ContactsPage() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Policies</th>
-                <th>Tenure start</th>
-                <th>Life / health</th>
+                <th>Status</th>
+                <th>Lifetime</th>
+                <th>In-force</th>
               </tr>
             </thead>
             <tbody>
@@ -63,13 +64,15 @@ export default async function ContactsPage() {
                 rows.map((c) => (
                   <tr key={c.id}>
                     <td className="font-medium">
-                      {c.lastName}, {c.firstName}
+                      <RecordLink href={`/contacts/${c.id}`}>
+                        {c.lastName}, {c.firstName}
+                      </RecordLink>
+                    </td>
+                    <td>
+                      <ClientStatusPill status={c.clientStatus} />
                     </td>
                     <td>{c.policyCount}</td>
-                    <td>{c.tenureStart ? c.tenureStart.toISOString().slice(0, 10) : "—"}</td>
-                    <td className="text-xs">
-                      {[c.lifeNotes, c.healthNotes].filter(Boolean).join(" · ") || "—"}
-                    </td>
+                    <td>{c.activePolicyCount}</td>
                   </tr>
                 ))
               )}

@@ -15,6 +15,7 @@ import {
 } from "./schema";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import { seedLifecycleDemo } from "./seed-lifecycle";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -74,6 +75,7 @@ export async function seed() {
       state: fixture.risk.state,
       zip: fixture.risk.zip,
       policyCount: 0,
+      activePolicyCount: 0,
       notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -86,6 +88,7 @@ export async function seed() {
         state: fixture.risk.state,
         zip: fixture.risk.zip,
         policyCount: 0,
+        activePolicyCount: 0,
         notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
         updatedAt: new Date(),
       },
@@ -308,4 +311,6 @@ export async function seed() {
     dueDate: new Date("2026-10-02T16:00:00.000Z"),
     status: "open",
   });
+
+  await seedLifecycleDemo();
 }

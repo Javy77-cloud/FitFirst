@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
-import { DEAL_ID } from "@/lib/fixtures/ids";
+import { DEAL_ID, ELENA_DEAL_ID, ELENA_LEAD_ID } from "@/lib/fixtures/ids";
 import { markAlertRead } from "@/app/actions/alerts";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +15,14 @@ export default async function HomePage() {
     <AppShell
       title="Desk"
       actions={
-        <Link href="/deals/new" className={cn(buttonVariants())}>
-          New shopping deal
-        </Link>
+        <>
+          <Link href="/get-started" className={cn(buttonVariants({ variant: "outline" }))}>
+            Get Started
+          </Link>
+          <Link href="/deals/new" className={cn(buttonVariants())}>
+            New shopping deal
+          </Link>
+        </>
       }
     >
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -37,13 +42,21 @@ export default async function HomePage() {
       <div className="mb-4 ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Start here</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          FitFirst copies a solo Florida P&amp;C desk: lead → deal (shopping) → contact and
-          policy only after bind. Quotes live on the deal. Filter carriers by appetite and the
-          decline log before anyone opens a portal. The day-one fixture is Ana Dib&apos;s
-          2026-09-02 Palm Bay HO3 shop: eight markets, zero bindable at $321,000.
+          Lead → Deal (shopping) → Contact or Business + Policy only after bind. Quotes live on
+          the deal. Ana Dib is the HO3-only shop: eight markets, zero bindable at $321,000. Elena
+          Ruiz is the bound personal-lines click-through.
         </p>
-        <div className="mt-3">
-          <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/get-started" className={cn(buttonVariants())}>
+            Run this path
+          </Link>
+          <Link href={`/leads/${ELENA_LEAD_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
+            Elena Ruiz lead
+          </Link>
+          <Link href={`/deals/${ELENA_DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
+            Melbourne HO3 deal
+          </Link>
+          <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
             Open Ana Dib HO3 shop
           </Link>
         </div>

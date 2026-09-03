@@ -8,8 +8,16 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+
+/** Consumed from Quote Sheet ingest — do not invent a second sheet shape. */
+export type QuoteSheetFieldValue = {
+  value: string;
+  status: "missing" | "check" | "confirmed";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy";
+};
 
 const tenantCol = () =>
   uuid("tenant_id")
@@ -67,6 +75,7 @@ export const contacts = pgTable(
     zip: text("zip"),
     tenureStart: timestamp("tenure_start", { withTimezone: true }),
     policyCount: integer("policy_count").notNull().default(0),
+    activePolicyCount: integer("active_policy_count").notNull().default(0),
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
@@ -82,11 +91,14 @@ export const deals = pgTable(
     tenantId: tenantCol(),
     leadId: uuid("lead_id").references(() => leads.id),
     contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
     title: text("title").notNull(),
     pipelineStage: text("pipeline_stage").notNull().default("shopping"),
     lineOfBusiness: text("line_of_business").notNull().default("HO"),
+    bindTarget: text("bind_target").notNull().default("contact"),
     state: text("state").notNull().default("FL"),
     notes: text("notes"),
+    quoteResultsNote: text("quote_results_note"),
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
@@ -163,9 +175,8 @@ export const policies = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    contactId: uuid("contact_id")
-      .notNull()
-      .references(() => contacts.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
     dealId: uuid("deal_id").references(() => deals.id),
     riskId: uuid("risk_id").references(() => risks.id),
     carrierId: uuid("carrier_id").references(() => carriers.id),
@@ -234,22 +245,87 @@ export const documents = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    riskId: uuid("risk_id")
-      .notNull()
-      .references(() => risks.id),
-    dealId: uuid("deal_id")
-      .notNull()
-      .references(() => deals.id),
+    riskId: uuid("risk_id").references(() => risks.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
     filename: text("filename").notNull(),
     mimeType: text("mime_type").notNull(),
     storagePath: text("storage_path").notNull(),
     docType: text("doc_type").notNull().default("other"),
+    slot: text("slot").notNull().default("source_doc"),
     status: text("status").notNull().default("uploaded"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (t) => [index("documents_tenant_risk_idx").on(t.tenantId, t.riskId)],
+  (t) => [
+    index("documents_tenant_risk_idx").on(t.tenantId, t.riskId),
+    index("documents_tenant_deal_slot_idx").on(t.tenantId, t.dealId, t.slot),
+    index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    mailingAddress: text("mailing_address"),
+    city: text("city"),
+    state: text("state"),
+    zip: text("zip"),
+    notes: text("notes"),
+    tenureStart: timestamp("tenure_start", { withTimezone: true }),
+    policyCount: integer("policy_count").notNull().default(0),
+    activePolicyCount: integer("active_policy_count").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index("accounts_tenant_idx").on(t.tenantId)],
+);
+
+export const contactAccounts = pgTable(
+  "contact_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id),
+    role: text("role").notNull().default("principal"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("contact_accounts_tenant_idx").on(t.tenantId),
+    uniqueIndex("contact_accounts_pair_uidx").on(t.tenantId, t.contactId, t.accountId),
+  ],
+);
+
+export const quoteSheets = pgTable(
+  "quote_sheets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    line: text("line").notNull(),
+    values: jsonb("values").$type<Record<string, QuoteSheetFieldValue>>().notNull().default({}),
+    ...timestamps,
+  },
+  (t) => [
+    index("quote_sheets_tenant_idx").on(t.tenantId),
+    uniqueIndex("quote_sheets_deal_line_uidx").on(t.tenantId, t.dealId, t.line),
+  ],
 );
 
 export const extractedFields = pgTable(
@@ -417,6 +493,8 @@ export const alerts = pgTable(
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
+export type Account = typeof accounts.$inferSelect;
+export type ContactAccount = typeof contactAccounts.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type Risk = typeof risks.$inferSelect;
 export type Document = typeof documents.$inferSelect;
@@ -425,5 +503,6 @@ export type Carrier = typeof carriers.$inferSelect;
 export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
+export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;

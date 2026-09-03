@@ -1,0 +1,96 @@
+import { notFound } from "next/navigation";
+import { uploadDealSlot } from "@/app/actions/lifecycle";
+import { AppShell } from "@/components/app-shell";
+import { RecordLink } from "@/components/record-links";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { formatDay, formatMoney } from "@/lib/domain";
+import { getPolicyWorkspace } from "@/lib/db/queries";
+
+export const dynamic = "force-dynamic";
+
+export default async function PolicyDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const workspace = await getPolicyWorkspace(id);
+  if (!workspace) notFound();
+  const { policy, contact, account, carrier, deal, files } = workspace;
+
+  return (
+    <AppShell title={policy.policyNumber}>
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+        <span className="uppercase">{policy.status}</span>
+        <span>{policy.lineOfBusiness}</span>
+        <span>{carrier?.name ?? "Carrier TBD"}</span>
+        <span>{formatMoney(policy.premium)}</span>
+        <span className="text-muted-foreground">
+          {formatDay(policy.effectiveDate)} → {formatDay(policy.expirationDate)}
+        </span>
+      </div>
+      <div className="mb-4 flex flex-wrap gap-3 text-sm">
+        {contact ? (
+          <RecordLink href={`/contacts/${contact.id}`}>
+            Contact {contact.lastName}, {contact.firstName}
+          </RecordLink>
+        ) : null}
+        {account ? <RecordLink href={`/accounts/${account.id}`}>Business {account.name}</RecordLink> : null}
+        {deal ? <RecordLink href={`/deals/${deal.id}`}>Deal {deal.title}</RecordLink> : null}
+      </div>
+
+      <section className="ff-card p-4">
+        <h2 className="text-sm font-semibold text-navy">Issued policy files</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Dec / complete / ID after bind. Shopping docs (source dec, wind mit, quote PDFs) stay
+          on the deal.
+        </p>
+        <form action={uploadDealSlot} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3">
+          <input type="hidden" name="policyId" value={policy.id} />
+          <input type="hidden" name="dealId" value={policy.dealId ?? ""} />
+          <input type="hidden" name="slot" value="policy_file" />
+          <div>
+            <Label className="text-xs">Type</Label>
+            <select
+              name="docType"
+              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              defaultValue="policy_dec"
+            >
+              <option value="policy_dec">Issued dec</option>
+              <option value="policy_complete">Complete policy</option>
+              <option value="policy_id">ID card</option>
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">File</Label>
+            <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+          </div>
+          <Button type="submit" size="sm">
+            Attach issued file
+          </Button>
+        </form>
+        {files.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No issued policy files yet.</p>
+        ) : (
+          <table className="ff-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {files.map((file) => (
+                <tr key={file.id}>
+                  <td className="font-medium">{file.filename}</td>
+                  <td className="uppercase">{file.docType.replaceAll("_", " ")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </AppShell>
+  );
+}

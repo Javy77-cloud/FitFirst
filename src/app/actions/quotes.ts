@@ -94,7 +94,7 @@ export async function shopInAppetite(dealId: string) {
       dealId,
       riskId: risk.id,
     });
-    const premium = risk.coverageA ? Math.round(risk.coverageA * 0.0165) : null;
+    const premium = risk.coverageA ? String(Math.round(risk.coverageA * 0.0165)) : null;
     await db.insert(quotes).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
@@ -135,7 +135,7 @@ export async function recordManualAttempt(formData: FormData) {
     result: String(formData.get("result") ?? "declined"),
     bindable: formData.get("bindable") === "true",
     quoteNumber: String(formData.get("quoteNumber") ?? "") || null,
-    premium: Number(formData.get("premium") || 0) || null,
+    premium: String(formData.get("premium") ?? "") || null,
     covATried: risk.coverageA,
     why: String(formData.get("why") ?? "") || null,
     snapYearBuilt: risk.yearBuilt,

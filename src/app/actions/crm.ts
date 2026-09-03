@@ -5,53 +5,80 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { refreshPartyCounts } from "@/lib/db/queries";
 import {
+  accounts,
   clientHistory,
+  contactAccounts,
   contacts,
   deals,
   leads,
   policies,
+  quoteSheets,
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { emptySheetValues } from "@/lib/lifecycle/quote-sheet";
+import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
-export async function createLead(formData: FormData) {
-  const [row] = await db
+export async function findMatchingLead(input: LeadIdentity) {
+  const rows = await db.select().from(leads).where(eq(leads.tenantId, DEFAULT_TENANT_ID));
+  return rows.find((row) => isSameLead(row, input)) ?? null;
+}
+
+export async function findOrCreateLead(input: LeadIdentity & { source?: string; notes?: string }) {
+  const existing = await findMatchingLead(input);
+  if (existing) return { lead: existing, created: false };
+  const [lead] = await db
     .insert(leads)
     .values({
       tenantId: DEFAULT_TENANT_ID,
-      firstName: str(formData, "firstName") || "Unknown",
-      lastName: str(formData, "lastName") || "Lead",
-      email: str(formData, "email") || null,
-      phone: str(formData, "phone") || null,
-      source: str(formData, "source") || "manual",
-      notes: str(formData, "notes") || null,
+      firstName: input.firstName || "Unknown",
+      lastName: input.lastName || "Lead",
+      email: input.email || null,
+      phone: input.phone || null,
+      source: input.source || "manual",
+      notes: input.notes || null,
       status: "new",
     })
     .returning();
-  revalidatePath("/leads");
-  redirect(`/leads`);
-  return row;
+  return { lead, created: true };
 }
 
-export async function createDealFromLead(formData: FormData) {
-  const leadId = str(formData, "leadId");
+export async function createLead(formData: FormData) {
+  const identity = {
+    firstName: str(formData, "firstName") || "Unknown",
+    lastName: str(formData, "lastName") || "Lead",
+    email: str(formData, "email") || null,
+    phone: str(formData, "phone") || null,
+  };
+  const { lead } = await findOrCreateLead({
+    ...identity,
+    source: str(formData, "source") || "manual",
+    notes: str(formData, "notes") || null,
+  });
+  revalidatePath("/leads");
+  redirect(`/leads/${lead.id}`);
+}
+
+export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL") {
   const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   if (!lead) throw new Error("Lead not found");
+  if (lead.convertedDealId) return lead.convertedDealId;
 
   const [deal] = await db
     .insert(deals)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId,
-      title: `${lead.lastName} · ${str(formData, "line") || "HO"} shop`,
+      title: `${lead.lastName} · ${line} shop`,
       pipelineStage: "shopping",
-      lineOfBusiness: str(formData, "line") || "HO",
-      state: str(formData, "state") || "FL",
+      lineOfBusiness: line,
+      state,
     })
     .returning();
 
@@ -62,31 +89,46 @@ export async function createDealFromLead(formData: FormData) {
     state: deal.state,
   });
 
+  await db.insert(quoteSheets).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId: deal.id,
+    line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
+    values: emptySheetValues(),
+  });
+
   await db
     .update(leads)
     .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, leadId));
 
+  return deal.id;
+}
+
+export async function createDealFromLead(formData: FormData) {
+  const dealId = await convertLeadToDeal(
+    str(formData, "leadId"),
+    str(formData, "line") || "HO",
+    str(formData, "state") || "FL",
+  );
   revalidatePath("/deals");
   revalidatePath("/leads");
-  redirect(`/deals/${deal.id}`);
+  redirect(`/deals/${dealId}`);
 }
 
 export async function createDeal(formData: FormData) {
   const firstName = str(formData, "firstName") || "New";
   const lastName = str(formData, "lastName") || "Shop";
-  const [lead] = await db
-    .insert(leads)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      firstName,
-      lastName,
-      email: str(formData, "email") || null,
-      phone: str(formData, "phone") || null,
-      source: "manual",
-      status: "converted",
-    })
-    .returning();
+  const { lead } = await findOrCreateLead({
+    firstName,
+    lastName,
+    email: str(formData, "email") || null,
+    phone: str(formData, "phone") || null,
+    source: "manual",
+  });
+  if (lead.convertedDealId) {
+    revalidatePath("/deals");
+    redirect(`/deals/${lead.convertedDealId}`);
+  }
 
   const [deal] = await db
     .insert(deals)
@@ -102,7 +144,7 @@ export async function createDeal(formData: FormData) {
 
   await db
     .update(leads)
-    .set({ convertedDealId: deal.id, updatedAt: new Date() })
+    .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, lead.id));
 
   await db.insert(risks).values({
@@ -112,6 +154,13 @@ export async function createDeal(formData: FormData) {
     state: deal.state,
     city: str(formData, "city") || null,
     county: str(formData, "county") || null,
+  });
+
+  await db.insert(quoteSheets).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId: deal.id,
+    line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
+    values: emptySheetValues(),
   });
 
   revalidatePath("/");
@@ -184,7 +233,7 @@ export async function createContact(formData: FormData) {
     })
     .returning();
   revalidatePath("/contacts");
-  redirect("/contacts");
+  redirect(`/contacts/${row.id}`);
   return row;
 }
 
@@ -193,12 +242,35 @@ export async function bindDeal(formData: FormData) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const [lead] = deal.leadId
+    ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
+    : [];
 
+  const bindTarget = str(formData, "bindTarget") || deal.bindTarget || "contact";
   let contactId = deal.contactId;
-  if (!contactId) {
-    const [lead] = deal.leadId
-      ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
-      : [];
+  let accountId = deal.accountId;
+
+  if (bindTarget === "account") {
+    if (!accountId) {
+      const [account] = await db
+        .insert(accounts)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          name:
+            str(formData, "businessName") ||
+            `${lead?.lastName ?? "Bound"} ${deal.lineOfBusiness}`.trim(),
+          email: lead?.email,
+          phone: lead?.phone,
+          mailingAddress: risk?.address1,
+          city: risk?.city,
+          state: risk?.state ?? "FL",
+          zip: risk?.zip,
+          tenureStart: new Date(),
+        })
+        .returning();
+      accountId = account.id;
+    }
+  } else if (!contactId) {
     const [contact] = await db
       .insert(contacts)
       .values({
@@ -207,41 +279,50 @@ export async function bindDeal(formData: FormData) {
         lastName: lead?.lastName ?? "Client",
         email: lead?.email,
         phone: lead?.phone,
+        mailingAddress: risk?.address1,
         city: risk?.city,
         state: risk?.state ?? "FL",
         zip: risk?.zip,
         tenureStart: new Date(),
-        policyCount: 1,
       })
       .returning();
     contactId = contact.id;
-  } else {
-    const [existing] = await db.select().from(contacts).where(eq(contacts.id, contactId));
-    if (existing) {
-      await db
-        .update(contacts)
-        .set({ policyCount: existing.policyCount + 1, updatedAt: new Date() })
-        .where(eq(contacts.id, contactId));
+  }
+
+  if (contactId && accountId) {
+    const existingLink = await db
+      .select()
+      .from(contactAccounts)
+      .where(eq(contactAccounts.contactId, contactId));
+    if (!existingLink.some((row) => row.accountId === accountId)) {
+      await db.insert(contactAccounts).values({
+        tenantId: DEFAULT_TENANT_ID,
+        contactId,
+        accountId,
+        role: "principal",
+      });
     }
   }
 
   const effective = new Date();
   const expiration = new Date(effective);
   expiration.setFullYear(expiration.getFullYear() + 1);
+  const premiumRaw = str(formData, "premium");
 
   const [policy] = await db
     .insert(policies)
     .values({
       tenantId: DEFAULT_TENANT_ID,
-      contactId,
+      contactId: bindTarget === "account" ? null : contactId,
+      accountId: bindTarget === "account" ? accountId : null,
       dealId,
       riskId: risk?.id,
       policyNumber: str(formData, "policyNumber") || `FF-${Date.now().toString().slice(-8)}`,
       lineOfBusiness: deal.lineOfBusiness,
-      status: "active",
+      status: "bound",
       effectiveDate: effective,
       expirationDate: expiration,
-      premium: Number(str(formData, "premium") || 0) || null,
+      premium: premiumRaw ? premiumRaw : null,
       coverageA: risk?.coverageA,
     })
     .returning();
@@ -250,24 +331,28 @@ export async function bindDeal(formData: FormData) {
     .update(deals)
     .set({
       contactId,
+      accountId,
+      bindTarget,
       pipelineStage: "bound",
       boundAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
 
-  if (risk) {
+  if (risk && contactId) {
     await db.update(risks).set({ contactId, updatedAt: new Date() }).where(eq(risks.id, risk.id));
   }
 
-  await db.insert(clientHistory).values({
-    tenantId: DEFAULT_TENANT_ID,
-    contactId,
-    dealId,
-    policyId: policy.id,
-    eventType: "bind",
-    body: `Bound ${deal.lineOfBusiness} ${policy.policyNumber}. Contact + policy created only after bind.`,
-  });
+  if (contactId) {
+    await db.insert(clientHistory).values({
+      tenantId: DEFAULT_TENANT_ID,
+      contactId,
+      dealId,
+      policyId: policy.id,
+      eventType: "bind",
+      body: `Bound ${deal.lineOfBusiness} ${policy.policyNumber}. Policy created only after bind — quotes stayed on the deal.`,
+    });
+  }
 
   for (const [kind, days] of [
     ["30_day", 30],
@@ -288,8 +373,12 @@ export async function bindDeal(formData: FormData) {
     });
   }
 
+  await refreshPartyCounts({ contactId, accountId });
+
   revalidatePath("/");
   revalidatePath("/policies");
   revalidatePath("/contacts");
+  revalidatePath("/accounts");
   revalidatePath(`/deals/${dealId}`);
+  redirect(`/policies/${policy.id}`);
 }

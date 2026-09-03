@@ -48,10 +48,80 @@ export const DOC_TYPES = [
   "dec",
   "wind_mit",
   "four_point",
+  "inspection",
   "photo",
+  "quote_pdf",
+  "policy_dec",
+  "policy_complete",
+  "policy_id",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
+
+export const DOC_SLOTS = ["source_doc", "quote_pdf", "policy_file"] as const;
+export type DocSlot = (typeof DOC_SLOTS)[number];
+
+export const SOURCE_DOC_TYPES = ["dec", "wind_mit", "four_point", "inspection", "photo"] as const;
+export const POLICY_FILE_TYPES = ["policy_dec", "policy_complete", "policy_id"] as const;
+
+export const POLICY_STATUSES = [
+  "bound",
+  "pending",
+  "active",
+  "cancelled",
+  "expired",
+] as const;
+export type PolicyStatus = (typeof POLICY_STATUSES)[number];
+
+/** In-force for client status and the active/bound/pending count. */
+export const IN_FORCE_POLICY_STATUSES = ["bound", "pending", "active"] as const;
+export type InForcePolicyStatus = (typeof IN_FORCE_POLICY_STATUSES)[number];
+
+export const CLIENT_STATUSES = ["client", "former_client", "not_a_client"] as const;
+export type ClientStatus = (typeof CLIENT_STATUSES)[number];
+
+export const BIND_TARGETS = ["contact", "account"] as const;
+export type BindTarget = (typeof BIND_TARGETS)[number];
+
+/** Desk line tabs — consumed by Quote Sheet ingest. Home is first-class here. */
+export const SHOP_LINES = [
+  "home",
+  "auto",
+  "rec_rv",
+  "flood",
+  "umbrella",
+  "life",
+  "health",
+  "workers_comp",
+  "general_liability",
+] as const;
+export type ShopLine = (typeof SHOP_LINES)[number];
+
+export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
+  HO: "home",
+  AUTO: "auto",
+  RV: "rec_rv",
+  FLOOD: "flood",
+  UMBRELLA: "umbrella",
+  LIFE: "life",
+  HEALTH: "health",
+  WC: "workers_comp",
+  GL: "general_liability",
+};
+
+export const QUOTE_FIELD_STATUSES = ["missing", "check", "confirmed"] as const;
+export type QuoteFieldStatus = (typeof QUOTE_FIELD_STATUSES)[number];
+
+export const QUOTE_FIELD_SOURCES = ["blank", "agent", "extracted", "seed", "javy"] as const;
+export type QuoteFieldSource = (typeof QUOTE_FIELD_SOURCES)[number];
+
+export type QuoteSheetFieldValue = {
+  value: string;
+  status: QuoteFieldStatus;
+  source: QuoteFieldSource;
+};
+
+export const SUPER_COPY_KIND = "fitfirst.sheet" as const;
 
 export const RISK_TYPES = ["property", "auto"] as const;
 export type RiskType = (typeof RISK_TYPES)[number];
@@ -138,4 +208,17 @@ export function formatMoney(value: number | string | null | undefined): string {
 
 export function formatPct(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+export function formatDay(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toISOString().slice(0, 10);
+}
+
+export function clientStatusLabel(status: ClientStatus): string {
+  if (status === "client") return "Client";
+  if (status === "former_client") return "Former Client";
+  return "Not a client";
 }

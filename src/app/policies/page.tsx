@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
-import { formatMoney } from "@/lib/domain";
+import { RecordLink } from "@/components/record-links";
+import { formatDay, formatMoney } from "@/lib/domain";
 import { listPolicies } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +10,8 @@ export default async function PoliciesPage() {
   return (
     <AppShell title="Policies">
       <p className="mb-3 text-sm text-muted-foreground">
-        Policies exist only after bind. Expiration tracking and 30/60/90 tasks hang off these
-        records.
+        Policies exist only after bind. Status is Bound, Pending, or Active — never quote-only.
+        Issued files live on the policy record.
       </p>
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
@@ -22,22 +23,34 @@ export default async function PoliciesPage() {
             <thead>
               <tr>
                 <th>Policy</th>
-                <th>Client</th>
+                <th>Status</th>
+                <th>Party</th>
                 <th>Carrier</th>
                 <th>Premium</th>
                 <th>Expires</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ policy, contact, carrier }) => (
+              {rows.map(({ policy, contact, account, carrier }) => (
                 <tr key={policy.id}>
-                  <td className="font-medium">{policy.policyNumber}</td>
+                  <td className="font-medium">
+                    <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
+                  </td>
+                  <td className="uppercase">{policy.status}</td>
                   <td>
-                    {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
+                    {contact ? (
+                      <RecordLink href={`/contacts/${contact.id}`}>
+                        {contact.lastName}, {contact.firstName}
+                      </RecordLink>
+                    ) : account ? (
+                      <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td>{carrier?.name ?? "—"}</td>
                   <td>{formatMoney(policy.premium)}</td>
-                  <td>{policy.expirationDate.toISOString().slice(0, 10)}</td>
+                  <td>{formatDay(policy.expirationDate)}</td>
                 </tr>
               ))}
             </tbody>
