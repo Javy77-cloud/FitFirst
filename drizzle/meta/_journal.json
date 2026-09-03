@@ -78,6 +78,13 @@
       "when": 1788475000000,
       "tag": "0010_deal_account_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788475100000,
+      "tag": "0011_agency_settings_updated_at",
+      "breakpoints": true
     }
   ]
 }
