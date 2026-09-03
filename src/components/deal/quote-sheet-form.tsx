@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
-import { sheetCounts } from "@/lib/quote-sheet/apply";
+import { sheetCounts, sourceTag } from "@/lib/quote-sheet/apply";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { COPY_SHEET_PORTAL_NOTE, SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { cn } from "@/lib/utils";
@@ -51,10 +51,10 @@ export function QuoteSheetForm({
               {SHOP_LINE_LABELS[line]} Quote Sheet
             </h2>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              Fill Quote Sheet is in this product — no bot.{" "}
+              Fill from the dec so you do not retype. Yellow is still missing. Source tags
+              show dec / photo-OCR / public — the document wins over public records.{" "}
               <span className="font-medium text-foreground">Copy sheet</span> is the in-desk
-              packet ({SUPER_COPY_LABEL}). Pasting into TypTap or any carrier portal stays you
-              or a quoting bot. FitFirst does not log into carriers.
+              packet ({SUPER_COPY_LABEL}). Portal paste stays you or a quoting bot.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-[11px]">
@@ -74,7 +74,8 @@ export function QuoteSheetForm({
         <div className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
           <div className="font-medium text-navy">People live on the Contact</div>
           <p className="mt-0.5 text-muted-foreground">
-            Named insured and DOB are not the Quote Sheet source of truth.
+            Contact stays the source of truth for people and DOB. The dec named-insured
+            lines are CHECK copies so you do not retype them.
             {contactName ? (
               <>
                 {" "}
@@ -163,6 +164,7 @@ function SheetField({
 }) {
   const tone =
     cell.status === "check" ? "check" : cell.value.trim() === "" || cell.status === "missing" ? "missing" : "ok";
+  const tag = sourceTag(cell);
   const javy = cell.source === "javy";
 
   return (
@@ -170,14 +172,10 @@ function SheetField({
       <div className="mb-1 flex items-center justify-between gap-2">
         <Label htmlFor={fieldKey} className="text-xs">
           {label}
-          {javy ? (
-            <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
-          ) : cell.status === "check" ? (
-            <span className="ml-1 font-normal text-fit-check">
-              CHECK{cell.source === "photo-ocr" ? " · photo-OCR" : ""}
+          {tag ? (
+            <span className={cn("ml-1 font-normal", javy ? "text-fit-green" : "text-fit-check")}>
+              {tag}
             </span>
-          ) : cell.source === "photo-ocr" ? (
-            <span className="ml-1 font-normal text-fit-check">photo-OCR</span>
           ) : null}
         </Label>
         {cell.status === "check" && !readOnly ? (

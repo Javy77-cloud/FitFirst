@@ -44,6 +44,10 @@ const FIELD_LABELS: Record<string, string> = {
   state: "State",
   zip: "ZIP",
   named_insured: "Named insured",
+  secondary_named_insured: "Additional named insured",
+  mailing_address: "Mailing address",
+  ordinance_or_law: "Ordinance or law",
+  water_backup: "Water backup",
   hurricane_deductible: "Hurricane deductible",
   aop_deductible: "AOP deductible",
   wind_hail_deductible: "Wind / hail deductible",
@@ -197,8 +201,33 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "named_insured",
-    re: /(?:named\s*insured|insured\s*name|primary\s*named\s*insured)\s*[:#]?\s*([^\n]+)/i,
+    re: /(?:(?<!additional\s)(?<!secondary\s)named\s*insured|insured\s*name|primary\s*named\s*insured)\s*[:#]?\s*([^\n]+)/i,
     normalize: (s) => titleCase(s.replace(/\s+/g, " ").trim()),
+  },
+  {
+    key: "secondary_named_insured",
+    re: /(?:additional(?:\s*named)?\s*insured|secondary\s*named\s*insured)\s*[:#]?\s*([^\n]+)/i,
+    normalize: (s) => titleCase(s.replace(/\s+/g, " ").trim()),
+  },
+  {
+    key: "mailing_address",
+    re: /(?:mailing\s*address|mail\s*to)\s*[:#]?\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "ordinance_or_law",
+    re: /(?:ordinance\s*(?:or\s*)?law)\s*[:#]?\s*(\d+\s*%|\$?\s*[\d,]{2,})/i,
+    normalize: (s) => s.replace(/\s+/g, "").replace(/\$/g, ""),
+  },
+  {
+    key: "water_backup",
+    re: /(?:water\s*backup|backup\s*of\s*sewer)\s*[:#]?\s*(\$?\s*[\d,]+|included|none)/i,
+    normalize: (s) => {
+      const compact = s.replace(/\s+/g, "").replace(/\$/g, "");
+      if (/included|none/i.test(s)) return s.trim().toLowerCase();
+      const n = parseInt(compact.replace(/,/g, ""), 10);
+      return Number.isFinite(n) ? String(n) : s.trim();
+    },
   },
   {
     key: "hurricane_deductible",

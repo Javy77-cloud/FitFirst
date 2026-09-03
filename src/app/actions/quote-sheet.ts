@@ -222,6 +222,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       const extracted = extractFieldsFromText(text);
       const applied = applyExtractedToSheet(line, values, extracted.fields);
       values = applied.values;
+      await syncNamedInsuredFromExtract(dealId, extracted.fields);
 
       await db.delete(extractedFields).where(eq(extractedFields.documentId, doc.id));
       for (const field of extracted.fields) {
@@ -363,13 +364,17 @@ async function fillSheetFromPhoto(input: {
 
 async function syncNamedInsuredFromExtract(dealId: string, fields: ExtractedField[]) {
   const named = fields.find((field) => field.fieldKey === "named_insured")?.normalizedValue.trim();
-  if (!named) return;
+  const secondary = fields
+    .find((field) => field.fieldKey === "secondary_named_insured")
+    ?.normalizedValue.trim();
+  if (!named && !secondary) return;
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
-  if (!deal || deal.primaryNamedInsured?.trim()) return;
-  await db
-    .update(deals)
-    .set({ primaryNamedInsured: named, updatedAt: new Date() })
-    .where(eq(deals.id, dealId));
+  if (!deal) return;
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (named && !deal.primaryNamedInsured?.trim()) patch.primaryNamedInsured = named;
+  if (secondary && !deal.secondaryNamedInsured?.trim()) patch.secondaryNamedInsured = secondary;
+  if (Object.keys(patch).length === 1) return;
+  await db.update(deals).set(patch).where(eq(deals.id, dealId));
 }
 
 async function syncHeaderFromSheet(

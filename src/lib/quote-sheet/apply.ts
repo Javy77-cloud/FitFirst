@@ -33,6 +33,23 @@ export function isPublicRecordsSource(field?: QuoteSheetFieldValue | null): bool
   return field?.source === "public" || field?.source === "public-records";
 }
 
+/** Desk label for a cell source — dec/photo beat public records. */
+export function sourceTag(cell: QuoteSheetFieldValue): string | null {
+  if (cell.source === "javy") return "Javy-tested";
+  if (!cell.value.trim() && cell.status === "missing") return null;
+  if (cell.source === "photo-ocr") {
+    return cell.status === "check" ? "CHECK · photo-OCR" : "photo-OCR";
+  }
+  if (cell.source === "extracted") {
+    return cell.status === "check" ? "CHECK · dec" : "dec";
+  }
+  if (cell.source === "public" || cell.source === "public-records") {
+    return cell.status === "check" ? "CHECK · public" : "public";
+  }
+  if (cell.status === "check") return "CHECK";
+  return null;
+}
+
 export type ApplyFillOptions = {
   source?: QuoteSheetFieldValue["source"];
 };

@@ -33,8 +33,8 @@ Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep
 Photo-a-dec is a selling point. Fill Quote Sheet works on a phone photo / scan, not just a clean text PDF.
 
 - Fixture: `fixtures/sample-photo-dec.png` (Luis Vega / Cocoa Beach). Seeded on the Vega photo-a-dec shop. **Do not put it on Ana Dib.**
-- Full-dec coverage fixture: `fixtures/sample-francisco-garcia-dec.txt` (Francisco / Javier Garcia). Maps named insured, premises, carrier, policy #, form, term, Cov A–F, deductibles, construction, year/roof, occupancy, premium. **Cov A is $280,000 from the dec — not Ana $321k, not a Zestimate.**
-- Shared mapper: `extractFieldsFromText` + `applyExtractedToSheet`. Ingest sibling owns upload UX, Lead→Deal, and public-records gap-fill. **Doc / photo-OCR wins over `public` / `public-records`.** Never invent SSN or claims. Never use Zestimate as Cov A.
+- Full-dec coverage fixture: `fixtures/sample-francisco-garcia-dec.txt` (Francisco / Javier Garcia). Maps named insured + additional, mailing, premises, carrier, policy #, form, term, Cov A–F, deductibles, ordinance/law, water backup, construction, year/roof, occupancy, premium. **Cov A is $280,000 from the dec — not Ana $321k, not a Zestimate.**
+- Sheet cells show source tags (`CHECK · dec`, `CHECK · photo-OCR`, `CHECK · public`, Javy-tested). Ingest sibling owns upload UX, Lead→Deal, and public-records gap-fill. **Doc / photo-OCR wins over `public` / `public-records`.** Never invent SSN or claims. Never use Zestimate as Cov A.
 - Still blanks-only for agent/javy/seed. Still never overwrite Javy-tested Ana Cov A ($321,000).
 
 ## Fill vs copy vs portals (locked)

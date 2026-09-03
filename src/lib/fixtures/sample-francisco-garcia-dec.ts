@@ -11,6 +11,7 @@ Company: Citizens Property Insurance
 Policy Number: FG-HO3-2026-4411
 Named insured: Francisco Garcia
 Additional named insured: Javier Garcia
+Mailing address: 2140 Tropic Breeze Ave, Melbourne, FL 32935
 Residence premises: 2140 Tropic Breeze Ave, Melbourne, FL 32935
 City: Melbourne
 County: Brevard
@@ -40,6 +41,8 @@ F. Medical Payments                   $2,000
 Hurricane deductible: 2%
 AOP deductible: $2,500
 Wind/hail deductible: 2%
+Ordinance or law: 25%
+Water backup: $5,000
 Annual premium: $4,200
 Current carrier: Citizens
 Zestimate: $410,000
@@ -64,6 +67,10 @@ export const DEC_COVERAGE_MISS_KEYS = [
   "current_premium",
   "roof_shape",
   "wind_hail_deductible",
+  "secondary_named_insured",
+  "mailing_address",
+  "ordinance_or_law",
+  "water_backup",
 ] as const;
 
 /** Keys a full Home dec should land on the Quote Sheet after this pass. */
@@ -102,4 +109,8 @@ export const DEC_COVERAGE_TARGET_KEYS = [
   "aop_deductible",
   "wind_hail_deductible",
   "current_premium",
+  "secondary_named_insured",
+  "mailing_address",
+  "ordinance_or_law",
+  "water_backup",
 ] as const;

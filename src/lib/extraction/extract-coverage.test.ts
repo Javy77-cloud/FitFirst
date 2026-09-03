@@ -27,6 +27,10 @@ describe("dec extraction coverage vs the 12-field miss", () => {
     }
 
     expect(filled.values.named_insured.value).toBe("Francisco Garcia");
+    expect(filled.values.secondary_named_insured.value).toBe("Javier Garcia");
+    expect(filled.values.mailing_address.value).toMatch(/2140 Tropic Breeze/);
+    expect(filled.values.ordinance_or_law.value).toBe("25%");
+    expect(filled.values.water_backup.value).toBe("5000");
     expect(filled.values.address1.value).toBe("2140 Tropic Breeze Ave");
     expect(filled.values.city.value).toBe("Melbourne");
     expect(filled.values.current_carrier.value).toMatch(/Citizens/i);
