@@ -164,7 +164,14 @@ describe("owner-home book math", () => {
       }),
     ];
     const policies = [
-      policy({ id: "hk-gl", status: "bound", premium: 8640, contactId: "hk", lineOfBusiness: "GL" }),
+      policy({
+        id: "hk-gl",
+        status: "bound",
+        premium: 8640,
+        contactId: "hk",
+        dealId: "won",
+        lineOfBusiness: "GL",
+      }),
     ];
     expect(pipelineCounts(deals, asOf)).toEqual({
       openQuotes: 1,
@@ -172,6 +179,21 @@ describe("owner-home book math", () => {
       closedWonThisMonth: 2,
     });
     expect(boundWaitingOnIssue(deals, policies).map((d) => d.id)).toEqual(["pending"]);
+
+    const commercialOnly = [
+      deal({ id: "marine", pipelineStage: "bound", title: "Harbor Key Marine · GL", contactId: null }),
+    ];
+    const onAccount = [
+      policy({
+        id: "gl-harbor",
+        status: "active",
+        premium: 4180,
+        contactId: "",
+        dealId: "marine",
+        lineOfBusiness: "GL",
+      }),
+    ];
+    expect(boundWaitingOnIssue(commercialOnly, onAccount)).toEqual([]);
   });
 
   it("counts household cross-sell gaps from in-force lines, not a score", () => {

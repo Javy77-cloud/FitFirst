@@ -135,6 +135,69 @@ The parallel slices were a pile of pages. This pass makes one click-path:
 7. Smart Search “Elena” / “Harbor” / “HO3-ELENA” finds the records.
 8. Bind again does not duplicate Elena or Harbor Key.
 
+## Overnight QA (`cursor/overnight-qa-desk-4c29`)
+
+Owner: overnight QA. Additive only. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Did not rewrite filter-first matching (one appointed check already in `match.ts`). No emails, no rater APIs, no live Zoho writes, no fake AI scores. Ana was not bound. Rosa Keene was not merged.
+
+Boot: `npm run db:migrate && npm run db:seed`, Postgres `fitfirst` / `fitfirst_dev`, app at port **43147**.
+
+### Verified (broker click-path)
+
+1. **Home** is owner desk (paper `#f7f3ec` + terracotta `#b4532a`). Copy says quotes including Ana’s $321,000 HO3 are pipeline, not written premium. KPIs click through: `/policies?status=in_force`, `/policies?written=this_month`, `/deals?stage=open`, renewals `/policies?renewal=30|60`, Work queue `/work-queue` ( `/queue` redirects here).
+2. **Elena Ruiz** Lead (converted) → Deal **Ruiz · Melbourne HO3** (bound) → Quote Sheet (Super-Copy / Send to Fill / Forms Fill) → Contact Elena **Client, lifetime 1 / in-force 1** → Policy **HO3-ELENA-2026**. Timeline on Contact and Policy shows the 30-day task, meeting, bind-confirmation call, and bind log. Linked business **Ruiz Tile LLC**.
+3. **Ana Dib** stays **shopping / unbound**. Cov A **$321,000** (`source: javy`, confirmed). Contact 360: **0 / 0 policies**, not a client. Markets: **0 green / 0 yellow / 10 skip (red)**. Sheet health **18 confirmed / 0 CHECK / 15 missing** (33 catalog fields) — not 100%. Fill packet `GET /api/deals/<ana>/quote-sheets/home/fill` is `kind: fitfirst.sheet`, `source: quote_sheets`, `coverage_a: 321000`. Fixture JSON untouched.
+4. Quote Sheet → **Send to Fill** + **Forms Fill** share the same `quote_sheets` row. `/forms/fl-ho3?dealId=<elena>` fills Elena / Cov A 385000. `/forms/fl-ho3?dealId=<ana>` fills Ana / Cov A 321000.
+5. **Harbor Key Marine LLC** Business: EIN 59-1234567, 14 employees, W-2/1099, Policy **GL-HARBOR-2026** on the Business (lifetime 1 / in-force 1). **Ruiz Tile LLC** linked to Elena, **0 commercial policies**, not a client. COI section present; **no stub issued**.
+6. **Activities**: Task / Call / Meeting log form on Contact and Policy 360. Seeded Elena rows appear on both. **Phone** is a stub page (`/phone`) — no softphone dock in layout.
+7. **Search** (wave-1 is in): Mario Cromartie, Virginia Palacios, Fritzs Seraphin, VP Painting & Construction all hit.
+8. **New slices that load**
+   - Markets auto-shops **Ortega · Winter Garden HO3**: 8 green / 1 yellow / 1 red.
+   - Merge review: open **Rosa Keene** email pair (`Rosa.Keene@` / `rosa.keene@`). Ana is locked out of the queue. Not merged.
+   - Work queue: owner attention + bound/pending/lapse list.
+   - Claims log page (empty).
+   - Commissions pending/paid page ($0 / $0).
+   - Vehicles section on Auto **QBE-PA-66103** (empty schedule).
+   - Locations on 360: **Rosa Keene** shows Harbor Lane dwelling; Elena/Harbor empty.
+   - Renewal compare `/policies/<id>/compare` (no terms seeded).
+   - Quote tracker `/quotes`: Ana 1 quoted / 3 declined / 6 skip / 0 bound; cheapest quoted American Integrity $5,607.53 not bindable.
+
+### Open bugs (fixer titles)
+
+**QA-2 Harbor Key identity split.** Search “Harbor” returns desk **Harbor Key Marine LLC** (EIN 59-1234567, `GL-HARBOR-2026`) **and** owner-book **Harbor Key Holdings** contact + deal `Harbor Key Holdings · marina GL` + policy `TR-GL-22019`. Two entities. Do not collapse Marine LLC. Decide keeper / rename / link.
+
+**QA-3 COI stub not seeded on Harbor Key Marine.** Account 360 empty-states Certificates. Preview route `/businesses/[id]/certificates/[certId]` is not wired to desk schema (`getIssuedCertificate` missing; `AppShell` has no `eyebrow`). Seed a stub **or** remove the preview until the slice compiles.
+
+**QA-4 Commissions seed not wired.** `/commissions` Pending $0 / Paid $0. `src/lib/db/seed-book.ts` / commission rows are not called from `seed.ts`. Pages empty-state; do not invent amounts.
+
+**QA-5 Claims log seed not wired.** `/claims` empty. `seed-claims.ts` not called. Do not invent a claim.
+
+**QA-6 Auto vehicles seed not wired.** Auto policy `QBE-PA-66103` (Camila Ruiz) shows “No vehicles on this policy yet.” `seed-auto.ts` not called.
+
+**QA-7 Renewal compare has no terms.** `/policies/<id>/compare` reads `policy_terms` / `renewal_compare_logs` — both empty. `seed-book-renewals.ts` not called. Original `ComparePanel` + `actions/renewal.ts` still import missing `PolicyCoverageLine`; do not reattach until that compiles.
+
+**QA-8 Elena 360 has no location row.** Mailing 412 Harbor Isle Dr is on the contact. `locations` only exist on the Rosa Keene pair. Add a premises row for Elena (and Harbor Key job site) if 360 should show them.
+
+**QA-9 Two Ruiz Melbourne HO3 deals.** Lifecycle **Elena** `Ruiz · Melbourne HO3` (bound, HO3-ELENA-2026) vs completeness/owner-book **Camila** `Ruiz · Melbourne HO3 (bound)`. Easy to open the wrong shop. Do not retitle Ana.
+
+**QA-10 Reyes · Cocoa HO3 is bound with no Policy.** Owner-home attention is correct: deal stage bound, `contact_id` set, zero policy rows. Seed should either attach a policy or leave the deal shopping.
+
+**QA-11 Slice action modules do not compile against the desk schema.** `src/app/actions/{activities,claims,commissions,locations,renewal,auto-schedule}.ts` and `src/lib/db/activity-queries.ts` still import `businesses`, `activityAttendees`, `activityEvents`, `@/lib/auth/session`, `PolicyCoverageLine`. Visiting the old `/calendar` 500’d and poisoned Turbopack for every route. Calendar/phone are stubs now. Do not import those actions from desk pages until aligned.
+
+**QA-12 Forms catalog always deep-links Elena.** `/forms` “Fill from Elena Quote Sheet” hardcodes `ELENA_DEAL_ID`. Deal-level Forms Fill passes the current `dealId` (correct). Pass the open deal (or last sheet) from the catalog.
+
+**QA-13 No live phone.** `/phone` and Settings “Connect phone line” are stubs. Softphone JS exists but is not mounted. Task/Call on 360 is the working path.
+
+### Fixed on this run (do not re-file)
+
+- Home “Work queue” pointed at `/queue` while nav used `/work-queue` — one queue now; `/queue` redirects.
+- 360 was missing locations / Auto vehicles / COI empty-states / renewal compare link — thin read panels added.
+- `boundWaitingOnIssue` ignored commercial policies on `deal_id` / account, so **Harbor Key Marine · GL** (active `GL-HARBOR-2026`) falsely showed “bound, waiting on issue.”
+- Missing `ACTIVITY_STATUS_ALIASES` export + broken calendar compile that 500’d the whole desk.
+
+### Ana lock (re-checked after seed + click)
+
+Deal `Dib · Palm Bay HO3` = **shopping**. Contact policies = **0**. Cov A = **$321,000** javy/confirmed. Fixture file not edited.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

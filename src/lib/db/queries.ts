@@ -773,6 +773,7 @@ export async function ownerHomeDashboard() {
   const homePolicies: HomePolicy[] = policyRows.map(({ policy, contact, carrier }) => ({
     id: policy.id,
     contactId: policy.contactId ?? "",
+    dealId: policy.dealId,
     carrierId: policy.carrierId,
     carrierName: carrier?.name ?? null,
     contactName: contactName(contact),

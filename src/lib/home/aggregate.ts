@@ -18,6 +18,7 @@ export const LOST_STAGES = new Set(["lost", "closed_lost"]);
 export type HomePolicy = {
   id: string;
   contactId: string;
+  dealId?: string | null;
   carrierId: string | null;
   carrierName: string | null;
   contactName: string;
@@ -198,15 +199,16 @@ export function isClosedWonThisMonth(deal: HomeDeal, asOf: Date): boolean {
 }
 
 export function boundWaitingOnIssue(deals: HomeDeal[], policies: HomePolicy[]): HomeDeal[] {
-  const boundContactOrDeal = new Set(
-    policies.filter((p) => p.contactId).flatMap((p) => [p.contactId, p.id]),
+  const issuedDealIds = new Set(
+    policies.filter((p) => isInForce(p) && p.dealId).map((p) => p.dealId as string),
   );
-  const policiesByDealContact = new Set(policies.map((p) => p.contactId));
+  const policiesByDealContact = new Set(policies.map((p) => p.contactId).filter(Boolean));
   return deals.filter((deal) => {
     const stage = deal.pipelineStage.toLowerCase();
     if (!WON_STAGES.has(stage)) return false;
+    if (issuedDealIds.has(deal.id)) return false;
     if (deal.contactId && policiesByDealContact.has(deal.contactId)) return false;
-    return !boundContactOrDeal.has(deal.id);
+    return true;
   });
 }
 
