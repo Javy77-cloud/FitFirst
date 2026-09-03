@@ -8,6 +8,8 @@ export type QuoteFieldDef = {
   input?: "text" | "number" | "textarea";
   /** Maps an extraction fieldKey onto this sheet key. */
   extractKey?: string;
+  /** Core fields stay on the master sheet. More is hidden until asked. */
+  tier?: "core" | "more";
 };
 
 export const HOME_FIELDS: QuoteFieldDef[] = [
@@ -19,11 +21,13 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built" },
   { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories" },
   { key: "square_feet", label: "Square feet", group: "Dwelling", input: "number", extractKey: "square_feet" },
+  { key: "beds", label: "Bedrooms", group: "Dwelling", extractKey: "beds" },
+  { key: "baths", label: "Bathrooms", group: "Dwelling", extractKey: "baths" },
   { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction" },
   { key: "occupancy", label: "Occupancy", group: "Dwelling", extractKey: "occupancy" },
   { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year" },
   { key: "roof_covering", label: "Roof covering", group: "Roof / wind", extractKey: "roof_covering" },
-  { key: "roof_shape", label: "Roof shape", group: "Roof / wind" },
+  { key: "roof_shape", label: "Roof shape", group: "Roof / wind", extractKey: "roof_shape" },
   {
     key: "opening_protection",
     label: "Opening protection",
@@ -43,14 +47,16 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     input: "number",
     extractKey: "miles_to_coast",
   },
+  { key: "flood_zone", label: "Flood zone", group: "Roof / wind", extractKey: "flood_zone" },
   { key: "pool", label: "Pool", group: "Roof / wind", extractKey: "pool" },
   { key: "mobile_home", label: "Mobile / manufactured", group: "Roof / wind", extractKey: "mobile_home" },
   { key: "coverage_a", label: "Coverage A (dwelling)", group: "Coverages", input: "number", extractKey: "coverage_a" },
-  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number" },
-  { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number" },
-  { key: "coverage_d", label: "Coverage D (loss of use)", group: "Coverages", input: "number" },
-  { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages" },
-  { key: "aop_deductible", label: "AOP deductible", group: "Coverages" },
+  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number", extractKey: "coverage_b" },
+  { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number", extractKey: "coverage_c" },
+  { key: "coverage_d", label: "Coverage D (loss of use)", group: "Coverages", input: "number", extractKey: "coverage_d" },
+  { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages", extractKey: "hurricane_deductible" },
+  { key: "aop_deductible", label: "AOP deductible", group: "Coverages", extractKey: "aop_deductible" },
+  { key: "wind_deductible", label: "Wind deductible", group: "Coverages", extractKey: "wind_deductible" },
   {
     key: "replacement_cost_estimate",
     label: "RCE / MSB (not Zillow)",
@@ -58,33 +64,40 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     input: "number",
     extractKey: "replacement_cost_estimate",
   },
+  { key: "named_insured", label: "Named insured (from the dec)", group: "Current policy", extractKey: "named_insured" },
+  { key: "policy_number", label: "Policy number", group: "Current policy", extractKey: "policy_number" },
+  { key: "form", label: "Form", group: "Current policy", extractKey: "form" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "effective_date", label: "Effective date", group: "Current policy" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "four_point_date", label: "4-point date", group: "Inspections" },
-  { key: "four_point_result", label: "4-point result", group: "Inspections" },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections" },
-  { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
+  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
+  { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
+  { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
+  { key: "mortgagee", label: "Mortgagee", group: "Current policy", extractKey: "mortgagee", tier: "more" },
+  { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date", tier: "more" },
+  { key: "four_point_result", label: "4-point result", group: "Inspections", extractKey: "four_point_result", tier: "more" },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form", tier: "more" },
+  { key: "notes", label: "Shop notes", group: "Notes", input: "textarea", tier: "more" },
 ];
 
 export const AUTO_FIELDS: QuoteFieldDef[] = [
-  { key: "vin", label: "VIN", group: "Vehicle" },
-  { key: "vehicle_year", label: "Year", group: "Vehicle", input: "number" },
-  { key: "vehicle_make", label: "Make", group: "Vehicle" },
-  { key: "vehicle_model", label: "Model", group: "Vehicle" },
-  { key: "vehicle_usage", label: "Usage", group: "Vehicle" },
-  { key: "garaging_zip", label: "Garaging ZIP", group: "Vehicle" },
-  { key: "garaging_address", label: "Garaging address", group: "Vehicle" },
-  { key: "liability_bi", label: "BI limits", group: "Coverages" },
-  { key: "liability_pd", label: "PD limit", group: "Coverages" },
-  { key: "um_uim", label: "UM / UIM", group: "Coverages" },
-  { key: "pip", label: "PIP", group: "Coverages" },
-  { key: "comp_deductible", label: "Comp deductible", group: "Coverages" },
-  { key: "collision_deductible", label: "Collision deductible", group: "Coverages" },
+  { key: "vin", label: "VIN", group: "Vehicle", extractKey: "vin" },
+  { key: "vehicle_year", label: "Year", group: "Vehicle", input: "number", extractKey: "vehicle_year" },
+  { key: "vehicle_make", label: "Make", group: "Vehicle", extractKey: "vehicle_make" },
+  { key: "vehicle_model", label: "Model", group: "Vehicle", extractKey: "vehicle_model" },
+  { key: "vehicle_usage", label: "Usage", group: "Vehicle", extractKey: "vehicle_usage" },
+  { key: "garaging_zip", label: "Garaging ZIP", group: "Vehicle", extractKey: "garaging_zip" },
+  { key: "garaging_address", label: "Garaging address", group: "Vehicle", extractKey: "garaging_address" },
+  { key: "liability_bi", label: "BI limits", group: "Coverages", extractKey: "liability_bi" },
+  { key: "liability_pd", label: "PD limit", group: "Coverages", extractKey: "liability_pd" },
+  { key: "um_uim", label: "UM / UIM", group: "Coverages", extractKey: "um_uim" },
+  { key: "pip", label: "PIP", group: "Coverages", extractKey: "pip" },
+  { key: "comp_deductible", label: "Comp deductible", group: "Coverages", extractKey: "comp_deductible" },
+  { key: "collision_deductible", label: "Collision deductible", group: "Coverages", extractKey: "collision_deductible" },
+  { key: "named_insured", label: "Named insured (from the dec)", group: "Current policy", extractKey: "named_insured" },
+  { key: "policy_number", label: "Policy number", group: "Current policy", extractKey: "policy_number" },
+  { key: "form", label: "Form", group: "Current policy", extractKey: "form" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
+  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
+  { key: "notes", label: "Shop notes", group: "Notes", input: "textarea", tier: "more" },
 ];
 
 export const REC_RV_FIELDS: QuoteFieldDef[] = [
@@ -100,7 +113,7 @@ export const REC_RV_FIELDS: QuoteFieldDef[] = [
 ];
 
 export const FLOOD_FIELDS: QuoteFieldDef[] = [
-  { key: "flood_zone", label: "Flood zone", group: "Risk" },
+  { key: "flood_zone", label: "Flood zone", group: "Risk", extractKey: "flood_zone" },
   { key: "elevation", label: "Elevation", group: "Risk" },
   { key: "building_limit", label: "Building limit", group: "Coverages", input: "number" },
   { key: "contents_limit", label: "Contents limit", group: "Coverages", input: "number" },
@@ -173,9 +186,14 @@ export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string
   return match?.key ?? null;
 }
 
-export function groupFields(line: ShopLine): { group: string; fields: QuoteFieldDef[] }[] {
+export function groupFields(
+  line: ShopLine,
+  opts?: { includeMore?: boolean },
+): { group: string; fields: QuoteFieldDef[] }[] {
+  const includeMore = opts?.includeMore ?? true;
   const groups: { group: string; fields: QuoteFieldDef[] }[] = [];
   for (const field of fieldsForLine(line)) {
+    if (!includeMore && field.tier === "more") continue;
     const existing = groups.find((g) => g.group === field.group);
     if (existing) existing.fields.push(field);
     else groups.push({ group: field.group, fields: [field] });

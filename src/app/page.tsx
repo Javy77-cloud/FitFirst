@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
-import { DEAL_ID, FILL_DEAL_ID } from "@/lib/fixtures/ids";
+import { DEAL_ID, FILL_DEAL_ID, GARCIA_DEAL_ID } from "@/lib/fixtures/ids";
 import { markAlertRead } from "@/app/actions/alerts";
 import { DeskDrop } from "@/components/desk-drop";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,9 @@ export default async function HomePage() {
           </Link>
           <Link href={`/deals/${FILL_DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
             Ortega fill-demo shop
+          </Link>
+          <Link href={`/deals/${GARCIA_DEAL_ID}`} className={cn(buttonVariants({ variant: "outline" }))}>
+            Francisco Garcia shop
           </Link>
         </div>
       </div>

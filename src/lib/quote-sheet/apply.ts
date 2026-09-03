@@ -5,6 +5,15 @@ import { extractKeyToSheetKey, fieldsForLine } from "./catalog";
 export type ExtractedInput = {
   fieldKey: string;
   normalizedValue: string;
+  sourceLabel?: string;
+};
+
+export type PublicFact = {
+  fieldKey: string;
+  value: string;
+  sourceLabel: string;
+  /** Rejected for Coverage A — Zestimate / list price never become Cov A. */
+  kind?: "listing" | "county" | "permit" | "fema" | "zestimate" | "list_price";
 };
 
 export type ApplyFillResult = {
@@ -55,11 +64,56 @@ export function applyExtractedToSheet(
       value: nextValue,
       status: "check",
       source: "extracted",
+      sourceLabel: item.sourceLabel ?? "Uploaded dec",
     };
     filledKeys.push(key);
   }
 
   return { values, filledKeys, skippedKeys };
+}
+
+/** Gap-fill blanks from public records. Uploaded dec / agent / Javy always win. */
+export function applyPublicToSheet(
+  line: ShopLine,
+  existing: Record<string, QuoteSheetFieldValue>,
+  facts: PublicFact[],
+): ApplyFillResult {
+  const values: Record<string, QuoteSheetFieldValue> = { ...existing };
+  const filledKeys: string[] = [];
+  const skippedKeys: string[] = [];
+
+  for (const fact of facts) {
+    const key = extractKeyToSheetKey(line, fact.fieldKey);
+    if (!key) continue;
+    if (key === "coverage_a" || fact.kind === "zestimate" || fact.kind === "list_price") {
+      skippedKeys.push(key);
+      continue;
+    }
+    if (isBlockedPublicKey(key)) {
+      skippedKeys.push(key);
+      continue;
+    }
+    const current = values[key];
+    if (neverCheckCoverageA(key, current) || !fieldIsBlank(current)) {
+      skippedKeys.push(key);
+      continue;
+    }
+    const nextValue = String(fact.value ?? "").trim();
+    if (!nextValue) continue;
+    values[key] = {
+      value: nextValue,
+      status: "check",
+      source: "public",
+      sourceLabel: fact.sourceLabel,
+    };
+    filledKeys.push(key);
+  }
+
+  return { values, filledKeys, skippedKeys };
+}
+
+function isBlockedPublicKey(key: string): boolean {
+  return /ssn|claim|social/.test(key);
 }
 
 export type DealHeaderGlance = {

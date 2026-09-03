@@ -1,4 +1,10 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
+import {
+  EXTRACT_LABELS,
+  aliasToKey,
+  isBlockedExtractKey,
+  looksLikeSsn,
+} from "./labels";
 
 export type ExtractedField = {
   fieldKey: string;
@@ -17,36 +23,13 @@ export type ExtractionResult = {
   glanceRequired: boolean;
 };
 
-const UNCERTAIN_VALUE = /[?]|unk(?:nown)?|illegible|n\/?a|tbd/i;
+const UNCERTAIN_VALUE = /\?|\bunk(?:nown)?\b|\billegible\b|\bn\/?a\b|\btbd\b/i;
 const OCR_CONFUSION = /\b(?:1q\d{2}|t1le|n0ne|cl4y|m3tal|fr4me)\b/i;
 const MESSY_MARKERS =
   /handwritten|low ocr|poor scan|illegible|messy handwriting|\[handwritten/i;
 
-const FIELD_LABELS: Record<string, string> = {
-  address: "Location",
-  city: "City",
-  county: "County",
-  year_built: "Year built",
-  construction: "Construction",
-  occupancy: "Occupancy",
-  stories: "Stories",
-  coverage_a: "Coverage A",
-  roof_year: "Roof year",
-  roof_covering: "Roof covering",
-  opening_protection: "Opening protection",
-  pool: "Pool",
-  protection_class: "Protection class",
-  miles_to_coast: "Miles to coast",
-  square_feet: "Square feet",
-  mobile_home: "Mobile home",
-  replacement_cost_estimate: "Replacement cost (RCE)",
-  current_carrier: "Current carrier",
-  state: "State",
-  zip: "ZIP",
-};
-
 type Pattern = {
-  key: keyof typeof FIELD_LABELS;
+  key: string;
   re: RegExp;
   normalize: (raw: string) => string;
 };
@@ -64,12 +47,47 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "coverage_a",
-    re: /(?:coverage\s*a|cov\.?\s*a|dwelling(?:\s*limit)?)\s*[:#]?\s*\$?\s*([\d,]{3,})/i,
+    re: /(?:coverage\s*a(?:\s*\([^)]*\)|\s+dwelling)?|cov\.?\s*a|dwelling(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
     normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_b",
+    re: /(?:coverage\s*b(?:\s*\([^)]*\)|\s+other\s*structures)?|cov\.?\s*b|other\s*structures)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_c",
+    re: /(?:coverage\s*c(?:\s*\([^)]*\)|\s+personal\s*property)?|cov\.?\s*c|personal\s*property|contents(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_d",
+    re: /(?:coverage\s*d(?:\s*\([^)]*\)|\s+loss\s*of\s*use)?|cov\.?\s*d|loss\s*of\s*use|additional\s*living)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "hurricane_deductible",
+    re: /(?:hurricane(?:\s*ded(?:uctible)?)?)\s*[:#]?\s*(\$?[\d,]+(?:\.\d+)?%?|\d+%)/i,
+    normalize: normalizeDeductible,
+  },
+  {
+    key: "aop_deductible",
+    re: /(?:aop(?:\s*ded(?:uctible)?)?|all\s*other\s*perils(?:\s*ded(?:uctible)?)?)\s*[:#]?\s*(\$?[\d,]+(?:\.\d+)?%?)/i,
+    normalize: normalizeDeductible,
+  },
+  {
+    key: "wind_deductible",
+    re: /(?:wind(?:\/hail)?(?:\s*ded(?:uctible)?)?)\s*[:#]?\s*(\$?[\d,]+(?:\.\d+)?%?)/i,
+    normalize: normalizeDeductible,
   },
   {
     key: "replacement_cost_estimate",
     re: /(?:replacement\s*cost(?:\s*estimate)?|rce|msb)\s*[:#]?\s*\$?\s*([\d,]{3,})/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "current_premium",
+    re: /(?:(?:current|annual|total)\s*premium|premium)\s*[:#]?\s*\$?\s*([\d,]{3,})/i,
     normalize: normalizeMoney,
   },
   {
@@ -79,8 +97,13 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "roof_covering",
-    re: /(?:roof\s*covering|roof\s*cov\.?|roof\s*type)\s*[:#]?\s*([a-z0-9 /+&,.-]+)/i,
+    re: /(?:roof\s*covering|roof\s*cov\.?|roof\s*type|roof\s*material)\s*[:#]?\s*([a-z0-9 /+&,.-]+)/i,
     normalize: normalizeRoof,
+  },
+  {
+    key: "roof_shape",
+    re: /(?:roof\s*shape|roof\s*geometry)\s*[:#]?\s*([a-z0-9 /+-]+)/i,
+    normalize: (s) => s.toLowerCase().trim(),
   },
   {
     key: "opening_protection",
@@ -119,7 +142,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "address",
-    re: /(?:location|property\s*address|insured\s*location)\s*[:#]?\s*([0-9].+)/i,
+    re: /(?:location|property\s*address|insured\s*location|residence\s*premises)\s*[:#]?\s*([0-9].+)/i,
     normalize: (s) => streetFromLocation(s),
   },
   {
@@ -134,8 +157,20 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "square_feet",
-    re: /(?:square\s*feet|sq\.?\s*ft\.?|living\s*area)\s*[:#]?\s*([\d,]+)/i,
+    re: /(?:square\s*feet|sq\.?\s*ft\.?|living\s*area|heated\s*sq)/i.source
+      ? /(?:square\s*feet|sq\.?\s*ft\.?|living\s*area|heated\s*sq\.?\s*ft\.?)\s*[:#]?\s*([\d,]+)/i
+      : /(?:square\s*feet)\s*[:#]?\s*([\d,]+)/i,
     normalize: (s) => String(parseInt(s.replace(/,/g, ""), 10)),
+  },
+  {
+    key: "beds",
+    re: /(?:bedrooms|beds|#\s*beds)\s*[:#]?\s*(\d+(?:\.\d+)?)/i,
+    normalize: (s) => s,
+  },
+  {
+    key: "baths",
+    re: /(?:bathrooms|baths|#\s*baths)\s*[:#]?\s*(\d+(?:\.\d+)?)/i,
+    normalize: (s) => s,
   },
   {
     key: "pool",
@@ -144,13 +179,118 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "mobile_home",
-    re: /(?:mobile\s*home|manufactured)\s*[:#]?\s*(yes|no|y|n)/i,
+    re: /(?:mobile\s*home|manufactured(?:\s*home)?)\s*[:#]?\s*(yes|no|y|n)/i,
     normalize: (s) => (/^(y|yes)$/i.test(s) ? "true" : "false"),
   },
   {
     key: "current_carrier",
-    re: /(?:current\s*carrier|incumbent(?:\s*carrier)?|expiring\s*carrier)\s*[:#]?\s*([a-z0-9 .&'-]+)/i,
+    re: /(?:current\s*carrier|incumbent(?:\s*carrier)?|expiring\s*carrier|writing\s*company|insurance\s*company)\s*[:#]?\s*([a-z0-9 .&'-]+)/i,
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "policy_number",
+    re: /(?:policy\s*(?:number|no\.?|#))\s*[:#]?\s*([A-Z0-9-]{4,})/i,
+    normalize: (s) => s.trim(),
+  },
+  {
+    key: "form",
+    re: /(?:policy\s*form|ho\s*form|form)\s*[:#]?\s*(HO[-\s]?[0-9]+|[A-Z0-9-]{2,12})/i,
+    normalize: (s) => s.replace(/\s+/g, "").toUpperCase(),
+  },
+  {
+    key: "named_insured",
+    re: /(?:primary\s+)?named\s+insured\s*[:#]\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "effective_date",
+    re: /(?:effective(?:\s*date)?|policy\s*effective|inception)\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    normalize: (s) => s,
+  },
+  {
+    key: "expiration_date",
+    re: /(?:expiration(?:\s*date)?|policy\s*expiration|expires)\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    normalize: (s) => s,
+  },
+  {
+    key: "mortgagee",
+    re: /(?:first\s*)?mortgagee(?:\s*clause)?\s*[:#]\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "flood_zone",
+    re: /(?:flood\s*zone|fema\s*zone|nfip\s*zone)\s*[:#]?\s*([A-Z]{1,3}[0-9]?)/i,
+    normalize: (s) => s.toUpperCase(),
+  },
+  {
+    key: "four_point_date",
+    re: /(?:4[\s-]*point|four[\s-]*point)\s*(?:date|insp)?\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    normalize: (s) => s,
+  },
+  {
+    key: "four_point_result",
+    re: /(?:4[\s-]*point|four[\s-]*point)\s*(?:result|status)\s*[:#]\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "wind_mit_form",
+    re: /(?:wind\s*mit(?:igation)?(?:\s*form)?|oir[\s-]?b[\s-]?1[\s-]?802)\s*[:#]\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "vin",
+    re: /(?:vin|vehicle\s*id(?:entification)?)\s*[:#]?\s*([A-HJ-NPR-Z0-9]{11,17})/i,
+    normalize: (s) => s.toUpperCase(),
+  },
+  {
+    key: "vehicle_year",
+    re: /(?:vehicle\s*year|year\/make\/model)\s*[:#]?\s*(\d{4})/i,
+    normalize: normalizeYear,
+  },
+  {
+    key: "vehicle_make",
+    re: /(?:vehicle\s*make|make)\s*[:#]\s*([a-z0-9 .'-]+)/i,
+    normalize: (s) => s.trim(),
+  },
+  {
+    key: "vehicle_model",
+    re: /(?:vehicle\s*model|model)\s*[:#]\s*([a-z0-9 .'-]+)/i,
+    normalize: (s) => s.trim(),
+  },
+  {
+    key: "garaging_zip",
+    re: /(?:garaging\s*zip)\s*[:#]?\s*(\d{5})/i,
+    normalize: (s) => s,
+  },
+  {
+    key: "liability_bi",
+    re: /(?:liability\s*bi|bodily\s*injury|bi\s*limits?)\s*[:#]?\s*([0-9,/ $kK]+)/i,
+    normalize: (s) => s.replace(/\s+/g, "").trim(),
+  },
+  {
+    key: "liability_pd",
+    re: /(?:property\s*damage|pd\s*limit)\s*[:#]?\s*(\$?[\d,]+)/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "um_uim",
+    re: /(?:um\s*\/\s*uim|uninsured\s*motorist)\s*[:#]?\s*([0-9,/ $kK]+)/i,
+    normalize: (s) => s.replace(/\s+/g, "").trim(),
+  },
+  {
+    key: "pip",
+    re: /(?:\bpip\b)\s*[:#]?\s*(\$?[\d,]+)/i,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "comp_deductible",
+    re: /(?:comp(?:rehensive)?\s*ded(?:uctible)?)\s*[:#]?\s*(\$?[\d,]+)/i,
+    normalize: normalizeDeductible,
+  },
+  {
+    key: "collision_deductible",
+    re: /(?:collision\s*ded(?:uctible)?)\s*[:#]?\s*(\$?[\d,]+)/i,
+    normalize: normalizeDeductible,
   },
 ];
 
@@ -179,42 +319,118 @@ export function assessDocumentQuality(text: string): {
 
 export function extractFieldsFromText(text: string): ExtractionResult {
   const quality = assessDocumentQuality(text);
-  const fields: ExtractedField[] = [];
+  const byKey = new Map<string, ExtractedField>();
 
-  for (const pattern of PATTERNS) {
-    const match = pattern.re.exec(text);
-    if (!match?.[1]) continue;
-    const rawValue = match[1].trim();
-    const normalizedValue = pattern.normalize(rawValue);
-    const uncertain =
-      UNCERTAIN_VALUE.test(rawValue) || OCR_CONFUSION.test(rawValue);
-    const source: ExtractedField["source"] = uncertain
-      ? "uncertain"
-      : "labeled";
-    let confidence = source === "labeled" ? 0.94 : 0.58;
-    confidence -= quality.penalty;
-    if (uncertain) confidence -= 0.2;
-    if (normalizedValue === "" || normalizedValue === "NaN") {
-      confidence = Math.min(confidence, 0.4);
+  for (const field of [...fromPatterns(text, quality.penalty), ...fromLabeledLines(text, quality.penalty)]) {
+    if (isBlockedExtractKey(field.fieldKey) || looksLikeSsn(field.rawValue)) continue;
+    const existing = byKey.get(field.fieldKey);
+    if (!existing || field.confidence > existing.confidence) {
+      byKey.set(field.fieldKey, field);
     }
-    confidence = clamp(confidence, 0.05, 0.99);
-    fields.push({
-      fieldKey: pattern.key,
-      label: FIELD_LABELS[pattern.key],
-      rawValue,
-      normalizedValue,
-      confidence: round3(confidence),
-      flagged: confidence < CONFIDENCE_THRESHOLD,
-      source,
-    });
   }
 
+  const fields = [...byKey.values()];
   return {
     fields,
     documentQuality: quality.messy ? "messy" : "clean",
     qualityNotes: quality.notes,
     glanceRequired: fields.some((f) => f.flagged),
   };
+}
+
+function fromPatterns(text: string, penalty: number): ExtractedField[] {
+  const fields: ExtractedField[] = [];
+  for (const pattern of PATTERNS) {
+    const match = pattern.re.exec(text);
+    if (!match?.[1]) continue;
+    const built = toField(pattern.key, match[1].trim(), pattern.normalize, penalty);
+    if (built) fields.push(built);
+  }
+  return fields;
+}
+
+function fromLabeledLines(text: string, penalty: number): ExtractedField[] {
+  const fields: ExtractedField[] = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.length > 220) continue;
+    const match = /^([A-Za-z][A-Za-z0-9 ./%#-]{0,48})\s*[:#]\s*(.+)$/.exec(line);
+    if (!match) continue;
+    const key = aliasToKey(match[1]);
+    if (!key || isBlockedExtractKey(key)) continue;
+    const rawValue = match[2].trim();
+    if (!rawValue || looksLikeSsn(rawValue)) continue;
+    const built = toField(key, rawValue, normalizerFor(key), penalty);
+    if (built) fields.push(built);
+  }
+  return fields;
+}
+
+function toField(
+  key: string,
+  rawValue: string,
+  normalize: (raw: string) => string,
+  penalty: number,
+): ExtractedField | null {
+  const normalizedValue = normalize(rawValue);
+  if (normalizedValue === "" || normalizedValue === "NaN") return null;
+  const uncertain = UNCERTAIN_VALUE.test(rawValue) || OCR_CONFUSION.test(rawValue);
+  const source: ExtractedField["source"] = uncertain ? "uncertain" : "labeled";
+  let confidence = source === "labeled" ? 0.94 : 0.58;
+  confidence -= penalty;
+  if (uncertain) confidence -= 0.2;
+  confidence = clamp(confidence, 0.05, 0.99);
+  return {
+    fieldKey: key,
+    label: EXTRACT_LABELS[key] ?? key.replaceAll("_", " "),
+    rawValue,
+    normalizedValue,
+    confidence: round3(confidence),
+    flagged: confidence < CONFIDENCE_THRESHOLD,
+    source,
+  };
+}
+
+function normalizerFor(key: string): (raw: string) => string {
+  if (key === "year_built" || key === "roof_year" || key === "vehicle_year") return normalizeYear;
+  if (
+    key === "coverage_a" ||
+    key === "coverage_b" ||
+    key === "coverage_c" ||
+    key === "coverage_d" ||
+    key === "replacement_cost_estimate" ||
+    key === "current_premium" ||
+    key === "liability_pd" ||
+    key === "pip"
+  ) {
+    return normalizeMoney;
+  }
+  if (key === "hurricane_deductible" || key === "aop_deductible" || key === "wind_deductible") {
+    return normalizeDeductible;
+  }
+  if (key === "construction") return normalizeConstruction;
+  if (key === "roof_covering") return normalizeRoof;
+  if (key === "opening_protection") return normalizeOpenings;
+  if (key === "occupancy") return normalizeOccupancy;
+  if (key === "address") return streetFromLocation;
+  if (key === "city" || key === "county") {
+    return (s) => titleCase(s.replace(/county$/i, "").trim());
+  }
+  if (key === "state") return (s) => s.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase();
+  if (key === "zip" || key === "garaging_zip") return (s) => (s.match(/\d{5}/)?.[0] ?? s);
+  if (key === "square_feet" || key === "stories") {
+    return (s) => {
+      const n = parseInt(s.replace(/,/g, ""), 10);
+      return Number.isFinite(n) ? String(n) : s;
+    };
+  }
+  if (key === "pool" || key === "mobile_home") {
+    return (s) => (/^(y|yes|true)$/i.test(s.trim()) ? "true" : /^(n|no|false|none)$/i.test(s.trim()) ? "false" : s);
+  }
+  if (key === "form") return (s) => s.replace(/\s+/g, "").toUpperCase();
+  if (key === "flood_zone") return (s) => s.trim().toUpperCase();
+  if (key === "named_insured" || key === "mortgagee") return (s) => s.replace(/\s+/g, " ").trim();
+  return (s) => s.replace(/\s+/g, " ").trim();
 }
 
 export function fieldKeyToRiskColumn(fieldKey: string): string | null {
@@ -281,6 +497,12 @@ function normalizeYear(raw: string): string {
 function normalizeMoney(raw: string): string {
   const n = parseInt(raw.replace(/[, $]/g, ""), 10);
   return Number.isFinite(n) ? String(n) : raw;
+}
+
+function normalizeDeductible(raw: string): string {
+  const trimmed = raw.replace(/\s+/g, "").trim();
+  if (/%/.test(trimmed)) return trimmed.replace(/\$/g, "");
+  return normalizeMoney(trimmed);
 }
 
 function normalizeConstruction(raw: string): string {

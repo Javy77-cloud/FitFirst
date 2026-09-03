@@ -4,7 +4,7 @@ import { sql } from "../src/lib/db";
 async function main() {
   const result = await seedIfEmpty();
   console.log(
-    "Loaded Ana Dib HO3 shop (2026-09-02 Palm Bay fixture) and Ortega Melbourne fill-demo deal.",
+    "Loaded Ana Dib HO3 shop, Ortega Melbourne fill-demo, and Francisco Javier Garcia HO/Auto shop.",
   );
   await sql.end({ timeout: 5 });
 }

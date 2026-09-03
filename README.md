@@ -41,7 +41,7 @@ Open [http://localhost:43147](http://localhost:43147).
 
 ## First path to exercise
 
-`npm run db:seed` loads two shops.
+`npm run db:seed` loads three shops.
 
 ### Ana Dib HO3 (complete Home sheet)
 
@@ -57,11 +57,14 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 
 1. Home → **Ortega fill-demo shop** (or Deals).
 2. Home Quote Sheet starts blank (yellow).
-3. A sample text dec is already on **Files**. Click **Fill Quote Sheet**.
-4. Year built (2004), address (412 Harbor Isle Dr), and Cov A ($275,000) land as **CHECK** (blue) on blanks only. Header glance picks up coverage, the property one-liner, and current carrier (Citizens) if those header fields were empty.
-5. A sample photo-a-dec PNG is also on Files. Fill still works. The photo opens an **ocr** job with status `not_implemented` — Photo OCR is the next slice, not a paid vendor. You can also drop your own `.txt` / text PDF / photo.
+3. Drop a dec on the sheet (or click **Fill from files already on this deal**). Every labeled field on the page maps — not a 12-field subset.
+4. Leftover blanks gap-fill from public listing / county / FEMA facts. The uploaded page wins on conflict. Each cell is tagged with its source. Zestimate is never Cov A.
 
-Create your own path from the **desk drop** (dec / wind mit / 4-point → Lead → Deal → Quote Sheet), **Leads**, or **New shopping deal**. Source docs never create a policy. Bind is what creates Contact + Policy.
+### Francisco Javier Garcia shop
+
+Zoho Contact `6742853000009315243` (email javyspain2004@gmail.com, DOB 1977-07-11, mobile 801-400-6160). Zoho had **no mailing street**. Seeded as a shopping deal with a full-page HO3 + auto sample dec on Files so you can click Fill and see the whole-page mapper. No policy.
+
+Create your own path from the **desk drop** (dec → Lead → Deal → filled Quote Sheet), **Leads**, or **New shopping deal**. Source docs never create a policy. Bind is what creates Contact + Policy.
 
 ## Schema
 

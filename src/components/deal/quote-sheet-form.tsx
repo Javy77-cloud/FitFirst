@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { Button } from "@/components/ui/button";
@@ -9,7 +12,8 @@ import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
-import { COPY_SHEET_PORTAL_NOTE, SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
+import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
+import { SheetDrop } from "@/components/deal/sheet-drop";
 import { cn } from "@/lib/utils";
 
 export function QuoteSheetForm({
@@ -18,6 +22,7 @@ export function QuoteSheetForm({
   line,
   sheet,
   contact,
+  riskId,
   printable = false,
 }: {
   dealId: string;
@@ -25,9 +30,11 @@ export function QuoteSheetForm({
   line: ShopLine;
   sheet: QuoteSheet;
   contact?: Contact | null;
+  riskId?: string;
   printable?: boolean;
 }) {
-  const groups = groupFields(line);
+  const [showMore, setShowMore] = useState(false);
+  const groups = groupFields(line, { includeMore: showMore || printable });
   const counts = sheetCounts(sheet.values);
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
   const copyText = buildCopySheetText({
@@ -40,21 +47,21 @@ export function QuoteSheetForm({
   });
 
   return (
-    <form action={printable ? undefined : saveQuoteSheet} className="space-y-4">
-      <input type="hidden" name="dealId" value={dealId} />
-      <input type="hidden" name="line" value={line} />
-
+    <div className="space-y-4">
       <div className="ff-card p-4 print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-navy">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Master sheet · this line only
+            </p>
+            <h2 className="text-lg font-semibold text-navy">
               {SHOP_LINE_LABELS[line]} Quote Sheet
             </h2>
-            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              Fill Quote Sheet is in this product — no bot.{" "}
-              <span className="font-medium text-foreground">Copy sheet</span> is the in-desk
-              packet ({SUPER_COPY_LABEL}). Pasting into TypTap or any carrier portal stays you
-              or a quoting bot. FitFirst does not log into carriers.
+            <p className="mt-1 text-xs text-muted-foreground">
+              Yellow = missing. Blue = CHECK (use the value). People and DOB stay on the
+              Contact
+              {contactName ? ` · ${contactName}` : ""}
+              {contact?.dateOfBirth ? ` · DOB ${contact.dateOfBirth}` : ""}.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-[11px]">
@@ -70,23 +77,15 @@ export function QuoteSheetForm({
             {printable ? null : <CopySheetButton text={copyText} />}
           </div>
         </div>
-
-        <div className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
-          <div className="font-medium text-navy">People live on the Contact</div>
-          <p className="mt-0.5 text-muted-foreground">
-            Named insured and DOB are not the Quote Sheet source of truth.
-            {contactName ? (
-              <>
-                {" "}
-                Contact: <span className="text-foreground">{contactName}</span>
-                {contact?.dateOfBirth ? ` · DOB ${contact.dateOfBirth}` : " · DOB not on file"}
-              </>
-            ) : (
-              " No contact yet — shopping starts as a deal."
-            )}
-          </p>
-        </div>
       </div>
+
+      {printable || !riskId ? null : (
+        <SheetDrop dealId={dealId} riskId={riskId} line={line} />
+      )}
+
+      <form action={printable ? undefined : saveQuoteSheet} className="space-y-4">
+      <input type="hidden" name="dealId" value={dealId} />
+      <input type="hidden" name="line" value={line} />
 
       {groups.map((group) => (
         <section key={group.group} className="ff-card p-4 print:break-inside-avoid">
@@ -119,6 +118,14 @@ export function QuoteSheetForm({
 
       {printable ? null : (
         <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMore((v) => !v)}
+          >
+            {showMore ? "Hide extra fields" : "Show inspections and notes"}
+          </Button>
           <CopySheetButton text={copyText} />
           <Button type="submit" size="sm" variant="secondary">
             Save Quote Sheet
@@ -133,15 +140,28 @@ export function QuoteSheetForm({
             href={`/deals/${dealId}/quote-sheet/${line}/print`}
             className="text-xs text-primary hover:underline"
           >
-            Print / PDF
+            Print
           </Link>
         </div>
       )}
       {printable ? null : (
-        <p className="text-[11px] text-muted-foreground print:hidden">{COPY_SHEET_PORTAL_NOTE}</p>
+        <p className="text-[11px] text-muted-foreground print:hidden">
+          Copy sheet ({SUPER_COPY_LABEL}). Portal paste is you or a bot — no carrier login here.
+        </p>
       )}
-    </form>
+      </form>
+    </div>
   );
+}
+
+function sourceTag(cell: QuoteSheetFieldValue) {
+  if (cell.source === "javy") return "Javy-tested";
+  if (cell.sourceLabel) return cell.sourceLabel;
+  if (cell.source === "extracted") return "Uploaded dec";
+  if (cell.source === "public") return "Public records";
+  if (cell.source === "agent") return "You typed";
+  if (cell.source === "seed") return "Seed";
+  return null;
 }
 
 function SheetField({
@@ -162,18 +182,22 @@ function SheetField({
   readOnly?: boolean;
 }) {
   const tone =
-    cell.status === "check" ? "check" : cell.value.trim() === "" || cell.status === "missing" ? "missing" : "ok";
-  const javy = cell.source === "javy";
+    cell.status === "check"
+      ? "check"
+      : cell.value.trim() === "" || cell.status === "missing"
+        ? "missing"
+        : "ok";
+  const tag = sourceTag(cell);
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-2">
         <Label htmlFor={fieldKey} className="text-xs">
           {label}
-          {javy ? (
-            <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
-          ) : cell.status === "check" ? (
+          {cell.status === "check" ? (
             <span className="ml-1 font-normal text-fit-check">CHECK</span>
+          ) : cell.source === "javy" ? (
+            <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
           ) : null}
         </Label>
         {cell.status === "check" && !readOnly ? (
@@ -208,6 +232,7 @@ function SheetField({
           className={cn("h-8", toneClass(tone))}
         />
       )}
+      {tag ? <p className="mt-0.5 text-[10px] text-muted-foreground">{tag}</p> : null}
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
   findOrCreateLead,
   type IngestFile,
 } from "@/lib/ingest/lead-deal";
-import { runFillQuoteSheet } from "@/app/actions/quote-sheet";
+import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import type { ShopLine } from "@/lib/domain";
 
 export async function ingestDroppedDocuments(formData: FormData) {
@@ -87,7 +87,7 @@ export async function ingestDroppedDocuments(formData: FormData) {
 
   const sourceFiles = files.filter((file) => !isQuoteAttachment(file.docType, file.filename));
   if (sourceFiles.length > 0) {
-    await runFillQuoteSheet(deal.id, line);
+    await runFillDealSheets(deal.id, line);
   }
 
   revalidatePath("/");

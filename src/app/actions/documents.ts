@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { persistDealFile } from "@/lib/documents/store";
+import { runFillDealSheets } from "@/app/actions/quote-sheet";
+import { SHOP_LINES, type ShopLine } from "@/lib/domain";
 import {
   CLEAN_DEC_FILENAME,
   CLEAN_DEC_TEXT,
@@ -29,6 +31,9 @@ export async function uploadDocument(formData: FormData) {
     buffer,
     docType,
   });
+  const lineRaw = String(formData.get("line") ?? "home");
+  const line = (SHOP_LINES as readonly string[]).includes(lineRaw) ? (lineRaw as ShopLine) : "home";
+  await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
 }
 

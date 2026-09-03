@@ -19,6 +19,7 @@ This file is the handshake for additive desk work. Do not invent a second CRM sh
 Tabs: Home, Auto, Rec/RV, Flood, Umbrella, Life, Health, Workers Comp, General Liability.
 Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep enough to shop FL HO / auto). WC / GL / RV are thinner.
 Desk sections (Quote Sheet / Files / Markets / Quotes) are URL-driven: `?line=home&tab=files`. Source files stay on Files.
+Master sheet chrome: one title per line (“Home Quote Sheet”), yellow = missing, blue = CHECK. Inspections/notes stay behind “Show more”.
 
 ## Ingest path (locked) — Lead → Deal
 
@@ -42,7 +43,9 @@ Hook new ingest to `src/lib/ingest/lead-deal.ts` + `src/app/actions/ingest.ts`. 
 
 - Upload / drop on an existing Deal still stores a `documents` row and Fill writes blanks only.
 - Desk-level drop uses the Lead → Deal path above.
-- Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`. **This path is done.**
+- Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`. Map **every labeled field** on the page (coverages B–D, deductibles, dates, premium, form, policy #, beds/baths, flood zone, auto VIN/limits). Do not stop at a short subset.
+- After the doc is applied, gap-fill remaining blanks from public records (`src/lib/public-records/lookup.ts`): county PA, listing facts (year / sqft / beds / baths / construction), permits when present, FEMA flood. **Uploaded doc wins on conflict.** Tag `source` + `sourceLabel` on each cell.
+- Never invent SSN or claims. Never use Zestimate or list price as Cov A.
 - Images always go through `classifyIngest` → engine `ocr` → `extractFromImage` → an `extraction_jobs` row. Job rows must exist even when OCR is stubbed.
 
 ## Photo OCR (next slice)
@@ -69,9 +72,11 @@ Next slice:
 | Paste into TypTap / any carrier portal | Human or quoting bot |
 | Carrier login / portal macros | Out of scope |
 
-## Public address links
+## Public address links and listing facts
 
-`src/lib/address-links.ts` + `src/components/address-links.tsx` — Zillow search and FEMA MSC flood map are outbound `target=_blank rel=noopener` tabs only. Never fetch those sites, never store Zestimate / list price, never use either as Cov A. Hide when street is empty.
+`src/lib/address-links.ts` — Zillow search and FEMA MSC flood map stay outbound tabs. `src/lib/public-records/` may pull **listed facts** (year built, sqft, beds/baths, construction, flood zone) to fill blanks only. Never store or apply Zestimate / list price as Cov A. Hide address links when street is empty.
+
+Photo OCR sibling (`bc-9615b8a2`) owns image extract. This desk owns the master sheet + text/PDF ingest. Do not fork a second sheet.
 
 ## Schema / tokens / fixtures
 

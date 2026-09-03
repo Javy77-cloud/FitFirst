@@ -7,6 +7,8 @@ import {
   contacts,
   deals,
   leads,
+  extractedFields,
+  extractionJobs,
   quoteAttemptLogs,
   quoteSheets,
   quotes,
@@ -27,6 +29,14 @@ import {
   FILL_LEAD_ID,
   FILL_PHOTO_ID,
   FILL_RISK_ID,
+  GARCIA_AUTO_DOC_ID,
+  GARCIA_AUTO_SHEET_ID,
+  GARCIA_CONTACT_ID,
+  GARCIA_DEAL_ID,
+  GARCIA_DOC_ID,
+  GARCIA_HOME_SHEET_ID,
+  GARCIA_LEAD_ID,
+  GARCIA_RISK_ID,
   LEAD_ID,
   RISK_ID,
   TENANT_ID,
@@ -41,6 +51,11 @@ import {
 } from "../fixtures/sample-photo-dec";
 import { anaHomeSheetValues, anaPropertyOneliner } from "../quote-sheet/ana-home";
 import { emptySheetValues } from "../quote-sheet/catalog";
+import {
+  GARCIA_AUTO_DEC_TEXT,
+  GARCIA_DEC_FILENAME,
+  GARCIA_DEC_TEXT,
+} from "../fixtures/sample-garcia-dec";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -364,9 +379,13 @@ export async function seed() {
   });
 
   await seedFillDemoDeal();
+  await seedGarciaDeal();
 }
 
 async function seedFillDemoDeal() {
+  await db.delete(extractionJobs).where(eq(extractionJobs.dealId, FILL_DEAL_ID));
+  await db.delete(extractedFields).where(eq(extractedFields.riskId, FILL_RISK_ID));
+
   await db
     .insert(leads)
     .values({
@@ -484,5 +503,170 @@ async function seedFillDemoDeal() {
     mimeType: "image/png",
     buffer: SAMPLE_PHOTO_DEC_PNG,
     docType: "photo",
+  });
+}
+
+/** Zoho contact Francisco Javier Garcia — shopping only, no policy. */
+async function seedGarciaDeal() {
+  await db.delete(extractionJobs).where(eq(extractionJobs.dealId, GARCIA_DEAL_ID));
+  await db.delete(extractedFields).where(eq(extractedFields.riskId, GARCIA_RISK_ID));
+
+  await db
+    .insert(leads)
+    .values({
+      id: GARCIA_LEAD_ID,
+      tenantId: TENANT_ID,
+      firstName: "Francisco",
+      lastName: "Garcia",
+      email: "javyspain2004@gmail.com",
+      phone: "801-400-6160",
+      source: "zoho-contact",
+      status: "converted",
+      notes: "Zoho Contact 6742853000009315243 Francisco Javier Garcia. No mailing street on Zoho. Full HO3 sample dec is on Files so Fill can map the whole page. No policy.",
+      convertedDealId: GARCIA_DEAL_ID,
+    })
+    .onConflictDoUpdate({
+      target: leads.id,
+      set: {
+        firstName: "Francisco",
+        lastName: "Garcia",
+        email: "javyspain2004@gmail.com",
+        phone: "801-400-6160",
+        convertedDealId: GARCIA_DEAL_ID,
+        notes: "Zoho Contact 6742853000009315243 Francisco Javier Garcia. No mailing street on Zoho. Full HO3 sample dec is on Files so Fill can map the whole page. No policy.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(contacts)
+    .values({
+      id: GARCIA_CONTACT_ID,
+      tenantId: TENANT_ID,
+      firstName: "Francisco",
+      lastName: "Garcia",
+      email: "javyspain2004@gmail.com",
+      phone: "801-400-6160",
+      dateOfBirth: "1977-07-11",
+      notes: "From Zoho. Secondary name on the sample dec: Karen Del Valle Garcia Cariel. People/DOB stay on Contact. No policy from this shop.",
+    })
+    .onConflictDoUpdate({
+      target: contacts.id,
+      set: {
+        firstName: "Francisco",
+        lastName: "Garcia",
+        email: "javyspain2004@gmail.com",
+        phone: "801-400-6160",
+        dateOfBirth: "1977-07-11",
+        notes: "From Zoho. Secondary name on the sample dec: Karen Del Valle Garcia Cariel. People/DOB stay on Contact. No policy from this shop.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(deals)
+    .values({
+      id: GARCIA_DEAL_ID,
+      tenantId: TENANT_ID,
+      leadId: GARCIA_LEAD_ID,
+      contactId: GARCIA_CONTACT_ID,
+      title: "Garcia · Francisco Javier HO/Auto shop",
+      pipelineStage: "shopping",
+      lineOfBusiness: "HO",
+      state: "FL",
+      primaryNamedInsured: "Francisco Javier Garcia",
+      secondaryNamedInsured: "Karen Del Valle Garcia Cariel",
+      shopLines: ["home", "auto"],
+      coverageAmount: null,
+      propertyOneliner: null,
+      currentCarrier: null,
+      notes: "Blank master sheets. Full-page HO3 + auto sample decs on Files. Fill maps every labeled field. Zoho had no street. No policy.",
+    })
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        leadId: GARCIA_LEAD_ID,
+        contactId: GARCIA_CONTACT_ID,
+        title: "Garcia · Francisco Javier HO/Auto shop",
+        pipelineStage: "shopping",
+        shopLines: ["home", "auto"],
+        primaryNamedInsured: "Francisco Javier Garcia",
+        secondaryNamedInsured: "Karen Del Valle Garcia Cariel",
+        coverageAmount: null,
+        propertyOneliner: null,
+        currentCarrier: null,
+        notes: "Blank master sheets. Full-page HO3 + auto sample decs on Files. Fill maps every labeled field. Zoho had no street. No policy.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(risks)
+    .values({
+      id: GARCIA_RISK_ID,
+      tenantId: TENANT_ID,
+      dealId: GARCIA_DEAL_ID,
+      contactId: GARCIA_CONTACT_ID,
+      riskType: "property",
+      state: "FL",
+    })
+    .onConflictDoUpdate({
+      target: risks.id,
+      set: {
+        dealId: GARCIA_DEAL_ID,
+        contactId: GARCIA_CONTACT_ID,
+        address1: null,
+        city: null,
+        coverageA: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: GARCIA_HOME_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: GARCIA_DEAL_ID,
+      line: "home",
+      values: emptySheetValues("home"),
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: { values: emptySheetValues("home"), updatedAt: new Date() },
+    });
+
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: GARCIA_AUTO_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: GARCIA_DEAL_ID,
+      line: "auto",
+      values: emptySheetValues("auto"),
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: { values: emptySheetValues("auto"), updatedAt: new Date() },
+    });
+
+  await persistDealFile({
+    id: GARCIA_DOC_ID,
+    dealId: GARCIA_DEAL_ID,
+    riskId: GARCIA_RISK_ID,
+    filename: GARCIA_DEC_FILENAME,
+    mimeType: "text/plain",
+    buffer: Buffer.from(GARCIA_DEC_TEXT, "utf8"),
+    docType: "dec",
+  });
+
+  await persistDealFile({
+    id: GARCIA_AUTO_DOC_ID,
+    dealId: GARCIA_DEAL_ID,
+    riskId: GARCIA_RISK_ID,
+    filename: "francisco-garcia-auto-sample-dec.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(GARCIA_AUTO_DEC_TEXT, "utf8"),
+    docType: "dec",
   });
 }

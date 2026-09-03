@@ -445,7 +445,9 @@ export const extractionJobs = pgTable(
 export type QuoteSheetFieldValue = {
   value: string;
   status: "missing" | "check" | "confirmed";
-  source: "blank" | "agent" | "extracted" | "seed" | "javy";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public";
+  /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
+  sourceLabel?: string;
 };
 
 export const alerts = pgTable(

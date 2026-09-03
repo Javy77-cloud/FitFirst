@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { bindDeal } from "@/app/actions/crm";
-import { addShopLine, fillQuoteSheet } from "@/app/actions/quote-sheet";
+import { addShopLine } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
 import { PropertyAddressLinks } from "@/components/address-links";
 import { DealFiles } from "@/components/deal/deal-files";
@@ -23,7 +23,7 @@ import {
   type ShopLine,
 } from "@/lib/domain";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
-import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
+import { buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 
 export const dynamic = "force-dynamic";
 
@@ -141,9 +141,8 @@ export default async function DealPage({
           />
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Header is a glance. The Quote Sheet is the edit form. Zillow / FEMA are address links
-          only — never a Zestimate as Cov A. Copy sheet is the in-desk packet ({SUPER_COPY_LABEL}).
-          Fill is in the product. Portal paste is a human or a bot — no TypTap login here.
+          Header is a glance. The {SHOP_LINE_LABELS[activeLine]} Quote Sheet below is the master
+          for this line. Yellow = missing. Blue = CHECK. Never use a Zestimate as Cov A.
         </p>
       </div>
 
@@ -186,13 +185,6 @@ export default async function DealPage({
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
-        <form action={fillQuoteSheet}>
-          <input type="hidden" name="dealId" value={deal.id} />
-          <input type="hidden" name="line" value={activeLine} />
-          <Button type="submit" size="sm">
-            Fill Quote Sheet
-          </Button>
-        </form>
         <CopySheetButton
           text={buildCopySheetText({
             line: activeLine,
@@ -208,12 +200,6 @@ export default async function DealPage({
           className="inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[0.8rem] font-medium"
         >
           Super-Copy JSON
-        </Link>
-        <Link
-          href={`/deals/${deal.id}/quote-sheet/${activeLine}/print`}
-          className="inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[0.8rem] font-medium"
-        >
-          Print Quote Sheet
         </Link>
       </div>
 
@@ -234,6 +220,7 @@ export default async function DealPage({
                   line={activeLine}
                   sheet={sheet}
                   contact={contact}
+                  riskId={risk.id}
                 />
               ),
             },

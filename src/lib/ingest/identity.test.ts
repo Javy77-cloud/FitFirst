@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CLEAN_DEC_TEXT } from "@/lib/fixtures/sample-docs";
 import { MELBOURNE_DEC_TEXT } from "@/lib/fixtures/sample-melbourne-dec";
+import { GARCIA_AUTO_DEC_TEXT, GARCIA_DEC_TEXT } from "@/lib/fixtures/sample-garcia-dec";
 import {
   INGEST_CREATES_POLICY,
   INGEST_PATH,
@@ -26,8 +27,19 @@ describe("drop ingest identity", () => {
   });
 
   it("reads named insured from the Melbourne sample dec", () => {
-    expect(parseNamedInsured(MELBOURNE_DEC_TEXT)).toBeNull();
+    expect(parseNamedInsured(MELBOURNE_DEC_TEXT)).toEqual({
+      firstName: "Maya",
+      lastName: "Ortega",
+      secondary: null,
+    });
     expect(inferShopLine(MELBOURNE_DEC_TEXT, "sample-melbourne-dec.txt", "dec")).toBe("home");
+  });
+
+  it("keeps a full HO3 on Home and an auto dec on Auto", () => {
+    expect(inferShopLine(GARCIA_DEC_TEXT, "francisco-garcia-ho3-sample-dec.txt", "dec")).toBe("home");
+    expect(inferShopLine(GARCIA_AUTO_DEC_TEXT, "francisco-garcia-auto-sample-dec.txt", "dec")).toBe(
+      "auto",
+    );
   });
 
   it("classifies source docs vs later quote-PDF attachments", () => {

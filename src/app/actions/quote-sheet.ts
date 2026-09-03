@@ -18,7 +18,7 @@ import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
 import { extractFieldsFromText, fieldKeyToRiskColumn, coerceRiskValue } from "@/lib/extraction/extract";
 import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
-import { isQuoteAttachment } from "@/lib/ingest/identity";
+import { inferShopLine, isQuoteAttachment } from "@/lib/ingest/identity";
 import { ImageOcrNotImplementedError, textFromUpload } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
@@ -30,11 +30,13 @@ import {
 } from "@/lib/fixtures/sample-photo-dec";
 import {
   applyExtractedToSheet,
+  applyPublicToSheet,
   confirmField,
   fillDealHeaderBlanks,
   mergeAgentEdits,
 } from "@/lib/quote-sheet/apply";
-import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
+import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import { SHOP_LINES } from "@/lib/domain";
 
 function str(form: FormData, key: string) {
@@ -122,8 +124,22 @@ export async function fillQuoteSheet(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
-  await runFillQuoteSheet(dealId, lineRaw);
+  await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
+}
+
+export async function runFillDealSheets(dealId: string, primary: ShopLine) {
+  await runFillQuoteSheet(dealId, primary);
+  await fillOtherShopLines(dealId, primary);
+}
+
+async function fillOtherShopLines(dealId: string, already: ShopLine) {
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  for (const line of deal?.shopLines ?? []) {
+    if (line !== already && isShopLine(line)) {
+      await runFillQuoteSheet(dealId, line);
+    }
+  }
 }
 
 export async function attachSampleMelbourneDec(formData: FormData) {
@@ -204,8 +220,20 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
     try {
       const text = await textFromUpload(buffer, doc.mimeType, doc.filename);
+      const inferred = inferShopLine(text, doc.filename, doc.docType);
+      if (inferred !== line) {
+        continue;
+      }
       const extracted = extractFieldsFromText(text);
-      const applied = applyExtractedToSheet(line, values, extracted.fields);
+      const applied = applyExtractedToSheet(
+        line,
+        values,
+        extracted.fields.map((field) => ({
+          fieldKey: field.fieldKey,
+          normalizedValue: field.normalizedValue,
+          sourceLabel: "Uploaded dec",
+        })),
+      );
       values = applied.values;
 
       await db.delete(extractedFields).where(eq(extractedFields.documentId, doc.id));
@@ -219,8 +247,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           normalizedValue: field.normalizedValue,
           confidence: field.confidence.toFixed(3),
           flagged: field.flagged,
-          appliedToRisk: applied.filledKeys.includes(field.fieldKey) || applied.filledKeys.includes(
-            field.fieldKey === "address" ? "address1" : field.fieldKey,
+          appliedToRisk: applied.filledKeys.includes(
+            extractKeyToSheetKey(line, field.fieldKey) ?? field.fieldKey,
           ),
         });
       }
@@ -237,7 +265,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         message:
           applied.filledKeys.length === 0
             ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
-            : `Filled ${applied.filledKeys.join(", ")} from ${doc.filename}. CHECK fields need a glance. Source PDFs stay on Files.`,
+            : `Filled ${applied.filledKeys.length} fields from ${doc.filename}. CHECK = use the value. Source files stay on Files.`,
       });
       await db
         .update(documents)
@@ -279,6 +307,22 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       message: "No source files on this deal. Drop a dec, wind mit, or 4-point first.",
     });
     return;
+  }
+
+  const publicLookup = await lookupPublicFacts(addressFromSheet(values));
+  if (publicLookup.facts.length) {
+    const publicApplied = applyPublicToSheet(line, values, publicLookup.facts);
+    values = publicApplied.values;
+    await db.insert(extractionJobs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      quoteSheetId: sheet.id,
+      engine: "pdf_text",
+      status: "done",
+      filledKeys: publicApplied.filledKeys,
+      skippedKeys: publicApplied.skippedKeys,
+      message: publicLookup.message,
+    });
   }
 
   await db

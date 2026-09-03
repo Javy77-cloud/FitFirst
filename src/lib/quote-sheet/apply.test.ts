@@ -5,10 +5,12 @@ import { extractFieldsFromText } from "@/lib/extraction/extract";
 import { anaHomeSheetValues } from "./ana-home";
 import {
   applyExtractedToSheet,
+  applyPublicToSheet,
   fillDealHeaderBlanks,
   mergeAgentEdits,
   neverCheckCoverageA,
 } from "./apply";
+import { GARCIA_DEC_TEXT } from "@/lib/fixtures/sample-garcia-dec";
 import { emptySheetValues } from "./catalog";
 
 describe("quote sheet fill — blanks only", () => {
@@ -92,6 +94,30 @@ describe("quote sheet fill — blanks only", () => {
     expect(skipped.coverageAmount).toBe(321000);
     expect(skipped.propertyOneliner).toBe("already set");
     expect(skipped.currentCarrier).toBe("American Integrity");
+  });
+
+  it("maps 30+ Garcia HO3 fields onto a blank Home sheet as CHECK", () => {
+    const extracted = extractFieldsFromText(GARCIA_DEC_TEXT);
+    const result = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
+    expect(result.filledKeys.length).toBeGreaterThanOrEqual(30);
+    expect(result.values.coverage_a.source).toBe("extracted");
+    expect(result.values.coverage_a.sourceLabel).toBe("Uploaded dec");
+    expect(result.values.coverage_b.value).toBe("28500");
+  });
+
+  it("gap-fills public facts only on blanks and never uses Zestimate as Cov A", () => {
+    const existing = emptySheetValues("home");
+    existing.coverage_a = { value: "285000", status: "check", source: "extracted", sourceLabel: "Uploaded dec" };
+    existing.year_built = { value: "1996", status: "check", source: "extracted", sourceLabel: "Uploaded dec" };
+    const result = applyPublicToSheet("home", existing, [
+      { fieldKey: "square_feet", value: "1840", sourceLabel: "Listing facts", kind: "listing" },
+      { fieldKey: "coverage_a", value: "294000", sourceLabel: "Zillow Zestimate", kind: "zestimate" },
+      { fieldKey: "year_built", value: "1980", sourceLabel: "Brevard PA", kind: "county" },
+    ]);
+    expect(result.values.square_feet.value).toBe("1840");
+    expect(result.values.square_feet.source).toBe("public");
+    expect(result.values.coverage_a.value).toBe("285000");
+    expect(result.values.year_built.value).toBe("1996");
   });
 
   it("keeps Javy Cov A confirmed when the agent saves the same number", () => {
