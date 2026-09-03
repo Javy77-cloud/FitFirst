@@ -25,6 +25,8 @@ ALTER TABLE "activity_logs" ADD COLUMN IF NOT EXISTS "to_address" text;
 CREATE INDEX IF NOT EXISTS "activity_logs_deal_idx" ON "activity_logs" ("tenant_id","deal_id");
 CREATE INDEX IF NOT EXISTS "activity_logs_thread_idx" ON "activity_logs" ("tenant_id","thread_key");
 
+ALTER TABLE "record_asks" ADD COLUMN IF NOT EXISTS "assignee_id" uuid;
+
 CREATE TABLE IF NOT EXISTS "desk_column_prefs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   "tenant_id" uuid NOT NULL REFERENCES "tenants"("id"),

@@ -1,11 +1,16 @@
 import { notFound } from "next/navigation";
 import { createDealFromLead } from "@/app/actions/crm";
+import { updateLeadRecord } from "@/app/actions/record-edit";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
-import { getLead, listEmailTemplates } from "@/lib/db/queries";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +20,12 @@ export default async function LeadDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [row, templates] = await Promise.all([getLead(id), listEmailTemplates()]);
+  const [row, templates, asks, users] = await Promise.all([
+    getLead(id),
+    listEmailTemplates(),
+    listRecordAsks("lead", id),
+    listDeskUsers(),
+  ]);
   if (!row) notFound();
   const { lead, deal, timeline } = row;
 
@@ -26,29 +36,49 @@ export default async function LeadDetailPage({
         <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
       </div>
 
-      <RecordSection id="record" title="This lead" summary="Info, convert, and communications">
-        <div className="mb-4 space-y-2 text-sm">
+      <RecordSection id="record" title="This lead" summary="Info already on the lead — do not retype">
+        <form action={updateLeadRecord} className="mb-4 grid gap-2 sm:grid-cols-2">
+          <input type="hidden" name="leadId" value={lead.id} />
           <div>
-            <span className="text-xs text-muted-foreground">Phone</span>
-            <div>{lead.phone ?? "—"}</div>
+            <Label className="text-xs">First</Label>
+            <Input name="firstName" defaultValue={lead.firstName} className="mt-1 h-8" />
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Email</span>
-            <div>{lead.email ?? "—"}</div>
+            <Label className="text-xs">Last</Label>
+            <Input name="lastName" defaultValue={lead.lastName} className="mt-1 h-8" />
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Notes</span>
-            <p className="whitespace-pre-wrap text-muted-foreground">{lead.notes ?? "—"}</p>
+            <Label className="text-xs">Phone</Label>
+            <Input name="phone" defaultValue={lead.phone ?? ""} className="mt-1 h-8" />
           </div>
-          {!deal ? (
-            <form action={createDealFromLead} className="pt-2">
-              <input type="hidden" name="leadId" value={lead.id} />
-              <Button type="submit" size="sm">
-                Convert to deal
-              </Button>
-            </form>
-          ) : null}
-        </div>
+          <div>
+            <Label className="text-xs">Email</Label>
+            <Input name="email" defaultValue={lead.email ?? ""} className="mt-1 h-8" />
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Notes</Label>
+            <Input name="notes" defaultValue={lead.notes ?? ""} className="mt-1 h-8" />
+          </div>
+          <Button type="submit" size="sm">
+            Save lead
+          </Button>
+        </form>
+        {!deal ? (
+          <form action={createDealFromLead} className="mb-4">
+            <input type="hidden" name="leadId" value={lead.id} />
+            <Button type="submit" size="sm" variant="outline">
+              Convert to deal
+            </Button>
+          </form>
+        ) : null}
+        <RecordAskPanel
+          entityType="lead"
+          entityId={lead.id}
+          asks={asks}
+          users={users}
+          leadId={lead.id}
+          dealId={deal?.id}
+        />
         <ActivityTimeline
           items={timeline}
           leadId={lead.id}
@@ -59,7 +89,7 @@ export default async function LeadDetailPage({
         />
       </RecordSection>
 
-      <RecordSection id="related" title="Related" summary="Deal created from this lead">
+      <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">
         {deal ? (
           <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
         ) : (

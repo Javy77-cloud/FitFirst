@@ -1,6 +1,27 @@
 import { RecordLink } from "@/components/record-links";
-import { formatDay, formatMoney } from "@/lib/domain";
+import { formatMoney } from "@/lib/domain";
 import { toNumber } from "@/lib/commissions/math";
+
+export function RelatedRollups({
+  premium,
+  commission,
+}: {
+  premium: number;
+  commission: number;
+}) {
+  return (
+    <div className="mb-3 grid gap-2 sm:grid-cols-2">
+      <div className="rounded-md border border-border px-3 py-2 text-sm">
+        <div className="text-xs text-muted-foreground">Total premium (these policies)</div>
+        <div className="font-semibold text-navy">{formatMoney(premium)}</div>
+      </div>
+      <div className="rounded-md border border-border px-3 py-2 text-sm">
+        <div className="text-xs text-muted-foreground">Total commission (these policies)</div>
+        <div className="font-semibold text-navy">{formatMoney(commission)}</div>
+      </div>
+    </div>
+  );
+}
 
 export function RelatedPolicies({
   rows,

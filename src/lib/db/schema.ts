@@ -1064,6 +1064,7 @@ export const recordAsks = pgTable("record_asks", {
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id").notNull(),
   authorId: uuid("author_id"),
+  assigneeId: uuid("assignee_id"),
   kind: text("kind").notNull().default("question"),
   body: text("body").notNull(),
   status: text("status").notNull().default("open"),
@@ -1246,6 +1247,7 @@ export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
 export type Business = Account;
 export type Claim = typeof claims.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
+export type RecordAsk = typeof recordAsks.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type PolicyTerm = typeof policyTerms.$inferSelect;

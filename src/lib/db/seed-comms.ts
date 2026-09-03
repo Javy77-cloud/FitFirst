@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
 import { db } from "./index";
-import { activities, activityLogs, emailSendJobs } from "./schema";
+import { activities, activityLogs, emailSendJobs, recordAsks } from "./schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
+  ADMIN_USER_ID,
+  AGENT_USER_ID,
   ELENA_CONTACT_ID,
   ELENA_DEAL_ID,
   ELENA_EMAIL_JOB_ID,
@@ -144,4 +146,26 @@ export async function seedCommsDesk() {
     .update(emailSendJobs)
     .set({ status: "logged" })
     .where(eq(emailSendJobs.id, ELENA_EMAIL_JOB_ID));
+
+  await db
+    .insert(recordAsks)
+    .values({
+      id: "88888888-8888-4888-8888-888888888803",
+      tenantId: DEFAULT_TENANT_ID,
+      entityType: "policy",
+      entityId: ELENA_POLICY_ID,
+      authorId: ADMIN_USER_ID,
+      assigneeId: AGENT_USER_ID,
+      kind: "status",
+      body: "What's the status on HO3-ELENA-2026?",
+      status: "open",
+    })
+    .onConflictDoUpdate({
+      target: recordAsks.id,
+      set: {
+        body: "What's the status on HO3-ELENA-2026?",
+        assigneeId: AGENT_USER_ID,
+        status: "open",
+      },
+    });
 }

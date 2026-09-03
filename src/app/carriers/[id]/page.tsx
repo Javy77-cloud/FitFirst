@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/domain";
-import { getCarrier } from "@/lib/db/queries";
+import { getCarrier, listRecordAsks } from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
 import { currentDeskSession } from "@/lib/auth/session";
+import { RecordAskPanel } from "@/components/record-ask";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +21,14 @@ export default async function CarrierRecordPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const row = await getCarrier(id);
+  const [row, asks, users, session] = await Promise.all([
+    getCarrier(id),
+    listRecordAsks("carrier", id),
+    listDeskUsers(),
+    currentDeskSession(),
+  ]);
   if (!row) notFound();
   const { carrier, rule } = row;
-  const session = await currentDeskSession();
 
   return (
     <AppShell title={carrier.name}>
@@ -70,6 +76,7 @@ export default async function CarrierRecordPage({
             </div>
           </dl>
         )}
+        <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} />
       </RecordSection>
       <RecordSection id="related" title="Related" summary="Appetite drill-in and decline log">
         <p className="mb-3 text-sm">

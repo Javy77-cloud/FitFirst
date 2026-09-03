@@ -1,12 +1,23 @@
 import { notFound } from "next/navigation";
+import { updateAccountRecord } from "@/app/actions/record-edit";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
+import { RecordAskPanel } from "@/components/record-ask";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
-import { RelatedDeals, RelatedPolicies } from "@/components/related-tables";
+import { RelatedDeals, RelatedPolicies, RelatedRollups } from "@/components/related-tables";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatMoney } from "@/lib/domain";
-import { getAccountWorkspace, listEmailTemplates } from "@/lib/db/queries";
+import {
+  getAccountWorkspace,
+  listEmailTemplates,
+  listRecordAsks,
+  sumCommissionsForPolicies,
+} from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +28,12 @@ export default async function AccountDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [workspace, templates] = await Promise.all([getAccountWorkspace(id), listEmailTemplates()]);
+  const [workspace, templates, asks, users] = await Promise.all([
+    getAccountWorkspace(id),
+    listEmailTemplates(),
+    listRecordAsks("account", id),
+    listDeskUsers(),
+  ]);
   if (!workspace) notFound();
   const {
     account,
@@ -32,6 +48,7 @@ export default async function AccountDetailPage({
     certificates,
   } = workspace;
   const premium = policies.reduce((sum, row) => sum + toNumber(row.policy.premium), 0);
+  const commission = await sumCommissionsForPolicies(policies.map((row) => row.policy.id));
 
   return (
     <AppShell title={account.name}>
@@ -46,33 +63,47 @@ export default async function AccountDetailPage({
       </div>
 
       <RecordSection id="record" title="This business" summary={`${account.ein ?? "No EIN"} · comms stay on this record`}>
-        <dl className="mb-4 grid gap-2 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-xs text-muted-foreground">EIN / FEIN</dt>
-            <dd>{account.ein ?? "—"}</dd>
+        <form action={updateAccountRecord} className="mb-4 grid gap-2 sm:grid-cols-3">
+          <input type="hidden" name="accountId" value={account.id} />
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Name</Label>
+            <Input name="name" defaultValue={account.name} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Entity</dt>
-            <dd>{account.entityType ?? "—"}</dd>
+            <Label className="text-xs">EIN / FEIN</Label>
+            <Input name="ein" defaultValue={account.ein ?? ""} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Employees</dt>
-            <dd>{account.employeeCount ?? "—"}</dd>
+            <Label className="text-xs">Phone</Label>
+            <Input name="phone" defaultValue={account.phone ?? ""} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Annual sales</dt>
-            <dd>{formatMoney(account.annualSales)}</dd>
+            <Label className="text-xs">Email</Label>
+            <Input name="email" defaultValue={account.email ?? ""} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Phone</dt>
-            <dd>{account.phone ?? "—"}</dd>
+            <Label className="text-xs">City</Label>
+            <Input name="city" defaultValue={account.city ?? ""} className="mt-1 h-8" />
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Email</dt>
-            <dd>{account.email ?? "—"}</dd>
+          <div className="sm:col-span-3 text-xs text-muted-foreground">
+            Entity {account.entityType ?? "—"} · Employees {account.employeeCount ?? "—"} · Sales{" "}
+            {formatMoney(account.annualSales)}
           </div>
-        </dl>
+          <Button type="submit" size="sm">
+            Save business
+          </Button>
+        </form>
         {account.operations ? <p className="mb-4 text-xs text-muted-foreground">{account.operations}</p> : null}
+        <RecordAskPanel
+          entityType="account"
+          entityId={account.id}
+          asks={asks}
+          users={users}
+          accountId={account.id}
+          contactId={contacts[0]?.id}
+          policyId={policies[0]?.policy.id}
+          dealId={deals[0]?.id}
+        />
         <ActivityTimeline
           items={timeline}
           accountId={account.id}
@@ -88,8 +119,9 @@ export default async function AccountDetailPage({
       <RecordSection
         id="related"
         title="Related"
-        summary={`${policies.length} commercial policies · ${formatMoney(premium)}`}
+        summary={`${policies.length} commercial policies · ${formatMoney(premium)} premium · ${formatMoney(commission)} commission`}
       >
+        <RelatedRollups premium={premium} commission={commission} />
         <LocationsList locations={locations} />
         <CertificatesList accountId={account.id} certificates={certificates} />
         <div className="mt-4">

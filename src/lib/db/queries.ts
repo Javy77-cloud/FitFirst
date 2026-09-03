@@ -36,6 +36,7 @@ import {
   extractedFields,
   formTemplates,
   claimAttachments,
+  commissions,
   issuedCertificates,
   leads,
   locations,
@@ -47,6 +48,7 @@ import {
   quoteAttemptLogs,
   quoteSheets,
   quotes,
+  recordAsks,
   renewalCompareLogs,
   reviewTasks,
   risks,
@@ -185,6 +187,31 @@ export async function listCommsForRecord(filter: {
   return all.filter((item) =>
     ["email", "sms", "call", "meeting", "task"].includes(item.kind.toLowerCase()),
   );
+}
+
+export async function listRecordAsks(entityType: string, entityId: string) {
+  return db
+    .select()
+    .from(recordAsks)
+    .where(
+      and(
+        eq(recordAsks.tenantId, tenant()),
+        eq(recordAsks.entityType, entityType),
+        eq(recordAsks.entityId, entityId),
+      ),
+    )
+    .orderBy(desc(recordAsks.createdAt));
+}
+
+export async function sumCommissionsForPolicies(policyIds: string[]) {
+  if (policyIds.length === 0) return 0;
+  const rows = await db
+    .select()
+    .from(commissions)
+    .where(eq(commissions.tenantId, tenant()));
+  return rows
+    .filter((row) => row.policyId && policyIds.includes(row.policyId))
+    .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
 }
 
 export async function listEmailTemplates() {

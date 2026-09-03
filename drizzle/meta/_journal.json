@@ -50,6 +50,13 @@
       "when": 1788458000000,
       "tag": "0006_live_desk",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788464500000,
+      "tag": "0007_record_ask_assignee",
+      "breakpoints": true
     }
   ]
 }

@@ -14,7 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney, SELLING_AGENCIES } from "@/lib/domain";
-import { getPolicyWorkspace, listEmailTemplates } from "@/lib/db/queries";
+import { getPolicyWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
+import { RecordAskPanel } from "@/components/record-ask";
+import { RelatedRollups } from "@/components/related-tables";
 import { inferLineFamily, LINE_FAMILIES, LINE_FAMILY_LABEL, previewCommission } from "@/lib/desk/commission-line";
 import { partyLabel, policyRecordName } from "@/lib/desk/policy-name";
 import { toNumber } from "@/lib/commissions/math";
@@ -27,7 +30,12 @@ export default async function PolicyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [workspace, templates] = await Promise.all([getPolicyWorkspace(id), listEmailTemplates()]);
+  const [workspace, templates, asks, users] = await Promise.all([
+    getPolicyWorkspace(id),
+    listEmailTemplates(),
+    listRecordAsks("policy", id),
+    listDeskUsers(),
+  ]);
   if (!workspace) notFound();
   const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
@@ -48,6 +56,7 @@ export default async function PolicyDetailPage({
     frequency: policy.billingFrequency,
     insuredCount: policy.insuredCount ?? 1,
   });
+  const thisCommission = await sumCommissionsForPolicies([policy.id]);
 
   return (
     <AppShell title={displayName}>
@@ -194,6 +203,16 @@ export default async function PolicyDetailPage({
           </ul>
         )}
 
+        <RecordAskPanel
+          entityType="policy"
+          entityId={policy.id}
+          asks={asks}
+          users={users}
+          policyId={policy.id}
+          contactId={contact?.id}
+          accountId={account?.id}
+          dealId={deal?.id}
+        />
         <div className="mt-6">
           <ActivityTimeline
             items={timeline}
@@ -208,7 +227,8 @@ export default async function PolicyDetailPage({
         </div>
       </RecordSection>
 
-      <RecordSection id="related" title="Related" summary="Insured, deal, carrier, renewal compare">
+      <RecordSection id="related" title="Related" summary="Insured, deal, carrier, this policy rollup">
+        <RelatedRollups premium={toNumber(policy.premium)} commission={thisCommission} />
         <div className="flex flex-wrap gap-3 text-sm">
           {contact ? (
             <RecordLink href={`/contacts/${contact.id}`}>

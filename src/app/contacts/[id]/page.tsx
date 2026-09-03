@@ -1,12 +1,23 @@
 import { notFound } from "next/navigation";
+import { updateContactRecord } from "@/app/actions/record-edit";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { LocationsList } from "@/components/desk-ams-panels";
+import { RecordAskPanel } from "@/components/record-ask";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
-import { RelatedDeals, RelatedPolicies } from "@/components/related-tables";
+import { RelatedDeals, RelatedPolicies, RelatedRollups } from "@/components/related-tables";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
-import { getContactWorkspace, listEmailTemplates } from "@/lib/db/queries";
+import {
+  getContactWorkspace,
+  listEmailTemplates,
+  listRecordAsks,
+  sumCommissionsForPolicies,
+} from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +28,12 @@ export default async function ContactDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [workspace, templates] = await Promise.all([getContactWorkspace(id), listEmailTemplates()]);
+  const [workspace, templates, asks, users] = await Promise.all([
+    getContactWorkspace(id),
+    listEmailTemplates(),
+    listRecordAsks("contact", id),
+    listDeskUsers(),
+  ]);
   if (!workspace) notFound();
   const {
     contact,
@@ -32,6 +48,7 @@ export default async function ContactDetailPage({
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
   const premium = policies.reduce((sum, row) => sum + toNumber(row.policy.premium), 0);
+  const commission = await sumCommissionsForPolicies(policies.map((row) => row.policy.id));
 
   return (
     <AppShell title={`${contact.lastName}, ${contact.firstName}`}>
@@ -51,24 +68,50 @@ export default async function ContactDetailPage({
         title="This contact"
         summary={`${contact.phone ?? contact.email ?? "No phone or email"} · edit and comms stay here`}
       >
-        <dl className="mb-4 grid grid-cols-2 gap-2 text-sm">
+        <form action={updateContactRecord} className="mb-4 grid gap-2 sm:grid-cols-2">
+          <input type="hidden" name="contactId" value={contact.id} />
           <div>
-            <dt className="text-xs text-muted-foreground">Mailing</dt>
-            <dd>{contact.mailingAddress ?? "—"}</dd>
+            <Label className="text-xs">First</Label>
+            <Input name="firstName" defaultValue={contact.firstName} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">City</dt>
-            <dd>{[contact.city, contact.state, contact.zip].filter(Boolean).join(", ") || "—"}</dd>
+            <Label className="text-xs">Last</Label>
+            <Input name="lastName" defaultValue={contact.lastName} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Tenure</dt>
-            <dd>{formatDay(contact.tenureStart)}</dd>
+            <Label className="text-xs">Phone</Label>
+            <Input name="phone" defaultValue={contact.phone ?? ""} className="mt-1 h-8" />
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Life / health notes</dt>
-            <dd>{[contact.lifeNotes, contact.healthNotes].filter(Boolean).join(" · ") || "—"}</dd>
+            <Label className="text-xs">Email</Label>
+            <Input name="email" defaultValue={contact.email ?? ""} className="mt-1 h-8" />
           </div>
-        </dl>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Mailing (copied at bind)</Label>
+            <Input name="mailingAddress" defaultValue={contact.mailingAddress ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">City</Label>
+            <Input name="city" defaultValue={contact.city ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">Tenure</Label>
+            <div className="mt-1 text-sm">{formatDay(contact.tenureStart)}</div>
+          </div>
+          <Button type="submit" size="sm">
+            Save contact
+          </Button>
+        </form>
+        <RecordAskPanel
+          entityType="contact"
+          entityId={contact.id}
+          asks={asks}
+          users={users}
+          contactId={contact.id}
+          policyId={latestPolicyId}
+          dealId={deals[0]?.id}
+          accountId={businesses[0]?.id}
+        />
         <ActivityTimeline
           items={timeline}
           contactId={contact.id}
@@ -84,8 +127,9 @@ export default async function ContactDetailPage({
       <RecordSection
         id="related"
         title="Related"
-        summary={`${policies.length} policies · ${formatMoney(premium)} premium · ${deals.length} deals`}
+        summary={`${policies.length} policies · ${formatMoney(premium)} premium · ${formatMoney(commission)} commission`}
       >
+        <RelatedRollups premium={premium} commission={commission} />
         <LocationsList locations={locations} />
         <div className="mt-4">
           <h3 className="mb-2 text-sm font-semibold text-navy">Policies</h3>

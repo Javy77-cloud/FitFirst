@@ -13,14 +13,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace, listEmailTemplates } from "@/lib/db/queries";
+import { getDealWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
+import { RecordAskPanel } from "@/components/record-ask";
+import { RelatedPolicies, RelatedRollups } from "@/components/related-tables";
+import { toNumber } from "@/lib/commissions/math";
+import { formatMoney } from "@/lib/domain";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { HealthStrip } from "@/components/completeness/health-strip";
 import { reportFromSheet } from "@/lib/completeness/report";
 import type { ShopLine } from "@/lib/domain";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { RecordSection } from "@/components/record-section";
-import { RelatedPolicies } from "@/components/related-tables";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +37,12 @@ export default async function DealPage({
 }) {
   const { id } = await params;
   const { tab, riskTab } = await searchParams;
-  const [workspace, templates] = await Promise.all([getDealWorkspace(id), listEmailTemplates()]);
+  const [workspace, templates, asks, users] = await Promise.all([
+    getDealWorkspace(id),
+    listEmailTemplates(),
+    listRecordAsks("deal", id),
+    listDeskUsers(),
+  ]);
   if (!workspace) notFound();
   const {
     deal,
@@ -55,6 +64,8 @@ export default async function DealPage({
   const health = quoteSheet
     ? reportFromSheet(sheetLine, quoteSheet.values)
     : null;
+  const premium = boundPolicies.reduce((sum, policy) => sum + toNumber(policy.premium), 0);
+  const commission = await sumCommissionsForPolicies(boundPolicies.map((p) => p.id));
 
   return (
     <AppShell
@@ -171,6 +182,17 @@ export default async function DealPage({
             ]}
           />
         )}
+        <RecordAskPanel
+          entityType="deal"
+          entityId={deal.id}
+          asks={asks}
+          users={users}
+          dealId={deal.id}
+          contactId={contact?.id}
+          accountId={account?.id}
+          policyId={boundPolicies[0]?.id}
+          leadId={lead?.id}
+        />
         <div className="mt-6">
           <ActivityTimeline
             items={timeline}
@@ -186,7 +208,12 @@ export default async function DealPage({
         </div>
       </RecordSection>
 
-      <RecordSection id="related" title="Related" summary="Lead, contact, business, bound policies">
+      <RecordSection
+        id="related"
+        title="Related"
+        summary={`${boundPolicies.length} bound policies · ${formatMoney(premium)} premium · ${formatMoney(commission)} commission`}
+      >
+        <RelatedRollups premium={premium} commission={commission} />
         <div className="mb-3 flex flex-wrap gap-3 text-sm">
           {lead ? (
             <RecordLink href={`/leads/${lead.id}`}>
