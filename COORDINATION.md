@@ -194,6 +194,43 @@ Boot: `npm run db:migrate && npm run db:seed` succeeded on Postgres `fitfirst` /
 
 Observed, **not filed** (pre-existing / accepted, not a fixer miss): Search is substring, so `Ana` also lists the Camila deal (`Camila` contains `ana`). Soto’s 2 drivers are seeded; the thin policy page only lists vehicles (same leftover pattern as ComparePanel not reattached). Do not invent Camila vehicles.
 
+### Errors / smoke (`cursor/errors-smoke-qa-74df`) after re-QA `cursor/overnight-re-qa-531d`
+
+Owner: errors-smoke. Additive only. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Did not bind Ana. Did not write Zoho. Did not merge Rosa Keene.
+
+Boot: `npm run db:migrate && npm run db:seed` on Postgres `fitfirst` / `fitfirst_dev`. App at **43147**.
+
+**Patched on this branch:** invalid record ids (`not-a-uuid`) 500'd Contact / Business / Policy / Deal / Lead / Claim / Merge / Forms `dealId` / Quote tracker `?deal=` / Fill API / COI preview. Postgres `22P02 invalid input syntax for type uuid`. Loaders now `isUuid()`-guard and 404 / empty instead of throwing. Empty deal filters show a sentence instead of a header-only table.
+
+**Smoke (HTTP + SQL). Ana locked. No Zoho writes.**
+
+| Path | Status | Notes |
+| --- | --- | --- |
+| Home / owner desk | 200 | In-force **56** (55 active + 1 bound). Written $118,726.67. Copy: Ana $321,000 HO3 is pipeline, not written. Cookie `ff_role=agent` → “Your book” 200. |
+| Elena 360 `/contacts/4444…444` | 200 | **Client**, lifetime 1 / in-force 1, `HO3-ELENA-2026` $2,840, Ruiz Tile LLC. No total-premium / total-commission rollup. |
+| Ana 360 `/contacts/2222…224` | 200 | **Not a client**, 0 / 0 policies. Quotes did not become coverage. |
+| Harbor `/accounts/6666…665` | **200** | First load OK. EIN 59-1234567, `GL-HARBOR-2026` $4,180, COI stub. Alias `/businesses/:id` 307. |
+| Policy `HO3-ELENA-2026` | 200 | Premium $2,840 renders. No commission fields on the policy page (no throw). |
+| Ana Quote Sheet / Markets | 200 | Cov A **$321,000** visible. Markets **0 green / 0 yellow / 10 red**. No invented policy numbers. |
+| Carriers list `/carriers` | 200 | Appetite table. `/carriers/:id` **404** — no detail route. Decline area is `/logs` 200. |
+| Calendar `/calendar` | 200 | Stub pointing at Tasks. |
+| Settings `/settings` | 200 | Phone-line stub only. No Agency vs My desk tabs (scope lives on Home via cookie). |
+| Forms `/forms` + `/forms/fl-ho3?dealId=Ana` | 200 | Ana Cov A 321000. Bad `dealId` 200 “no deal”. Missing slug 404. |
+| Missing UUID | 404 | Graceful “Record not found”. Empty list filters 200. |
+
+### Ranked leftovers (not patched)
+
+**Major**
+- **No carrier detail.** `GET /carriers/<id>` 404. List has no row links. Decline log is `/logs`.
+- **Policy commission fields absent.** `/policies/4444…445` shows premium only. `/commissions` 200 ($1,132.28 pending / $804.50 paid) is the working surface.
+- **360 has no premium/commission totals.** Related policies list per-row premium; no sum on Elena or Ana click-in.
+- **Settings has no Agency vs My desk.** `/settings` is the phone stub. Owner/agent switch is Home cookie `ff_role` / `ff_actor`.
+
+**Minor**
+- Search substring still lists Camila when querying `Ana` (accepted leftover).
+- `/phone` stub (QA-13 accepted). Do not build a softphone.
+- Custom 404 copy is in the RSC payload; Next still wraps `NEXT_HTTP_ERROR_FALLBACK;404`.
+
 ### Open bugs (leftovers only)
 
 **QA-13 No live phone.** `/phone` is a stub. Softphone JS is not mounted. Task/Call on 360 is the working path. Accepted — do not build a live softphone.

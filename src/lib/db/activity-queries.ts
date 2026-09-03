@@ -1,5 +1,6 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { isDueToday, isOverdue, shouldNotifyCall, whenForActivity } from "@/lib/activities/rules";
 import { db } from "./index";
 import {
@@ -24,6 +25,7 @@ export async function listBusinesses() {
 }
 
 export async function getBusiness(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(accounts)
@@ -96,6 +98,7 @@ export async function listActivities(filter?: {
 }
 
 export async function getActivity(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select({
       activity: activities,
@@ -139,6 +142,7 @@ export async function timelineFor(filter: {
 }
 
 export async function getContactWorkspace(contactId: string) {
+  if (!isUuid(contactId)) return null;
   const [contact] = await db
     .select()
     .from(contacts)
@@ -154,6 +158,7 @@ export async function getContactWorkspace(contactId: string) {
 }
 
 export async function getPolicyWorkspace(policyId: string) {
+  if (!isUuid(policyId)) return null;
   const [row] = await db
     .select({ policy: policies, contact: contacts })
     .from(policies)

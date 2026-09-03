@@ -3,11 +3,13 @@ import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { db } from "@/lib/db";
 import { claims, policies } from "@/lib/db/schema";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const [row] = await db
     .select({ claim: claims, policy: policies })
     .from(claims)
