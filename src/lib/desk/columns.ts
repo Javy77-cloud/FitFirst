@@ -5,6 +5,15 @@ export type ColumnDef = {
 };
 
 export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
+  leads: [
+    { key: "name", label: "Name", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "source", label: "Source", defaultOn: true },
+    { key: "phone", label: "Phone", defaultOn: true },
+    { key: "email", label: "Email", defaultOn: true },
+    { key: "created", label: "Created", defaultOn: false },
+    { key: "action", label: "Shop", defaultOn: true },
+  ],
   deals: [
     { key: "title", label: "Deal", defaultOn: true },
     { key: "stage", label: "Stage", defaultOn: true },

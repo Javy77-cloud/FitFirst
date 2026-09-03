@@ -57,6 +57,7 @@ export const DOC_TYPES = [
   "four_point",
   "inspection",
   "photo",
+  "quote",
   "quote_pdf",
   "policy_dec",
   "policy_complete",
@@ -71,6 +72,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   four_point: "4-point",
   inspection: "Inspection",
   photo: "Photo",
+  quote: "Quote",
   quote_pdf: "Quote PDF",
   policy_dec: "Policy dec",
   policy_complete: "Complete policy",
@@ -145,10 +147,25 @@ export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
   GL: "general_liability",
 };
 
+export const SHOP_LINE_TO_LOB: Record<ShopLine, string> = {
+  home: "HO",
+  auto: "AUTO",
+  rec_rv: "RV",
+  flood: "FLOOD",
+  umbrella: "UMBRELLA",
+  life: "LIFE",
+  health: "HEALTH",
+  workers_comp: "WC",
+  general_liability: "GL",
+};
+
+export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+
 export const QUOTE_FIELD_STATUSES = ["missing", "check", "confirmed"] as const;
 export type QuoteFieldStatus = (typeof QUOTE_FIELD_STATUSES)[number];
 
-export const QUOTE_FIELD_SOURCES = ["blank", "agent", "extracted", "seed", "javy"] as const;
+export const QUOTE_FIELD_SOURCES = ["blank", "agent", "extracted", "seed", "javy", "public"] as const;
 export type QuoteFieldSource = (typeof QUOTE_FIELD_SOURCES)[number];
 
 export type QuoteSheetFieldValue = {
@@ -260,6 +277,207 @@ export function formatMoney(value: number | string | null | undefined): string {
 export function formatPct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
+
+/** Restored from cb1393c agency branding + later template / document slices. */
+export const AGENCY_BRAND = {
+  name: "Javier Garcia Insurance",
+  phone: "321-429-1182",
+  reviewLinkPlaceholder: "[Google review link]",
+} as const;
+
+export const CONTACT_LANGUAGES = ["english", "spanish", "creole", ""] as const;
+export type ContactLanguage = (typeof CONTACT_LANGUAGES)[number];
+
+export const EMAIL_LOCALES = ["en", "es"] as const;
+export type EmailLocale = (typeof EMAIL_LOCALES)[number];
+
+export const SEND_FROM_PROVIDERS = [
+  "google",
+  "outlook",
+  "yahoo",
+  "zoho_mail",
+  "imap",
+] as const;
+export type SendFromProvider = (typeof SEND_FROM_PROVIDERS)[number];
+
+export const SEND_FROM_LABELS: Record<SendFromProvider, string> = {
+  google: "Google",
+  outlook: "Outlook",
+  yahoo: "Yahoo",
+  zoho_mail: "Zoho Mail",
+  imap: "IMAP",
+};
+
+export const EMAIL_TEMPLATE_KINDS = [
+  "google_review",
+  "checkin_4mo",
+  "renewal_awareness",
+  "custom",
+] as const;
+export type EmailTemplateKind = (typeof EMAIL_TEMPLATE_KINDS)[number];
+
+export const EMAIL_TRIGGER_EVENTS = ["closed_won", "policy_renewal"] as const;
+export type EmailTriggerEvent = (typeof EMAIL_TRIGGER_EVENTS)[number];
+
+export const EMAIL_DELAY_UNITS = ["days", "months"] as const;
+export type EmailDelayUnit = (typeof EMAIL_DELAY_UNITS)[number];
+
+export const EMAIL_JOB_STATUSES = ["queued", "sent", "failed"] as const;
+export type EmailJobStatus = (typeof EMAIL_JOB_STATUSES)[number];
+
+export const EMAIL_JOB_HOLD = "connect_email_to_send";
+
+export const MERGE_FIELDS = [
+  { key: "contact_first_name", label: "Contact first name" },
+  { key: "agency_name", label: "Agency name" },
+  { key: "policy_type", label: "Policy type" },
+  { key: "won_date", label: "Won date" },
+  { key: "review_link", label: "Review link" },
+  { key: "agent_phone", label: "Agent phone" },
+  { key: "signature", label: "Email signature" },
+] as const;
+
+export const DESK_ROLES = ["admin", "agent"] as const;
+export type DeskRole = (typeof DESK_ROLES)[number];
+
+export const COLOR_PRESETS = ["agency", "terracotta", "forest", "slate"] as const;
+export type ColorPreset = (typeof COLOR_PRESETS)[number];
+
+export const FONT_PRESETS = ["plex", "system"] as const;
+export type FontPreset = (typeof FONT_PRESETS)[number];
+
+export const DENSITY_PRESETS = ["comfortable", "compact"] as const;
+export type DensityPreset = (typeof DENSITY_PRESETS)[number];
+
+export const COLOR_PRESET_LABELS: Record<ColorPreset, string> = {
+  agency: "Agency navy (default)",
+  terracotta: "Terracotta",
+  forest: "Forest",
+  slate: "Slate",
+};
+
+export const FONT_PRESET_LABELS: Record<FontPreset, string> = {
+  plex: "IBM Plex (desk default)",
+  system: "System UI",
+};
+
+export const DENSITY_PRESET_LABELS: Record<DensityPreset, string> = {
+  comfortable: "Comfortable",
+  compact: "Compact",
+};
+
+export type ColumnLayout = Record<string, string[]>;
+
+export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[]> = {
+  leads: [
+    { key: "name", label: "Name" },
+    { key: "status", label: "Status" },
+    { key: "source", label: "Source" },
+    { key: "phone", label: "Phone" },
+    { key: "email", label: "Email" },
+    { key: "created", label: "Created" },
+    { key: "action", label: "Shop" },
+  ],
+  contacts: [
+    { key: "name", label: "Name" },
+    { key: "status", label: "Status" },
+    { key: "phone", label: "Phone" },
+    { key: "email", label: "Email" },
+    { key: "city", label: "City" },
+    { key: "assigned", label: "Assigned" },
+    { key: "lifetime", label: "Lifetime" },
+    { key: "inForce", label: "In-force" },
+  ],
+  deals: [
+    { key: "title", label: "Deal" },
+    { key: "stage", label: "Stage" },
+    { key: "line", label: "Line" },
+    { key: "state", label: "State" },
+    { key: "contact", label: "Contact" },
+    { key: "phone", label: "Phone" },
+    { key: "email", label: "Email" },
+    { key: "assigned", label: "Assigned" },
+    { key: "premium", label: "Coverage $" },
+    { key: "updated", label: "Updated" },
+    { key: "comms", label: "Comms" },
+  ],
+  accounts: [
+    { key: "name", label: "Business" },
+    { key: "status", label: "Status" },
+    { key: "ein", label: "EIN" },
+    { key: "phone", label: "Phone" },
+    { key: "city", label: "City" },
+    { key: "employees", label: "Employees" },
+    { key: "lifetime", label: "Lifetime" },
+    { key: "inForce", label: "In-force" },
+  ],
+  policies: [
+    { key: "number", label: "Policy" },
+    { key: "status", label: "Status" },
+    { key: "insured", label: "Insured" },
+    { key: "line", label: "Line" },
+    { key: "carrier", label: "Carrier" },
+    { key: "premium", label: "Premium" },
+    { key: "effective", label: "Effective" },
+    { key: "expires", label: "X-Date" },
+    { key: "assigned", label: "Assigned" },
+  ],
+  carriers: [
+    { key: "name", label: "Carrier" },
+    { key: "portalLogin", label: "Portal login" },
+    { key: "csPhone", label: "Customer service" },
+    { key: "agentPhone", label: "Agent phone" },
+    { key: "website", label: "Website / portal" },
+    { key: "info", label: "Carrier info" },
+    { key: "lines", label: "Lines" },
+  ],
+  tasks: [
+    { key: "title", label: "Task" },
+    { key: "due", label: "Due" },
+    { key: "status", label: "Status" },
+    { key: "kind", label: "Kind" },
+    { key: "related", label: "Related" },
+  ],
+};
+
+export function defaultColumnLayout(): ColumnLayout {
+  return Object.fromEntries(
+    Object.entries(LIST_COLUMN_CATALOG).map(([list, cols]) => [list, cols.map((c) => c.key)]),
+  );
+}
+
+export function resolveColumnKeys(listKey: string, layout?: ColumnLayout | null): string[] {
+  const catalog = LIST_COLUMN_CATALOG[listKey] ?? [];
+  const allowed = new Set(catalog.map((c) => c.key));
+  const picked = (layout?.[listKey] ?? []).filter((key) => allowed.has(key));
+  return picked.length > 0 ? picked : catalog.map((c) => c.key);
+}
+
+export const FOLDER_KINDS = ["agency_library", "account", "deal", "policy", "custom"] as const;
+export type FolderKind = (typeof FOLDER_KINDS)[number];
+
+export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
+  agency_library: "Agency library",
+  account: "Account",
+  deal: "Deal",
+  policy: "Policy",
+  custom: "Folder",
+};
+
+export const CAMPAIGN_AUDIENCE_TYPES = ["tag", "pipeline_stage"] as const;
+export type CampaignAudienceType = (typeof CAMPAIGN_AUDIENCE_TYPES)[number];
+
+export const CAMPAIGN_STATUSES = ["draft", "queued", "stub_sent"] as const;
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+
+export const ESIGN_PROVIDERS = ["docusign", "dropbox_sign", "zoho_sign"] as const;
+export type EsignProvider = (typeof ESIGN_PROVIDERS)[number];
+
+export const ESIGN_STATUSES = ["draft", "sent", "signed"] as const;
+export type EsignStatus = (typeof ESIGN_STATUSES)[number];
+
+export const SMS_PROVIDERS = ["none", "twilio"] as const;
+export type SmsProvider = (typeof SMS_PROVIDERS)[number];
 
 export function formatDay(value: Date | string | null | undefined): string {
   if (!value) return "—";
