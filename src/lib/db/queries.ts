@@ -43,10 +43,12 @@ export async function listPolicies() {
       policy: policies,
       contact: contacts,
       carrier: carriers,
+      deal: deals,
     })
     .from(policies)
     .leftJoin(contacts, eq(policies.contactId, contacts.id))
     .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .leftJoin(deals, eq(policies.dealId, deals.id))
     .where(eq(policies.tenantId, tenant()))
     .orderBy(asc(policies.expirationDate));
 }
@@ -182,7 +184,7 @@ export async function dashboardStats() {
     .orderBy(desc(deals.updatedAt))
     .limit(8);
 
-  const tasks = await listReviewTasks();
+  const tasks = await listReviewQueue();
   const unread = await listAlerts(true);
   const expiring = await db
     .select()
@@ -221,9 +223,11 @@ export async function getContactWorkspace(contactId: string) {
     .select({
       policy: policies,
       carrier: carriers,
+      deal: deals,
     })
     .from(policies)
     .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .leftJoin(deals, eq(policies.dealId, deals.id))
     .where(and(eq(policies.tenantId, tenant()), eq(policies.contactId, contactId)))
     .orderBy(asc(policies.expirationDate));
 

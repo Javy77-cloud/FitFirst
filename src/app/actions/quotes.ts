@@ -14,6 +14,7 @@ import {
   quotes,
   risks,
 } from "@/lib/db/schema";
+import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 
 export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
@@ -116,6 +117,8 @@ export async function shopInAppetite(dealId: string) {
     .update(deals)
     .set({ pipelineStage: "quoting", updatedAt: new Date() })
     .where(eq(deals.id, dealId));
+
+  await attachFinalizedQuotePdfs(dealId);
 
   revalidatePath(`/deals/${dealId}`);
   return matches;

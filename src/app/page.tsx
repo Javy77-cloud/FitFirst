@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
+import { DecDropForm } from "@/components/crm/dec-drop-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
+import { accountDisplayName } from "@/lib/crm/bind";
+import { entityHref } from "@/lib/crm/display";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
@@ -44,11 +47,18 @@ export default async function HomePage() {
           decline log before anyone opens a portal. The day-one fixture is Ana Dib&apos;s
           2026-09-02 Palm Bay HO3 shop: eight markets, zero bindable at $321,000.
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
             Open Ana Dib HO3 shop
           </Link>
+          <Link href="/leads" className={cn(buttonVariants({ variant: "outline" }))}>
+            New lead
+          </Link>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <DecDropForm />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -63,7 +73,16 @@ export default async function HomePage() {
               {unread.map((alert) => (
                 <li key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
-                    <div className="text-sm font-medium">{alert.title}</div>
+                    {entityHref(alert.entityType, alert.entityId) ? (
+                      <Link
+                        href={entityHref(alert.entityType, alert.entityId)!}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {alert.title}
+                      </Link>
+                    ) : (
+                      <div className="text-sm font-medium">{alert.title}</div>
+                    )}
                     <p className="text-xs text-muted-foreground">{alert.body}</p>
                   </div>
                   <form action={markAlertRead}>
@@ -88,12 +107,28 @@ export default async function HomePage() {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {tasks.map((task) => (
+              {tasks.map(({ task, contact, policy }) => (
                 <li key={task.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <div className="text-sm">{task.title}</div>
                     <div className="text-[11px] text-muted-foreground">
                       Due {task.dueDate.toISOString().slice(0, 10)}
+                      {contact ? (
+                        <>
+                          {" · "}
+                          <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
+                            {accountDisplayName(contact)}
+                          </Link>
+                        </>
+                      ) : null}
+                      {policy ? (
+                        <>
+                          {" · "}
+                          <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
+                            {policy.policyNumber}
+                          </Link>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                   <CompleteTaskForm taskId={task.id} />

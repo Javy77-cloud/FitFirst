@@ -23,13 +23,14 @@ import {
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
-async function persistFile(
+export async function persistFile(
   dealId: string,
   riskId: string,
   filename: string,
   mimeType: string,
   buffer: Buffer,
   docType: string,
+  quoteId?: string | null,
 ) {
   const id = randomUUID();
   const storagePath = path.join(DEFAULT_TENANT_ID, dealId, `${id}-${filename}`);
@@ -48,6 +49,7 @@ async function persistFile(
       mimeType,
       storagePath,
       docType,
+      quoteId: quoteId ?? null,
       status: "uploaded",
     })
     .returning();
@@ -93,6 +95,10 @@ export async function uploadSampleDocument(formData: FormData) {
   );
   await runExtraction(doc.id, dealId);
   revalidatePath(`/deals/${dealId}`);
+}
+
+export async function extractDocument(documentId: string, dealId: string) {
+  await runExtraction(documentId, dealId);
 }
 
 export async function extractExisting(formData: FormData) {

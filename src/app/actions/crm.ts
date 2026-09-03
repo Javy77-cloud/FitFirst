@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { DEAL_STAGES, DEFAULT_TENANT_ID, LINES, type DealStage } from "@/lib/domain";
 import {
   BindBlockedError,
+  defaultAccountKind,
+  parseAccountKind,
   planBind,
   stubPolicyNumber,
 } from "@/lib/crm/bind";
@@ -20,6 +22,7 @@ import {
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { extractDocument, persistFile } from "@/app/actions/documents";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -167,6 +170,73 @@ export async function createDeal(formData: FormData) {
   redirect(`/deals/${deal.id}`);
 }
 
+export async function createDealFromDecDrop(formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Drop a declarations PDF or text file to open a shop.");
+  }
+  const firstName = str(formData, "firstName") || "Dec";
+  const lastName = str(formData, "lastName") || "Drop";
+  const line = LINES.includes(str(formData, "line") as (typeof LINES)[number])
+    ? str(formData, "line")
+    : "HO";
+
+  const [lead] = await db
+    .insert(leads)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      firstName,
+      lastName,
+      email: str(formData, "email") || null,
+      phone: str(formData, "phone") || null,
+      source: "dec_drop",
+      status: "converted",
+      notes: str(formData, "notes") || `Dec drop: ${file.name}`,
+    })
+    .returning();
+
+  const [deal] = await db
+    .insert(deals)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      leadId: lead.id,
+      title: `${lastName} · ${line} shop`,
+      pipelineStage: "shopping",
+      lineOfBusiness: line,
+      state: str(formData, "state") || "FL",
+    })
+    .returning();
+
+  await db
+    .update(leads)
+    .set({ convertedDealId: deal.id, updatedAt: new Date() })
+    .where(eq(leads.id, lead.id));
+
+  const [risk] = await db
+    .insert(risks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      riskType: line === "AUTO" ? "auto" : "property",
+      state: deal.state,
+    })
+    .returning();
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const doc = await persistFile(
+    deal.id,
+    risk.id,
+    file.name,
+    file.type || "application/octet-stream",
+    buffer,
+    "dec",
+  );
+  await extractDocument(doc.id, deal.id);
+
+  revalidateCrm([`/deals/${deal.id}`, `/leads/${lead.id}`]);
+  redirect(`/deals/${deal.id}`);
+}
+
 export async function updateDealStage(formData: FormData) {
   const dealId = str(formData, "dealId");
   const stage = str(formData, "stage") as DealStage;
@@ -260,6 +330,8 @@ export async function createContact(formData: FormData) {
       city: str(formData, "city") || null,
       state: str(formData, "state") || "FL",
       zip: str(formData, "zip") || null,
+      accountKind: parseAccountKind(str(formData, "accountKind")),
+      legalName: str(formData, "legalName") || null,
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
       notes: str(formData, "notes") || null,
@@ -282,6 +354,8 @@ export async function updateContact(formData: FormData) {
       city: str(formData, "city") || null,
       state: str(formData, "state") || "FL",
       zip: str(formData, "zip") || null,
+      accountKind: parseAccountKind(str(formData, "accountKind")),
+      legalName: str(formData, "legalName") || null,
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
       notes: str(formData, "notes") || null,
@@ -319,6 +393,19 @@ export async function bindDeal(formData: FormData) {
       ? await tx.select().from(contacts).where(eq(contacts.id, deal.contactId))
       : [];
 
+    const sameLineActive = existing
+      ? await tx
+          .select({ id: policies.id })
+          .from(policies)
+          .where(
+            and(
+              eq(policies.contactId, existing.id),
+              eq(policies.lineOfBusiness, deal.lineOfBusiness),
+              eq(policies.status, "active"),
+            ),
+          )
+      : [];
+
     const plan = planBind({
       deal: {
         id: deal.id,
@@ -339,6 +426,9 @@ export async function bindDeal(formData: FormData) {
         ? {
             id: existing.id,
             policyCount: existing.policyCount,
+            activePolicyCount: existing.activePolicyCount,
+            accountKind: existing.accountKind,
+            legalName: existing.legalName,
             tenureStart: existing.tenureStart,
             lifeNotes: existing.lifeNotes,
             healthNotes: existing.healthNotes,
@@ -357,6 +447,11 @@ export async function bindDeal(formData: FormData) {
       policyNumber: str(formData, "policyNumber") || stubPolicyNumber(now),
       premium: str(formData, "premium") || null,
       carrierId: str(formData, "carrierId") || null,
+      accountKind: str(formData, "accountKind")
+        ? parseAccountKind(str(formData, "accountKind"))
+        : defaultAccountKind(deal.lineOfBusiness),
+      legalName: str(formData, "legalName") || null,
+      replacingSameLine: sameLineActive.length > 0,
       now,
     });
 
@@ -376,6 +471,9 @@ export async function bindDeal(formData: FormData) {
           zip: plan.contactDraft.zip,
           tenureStart: plan.contactDraft.tenureStart,
           policyCount: plan.contactDraft.policyCount,
+          activePolicyCount: plan.contactDraft.activePolicyCount,
+          accountKind: plan.contactDraft.accountKind,
+          legalName: plan.contactDraft.legalName,
           lifeNotes: plan.contactDraft.lifeNotes,
           healthNotes: plan.contactDraft.healthNotes,
         })
@@ -386,12 +484,28 @@ export async function bindDeal(formData: FormData) {
         .update(contacts)
         .set({
           policyCount: plan.nextPolicyCount,
+          activePolicyCount: plan.nextActivePolicyCount,
           tenureStart: plan.tenureStart,
+          accountKind: plan.contactDraft.accountKind,
+          legalName: plan.contactDraft.legalName,
           lifeNotes: plan.contactDraft.lifeNotes,
           healthNotes: plan.contactDraft.healthNotes,
           updatedAt: now,
         })
         .where(eq(contacts.id, contactId));
+    }
+
+    if (plan.replacingSameLine && contactId) {
+      await tx
+        .update(policies)
+        .set({ status: "replaced", updatedAt: now })
+        .where(
+          and(
+            eq(policies.contactId, contactId),
+            eq(policies.lineOfBusiness, deal.lineOfBusiness),
+            eq(policies.status, "active"),
+          ),
+        );
     }
 
     const [policy] = await tx

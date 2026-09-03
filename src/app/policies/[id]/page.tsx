@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
+import { accountDisplayName } from "@/lib/crm/bind";
 import { formatMoney } from "@/lib/domain";
 import { formatIsoDate, formatTenure, taskKindLabel } from "@/lib/crm/display";
 import { getPolicyWorkspace } from "@/lib/db/queries";
@@ -37,19 +38,21 @@ export default async function PolicyDetailPage({
 
       <dl className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="ff-card p-4">
-          <dt className="text-[11px] uppercase text-muted-foreground">Client</dt>
+          <dt className="text-[11px] uppercase text-muted-foreground">
+            {contact?.accountKind === "commercial" ? "Business" : "Contact"}
+          </dt>
           <dd className="text-sm font-medium">
             {contact ? (
               <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                {contact.lastName}, {contact.firstName}
+                {accountDisplayName(contact)}
               </Link>
             ) : (
               "—"
             )}
           </dd>
           <dd className="text-xs text-muted-foreground">
-            Tenure {contact ? formatTenure(contact.tenureStart) : "—"} · {contact?.policyCount ?? 0}{" "}
-            policies
+            Tenure {contact ? formatTenure(contact.tenureStart) : "—"} · lifetime{" "}
+            {contact?.policyCount ?? 0} · active {contact?.activePolicyCount ?? 0}
           </dd>
         </div>
         <div className="ff-card p-4">

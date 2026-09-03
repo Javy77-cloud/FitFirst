@@ -1,12 +1,14 @@
 import { formatMoney } from "@/lib/domain";
-import type { Carrier, Quote, QuoteAttemptLog } from "@/lib/db/schema";
+import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 
 export function QuotesPanel({
   quotes,
   logs,
+  quoteDocs = [],
 }: {
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
+  quoteDocs?: Document[];
 }) {
   return (
     <div className="space-y-4">
@@ -30,10 +32,13 @@ export function QuotesPanel({
                 <th>Cov A</th>
                 <th>Bindable</th>
                 <th>Gaps</th>
+                <th>PDF</th>
               </tr>
             </thead>
             <tbody>
-              {quotes.map(({ quote, carrier }) => (
+              {quotes.map(({ quote, carrier }) => {
+                const pdf = quoteDocs.find((doc) => doc.quoteId === quote.id);
+                return (
                 <tr key={quote.id}>
                   <td className="font-medium">
                     {carrier.name}
@@ -49,12 +54,29 @@ export function QuotesPanel({
                   <td className="text-xs">
                     {quote.coverageGaps.length ? quote.coverageGaps.join("; ") : "None noted"}
                   </td>
+                  <td>
+                    {pdf ? (
+                      <a href={`/api/documents/${pdf.id}`} className="text-xs text-primary hover:underline">
+                        Open PDF
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">Pending finalize</span>
+                    )}
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
       </section>
+
+      {quoteDocs.length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {quoteDocs.length} quote PDF{quoteDocs.length === 1 ? "" : "s"} attached on this deal.
+          These files are not policies.
+        </p>
+      ) : null}
 
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">

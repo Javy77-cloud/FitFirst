@@ -111,14 +111,21 @@ export function DocumentsPanel({
                   <td className="font-medium">{doc.filename}</td>
                   <td className="uppercase">{doc.docType.replace("_", " ")}</td>
                   <td>{doc.status.replace("_", " ")}</td>
-                  <td>
-                    <form action={extractExisting}>
-                      <input type="hidden" name="documentId" value={doc.id} />
-                      <input type="hidden" name="dealId" value={dealId} />
-                      <Button type="submit" variant="ghost" size="xs">
-                        Re-extract
-                      </Button>
-                    </form>
+                  <td className="space-x-2">
+                    <a href={`/api/documents/${doc.id}`} className="text-xs text-primary hover:underline">
+                      Open
+                    </a>
+                    {doc.docType === "quote_pdf" ? (
+                      <span className="text-[11px] text-muted-foreground">Quote file</span>
+                    ) : (
+                      <form action={extractExisting} className="inline">
+                        <input type="hidden" name="documentId" value={doc.id} />
+                        <input type="hidden" name="dealId" value={dealId} />
+                        <Button type="submit" variant="ghost" size="xs">
+                          Re-extract
+                        </Button>
+                      </form>
+                    )}
                   </td>
                 </tr>
               ))}

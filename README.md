@@ -51,10 +51,10 @@ Create your own path from **Leads** or **New shopping deal**. Bind is what creat
 
 ### CRM bind path
 
-1. **Leads** → save a person → **Start shop** (or convert from the lead record).
-2. The deal is shopping only. Quotes stay on the deal.
-3. **Bind (creates contact + policy)** writes the contact, policy, tenure, client history, in-app alerts, and 30/60/90 plus expiration tasks.
-4. Open **Contacts**, **Policies**, or **Reviews** to see tenure, policy count, and the review queue. Alerts stay in the desk — nothing emails the agent.
+1. **Leads** → save a person → **Start shop**, or **Dec drop → deal** (same funnel).
+2. The deal is shopping only. When stub quotes are finalized, quote PDFs attach on the deal. A quote never creates a policy.
+3. **Bind** writes a personal contact or a commercial business, then **one policy per line**, linked back to the deal. Lifetime and active counts live on the account.
+4. Open **Accounts**, **Policies**, or **Reviews** for tenure, counts, and 30/60/90 tasks. Alerts stay in the desk.
 
 Life and health deals are CRM notes with a rating placeholder. They still bind the same way.
 

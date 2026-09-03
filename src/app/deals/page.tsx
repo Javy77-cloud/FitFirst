@@ -78,6 +78,16 @@ export default async function DealsPage({
                             >
                               {deal.title}
                             </Link>
+                            {deal.contactId ? (
+                              <div className="text-[11px]">
+                                <Link
+                                  href={`/contacts/${deal.contactId}`}
+                                  className="text-muted-foreground hover:text-primary"
+                                >
+                                  Open account
+                                </Link>
+                              </div>
+                            ) : null}
                           </td>
                           <td>
                             <StagePill stage={deal.pipelineStage} />

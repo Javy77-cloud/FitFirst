@@ -1,0 +1,54 @@
+import { createDealFromDecDrop } from "@/app/actions/crm";
+import { LineSelect } from "@/components/crm/line-select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export function DecDropForm() {
+  return (
+    <form action={createDealFromDecDrop} className="ff-card space-y-3 p-4">
+      <div>
+        <h2 className="text-sm font-semibold text-navy">Dec drop → deal</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Same funnel as a lead. The declarations file opens a shopping deal. Contact and policy
+          still wait for bind.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="decFirstName" className="text-xs">
+            First name
+          </Label>
+          <Input id="decFirstName" name="firstName" required className="mt-1 h-8" />
+        </div>
+        <div>
+          <Label htmlFor="decLastName" className="text-xs">
+            Last name
+          </Label>
+          <Input id="decLastName" name="lastName" required className="mt-1 h-8" />
+        </div>
+        <div>
+          <Label htmlFor="decLine" className="text-xs">
+            Line
+          </Label>
+          <LineSelect id="decLine" />
+        </div>
+        <div>
+          <Label htmlFor="decFile" className="text-xs">
+            Dec PDF or text
+          </Label>
+          <input
+            id="decFile"
+            name="file"
+            type="file"
+            required
+            className="mt-1 block w-full text-xs"
+          />
+        </div>
+      </div>
+      <Button type="submit" size="sm">
+        Open shop from dec
+      </Button>
+    </form>
+  );
+}

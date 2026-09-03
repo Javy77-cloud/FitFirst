@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/domain";
+import { accountDisplayName } from "@/lib/crm/bind";
 import { formatIsoDate, formatTenure, taskKindLabel } from "@/lib/crm/display";
 import { getContactWorkspace } from "@/lib/db/queries";
 
@@ -27,11 +28,19 @@ export default async function ContactDetailPage({
   const openTasks = tasks.filter((task) => task.status === "open");
 
   return (
-    <AppShell title={`${contact.lastName}, ${contact.firstName}`}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+    <AppShell title={accountDisplayName(contact)}>
+      <p className="mb-3 text-sm text-muted-foreground">
+        {contact.accountKind === "commercial" ? "Commercial business" : "Personal contact"}.
+        Policies on this account were written at bind, one per line.
+      </p>
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="ff-card p-4">
-          <div className="text-[11px] uppercase text-muted-foreground">Policy count</div>
+          <div className="text-[11px] uppercase text-muted-foreground">Lifetime policies</div>
           <div className="text-2xl font-semibold text-navy">{contact.policyCount}</div>
+        </div>
+        <div className="ff-card p-4">
+          <div className="text-[11px] uppercase text-muted-foreground">Active policies</div>
+          <div className="text-2xl font-semibold text-navy">{contact.activePolicyCount}</div>
         </div>
         <div className="ff-card p-4">
           <div className="text-[11px] uppercase text-muted-foreground">Tenure</div>
@@ -62,13 +71,15 @@ export default async function ContactDetailPage({
                   <tr>
                     <th>Policy</th>
                     <th>Line</th>
+                    <th>Status</th>
+                    <th>Deal</th>
                     <th>Carrier</th>
                     <th>Premium</th>
                     <th>Expires</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {policies.map(({ policy, carrier }) => (
+                  {policies.map(({ policy, carrier, deal }) => (
                     <tr key={policy.id}>
                       <td>
                         <Link
@@ -79,6 +90,16 @@ export default async function ContactDetailPage({
                         </Link>
                       </td>
                       <td>{policy.lineOfBusiness}</td>
+                      <td className="capitalize">{policy.status}</td>
+                      <td>
+                        {deal ? (
+                          <Link href={`/deals/${deal.id}`} className="text-primary hover:underline">
+                            {deal.title}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{carrier?.name ?? "—"}</td>
                       <td>{formatMoney(policy.premium)}</td>
                       <td>
@@ -172,8 +193,23 @@ export default async function ContactDetailPage({
         <div className="space-y-4">
           <form action={updateContact} className="ff-card space-y-3 p-4">
             <input type="hidden" name="contactId" value={contact.id} />
-            <h2 className="text-sm font-semibold text-navy">Contact + CRM notes</h2>
+            <h2 className="text-sm font-semibold text-navy">Account + CRM notes</h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <div>
+                <Label className="text-xs">Account</Label>
+                <select
+                  name="accountKind"
+                  defaultValue={contact.accountKind}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  <option value="personal">Personal contact</option>
+                  <option value="commercial">Commercial business</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Legal / DBA name</Label>
+                <Input name="legalName" defaultValue={contact.legalName ?? ""} className="mt-1 h-8" />
+              </div>
               <div>
                 <Label className="text-xs">First name</Label>
                 <Input name="firstName" defaultValue={contact.firstName} required className="mt-1 h-8" />

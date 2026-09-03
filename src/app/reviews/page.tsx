@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
+import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
 
@@ -39,7 +40,7 @@ export default async function ReviewsPage() {
                         <>
                           {" · "}
                           <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                            {contact.lastName}, {contact.firstName}
+                            {accountDisplayName(contact)}
                           </Link>
                         </>
                       ) : null}
@@ -88,7 +89,7 @@ export default async function ReviewsPage() {
                     <td>
                       {contact ? (
                         <Link href={`/contacts/${contact.id}`} className="hover:underline">
-                          {contact.lastName}, {contact.firstName}
+                          {accountDisplayName(contact)}
                         </Link>
                       ) : (
                         "—"

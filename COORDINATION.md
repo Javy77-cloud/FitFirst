@@ -1,34 +1,49 @@
 # Parallel-agent coordination
 
-## CRM UI + bind / history (this slice)
+## Shared funnel (do not fork)
 
-Owns the desk flow: lead → shopping deal → stub bind → contact + policy + tenure + 30/60/90.
+One path for the first test platform. Lifecycle-wiring must call these hooks — do not add a second bind or policy insert.
 
-**Do not** rewrite schema, touch Zoho, implement carrier portals, edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`, or change appetite matching / document extraction.
+**Lead (or dec drop) → Deal → finalized quotes attach PDFs on the Deal → Bind → Contact (personal) or Business (commercial) → one Policy per line.**
+
+Quotes never create a Policy.
+
+Shared hooks in `src/lib/lifecycle/hooks.ts`:
+
+- `attachFinalizedQuotePdfs(dealId)` — idempotent; call after stub quotes are written
+- `planBind` / `bindDeal` — only policy write path
+- `QUOTE_CREATES_POLICY === false`
+
+`shopInAppetite` already calls `attachFinalizedQuotePdfs` after quotes are inserted. Do not change filter-first matching. Do not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`.
+
+## CRM UI + bind / history
+
+Owns screens and bind. Additive columns: `contacts.account_kind`, `contacts.legal_name`, `contacts.active_policy_count`, `documents.quote_id`.
 
 ### Files owned
 
-- `src/lib/crm/**` — bind planner, tenure / expiration helpers, tests
-- `src/app/actions/crm.ts` — lead/deal/contact actions; **bind is the only path that inserts a policy from a deal**
-- `src/app/actions/alerts.ts` — dismiss + complete-task (writes client history; in-app only)
-- `src/app/leads/**`
-- `src/app/contacts/**`
-- `src/app/policies/**`
-- `src/app/reviews/**`
+- `src/lib/crm/**`
+- `src/lib/lifecycle/hooks.ts` — re-exports only; lifecycle-wiring should import from here
+- `src/app/actions/crm.ts` — lead, dec drop, deal, contact, **bindDeal**
+- `src/app/actions/alerts.ts`
+- `src/app/leads/**`, `src/app/contacts/**`, `src/app/policies/**`, `src/app/reviews/**`
 - `src/app/deals/page.tsx`, `src/app/deals/new/page.tsx`
-- `src/components/crm/**` — includes server `QueryTabs` for deal/pipeline views (URL `?tab=` / `?view=`)
+- `src/components/crm/**`
+- `src/app/api/documents/[id]/route.ts`
 
-### Shared files (additive only)
+### Shared (additive)
 
-- `src/lib/db/queries.ts` — added `getLead`, `getContactWorkspace`, `getPolicyWorkspace`, `listReviewQueue`, plus `boundPolicy` / `dealTasks` on `getDealWorkspace`
-- `src/app/deals/[id]/page.tsx` — bind card / bound summary / life-health placeholder; P&C document/market/quote tabs left in place
-- `src/app/page.tsx` — review complete + policy count
-- `src/components/app-shell.tsx` — Reviews nav + mobile bar
+- `src/lib/db/schema.ts` / `drizzle/0002_crm_account_kind_and_quote_docs.sql`
+- `src/lib/db/queries.ts` — CRM reads; `boundPolicy` / `dealTasks` / account joins
+- `src/app/deals/[id]/page.tsx` — bind card, breadcrumb, quote PDF pass-through
+- `src/app/actions/quotes.ts` — **only** the finalize hook call after quotes exist
+- `src/app/actions/documents.ts` — exported `persistFile` / `extractDocument`
+- `src/components/deal/quotes-panel.tsx`, `documents-panel.tsx` — PDF open links
+- `src/app/page.tsx`, `src/app/alerts/page.tsx`, `src/components/app-shell.tsx`
 
-No new migration. Existing `contacts.tenure_start`, `policy_count`, `life_notes`, `health_notes`, `client_history`, `review_tasks`, and `alerts` cover the screens.
+### Contract
 
-### Contract other slices should keep
-
-- Quotes / `shopInAppetite` must never insert into `policies`.
-- Do not move a deal to `bound` except through `bindDeal`.
-- Life / health: CRM notes on contact + deal only; no rating UI.
+- Bind is the only path that inserts `policies`.
+- One active policy per account + line; a later bind of the same line marks the prior `replaced` and increments lifetime only.
+- Commercial (`GL` default, or bind form) uses the same `contacts` row with `account_kind = commercial` — no second account table.
+- Life / health: CRM notes only.

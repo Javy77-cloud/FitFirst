@@ -28,6 +28,43 @@ export function isCrmOnlyLine(line: string): line is CrmOnlyLine {
   return line === "LIFE" || line === "HEALTH";
 }
 
+export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+
+export const COMMERCIAL_LINES = ["GL"] as const;
+
+export function isCommercialLine(line: string): boolean {
+  return (COMMERCIAL_LINES as readonly string[]).includes(line);
+}
+
+export function defaultAccountKind(line: string): AccountKind {
+  return isCommercialLine(line) ? "commercial" : "personal";
+}
+
+export function parseAccountKind(value: string | null | undefined): AccountKind {
+  return value === "commercial" ? "commercial" : "personal";
+}
+
+export function accountDisplayName(account: {
+  accountKind?: string | null;
+  legalName?: string | null;
+  firstName: string;
+  lastName: string;
+}): string {
+  if (account.accountKind === "commercial" && account.legalName?.trim()) {
+    return account.legalName.trim();
+  }
+  return `${account.lastName}, ${account.firstName}`;
+}
+
+export function nextActivePolicyCount(input: {
+  currentActive: number;
+  replacingSameLine: boolean;
+}): number {
+  if (input.replacingSameLine) return Math.max(input.currentActive, 1);
+  return input.currentActive + 1;
+}
+
 export function addUtcDays(from: Date, days: number): Date {
   const next = new Date(from.getTime());
   next.setUTCDate(next.getUTCDate() + days);
@@ -68,6 +105,9 @@ export type BindLeadInput = {
 export type BindContactInput = {
   id: string;
   policyCount: number;
+  activePolicyCount?: number;
+  accountKind?: string | null;
+  legalName?: string | null;
   tenureStart: Date | null;
   lifeNotes: string | null;
   healthNotes: string | null;
@@ -98,6 +138,9 @@ export type BindPlanInput = {
   policyNumber: string;
   premium: string | null;
   carrierId: string | null;
+  accountKind?: AccountKind;
+  legalName?: string | null;
+  replacingSameLine?: boolean;
   now: Date;
 };
 
@@ -118,6 +161,9 @@ export type BindTaskPlan = {
 export type BindPlan = {
   createContact: boolean;
   nextPolicyCount: number;
+  nextActivePolicyCount: number;
+  replacingSameLine: boolean;
+  accountKind: AccountKind;
   tenureStart: Date;
   contactDraft: {
     firstName: string;
@@ -130,6 +176,9 @@ export type BindPlan = {
     zip: string | null;
     tenureStart: Date;
     policyCount: number;
+    activePolicyCount: number;
+    accountKind: AccountKind;
+    legalName: string | null;
     lifeNotes: string | null;
     healthNotes: string | null;
   };
@@ -166,12 +215,29 @@ export function planBind(input: BindPlanInput): BindPlan {
   const createContact = !input.deal.contactId;
   const tenureStart = input.contact?.tenureStart ?? input.now;
   const nextPolicyCount = (input.contact?.policyCount ?? 0) + 1;
+  const replacingSameLine = Boolean(input.replacingSameLine);
+  const accountKind =
+    input.accountKind ??
+    (input.contact?.accountKind
+      ? parseAccountKind(input.contact.accountKind)
+      : defaultAccountKind(input.deal.lineOfBusiness));
+  const nextActive = nextActivePolicyCount({
+    currentActive: input.contact?.activePolicyCount ?? 0,
+    replacingSameLine,
+  });
   const names = input.lead ?? {
     firstName: "Bound",
     lastName: "Client",
     email: null,
     phone: null,
   };
+  const legalName =
+    accountKind === "commercial"
+      ? (input.legalName?.trim() ||
+          input.contact?.legalName?.trim() ||
+          `${names.firstName} ${names.lastName}`.trim() ||
+          names.lastName)
+      : (input.contact?.legalName ?? null);
   const lineNotes = crmNotesForLine(input.deal.lineOfBusiness, input.deal.notes);
   const expirationDate = addUtcYears(input.now, 1);
   const premium = input.premium && input.premium.trim() !== "" ? input.premium.trim() : null;
@@ -182,19 +248,25 @@ export function planBind(input: BindPlanInput): BindPlan {
     dueDate: addUtcDays(input.now, offset.days),
   }));
 
-  const insured = `${names.lastName}, ${names.firstName}`;
+  const insured = accountDisplayName({
+    accountKind,
+    legalName,
+    firstName: names.firstName,
+    lastName: names.lastName,
+  });
+  const accountLabel = accountKind === "commercial" ? "business" : "contact";
   const alerts: BindAlertPlan[] = [
     {
       kind: "bind",
       title: `Bound ${input.deal.lineOfBusiness} ${input.policyNumber}`,
-      body: `${insured}: contact and policy created from bind. Quotes did not create this policy. Alerts stay in the desk — nothing emails the agent.`,
+      body: `${insured}: ${accountLabel} and one ${input.deal.lineOfBusiness} policy created from bind. Quotes did not create this policy. Alerts stay in the desk — nothing emails the agent.`,
       severity: "info",
       entityType: "policy",
     },
     {
       kind: "review",
       title: `30/60/90 reviews scheduled · ${input.policyNumber}`,
-      body: `Open ${insured}'s contact for tenure, policy count, and the 30/60/90 plus expiration tasks.`,
+      body: `Open ${insured} for tenure, lifetime and active policy counts, and the 30/60/90 plus expiration tasks.`,
       severity: "info",
       entityType: "contact",
     },
@@ -203,6 +275,9 @@ export function planBind(input: BindPlanInput): BindPlan {
   return {
     createContact,
     nextPolicyCount,
+    nextActivePolicyCount: nextActive,
+    replacingSameLine,
+    accountKind,
     tenureStart,
     contactDraft: {
       firstName: names.firstName,
@@ -215,6 +290,9 @@ export function planBind(input: BindPlanInput): BindPlan {
       zip: input.risk?.zip ?? null,
       tenureStart,
       policyCount: createContact ? 1 : nextPolicyCount,
+      activePolicyCount: nextActive,
+      accountKind,
+      legalName,
       lifeNotes: input.contact?.lifeNotes ?? lineNotes.lifeNotes,
       healthNotes: input.contact?.healthNotes ?? lineNotes.healthNotes,
     },
@@ -231,7 +309,7 @@ export function planBind(input: BindPlanInput): BindPlan {
     },
     history: {
       eventType: "bind",
-      body: `Bound ${input.deal.lineOfBusiness} ${input.policyNumber}. Contact + policy created only after bind.`,
+      body: `Bound ${input.deal.lineOfBusiness} ${input.policyNumber} on ${accountLabel} ${insured}. One policy per line; quotes did not create this policy.`,
     },
     tasks,
     alerts,

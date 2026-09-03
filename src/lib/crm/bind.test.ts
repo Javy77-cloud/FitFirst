@@ -3,8 +3,12 @@ import {
   BindBlockedError,
   QUOTE_CREATES_POLICY,
   REVIEW_OFFSETS,
+  accountDisplayName,
   assertCanBind,
+  defaultAccountKind,
   isCrmOnlyLine,
+  isCommercialLine,
+  nextActivePolicyCount,
   planBind,
   stubPolicyNumber,
 } from "./bind";
@@ -82,7 +86,7 @@ describe("bind contract", () => {
     expect(plan.policy.premium).toBe("1840.50");
     expect(plan.policy.coverageA).toBe(321000);
     expect(plan.history.eventType).toBe("bind");
-    expect(plan.history.body).toMatch(/only after bind/);
+    expect(plan.history.body).toMatch(/quotes did not create this policy/);
     expect(plan.tasks.map((task) => task.kind)).toEqual([
       "30_day",
       "60_day",
@@ -161,5 +165,57 @@ describe("bind contract", () => {
 
   it("builds a stub policy number from the clock", () => {
     expect(stubPolicyNumber(new Date("2026-09-02T16:00:00.123Z"))).toMatch(/^FF-\d{8}$/);
+  });
+
+  it("binds commercial GL to a business account with one active policy per line", () => {
+    expect(isCommercialLine("GL")).toBe(true);
+    expect(defaultAccountKind("GL")).toBe("commercial");
+    expect(defaultAccountKind("HO")).toBe("personal");
+    expect(nextActivePolicyCount({ currentActive: 0, replacingSameLine: false })).toBe(1);
+    expect(nextActivePolicyCount({ currentActive: 2, replacingSameLine: true })).toBe(2);
+
+    const first = planBind({
+      deal: { ...baseDeal(), lineOfBusiness: "GL" },
+      lead: { firstName: "Alex", lastName: "Nguyen", email: null, phone: null },
+      contact: null,
+      risk: null,
+      policyNumber: "GL-1",
+      premium: "2400",
+      carrierId: null,
+      legalName: "Nguyen Marine LLC",
+      now,
+    });
+    expect(first.accountKind).toBe("commercial");
+    expect(first.contactDraft.legalName).toBe("Nguyen Marine LLC");
+    expect(first.contactDraft.activePolicyCount).toBe(1);
+    expect(first.nextActivePolicyCount).toBe(1);
+    expect(first.replacingSameLine).toBe(false);
+    expect(accountDisplayName(first.contactDraft)).toBe("Nguyen Marine LLC");
+
+    const renewal = planBind({
+      deal: { ...baseDeal(), lineOfBusiness: "GL", contactId: "biz-1", pipelineStage: "comparing" },
+      lead: { firstName: "Alex", lastName: "Nguyen", email: null, phone: null },
+      contact: {
+        id: "biz-1",
+        policyCount: 1,
+        activePolicyCount: 1,
+        accountKind: "commercial",
+        legalName: "Nguyen Marine LLC",
+        tenureStart: now,
+        lifeNotes: null,
+        healthNotes: null,
+      },
+      risk: null,
+      policyNumber: "GL-2",
+      premium: "2500",
+      carrierId: null,
+      replacingSameLine: true,
+      now,
+    });
+    expect(renewal.createContact).toBe(false);
+    expect(renewal.nextPolicyCount).toBe(2);
+    expect(renewal.nextActivePolicyCount).toBe(1);
+    expect(renewal.contactDraft.policyCount).toBe(2);
+    expect(renewal.contactDraft.activePolicyCount).toBe(1);
   });
 });

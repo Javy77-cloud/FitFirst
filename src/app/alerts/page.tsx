@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { markAlertRead } from "@/app/actions/alerts";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { entityHref } from "@/lib/crm/display";
 import { listAlerts } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +21,16 @@ export default async function AlertsPage() {
           rows.map((alert) => (
             <div key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <div>
-                <div className="text-sm font-medium">{alert.title}</div>
+                {entityHref(alert.entityType, alert.entityId) ? (
+                  <Link
+                    href={entityHref(alert.entityType, alert.entityId)!}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {alert.title}
+                  </Link>
+                ) : (
+                  <div className="text-sm font-medium">{alert.title}</div>
+                )}
                 <p className="text-xs text-muted-foreground">{alert.body}</p>
                 <div className="mt-1 text-[11px] uppercase text-muted-foreground">
                   {alert.severity} · {alert.kind}

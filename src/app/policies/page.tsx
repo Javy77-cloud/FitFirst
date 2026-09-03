@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
+import { accountDisplayName } from "@/lib/crm/bind";
 import { formatMoney } from "@/lib/domain";
 import { listPolicies } from "@/lib/db/queries";
 
@@ -24,15 +25,17 @@ export default async function PoliciesPage() {
             <thead>
               <tr>
                 <th>Policy</th>
-                <th>Client</th>
+                <th>Account</th>
+                <th>Deal</th>
                 <th>Line</th>
+                <th>Status</th>
                 <th>Carrier</th>
                 <th>Premium</th>
                 <th>Expires</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ policy, contact, carrier }) => (
+              {rows.map(({ policy, contact, carrier, deal }) => (
                 <tr key={policy.id}>
                   <td className="font-medium">
                     <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
@@ -42,13 +45,23 @@ export default async function PoliciesPage() {
                   <td>
                     {contact ? (
                       <Link href={`/contacts/${contact.id}`} className="hover:underline">
-                        {contact.lastName}, {contact.firstName}
+                        {accountDisplayName(contact)}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>
+                    {deal ? (
+                      <Link href={`/deals/${deal.id}`} className="hover:underline">
+                        {deal.title}
                       </Link>
                     ) : (
                       "—"
                     )}
                   </td>
                   <td>{policy.lineOfBusiness}</td>
+                  <td className="capitalize">{policy.status}</td>
                   <td>{carrier?.name ?? "—"}</td>
                   <td>{formatMoney(policy.premium)}</td>
                   <td>

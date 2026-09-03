@@ -12,7 +12,8 @@ import { StagePill } from "@/components/fit-badge";
 import { QueryTabs, resolveQueryTab } from "@/components/crm/query-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { formatTenure, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
-import { isCrmOnlyLine, LINE_LABELS } from "@/lib/crm/bind";
+import { accountDisplayName, defaultAccountKind, isCrmOnlyLine, LINE_LABELS } from "@/lib/crm/bind";
+import { QUOTE_PDF_DOC_TYPE } from "@/lib/crm/quote-pdf";
 import { getDealWorkspace } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,8 @@ export default async function DealPage({
   const crmOnly = isCrmOnlyLine(deal.lineOfBusiness);
   const matches = !crmOnly && risk ? await evaluateDealMarkets(risk) : [];
   const bound = deal.pipelineStage === "bound";
+  const quoteDocs = docs.filter((doc) => doc.docType === QUOTE_PDF_DOC_TYPE);
+  const accountKind = defaultAccountKind(deal.lineOfBusiness);
 
   return (
     <AppShell title={deal.title}>
@@ -55,6 +58,17 @@ export default async function DealPage({
         ) : lead ? (
           <Link href={`/leads/${lead.id}`} className="text-muted-foreground hover:text-primary">
             Lead {lead.lastName}, {lead.firstName}
+          </Link>
+        ) : null}
+        {contact ? (
+          <Link href={`/contacts/${contact.id}`} className="text-muted-foreground hover:text-primary">
+            {contact.accountKind === "commercial" ? "Business" : "Contact"}{" "}
+            {accountDisplayName(contact)}
+          </Link>
+        ) : null}
+        {boundPolicy ? (
+          <Link href={`/policies/${boundPolicy.id}`} className="text-muted-foreground hover:text-primary">
+            Policy {boundPolicy.policyNumber}
           </Link>
         ) : null}
         {risk?.city ? (
@@ -74,11 +88,13 @@ export default async function DealPage({
           </p>
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <dt className="text-[11px] uppercase text-muted-foreground">Contact</dt>
+              <dt className="text-[11px] uppercase text-muted-foreground">
+                {contact?.accountKind === "commercial" ? "Business" : "Contact"}
+              </dt>
               <dd>
                 {contact ? (
                   <Link href={`/contacts/${contact.id}`} className="font-medium text-primary hover:underline">
-                    {contact.lastName}, {contact.firstName}
+                    {accountDisplayName(contact)}
                   </Link>
                 ) : (
                   "—"
@@ -105,8 +121,10 @@ export default async function DealPage({
               <dd>{contact ? formatTenure(contact.tenureStart) : "—"}</dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase text-muted-foreground">Policies on book</dt>
-              <dd>{contact?.policyCount ?? "—"}</dd>
+              <dt className="text-[11px] uppercase text-muted-foreground">Lifetime / active</dt>
+              <dd>
+                {contact ? `${contact.policyCount} / ${contact.activePolicyCount}` : "—"}
+              </dd>
             </div>
           </dl>
           {dealTasks.length > 0 ? (
@@ -127,7 +145,11 @@ export default async function DealPage({
         </section>
       ) : (
         <div className="mb-4">
-          <BindForm dealId={deal.id} />
+          <BindForm
+            dealId={deal.id}
+            defaultAccountKind={accountKind}
+            line={deal.lineOfBusiness}
+          />
         </div>
       )}
 
@@ -161,7 +183,7 @@ export default async function DealPage({
             {
               id: "quotes",
               label: "Quotes",
-              content: <QuotesPanel quotes={quotes} logs={logs} />,
+              content: <QuotesPanel quotes={quotes} logs={logs} quoteDocs={quoteDocs} />,
             },
           ]}
         />

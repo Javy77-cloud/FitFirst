@@ -46,6 +46,23 @@ export function formatIsoDate(value: Date | null | undefined): string {
   return value.toISOString().slice(0, 10);
 }
 
+export function entityHref(entityType?: string | null, entityId?: string | null): string | null {
+  if (!entityType || !entityId) return null;
+  switch (entityType) {
+    case "deal":
+      return `/deals/${entityId}`;
+    case "contact":
+    case "business":
+      return `/contacts/${entityId}`;
+    case "policy":
+      return `/policies/${entityId}`;
+    case "lead":
+      return `/leads/${entityId}`;
+    default:
+      return null;
+  }
+}
+
 export function taskKindLabel(kind: string): string {
   switch (kind) {
     case "30_day":

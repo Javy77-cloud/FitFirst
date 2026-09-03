@@ -49,6 +49,7 @@ export const DOC_TYPES = [
   "wind_mit",
   "four_point",
   "photo",
+  "quote_pdf",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];

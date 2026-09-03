@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createDealFromLead, createLead } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { DecDropForm } from "@/components/crm/dec-drop-form";
 import { LineSelect } from "@/components/crm/line-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,8 @@ export default async function LeadsPage() {
           </Button>
         </form>
 
+        <div className="space-y-4">
+        <DecDropForm />
         <section className="ff-card overflow-x-auto">
           <table className="ff-table">
             <thead>
@@ -114,6 +117,7 @@ export default async function LeadsPage() {
             </tbody>
           </table>
         </section>
+        </div>
       </div>
     </AppShell>
   );

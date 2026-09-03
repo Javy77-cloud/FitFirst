@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   daysUntil,
+  entityHref,
   expirationTone,
   expirationToneClass,
   formatIsoDate,
@@ -39,5 +40,11 @@ describe("CRM display helpers", () => {
     expect(taskKindLabel("expiration")).toBe("Expiration");
     expect(formatIsoDate(new Date("2026-09-02T16:00:00.000Z"))).toBe("2026-09-02");
     expect(formatIsoDate(null)).toBe("—");
+    expect(entityHref("contact", "abc")).toBe("/contacts/abc");
+    expect(entityHref("business", "abc")).toBe("/contacts/abc");
+    expect(entityHref("policy", "p1")).toBe("/policies/p1");
+    expect(entityHref("deal", "d1")).toBe("/deals/d1");
+    expect(entityHref("lead", "l1")).toBe("/leads/l1");
+    expect(entityHref("deal", null)).toBeNull();
   });
 });

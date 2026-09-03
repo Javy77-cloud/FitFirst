@@ -67,6 +67,9 @@ export const contacts = pgTable(
     zip: text("zip"),
     tenureStart: timestamp("tenure_start", { withTimezone: true }),
     policyCount: integer("policy_count").notNull().default(0),
+    activePolicyCount: integer("active_policy_count").notNull().default(0),
+    accountKind: text("account_kind").notNull().default("personal"),
+    legalName: text("legal_name"),
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
@@ -244,6 +247,7 @@ export const documents = pgTable(
     mimeType: text("mime_type").notNull(),
     storagePath: text("storage_path").notNull(),
     docType: text("doc_type").notNull().default("other"),
+    quoteId: uuid("quote_id"),
     status: text("status").notNull().default("uploaded"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
