@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { DeskAgentSwitcher } from "@/components/crm/desk-agent-switcher";
+import { getCurrentAgent } from "@/lib/crm/desk-agent";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
@@ -48,6 +49,7 @@ export async function AppShell({
     .from(alerts)
     .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
+  const agent = await getCurrentAgent();
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -108,7 +110,8 @@ export async function AppShell({
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-3 md:px-5">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Personal lines worksheet
+              Personal lines worksheet · {agent.displayName}
+              {agent.role === "admin" ? " (admin)" : ""}
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>

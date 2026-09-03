@@ -6,6 +6,7 @@ export async function DeskAgentSwitcher({ compact = false }: { compact?: boolean
   return (
     <DeskAgentSwitcherForm
       compact={compact}
+      instanceId={compact ? "desk-agent-mobile" : "desk-agent-sidebar"}
       currentId={current.id}
       agents={agents.map((agent) => ({
         id: agent.id,

@@ -6,23 +6,25 @@ export function DeskAgentSwitcherForm({
   currentId,
   agents,
   compact,
+  instanceId,
 }: {
   currentId: string;
   agents: Array<{ id: string; displayName: string; role: string }>;
   compact?: boolean;
+  instanceId: string;
 }) {
   return (
     <form action={switchDeskAgent} className={compact ? "flex items-center gap-1" : "space-y-1"}>
       {compact ? null : (
         <label
-          htmlFor="desk-agent"
+          htmlFor={instanceId}
           className="block text-[10px] uppercase tracking-wide text-sidebar-foreground/60"
         >
           Desk agent
         </label>
       )}
       <select
-        id="desk-agent"
+        id={instanceId}
         name="agentId"
         defaultValue={currentId}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
@@ -39,6 +41,11 @@ export function DeskAgentSwitcherForm({
           </option>
         ))}
       </select>
+      <noscript>
+        <button type="submit" className="text-xs underline">
+          Switch
+        </button>
+      </noscript>
     </form>
   );
 }
