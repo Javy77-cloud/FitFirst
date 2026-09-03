@@ -730,6 +730,7 @@ export async function listReviewTasks(opts: { all?: boolean } = {}) {
 }
 
 export async function getReviewTask(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(reviewTasks)
