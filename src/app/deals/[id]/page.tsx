@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { bindDeal } from "@/app/actions/crm";
+import { archiveDeal, bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { EmailActivityList, HistoryList } from "@/components/templates/email-activity";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
@@ -117,6 +118,14 @@ export default async function DealPage({
           <span className="text-muted-foreground">
             {risk.city}, {risk.county} · Cov A {risk.coverageA ?? "—"}
           </span>
+        ) : null}
+        {deal.wonAt ? (
+          <span className="text-muted-foreground">Won {formatDay(deal.wonAt)}</span>
+        ) : null}
+        {contact ? (
+          <a href={`/contacts/${contact.id}`} className="text-primary hover:underline">
+            {contact.lastName}, {contact.firstName}
+          </a>
         ) : null}
       </div>
 

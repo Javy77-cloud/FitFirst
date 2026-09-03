@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { alerts } from "@/lib/db/schema";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -146,7 +147,7 @@ export async function AppShell({
             {actions}
           </div>
         </header>
-        <main className="flex-1 p-5">{children}</main>
+        <main className="flex-1 p-4 sm:p-5">{children}</main>
       </div>
     </div>
   );

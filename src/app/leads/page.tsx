@@ -6,12 +6,15 @@ import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { visibleColumns } from "@/components/brand/column-layout-fields";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listLeads } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const rows = await listLeads();
+  const [rows, desk] = await Promise.all([listLeads(), getResolvedDesk()]);
+  const cols = visibleColumns("leads", desk.columnLayout);
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-sm text-muted-foreground">
@@ -84,16 +87,15 @@ export default async function LeadsPage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Source</th>
-                <th></th>
+                {cols.map((col) => (
+                  <th key={col.key}>{col.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground">
+                  <td colSpan={cols.length} className="text-muted-foreground">
                     No leads yet.
                   </td>
                 </tr>

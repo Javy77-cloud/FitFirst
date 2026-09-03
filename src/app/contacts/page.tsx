@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
@@ -57,6 +58,10 @@ export default async function ContactsPage({
           <div>
             <Label className="text-xs">Last name</Label>
             <Input name="lastName" required className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">Email</Label>
+            <Input name="email" type="email" className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">Phone</Label>
