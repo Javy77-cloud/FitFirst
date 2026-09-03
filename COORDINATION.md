@@ -19,9 +19,28 @@ This file is the handshake for additive desk work. Do not invent a second CRM sh
 Tabs: Home, Auto, Rec/RV, Flood, Umbrella, Life, Health, Workers Comp, General Liability.
 Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep enough to shop FL HO / auto). WC / GL / RV are thinner.
 
-## Ingest
+## Ingest path (locked) — Lead → Deal
 
-- Upload / drop stores a `documents` row. It does not write the sheet.
+A dropped dec / wind mit / 4-point / inspection must:
+
+1. **Find-or-create a Lead** (named insured from the packet when readable).
+2. **Convert that Lead to a shopping Deal** (reuse an open shop; do not open a second shop if one is already shopping).
+3. **Attach the source docs on that Deal.**
+4. **Start filling the Quote Sheet** for the line the docs are — **Home first**.
+5. **Never create a Policy** from those docs.
+
+Leave room on the Deal for later **quote-PDF** attachments (`docType=quote`). Fill skips quote PDFs.
+
+Bind later:
+- Personal → Contact + Policy (`bindDeal` today).
+- Commercial → Business + Policy (later). `deals.account_kind` is `personal` | `commercial`. Do not invent a Business table this pass.
+
+Hook new ingest to `src/lib/ingest/lead-deal.ts` + `src/app/actions/ingest.ts`. Do not rewrite other agents’ pipelines (leads form, new-deal form, bind, markets).
+
+## Ingest parsers
+
+- Upload / drop on an existing Deal still stores a `documents` row and Fill writes blanks only.
+- Desk-level drop uses the Lead → Deal path above.
 - Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`. **This path is done.**
 - Images always go through `classifyIngest` → engine `ocr` → `extractFromImage` → an `extraction_jobs` row. Job rows must exist even when OCR is stubbed.
 

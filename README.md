@@ -61,7 +61,7 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 4. Year built (2004), address (412 Harbor Isle Dr), and Cov A ($275,000) land as **CHECK** (blue) on blanks only. Header glance picks up coverage, the property one-liner, and current carrier (Citizens) if those header fields were empty.
 5. A sample photo-a-dec PNG is also on Files. Fill still works. The photo opens an **ocr** job with status `not_implemented` — Photo OCR is the next slice, not a paid vendor. You can also drop your own `.txt` / text PDF / photo.
 
-Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
+Create your own path from the **desk drop** (dec / wind mit / 4-point → Lead → Deal → Quote Sheet), **Leads**, or **New shopping deal**. Source docs never create a policy. Bind is what creates Contact + Policy.
 
 ## Schema
 
@@ -77,7 +77,7 @@ Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`. See 
 npm test
 ```
 
-Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence (clean dec vs messy wind mit), Quote Sheet fill-blanks-only (including Javy Cov A), Super-Copy packet shape, OCR stub, and Zillow/FEMA link builders.
+Covers appetite matching (filter-first, learned declines, RCE floors), extraction confidence (clean dec vs messy wind mit), Quote Sheet fill-blanks-only (including Javy Cov A), Super-Copy / Copy sheet packs, the photo-a-dec OCR hook (`not_implemented`, does not block text fill), and Zillow/FEMA link builders.
 
 ## Restyle
 

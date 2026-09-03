@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { dashboardStats } from "@/lib/db/queries";
 import { DEAL_ID, FILL_DEAL_ID } from "@/lib/fixtures/ids";
 import { markAlertRead } from "@/app/actions/alerts";
+import { DeskDrop } from "@/components/desk-drop";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,10 @@ export default async function HomePage() {
             <div className="text-2xl font-semibold text-navy">{String(value)}</div>
           </Link>
         ))}
+      </div>
+
+      <div className="mb-4">
+        <DeskDrop />
       </div>
 
       <div className="mb-4 ff-card p-4">

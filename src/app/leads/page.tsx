@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
+import { DeskDrop } from "@/components/desk-drop";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ export default async function LeadsPage() {
   const rows = await listLeads();
   return (
     <AppShell title="Leads">
+      <div className="mb-4">
+        <DeskDrop />
+      </div>
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <form action={createLead} className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">New lead</h2>

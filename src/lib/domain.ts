@@ -119,10 +119,24 @@ export const DOC_TYPES = [
   "dec",
   "wind_mit",
   "four_point",
+  "inspection",
   "photo",
+  "quote",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
+
+/** Source packets that start a shop. Quote PDFs attach later and do not create a policy. */
+export const SOURCE_DOC_TYPES: DocType[] = [
+  "dec",
+  "wind_mit",
+  "four_point",
+  "inspection",
+  "photo",
+];
+
+export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
 export const RISK_TYPES = ["property", "auto"] as const;
 export type RiskType = (typeof RISK_TYPES)[number];

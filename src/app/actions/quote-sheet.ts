@@ -18,6 +18,7 @@ import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
 import { extractFieldsFromText, fieldKeyToRiskColumn, coerceRiskValue } from "@/lib/extraction/extract";
 import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
+import { isQuoteAttachment } from "@/lib/ingest/identity";
 import { ImageOcrNotImplementedError, textFromUpload } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
@@ -164,6 +165,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
   if (Object.keys(values).length === 0) values = emptySheetValues(line);
 
   for (const doc of docs) {
+    if (isQuoteAttachment(doc.docType, doc.filename)) continue;
     const abs = path.join(uploadRoot, doc.storagePath);
     let buffer: Buffer;
     try {

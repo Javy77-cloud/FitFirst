@@ -95,6 +95,7 @@ export const deals = pgTable(
     coverageAmount: integer("coverage_amount"),
     propertyOneliner: text("property_oneliner"),
     currentCarrier: text("current_carrier"),
+    accountKind: text("account_kind").notNull().default("personal"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
     ...timestamps,
   },

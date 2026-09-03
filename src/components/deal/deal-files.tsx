@@ -80,7 +80,9 @@ export function DealFiles({
                 <option value="dec">Declarations</option>
                 <option value="wind_mit">Wind mitigation</option>
                 <option value="four_point">4-point</option>
+                <option value="inspection">Inspection</option>
                 <option value="photo">Photo</option>
+                <option value="quote">Quote PDF (later — does not fill)</option>
                 <option value="other">Other / competing quote</option>
               </select>
             </div>
