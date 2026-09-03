@@ -19,6 +19,54 @@ export type QuoteSheetFieldValue = {
   source: "blank" | "agent" | "extracted" | "seed" | "javy";
 };
 
+/** Renewal compare coverage row. Stored on policy_terms.coverages. */
+export type PolicyCoverageLine = {
+  key: string;
+  label: string;
+  value: string;
+};
+
+export type CoverageLimits = {
+  eachOccurrence?: string;
+  damageToRented?: string;
+  medicalExpense?: string;
+  personalAdvertising?: string;
+  generalAggregate?: string;
+  productsCompletedOps?: string;
+  wcStatutory?: string;
+  elEachAccident?: string;
+  elDiseaseEachEmployee?: string;
+  elDiseasePolicyLimit?: string;
+};
+
+export type CertificateLine = {
+  policyId: string;
+  lineOfBusiness: string;
+  lineLabel: string;
+  policyNumber: string;
+  carrierName: string;
+  status: string;
+  effectiveDate: string;
+  expirationDate: string;
+  limits: { key: string; label: string; value: string }[];
+};
+
+export type RenewalCompareSnapshot = {
+  currentPremium: string;
+  proposedPremium: string;
+  premiumDelta: string;
+  premiumDeltaPct: string | null;
+  currentDeductibles: Record<string, string | null>;
+  proposedDeductibles: Record<string, string | null>;
+  coverageRows: {
+    key: string;
+    label: string;
+    currentValue: string;
+    proposedValue: string;
+    changed: boolean;
+  }[];
+};
+
 const tenantCol = () =>
   uuid("tenant_id")
     .notNull()
@@ -845,7 +893,7 @@ export const issuedCertificates = pgTable(
     holderName: text("holder_name").notNull(),
     holderAddress: text("holder_address"),
     jobLocation: text("job_location"),
-    lines: jsonb("lines").$type<string[]>().notNull().default([]),
+    lines: jsonb("lines").$type<CertificateLine[]>().notNull().default([]),
     producerName: text("producer_name"),
     issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
     status: text("status").notNull().default("issued"),
@@ -1020,7 +1068,7 @@ export const policyTerms = pgTable("policy_terms", {
   hurricaneDeductible: text("hurricane_deductible"),
   comprehensiveDeductible: text("comprehensive_deductible"),
   collisionDeductible: text("collision_deductible"),
-  coverages: jsonb("coverages").$type<Record<string, string> | null>(),
+  coverages: jsonb("coverages").$type<PolicyCoverageLine[] | Record<string, string> | null>(),
   notes: text("notes"),
   source: text("source"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1131,6 +1179,7 @@ export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type Location = typeof locations.$inferSelect;
 export type MergeCandidate = typeof mergeCandidates.$inferSelect;
 export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
+export type Business = Account;
 export type Claim = typeof claims.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;

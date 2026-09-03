@@ -64,9 +64,9 @@ export async function seedOwnerBook() {
     {
       id: OWNER_CONTACT_IDS.harborKey,
       tenantId: TENANT_ID,
-      firstName: "Harbor Key",
+      firstName: "Keystone",
       lastName: "Holdings",
-      email: "ops@harborkey.example",
+      email: "ops@keystoneholdings.example",
       phone: "321-555-0400",
       mailingAddress: "12 Max Brewer Bridge Approach",
       city: "Titusville",
@@ -74,7 +74,7 @@ export async function seedOwnerBook() {
       zip: "32796",
       tenureStart: new Date("2026-09-01T16:00:00.000Z"),
       policyCount: 1,
-      notes: "Commercial marina GL. Bound and issued this month.",
+      notes: "Owner-book contact demo for TR-GL-22019. Not Harbor Key Marine LLC (EIN 59-1234567 / GL-HARBOR-2026).",
     },
     {
       id: OWNER_CONTACT_IDS.pike,
@@ -132,7 +132,7 @@ export async function seedOwnerBook() {
       state: "FL",
       zip: "32922",
       policyCount: 0,
-      notes: "HO3 bound this month. Carrier has not issued the policy number yet.",
+      notes: "HO3 bound this month. Pending policy REYES-HO3-PENDING is waiting on the carrier issue packet.",
     },
   ];
 
@@ -163,12 +163,12 @@ export async function seedOwnerBook() {
     {
       id: OWNER_LEAD_IDS.harbor,
       tenantId: TENANT_ID,
-      firstName: "Harbor Key",
+      firstName: "Keystone",
       lastName: "Holdings",
       source: "book",
       status: "converted",
       convertedDealId: OWNER_DEAL_IDS.harbor,
-      notes: "Commercial GL won September 2026.",
+      notes: "Owner-book GL won September 2026. Not the Harbor Key Marine LLC commercial walk.",
     },
     {
       id: OWNER_LEAD_IDS.nguyen,
@@ -188,7 +188,7 @@ export async function seedOwnerBook() {
       source: "book",
       status: "converted",
       convertedDealId: OWNER_DEAL_IDS.reyes,
-      notes: "Bound, waiting on issue.",
+      notes: "Bound. Pending policy REYES-HO3-PENDING is waiting on issue.",
     },
   ];
 
@@ -216,12 +216,12 @@ export async function seedOwnerBook() {
       tenantId: TENANT_ID,
       leadId: OWNER_LEAD_IDS.harbor,
       contactId: OWNER_CONTACT_IDS.harborKey,
-      title: "Harbor Key Holdings · marina GL",
+      title: "Keystone Holdings · marina GL (owner-book)",
       pipelineStage: "bound",
       lineOfBusiness: "GL",
       state: "FL",
       boundAt: new Date("2026-09-01T16:00:00.000Z"),
-      notes: "Closed won this month. Policy HK-GL-22019 is in force.",
+      notes: "Owner-book Closed Won. Policy TR-GL-22019. Not Harbor Key Marine LLC / GL-HARBOR-2026.",
     },
     {
       id: OWNER_DEAL_IDS.nguyen,
@@ -244,7 +244,7 @@ export async function seedOwnerBook() {
       lineOfBusiness: "HO",
       state: "FL",
       boundAt: new Date("2026-09-02T18:00:00.000Z"),
-      notes: "Bound 2026-09-02. Waiting on the carrier to issue. No policy row.",
+      notes: "Bound 2026-09-02. Pending policy REYES-HO3-PENDING is attached — waiting on the carrier issue packet.",
     },
   ];
 
@@ -356,6 +356,20 @@ export async function seedOwnerBook() {
       expirationDate: new Date("2026-04-01T00:00:00.000Z"),
       premium: "2190.00",
       coverageA: 265000,
+    },
+    {
+      id: OWNER_POLICY_IDS.reyesHo,
+      tenantId: TENANT_ID,
+      contactId: OWNER_CONTACT_IDS.reyes,
+      dealId: OWNER_DEAL_IDS.reyes,
+      carrierId: CARRIER_IDS.americanIntegrity,
+      policyNumber: "REYES-HO3-PENDING",
+      lineOfBusiness: "HO",
+      status: "pending",
+      effectiveDate: new Date("2026-09-02T00:00:00.000Z"),
+      expirationDate: new Date("2027-09-02T00:00:00.000Z"),
+      premium: null,
+      coverageA: null,
     },
   ];
 

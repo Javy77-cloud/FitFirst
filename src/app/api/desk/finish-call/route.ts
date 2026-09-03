@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { saveCallOutcome } from "@/app/actions/activities";
+import { saveCallOutcome } from "@/app/actions/activities-desk";
 
 export async function POST(request: Request) {
   const form = await request.formData();

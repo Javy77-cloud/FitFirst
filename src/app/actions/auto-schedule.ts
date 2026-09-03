@@ -115,7 +115,7 @@ export async function addDriver(formData: FormData) {
     contactId: optionalId(formData, "contactId"),
     firstName,
     lastName,
-    dateOfBirth,
+    dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().slice(0, 10) : null,
     licenseNumber: str(formData, "licenseNumber") || null,
     licenseState: str(formData, "licenseState") || null,
     sortOrder: Number(next ?? 0),

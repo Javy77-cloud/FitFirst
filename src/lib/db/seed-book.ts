@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm";
-import { hashPassword } from "../auth/password";
 import { splitCommission } from "../commissions/math";
 import {
   ADMIN_USER_ID,
@@ -220,9 +219,6 @@ const BOOK: DemoCommission[] = [
 ];
 
 export async function seedUsersAndBook() {
-  const password = process.env.DEV_ADMIN_PASSWORD || "fitfirst-local";
-  const adminHash = hashPassword(password);
-
   await db
     .insert(users)
     .values({
@@ -231,7 +227,7 @@ export async function seedUsersAndBook() {
       name: "Javy Rivera",
       email: "javy@fitfirst.local",
       role: "admin",
-      passwordHash: adminHash,
+      passwordHash: null,
       active: true,
     })
     .onConflictDoUpdate({
@@ -240,7 +236,6 @@ export async function seedUsersAndBook() {
         name: "Javy Rivera",
         email: "javy@fitfirst.local",
         role: "admin",
-        passwordHash: adminHash,
         active: true,
         updatedAt: new Date(),
       },
@@ -277,7 +272,7 @@ export async function seedUsersAndBook() {
     })
     .onConflictDoUpdate({
       target: agencySettings.id,
-      set: { fiscalYearStartMonth: 1, updatedAt: new Date() },
+      set: { fiscalYearStartMonth: 1 },
     });
 
   await db.update(leads).set({ ownerId: ADMIN_USER_ID, updatedAt: new Date() }).where(eq(leads.id, LEAD_ID));
@@ -335,12 +330,12 @@ export async function seedUsersAndBook() {
     },
     {
       id: DEMO_CONTACT_HARBOR_KEY,
-      firstName: "Harbor Key",
-      lastName: "Marine",
+      firstName: "Book",
+      lastName: "Marina",
       city: "Titusville",
       ownerId: ADMIN_USER_ID,
       policyCount: 2,
-      notes: "Commercial marina. GL pending, BOP paid. Producer pay only — no insured premium collection.",
+      notes: "Producer-pay book demo (QBE-GL-44021 / SS-BOP-44022). Not Harbor Key Marine LLC and not Keystone Holdings.",
     },
   ] as const;
 
@@ -531,13 +526,9 @@ export async function seedUsersAndBook() {
         premium: row.premium.toFixed(2),
         ratePct: row.ratePct.toFixed(2),
         amount,
-        agencyAmount: split.agencyAmount.toFixed(2),
-        producerAmount: split.producerAmount.toFixed(2),
-        sellingAgency: row.sellingAgency ?? "afa",
         status: row.status,
         dueDate: row.dueDate ? new Date(row.dueDate) : null,
         paidDate: row.paidDate ? new Date(row.paidDate) : null,
-        paidByUserId: row.status === "paid" ? (row.paidByUserId ?? ADMIN_USER_ID) : null,
         period: row.period,
       })
       .onConflictDoUpdate({
@@ -550,13 +541,9 @@ export async function seedUsersAndBook() {
           premium: row.premium.toFixed(2),
           ratePct: row.ratePct.toFixed(2),
           amount,
-          agencyAmount: split.agencyAmount.toFixed(2),
-          producerAmount: split.producerAmount.toFixed(2),
-          sellingAgency: row.sellingAgency ?? "afa",
           status: row.status,
           dueDate: row.dueDate ? new Date(row.dueDate) : null,
           paidDate: row.paidDate ? new Date(row.paidDate) : null,
-          paidByUserId: row.status === "paid" ? (row.paidByUserId ?? ADMIN_USER_ID) : null,
           period: row.period,
           updatedAt: new Date(),
         },
@@ -583,7 +570,6 @@ export async function seedUsersAndBook() {
         status: "open",
         resolvedBy: null,
         resolvedAt: null,
-        updatedAt: new Date(),
       },
     });
 
@@ -605,7 +591,6 @@ export async function seedUsersAndBook() {
         body: "What about this? AI still has not issued the producer statement.",
         kind: "question",
         status: "open",
-        updatedAt: new Date(),
       },
     });
 
@@ -715,7 +700,6 @@ export async function seedUsersAndBook() {
         set: {
           premiumGoal: row.premiumGoal,
           policyGoal: row.policyGoal,
-          updatedAt: new Date(),
         },
       });
   }

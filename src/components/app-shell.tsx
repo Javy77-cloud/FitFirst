@@ -44,10 +44,12 @@ const NAV = [
 export async function AppShell({
   children,
   title,
+  eyebrow,
   actions,
 }: {
   children: React.ReactNode;
   title: string;
+  eyebrow?: string;
   actions?: React.ReactNode;
 }) {
   const [count] = await db
@@ -104,7 +106,7 @@ export async function AppShell({
         <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Personal lines worksheet
+              {eyebrow ?? "Personal lines worksheet"}
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>

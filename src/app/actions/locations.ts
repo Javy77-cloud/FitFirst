@@ -19,8 +19,8 @@ function occupancyFrom(form: FormData): Occupancy {
 
 export async function createLocation(formData: FormData) {
   const contactId = str(formData, "contactId") || null;
-  const businessId = str(formData, "businessId") || null;
-  if (!contactId && !businessId) {
+  const accountId = str(formData, "accountId") || str(formData, "businessId") || null;
+  if (!contactId && !accountId) {
     throw new Error("A location must belong to a contact or a business.");
   }
 
@@ -34,7 +34,10 @@ export async function createLocation(formData: FormData) {
   await db.insert(locations).values({
     tenantId: DEFAULT_TENANT_ID,
     contactId,
-    businessId,
+    accountId,
+    kind: "property",
+    label: str(formData, "label") || street,
+    address1: street,
     street,
     city,
     state: str(formData, "state") || "FL",
@@ -43,8 +46,12 @@ export async function createLocation(formData: FormData) {
   });
 
   if (contactId) revalidatePath(`/contacts/${contactId}`);
-  if (businessId) revalidatePath(`/businesses/${businessId}`);
+  if (accountId) {
+    revalidatePath(`/accounts/${accountId}`);
+    revalidatePath(`/businesses/${accountId}`);
+  }
   revalidatePath("/contacts");
+  revalidatePath("/accounts");
   revalidatePath("/businesses");
   revalidatePath("/policies");
 }
@@ -52,6 +59,7 @@ export async function createLocation(formData: FormData) {
 export async function findOrCreateLocationFromAddress(input: {
   contactId?: string | null;
   businessId?: string | null;
+  accountId?: string | null;
   street?: string | null;
   city?: string | null;
   state?: string | null;
@@ -61,11 +69,11 @@ export async function findOrCreateLocationFromAddress(input: {
   const street = input.street?.trim() ?? "";
   const city = input.city?.trim() ?? "";
   const zip = input.zip?.trim() ?? "";
+  const accountId = input.accountId ?? input.businessId ?? null;
   if (!street || !city || !zip) return null;
-  if (!input.contactId && !input.businessId) return null;
+  if (!input.contactId && !accountId) return null;
 
-  const occupancy = (input.occupancy?.trim() ||
-    defaultOccupancyForLine("HO")) as Occupancy;
+  const occupancy = (input.occupancy?.trim() || defaultOccupancyForLine("HO")) as Occupancy;
 
   const existing = await db
     .select()
@@ -76,9 +84,7 @@ export async function findOrCreateLocationFromAddress(input: {
         eq(locations.street, street),
         eq(locations.city, city),
         eq(locations.zip, zip),
-        input.contactId
-          ? eq(locations.contactId, input.contactId)
-          : eq(locations.businessId, input.businessId!),
+        input.contactId ? eq(locations.contactId, input.contactId) : eq(locations.accountId, accountId!),
       ),
     );
 
@@ -89,7 +95,10 @@ export async function findOrCreateLocationFromAddress(input: {
     .values({
       tenantId: DEFAULT_TENANT_ID,
       contactId: input.contactId ?? null,
-      businessId: input.businessId ?? null,
+      accountId,
+      kind: "property",
+      label: street,
+      address1: street,
       street,
       city,
       state: input.state?.trim() || "FL",

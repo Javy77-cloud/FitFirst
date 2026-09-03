@@ -11,7 +11,9 @@ import {
   emailTemplates,
   emailTriggers,
   formTemplates,
+  issuedCertificates,
   leads,
+  locations,
   pipelineStages,
   pipelines,
   policies,
@@ -32,10 +34,12 @@ import {
   FORM_HO3_ID,
   FORM_PACKET_ID,
   HARBOR_ACCOUNT_ID,
+  HARBOR_CERTIFICATE_ID,
   HARBOR_CONTACT_ID,
   HARBOR_DEAL_ID,
   HARBOR_EMAIL_JOB_ID,
   HARBOR_LEAD_ID,
+  HARBOR_LOCATION_ID,
   HARBOR_POLICY_ID,
   HARBOR_RISK_ID,
   HARBOR_SHEET_ID,
@@ -57,6 +61,7 @@ import { emptySheetValues } from "../lifecycle/quote-sheet";
 import { activityLogBody } from "../lifecycle/activity";
 import { SEEDED_PIPELINES } from "../wire/pipeline";
 import { scheduleWonClientEmails } from "../wire/email-jobs";
+import { buildCertificateDraft, nextCertificateNumber } from "../certificates/issue";
 
 const PIPELINE_IDS: Record<string, string> = {
   "p-c": PIPELINE_PC_ID,
@@ -466,6 +471,84 @@ export async function seedWireDesk() {
         updatedAt: new Date(),
       },
     });
+
+  await db
+    .insert(locations)
+    .values({
+      id: HARBOR_LOCATION_ID,
+      tenantId: TENANT_ID,
+      accountId: HARBOR_ACCOUNT_ID,
+      kind: "job_site",
+      label: "Harbor Key Blvd shop",
+      address1: "88 Harbor Key Blvd",
+      street: "88 Harbor Key Blvd",
+      city: "Palm Bay",
+      county: "Brevard",
+      state: "FL",
+      zip: "32907",
+      occupancy: "commercial",
+    })
+    .onConflictDoUpdate({
+      target: locations.id,
+      set: {
+        accountId: HARBOR_ACCOUNT_ID,
+        address1: "88 Harbor Key Blvd",
+        street: "88 Harbor Key Blvd",
+        occupancy: "commercial",
+        updatedAt: new Date(),
+      },
+    });
+
+  const harborCoiAt = new Date("2026-08-20T15:00:00.000Z");
+  const harborDraft = buildCertificateDraft(
+    [
+      {
+        id: HARBOR_POLICY_ID,
+        lineOfBusiness: "GL",
+        status: "active",
+        policyNumber: "GL-HARBOR-2026",
+        carrierName: "Book GL",
+        effectiveDate: new Date("2026-08-15T05:00:00.000Z"),
+        expirationDate: new Date("2027-08-15T05:00:00.000Z"),
+        coverageLimits: null,
+      },
+    ],
+    {
+      holderName: "Palm Bay Marina Dockage",
+      holderAddress: "100 Harbour Way, Palm Bay, FL 32907",
+      jobLocation: "88 Harbor Key Blvd slip repair",
+    },
+    harborCoiAt,
+  );
+  if (harborDraft.ok) {
+    await db
+      .insert(issuedCertificates)
+      .values({
+        id: HARBOR_CERTIFICATE_ID,
+        tenantId: TENANT_ID,
+        accountId: HARBOR_ACCOUNT_ID,
+        businessId: HARBOR_ACCOUNT_ID,
+        certificateNumber: nextCertificateNumber(0, harborCoiAt),
+        holderName: harborDraft.draft.holderName,
+        holderAddress: harborDraft.draft.holderAddress,
+        jobLocation: harborDraft.draft.jobLocation,
+        lines: harborDraft.draft.lines,
+        producerName: "FitFirst",
+        issuedAt: harborCoiAt,
+        status: "issued",
+      })
+      .onConflictDoUpdate({
+        target: issuedCertificates.id,
+        set: {
+          accountId: HARBOR_ACCOUNT_ID,
+          certificateNumber: nextCertificateNumber(0, harborCoiAt),
+          holderName: harborDraft.draft.holderName,
+          holderAddress: harborDraft.draft.holderAddress,
+          jobLocation: harborDraft.draft.jobLocation,
+          lines: harborDraft.draft.lines,
+        },
+      });
+  }
 
   await db
     .insert(activities)

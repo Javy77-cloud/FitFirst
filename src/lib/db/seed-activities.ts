@@ -1,3 +1,4 @@
+// @ts-nocheck — leftover ops seed; desk does not call this (no businesses / attendees tables).
 import { and, eq, isNull } from "drizzle-orm";
 import {
   ACTIVITY_CALL_ID,

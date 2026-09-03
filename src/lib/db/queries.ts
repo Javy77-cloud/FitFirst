@@ -386,6 +386,32 @@ export async function getAccountWorkspace(id: string) {
   };
 }
 
+export async function getBusinessWorkspace(id: string) {
+  return getAccountWorkspace(id);
+}
+
+export async function getIssuedCertificate(accountId: string, certId: string) {
+  const workspace = await getAccountWorkspace(accountId);
+  if (!workspace) return null;
+  const certificate = workspace.certificates.find((row) => row.id === certId);
+  if (!certificate) return null;
+  return {
+    business: workspace.account,
+    account: workspace.account,
+    certificate,
+  };
+}
+
+export async function getLastQuoteSheetDealId() {
+  const [sheet] = await db
+    .select({ dealId: quoteSheets.dealId })
+    .from(quoteSheets)
+    .where(eq(quoteSheets.tenantId, tenant()))
+    .orderBy(desc(quoteSheets.updatedAt))
+    .limit(1);
+  return sheet?.dealId ?? null;
+}
+
 export async function getPolicyWorkspace(id: string) {
   const [row] = await db
     .select({

@@ -106,3 +106,19 @@ export async function completeDeskActivity(formData: FormData) {
 
   revalidateRelated(activity);
 }
+
+/** Desk call close — used by the phone stub finish-call route. Not a softphone. */
+export async function saveCallOutcome(formData: FormData) {
+  const id = str(formData, "id") || str(formData, "activityId");
+  if (id) {
+    formData.set("activityId", id);
+    await completeDeskActivity(formData);
+  } else {
+    formData.set("kind", "call");
+    await logDeskActivity(formData);
+  }
+  const returnTo =
+    str(formData, "returnTo") ||
+    (str(formData, "contactId") ? `/contacts/${str(formData, "contactId")}` : "/tasks");
+  return { returnTo, contactId: str(formData, "contactId") || null, policyId: str(formData, "policyId") || null };
+}

@@ -12,6 +12,7 @@ import {
   deals,
   documents,
   leads,
+  locations,
   policies,
   quoteSheets,
   quotes,
@@ -25,6 +26,7 @@ import {
   ELENA_CONTACT_ID,
   ELENA_DEAL_ID,
   ELENA_LEAD_ID,
+  ELENA_LOCATION_ID,
   ELENA_MEETING_ID,
   ELENA_POLICY_ID,
   ELENA_QUOTE_AI_ID,
@@ -160,6 +162,34 @@ export async function seedLifecycleDemo() {
         activePolicyCount: 1,
         notes:
           "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(locations)
+    .values({
+      id: ELENA_LOCATION_ID,
+      tenantId: TENANT_ID,
+      contactId: ELENA_CONTACT_ID,
+      kind: "property",
+      label: "Harbor Isle dwelling",
+      address1: "412 Harbor Isle Dr",
+      street: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      county: "Brevard",
+      state: "FL",
+      zip: "32935",
+      occupancy: "owner",
+    })
+    .onConflictDoUpdate({
+      target: locations.id,
+      set: {
+        contactId: ELENA_CONTACT_ID,
+        address1: "412 Harbor Isle Dr",
+        street: "412 Harbor Isle Dr",
+        city: "Melbourne",
+        occupancy: "owner",
         updatedAt: new Date(),
       },
     });

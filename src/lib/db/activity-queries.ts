@@ -1,17 +1,11 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import {
-  isDueToday,
-  isOverdue,
-  shouldNotifyCall,
-  whenForActivity,
-} from "@/lib/activities/rules";
+import { isDueToday, isOverdue, shouldNotifyCall, whenForActivity } from "@/lib/activities/rules";
 import { db } from "./index";
 import {
+  accounts,
   activities,
-  activityAttendees,
-  activityEvents,
-  businesses,
+  activityLogs,
   clientHistory,
   contacts,
   deals,
@@ -22,62 +16,43 @@ import {
 const tenant = () => DEFAULT_TENANT_ID;
 
 export async function listDeskUsers() {
-  return db
-    .select()
-    .from(users)
-    .where(eq(users.tenantId, tenant()))
-    .orderBy(users.name);
+  return db.select().from(users).where(eq(users.tenantId, tenant())).orderBy(users.name);
 }
 
 export async function listBusinesses() {
-  return db
-    .select()
-    .from(businesses)
-    .where(eq(businesses.tenantId, tenant()))
-    .orderBy(businesses.name);
+  return db.select().from(accounts).where(eq(accounts.tenantId, tenant())).orderBy(accounts.name);
 }
 
 export async function getBusiness(id: string) {
   const [row] = await db
     .select()
-    .from(businesses)
-    .where(and(eq(businesses.tenantId, tenant()), eq(businesses.id, id)));
+    .from(accounts)
+    .where(and(eq(accounts.tenantId, tenant()), eq(accounts.id, id)));
   return row ?? null;
 }
 
 export async function listRelatedOptions() {
   const [contactRows, dealRows, policyRows, businessRows, userRows] = await Promise.all([
     db
-      .select({
-        id: contacts.id,
-        firstName: contacts.firstName,
-        lastName: contacts.lastName,
-        phone: contacts.phone,
-      })
+      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName })
       .from(contacts)
       .where(eq(contacts.tenantId, tenant()))
       .orderBy(contacts.lastName),
     db
-      .select({ id: deals.id, title: deals.title, pipelineStage: deals.pipelineStage })
+      .select({ id: deals.id, title: deals.title })
       .from(deals)
       .where(eq(deals.tenantId, tenant()))
-      .orderBy(desc(deals.updatedAt)),
+      .orderBy(deals.title),
     db
-      .select({
-        id: policies.id,
-        policyNumber: policies.policyNumber,
-        contactId: policies.contactId,
-        lineOfBusiness: policies.lineOfBusiness,
-        status: policies.status,
-      })
+      .select({ id: policies.id, policyNumber: policies.policyNumber })
       .from(policies)
       .where(eq(policies.tenantId, tenant()))
-      .orderBy(desc(policies.expirationDate)),
+      .orderBy(policies.policyNumber),
     db
-      .select({ id: businesses.id, name: businesses.name })
-      .from(businesses)
-      .where(eq(businesses.tenantId, tenant()))
-      .orderBy(businesses.name),
+      .select({ id: accounts.id, name: accounts.name })
+      .from(accounts)
+      .where(eq(accounts.tenantId, tenant()))
+      .orderBy(accounts.name),
     listDeskUsers(),
   ]);
   return {
@@ -89,50 +64,35 @@ export async function listRelatedOptions() {
   };
 }
 
-export async function listActivities(filters?: {
-  kind?: string;
-  status?: string;
-  policyId?: string;
+export async function listActivities(filter?: {
   contactId?: string;
-  dealId?: string;
+  accountId?: string;
   businessId?: string;
-  from?: Date;
-  to?: Date;
+  policyId?: string;
+  dealId?: string;
 }) {
-  const clauses = [eq(activities.tenantId, tenant())];
-  if (filters?.kind) clauses.push(eq(activities.kind, filters.kind));
-  if (filters?.status) clauses.push(eq(activities.status, filters.status));
-  if (filters?.policyId) clauses.push(eq(activities.policyId, filters.policyId));
-  if (filters?.contactId) clauses.push(eq(activities.contactId, filters.contactId));
-  if (filters?.dealId) clauses.push(eq(activities.dealId, filters.dealId));
-  if (filters?.businessId) clauses.push(eq(activities.businessId, filters.businessId));
-
+  const accountId = filter?.accountId ?? filter?.businessId;
+  const where = and(
+    eq(activities.tenantId, tenant()),
+    filter?.contactId ? eq(activities.contactId, filter.contactId) : undefined,
+    accountId ? eq(activities.accountId, accountId) : undefined,
+    filter?.policyId ? eq(activities.policyId, filter.policyId) : undefined,
+    filter?.dealId ? eq(activities.dealId, filter.dealId) : undefined,
+  );
   const rows = await db
     .select({
       activity: activities,
       contact: contacts,
       policy: policies,
-      deal: deals,
-      business: businesses,
-      assigneeUser: users,
+      business: accounts,
     })
     .from(activities)
     .leftJoin(contacts, eq(activities.contactId, contacts.id))
     .leftJoin(policies, eq(activities.policyId, policies.id))
-    .leftJoin(deals, eq(activities.dealId, deals.id))
-    .leftJoin(businesses, eq(activities.businessId, businesses.id))
-    .leftJoin(users, eq(activities.assigneeId, users.id))
-    .where(and(...clauses))
+    .leftJoin(accounts, eq(activities.accountId, accounts.id))
+    .where(where)
     .orderBy(desc(activities.updatedAt));
-
-  return rows.filter((row) => {
-    if (!filters?.from && !filters?.to) return true;
-    const when = whenForActivity(row.activity);
-    if (!when) return false;
-    if (filters.from && when < filters.from) return false;
-    if (filters.to && when >= filters.to) return false;
-    return true;
-  });
+  return rows;
 }
 
 export async function getActivity(id: string) {
@@ -141,84 +101,41 @@ export async function getActivity(id: string) {
       activity: activities,
       contact: contacts,
       policy: policies,
-      deal: deals,
-      business: businesses,
-      assigneeUser: users,
+      business: accounts,
     })
     .from(activities)
     .leftJoin(contacts, eq(activities.contactId, contacts.id))
     .leftJoin(policies, eq(activities.policyId, policies.id))
-    .leftJoin(deals, eq(activities.dealId, deals.id))
-    .leftJoin(businesses, eq(activities.businessId, businesses.id))
-    .leftJoin(users, eq(activities.assigneeId, users.id))
+    .leftJoin(accounts, eq(activities.accountId, accounts.id))
     .where(and(eq(activities.tenantId, tenant()), eq(activities.id, id)));
   if (!row) return null;
   const events = await db
     .select()
-    .from(activityEvents)
-    .where(and(eq(activityEvents.tenantId, tenant()), eq(activityEvents.activityId, id)))
-    .orderBy(desc(activityEvents.occurredAt));
-  const attendees = await db
-    .select({
-      attendee: activityAttendees,
-      contact: contacts,
-    })
-    .from(activityAttendees)
-    .innerJoin(contacts, eq(activityAttendees.contactId, contacts.id))
-    .where(
-      and(eq(activityAttendees.tenantId, tenant()), eq(activityAttendees.activityId, id)),
-    );
-  return { ...row, events, attendees };
-}
-
-export async function listActivityEvents(activityId: string) {
-  return db
-    .select()
-    .from(activityEvents)
-    .where(
-      and(eq(activityEvents.tenantId, tenant()), eq(activityEvents.activityId, activityId)),
-    )
-    .orderBy(desc(activityEvents.occurredAt));
+    .from(activityLogs)
+    .where(and(eq(activityLogs.tenantId, tenant()), eq(activityLogs.activityId, id)))
+    .orderBy(desc(activityLogs.occurredAt));
+  return { ...row, events, attendees: [] as { attendee: unknown; contact: typeof contacts.$inferSelect }[] };
 }
 
 export async function timelineFor(filter: {
   contactId?: string;
-  policyId?: string;
-  dealId?: string;
+  accountId?: string;
   businessId?: string;
-  type?: string;
-  status?: string;
-  from?: Date;
-  to?: Date;
+  policyId?: string;
 }) {
-  const clauses = [eq(clientHistory.tenantId, tenant())];
-  if (filter.contactId) clauses.push(eq(clientHistory.contactId, filter.contactId));
-  if (filter.policyId) clauses.push(eq(clientHistory.policyId, filter.policyId));
-  if (filter.dealId) clauses.push(eq(clientHistory.dealId, filter.dealId));
-  if (filter.businessId) clauses.push(eq(clientHistory.businessId, filter.businessId));
-  if (filter.type) clauses.push(eq(clientHistory.eventType, filter.type));
-
-  const rows = await db
-    .select({
-      history: clientHistory,
-      activity: activities,
-      policy: policies,
-    })
-    .from(clientHistory)
-    .leftJoin(activities, eq(clientHistory.activityId, activities.id))
-    .leftJoin(policies, eq(clientHistory.policyId, policies.id))
-    .where(and(...clauses))
-    .orderBy(desc(clientHistory.occurredAt));
-
-  return rows.filter((row) => {
-    if (filter.status && row.activity?.status !== filter.status) return false;
-    if (filter.from && row.history.occurredAt < filter.from) return false;
-    if (filter.to && row.history.occurredAt >= filter.to) return false;
-    if (filter.policyId && !row.history.policyId && row.activity?.policyId !== filter.policyId) {
-      return false;
-    }
-    return true;
-  });
+  const accountId = filter.accountId ?? filter.businessId;
+  return db
+    .select()
+    .from(activityLogs)
+    .where(
+      and(
+        eq(activityLogs.tenantId, tenant()),
+        filter.contactId ? eq(activityLogs.contactId, filter.contactId) : undefined,
+        accountId ? eq(activityLogs.accountId, accountId) : undefined,
+        filter.policyId ? eq(activityLogs.policyId, filter.policyId) : undefined,
+      ),
+    )
+    .orderBy(desc(activityLogs.occurredAt));
 }
 
 export async function getContactWorkspace(contactId: string) {
@@ -228,16 +145,8 @@ export async function getContactWorkspace(contactId: string) {
     .where(and(eq(contacts.tenantId, tenant()), eq(contacts.id, contactId)));
   if (!contact) return null;
   const [policyRows, dealRows, work, timeline] = await Promise.all([
-    db
-      .select()
-      .from(policies)
-      .where(and(eq(policies.tenantId, tenant()), eq(policies.contactId, contactId)))
-      .orderBy(desc(policies.expirationDate)),
-    db
-      .select()
-      .from(deals)
-      .where(and(eq(deals.tenantId, tenant()), eq(deals.contactId, contactId)))
-      .orderBy(desc(deals.updatedAt)),
+    db.select().from(policies).where(eq(policies.contactId, contactId)),
+    db.select().from(deals).where(eq(deals.contactId, contactId)).orderBy(desc(deals.updatedAt)),
     listActivities({ contactId }),
     timelineFor({ contactId }),
   ]);
@@ -251,10 +160,7 @@ export async function getPolicyWorkspace(policyId: string) {
     .leftJoin(contacts, eq(policies.contactId, contacts.id))
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
   if (!row) return null;
-  const [work, timeline] = await Promise.all([
-    listActivities({ policyId }),
-    timelineFor({ policyId }),
-  ]);
+  const [work, timeline] = await Promise.all([listActivities({ policyId }), timelineFor({ policyId })]);
   return { ...row, work, timeline };
 }
 
@@ -262,22 +168,16 @@ export async function getBusinessWorkspace(businessId: string) {
   const business = await getBusiness(businessId);
   if (!business) return null;
   const [work, timeline] = await Promise.all([
-    listActivities({ businessId }),
-    timelineFor({ businessId }),
+    listActivities({ accountId: businessId }),
+    timelineFor({ accountId: businessId }),
   ]);
-  const [contact] = business.primaryContactId
-    ? await db.select().from(contacts).where(eq(contacts.id, business.primaryContactId))
-    : [];
-  return { business, contact: contact ?? null, work, timeline };
+  return { business, contact: null, work, timeline, policyRows: [] as { policy: typeof policies.$inferSelect; carrier: null }[] };
 }
 
 export async function deskQueue(now = new Date()) {
   const rows = await listActivities();
   const open = rows.filter(
-    (row) =>
-      row.activity.status !== "completed" &&
-      row.activity.status !== "canceled" &&
-      row.activity.status !== "cancelled",
+    (row) => row.activity.status !== "completed" && row.activity.status !== "canceled" && row.activity.status !== "cancelled",
   );
   const dueToday = open.filter((row) => isDueToday(whenForActivity(row.activity), now, row.activity.status));
   const overdue = open.filter((row) => isOverdue(whenForActivity(row.activity), now, row.activity.status));
@@ -285,10 +185,10 @@ export async function deskQueue(now = new Date()) {
     shouldNotifyCall({
       kind: row.activity.kind,
       when: whenForActivity(row.activity),
-      reminderMinutes: row.activity.reminderMinutes,
+      reminderMinutes: null,
       now,
       status: row.activity.status,
-      outcome: row.activity.outcome,
+      outcome: null,
     }),
   );
   return { dueToday, overdue, makeThisCall, open };
@@ -296,15 +196,21 @@ export async function deskQueue(now = new Date()) {
 
 export async function countOpenWork() {
   const [row] = await db
-    .select({
-      n: sql<number>`count(*)`,
-    })
+    .select({ n: sql<number>`count(*)` })
     .from(activities)
     .where(
       and(
         eq(activities.tenantId, tenant()),
-        or(eq(activities.status, "incomplete"), eq(activities.status, "in_progress"), eq(activities.status, "open"), eq(activities.status, "delayed"), eq(activities.status, "rescheduled")),
+        or(eq(activities.status, "incomplete"), eq(activities.status, "in_progress"), eq(activities.status, "open")),
       ),
     );
   return Number(row?.n ?? 0);
+}
+
+export async function listClientHistory(contactId: string) {
+  return db
+    .select()
+    .from(clientHistory)
+    .where(and(eq(clientHistory.tenantId, tenant()), eq(clientHistory.contactId, contactId)))
+    .orderBy(desc(clientHistory.occurredAt));
 }

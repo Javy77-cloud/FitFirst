@@ -385,7 +385,6 @@ export async function seedBookRenewals() {
         hurricaneDeductible: "2%",
         coverages: haleCurrentCoverages,
         notes: "In-force Heritage HO3.",
-        updatedAt: new Date(),
       },
     });
 
@@ -413,7 +412,6 @@ export async function seedBookRenewals() {
         hurricaneDeductible: "5%",
         coverages: haleProposedCoverages,
         notes: "Heritage renewal offer received 2026-08-18. Not a FitFirst rate.",
-        updatedAt: new Date(),
       },
     });
 
@@ -441,7 +439,6 @@ export async function seedBookRenewals() {
         collisionDeductible: "$1,000",
         coverages: nairCurrentCoverages,
         notes: "In-force Progressive personal auto.",
-        updatedAt: new Date(),
       },
     });
 
@@ -469,7 +466,6 @@ export async function seedBookRenewals() {
         collisionDeductible: "$500",
         coverages: nairProposedCoverages,
         notes: "Progressive renewal offer received 2026-08-22. Not a FitFirst rate.",
-        updatedAt: new Date(),
       },
     });
 
@@ -491,8 +487,8 @@ export async function seedBookRenewals() {
       eventType: "seeded",
       currentPremium: HALE_CURRENT_PREMIUM,
       proposedPremium: HALE_PROPOSED_PREMIUM,
-      premiumDelta: haleChange.delta.toFixed(2),
-      premiumDeltaPct: haleChange.pct?.toFixed(4) ?? null,
+      delta: haleChange.delta.toFixed(2),
+      pct: haleChange.pct?.toFixed(4) ?? null,
       summary: haleSummary,
       snapshot: buildCompareSnapshot({
         currentPremium: HALE_CURRENT_PREMIUM,
@@ -509,8 +505,8 @@ export async function seedBookRenewals() {
         summary: haleSummary,
         currentPremium: HALE_CURRENT_PREMIUM,
         proposedPremium: HALE_PROPOSED_PREMIUM,
-        premiumDelta: haleChange.delta.toFixed(2),
-        premiumDeltaPct: haleChange.pct?.toFixed(4) ?? null,
+        delta: haleChange.delta.toFixed(2),
+        pct: haleChange.pct?.toFixed(4) ?? null,
       },
     });
 
@@ -525,8 +521,8 @@ export async function seedBookRenewals() {
       eventType: "seeded",
       currentPremium: NAIR_CURRENT_PREMIUM,
       proposedPremium: NAIR_PROPOSED_PREMIUM,
-      premiumDelta: nairChange.delta.toFixed(2),
-      premiumDeltaPct: nairChange.pct?.toFixed(4) ?? null,
+      delta: nairChange.delta.toFixed(2),
+      pct: nairChange.pct?.toFixed(4) ?? null,
       summary: nairSummary,
       snapshot: buildCompareSnapshot({
         currentPremium: NAIR_CURRENT_PREMIUM,
@@ -549,8 +545,8 @@ export async function seedBookRenewals() {
         summary: nairSummary,
         currentPremium: NAIR_CURRENT_PREMIUM,
         proposedPremium: NAIR_PROPOSED_PREMIUM,
-        premiumDelta: nairChange.delta.toFixed(2),
-        premiumDeltaPct: nairChange.pct?.toFixed(4) ?? null,
+        delta: nairChange.delta.toFixed(2),
+        pct: nairChange.pct?.toFixed(4) ?? null,
       },
     });
 

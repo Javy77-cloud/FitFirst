@@ -22,6 +22,10 @@ import { seedWave1ZohoBook } from "./seed-wave1";
 import { seedMergeDuplicates } from "./seed-merge";
 import { seedAppointmentsAndSheets, seedOrtegaFitDeal } from "./seed-shop-fits";
 import { seedCompleteness } from "./seed-completeness";
+import { seedUsersAndBook } from "./seed-book";
+import { seedClaimsBook } from "./seed-claims";
+import { seedAutoBook } from "./seed-auto";
+import { seedBookRenewals } from "./seed-book-renewals";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -326,4 +330,8 @@ export async function seed() {
   await seedCompleteness();
   await seedMergeDuplicates();
   await seedWave1ZohoBook();
+  await seedUsersAndBook();
+  await seedClaimsBook();
+  await seedAutoBook();
+  await seedBookRenewals();
 }

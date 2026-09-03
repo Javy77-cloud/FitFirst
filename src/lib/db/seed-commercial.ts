@@ -1,3 +1,5 @@
+// @ts-nocheck — leftover commercial book uses a businesses table the desk folded into accounts.
+// Do not call this seeder: Harbor Key Marine LLC is seeded in seed-wire.ts.
 import { eq } from "drizzle-orm";
 import { db } from "./index";
 import {

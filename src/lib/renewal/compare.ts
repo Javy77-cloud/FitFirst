@@ -58,12 +58,24 @@ export function compareSummary(change: PremiumChange): string {
   return `Premium ${verb} ${formatSignedMoney(change.delta)} (${formatDeltaPct(change.pct)}) from ${formatMoney(change.current)} to ${formatMoney(change.proposed)}.`;
 }
 
+function asCoverageLines(
+  value: PolicyCoverageLine[] | Record<string, string> | null | undefined,
+): PolicyCoverageLine[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return Object.entries(value).map(([key, lineValue]) => ({
+    key,
+    label: key,
+    value: lineValue,
+  }));
+}
+
 export function coverageRows(
-  current: PolicyCoverageLine[] | null | undefined,
-  proposed: PolicyCoverageLine[] | null | undefined,
+  current: PolicyCoverageLine[] | Record<string, string> | null | undefined,
+  proposed: PolicyCoverageLine[] | Record<string, string> | null | undefined,
 ): CoverageCompareRow[] {
-  const currentLines = current ?? [];
-  const proposedLines = proposed ?? [];
+  const currentLines = asCoverageLines(current);
+  const proposedLines = asCoverageLines(proposed);
   const keys: string[] = [];
   for (const line of [...currentLines, ...proposedLines]) {
     if (!keys.includes(line.key)) keys.push(line.key);

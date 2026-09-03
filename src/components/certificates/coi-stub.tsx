@@ -1,14 +1,15 @@
 import { formatDay } from "@/lib/domain";
-import type { Business, IssuedCertificate } from "@/lib/db/schema";
+import type { Account, IssuedCertificate } from "@/lib/db/schema";
 
 export function CertificateStub({
   business,
   certificate,
 }: {
-  business: Business;
+  business: Account;
   certificate: IssuedCertificate;
 }) {
-  const insuredAddress = [business.address1, [business.city, business.state, business.zip].filter(Boolean).join(", ")]
+  const street = business.mailingAddress ?? business.primaryAddress1;
+  const insuredAddress = [street, [business.city, business.state, business.zip].filter(Boolean).join(", ")]
     .filter(Boolean)
     .join("\n");
 

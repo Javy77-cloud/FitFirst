@@ -22,7 +22,7 @@ Docker: `docker compose up --build` (same port).
 ## Seeded click-through
 
 - **Elena Ruiz · Melbourne HO3** — Lead → Deal → Quote Sheet → Contact + Policy `HO3-ELENA-2026`. Linked business **Ruiz Tile LLC** has no commercial policy.
-- **Harbor Key Marine LLC** — commercial Closed Won. EIN 59-1234567, GL policy `GL-HARBOR-2026` on the Business.
+- **Harbor Key Marine LLC** — commercial Closed Won. EIN 59-1234567, GL policy `GL-HARBOR-2026` on the Business. COI stub on the Business. Not Keystone Holdings (`TR-GL-22019`).
 - **Ana Dib HO3** — `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Stage **shopping**, unbound, Cov A **$321,000**. Do not bind. Do not edit that fixture.
 - **Ortega · Winter Garden HO3** — inland masonry shop for Markets auto-fits.
 - **Rosa Keene** — open merge pair on email (do not merge Ana).

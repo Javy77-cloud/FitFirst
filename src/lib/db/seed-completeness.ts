@@ -52,7 +52,7 @@ export async function seedCompleteness() {
       tenantId: TENANT_ID,
       leadId: HEALTH_LEAD_ID,
       contactId: OPP_CONTACT_IDS.ruiz,
-      title: "Ruiz · Melbourne HO3 (bound)",
+      title: "Camila Ruiz · Melbourne HO3 (bound)",
       pipelineStage: "bound",
       lineOfBusiness: "HO",
       state: "FL",
@@ -69,7 +69,7 @@ export async function seedCompleteness() {
       set: {
         leadId: HEALTH_LEAD_ID,
         contactId: OPP_CONTACT_IDS.ruiz,
-        title: "Ruiz · Melbourne HO3 (bound)",
+        title: "Camila Ruiz · Melbourne HO3 (bound)",
         pipelineStage: "bound",
         lineOfBusiness: "HO",
         shopLines: ["home"],

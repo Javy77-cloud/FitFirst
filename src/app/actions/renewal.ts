@@ -58,8 +58,8 @@ async function persistCompareLog(input: {
     eventType: input.eventType,
     currentPremium: currentPremium.toFixed(2),
     proposedPremium: proposedPremium.toFixed(2),
-    premiumDelta: change.delta.toFixed(2),
-    premiumDeltaPct: change.pct == null ? null : change.pct.toFixed(4),
+    delta: change.delta.toFixed(2),
+    pct: change.pct == null ? null : change.pct.toFixed(4),
     summary,
     snapshot: buildCompareSnapshot({
       currentPremium: currentPremium.toFixed(2),
