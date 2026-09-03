@@ -4,6 +4,13 @@ import { fieldsForLine } from "./catalog";
 
 export const SUPER_COPY_LABEL = "copy from this, not the PDFs";
 
+/** Locked: Fill is in-product. Portal paste is human/bot. No TypTap / carrier login. */
+export const COPY_SHEET_PORTAL_NOTE =
+  "Fill Quote Sheet is in FitFirst (no bot). Pasting into TypTap or any carrier portal is a human or a quoting bot. FitFirst does not log into carriers.";
+
+export const SUPER_COPY_INSTRUCTION =
+  "Copy from this, not the PDFs. Fill Quote Sheet is in FitFirst (no bot). Super-Copy into carrier portals stays a human or a quoting bot unless a carrier API exists. Do not build portal macros.";
+
 export type SuperCopyPacket = {
   label: typeof SUPER_COPY_LABEL;
   instruction: string;
@@ -55,8 +62,7 @@ export function buildSuperCopyPacket(input: {
   }
   return {
     label: SUPER_COPY_LABEL,
-    instruction:
-      "Copy from this, not the PDFs. This Quote Sheet is the packet the quoting bot pastes. Source PDFs stay on Files.",
+    instruction: SUPER_COPY_INSTRUCTION,
     product: "FitFirst Quote Sheet",
     line: input.line,
     lineLabel: SHOP_LINE_LABELS[input.line],
@@ -69,4 +75,48 @@ export function buildSuperCopyPacket(input: {
     fields,
     filled,
   };
+}
+
+/** Clean labeled clipboard pack for Gaya / the agent. Not a portal macro. */
+export function buildCopySheetText(input: {
+  line: ShopLine;
+  dealId: string;
+  dealTitle: string;
+  values: Record<string, QuoteSheetFieldValue>;
+  contactName?: string | null;
+  contactDob?: string | null;
+}): string {
+  const packet = buildSuperCopyPacket(input);
+  const lines: string[] = [
+    `FitFirst ${packet.lineLabel} Quote Sheet`,
+    SUPER_COPY_LABEL,
+    "",
+    `Deal: ${packet.deal.title}`,
+  ];
+  if (packet.contact.name) {
+    const dob = packet.contact.dateOfBirth ? ` · DOB ${packet.contact.dateOfBirth}` : "";
+    lines.push(`Contact (people/DOB live here, not on the sheet): ${packet.contact.name}${dob}`);
+  }
+  lines.push("");
+
+  let currentGroup = "";
+  for (const field of packet.fields) {
+    if (!field.value.trim()) continue;
+    if (field.group !== currentGroup) {
+      if (currentGroup) lines.push("");
+      lines.push(field.group);
+      currentGroup = field.group;
+    }
+    lines.push(`${field.label}: ${field.value}`);
+  }
+
+  const missing = packet.fields.filter((field) => !field.value.trim()).map((field) => field.label);
+  if (missing.length) {
+    lines.push("");
+    lines.push(`Missing (yellow): ${missing.join(", ")}`);
+  }
+
+  lines.push("");
+  lines.push(COPY_SHEET_PORTAL_NOTE);
+  return lines.join("\n");
 }

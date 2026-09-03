@@ -33,8 +33,10 @@ export function DealFiles({
         <h3 className="text-sm font-semibold text-navy">Source files</h3>
         <p className="mb-3 text-xs text-muted-foreground">
           Dec pages, wind mit, 4-point, competing quotes, photos, and notes stay attachments.
-          They are never the copy packet. Click <span className="font-medium">Fill Quote Sheet</span>{" "}
-          to write extracted values into <span className="font-medium">blank</span> fields only.
+          They are never the copy packet. <span className="font-medium">Fill Quote Sheet</span>{" "}
+          is in this product — it writes extracted values into{" "}
+          <span className="font-medium">blank</span> fields only. Photos open an OCR job
+          (status not_implemented this pass). Do not expect a TypTap login from here.
         </p>
 
         <form

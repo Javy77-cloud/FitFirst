@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM. The domain follows a solo
 
 - Lead → Deal (shopping) → **one Quote Sheet per line** → Contact + Policy **only after bind**
 - Quotes live on the deal. A quote never creates a policy.
-- Agents hand over whatever they have (dec, wind mit, 4-point, photos, notes, competing quote). FitFirst produces **one editable master Quote Sheet per line**. That sheet is what Super-Copy / a rater uses. Raw PDFs stay on Files — they are never the copy packet.
+- Agents hand over whatever they have (dec, wind mit, 4-point, photos, notes, competing quote). **Fill Quote Sheet is in the product** (no bot) and writes extracted values into blank fields. **Copy sheet** puts a labeled pack on the clipboard for Gaya or the agent. Super-Copy JSON stays as a download. Pasting into TypTap or any carrier portal is a human or a quoting bot — FitFirst does not log into carriers. Raw PDFs stay on Files.
 - Yellow = missing. Blue = CHECK (extracted, unconfirmed). A Javy-tested Cov A is confirmed, never CHECK.
 - People and DOB live on the Contact.
 - Shop **in-appetite / green** markets first. Yellow is a stretch override. Red is skip.
@@ -50,7 +50,7 @@ From `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brev
 1. Home → **Open Ana Dib HO3 shop**.
 2. **Home** Quote Sheet is already filled from seed. Cov A **$321,000** is broker-tested (Javy) — confirmed, not CHECK, not a Zillow Zestimate.
 3. Header glance shows coverage amount and the property one-liner. Zillow / FEMA are address links only.
-4. **Super-Copy JSON** downloads the sheet the quoting bot would paste (`copy from this, not the PDFs`). Print / PDF is the same packet.
+4. **Copy sheet** puts a labeled field pack on the clipboard (`copy from this, not the PDFs`). **Super-Copy JSON** is the same packet as a download. Print / PDF is available. Portal paste is still you or a bot — no TypTap login in FitFirst.
 5. **Markets** is still filter-first: QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable.
 
 ### Ortega Melbourne fill demo

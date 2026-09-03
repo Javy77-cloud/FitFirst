@@ -4,9 +4,11 @@ This file is the handshake for additive desk work. Do not invent a second CRM sh
 
 ## Quote Sheet is the master
 
-- One editable Quote Sheet per deal line (`quote_sheets`). Super-Copy / a rater copies **from the sheet**, never from PDFs.
+- One editable Quote Sheet per deal line (`quote_sheets`). Copy from the sheet, never from PDFs.
 - Source files (dec, wind mit, 4-point, photos, competing quotes, notes) live on `documents`. They stay attachments.
-- **Fill Quote Sheet** extracts into **blank** fields only. Never overwrite a value the agent typed or a seeded confirmed value.
+- **Fill Quote Sheet is IN the product** (no bot). It extracts into **blank** fields only. Never overwrite a value the agent typed or a seeded confirmed value.
+- **Copy sheet** (clipboard labeled pack) + Super-Copy JSON download are the in-desk paste packet Gaya / the agent uses.
+- **Super-Copy INTO carrier portals** (TypTap, Harmony, Swyfft, etc.) stays a human or a quoting bot unless a carrier API exists. Do not build portal macros or carrier logins.
 - Yellow (`--ff-yellow-bg`) = missing. Blue (`--ff-check-bg`) = CHECK (extracted, unconfirmed).
 - Javy-tested Coverage A (Ana Dib $321,000, `source: javy`) is **confirmed**. Never flag it CHECK. Never overwrite it.
 - People and DOB live on `contacts`. Do not duplicate them as the Quote Sheet source of truth.
@@ -23,6 +25,17 @@ Show the tabs that apply (`deals.shop_lines`). Home + Auto are first-class (deep
 - Text PDFs and `.txt` use `pdf-parse` + `extractFieldsFromText`.
 - Images create an `extraction_jobs` row with engine `ocr` and status `not_implemented`. No paid OCR vendor.
 - Job rows must exist even when OCR is stubbed.
+- Photo-a-dec is a selling point. Fill already has a first-class OCR hook (image upload + `extraction_jobs` row, status `not_implemented`). **Photo OCR is the next slice** — tesseract or equivalent, no paid vendor. Do not block Fill on photos this pass.
+
+## Fill vs copy vs portals (locked)
+
+| Action | Where |
+| --- | --- |
+| Fill Quote Sheet (dec / text PDF → blanks) | In FitFirst |
+| Copy sheet (clipboard labeled pack) | In FitFirst |
+| Super-Copy JSON / print | In FitFirst |
+| Paste into TypTap / any carrier portal | Human or quoting bot |
+| Carrier login / portal macros | Out of scope |
 
 ## Public address links
 

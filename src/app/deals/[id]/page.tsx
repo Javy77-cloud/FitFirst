@@ -22,7 +22,8 @@ import {
   formatMoney,
   type ShopLine,
 } from "@/lib/domain";
-import { SUPER_COPY_LABEL } from "@/lib/quote-sheet/super-copy";
+import { CopySheetButton } from "@/components/deal/copy-sheet-button";
+import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 
 export const dynamic = "force-dynamic";
 
@@ -134,7 +135,8 @@ export default async function DealPage({
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground">
           Header is a glance. The Quote Sheet is the edit form. Zillow / FEMA are address links
-          only — never a Zestimate as Cov A. Super-Copy: {SUPER_COPY_LABEL}.
+          only — never a Zestimate as Cov A. Copy sheet is the in-desk packet ({SUPER_COPY_LABEL}).
+          Fill is in the product. Portal paste is a human or a bot — no TypTap login here.
         </p>
       </div>
 
@@ -184,6 +186,16 @@ export default async function DealPage({
             Fill Quote Sheet
           </Button>
         </form>
+        <CopySheetButton
+          text={buildCopySheetText({
+            line: activeLine,
+            dealId: deal.id,
+            dealTitle: deal.title,
+            values: sheet.values,
+            contactName: contact ? `${contact.firstName} ${contact.lastName}` : null,
+            contactDob: contact?.dateOfBirth ?? null,
+          })}
+        />
         <Link
           href={`/api/deals/${deal.id}/quote-sheets/${activeLine}/super-copy`}
           className="inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[0.8rem] font-medium"
@@ -210,6 +222,7 @@ export default async function DealPage({
               content: (
                 <QuoteSheetForm
                   dealId={deal.id}
+                  dealTitle={deal.title}
                   line={activeLine}
                   sheet={sheet}
                   contact={contact}

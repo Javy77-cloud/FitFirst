@@ -8,17 +8,20 @@ import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema"
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
-import { SUPER_COPY_LABEL } from "@/lib/quote-sheet/super-copy";
+import { CopySheetButton } from "@/components/deal/copy-sheet-button";
+import { COPY_SHEET_PORTAL_NOTE, SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { cn } from "@/lib/utils";
 
 export function QuoteSheetForm({
   dealId,
+  dealTitle,
   line,
   sheet,
   contact,
   printable = false,
 }: {
   dealId: string;
+  dealTitle: string;
   line: ShopLine;
   sheet: QuoteSheet;
   contact?: Contact | null;
@@ -27,6 +30,14 @@ export function QuoteSheetForm({
   const groups = groupFields(line);
   const counts = sheetCounts(sheet.values);
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
+  const copyText = buildCopySheetText({
+    line,
+    dealId,
+    dealTitle,
+    values: sheet.values,
+    contactName,
+    contactDob: contact?.dateOfBirth ?? null,
+  });
 
   return (
     <form action={printable ? undefined : saveQuoteSheet} className="space-y-4">
@@ -40,9 +51,10 @@ export function QuoteSheetForm({
               {SHOP_LINE_LABELS[line]} Quote Sheet
             </h2>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              One editable master per line. Super-Copy and the rater paste{" "}
-              <span className="font-medium text-foreground">{SUPER_COPY_LABEL}</span>. Source
-              PDFs stay on Files.
+              Fill Quote Sheet is in this product — no bot.{" "}
+              <span className="font-medium text-foreground">Copy sheet</span> is the in-desk
+              packet ({SUPER_COPY_LABEL}). Pasting into TypTap or any carrier portal stays you
+              or a quoting bot. FitFirst does not log into carriers.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-[11px]">
@@ -55,6 +67,7 @@ export function QuoteSheetForm({
             <span className="rounded-sm bg-fit-green-bg px-2 py-0.5 text-fit-green">
               {counts.confirmed} confirmed
             </span>
+            {printable ? null : <CopySheetButton text={copyText} />}
           </div>
         </div>
 
@@ -106,22 +119,26 @@ export function QuoteSheetForm({
 
       {printable ? null : (
         <div className="flex flex-wrap items-center gap-2 print:hidden">
-          <Button type="submit" size="sm">
+          <CopySheetButton text={copyText} />
+          <Button type="submit" size="sm" variant="secondary">
             Save Quote Sheet
           </Button>
+          <Link
+            href={`/api/deals/${dealId}/quote-sheets/${line}/super-copy`}
+            className="inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[0.8rem] font-medium"
+          >
+            Super-Copy JSON
+          </Link>
           <Link
             href={`/deals/${dealId}/quote-sheet/${line}/print`}
             className="text-xs text-primary hover:underline"
           >
             Print / PDF
           </Link>
-          <Link
-            href={`/api/deals/${dealId}/quote-sheets/${line}/super-copy`}
-            className="text-xs text-primary hover:underline"
-          >
-            Download Super-Copy JSON
-          </Link>
         </div>
+      )}
+      {printable ? null : (
+        <p className="text-[11px] text-muted-foreground print:hidden">{COPY_SHEET_PORTAL_NOTE}</p>
       )}
     </form>
   );

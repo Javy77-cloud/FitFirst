@@ -38,9 +38,10 @@ export default async function HomePage() {
         <h2 className="text-sm font-semibold text-navy">Start here</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           FitFirst copies a solo Florida P&amp;C desk: lead → deal (shopping) → one Quote Sheet
-          per line → contact and policy only after bind. Source PDFs stay on Files. Super-Copy
-          is the packet the rater pastes. The day-one fixture is Ana Dib&apos;s 2026-09-02 Palm
-          Bay HO3 shop: eight markets, zero bindable at $321,000.
+          per line → contact and policy only after bind. Fill Quote Sheet is in the product.
+          Copy sheet is the in-desk paste packet. Pasting into a carrier portal stays you or a
+          bot — no TypTap login here. The day-one fixture is Ana Dib&apos;s 2026-09-02 Palm Bay
+          HO3 shop: eight markets, zero bindable at $321,000.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>

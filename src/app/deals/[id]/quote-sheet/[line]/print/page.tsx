@@ -25,10 +25,12 @@ export default async function QuoteSheetPrintPage({
       </p>
       <h1 className="text-xl font-semibold text-navy">{workspace.deal.title}</h1>
       <p className="mb-4 text-sm text-muted-foreground">
-        Print or save as PDF. This sheet is the packet. Source PDFs stay on Files.
+        Print or save as PDF. This sheet is the packet. Source PDFs stay on Files. Fill is
+        in FitFirst. Portal paste is you or a bot — no carrier login here.
       </p>
       <QuoteSheetForm
         dealId={workspace.deal.id}
+        dealTitle={workspace.deal.title}
         line={line as ShopLine}
         sheet={sheet}
         contact={workspace.contact}
