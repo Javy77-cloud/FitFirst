@@ -225,3 +225,60 @@
 [data-ff-density="compact"] .ff-table td {
   padding: 0.35rem 0.5rem;
 }
+
+.ff-cal-task {
+  background: var(--ff-accent);
+  color: #ffffff;
+}
+.ff-cal-meeting {
+  background: var(--ff-green);
+  color: #ffffff;
+}
+.ff-cal-call {
+  background: var(--ff-yellow);
+  color: #ffffff;
+}
+.ff-cal-sms {
+  background: var(--ff-flag);
+  color: #ffffff;
+}
+.ff-cal-email {
+  background: var(--ff-navy);
+  color: #ffffff;
+}
+.ff-stub {
+  background: var(--ff-flag-bg);
+  color: var(--ff-flag);
+  border: 1px solid color-mix(in srgb, var(--ff-flag) 25%, var(--ff-border));
+}
+
+.ff-doc-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid var(--ff-border);
+  background: var(--ff-card);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.75rem 0.75rem;
+  min-height: 7.5rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--ff-shadow);
+}
+.ff-doc-tile:hover {
+  border-color: var(--ff-accent);
+}
+.ff-doc-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ff-doc-navy { background: var(--ff-navy); color: #fff; }
+.ff-doc-accent { background: var(--ff-accent); color: #fff; }
+.ff-doc-green { background: var(--ff-green); color: #fff; }
+.ff-doc-yellow { background: var(--ff-yellow); color: #fff; }
+.ff-doc-flag { background: var(--ff-flag); color: #fff; }
+.ff-doc-muted { background: var(--ff-canvas); color: var(--ff-navy); border: 1px solid var(--ff-border); }

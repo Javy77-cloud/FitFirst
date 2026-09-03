@@ -8,16 +8,20 @@ import {
 } from "@/app/actions/documents";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DOC_TYPE_LABELS, DOC_TYPES } from "@/lib/domain";
 
 export function DocumentsPanel({
   dealId,
   riskId,
+  contactId,
   docs,
   fields,
 }: {
   dealId: string;
   riskId: string;
+  contactId?: string | null;
   docs: Document[];
   fields: ExtractedFieldRow[];
 }) {

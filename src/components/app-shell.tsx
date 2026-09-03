@@ -5,6 +5,7 @@ import {
   Bell,
   Briefcase,
   Building2,
+  CalendarDays,
   ClipboardList,
   Contact,
   FileStack,

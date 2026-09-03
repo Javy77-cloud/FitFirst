@@ -408,6 +408,28 @@ export const reviewTasks = pgTable(
   ],
 );
 
+export const documentFolders = pgTable(
+  "document_folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    kind: text("kind").notNull().default("custom"),
+    slug: text("slug"),
+    description: text("description"),
+    parentId: uuid("parent_id"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index("document_folders_tenant_idx").on(t.tenantId, t.kind),
+    index("document_folders_parent_idx").on(t.tenantId, t.parentId),
+  ],
+);
+
 export const documents = pgTable(
   "documents",
   {
@@ -424,6 +446,7 @@ export const documents = pgTable(
     docType: text("doc_type").notNull().default("other"),
     slot: text("slot").notNull().default("source_doc"),
     status: text("status").notNull().default("uploaded"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -1285,6 +1308,7 @@ export type Account = typeof accounts.$inferSelect;
 export type ContactAccount = typeof contactAccounts.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type Risk = typeof risks.$inferSelect;
+export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;

@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
@@ -9,8 +11,13 @@ import {
   appetiteRules,
   carrierAppointments,
   carriers,
+  activities,
+  activityLogs,
   contacts,
   deals,
+  documentFolders,
+  documents,
+  emailCampaigns,
   leads,
   quoteAttemptLogs,
   quotes,
@@ -105,6 +112,7 @@ export async function seed() {
       city: fixture.risk.city,
       state: fixture.risk.state,
       zip: fixture.risk.zip,
+      phone: "321-555-0148",
       policyCount: 0,
       activePolicyCount: 0,
       notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
@@ -118,6 +126,7 @@ export async function seed() {
         city: fixture.risk.city,
         state: fixture.risk.state,
         zip: fixture.risk.zip,
+        phone: "321-555-0148",
         policyCount: 0,
         activePolicyCount: 0,
         notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
