@@ -64,6 +64,13 @@
       "when": 1788469800000,
       "tag": "0008_comms_qa",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788472000000,
+      "tag": "0009_pack_addons",
+      "breakpoints": true
     }
   ]
 }

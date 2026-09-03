@@ -16,7 +16,9 @@ import {
 export type QuoteSheetFieldValue = {
   value: string;
   status: "missing" | "check" | "confirmed";
-  source: "blank" | "agent" | "extracted" | "seed" | "javy";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public";
+  /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
+  sourceLabel?: string;
 };
 
 /** Renewal compare coverage row. Stored on policy_terms.coverages. */
@@ -114,6 +116,9 @@ export const agencySettings = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
+    agencyName: text("agency_name"),
+    logoPath: text("logo_path"),
+    emailSignature: text("email_signature"),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
@@ -240,9 +245,11 @@ export const carriers = pgTable(
     dontWriteNotes: text("dont_write_notes"),
     portalStatus: text("portal_status").notNull().default("open"),
     portalUrl: text("portal_url"),
+    portalLogin: text("portal_login"),
     customerServicePhone: text("customer_service_phone"),
     agentPhone: text("agent_phone"),
     website: text("website"),
+    agentPortalUrl: text("agent_portal_url"),
     carrierInfo: text("carrier_info"),
     active: boolean("active").notNull().default(true),
     fixtureTag: text("fixture_tag"),
@@ -699,24 +706,6 @@ export const quotes = pgTable(
   (t) => [index("quotes_tenant_deal_idx").on(t.tenantId, t.dealId)],
 );
 
-export const quoteSheets = pgTable(
-  "quote_sheets",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: tenantCol(),
-    dealId: uuid("deal_id")
-      .notNull()
-      .references(() => deals.id),
-    line: text("line").notNull(),
-    values: jsonb("values").$type<Record<string, QuoteSheetFieldValue>>().notNull().default({}),
-    ...timestamps,
-  },
-  (t) => [
-    index("quote_sheets_tenant_idx").on(t.tenantId),
-    uniqueIndex("quote_sheets_deal_line_uidx").on(t.tenantId, t.dealId, t.line),
-  ],
-);
-
 export const extractionJobs = pgTable(
   "extraction_jobs",
   {
@@ -738,14 +727,6 @@ export const extractionJobs = pgTable(
   },
   (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
 );
-
-export type QuoteSheetFieldValue = {
-  value: string;
-  status: "missing" | "check" | "confirmed";
-  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public";
-  /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
-  sourceLabel?: string;
-};
 
 export const alerts = pgTable(
   "alerts",
@@ -953,40 +934,6 @@ export const emailSendJobs = pgTable(
   (t) => [index("email_jobs_anchor_idx").on(t.tenantId, t.anchorKind, t.status)],
 );
 
-export const users = pgTable(
-  "users",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: tenantCol(),
-    name: text("name").notNull(),
-    email: text("email").notNull(),
-    role: text("role").notNull().default("agent"),
-    passwordHash: text("password_hash"),
-    active: boolean("active").notNull().default(true),
-    ...timestamps,
-  },
-  (t) => [index("users_tenant_idx").on(t.tenantId)],
-);
-
-export const carrierAppointments = pgTable(
-  "carrier_appointments",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: tenantCol(),
-    carrierId: uuid("carrier_id")
-      .notNull()
-      .references(() => carriers.id),
-    writtenLine: text("written_line").notNull(),
-    appointed: boolean("appointed").notNull().default(true),
-    sellingAgency: text("selling_agency"),
-    notes: text("notes"),
-    ...timestamps,
-  },
-  (t) => [
-    uniqueIndex("carrier_appointments_line_uidx").on(t.tenantId, t.carrierId, t.writtenLine),
-  ],
-);
-
 export const locations = pgTable(
   "locations",
   {
@@ -1143,16 +1090,6 @@ export const commissionEvents = pgTable("commission_events", {
   fromStatus: text("from_status"),
   toStatus: text("to_status"),
   note: text("note"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-export const agencySettings = pgTable("agency_settings", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: tenantCol(),
-  fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
-  agencyName: text("agency_name"),
-  logoPath: text("logo_path"),
-  emailSignature: text("email_signature"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -1354,6 +1291,180 @@ export const policyWorkNotes = pgTable("policy_work_notes", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const deskAgents = pgTable(
+  "desk_agents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    displayName: text("display_name").notNull(),
+    role: text("role").notNull().default("agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("desk_agents_tenant_idx").on(t.tenantId),
+    uniqueIndex("desk_agents_slug_uidx").on(t.tenantId, t.slug),
+  ],
+);
+
+export const columnLayouts = pgTable(
+  "column_layouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agentId: uuid("agent_id").references(() => deskAgents.id),
+    tableId: text("table_id").notNull(),
+    columnIds: jsonb("column_ids").$type<string[]>().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("column_layouts_lookup_idx").on(t.tenantId, t.tableId, t.agentId)],
+);
+
+export const emailSendAccounts = pgTable(
+  "email_send_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    status: text("status").notNull().default("disconnected"),
+    accountEmail: text("account_email"),
+    ...timestamps,
+  },
+  (t) => [index("email_send_accounts_tenant_idx").on(t.tenantId)],
+);
+
+export const agencyBrand = pgTable(
+  "agency_brand",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agencyName: text("agency_name").notNull(),
+    logoStoragePath: text("logo_storage_path"),
+    logoMime: text("logo_mime"),
+    defaultColorPreset: text("default_color_preset").notNull().default("agency"),
+    defaultFontPreset: text("default_font_preset").notNull().default("plex"),
+    defaultDensity: text("default_density").notNull().default("comfortable"),
+    defaultColumnLayout: jsonb("default_column_layout")
+      .$type<Record<string, string[]> | null>()
+      .default({}),
+    ...timestamps,
+  },
+  (t) => [index("agency_brand_tenant_idx").on(t.tenantId)],
+);
+
+export const emailSignatures = pgTable(
+  "email_signatures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    bodyEn: text("body_en").notNull(),
+    bodyEs: text("body_es").notNull(),
+    isDefault: boolean("is_default").notNull().default(true),
+    isExampleCopy: boolean("is_example_copy").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("email_signatures_tenant_idx").on(t.tenantId)],
+);
+
+export const agentUiPrefs = pgTable(
+  "agent_ui_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    actorKey: text("actor_key").notNull(),
+    colorPreset: text("color_preset"),
+    fontPreset: text("font_preset"),
+    density: text("density"),
+    columnLayout: jsonb("column_layout").$type<Record<string, string[]> | null>(),
+    ...timestamps,
+  },
+  (t) => [index("agent_ui_prefs_actor_idx").on(t.tenantId, t.actorKey)],
+);
+
+export const calendarConnections = pgTable(
+  "calendar_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull().default("google"),
+    connected: boolean("connected").notNull().default(false),
+    displayEmail: text("display_email"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastSyncDirection: text("last_sync_direction"),
+    lastSyncStatus: text("last_sync_status"),
+    ...timestamps,
+  },
+  (t) => [index("calendar_connections_tenant_idx").on(t.tenantId, t.provider)],
+);
+
+export const emailCampaigns = pgTable(
+  "email_campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    audienceType: text("audience_type").notNull(),
+    audienceValue: text("audience_value").notNull(),
+    status: text("status").notNull().default("draft"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("email_campaigns_tenant_idx").on(t.tenantId)],
+);
+
+export const campaignSendLogs = pgTable(
+  "campaign_send_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => emailCampaigns.id),
+    recipientEmail: text("recipient_email"),
+    recipientName: text("recipient_name"),
+    outcome: text("outcome").notNull().default("would_send"),
+    detail: text("detail"),
+    loggedAt: timestamp("logged_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("campaign_send_logs_campaign_idx").on(t.tenantId, t.campaignId)],
+);
+
+export const smsSettings = pgTable("sms_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  provider: text("provider").notNull().default("none"),
+  connected: boolean("connected").notNull().default(false),
+  displayFrom: text("display_from"),
+  notes: text("notes"),
+  lastConnectStatus: text("last_connect_status"),
+  ...timestamps,
+});
+
+export const signatureEnvelopes = pgTable(
+  "signature_envelopes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    provider: text("provider").notNull().default("docusign"),
+    status: text("status").notNull().default("draft"),
+    signerName: text("signer_name"),
+    signerEmail: text("signer_email"),
+    subject: text("subject"),
+    lastProviderResult: text("last_provider_result"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("signature_envelopes_tenant_idx").on(t.tenantId)],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -1381,7 +1492,6 @@ export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
 export type User = typeof users.$inferSelect;
-export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type Location = typeof locations.$inferSelect;
 export type MergeCandidate = typeof mergeCandidates.$inferSelect;
 export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
@@ -1397,3 +1507,16 @@ export type PolicyWorkItem = typeof policyWorkItems.$inferSelect;
 export type DeskColumnPref = typeof deskColumnPrefs.$inferSelect;
 export type CommissionRateSetting = typeof commissionRateSettings.$inferSelect;
 export type PolicyAutomation = typeof policyAutomations.$inferSelect;
+export type PipelineStageRow = PipelineStage;
+export type DeskAgent = typeof deskAgents.$inferSelect;
+export type ColumnLayoutRow = typeof columnLayouts.$inferSelect;
+export type EmailSendAccount = typeof emailSendAccounts.$inferSelect;
+export type AgencyBrand = typeof agencyBrand.$inferSelect;
+export type EmailSignature = typeof emailSignatures.$inferSelect;
+export type AgentUiPref = typeof agentUiPrefs.$inferSelect;
+export type CalendarConnection = typeof calendarConnections.$inferSelect;
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
+export type SmsSettings = typeof smsSettings.$inferSelect;
+export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
+export type ExtractionJob = typeof extractionJobs.$inferSelect;

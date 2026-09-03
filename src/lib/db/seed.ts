@@ -17,7 +17,6 @@ import {
   deals,
   documentFolders,
   documents,
-  emailCampaigns,
   leads,
   extractedFields,
   extractionJobs,
