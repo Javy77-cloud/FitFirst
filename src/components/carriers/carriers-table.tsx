@@ -1,16 +1,10 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { AppointmentRows } from "@/components/carriers/appointment-rows";
-import { AppetiteNotes, type AppetiteNotesRule } from "@/components/carriers/appetite-notes";
+import Link from "next/link";
+import { AppointmentRows, type AppointmentRowInput } from "@/components/carriers/appointment-rows";
+import { AppetiteNotesPanel, type AppetiteNotesRule } from "@/components/carriers/appetite-notes";
 import { ColumnPicker } from "@/components/carriers/column-picker";
-import {
-  defaultColumnVisibility,
-  type CarrierTableColumnId,
-} from "@/lib/carriers/desk";
-import type { AppointmentRowInput } from "@/components/carriers/appointment-rows";
-
-const STORAGE_KEY = "ff-carrier-columns";
+import { buttonVariants } from "@/components/ui/button";
+import { colsQuery, type CarrierTableColumnId } from "@/lib/carriers/desk";
+import { cn } from "@/lib/utils";
 
 export type CarrierTableRow = {
   id: string;
@@ -26,19 +20,6 @@ export type CarrierTableRow = {
   appointments: AppointmentRowInput[];
 };
 
-function loadVisibility(): Record<CarrierTableColumnId, boolean> {
-  const fallback = defaultColumnVisibility();
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Partial<Record<CarrierTableColumnId, boolean>>;
-    return { ...fallback, ...parsed };
-  } catch {
-    return fallback;
-  }
-}
-
 function ExternalLink({ href, children }: { href: string; children: string }) {
   return (
     <a
@@ -52,27 +33,34 @@ function ExternalLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-export function CarriersTable({ rows }: { rows: CarrierTableRow[] }) {
-  const [visible, setVisible] = useState(defaultColumnVisibility);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setVisible(loadVisibility());
-    setReady(true);
-  }, []);
-
-  function updateVisible(next: Record<CarrierTableColumnId, boolean>) {
-    setVisible(next);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }
-
-  const show = (id: CarrierTableColumnId) => !ready || visible[id];
+export function CarriersTable({
+  rows,
+  visible,
+  notesId,
+}: {
+  rows: CarrierTableRow[];
+  visible: Record<CarrierTableColumnId, boolean>;
+  notesId?: string;
+}) {
+  const show = (id: CarrierTableColumnId) => visible[id];
+  const qs = colsQuery(visible);
+  const closeHref = qs ? `/carriers?${qs}` : "/carriers";
+  const notesRow = notesId ? rows.find((row) => row.id === notesId) : undefined;
 
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <ColumnPicker visible={visible} onChange={updateVisible} />
+        <ColumnPicker visible={visible} notesId={notesId} />
       </div>
+      {notesRow ? (
+        <AppetiteNotesPanel
+          carrierName={notesRow.name}
+          dontWriteNotes={notesRow.dontWriteNotes}
+          rule={notesRow.rule}
+          appointments={notesRow.appointments}
+          closeHref={closeHref}
+        />
+      ) : null}
       <section className="ff-card overflow-x-auto">
         <table className="ff-table">
           <thead>
@@ -95,54 +83,59 @@ export function CarriersTable({ rows }: { rows: CarrierTableRow[] }) {
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="font-medium">{row.name}</td>
-                  {show("portalLogin") ? (
-                    <td className="text-xs">{row.portalLogin || "—"}</td>
-                  ) : null}
-                  {show("customerServicePhone") ? (
-                    <td className="whitespace-nowrap text-xs">
-                      {row.customerServicePhone || "—"}
-                    </td>
-                  ) : null}
-                  {show("agentPhone") ? (
-                    <td className="text-xs">{row.agentPhone || "—"}</td>
-                  ) : null}
-                  {show("website") ? (
-                    <td className="text-xs">
-                      {row.website || row.agentPortalUrl ? (
-                        <span className="flex flex-col gap-0.5">
-                          {row.website ? (
-                            <ExternalLink href={row.website}>Website</ExternalLink>
-                          ) : null}
-                          {row.agentPortalUrl ? (
-                            <ExternalLink href={row.agentPortalUrl}>Agent portal</ExternalLink>
-                          ) : null}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  ) : null}
-                  {show("carrierInfo") ? (
-                    <td className="max-w-xs text-xs">{row.carrierInfo || "—"}</td>
-                  ) : null}
-                  {show("appointments") ? (
+              rows.map((row) => {
+                const notesHref = qs
+                  ? `/carriers?${qs}&notes=${row.id}`
+                  : `/carriers?notes=${row.id}`;
+                return (
+                  <tr key={row.id}>
+                    <td className="font-medium">{row.name}</td>
+                    {show("portalLogin") ? (
+                      <td className="text-xs">{row.portalLogin || "—"}</td>
+                    ) : null}
+                    {show("customerServicePhone") ? (
+                      <td className="whitespace-nowrap text-xs">
+                        {row.customerServicePhone || "—"}
+                      </td>
+                    ) : null}
+                    {show("agentPhone") ? (
+                      <td className="text-xs">{row.agentPhone || "—"}</td>
+                    ) : null}
+                    {show("website") ? (
+                      <td className="text-xs">
+                        {row.website || row.agentPortalUrl ? (
+                          <span className="flex flex-col gap-0.5">
+                            {row.website ? (
+                              <ExternalLink href={row.website}>Website</ExternalLink>
+                            ) : null}
+                            {row.agentPortalUrl ? (
+                              <ExternalLink href={row.agentPortalUrl}>Agent portal</ExternalLink>
+                            ) : null}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    ) : null}
+                    {show("carrierInfo") ? (
+                      <td className="max-w-xs text-xs">{row.carrierInfo || "—"}</td>
+                    ) : null}
+                    {show("appointments") ? (
+                      <td>
+                        <AppointmentRows appointments={row.appointments} />
+                      </td>
+                    ) : null}
                     <td>
-                      <AppointmentRows appointments={row.appointments} />
+                      <Link
+                        href={notesHref}
+                        className={cn(buttonVariants({ variant: "ghost", size: "xs" }))}
+                      >
+                        Appetite
+                      </Link>
                     </td>
-                  ) : null}
-                  <td>
-                    <AppetiteNotes
-                      carrierName={row.name}
-                      dontWriteNotes={row.dontWriteNotes}
-                      rule={row.rule}
-                      appointments={row.appointments}
-                    />
-                  </td>
-                </tr>
-              ))
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

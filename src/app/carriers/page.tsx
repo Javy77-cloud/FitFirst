@@ -2,12 +2,20 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CarriersTable, type CarrierTableRow } from "@/components/carriers/carriers-table";
 import { buttonVariants } from "@/components/ui/button";
+import { visibilityFromCols } from "@/lib/carriers/desk";
 import { listCarrierAppointments, listCarriers } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function CarriersPage() {
+export default async function CarriersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cols?: string | string[]; notes?: string }>;
+}) {
+  const params = await searchParams;
+  const cols = params.cols == null ? undefined : Array.isArray(params.cols) ? params.cols : [params.cols];
+  const visible = visibilityFromCols(cols);
   const rows = await listCarriers();
   const appointments = await listCarrierAppointments();
   const byCarrier = new Map<string, typeof appointments>();
@@ -60,7 +68,7 @@ export default async function CarriersPage() {
         Columns to show or hide fields. Appointments stay off the main table unless you turn
         that column on.
       </p>
-      <CarriersTable rows={tableRows} />
+      <CarriersTable rows={tableRows} visible={visible} notesId={params.notes} />
     </AppShell>
   );
 }

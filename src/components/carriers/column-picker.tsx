@@ -1,49 +1,53 @@
-"use client";
-
-import { Columns3 } from "lucide-react";
+import { CARRIER_TABLE_COLUMNS, type CarrierTableColumnId } from "@/lib/carriers/desk";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  CARRIER_TABLE_COLUMNS,
-  type CarrierTableColumnId,
-} from "@/lib/carriers/desk";
 import { cn } from "@/lib/utils";
 
 export function ColumnPicker({
   visible,
-  onChange,
+  notesId,
 }: {
   visible: Record<CarrierTableColumnId, boolean>;
-  onChange: (next: Record<CarrierTableColumnId, boolean>) => void;
+  notesId?: string;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+    <details className="relative">
+      <summary
+        className={cn(
+          buttonVariants({ variant: "outline", size: "sm" }),
+          "cursor-pointer list-none [&::-webkit-details-marker]:hidden",
+        )}
       >
-        <Columns3 className="size-3.5" />
         Columns
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel>Show on the table</DropdownMenuLabel>
-        {CARRIER_TABLE_COLUMNS.map((col) => (
-          <DropdownMenuCheckboxItem
-            key={col.id}
-            checked={visible[col.id]}
-            onCheckedChange={(checked) =>
-              onChange({ ...visible, [col.id]: checked === true })
-            }
-          >
-            {col.label}
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </summary>
+      <form
+        method="get"
+        action="/carriers"
+        className="absolute right-0 z-20 mt-1 w-64 rounded-md border border-border bg-card p-3 shadow-md"
+      >
+        {notesId ? <input type="hidden" name="notes" value={notesId} /> : null}
+        <p className="mb-2 text-xs font-medium text-muted-foreground">Show on the table</p>
+        <ul className="space-y-1.5">
+          {CARRIER_TABLE_COLUMNS.map((col) => (
+            <li key={col.id}>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="cols"
+                  value={col.id}
+                  defaultChecked={visible[col.id]}
+                />
+                {col.label}
+              </label>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="submit"
+          className={cn(buttonVariants({ size: "sm" }), "mt-3 w-full")}
+        >
+          Apply
+        </button>
+      </form>
+    </details>
   );
 }

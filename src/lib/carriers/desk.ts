@@ -111,3 +111,21 @@ export function defaultColumnVisibility(): Record<CarrierTableColumnId, boolean>
     CARRIER_TABLE_COLUMNS.map((col) => [col.id, col.defaultVisible]),
   ) as Record<CarrierTableColumnId, boolean>;
 }
+
+export function visibilityFromCols(
+  cols: string[] | undefined,
+): Record<CarrierTableColumnId, boolean> {
+  if (!cols || cols.length === 0) return defaultColumnVisibility();
+  const selected = new Set(cols);
+  return Object.fromEntries(
+    CARRIER_TABLE_COLUMNS.map((col) => [col.id, selected.has(col.id)]),
+  ) as Record<CarrierTableColumnId, boolean>;
+}
+
+export function colsQuery(visible: Record<CarrierTableColumnId, boolean>): string {
+  const params = new URLSearchParams();
+  for (const col of CARRIER_TABLE_COLUMNS) {
+    if (visible[col.id]) params.append("cols", col.id);
+  }
+  return params.toString();
+}
