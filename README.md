@@ -44,14 +44,17 @@ Open [http://localhost:43147](http://localhost:43147).
 1. Home → **Open Ana Dib HO3 shop**. 1098 Adige Ct SE, 1989 frame-stucco SFH, 8 mi coast, clay tile + metal, Cov A **$321,000** (broker-tested rebuild — do not change that number). Eight markets, zero bindable.
 2. **Documents** → **Sample handwritten wind mit**. Flagged fields stay off the worksheet until you click **Accept**.
 3. **Sample clean dec** applies high-confidence values automatically.
-4. **Markets** is filter-first: QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable. Floors are log attempts, not wins. No policy is created from these quotes.
+4. **Markets** is filter-first: ten markets, **0 green / 10 skip**. QBE, Benchmark/Hadron, HOC, VYRD, and the house RCE/MSB floors score **red / skip**. American Integrity was quoted at $321k and is still not bindable. Floors are log attempts, not wins. No policy is created from these quotes.
 5. Carrier-wide rules (QBE frame+20 mi coast, Benchmark/Hadron aged clay, HOC no NB, VYRD takeout + Brevard $350k) stay distinct from one-house floors (Tailrow $354k, VAVE $418,491, GeoVera $363k, SageSure MSB $349,868). SageSure published min Cov A remains $100k in named counties.
+6. **Carriers** lists appointments by written line (Home / Auto / Flood / Umbrella) and selling agency (AFA, First Connect, Agentero). First-wave Home is appointed for the seeded shop carriers. Markets may skip an explicit not-appointed row; a missing row is unknown, not a skip.
 
 Create your own path from **Leads** or **New shopping deal**. Bind is what creates a policy.
 
 ## Schema
 
 Every table has `tenant_id` from day one. Runtime is single-tenant (`TENANT_ID` in `.env`). No multi-tenant isolation, credential vault, billing, or Zoho sync.
+
+`carrier_appointments` is the appointment book: one row per carrier + written line (`appointed`, `selling_agency`). See `COORDINATION.md`.
 
 Checked-in SQL is under `drizzle/`. Regenerated with `npm run db:generate`.
 

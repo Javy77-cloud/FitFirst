@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
-import { DEFAULT_TENANT_ID, type AppetiteRuleInput, type PriorAttempt } from "@/lib/domain";
+import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { appointedByCarrierLine } from "@/lib/db/queries";
 import { appetiteRules, carriers, quoteAttemptLogs } from "@/lib/db/schema";
 import { matchCarrier, rankFits, riskFromRecord, type CarrierMatch } from "./match";
+import { toAppetiteInput } from "./rule-input";
 import type { Risk } from "@/lib/db/schema";
 
 export async function evaluateDealMarkets(risk: Risk): Promise<CarrierMatch[]> {
@@ -16,6 +18,8 @@ export async function evaluateDealMarkets(risk: Risk): Promise<CarrierMatch[]> {
     .select()
     .from(quoteAttemptLogs)
     .where(eq(quoteAttemptLogs.tenantId, DEFAULT_TENANT_ID));
+
+  const appointedMap = await appointedByCarrierLine();
 
   const prior: PriorAttempt[] = logs.map((log) => ({
     carrierId: log.carrierId,
@@ -32,37 +36,11 @@ export async function evaluateDealMarkets(risk: Risk): Promise<CarrierMatch[]> {
   }));
 
   return rankFits(
-    rules.map(({ rule, carrier }) =>
-      matchCarrier(
-        riskFromRecord(risk),
-        {
-          carrierId: carrier.id,
-          carrierName: carrier.name,
-          lineOfBusiness: rule.lineOfBusiness,
-          minCovA: rule.minCovA,
-          maxCovA: rule.maxCovA,
-          minYearBuilt: rule.minYearBuilt,
-          maxRoofAge: rule.maxRoofAge,
-          allowedRoofCoverings: rule.allowedRoofCoverings,
-          coastalAllowed: rule.coastalAllowed,
-          minMilesToCoast: rule.minMilesToCoast,
-          maxMilesToCoast: rule.maxMilesToCoast,
-          mobileAllowed: rule.mobileAllowed,
-          requiresOpeningProtection: rule.requiresOpeningProtection,
-          maxStories: rule.maxStories,
-          allowedConstruction: rule.allowedConstruction,
-          allowedOccupancy: rule.allowedOccupancy,
-          allowedCounties: rule.allowedCounties,
-          excludedCounties: rule.excludedCounties,
-          countyMinCovA: rule.countyMinCovA,
-          requireReplacementCost: rule.requireReplacementCost,
-          rceFloorRatio: rule.rceFloorRatio,
-          portalStatus: carrier.portalStatus as AppetiteRuleInput["portalStatus"],
-          dontWriteNotes: carrier.dontWriteNotes,
-          writtenLines: carrier.writtenLines,
-        },
-        prior,
-      ),
-    ),
+    rules.map(({ rule, carrier }) => {
+      const line = appointmentLine(rule.lineOfBusiness);
+      const key = `${carrier.id}:${line}`;
+      const appointed = appointedMap.has(key) ? appointedMap.get(key)! : null;
+      return matchCarrier(riskFromRecord(risk), toAppetiteInput(carrier, rule, appointed), prior);
+    }),
   );
 }

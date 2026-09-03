@@ -8,6 +8,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -113,6 +114,30 @@ export const carriers = pgTable(
     ...timestamps,
   },
   (t) => [index("carriers_tenant_idx").on(t.tenantId)],
+);
+
+export const carrierAppointments = pgTable(
+  "carrier_appointments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id),
+    writtenLine: text("written_line").notNull(),
+    appointed: boolean("appointed").notNull().default(false),
+    sellingAgency: text("selling_agency").notNull(),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("carrier_appointments_tenant_idx").on(t.tenantId),
+    uniqueIndex("carrier_appointments_carrier_line_uidx").on(
+      t.tenantId,
+      t.carrierId,
+      t.writtenLine,
+    ),
+  ],
 );
 
 export const risks = pgTable(
@@ -422,6 +447,7 @@ export type Risk = typeof risks.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;
+export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;

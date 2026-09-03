@@ -1,8 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
+  APPOINTMENT_LINES,
+  type SellingAgency,
+} from "@/lib/domain";
+import {
   alerts,
   appetiteRules,
+  carrierAppointments,
   carriers,
   contacts,
   deals,
@@ -16,9 +21,23 @@ import {
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
 
-const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
-
 type CarrierKey = keyof typeof CARRIER_IDS;
+
+/** Selling paper for first-wave Home. Other lines reuse the same agency, appointed=false. */
+const HOME_SELLING_AGENCY: Record<CarrierKey, SellingAgency> = {
+  tailrow: "First Connect",
+  hoc: "AFA",
+  vyrd: "AFA",
+  qbe: "AFA",
+  vave: "Agentero",
+  benchmark: "AFA",
+  hadron: "First Connect",
+  geovera: "AFA",
+  sagesure: "First Connect",
+  americanIntegrity: "AFA",
+};
+
+const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
 export async function seedIfEmpty() {
   await seed();
@@ -202,6 +221,24 @@ export async function seed() {
         },
       });
   }
+
+  await db.delete(carrierAppointments).where(eq(carrierAppointments.tenantId, TENANT_ID));
+  await db.insert(carrierAppointments).values(
+    (Object.keys(CARRIER_IDS) as CarrierKey[]).flatMap((key) => {
+      const agency = HOME_SELLING_AGENCY[key];
+      return APPOINTMENT_LINES.map((writtenLine) => ({
+        tenantId: TENANT_ID,
+        carrierId: CARRIER_IDS[key],
+        writtenLine,
+        appointed: writtenLine === "HO",
+        sellingAgency: agency,
+        notes:
+          writtenLine === "HO"
+            ? "First-wave Home appointment. Seeded appointed=true for existing shop carriers."
+            : "Explicit not-appointed. Do not treat a missing row as paper.",
+      }));
+    }),
+  );
 
   await db.delete(appetiteRules).where(eq(appetiteRules.tenantId, TENANT_ID));
   await db.insert(appetiteRules).values(
