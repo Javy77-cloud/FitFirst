@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -15,8 +15,14 @@ import {
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { LOB_TO_SHOP_LINE, SHOP_LINES, type ShopLine } from "@/lib/domain";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import {
+  fillContactBlanksFromSheet,
+  fillPolicyBlanksFromSheet,
+  parseSheetDate,
+} from "@/lib/quote-sheet/apply";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -198,28 +204,50 @@ export async function createContact(formData: FormData) {
   return row;
 }
 
+async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteSheetFieldValue>> {
+  const sheets = await db
+    .select()
+    .from(quoteSheets)
+    .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
+  const home = sheets.find((s) => s.line === "home");
+  return (home ?? sheets[0])?.values ?? {};
+}
+
 export async function bindDeal(formData: FormData) {
   const dealId = str(formData, "dealId");
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const sheetValues = await sheetValuesForDeal(dealId);
 
   let contactId = deal.contactId;
   if (!contactId) {
     const [lead] = deal.leadId
       ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
       : [];
+    const seeded = fillContactBlanksFromSheet(
+      {
+        firstName: lead?.firstName ?? "Bound",
+        lastName: lead?.lastName ?? "Client",
+        mailingAddress: null,
+        city: risk?.city ?? null,
+        state: risk?.state ?? "FL",
+        zip: risk?.zip ?? null,
+      },
+      sheetValues,
+    );
     const [contact] = await db
       .insert(contacts)
       .values({
         tenantId: DEFAULT_TENANT_ID,
-        firstName: lead?.firstName ?? "Bound",
-        lastName: lead?.lastName ?? "Client",
+        firstName: seeded.firstName,
+        lastName: seeded.lastName,
         email: lead?.email,
         phone: lead?.phone,
-        city: risk?.city,
-        state: risk?.state ?? "FL",
-        zip: risk?.zip,
+        mailingAddress: seeded.mailingAddress,
+        city: seeded.city,
+        state: seeded.state ?? "FL",
+        zip: seeded.zip,
         tenureStart: new Date(),
         policyCount: 1,
       })
@@ -228,16 +256,49 @@ export async function bindDeal(formData: FormData) {
   } else {
     const [existing] = await db.select().from(contacts).where(eq(contacts.id, contactId));
     if (existing) {
+      const filled = fillContactBlanksFromSheet(
+        {
+          firstName: existing.firstName,
+          lastName: existing.lastName,
+          mailingAddress: existing.mailingAddress,
+          city: existing.city,
+          state: existing.state,
+          zip: existing.zip,
+        },
+        sheetValues,
+      );
       await db
         .update(contacts)
-        .set({ policyCount: existing.policyCount + 1, updatedAt: new Date() })
+        .set({
+          firstName: filled.firstName,
+          lastName: filled.lastName,
+          mailingAddress: filled.mailingAddress,
+          city: filled.city,
+          state: filled.state,
+          zip: filled.zip,
+          policyCount: existing.policyCount + 1,
+          updatedAt: new Date(),
+        })
         .where(eq(contacts.id, contactId));
     }
   }
 
-  const effective = new Date();
-  const expiration = new Date(effective);
-  expiration.setFullYear(expiration.getFullYear() + 1);
+  const typedPolicy = str(formData, "policyNumber");
+  const typedPremium = str(formData, "premium");
+  const fromSheet = fillPolicyBlanksFromSheet(
+    {
+      policyNumber: typedPolicy || null,
+      coverageA: risk?.coverageA ?? null,
+      premium: typedPremium ? Number(typedPremium) || null : null,
+      effectiveDate: null,
+      expirationDate: null,
+    },
+    sheetValues,
+  );
+  const effective = parseSheetDate(fromSheet.effectiveDate) ?? new Date();
+  const parsedExp = parseSheetDate(fromSheet.expirationDate);
+  const expiration = parsedExp ?? new Date(effective.getTime());
+  if (!parsedExp) expiration.setUTCFullYear(effective.getUTCFullYear() + 1);
 
   const [policy] = await db
     .insert(policies)
@@ -246,13 +307,13 @@ export async function bindDeal(formData: FormData) {
       contactId,
       dealId,
       riskId: risk?.id,
-      policyNumber: str(formData, "policyNumber") || `FF-${Date.now().toString().slice(-8)}`,
+      policyNumber: fromSheet.policyNumber || `FF-${Date.now().toString().slice(-8)}`,
       lineOfBusiness: deal.lineOfBusiness,
       status: "active",
       effectiveDate: effective,
       expirationDate: expiration,
-      premium: Number(str(formData, "premium") || 0) || null,
-      coverageA: risk?.coverageA,
+      premium: fromSheet.premium != null ? String(fromSheet.premium) : null,
+      coverageA: fromSheet.coverageA ?? risk?.coverageA,
     })
     .returning();
 

@@ -342,13 +342,13 @@ async function syncHeaderFromSheet(
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) return;
   const glance = fillDealHeaderBlanks(
-    mode === "fill"
-      ? {
-          coverageAmount: deal.coverageAmount,
-          propertyOneliner: deal.propertyOneliner,
-          currentCarrier: deal.currentCarrier,
-        }
-      : { coverageAmount: null, propertyOneliner: null, currentCarrier: null },
+    {
+      coverageAmount: deal.coverageAmount,
+      propertyOneliner: deal.propertyOneliner,
+      currentCarrier: deal.currentCarrier,
+      primaryNamedInsured: deal.primaryNamedInsured,
+      secondaryNamedInsured: deal.secondaryNamedInsured,
+    },
     values,
   );
   await db
@@ -357,6 +357,7 @@ async function syncHeaderFromSheet(
       coverageAmount: glance.coverageAmount ?? deal.coverageAmount,
       propertyOneliner: glance.propertyOneliner ?? deal.propertyOneliner,
       currentCarrier: glance.currentCarrier ?? deal.currentCarrier,
+      primaryNamedInsured: glance.primaryNamedInsured ?? deal.primaryNamedInsured,
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));

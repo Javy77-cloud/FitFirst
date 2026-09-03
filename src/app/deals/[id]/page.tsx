@@ -96,11 +96,11 @@ export default async function DealPage({
             <input type="hidden" name="dealId" value={deal.id} />
             <Input
               name="policyNumber"
-              placeholder="Policy # at bind"
+              placeholder={sheet.values.policy_number?.value || "Policy # at bind"}
               className="h-8 w-36"
             />
             <Button type="submit" size="sm" variant="secondary">
-              Bind (creates contact + policy)
+              Bind (sheet → contact + policy blanks)
             </Button>
           </form>
         ) : null
@@ -141,8 +141,9 @@ export default async function DealPage({
           />
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Header is a glance. The {SHOP_LINE_LABELS[activeLine]} Quote Sheet below is the master
-          for this line. Yellow = missing. Blue = CHECK. Never use a Zestimate as Cov A.
+          Upload once. Fill writes the {SHOP_LINE_LABELS[activeLine]} master sheet. Matching
+          values copy onto Deal blanks, then Contact + Policy blanks at bind. Yellow = missing.
+          Blue = CHECK. Never a Zestimate as Cov A.
         </p>
       </div>
 

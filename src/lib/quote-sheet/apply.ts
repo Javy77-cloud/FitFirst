@@ -120,6 +120,8 @@ export type DealHeaderGlance = {
   coverageAmount: number | null;
   propertyOneliner: string | null;
   currentCarrier: string | null;
+  primaryNamedInsured?: string | null;
+  secondaryNamedInsured?: string | null;
 };
 
 export function headerIsBlank(value: string | number | null | undefined): boolean {
@@ -157,7 +159,7 @@ export function coverageAmountFromSheet(
   return Number.isFinite(n) ? n : null;
 }
 
-/** Copy matching glance fields onto deal header BLANKS only. */
+/** Copy matching glance fields onto deal header BLANKS only. Never overwrite typed values. */
 export function fillDealHeaderBlanks(
   header: DealHeaderGlance,
   values: Record<string, QuoteSheetFieldValue>,
@@ -175,7 +177,107 @@ export function fillDealHeaderBlanks(
   if (headerIsBlank(header.currentCarrier) && carrier) {
     next.currentCarrier = carrier;
   }
+  const named = values.named_insured?.value?.trim() ?? "";
+  if (headerIsBlank(header.primaryNamedInsured) && named) {
+    next.primaryNamedInsured = named;
+  }
   return next;
+}
+
+export type ContactBlanks = {
+  firstName: string;
+  lastName: string;
+  mailingAddress: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+};
+
+const PLACEHOLDER_NAMES = new Set(["bound", "client", "unknown", "lead"]);
+
+export function splitNamedInsured(raw: string): { firstName: string; lastName: string } | null {
+  const parts = raw.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return null;
+  if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] };
+  return { firstName: parts.slice(0, -1).join(" "), lastName: parts[parts.length - 1] };
+}
+
+function isPlaceholderName(value: string | null | undefined): boolean {
+  const v = (value ?? "").trim().toLowerCase();
+  return !v || PLACEHOLDER_NAMES.has(v);
+}
+
+/** Bind: copy matching sheet values onto Contact blanks. Never invent SSN, DOB, or claims. */
+export function fillContactBlanksFromSheet(
+  contact: ContactBlanks,
+  values: Record<string, QuoteSheetFieldValue>,
+): ContactBlanks {
+  const next: ContactBlanks = { ...contact };
+  const named = splitNamedInsured(values.named_insured?.value?.trim() ?? "");
+  if (named && isPlaceholderName(contact.firstName)) next.firstName = named.firstName;
+  if (named && isPlaceholderName(contact.lastName)) next.lastName = named.lastName;
+  const street = values.address1?.value?.trim() ?? "";
+  if (headerIsBlank(contact.mailingAddress) && street) next.mailingAddress = street;
+  const city = values.city?.value?.trim() ?? "";
+  if (headerIsBlank(contact.city) && city) next.city = city;
+  const state = values.state?.value?.trim() ?? "";
+  if (headerIsBlank(contact.state) && state) next.state = state;
+  const zip = values.zip?.value?.trim() ?? "";
+  if (headerIsBlank(contact.zip) && zip) next.zip = zip;
+  return next;
+}
+
+export type PolicyBlanks = {
+  policyNumber: string | null;
+  coverageA: number | null;
+  premium: number | null;
+  effectiveDate: string | null;
+  expirationDate: string | null;
+};
+
+function moneyFromSheet(raw: string): number | null {
+  const n = Number(raw.replace(/[, $]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Bind: copy matching sheet values onto Policy blanks. Never use Zestimate as Cov A. */
+export function fillPolicyBlanksFromSheet(
+  policy: PolicyBlanks,
+  values: Record<string, QuoteSheetFieldValue>,
+  opts?: { coverageASource?: string | null },
+): PolicyBlanks {
+  const next: PolicyBlanks = { ...policy };
+  const number = values.policy_number?.value?.trim() ?? "";
+  if (headerIsBlank(policy.policyNumber) && number) next.policyNumber = number;
+  const covA = coverageAmountFromSheet(values);
+  const covSource = opts?.coverageASource ?? values.coverage_a?.source ?? "";
+  if (
+    headerIsBlank(policy.coverageA) &&
+    covA != null &&
+    covSource !== "public" &&
+    values.coverage_a?.sourceLabel?.toLowerCase().includes("zestimate") !== true
+  ) {
+    next.coverageA = covA;
+  }
+  const premium = moneyFromSheet(values.current_premium?.value?.trim() ?? "");
+  if (headerIsBlank(policy.premium) && premium != null) next.premium = premium;
+  const effective = values.effective_date?.value?.trim() ?? "";
+  if (headerIsBlank(policy.effectiveDate) && effective) next.effectiveDate = effective;
+  const expiration = values.expiration_date?.value?.trim() ?? "";
+  if (headerIsBlank(policy.expirationDate) && expiration) next.expirationDate = expiration;
+  return next;
+}
+
+export function parseSheetDate(raw: string | null | undefined): Date | null {
+  if (!raw?.trim()) return null;
+  const m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/.exec(raw.trim());
+  if (!m) return null;
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  let year = Number(m[3]);
+  if (year < 100) year += 2000;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export function mergeAgentEdits(

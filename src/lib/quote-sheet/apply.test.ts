@@ -6,7 +6,9 @@ import { anaHomeSheetValues } from "./ana-home";
 import {
   applyExtractedToSheet,
   applyPublicToSheet,
+  fillContactBlanksFromSheet,
   fillDealHeaderBlanks,
+  fillPolicyBlanksFromSheet,
   mergeAgentEdits,
   neverCheckCoverageA,
 } from "./apply";
@@ -118,6 +120,87 @@ describe("quote sheet fill — blanks only", () => {
     expect(result.values.square_feet.source).toBe("public");
     expect(result.values.coverage_a.value).toBe("285000");
     expect(result.values.year_built.value).toBe("1996");
+  });
+
+  it("copies named insured onto a blank deal header and leaves typed names alone", () => {
+    const extracted = extractFieldsFromText(GARCIA_DEC_TEXT);
+    const { values } = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
+    const filled = fillDealHeaderBlanks(
+      {
+        coverageAmount: null,
+        propertyOneliner: null,
+        currentCarrier: null,
+        primaryNamedInsured: null,
+      },
+      values,
+    );
+    expect(filled.primaryNamedInsured).toMatch(/Francisco Javier Garcia/i);
+    const kept = fillDealHeaderBlanks(
+      {
+        coverageAmount: null,
+        propertyOneliner: null,
+        currentCarrier: null,
+        primaryNamedInsured: "Javy typed this",
+      },
+      values,
+    );
+    expect(kept.primaryNamedInsured).toBe("Javy typed this");
+  });
+
+  it("copies Contact and Policy blanks on bind without overwriting typed values or inventing SSN", () => {
+    const extracted = extractFieldsFromText(GARCIA_DEC_TEXT);
+    const { values } = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
+    const contact = fillContactBlanksFromSheet(
+      {
+        firstName: "Bound",
+        lastName: "Client",
+        mailingAddress: null,
+        city: null,
+        state: "FL",
+        zip: null,
+      },
+      values,
+    );
+    expect(contact.firstName).toMatch(/Francisco/i);
+    expect(contact.lastName).toMatch(/Garcia/i);
+    expect(contact.mailingAddress).toBe("100 Sample Dec Ln");
+    expect(contact.zip).toBe("32909");
+
+    const existing = fillContactBlanksFromSheet(
+      {
+        firstName: "Ana",
+        lastName: "Dib",
+        mailingAddress: "1098 Adige Ct SE",
+        city: "Palm Bay",
+        state: "FL",
+        zip: "32909",
+      },
+      values,
+    );
+    expect(existing.firstName).toBe("Ana");
+    expect(existing.mailingAddress).toBe("1098 Adige Ct SE");
+
+    const policy = fillPolicyBlanksFromSheet(
+      { policyNumber: null, coverageA: null, premium: null, effectiveDate: null, expirationDate: null },
+      values,
+    );
+    expect(policy.policyNumber).toMatch(/CIT-HO3/);
+    expect(policy.coverageA).toBe(285000);
+    expect(policy.premium).toBe(4860);
+
+    const typed = fillPolicyBlanksFromSheet(
+      {
+        policyNumber: "AGENT-1",
+        coverageA: 321000,
+        premium: 99,
+        effectiveDate: null,
+        expirationDate: null,
+      },
+      values,
+    );
+    expect(typed.policyNumber).toBe("AGENT-1");
+    expect(typed.coverageA).toBe(321000);
+    expect(typed.premium).toBe(99);
   });
 
   it("keeps Javy Cov A confirmed when the agent saves the same number", () => {

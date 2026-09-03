@@ -2,6 +2,10 @@
 
 This file is the handshake for additive desk work. Do not invent a second CRM shape.
 
+## North star (Javy)
+
+Beat Zoho on **minimum data entry**. Upload a dec / wind mit / 4-point **once** → Fill Quote Sheet → matching values copy onto **Deal blanks** (never overwrite what he typed) and later onto **Contact / Business / Policy** at bind. Prefer the uploaded doc. Gap-fill leftover blanks from Zillow/public records with source tags. Never Zestimate as Cov A. Never invent SSN or claims. Sheet UX: line tabs, yellow = missing, blue = CHECK. Ana fixture Cov A stays **$321,000**. Additive only. No Business table this pass.
+
 ## Quote Sheet is the master
 
 - One editable Quote Sheet per deal line (`quote_sheets`). Copy from the sheet, never from PDFs.
