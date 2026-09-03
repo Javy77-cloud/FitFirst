@@ -2,30 +2,17 @@ import Link from "next/link";
 import { createDealFromLead, createLead } from "@/app/actions/crm";
 import { dropLeadPacket, dropSampleDecPacket, stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
+import { LineSelect } from "@/components/crm/line-select";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { visibleColumns } from "@/components/brand/column-layout-fields";
-import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listLeads } from "@/lib/db/queries";
-import { DeskDrop } from "@/components/desk-drop";
-
-const LEAD_COLUMNS = [
-  { id: "name", header: "Name", defaultVisible: true, hideable: false },
-  { id: "status", header: "Status", defaultVisible: true },
-  { id: "source", header: "Source", defaultVisible: true },
-  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
-  { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
-  { id: "created", header: "Created", defaultVisible: false },
-  { id: "action", header: "Shop", defaultVisible: true, hideable: false },
-];
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const [rows, desk] = await Promise.all([listLeads(), getResolvedDesk()]);
-  const cols = visibleColumns("leads", desk.columnLayout);
+  const rows = await listLeads();
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-sm text-muted-foreground">
@@ -94,22 +81,20 @@ export default async function LeadsPage() {
           </form>
         </div>
 
-        <div className="space-y-4">
-        <DecDropForm />
-        <ColumnPicker tableId="leads" columns={LEAD_COLUMNS}>
         <section className="ff-card overflow-x-auto">
           <table className="ff-table">
             <thead>
               <tr>
-                {cols.map((col) => (
-                  <th key={col.key}>{col.label}</th>
-                ))}
+                <th>Name</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Shop</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={cols.length} className="text-muted-foreground">
+                  <td colSpan={4} className="text-muted-foreground">
                     No leads yet.
                   </td>
                 </tr>
@@ -126,15 +111,6 @@ export default async function LeadsPage() {
                     </td>
                     <td className="uppercase">{lead.status}</td>
                     <td>{lead.source}</td>
-                    <td>
-                      <OwnerSelect
-                        entityType="lead"
-                        entityId={lead.id}
-                        ownerId={lead.ownerId}
-                        users={users}
-                        canAssign={assign}
-                      />
-                    </td>
                     <td>
                       {lead.convertedDealId ? (
                         <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
@@ -156,8 +132,6 @@ export default async function LeadsPage() {
             </tbody>
           </table>
         </section>
-        </ColumnPicker>
-        </div>
       </div>
     </AppShell>
   );
