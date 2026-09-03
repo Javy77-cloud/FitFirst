@@ -19,6 +19,7 @@ import {
   type EmailTrigger,
 } from "@/lib/db/schema";
 import { CONTACT_ID } from "@/lib/fixtures/ids";
+import { addDelay, subtractDelay } from "./dates";
 import { isProtectedAnaContact, pickEmailLocale } from "./locale";
 import { mergeTemplate } from "./merge";
 
@@ -40,26 +41,6 @@ export type RenewalScheduleInput = {
   policyType: string;
   policyNumber?: string | null;
 };
-
-export function addDelay(anchor: Date, amount: number, unit: EmailDelayUnit): Date {
-  const next = new Date(anchor.getTime());
-  if (unit === "months") {
-    next.setMonth(next.getMonth() + amount);
-    return next;
-  }
-  next.setDate(next.getDate() + amount);
-  return next;
-}
-
-function subtractDelay(anchor: Date, amount: number, unit: EmailDelayUnit): Date {
-  const next = new Date(anchor.getTime());
-  if (unit === "months") {
-    next.setMonth(next.getMonth() - amount);
-    return next;
-  }
-  next.setDate(next.getDate() - amount);
-  return next;
-}
 
 async function loadContact(contactId: string, tenantId: string): Promise<Contact | null> {
   const [contact] = await db
@@ -319,7 +300,4 @@ export async function schedulePolicyRenewalEmails(
   return ids;
 }
 
-/** ARCHIVE must not call this. Jobs stay on won / policy dates. */
-export function archiveCancelsEmailJobs(): false {
-  return false;
-}
+export { addDelay, archiveCancelsEmailJobs } from "./dates";

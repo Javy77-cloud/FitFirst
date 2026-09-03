@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AGENCY_BRAND } from "@/lib/domain";
-import { addDelay, archiveCancelsEmailJobs } from "./schedule";
+import { addDelay, archiveCancelsEmailJobs } from "./dates";
 import { isProtectedAnaContact, pickEmailLocale } from "./locale";
 import { mergeTemplate } from "./merge";
 
