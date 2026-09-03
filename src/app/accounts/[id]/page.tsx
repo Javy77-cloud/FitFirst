@@ -38,6 +38,38 @@ export default async function AccountDetailPage({
         </span>
       </div>
       <section className="ff-card mb-4 p-4 text-sm">
+        <h2 className="text-sm font-semibold text-navy">Account 360 · commercial profile</h2>
+        <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+          <div>
+            <dt className="text-muted-foreground">EIN / FEIN</dt>
+            <dd>{account.ein ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Entity</dt>
+            <dd>{account.entityType ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Employees</dt>
+            <dd>{account.employeeCount ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Annual sales</dt>
+            <dd>{formatMoney(account.annualSales)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">W-2 payroll</dt>
+            <dd>{formatMoney(account.payrollW2)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">1099 / subcontracted</dt>
+            <dd>{formatMoney(account.payroll1099)}</dd>
+          </div>
+        </dl>
+        {account.operations ? (
+          <p className="mt-3 text-xs text-muted-foreground">{account.operations}</p>
+        ) : null}
+      </section>
+      <section className="ff-card mb-4 p-4 text-sm">
         <h2 className="text-sm font-semibold text-navy">Linked people</h2>
         {contacts.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No contacts linked.</p>

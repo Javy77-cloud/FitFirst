@@ -29,6 +29,13 @@
       "when": 1788395600000,
       "tag": "0003_test_desk_activity_fks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788399000000,
+      "tag": "0004_desk_wire",
+      "breakpoints": true
     }
   ]
 }

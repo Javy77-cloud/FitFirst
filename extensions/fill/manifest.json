@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "FitFirst Fill",
+  "version": "0.1.0",
+  "description": "Fill the open carrier page from the FitFirst quote sheet. You click Fill. No portal login. No passwords.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "FitFirst Fill",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "activeTab", "clipboardRead", "scripting"],
+  "host_permissions": [
+    "http://localhost:43147/*",
+    "http://127.0.0.1:43147/*",
+    "https://agency.harmony-ins.com/*",
+    "https://*.harmony-ins.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:43147/*", "http://127.0.0.1:43147/*"],
+      "js": ["content/desk.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["demo/harmony-quote.html", "demo/generic-quote.html", "seed/ana-sheet.json"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

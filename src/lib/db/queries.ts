@@ -14,8 +14,12 @@ import {
   contacts,
   deals,
   documents,
+  emailSendJobs,
   extractedFields,
+  formTemplates,
   leads,
+  pipelineStages,
+  pipelines,
   policies,
   quoteAttemptLogs,
   quoteSheets,
@@ -24,6 +28,16 @@ import {
   risks,
   tenants,
 } from "./schema";
+import {
+  hitFromBusiness,
+  hitFromContact,
+  hitFromDeal,
+  hitFromLead,
+  hitFromPolicy,
+  matchesQuery,
+  rankHits,
+  type SearchHit,
+} from "@/lib/wire/search";
 
 export type TimelineItem = {
   id: string;
@@ -485,6 +499,94 @@ export async function dashboardStats() {
     .limit(8);
 
   return { stats: row, recentDeals, tasks, unread, expiring };
+}
+
+export async function listPipelines() {
+  const boards = await db
+    .select()
+    .from(pipelines)
+    .where(eq(pipelines.tenantId, tenant()))
+    .orderBy(asc(pipelines.sortOrder));
+  const stages = await db
+    .select()
+    .from(pipelineStages)
+    .where(eq(pipelineStages.tenantId, tenant()))
+    .orderBy(asc(pipelineStages.sortOrder));
+  return boards.map((board) => ({
+    ...board,
+    stages: stages.filter((stage) => stage.pipelineId === board.id),
+  }));
+}
+
+export async function getPipelineBoard(slug: string) {
+  const boards = await listPipelines();
+  const board = boards.find((row) => row.slug === slug) ?? boards[0] ?? null;
+  if (!board) return null;
+  const cards = await db
+    .select()
+    .from(deals)
+    .where(eq(deals.tenantId, tenant()))
+    .orderBy(desc(deals.updatedAt));
+  return {
+    board,
+    boards,
+    cards: cards.filter((deal) => deal.pipelineId === board.id),
+  };
+}
+
+export async function listFormTemplates() {
+  return db
+    .select()
+    .from(formTemplates)
+    .where(eq(formTemplates.tenantId, tenant()))
+    .orderBy(asc(formTemplates.name));
+}
+
+export async function getFormTemplate(slug: string) {
+  const [row] = await db
+    .select()
+    .from(formTemplates)
+    .where(and(eq(formTemplates.tenantId, tenant()), eq(formTemplates.slug, slug)));
+  return row ?? null;
+}
+
+export async function listEmailJobsForDeal(dealId: string) {
+  return db
+    .select()
+    .from(emailSendJobs)
+    .where(and(eq(emailSendJobs.tenantId, tenant()), eq(emailSendJobs.dealId, dealId)))
+    .orderBy(asc(emailSendJobs.scheduledFor));
+}
+
+export async function smartSearch(query: string): Promise<SearchHit[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const [leadRows, dealRows, contactRows, accountRows, policyRows] = await Promise.all([
+    db.select().from(leads).where(eq(leads.tenantId, tenant())),
+    db.select().from(deals).where(eq(deals.tenantId, tenant())),
+    db.select().from(contacts).where(eq(contacts.tenantId, tenant())),
+    db.select().from(accounts).where(eq(accounts.tenantId, tenant())),
+    db.select().from(policies).where(eq(policies.tenantId, tenant())),
+  ]);
+  const hits: SearchHit[] = [];
+  for (const row of leadRows) {
+    if (matchesQuery(q, row.firstName, row.lastName, row.email, row.phone)) hits.push(hitFromLead(row));
+  }
+  for (const row of dealRows) {
+    if (matchesQuery(q, row.title, row.primaryNamedInsured, row.notes)) hits.push(hitFromDeal(row));
+  }
+  for (const row of contactRows) {
+    if (matchesQuery(q, row.firstName, row.lastName, row.email, row.phone, row.mailingAddress)) {
+      hits.push(hitFromContact(row));
+    }
+  }
+  for (const row of accountRows) {
+    if (matchesQuery(q, row.name, row.dba, row.ein, row.city)) hits.push(hitFromBusiness(row));
+  }
+  for (const row of policyRows) {
+    if (matchesQuery(q, row.policyNumber, row.lineOfBusiness)) hits.push(hitFromPolicy(row));
+  }
+  return rankHits(hits, q).slice(0, 24);
 }
 
 export async function historyForContact(contactId: string) {

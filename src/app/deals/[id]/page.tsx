@@ -49,7 +49,7 @@ export default async function DealPage({
     <AppShell
       title={deal.title}
       actions={
-        deal.pipelineStage !== "bound" ? (
+        deal.pipelineStage !== "bound" && !isAna ? (
           <form action={bindDeal} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="dealId" value={deal.id} />
             <select
@@ -60,6 +60,8 @@ export default async function DealPage({
               <option value="contact">Personal — create Contact</option>
               <option value="account">Commercial — create Business</option>
             </select>
+            <Input name="businessName" placeholder="Business name (commercial)" className="h-8 w-44" />
+            <Input name="ein" placeholder="EIN / FEIN" className="h-8 w-32" />
             <Input name="policyNumber" placeholder="Policy # at bind" className="h-8 w-36" />
             <Input name="premium" placeholder="Premium" className="h-8 w-24" />
             <Button type="submit" size="sm" variant="secondary">

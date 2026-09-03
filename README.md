@@ -39,12 +39,13 @@ Open [http://localhost:43147](http://localhost:43147). Start at **Get Started**.
 
 ## First path to exercise
 
-`npm run db:seed` loads two required records:
+`npm run db:seed` loads the wired desk:
 
-- **Elena Ruiz · Melbourne HO3** — personal-lines click-through. Dropped dec → Lead → Deal (Quote Sheet + source docs + quote PDFs + ranked note) → bind → Contact + one HO3 Policy. Lifetime 1, in-force 1, status Client. Linked business **Ruiz Tile LLC** has no commercial policy.
-- **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json` (2026-09-02, Palm Bay / Brevard). HO3-only seed. Cov A **$321,000**. Eight markets, zero bindable. **Do not bind Ana. Do not change that number.**
+- **Elena Ruiz · Melbourne HO3** — personal-lines click-through. Lead → Deal (Quote Sheet + source docs) → Contact + Policy HO3-ELENA-2026. Linked business **Ruiz Tile LLC** has no commercial policy (same person, personal + business).
+- **Harbor Key Marine LLC** — commercial Closed Won. EIN 59-1234567, 14 employees, W-2/1099 payroll, one GL policy on the Business.
+- **Ana Dib HO3 shop** from `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Quote Sent, unbound. Cov A **$321,000**. Eight markets, zero bindable. **Do not bind Ana. Do not change that number.**
 
-Exact click path is in `COORDINATION.md`.
+Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Pipeline links: P-C, Health, Life, Won-Lost/ARCHIVE, Flood. Smart Search finds Lead, Deal, Contact, Business, and Policy. Exact path is in `COORDINATION.md` (FF-WIRE-1).
 
 ## Schema
 

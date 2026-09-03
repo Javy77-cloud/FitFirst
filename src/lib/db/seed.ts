@@ -16,6 +16,7 @@ import {
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
 import { seedLifecycleDemo } from "./seed-lifecycle";
+import { seedWireDesk } from "./seed-wire";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -313,4 +314,5 @@ export async function seed() {
   });
 
   await seedLifecycleDemo();
+  await seedWireDesk();
 }

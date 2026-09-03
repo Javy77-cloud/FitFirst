@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-ff-portal="harmony">
+  <head>
+    <meta charset="utf-8" />
+    <title>Harmony — New Business (FitFirst demo)</title>
+    <style>
+      :root {
+        --navy: #0c2340;
+        --muted: #5c6b7a;
+        --border: #c5d0dc;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.45 system-ui, sans-serif;
+        background: #f3f5f8;
+        color: #1c2430;
+      }
+      header {
+        background: var(--navy);
+        color: #fff;
+        padding: 14px 20px;
+      }
+      header .kicker {
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #d5e2f0;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .note {
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      form {
+        background: #fff;
+        border: 1px solid #d5dde6;
+        border-radius: 6px;
+        padding: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+      }
+      label span {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input,
+      select {
+        width: 100%;
+        height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0 8px;
+        box-sizing: border-box;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+      .login-trap {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="kicker">agency.harmony-ins.com · practice page</div>
+      <div>Harmony — New Business (demo)</div>
+    </header>
+    <main>
+      <p class="note">
+        Local stand-in for a Harmony HO quote form. FitFirst Fill does not log in. Click
+        <strong>Fill this page</strong> in the toolbar after the Quote Sheet is sent (or use the Ana seed).
+      </p>
+      <form data-ff-portal="harmony">
+        <div class="grid">
+          <label>
+            <span>Named Insured</span>
+            <input id="namedInsured" name="NamedInsured" />
+          </label>
+          <label>
+            <span>Additional Named Insured</span>
+            <input id="secondaryInsured" name="AdditionalInsured" />
+          </label>
+          <label class="wide">
+            <span>Property Address</span>
+            <input id="propertyAddress" name="PropertyAddress" />
+          </label>
+          <label>
+            <span>City</span>
+            <input id="city" name="City" />
+          </label>
+          <label>
+            <span>State</span>
+            <input id="state" name="State" />
+          </label>
+          <label>
+            <span>ZIP</span>
+            <input id="zip" name="ZipCode" />
+          </label>
+          <label>
+            <span>Year Built</span>
+            <input id="yearBuilt" name="YearBuilt" />
+          </label>
+          <label>
+            <span>Dwelling / Coverage A</span>
+            <input id="coverageA" name="CoverageA" />
+          </label>
+          <label>
+            <span>Occupancy</span>
+            <select id="occupancy" name="Occupancy">
+              <option value="">Select…</option>
+              <option value="OwnerOccupied">Owner Occupied</option>
+              <option value="Tenant">Tenant Occupied</option>
+              <option value="Vacant">Vacant</option>
+            </select>
+          </label>
+          <label>
+            <span>Construction</span>
+            <input id="construction" name="ConstructionType" />
+          </label>
+          <label>
+            <span>Roof Year</span>
+            <input id="roofYear" name="RoofYear" />
+          </label>
+          <label>
+            <span>Roof Covering</span>
+            <input id="roofCovering" name="RoofCovering" />
+          </label>
+        </div>
+        <div class="login-trap">
+          <label>
+            <span>Username</span>
+            <input id="username" name="username" autocomplete="username" />
+          </label>
+          <label>
+            <span>Password</span>
+            <input id="password" name="password" type="password" autocomplete="current-password" />
+          </label>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

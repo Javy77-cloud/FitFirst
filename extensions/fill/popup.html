@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FitFirst Fill</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">FitFirst Fill</div>
+      <div class="sub">Quote sheet → carrier page. You click Fill.</div>
+    </header>
+
+    <section id="sheet-card">
+      <div class="kicker">Last loaded sheet</div>
+      <h1 id="insured">No sheet loaded</h1>
+      <p id="address" class="muted">Send a sheet from the desk, or keep the Ana seed.</p>
+      <dl>
+        <div>
+          <dt>Year built</dt>
+          <dd id="year-built">—</dd>
+        </div>
+        <div>
+          <dt>Dwelling / Cov A</dt>
+          <dd id="coverage-a">—</dd>
+        </div>
+        <div>
+          <dt>Occupancy</dt>
+          <dd id="occupancy">—</dd>
+        </div>
+      </dl>
+      <p id="carrier-hint" class="hint">Carrier hint: —</p>
+      <p id="source" class="muted"></p>
+    </section>
+
+    <div class="actions">
+      <button id="fill" type="button" class="primary">Fill this page</button>
+      <button id="clipboard" type="button">Load from clipboard</button>
+      <button id="demo" type="button">Open Harmony demo</button>
+    </div>
+
+    <p id="status" class="status" role="status"></p>
+    <p class="fineprint">
+      No portal login. No password vault. Skips username and password fields.
+    </p>
+    <script src="popup.js"></script>
+  </body>
+</html>

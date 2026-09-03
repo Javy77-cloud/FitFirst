@@ -102,6 +102,11 @@ export const deals = pgTable(
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
+    pipelineId: uuid("pipeline_id"),
+    pipelineStageSlug: text("pipeline_stage_slug"),
+    wonAt: timestamp("won_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    archiveScheduledAt: timestamp("archive_scheduled_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -283,9 +288,23 @@ export const accounts = pgTable(
     tenureStart: timestamp("tenure_start", { withTimezone: true }),
     policyCount: integer("policy_count").notNull().default(0),
     activePolicyCount: integer("active_policy_count").notNull().default(0),
+    dba: text("dba"),
+    ein: text("ein"),
+    entityType: text("entity_type"),
+    employeeCount: integer("employee_count"),
+    annualSales: numeric("annual_sales", { precision: 14, scale: 2 }),
+    payrollTotal: numeric("payroll_total", { precision: 14, scale: 2 }),
+    payrollW2: numeric("payroll_w2", { precision: 14, scale: 2 }),
+    payroll1099: numeric("payroll_1099", { precision: 14, scale: 2 }),
+    yearsInBusiness: integer("years_in_business"),
+    naics: text("naics"),
+    operations: text("operations"),
     ...timestamps,
   },
-  (t) => [index("accounts_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("accounts_tenant_idx").on(t.tenantId),
+    index("accounts_ein_idx").on(t.tenantId, t.ein),
+  ],
 );
 
 export const contactAccounts = pgTable(
@@ -549,6 +568,123 @@ export const activityLogs = pgTable(
   ],
 );
 
+export const pipelines = pgTable(
+  "pipelines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    kind: text("kind").notNull().default("shopping"),
+    seeded: boolean("seeded").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index("pipelines_tenant_idx").on(t.tenantId),
+    uniqueIndex("pipelines_slug_uidx").on(t.tenantId, t.slug),
+  ],
+);
+
+export const pipelineStages = pgTable(
+  "pipeline_stages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    pipelineId: uuid("pipeline_id")
+      .notNull()
+      .references(() => pipelines.id),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    seeded: boolean("seeded").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("pipeline_stages_slug_uidx").on(t.tenantId, t.pipelineId, t.slug)],
+);
+
+export type FormFieldDef = {
+  key: string;
+  label: string;
+  group: string;
+  sheetKey?: string;
+  contactKey?: "name" | "email" | "phone" | "dob" | "mailing";
+  dealKey?: "primaryNamedInsured" | "secondaryNamedInsured" | "title" | "state";
+};
+
+export const formTemplates = pgTable(
+  "form_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    line: text("line").notNull(),
+    status: text("status").notNull().default("stub"),
+    family: text("family"),
+    summary: text("summary"),
+    fields: jsonb("fields").$type<FormFieldDef[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("form_templates_slug_uidx").on(t.tenantId, t.slug)],
+);
+
+export const emailTemplates = pgTable(
+  "email_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    locale: text("locale").notNull().default("en"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("email_templates_slug_uidx").on(t.tenantId, t.slug)],
+);
+
+export const emailTriggers = pgTable(
+  "email_triggers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    kind: text("kind").notNull(),
+    name: text("name").notNull(),
+    delayDays: integer("delay_days").notNull().default(0),
+    templateId: uuid("template_id"),
+    hangOff: text("hang_off").notNull().default("won_date"),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+);
+
+export const emailSendJobs = pgTable(
+  "email_send_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    triggerId: uuid("trigger_id"),
+    templateId: uuid("template_id"),
+    contactId: uuid("contact_id"),
+    accountId: uuid("account_id"),
+    dealId: uuid("deal_id"),
+    policyId: uuid("policy_id"),
+    anchorKind: text("anchor_kind").notNull().default("won_date"),
+    anchorAt: timestamp("anchor_at", { withTimezone: true }).notNull(),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+    status: text("status").notNull().default("queued"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("email_jobs_anchor_idx").on(t.tenantId, t.anchorKind, t.status)],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -567,3 +703,9 @@ export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
+export type Pipeline = typeof pipelines.$inferSelect;
+export type PipelineStage = typeof pipelineStages.$inferSelect;
+export type FormTemplate = typeof formTemplates.$inferSelect;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type EmailTrigger = typeof emailTriggers.$inferSelect;
+export type EmailSendJob = typeof emailSendJobs.$inferSelect;

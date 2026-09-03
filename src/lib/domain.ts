@@ -18,8 +18,12 @@ export const DEAL_STAGES = [
   "shopping",
   "quoting",
   "comparing",
+  "quote_sent",
+  "closed_won",
   "bound",
   "lost",
+  "closed_lost",
+  "archive",
 ] as const;
 export type DealStage = (typeof DEAL_STAGES)[number];
 
@@ -138,6 +142,20 @@ export type QuoteSheetFieldValue = {
 };
 
 export const SUPER_COPY_KIND = "fitfirst.sheet" as const;
+
+export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
+  home: "Home",
+  auto: "Auto",
+  rec_rv: "Rec / RV",
+  flood: "Flood",
+  umbrella: "Umbrella",
+  life: "Life",
+  health: "Health",
+  workers_comp: "Workers Comp",
+  general_liability: "General Liability",
+};
+
+export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "won-lost", "flood"] as const;
 
 export const RISK_TYPES = ["property", "auto"] as const;
 export type RiskType = (typeof RISK_TYPES)[number];

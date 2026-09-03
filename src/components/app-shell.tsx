@@ -8,22 +8,28 @@ import {
   Contact,
   FileStack,
   Home,
+  Kanban,
   ListChecks,
+  Search,
   Shield,
   Users,
 } from "lucide-react";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
+import { SmartSearch } from "@/components/smart-search";
 
 const NAV = [
   { href: "/get-started", label: "Get Started", icon: ListChecks },
   { href: "/", label: "Home", icon: Home },
+  { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/accounts", label: "Businesses", icon: Briefcase },
   { href: "/policies", label: "Policies", icon: Shield },
+  { href: "/forms", label: "Forms", icon: FileStack },
+  { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
   { href: "/alerts", label: "Alerts", icon: Bell },
@@ -96,7 +102,10 @@ export async function AppShell({
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>
-          <div className="flex items-center gap-2">{actions}</div>
+          <div className="flex items-center gap-2">
+            <SmartSearch />
+            {actions}
+          </div>
         </header>
         <main className="flex-1 p-5">{children}</main>
       </div>

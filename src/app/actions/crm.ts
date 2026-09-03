@@ -14,7 +14,10 @@ import {
   contactAccounts,
   contacts,
   deals,
+  emailSendJobs,
+  emailTriggers,
   leads,
+  pipelines,
   policies,
   quoteSheets,
   reviewTasks,
@@ -23,6 +26,14 @@ import {
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { emptySheetValues } from "@/lib/lifecycle/quote-sheet";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
+import {
+  accountFieldsFromSheet,
+  contactFieldsFromSheet,
+  isSameAccount,
+  isSameContact,
+} from "@/lib/wire/match-party";
+import { nextMorning } from "@/lib/wire/pipeline";
+import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -75,6 +86,12 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   if (!lead) throw new Error("Lead not found");
   if (lead.convertedDealId) return lead.convertedDealId;
 
+  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
+  const [pipeline] = await db
+    .select()
+    .from(pipelines)
+    .where(eq(pipelines.slug, pipelineSlug));
+
   const [deal] = await db
     .insert(deals)
     .values({
@@ -82,8 +99,11 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
       leadId,
       title: `${lead.lastName} · ${line} shop`,
       pipelineStage: "shopping",
+      pipelineId: pipeline?.id ?? null,
+      pipelineStageSlug: "gather",
       lineOfBusiness: line,
       state,
+      primaryNamedInsured: `${lead.firstName} ${lead.lastName}`.trim(),
     })
     .returning();
 
@@ -94,11 +114,14 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     state: deal.state,
   });
 
+  const sheetValues = emptySheetValues();
+  if (lead.email) sheetValues.notes = { value: `Lead ${lead.email}`, status: "confirmed", source: "agent" };
+
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
-    values: emptySheetValues(),
+    values: sheetValues,
   });
 
   await db
@@ -219,6 +242,21 @@ export async function updateRisk(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
+export async function findMatchingContact(input: {
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+}) {
+  const rows = await db.select().from(contacts).where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
+  return rows.find((row) => isSameContact(row, input)) ?? null;
+}
+
+export async function findMatchingAccount(input: { name: string; ein?: string | null }) {
+  const rows = await db.select().from(accounts).where(eq(accounts.tenantId, DEFAULT_TENANT_ID));
+  return rows.find((row) => isSameAccount(row, input)) ?? null;
+}
+
 export async function createContact(formData: FormData) {
   const [row] = await db
     .insert(contacts)
@@ -253,44 +291,88 @@ export async function bindDeal(formData: FormData) {
   const bindTarget = str(formData, "bindTarget") || deal.bindTarget || "contact";
   let contactId = deal.contactId;
   let accountId = deal.accountId;
+  const [sheet] = await db
+    .select()
+    .from(quoteSheets)
+    .where(eq(quoteSheets.dealId, dealId));
+  const sheetValues = sheet?.values ?? {};
 
   if (bindTarget === "account") {
-    if (!accountId) {
+    const identity = {
+      name:
+        str(formData, "businessName") ||
+        `${lead?.lastName ?? "Bound"} ${deal.lineOfBusiness}`.trim(),
+      ein: str(formData, "ein") || null,
+    };
+    const copied = accountFieldsFromSheet(sheetValues, {
+      ...identity,
+      email: lead?.email,
+      phone: lead?.phone,
+      mailingAddress: risk?.address1,
+      city: risk?.city,
+      state: risk?.state ?? "FL",
+      zip: risk?.zip,
+    });
+    const existing = accountId
+      ? (await db.select().from(accounts).where(eq(accounts.id, accountId)))[0]
+      : await findMatchingAccount(identity);
+    if (existing) {
+      accountId = existing.id;
+    } else {
       const [account] = await db
         .insert(accounts)
         .values({
           tenantId: DEFAULT_TENANT_ID,
-          name:
-            str(formData, "businessName") ||
-            `${lead?.lastName ?? "Bound"} ${deal.lineOfBusiness}`.trim(),
-          email: lead?.email,
-          phone: lead?.phone,
-          mailingAddress: risk?.address1,
-          city: risk?.city,
-          state: risk?.state ?? "FL",
-          zip: risk?.zip,
+          name: copied.name,
+          ein: copied.ein,
+          email: copied.email,
+          phone: copied.phone,
+          mailingAddress: copied.mailingAddress,
+          city: copied.city,
+          state: copied.state,
+          zip: copied.zip,
+          employeeCount: copied.employeeCount,
+          annualSales: copied.annualSales,
+          payrollW2: copied.payrollW2,
+          payroll1099: copied.payroll1099,
+          payrollTotal: copied.payrollTotal,
           tenureStart: new Date(),
         })
         .returning();
       accountId = account.id;
     }
+    if (!contactId && lead) {
+      const matched = await findMatchingContact(lead);
+      if (matched) contactId = matched.id;
+    }
   } else if (!contactId) {
-    const [contact] = await db
-      .insert(contacts)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        firstName: lead?.firstName ?? "Bound",
-        lastName: lead?.lastName ?? "Client",
-        email: lead?.email,
-        phone: lead?.phone,
+    const identity = {
+      firstName: lead?.firstName ?? "Bound",
+      lastName: lead?.lastName ?? "Client",
+      email: lead?.email,
+      phone: lead?.phone,
+    };
+    const existing = await findMatchingContact(identity);
+    if (existing) {
+      contactId = existing.id;
+    } else {
+      const copied = contactFieldsFromSheet(sheetValues, {
+        ...identity,
         mailingAddress: risk?.address1,
         city: risk?.city,
         state: risk?.state ?? "FL",
         zip: risk?.zip,
-        tenureStart: new Date(),
-      })
-      .returning();
-    contactId = contact.id;
+      });
+      const [contact] = await db
+        .insert(contacts)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          ...copied,
+          tenureStart: new Date(),
+        })
+        .returning();
+      contactId = contact.id;
+    }
   }
 
   if (contactId && accountId) {
@@ -308,10 +390,18 @@ export async function bindDeal(formData: FormData) {
     }
   }
 
+  const existingPolicies = await db.select().from(policies).where(eq(policies.dealId, dealId));
+  const alreadyBound = existingPolicies.find((row) => row.lineOfBusiness === deal.lineOfBusiness);
+  if (alreadyBound) {
+    revalidatePath(`/deals/${dealId}`);
+    redirect(`/policies/${alreadyBound.id}`);
+  }
+
   const effective = new Date();
   const expiration = new Date(effective);
   expiration.setFullYear(expiration.getFullYear() + 1);
   const premiumRaw = str(formData, "premium");
+  const wonAt = new Date();
 
   const [policy] = await db
     .insert(policies)
@@ -338,7 +428,10 @@ export async function bindDeal(formData: FormData) {
       accountId,
       bindTarget,
       pipelineStage: "bound",
-      boundAt: new Date(),
+      pipelineStageSlug: "closed_won",
+      boundAt: wonAt,
+      wonAt,
+      archiveScheduledAt: nextMorning(wonAt),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
@@ -406,6 +499,28 @@ export async function bindDeal(formData: FormData) {
   }
 
   await refreshPartyCounts({ contactId, accountId });
+
+  const triggers = await db
+    .select()
+    .from(emailTriggers)
+    .where(eq(emailTriggers.tenantId, DEFAULT_TENANT_ID));
+  const drafts = scheduleWonClientEmails(wonAt);
+  for (const draft of drafts) {
+    const trigger = triggers.find((row) => row.kind === draft.kind);
+    await db.insert(emailSendJobs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      triggerId: trigger?.id ?? null,
+      templateId: trigger?.templateId ?? null,
+      contactId: contactId ?? null,
+      accountId: bindTarget === "account" ? accountId : null,
+      dealId,
+      policyId: policy.id,
+      anchorKind: draft.hangOff,
+      anchorAt: wonAt,
+      scheduledFor: draft.scheduledFor,
+      status: "queued",
+    });
+  }
 
   revalidatePath("/");
   revalidatePath("/policies");

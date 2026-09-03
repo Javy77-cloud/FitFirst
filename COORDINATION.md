@@ -105,6 +105,36 @@ After `npm run db:migrate && npm run db:seed` (or `docker compose up --build`):
 5. **Bind (creates contact + policy)** — copies name, phone, email, mailing address from the lead/risk. One HO3 Policy, status Bound/Active. Contact shows Client + counts.
 6. Commercial: on the deal, bind as **Business** to create an Account instead of a personal Contact. Same person can still be linked via **Businesses**.
 
+## Desk wiring (`cursor/desk-wiring-edcb`) — what this pass joined
+
+Owner: wiring agent. Additive only. Did not rewrite phone/calendar files.
+
+The parallel slices were a pile of pages. This pass makes one click-path:
+
+| Slice | How it is wired |
+| --- | --- |
+| TEST-DESK lifecycle | Kept as CRM spine. Lead convert still keeps `leads.converted_deal_id` + `deals.lead_id`. Source docs stay on the Deal. |
+| Quote Sheet | `quote_sheets` is the only shopping worksheet. Super-Copy JSON, Send to Fill, and Forms Fill all read `quote_sheets.values` for that Deal+line. Never raw PDFs. Yellow = missing. Blue = CHECK. |
+| Chrome Fill | `GET /api/deals/:id/quote-sheets/:line/fill` builds `fitfirst.sheet` from the same row. Desk **Send to Fill** writes that JSON to `localStorage` + `postMessage`. `/fill-demo` reads it. Extension folder left as the add-on; no portal macros. |
+| Forms stub | `/forms` + `/forms/fl-ho3?dealId=` call `fillFormFromSheet` against `quote_sheets.values`. |
+| Account 360 | `/contacts/[id]` and `/accounts/[id]` (also `/businesses/[id]` alias). Lifetime + active/bound/pending counts come from `policies` rows, including newly bound ones. Activity timeline is the existing `activities` + `activity_logs` hook — softphone agent may still be finishing; do not rewrite `/calendar` or phone files. |
+| Commercial Business | Same `accounts` table (no second businesses table). EIN/FEIN, employees, sales, W-2/1099. Harbor Key Marine LLC is the commercial Closed Won demo. Ruiz Tile stays Elena’s linked personal+business pair with zero commercial policies. |
+| Multi-pipeline | Real links: `/pipeline?pipeline=p-c\|health\|life\|won-lost\|flood`. Flood is the admin-added board. Closed Won / Bind writes Policy. ARCHIVE later does **not** cancel `email_send_jobs` hung on `won_date`. |
+| Email templates | Seeded thank-you + Google review. Bind calls `scheduleWonClientEmails`. `archiveCancelsEmailJobs()` is `false`. |
+| Smart Search | `/search?q=` and `GET /api/search` find Lead, Deal, Contact, Business, Policy by name. |
+| Dedup | Second bind of the same person reuses Contact (name + email/phone). Business matches EIN then exact legal name. Same person can hold a personal Contact and a linked Business. |
+
+### Exact wired click path (FF-WIRE-1)
+
+1. Lead Elena Ruiz → Deal Ruiz · Melbourne HO3 (Lead kept). Source docs on the Deal.
+2. Quote Sheet on that Deal. Super-Copy / Send to Fill / Forms Fill = same sheet record.
+3. Closed Won already created Contact Elena + Policy HO3-ELENA-2026. Quotes on the deal are not policies. **Ana stays Quote Sent / unbound**, Cov A **$321,000**.
+4. Harbor Key Marine Closed Won created Business (EIN 59-1234567, 14 employees, W-2/1099) + Policy GL-HARBOR-2026.
+5. Account 360 on Elena and Harbor Key shows lifetime + active counts, the new Policy, and the activity timeline (tasks assigned to Contact and/or Policy appear on both).
+6. Pipeline switcher links are real. ARCHIVE does not cancel won-date emails.
+7. Smart Search “Elena” / “Harbor” / “HO3-ELENA” finds the records.
+8. Bind again does not duplicate Elena or Harbor Key.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

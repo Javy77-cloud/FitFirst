@@ -1,0 +1,37 @@
+{
+  "kind": "fitfirst.sheet",
+  "version": 1,
+  "tenantId": "11111111-1111-4111-8111-111111111111",
+  "dealId": "22222222-2222-4222-8222-222222222222",
+  "shopDate": "2026-09-02",
+  "carrierHint": {
+    "key": "tailrow",
+    "name": "Tailrow",
+    "portal": "Harmony",
+    "host": "agency.harmony-ins.com"
+  },
+  "insured": {
+    "primary": "Ana Dib",
+    "namedInsured": "George Dib"
+  },
+  "risk": {
+    "address1": "1098 Adige Ct SE",
+    "city": "Palm Bay",
+    "county": "Brevard",
+    "state": "FL",
+    "zip": "32909",
+    "line": "HO3",
+    "occupancy": "owner",
+    "occupancyNote": "owner-occupied primary, single family",
+    "stories": 1,
+    "yearBuilt": 1989,
+    "roofYear": 1989,
+    "roofCovering": "clay tile + metal",
+    "construction": "frame",
+    "openingProtection": "none",
+    "pool": false,
+    "protectionClass": "3",
+    "milesToCoast": 8,
+    "coverageA": 321000
+  }
+}

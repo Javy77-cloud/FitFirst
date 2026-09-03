@@ -29,6 +29,7 @@ export default async function ContactDetailPage({
 
   return (
     <AppShell title={`${contact.lastName}, ${contact.firstName}`}>
+      <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Account 360</p>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <ClientStatusPill status={clientStatus} />
         <span>
