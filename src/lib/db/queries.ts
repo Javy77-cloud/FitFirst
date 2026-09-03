@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import { isAdmin, type Actor } from "@/lib/auth/rbac";
-import { getActor } from "@/lib/auth/session";
+import { currentDeskSession, type DeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
@@ -256,9 +255,9 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
 
 const tenant = () => DEFAULT_TENANT_ID;
 
-function ownerWhere(actor: Actor, column: AnyPgColumn): SQL | undefined {
-  if (isAdmin(actor)) return undefined;
-  return eq(column, actor.id);
+function ownerWhere(session: DeskSession, column: AnyPgColumn): SQL | undefined {
+  if (session.isAdmin || !session.userId) return undefined;
+  return eq(column, session.userId);
 }
 
 export async function listUsers() {
@@ -283,8 +282,8 @@ export async function getAgencySettings() {
 }
 
 export async function listLeads() {
-  const actor = await getActor();
-  const scope = ownerWhere(actor, leads.ownerId);
+  const session = await currentDeskSession();
+  const scope = ownerWhere(session, leads.ownerId);
   return db
     .select()
     .from(leads)
@@ -323,6 +322,8 @@ export async function listDeals(filter: DealListFilter = {}) {
 }
 
 export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {
+  const session = await currentDeskSession();
+  const scope = ownerWhere(session, contacts.ownerId);
   const rows = await db
     .select()
     .from(contacts)
@@ -749,8 +750,8 @@ export async function getDealWorkspace(dealId: string) {
     .from(deals)
     .where(and(eq(deals.tenantId, tenant()), eq(deals.id, dealId)));
   if (!deal) return null;
-  const actor = await getActor();
-  if (!isAdmin(actor) && deal.ownerId !== actor.id) return null;
+  const session = await currentDeskSession();
+  if (!session.isAdmin && session.userId && deal.ownerId !== session.userId) return null;
 
   const [risk] = await db
     .select()
@@ -857,8 +858,9 @@ export async function refreshPartyCounts(party: {
 }
 
 export async function dashboardStats() {
-  const actor = await getActor();
-  const ownerSql = isAdmin(actor) ? sql`` : sql` and owner_id = ${actor.id}`;
+  const session = await currentDeskSession();
+  const ownerSql =
+    session.isAdmin || !session.userId ? sql`` : sql` and owner_id = ${session.userId}`;
   const [row] = await db
     .select({
       leads: sql<number>`(select count(*) from leads where tenant_id = ${tenant()}${ownerSql})`,
@@ -871,7 +873,7 @@ export async function dashboardStats() {
     .from(tenants)
     .where(eq(tenants.id, tenant()));
 
-  const dealScope = ownerWhere(actor, deals.ownerId);
+  const dealScope = ownerWhere(session, deals.ownerId);
   const recentDeals = await db
     .select()
     .from(deals)
@@ -881,7 +883,7 @@ export async function dashboardStats() {
 
   const tasks = await listReviewQueue();
   const unread = await listAlerts(true);
-  const policyScope = ownerWhere(actor, policies.ownerId);
+  const policyScope = ownerWhere(session, policies.ownerId);
   const expiring = await db
     .select()
     .from(policies)

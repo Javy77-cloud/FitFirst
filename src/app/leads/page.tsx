@@ -2,30 +2,40 @@ import Link from "next/link";
 import { createDealFromLead, createLead } from "@/app/actions/crm";
 import { dropLeadPacket, dropSampleDecPacket, stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
+import { visibleColumns } from "@/components/brand/column-layout-fields";
+import { ColumnPicker } from "@/components/crm/column-picker";
+import { DecDropForm } from "@/components/crm/dec-drop-form";
+import { LineSelect } from "@/components/crm/line-select";
+import { DeskDrop } from "@/components/desk-drop";
+import { OwnerSelect } from "@/components/owner-select";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { visibleColumns } from "@/components/brand/column-layout-fields";
+import { currentDeskSession } from "@/lib/auth/session";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
-import { listLeads } from "@/lib/db/queries";
-import { DeskDrop } from "@/components/desk-drop";
+import { listLeads, listUsers } from "@/lib/db/queries";
 
 const LEAD_COLUMNS = [
   { id: "name", header: "Name", defaultVisible: true, hideable: false },
   { id: "status", header: "Status", defaultVisible: true },
   { id: "source", header: "Source", defaultVisible: true },
-  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
-  { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
-  { id: "created", header: "Created", defaultVisible: false },
+  { id: "owner", header: "Owner", defaultVisible: true },
   { id: "action", header: "Shop", defaultVisible: true, hideable: false },
 ];
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const [rows, desk] = await Promise.all([listLeads(), getResolvedDesk()]);
+  const [rows, desk, users, session] = await Promise.all([
+    listLeads(),
+    getResolvedDesk(),
+    listUsers(),
+    currentDeskSession(),
+  ]);
   const cols = visibleColumns("leads", desk.columnLayout);
+  const assign = session.isAdmin;
+
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-sm text-muted-foreground">
@@ -92,71 +102,95 @@ export default async function LeadsPage() {
               Import packet
             </Button>
           </form>
+          <DeskDrop compact />
         </div>
 
         <div className="space-y-4">
-        <DecDropForm />
-        <ColumnPicker tableId="leads" columns={LEAD_COLUMNS}>
-        <section className="ff-card overflow-x-auto">
-          <table className="ff-table">
-            <thead>
-              <tr>
-                {cols.map((col) => (
-                  <th key={col.key}>{col.label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={cols.length} className="text-muted-foreground">
-                    No leads yet.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((lead) => (
-                  <tr key={lead.id}>
-                    <td className="font-medium">
-                      <RecordLink href={`/leads/${lead.id}`}>
-                        {lead.lastName}, {lead.firstName}
-                      </RecordLink>
-                      <div className="text-[11px] text-muted-foreground">
-                        {lead.phone ?? lead.email}
-                      </div>
-                    </td>
-                    <td className="uppercase">{lead.status}</td>
-                    <td>{lead.source}</td>
-                    <td>
-                      <OwnerSelect
-                        entityType="lead"
-                        entityId={lead.id}
-                        ownerId={lead.ownerId}
-                        users={users}
-                        canAssign={assign}
-                      />
-                    </td>
-                    <td>
-                      {lead.convertedDealId ? (
-                        <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
-                          Open deal
-                        </Link>
-                      ) : (
-                        <form action={createDealFromLead} className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
-                          <input type="hidden" name="leadId" value={lead.id} />
-                          <LineSelect id={`line-${lead.id}`} defaultValue="HO" />
-                          <Button type="submit" size="xs">
-                            Start shop
-                          </Button>
-                        </form>
-                      )}
-                    </td>
+          <DecDropForm />
+          <ColumnPicker tableId="leads" columns={LEAD_COLUMNS}>
+            <section className="ff-card overflow-x-auto">
+              <table className="ff-table">
+                <thead>
+                  <tr>
+                    {cols.map((col) => (
+                      <th key={col.key}>{col.label}</th>
+                    ))}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </section>
-        </ColumnPicker>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={cols.length} className="text-muted-foreground">
+                        No leads yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((lead) => (
+                      <tr key={lead.id}>
+                        {cols.map((col) => {
+                          if (col.key === "name") {
+                            return (
+                              <td key={col.key} className="font-medium">
+                                <RecordLink href={`/leads/${lead.id}`}>
+                                  {lead.lastName}, {lead.firstName}
+                                </RecordLink>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {lead.phone ?? lead.email}
+                                </div>
+                              </td>
+                            );
+                          }
+                          if (col.key === "status") {
+                            return (
+                              <td key={col.key} className="uppercase">
+                                {lead.status}
+                              </td>
+                            );
+                          }
+                          if (col.key === "source") {
+                            return <td key={col.key}>{lead.source}</td>;
+                          }
+                          if (col.key === "owner") {
+                            return (
+                              <td key={col.key}>
+                                <OwnerSelect
+                                  entityType="lead"
+                                  entityId={lead.id}
+                                  ownerId={lead.ownerId}
+                                  users={users}
+                                  canAssign={assign}
+                                />
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={col.key}>
+                              {lead.convertedDealId ? (
+                                <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
+                                  Open deal
+                                </Link>
+                              ) : (
+                                <form
+                                  action={createDealFromLead}
+                                  className="flex flex-col items-end gap-1 sm:flex-row sm:items-center"
+                                >
+                                  <input type="hidden" name="leadId" value={lead.id} />
+                                  <LineSelect id={`line-${lead.id}`} defaultValue="HO" />
+                                  <Button type="submit" size="xs">
+                                    Start shop
+                                  </Button>
+                                </form>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </ColumnPicker>
         </div>
       </div>
     </AppShell>

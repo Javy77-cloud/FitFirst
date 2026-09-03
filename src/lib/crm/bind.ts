@@ -20,8 +20,11 @@ export const LINE_LABELS: Record<LineOfBusiness, string> = {
   FLOOD: "Flood",
   UMBRELLA: "Umbrella",
   GL: "General liability",
+  BOP: "BOP",
   LIFE: "Life (CRM only)",
   HEALTH: "Health (CRM only)",
+  RV: "Rec / RV",
+  WC: "Workers Comp",
 };
 
 export function isCrmOnlyLine(line: string): line is CrmOnlyLine {

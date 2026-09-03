@@ -143,6 +143,50 @@ export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
   HEALTH: "health",
   WC: "workers_comp",
   GL: "general_liability",
+  BOP: "general_liability",
+};
+
+export const SHOP_LINE_TO_LOB: Record<ShopLine, LineOfBusiness> = {
+  home: "HO",
+  auto: "AUTO",
+  rec_rv: "RV",
+  flood: "FLOOD",
+  umbrella: "UMBRELLA",
+  life: "LIFE",
+  health: "HEALTH",
+  workers_comp: "WC",
+  general_liability: "GL",
+};
+
+export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+
+export const FOLDER_KINDS = ["acord", "flyers", "marketing", "account", "deal"] as const;
+export type FolderKind = (typeof FOLDER_KINDS)[number];
+
+export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
+  acord: "ACORD",
+  flyers: "Flyers",
+  marketing: "Marketing",
+  account: "Account",
+  deal: "Deal",
+};
+
+export const ESIGN_PROVIDERS = ["docusign", "adobe", "other"] as const;
+export type EsignProvider = (typeof ESIGN_PROVIDERS)[number];
+
+export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
+  task: "Task",
+  meeting: "Meeting",
+  call: "Call",
+  email: "Email",
+  sms: "SMS",
+};
+
+export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
+  open: "Open",
+  completed: "Done",
+  cancelled: "Cancelled",
 };
 
 export const QUOTE_FIELD_STATUSES = ["missing", "check", "confirmed"] as const;
@@ -259,6 +303,141 @@ export function formatMoney(value: number | string | null | undefined): string {
 
 export function formatPct(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+/** Restored from agency-brand (cb1393c). Leads and settings read this when DB brand is empty. */
+export const AGENCY_BRAND = {
+  name: "Javier Garcia Insurance",
+  phone: "321-429-1182",
+  reviewLinkPlaceholder: "[Google review link]",
+} as const;
+
+export const CONTACT_LANGUAGES = ["english", "spanish", "creole", ""] as const;
+export type ContactLanguage = (typeof CONTACT_LANGUAGES)[number];
+
+export const EMAIL_LOCALES = ["en", "es"] as const;
+export type EmailLocale = (typeof EMAIL_LOCALES)[number];
+
+export const SEND_FROM_PROVIDERS = [
+  "google",
+  "outlook",
+  "yahoo",
+  "zoho_mail",
+  "imap",
+] as const;
+export type SendFromProvider = (typeof SEND_FROM_PROVIDERS)[number];
+
+export const SEND_FROM_LABELS: Record<SendFromProvider, string> = {
+  google: "Google",
+  outlook: "Outlook",
+  yahoo: "Yahoo",
+  zoho_mail: "Zoho Mail",
+  imap: "IMAP",
+};
+
+export const EMAIL_TEMPLATE_KINDS = [
+  "google_review",
+  "checkin_4mo",
+  "renewal_awareness",
+  "custom",
+] as const;
+export type EmailTemplateKind = (typeof EMAIL_TEMPLATE_KINDS)[number];
+
+export const EMAIL_TRIGGER_EVENTS = ["closed_won", "policy_renewal"] as const;
+export type EmailTriggerEvent = (typeof EMAIL_TRIGGER_EVENTS)[number];
+
+export const EMAIL_DELAY_UNITS = ["days", "months"] as const;
+export type EmailDelayUnit = (typeof EMAIL_DELAY_UNITS)[number];
+
+export const EMAIL_JOB_STATUSES = ["queued", "sent", "failed"] as const;
+export type EmailJobStatus = (typeof EMAIL_JOB_STATUSES)[number];
+
+export const EMAIL_JOB_HOLD = "connect_email_to_send";
+
+export const MERGE_FIELDS = [
+  { key: "contact_first_name", label: "Contact first name" },
+  { key: "agency_name", label: "Agency name" },
+  { key: "policy_type", label: "Policy type" },
+  { key: "won_date", label: "Won date" },
+  { key: "review_link", label: "Review link" },
+  { key: "agent_phone", label: "Agent phone" },
+  { key: "signature", label: "Email signature" },
+] as const;
+
+export const DESK_ROLES = ["admin", "agent"] as const;
+export type DeskRole = (typeof DESK_ROLES)[number];
+
+export const COLOR_PRESETS = ["agency", "terracotta", "forest", "slate"] as const;
+export type ColorPreset = (typeof COLOR_PRESETS)[number];
+
+export const FONT_PRESETS = ["plex", "system"] as const;
+export type FontPreset = (typeof FONT_PRESETS)[number];
+
+export const DENSITY_PRESETS = ["comfortable", "compact"] as const;
+export type DensityPreset = (typeof DENSITY_PRESETS)[number];
+
+export const COLOR_PRESET_LABELS: Record<ColorPreset, string> = {
+  agency: "Agency navy (default)",
+  terracotta: "Terracotta",
+  forest: "Forest",
+  slate: "Slate",
+};
+
+export const FONT_PRESET_LABELS: Record<FontPreset, string> = {
+  plex: "IBM Plex (desk default)",
+  system: "System UI",
+};
+
+export const DENSITY_PRESET_LABELS: Record<DensityPreset, string> = {
+  comfortable: "Comfortable",
+  compact: "Compact",
+};
+
+export type ColumnLayout = Record<string, string[]>;
+
+export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[]> = {
+  leads: [
+    { key: "name", label: "Name" },
+    { key: "status", label: "Status" },
+    { key: "source", label: "Source" },
+    { key: "owner", label: "Owner" },
+    { key: "action", label: "Action" },
+  ],
+  contacts: [
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    { key: "language", label: "Language" },
+    { key: "policies", label: "Policies" },
+    { key: "tenure", label: "Tenure start" },
+    { key: "notes", label: "Life / health" },
+  ],
+  deals: [
+    { key: "title", label: "Deal" },
+    { key: "stage", label: "Stage" },
+    { key: "line", label: "Line" },
+    { key: "state", label: "State" },
+    { key: "archive", label: "Archive" },
+  ],
+  policies: [
+    { key: "policy", label: "Policy" },
+    { key: "client", label: "Client" },
+    { key: "carrier", label: "Carrier" },
+    { key: "premium", label: "Premium" },
+    { key: "expires", label: "Expires" },
+  ],
+};
+
+export function defaultColumnLayout(): ColumnLayout {
+  return Object.fromEntries(
+    Object.entries(LIST_COLUMN_CATALOG).map(([list, cols]) => [list, cols.map((c) => c.key)]),
+  );
+}
+
+export function resolveColumnKeys(listKey: string, layout?: ColumnLayout | null): string[] {
+  const catalog = LIST_COLUMN_CATALOG[listKey] ?? [];
+  const allowed = new Set(catalog.map((c) => c.key));
+  const picked = (layout?.[listKey] ?? []).filter((key) => allowed.has(key));
+  return picked.length > 0 ? picked : catalog.map((c) => c.key);
 }
 
 export function formatDay(value: Date | string | null | undefined): string {
