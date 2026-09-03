@@ -282,6 +282,10 @@ Shipped on `cursor/live-desk-walkthrough-531d`:
 
 Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI. Alerts list the Elena status ask with Open record.
 
+## Feel-pass consolidate (`cursor/feel-pass-consolidate-5e5c`)
+
+One Mac Chrome feel branch. Starts from `cursor/live-desk-walkthrough-531d` (overnight re-QA + records). Merges QA + today’s pack walkthrough tips. Additive migrations only (`0008_comms_qa`, `0009_pack_addons`). Ana fixture untouched. No live Zoho writes.
+
 ## Communication QA (`cursor/comms-qa-9e37`)
 
 Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live Zoho.
