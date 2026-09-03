@@ -8,6 +8,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -434,6 +435,39 @@ export const pipelineStages = pgTable(
   (t) => [index("pipeline_stages_tenant_idx").on(t.tenantId, t.sortOrder)],
 );
 
+export const deskAgents = pgTable(
+  "desk_agents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    displayName: text("display_name").notNull(),
+    role: text("role").notNull().default("agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("desk_agents_tenant_idx").on(t.tenantId),
+    uniqueIndex("desk_agents_slug_uidx").on(t.tenantId, t.slug),
+  ],
+);
+
+export const columnLayouts = pgTable(
+  "column_layouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agentId: uuid("agent_id").references(() => deskAgents.id),
+    tableId: text("table_id").notNull(),
+    columnIds: jsonb("column_ids").$type<string[]>().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("column_layouts_lookup_idx").on(t.tenantId, t.tableId, t.agentId)],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -448,3 +482,5 @@ export type Quote = typeof quotes.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type PipelineStageRow = typeof pipelineStages.$inferSelect;
+export type DeskAgent = typeof deskAgents.$inferSelect;
+export type ColumnLayoutRow = typeof columnLayouts.$inferSelect;

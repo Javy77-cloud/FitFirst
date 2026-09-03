@@ -29,6 +29,13 @@
       "when": 1788392000000,
       "tag": "0003_pipeline_stages",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788394000000,
+      "tag": "0004_desk_agents_column_layouts",
+      "breakpoints": true
     }
   ]
 }

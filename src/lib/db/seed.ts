@@ -8,6 +8,7 @@ import {
   deals,
   leads,
   quoteAttemptLogs,
+  deskAgents,
   pipelineStages,
   quotes,
   reviewTasks,
@@ -15,7 +16,15 @@ import {
   tenants,
 } from "./schema";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
-import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import {
+  CARRIER_IDS,
+  CONTACT_ID,
+  DEAL_ID,
+  LEAD_ID,
+  RISK_ID,
+  SEEDED_DESK_AGENTS,
+  TENANT_ID,
+} from "../fixtures/ids";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -55,6 +64,21 @@ export async function seed() {
   if (missingStages.length > 0) {
     await db.insert(pipelineStages).values(
       missingStages.map((row) => ({
+        tenantId: TENANT_ID,
+        ...row,
+      })),
+    );
+  }
+
+  const existingAgents = await db
+    .select()
+    .from(deskAgents)
+    .where(eq(deskAgents.tenantId, TENANT_ID));
+  const haveAgent = new Set(existingAgents.map((row) => row.slug));
+  const missingAgents = SEEDED_DESK_AGENTS.filter((row) => !haveAgent.has(row.slug));
+  if (missingAgents.length > 0) {
+    await db.insert(deskAgents).values(
+      missingAgents.map((row) => ({
         tenantId: TENANT_ID,
         ...row,
       })),

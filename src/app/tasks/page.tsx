@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createTask } from "@/app/actions/alerts";
 import { AppShell } from "@/components/app-shell";
-import { ColumnPicker } from "@/components/crm/data-table";
+import { ColumnPicker } from "@/components/crm/column-picker";
 import { TaskRowEditor } from "@/components/crm/task-row-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

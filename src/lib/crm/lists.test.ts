@@ -3,8 +3,10 @@ import {
   insuredContactName,
   insuredHref,
   matchesPolicyFilters,
+  moveColumn,
   pcSubfilter,
   policyBook,
+  resolveColumnLayout,
   resolveVisibleColumns,
   slugifyStage,
 } from "./lists";
@@ -34,6 +36,46 @@ describe("resolveVisibleColumns", () => {
 
   it("drops unknown ids and falls back if the picker is empty", () => {
     expect(resolveVisibleColumns(cols, ["nope"])).toEqual(["deal", "stage", "line"]);
+  });
+});
+
+describe("resolveColumnLayout", () => {
+  const cols = [
+    { id: "deal", defaultVisible: true, hideable: false },
+    { id: "stage", defaultVisible: true },
+    { id: "line", defaultVisible: true },
+    { id: "phone", defaultVisible: false },
+  ];
+
+  it("lets the agent override beat the agency default", () => {
+    const layout = resolveColumnLayout(cols, {
+      agencyIds: ["deal", "stage", "line"],
+      agentIds: ["deal", "phone"],
+    });
+    expect(layout).toEqual({ ids: ["deal", "phone"], source: "agent" });
+  });
+
+  it("uses the agency default when the agent has no override", () => {
+    const layout = resolveColumnLayout(cols, {
+      agencyIds: ["deal", "stage", "phone"],
+      agentIds: null,
+    });
+    expect(layout).toEqual({ ids: ["deal", "stage", "phone"], source: "agency" });
+  });
+
+  it("falls back to code defaults", () => {
+    expect(resolveColumnLayout(cols, { agencyIds: null, agentIds: null }).source).toBe("code");
+  });
+
+  it("keeps required columns even if a saved layout omitted them", () => {
+    expect(resolveColumnLayout(cols, { agentIds: ["phone"], agencyIds: null }).ids).toEqual([
+      "deal",
+      "phone",
+    ]);
+  });
+
+  it("rearranges a saved order", () => {
+    expect(moveColumn(["deal", "stage", "phone"], "phone", -1)).toEqual(["deal", "phone", "stage"]);
   });
 });
 

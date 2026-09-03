@@ -32,8 +32,10 @@ export default async function DealsPage({
       }
     >
       <p className="mb-3 text-sm text-muted-foreground">
-        Open the column picker to show phone, email, Cov A, city, and more. Log a call, SMS, email,
-        or task from the row — the deal stays closed. Nothing is sent outside the desk.
+        Open the column picker to show phone, email, Cov A, city, and more — saved for the desk
+        agent in the sidebar, not as a global setting. Agency admin can set a default; your
+        override wins. Log a call, SMS, email, or task from the row. Nothing is sent outside the
+        desk.
       </p>
       {rows.length === 0 ? (
         <section className="ff-card px-4 py-8 text-sm text-muted-foreground">

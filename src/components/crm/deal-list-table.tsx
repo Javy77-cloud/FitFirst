@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ColumnPicker } from "@/components/crm/data-table";
+import { ColumnPicker } from "@/components/crm/column-picker";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { StagePill } from "@/components/fit-badge";

@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { ColumnPicker } from "@/components/crm/data-table";
+import { ColumnPicker } from "@/components/crm/column-picker";
 import { formatMoney } from "@/lib/domain";
 import { listQuoteLogs } from "@/lib/db/queries";
 

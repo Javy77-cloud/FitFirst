@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ColumnPicker } from "@/components/crm/data-table";
+import { ColumnPicker } from "@/components/crm/column-picker";
 import { formatIsoDate } from "@/lib/crm/display";
 import { listLeads } from "@/lib/db/queries";
 

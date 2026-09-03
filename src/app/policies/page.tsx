@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { ColumnPicker } from "@/components/crm/data-table";
+import { ColumnPicker } from "@/components/crm/column-picker";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { FilterLinks } from "@/components/crm/filter-links";
 import { InsuredLink } from "@/components/crm/insured-link";

@@ -54,7 +54,7 @@ Create your own path from **Leads** or **New shopping deal**. Bind is what creat
 1. **Leads** → save a person → **Start shop**, or **Dec drop → deal** (same funnel).
 2. The deal is shopping only. When stub quotes are finalized, quote PDFs attach on the deal. A quote never creates a policy.
 3. **Bind** writes a personal contact or a commercial business, then **one policy per line**, linked back to the deal. Lifetime and active counts live on the account.
-4. Open **Contacts**, **Businesses**, **Policies**, or **Tasks**. Use **Columns** on every table to persist extra fields. Alerts stay in the desk.
+4. Open **Contacts**, **Businesses**, **Policies**, or **Tasks**. Use **Columns** on every table. Layouts are per desk agent (sidebar switcher). Agency admin can save a default; an agent override wins for that person. Colors and fonts are not here. Alerts stay in the desk.
 
 ### Pipeline and lists
 

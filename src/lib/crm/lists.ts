@@ -6,17 +6,57 @@ export type ColumnSpec = {
   defaultVisible?: boolean;
 };
 
-export function resolveVisibleColumns(
-  columns: Array<{ id: string; defaultVisible?: boolean }>,
-  storedIds: string[] | null,
-): string[] {
-  const allowed = new Set(columns.map((column) => column.id));
-  if (storedIds && storedIds.length > 0) {
-    const picked = storedIds.filter((id) => allowed.has(id));
-    if (picked.length > 0) return picked;
-  }
+export type LayoutSource = "agent" | "agency" | "code";
+
+function codeDefaultIds(columns: Array<{ id: string; defaultVisible?: boolean }>): string[] {
   const defaults = columns.filter((column) => column.defaultVisible !== false).map((column) => column.id);
   return defaults.length > 0 ? defaults : [columns[0]!.id];
+}
+
+function sanitizeColumnIds(
+  columns: Array<{ id: string; defaultVisible?: boolean; hideable?: boolean }>,
+  storedIds: string[] | null | undefined,
+): string[] | null {
+  if (!storedIds || storedIds.length === 0) return null;
+  const allowed = new Set(columns.map((column) => column.id));
+  const picked = storedIds.filter((id) => allowed.has(id));
+  if (picked.length === 0) return null;
+  const required = columns.filter((column) => column.hideable === false).map((column) => column.id);
+  const next = [...picked];
+  for (const id of required) {
+    if (!next.includes(id)) next.unshift(id);
+  }
+  return next;
+}
+
+/** Agent override wins, then agency default, then code defaults. */
+export function resolveColumnLayout(
+  columns: Array<{ id: string; defaultVisible?: boolean; hideable?: boolean }>,
+  input: { agentIds?: string[] | null; agencyIds?: string[] | null },
+): { ids: string[]; source: LayoutSource } {
+  const agent = sanitizeColumnIds(columns, input.agentIds);
+  if (agent) return { ids: agent, source: "agent" };
+  const agency = sanitizeColumnIds(columns, input.agencyIds);
+  if (agency) return { ids: agency, source: "agency" };
+  return { ids: codeDefaultIds(columns), source: "code" };
+}
+
+export function resolveVisibleColumns(
+  columns: Array<{ id: string; defaultVisible?: boolean; hideable?: boolean }>,
+  storedIds: string[] | null,
+): string[] {
+  return resolveColumnLayout(columns, { agentIds: storedIds, agencyIds: null }).ids;
+}
+
+export function moveColumn(ids: string[], id: string, direction: -1 | 1): string[] {
+  const index = ids.indexOf(id);
+  if (index < 0) return ids;
+  const next = index + direction;
+  if (next < 0 || next >= ids.length) return ids;
+  const copy = [...ids];
+  const [item] = copy.splice(index, 1);
+  copy.splice(next, 0, item!);
+  return copy;
 }
 
 export function slugifyStage(label: string): string {
@@ -80,8 +120,8 @@ export function insuredContactName(input: {
   return "—";
 }
 
-export function columnStorageKey(tableId: string): string {
-  return `ff-cols:${tableId}`;
+export function columnStorageKey(tableId: string, agentId?: string): string {
+  return agentId ? `ff-cols:${agentId}:${tableId}` : `ff-cols:${tableId}`;
 }
 
 export function insuredHref(input: {

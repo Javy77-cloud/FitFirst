@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ColumnPicker } from "@/components/crm/data-table";
+import { ColumnPicker } from "@/components/crm/column-picker";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { formatTenure } from "@/lib/crm/display";
 import type { Contact } from "@/lib/db/schema";

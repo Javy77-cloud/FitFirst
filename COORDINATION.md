@@ -23,11 +23,11 @@ Owns screens and bind. Additive columns: `contacts.account_kind`, `contacts.lega
 ### Lists / pipeline chrome (this slice)
 
 - Pipeline (`/pipeline`): kanban columns, Create, admin stage editor (add / delete / relabel). Bound is locked. View switcher: Columns + List of the same shops.
-- Sitewide `ColumnPicker` (`ff-cols:${tableId}` in localStorage) on Deals, Contacts, Businesses, Policies, Carriers, Tasks, Leads, decline log.
+- Sitewide `ColumnPicker` on Deals, Contacts, Businesses, Policies, Carriers, Tasks, Leads, decline log. Layout is **per desk agent** (`column_layouts`). Agency/admin may save a default; that agent’s override wins. Colors/fonts stay on the admin-branding sibling.
 - Deals list is a full worksheet (not 3 columns) with row-level call / SMS / email / task (in-desk only).
 - Contacts = personal; Businesses = `account_kind = commercial`. Policies: P&C / Life / Health, then P&C Home / Auto / Commercial. Column is **Insured / contact name** (never Party); link uses `insuredHref`.
 - Tasks (`/tasks`): add / edit / delete. Reviews stays the open queue.
-- Additive: `pipeline_stages` (`drizzle/0003_pipeline_stages.sql`).
+- Additive: `pipeline_stages` (`drizzle/0003_pipeline_stages.sql`), `desk_agents` + `column_layouts` (`drizzle/0004_desk_agents_column_layouts.sql`).
 
 ### Files owned
 

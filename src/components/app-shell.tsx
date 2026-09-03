@@ -14,6 +14,7 @@ import {
   Shield,
   Users,
 } from "lucide-react";
+import { DeskAgentSwitcher } from "@/components/crm/desk-agent-switcher";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
@@ -79,10 +80,13 @@ export async function AppShell({
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
-          Single-tenant demo
-          <br />
-          No Zoho sync · no portal logins
+        <div className="space-y-2 border-t border-sidebar-border px-3 py-3">
+          <DeskAgentSwitcher />
+          <p className="text-[11px] text-sidebar-foreground/60">
+            Column layouts are per agent.
+            <br />
+            No Zoho sync · no portal logins
+          </p>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -108,7 +112,12 @@ export async function AppShell({
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>
-          <div className="flex items-center gap-2">{actions}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="md:hidden">
+              <DeskAgentSwitcher compact />
+            </div>
+            {actions}
+          </div>
         </header>
         <main className="flex-1 p-4 md:p-5">{children}</main>
       </div>
