@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { getActor } from "@/lib/auth/session";
+import { periodKey, splitCommission } from "@/lib/commissions/math";
+import {
+  DEFAULT_COMMISSION_RATE_PCT,
+  DEFAULT_PRODUCER_SPLIT_PCT,
+  DEFAULT_TENANT_ID,
+} from "@/lib/domain";
 import { db } from "@/lib/db";
 import { refreshPartyCounts } from "@/lib/db/queries";
 import {
@@ -169,6 +175,7 @@ export async function createDealFromLead(formData: FormData) {
 }
 
 export async function createDeal(formData: FormData) {
+  const actor = await getActor();
   const firstName = str(formData, "firstName") || "New";
   const lastName = str(formData, "lastName") || "Shop";
   const { lead } = await findOrCreateLead({
@@ -192,6 +199,7 @@ export async function createDeal(formData: FormData) {
       pipelineStage: "shopping",
       lineOfBusiness: str(formData, "line") || "HO",
       state: str(formData, "state") || "FL",
+      ownerId: actor.id,
     })
     .returning();
 
@@ -309,6 +317,7 @@ export async function createContact(formData: FormData) {
 }
 
 export async function bindDeal(formData: FormData) {
+  const actor = await getActor();
   const dealId = str(formData, "dealId");
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
@@ -462,6 +471,7 @@ export async function bindDeal(formData: FormData) {
   const premiumRaw = str(formData, "premium") || copiedQuote?.premium || null;
   const wonAt = new Date();
 
+  const premiumNum = Number(str(formData, "premium") || 0) || 0;
   const [policy] = await db
     .insert(policies)
     .values({
@@ -485,6 +495,32 @@ export async function bindDeal(formData: FormData) {
     })
     .returning();
 
+  if (premiumNum > 0) {
+    const due = new Date(effective);
+    due.setUTCDate(due.getUTCDate() + 30);
+    const split = splitCommission(
+      premiumNum,
+      DEFAULT_COMMISSION_RATE_PCT,
+      DEFAULT_PRODUCER_SPLIT_PCT,
+    );
+    await db.insert(commissions).values({
+      tenantId: DEFAULT_TENANT_ID,
+      agentId: ownerId,
+      policyId: policy.id,
+      carrierId: policy.carrierId,
+      lineOfBusiness: deal.lineOfBusiness,
+      premium: premiumNum.toFixed(2),
+      ratePct: DEFAULT_COMMISSION_RATE_PCT.toFixed(2),
+      amount: split.producerAmount.toFixed(2),
+      agencyAmount: split.agencyAmount.toFixed(2),
+      producerAmount: split.producerAmount.toFixed(2),
+      sellingAgency: "afa",
+      status: "pending",
+      dueDate: due,
+      period: periodKey(effective),
+    });
+  }
+
   await db
     .update(deals)
     .set({
@@ -497,6 +533,7 @@ export async function bindDeal(formData: FormData) {
       wonAt,
       archiveScheduledAt: nextMorning(wonAt),
       updatedAt: new Date(),
+      ownerId,
     })
     .where(eq(deals.id, dealId));
 

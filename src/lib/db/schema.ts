@@ -90,6 +90,35 @@ export const tenants = pgTable("tenants", {
     .notNull(),
 });
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    role: text("role").notNull().default("agent"),
+    passwordHash: text("password_hash"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    index("users_tenant_idx").on(t.tenantId),
+    uniqueIndex("users_tenant_email_idx").on(t.tenantId, t.email),
+  ],
+);
+
+export const agencySettings = pgTable(
+  "agency_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
+);
+
 export const leads = pgTable(
   "leads",
   {
@@ -113,7 +142,10 @@ export const leads = pgTable(
     ownerId: uuid("owner_id"),
     ...timestamps,
   },
-  (t) => [index("leads_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("leads_tenant_idx").on(t.tenantId),
+    index("leads_owner_idx").on(t.tenantId, t.ownerId),
+  ],
 );
 
 export const contacts = pgTable(
@@ -149,7 +181,10 @@ export const contacts = pgTable(
     ownerId: uuid("owner_id"),
     ...timestamps,
   },
-  (t) => [index("contacts_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("contacts_tenant_idx").on(t.tenantId),
+    index("contacts_owner_idx").on(t.tenantId, t.ownerId),
+  ],
 );
 
 export const deals = pgTable(
@@ -185,6 +220,7 @@ export const deals = pgTable(
   (t) => [
     index("deals_tenant_idx").on(t.tenantId),
     index("deals_stage_idx").on(t.tenantId, t.pipelineStage),
+    index("deals_owner_idx").on(t.tenantId, t.ownerId),
   ],
 );
 
@@ -322,6 +358,7 @@ export const policies = pgTable(
   (t) => [
     index("policies_tenant_idx").on(t.tenantId),
     index("policies_exp_idx").on(t.tenantId, t.expirationDate),
+    index("policies_owner_idx").on(t.tenantId, t.ownerId),
   ],
 );
 

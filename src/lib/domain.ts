@@ -9,6 +9,7 @@ export const LINES = [
   "FLOOD",
   "UMBRELLA",
   "GL",
+  "BOP",
   "LIFE",
   "HEALTH",
 ] as const;

@@ -113,6 +113,15 @@ export default async function LeadsPage() {
                     <td className="uppercase">{lead.status}</td>
                     <td>{lead.source}</td>
                     <td>
+                      <OwnerSelect
+                        entityType="lead"
+                        entityId={lead.id}
+                        ownerId={lead.ownerId}
+                        users={users}
+                        canAssign={assign}
+                      />
+                    </td>
+                    <td>
                       {lead.convertedDealId ? (
                         <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
                           Open deal

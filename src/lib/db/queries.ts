@@ -250,10 +250,44 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
     .orderBy(asc(activities.startAt), asc(activities.dueAt));
 }
 
+const paidByUsers = alias(users, "paid_by_users");
+
 const tenant = () => DEFAULT_TENANT_ID;
 
+function ownerWhere(actor: Actor, column: AnyPgColumn): SQL | undefined {
+  if (isAdmin(actor)) return undefined;
+  return eq(column, actor.id);
+}
+
+export async function listUsers() {
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+    })
+    .from(users)
+    .where(eq(users.tenantId, tenant()))
+    .orderBy(asc(users.name));
+}
+
+export async function getAgencySettings() {
+  const [row] = await db
+    .select()
+    .from(agencySettings)
+    .where(eq(agencySettings.tenantId, tenant()));
+  return row ?? { fiscalYearStartMonth: 1 };
+}
+
 export async function listLeads() {
-  return db.select().from(leads).where(eq(leads.tenantId, tenant())).orderBy(desc(leads.createdAt));
+  const actor = await getActor();
+  const scope = ownerWhere(actor, leads.ownerId);
+  return db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.tenantId, tenant()), scope))
+    .orderBy(desc(leads.createdAt));
 }
 
 export type DealListFilter = {
@@ -290,7 +324,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
   const rows = await db
     .select()
     .from(contacts)
-    .where(eq(contacts.tenantId, tenant()))
+    .where(and(eq(contacts.tenantId, tenant()), scope))
     .orderBy(asc(contacts.lastName));
   const allPolicies = await db
     .select()
@@ -364,12 +398,14 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
       contact: contacts,
       account: accounts,
       carrier: carriers,
+      owner: users,
     })
     .from(policies)
     .leftJoin(contacts, eq(policies.contactId, contacts.id))
     .leftJoin(accounts, eq(policies.accountId, accounts.id))
     .leftJoin(carriers, eq(policies.carrierId, carriers.id))
-    .where(eq(policies.tenantId, tenant()))
+    .leftJoin(users, eq(policies.ownerId, users.id))
+    .where(and(eq(policies.tenantId, tenant()), scope))
     .orderBy(asc(policies.expirationDate));
 
   const asOf = DESK_AS_OF;
@@ -707,6 +743,7 @@ export async function getDealWorkspace(dealId: string) {
     .from(deals)
     .where(and(eq(deals.tenantId, tenant()), eq(deals.id, dealId)));
   if (!deal) return null;
+  if (!isAdmin(actor) && deal.ownerId !== actor.id) return null;
 
   const [risk] = await db
     .select()
@@ -813,31 +850,35 @@ export async function refreshPartyCounts(party: {
 }
 
 export async function dashboardStats() {
+  const actor = await getActor();
+  const ownerSql = isAdmin(actor) ? sql`` : sql` and owner_id = ${actor.id}`;
   const [row] = await db
     .select({
-      leads: sql<number>`(select count(*) from leads where tenant_id = ${tenant()})`,
-      deals: sql<number>`(select count(*) from deals where tenant_id = ${tenant()})`,
-      shopping: sql<number>`(select count(*) from deals where tenant_id = ${tenant()} and pipeline_stage = 'shopping')`,
-      contacts: sql<number>`(select count(*) from contacts where tenant_id = ${tenant()})`,
-      policies: sql<number>`(select count(*) from policies where tenant_id = ${tenant()})`,
+      leads: sql<number>`(select count(*) from leads where tenant_id = ${tenant()}${ownerSql})`,
+      deals: sql<number>`(select count(*) from deals where tenant_id = ${tenant()}${ownerSql})`,
+      shopping: sql<number>`(select count(*) from deals where tenant_id = ${tenant()} and pipeline_stage = 'shopping'${ownerSql})`,
+      contacts: sql<number>`(select count(*) from contacts where tenant_id = ${tenant()}${ownerSql})`,
+      policies: sql<number>`(select count(*) from policies where tenant_id = ${tenant()}${ownerSql})`,
       unreadAlerts: sql<number>`(select count(*) from alerts where tenant_id = ${tenant()} and read_at is null)`,
     })
     .from(tenants)
     .where(eq(tenants.id, tenant()));
 
+  const dealScope = ownerWhere(actor, deals.ownerId);
   const recentDeals = await db
     .select()
     .from(deals)
-    .where(eq(deals.tenantId, tenant()))
+    .where(and(eq(deals.tenantId, tenant()), dealScope))
     .orderBy(desc(deals.updatedAt))
     .limit(8);
 
   const tasks = await listReviewTasks();
   const unread = await listAlerts(true);
+  const policyScope = ownerWhere(actor, policies.ownerId);
   const expiring = await db
     .select()
     .from(policies)
-    .where(eq(policies.tenantId, tenant()))
+    .where(and(eq(policies.tenantId, tenant()), policyScope))
     .orderBy(asc(policies.expirationDate))
     .limit(8);
 

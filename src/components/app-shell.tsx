@@ -15,7 +15,10 @@ import {
   Search,
   Shield,
   Users,
+  Wallet,
 } from "lucide-react";
+import { ActorSwitcher } from "@/components/actor-switcher";
+import { getActor, listActors } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
