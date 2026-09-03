@@ -7,7 +7,14 @@ import { listCarriers } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function CarriersPage() {
+export default async function CarriersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cols?: string | string[]; notes?: string }>;
+}) {
+  const params = await searchParams;
+  const cols = params.cols == null ? undefined : Array.isArray(params.cols) ? params.cols : [params.cols];
+  const visible = visibilityFromCols(cols);
   const rows = await listCarriers();
   const seen = new Set<string>();
   const unique = rows.filter(({ carrier }) => {

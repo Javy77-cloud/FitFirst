@@ -1,8 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
+  APPOINTMENT_LINES,
+  type SellingAgency,
+} from "@/lib/domain";
+import {
   alerts,
   appetiteRules,
+  carrierAppointments,
   carriers,
   contacts,
   deals,
@@ -13,6 +18,7 @@ import {
   risks,
   tenants,
 } from "./schema";
+import { CARRIER_DESK } from "@/lib/carriers/desk";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
 import { seedLifecycleDemo } from "./seed-lifecycle";
@@ -28,9 +34,23 @@ import { seedAutoBook } from "./seed-auto";
 import { seedBookRenewals } from "./seed-book-renewals";
 import { seedCommsDesk } from "./seed-comms";
 
-const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
-
 type CarrierKey = keyof typeof CARRIER_IDS;
+
+/** Selling paper for first-wave Home. Other lines reuse the same agency, appointed=false. */
+const HOME_SELLING_AGENCY: Record<CarrierKey, SellingAgency> = {
+  tailrow: "First Connect",
+  hoc: "AFA",
+  vyrd: "AFA",
+  qbe: "AFA",
+  vave: "Agentero",
+  benchmark: "AFA",
+  hadron: "First Connect",
+  geovera: "AFA",
+  sagesure: "First Connect",
+  americanIntegrity: "AFA",
+};
+
+const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
 export async function seedIfEmpty() {
   await seed();
@@ -190,7 +210,9 @@ export async function seed() {
     });
 
   for (const carrier of fixture.carriers) {
-    const id = CARRIER_IDS[carrier.key as CarrierKey];
+    const key = carrier.key as CarrierKey;
+    const id = CARRIER_IDS[key];
+    const desk = CARRIER_DESK[key];
     await db
       .insert(carriers)
       .values({
@@ -200,6 +222,12 @@ export async function seed() {
         writtenLines: carrier.writtenLines,
         dontWriteNotes: carrier.dontWriteNotes,
         portalStatus: carrier.portalStatus,
+        portalLogin: desk.portalLogin,
+        customerServicePhone: desk.customerServicePhone,
+        agentPhone: desk.agentPhone,
+        website: desk.website,
+        agentPortalUrl: desk.agentPortalUrl,
+        carrierInfo: desk.carrierInfo,
         fixtureTag: "fl-ho3-2026-09-02",
         active: true,
       })
@@ -210,12 +238,36 @@ export async function seed() {
           writtenLines: carrier.writtenLines,
           dontWriteNotes: carrier.dontWriteNotes,
           portalStatus: carrier.portalStatus,
+          portalLogin: desk.portalLogin,
+          customerServicePhone: desk.customerServicePhone,
+          agentPhone: desk.agentPhone,
+          website: desk.website,
+          agentPortalUrl: desk.agentPortalUrl,
+          carrierInfo: desk.carrierInfo,
           fixtureTag: "fl-ho3-2026-09-02",
           active: true,
           updatedAt: new Date(),
         },
       });
   }
+
+  await db.delete(carrierAppointments).where(eq(carrierAppointments.tenantId, TENANT_ID));
+  await db.insert(carrierAppointments).values(
+    (Object.keys(CARRIER_IDS) as CarrierKey[]).flatMap((key) => {
+      const agency = HOME_SELLING_AGENCY[key];
+      return APPOINTMENT_LINES.map((writtenLine) => ({
+        tenantId: TENANT_ID,
+        carrierId: CARRIER_IDS[key],
+        writtenLine,
+        appointed: writtenLine === "HO",
+        sellingAgency: agency,
+        notes:
+          writtenLine === "HO"
+            ? "First-wave Home appointment. Seeded appointed=true for existing shop carriers."
+            : "Explicit not-appointed. Do not treat a missing row as paper.",
+      }));
+    }),
+  );
 
   await db.delete(appetiteRules).where(eq(appetiteRules.tenantId, TENANT_ID));
   await db.insert(appetiteRules).values(

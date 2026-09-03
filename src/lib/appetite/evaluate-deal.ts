@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { DEFAULT_TENANT_ID, type AppetiteRuleInput, type PriorAttempt } from "@/lib/domain";
+import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   appetiteRules,
@@ -36,6 +36,8 @@ export async function evaluateDealShopFits(risk: Risk): Promise<ShopFit[]> {
       .from(quoteSheets)
       .where(eq(quoteSheets.dealId, risk.dealId)),
   ]);
+
+  const appointedMap = await appointedByCarrierLine();
 
   const prior: PriorAttempt[] = logs.map((log) => ({
     carrierId: log.carrierId,

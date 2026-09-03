@@ -5,6 +5,7 @@ export type SectionTab = {
   id: string;
   label: string;
   content: React.ReactNode;
+  href?: string;
 };
 
 /**
@@ -42,6 +43,25 @@ export function SectionTabs({
       <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
+          const className = cn(
+            "rounded-sm px-2.5 py-1 text-sm font-medium",
+            selected
+              ? "bg-card text-navy shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          );
+          if (tab.href) {
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                role="tab"
+                aria-selected={selected}
+                className={className}
+              >
+                {tab.label}
+              </Link>
+            );
+          }
           return (
             <Link
               key={tab.id}

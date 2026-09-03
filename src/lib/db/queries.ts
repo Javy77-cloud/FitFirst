@@ -26,6 +26,7 @@ import {
   activityLogs,
   alerts,
   appetiteRules,
+  carrierAppointments,
   carriers,
   clientHistory,
   contactAccounts,
@@ -634,6 +635,23 @@ export async function listCarriers() {
     .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
     .where(eq(carriers.tenantId, tenant()))
     .orderBy(asc(carriers.name));
+}
+
+export async function listCarrierAppointments() {
+  return db
+    .select()
+    .from(carrierAppointments)
+    .where(eq(carrierAppointments.tenantId, tenant()))
+    .orderBy(asc(carrierAppointments.writtenLine));
+}
+
+export async function appointedByCarrierLine() {
+  const rows = await listCarrierAppointments();
+  const map = new Map<string, boolean>();
+  for (const row of rows) {
+    map.set(`${row.carrierId}:${row.writtenLine}`, row.appointed);
+  }
+  return map;
 }
 
 export async function listQuoteLogs() {
