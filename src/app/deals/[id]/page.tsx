@@ -73,6 +73,12 @@ export default async function DealPage({
     };
 
   const unusedLines = SHOP_LINES.filter((line) => !lines.includes(line));
+  const requestedTab = query.tab ?? "sheet";
+  const activeTab = ["sheet", "files", "markets", "quotes"].includes(requestedTab)
+    ? requestedTab
+    : "sheet";
+  const dealTabHref = (tab: string) =>
+    `/deals/${deal.id}?line=${activeLine}&tab=${tab}`;
   const address = {
     address1: sheet.values.address1?.value || risk?.address1,
     city: sheet.values.city?.value || risk?.city,
@@ -146,7 +152,7 @@ export default async function DealPage({
           return (
             <Link
               key={line}
-              href={`/deals/${deal.id}?line=${line}`}
+              href={`/deals/${deal.id}?line=${line}&tab=${activeTab}`}
               className={
                 selected
                   ? "rounded-sm bg-card px-2.5 py-1 text-sm font-medium text-navy shadow-sm"
@@ -215,6 +221,8 @@ export default async function DealPage({
       ) : (
         <SectionTabs
           defaultValue="sheet"
+          activeId={activeTab}
+          hrefFor={dealTabHref}
           tabs={[
             {
               id: "sheet",
