@@ -20,7 +20,7 @@ import {
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
-async function persistFile(
+export async function persistFile(
   dealId: string,
   riskId: string,
   filename: string,

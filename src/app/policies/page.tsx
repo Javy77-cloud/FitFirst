@@ -140,11 +140,67 @@ export default async function PoliciesPage({
                   <Col table="policies" col="expires">{formatDay(policy.expirationDate)}</Col>
                   <Col table="policies" col="assigned">{policy.ownerId ? users.get(policy.ownerId) ?? "—" : "—"}</Col>
                 </tr>
-              ))}
+              ) : (
+                rows.map(({ policy, contact, carrier, deal }) => {
+                  const name = insuredContactName({
+                    primaryNamedInsured: deal?.primaryNamedInsured,
+                    secondaryNamedInsured: deal?.secondaryNamedInsured,
+                    contact,
+                  });
+                  const href = insuredHref({ contactId: policy.contactId, leadId: deal?.leadId });
+                  const bookLabel =
+                    policyBook(policy.lineOfBusiness) === "pc"
+                      ? "P&C"
+                      : policyBook(policy.lineOfBusiness) === "life"
+                        ? "Life"
+                        : "Health";
+                  return (
+                    <tr key={policy.id}>
+                      <td data-col="policy" className="font-medium">
+                        <LinkedValue value={policy.policyNumber} href={`/policies/${policy.id}`} />
+                      </td>
+                      <td data-col="insured">
+                        <InsuredLink href={href} name={name} />
+                      </td>
+                      <td data-col="phone">
+                        <LinkedValue value={contact?.phone} kind="tel" />
+                      </td>
+                      <td data-col="email">
+                        <LinkedValue value={contact?.email} kind="email" />
+                      </td>
+                      <td data-col="line">{policy.lineOfBusiness}</td>
+                      <td data-col="book">{bookLabel}</td>
+                      <td data-col="status" className="capitalize">
+                        {policy.status}
+                      </td>
+                      <td data-col="carrier">{carrier?.name ?? "—"}</td>
+                      <td data-col="premium">{formatMoney(policy.premium)}</td>
+                      <td data-col="coverageA">
+                        {policy.coverageA != null ? formatMoney(policy.coverageA) : "—"}
+                      </td>
+                      <td data-col="effective">
+                        {policy.effectiveDate.toISOString().slice(0, 10)}
+                      </td>
+                      <td data-col="expires">
+                        <ExpirationBadge date={policy.expirationDate} />
+                      </td>
+                      <td data-col="deal">
+                        {deal ? (
+                          <Link href={`/deals/${deal.id}`} className="hover:underline">
+                            {deal.title}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
-        )}
-      </section>
+        </section>
+      </ColumnPicker>
     </AppShell>
   );
 }

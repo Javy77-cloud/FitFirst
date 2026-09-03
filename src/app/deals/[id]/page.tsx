@@ -129,7 +129,7 @@ export default async function DealPage({
     >
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
-        <span>{deal.lineOfBusiness}</span>
+        <span>{LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness}</span>
         <span className="text-muted-foreground">{deal.state}</span>
         {lead ? (
           <RecordLink href={`/leads/${lead.id}`}>

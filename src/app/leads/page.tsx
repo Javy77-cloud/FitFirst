@@ -11,6 +11,16 @@ import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listLeads } from "@/lib/db/queries";
 import { DeskDrop } from "@/components/desk-drop";
 
+const LEAD_COLUMNS = [
+  { id: "name", header: "Name", defaultVisible: true, hideable: false },
+  { id: "status", header: "Status", defaultVisible: true },
+  { id: "source", header: "Source", defaultVisible: true },
+  { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
+  { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
+  { id: "created", header: "Created", defaultVisible: false },
+  { id: "action", header: "Shop", defaultVisible: true, hideable: false },
+];
+
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
@@ -84,7 +94,10 @@ export default async function LeadsPage() {
           </form>
         </div>
 
-        <section className="ff-card overflow-hidden">
+        <div className="space-y-4">
+        <DecDropForm />
+        <ColumnPicker tableId="leads" columns={LEAD_COLUMNS}>
+        <section className="ff-card overflow-x-auto">
           <table className="ff-table">
             <thead>
               <tr>
@@ -128,8 +141,9 @@ export default async function LeadsPage() {
                           Open deal
                         </Link>
                       ) : (
-                        <form action={createDealFromLead}>
+                        <form action={createDealFromLead} className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
                           <input type="hidden" name="leadId" value={lead.id} />
+                          <LineSelect id={`line-${lead.id}`} defaultValue="HO" />
                           <Button type="submit" size="xs">
                             Start shop
                           </Button>
@@ -142,6 +156,8 @@ export default async function LeadsPage() {
             </tbody>
           </table>
         </section>
+        </ColumnPicker>
+        </div>
       </div>
     </AppShell>
   );

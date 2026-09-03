@@ -50,14 +50,19 @@ export default async function ContactsPage({
       </form>
       <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <form action={createContact} className="ff-card space-y-3 p-4">
-          <h2 className="text-sm font-semibold text-navy">Add contact</h2>
+          <h2 className="text-sm font-semibold text-navy">Add personal contact</h2>
+          <input type="hidden" name="accountKind" value="personal" />
           <div>
-            <Label className="text-xs">First name</Label>
-            <Input name="firstName" required className="mt-1 h-8" />
+            <Label htmlFor="firstName" className="text-xs">
+              First name
+            </Label>
+            <Input id="firstName" name="firstName" required className="mt-1 h-8" />
           </div>
           <div>
-            <Label className="text-xs">Last name</Label>
-            <Input name="lastName" required className="mt-1 h-8" />
+            <Label htmlFor="lastName" className="text-xs">
+              Last name
+            </Label>
+            <Input id="lastName" name="lastName" required className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">Email</Label>

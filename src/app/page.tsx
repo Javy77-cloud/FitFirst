@@ -37,7 +37,16 @@ export default async function HomePage() {
               {unread.map((alert) => (
                 <li key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
-                    <div className="text-sm font-medium">{alert.title}</div>
+                    {entityHref(alert.entityType, alert.entityId) ? (
+                      <Link
+                        href={entityHref(alert.entityType, alert.entityId)!}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {alert.title}
+                      </Link>
+                    ) : (
+                      <div className="text-sm font-medium">{alert.title}</div>
+                    )}
                     <p className="text-xs text-muted-foreground">{alert.body}</p>
                   </div>
                   <form action={markAlertRead}>

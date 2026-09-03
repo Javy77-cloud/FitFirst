@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DealListTable } from "@/components/crm/deal-list-table";
+import { PipelineBoard } from "@/components/crm/pipeline-board";
+import { QueryTabs, resolveQueryTab } from "@/components/crm/query-tabs";
 import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
 import { ColumnPicker, Col } from "@/components/column-picker";

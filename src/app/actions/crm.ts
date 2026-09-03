@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getActor } from "@/lib/auth/session";
@@ -198,9 +199,9 @@ export async function createDeal(formData: FormData) {
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
-      title: `${lastName} · ${str(formData, "line") || "HO"} shop`,
+      title: `${lastName} · ${line} shop`,
       pipelineStage: "shopping",
-      lineOfBusiness: str(formData, "line") || "HO",
+      lineOfBusiness: line,
       state: str(formData, "state") || "FL",
       ownerId: actor.id,
     })
@@ -234,6 +235,198 @@ export async function createDeal(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/deals");
   redirect(`/deals/${deal.id}`);
+}
+
+export async function createDealFromDecDrop(formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Drop a declarations PDF or text file to open a shop.");
+  }
+  const firstName = str(formData, "firstName") || "Dec";
+  const lastName = str(formData, "lastName") || "Drop";
+  const line = LINES.includes(str(formData, "line") as (typeof LINES)[number])
+    ? str(formData, "line")
+    : "HO";
+
+  const [lead] = await db
+    .insert(leads)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      firstName,
+      lastName,
+      email: str(formData, "email") || null,
+      phone: str(formData, "phone") || null,
+      source: "dec_drop",
+      status: "converted",
+      notes: str(formData, "notes") || `Dec drop: ${file.name}`,
+    })
+    .returning();
+
+  const [deal] = await db
+    .insert(deals)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      leadId: lead.id,
+      title: `${lastName} · ${line} shop`,
+      pipelineStage: "shopping",
+      lineOfBusiness: line,
+      state: str(formData, "state") || "FL",
+      primaryNamedInsured: `${firstName} ${lastName}`.trim(),
+    })
+    .returning();
+
+  await db
+    .update(leads)
+    .set({ convertedDealId: deal.id, updatedAt: new Date() })
+    .where(eq(leads.id, lead.id));
+
+  const [risk] = await db
+    .insert(risks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      riskType: line === "AUTO" ? "auto" : "property",
+      state: deal.state,
+    })
+    .returning();
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const doc = await persistFile(
+    deal.id,
+    risk.id,
+    file.name,
+    file.type || "application/octet-stream",
+    buffer,
+    "dec",
+  );
+  await extractDocument(doc.id, deal.id);
+
+  revalidateCrm([`/deals/${deal.id}`, `/leads/${lead.id}`]);
+  redirect(`/deals/${deal.id}`);
+}
+
+export async function updateDealStage(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const stage = str(formData, "stage");
+  const stages = await ensurePipelineStages();
+  if (!stages.some((row) => row.slug === stage)) throw new Error("Unknown pipeline stage");
+  if (stage === "bound") {
+    throw new BindBlockedError("Use Bind to move a deal to bound. That is the only path that creates a policy.");
+  }
+
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) throw new Error("Deal not found");
+  if (deal.pipelineStage === "bound") {
+    throw new BindBlockedError("A bound deal stays bound. Bind already created the contact and policy.");
+  }
+
+  await db
+    .update(deals)
+    .set({ pipelineStage: stage, updatedAt: new Date() })
+    .where(eq(deals.id, dealId));
+  revalidateCrm([`/deals/${dealId}`]);
+}
+
+export async function createPipelineStage(formData: FormData) {
+  const label = str(formData, "label");
+  if (!label) throw new Error("Stage label is required");
+  const slug = slugifyStage(label);
+  const stages = await ensurePipelineStages();
+  if (slug === "bound" || stages.some((row) => row.slug === slug)) {
+    throw new Error("That stage already exists");
+  }
+  const sortOrder = stages.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1;
+  await db.insert(pipelineStages).values({
+    tenantId: DEFAULT_TENANT_ID,
+    slug,
+    label,
+    sortOrder,
+    locked: false,
+  });
+  revalidateCrm();
+}
+
+export async function relabelPipelineStage(formData: FormData) {
+  const stageId = str(formData, "stageId");
+  const label = str(formData, "label");
+  if (!label) throw new Error("Stage label is required");
+  await db.update(pipelineStages).set({ label }).where(eq(pipelineStages.id, stageId));
+  revalidateCrm();
+}
+
+export async function deletePipelineStage(formData: FormData) {
+  const stageId = str(formData, "stageId");
+  const [stage] = await db.select().from(pipelineStages).where(eq(pipelineStages.id, stageId));
+  if (!stage) throw new Error("Stage not found");
+  if (stage.locked || stage.slug === "bound") {
+    throw new Error("Bound is reserved for bind and cannot be deleted");
+  }
+  await db
+    .update(deals)
+    .set({ pipelineStage: "shopping", updatedAt: new Date() })
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.pipelineStage, stage.slug)));
+  await db.delete(pipelineStages).where(eq(pipelineStages.id, stageId));
+  revalidateCrm();
+}
+
+export async function createDealOutreach(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const kind = str(formData, "kind");
+  if (!isOutreachKind(kind)) throw new Error("Unknown outreach kind");
+  const note = str(formData, "note");
+  const dueRaw = str(formData, "dueDate");
+  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) throw new Error("Deal not found");
+
+  const title = note
+    ? `${outreachLabel(kind)} · ${deal.title}: ${note}`
+    : `${outreachLabel(kind)} · ${deal.title}`;
+
+  await db.insert(reviewTasks).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId: deal.id,
+    contactId: deal.contactId,
+    kind,
+    title,
+    dueDate,
+    status: "open",
+  });
+
+  if (deal.contactId) {
+    await db.insert(clientHistory).values({
+      tenantId: DEFAULT_TENANT_ID,
+      contactId: deal.contactId,
+      dealId: deal.id,
+      eventType: kind,
+      body: note || `${outreachLabel(kind)} logged from the deals list. Nothing was sent outside the desk.`,
+    });
+  }
+
+  revalidateCrm([`/deals/${deal.id}`, "/tasks"]);
+  const referer = (await headers()).get("referer");
+  if (referer) {
+    try {
+      redirect(new URL(referer).pathname + new URL(referer).search);
+    } catch (error) {
+      if (typeof error === "object" && error && "digest" in error) throw error;
+    }
+  }
+  redirect("/deals");
+}
+
+export async function updateDealCrmNotes(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  await db
+    .update(deals)
+    .set({
+      notes: str(formData, "notes") || null,
+      primaryNamedInsured: str(formData, "primaryNamedInsured") || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(deals.id, dealId));
+  revalidateCrm([`/deals/${dealId}`]);
 }
 
 export async function updateRisk(formData: FormData) {
@@ -310,6 +503,8 @@ export async function createContact(formData: FormData) {
       city: str(formData, "city") || null,
       state: str(formData, "state") || "FL",
       zip: str(formData, "zip") || null,
+      accountKind: parseAccountKind(str(formData, "accountKind")),
+      legalName: str(formData, "legalName") || null,
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
       preferredLanguage: str(formData, "preferredLanguage") || null,
@@ -452,7 +647,6 @@ export async function bindDeal(formData: FormData) {
         .returning();
       contactId = contact.id;
     }
-  }
 
   if (contactId && accountId) {
     const existingLink = await db

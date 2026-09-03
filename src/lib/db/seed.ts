@@ -80,6 +80,43 @@ export async function seed() {
       set: { name: fixture.tenant.name, tenantId: TENANT_ID },
     });
 
+  const defaultStages = [
+    { slug: "shopping", label: "Shopping", sortOrder: 0, locked: false },
+    { slug: "quoting", label: "Quoting", sortOrder: 1, locked: false },
+    { slug: "comparing", label: "Comparing", sortOrder: 2, locked: false },
+    { slug: "bound", label: "Bound", sortOrder: 3, locked: true },
+    { slug: "lost", label: "Lost", sortOrder: 4, locked: false },
+  ];
+  const existingStages = await db
+    .select()
+    .from(pipelineStages)
+    .where(eq(pipelineStages.tenantId, TENANT_ID));
+  const haveStage = new Set(existingStages.map((row) => row.slug));
+  const missingStages = defaultStages.filter((row) => !haveStage.has(row.slug));
+  if (missingStages.length > 0) {
+    await db.insert(pipelineStages).values(
+      missingStages.map((row) => ({
+        tenantId: TENANT_ID,
+        ...row,
+      })),
+    );
+  }
+
+  const existingAgents = await db
+    .select()
+    .from(deskAgents)
+    .where(eq(deskAgents.tenantId, TENANT_ID));
+  const haveAgent = new Set(existingAgents.map((row) => row.slug));
+  const missingAgents = SEEDED_DESK_AGENTS.filter((row) => !haveAgent.has(row.slug));
+  if (missingAgents.length > 0) {
+    await db.insert(deskAgents).values(
+      missingAgents.map((row) => ({
+        tenantId: TENANT_ID,
+        ...row,
+      })),
+    );
+  }
+
   await db
     .insert(leads)
     .values({
@@ -87,6 +124,8 @@ export async function seed() {
       tenantId: TENANT_ID,
       firstName: "Ana",
       lastName: "Dib",
+      phone: "(321) 555-0144",
+      email: "ana.dib@desk.local",
       source: "book",
       status: "converted",
       notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
@@ -97,6 +136,8 @@ export async function seed() {
       set: {
         firstName: "Ana",
         lastName: "Dib",
+        phone: "(321) 555-0144",
+        email: "ana.dib@desk.local",
         status: "converted",
         convertedDealId: DEAL_ID,
         notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
@@ -111,6 +152,8 @@ export async function seed() {
       tenantId: TENANT_ID,
       firstName: "Ana",
       lastName: "Dib",
+      phone: "(321) 555-0144",
+      email: "ana.dib@desk.local",
       mailingAddress: fixture.risk.address1,
       city: fixture.risk.city,
       state: fixture.risk.state,
@@ -125,6 +168,8 @@ export async function seed() {
       set: {
         firstName: "Ana",
         lastName: "Dib",
+        phone: "(321) 555-0144",
+        email: "ana.dib@desk.local",
         mailingAddress: fixture.risk.address1,
         city: fixture.risk.city,
         state: fixture.risk.state,

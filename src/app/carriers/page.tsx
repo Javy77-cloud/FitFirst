@@ -5,6 +5,16 @@ import { RecordLink } from "@/components/record-links";
 import { defaultColumns } from "@/lib/desk/columns";
 import { listCarriers } from "@/lib/db/queries";
 
+const COLUMNS = [
+  { id: "carrier", header: "Carrier", defaultVisible: true, hideable: false },
+  { id: "portal", header: "Portal", defaultVisible: true },
+  { id: "cova", header: "Cov A", defaultVisible: true },
+  { id: "roof", header: "Roof / coast / mobile", defaultVisible: true },
+  { id: "dont", header: "Don't write", defaultVisible: true },
+  { id: "naic", header: "NAIC", defaultVisible: false },
+  { id: "lines", header: "Written lines", defaultVisible: false },
+];
+
 export const dynamic = "force-dynamic";
 
 export default async function CarriersPage({
@@ -82,6 +92,7 @@ export default async function CarriersPage({
           </tbody>
         </table>
       </section>
+      </ColumnPicker>
     </AppShell>
   );
 }

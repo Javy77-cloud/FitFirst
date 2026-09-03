@@ -3,6 +3,7 @@ import { markAlertRead } from "@/app/actions/alerts";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
+import { entityHref } from "@/lib/crm/display";
 import { listAlerts } from "@/lib/db/queries";
 import { recordHref } from "@/lib/desk/record-href";
 
@@ -24,7 +25,16 @@ export default async function AlertsPage() {
             return (
             <div key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <div>
-                <div className="text-sm font-medium">{alert.title}</div>
+                {entityHref(alert.entityType, alert.entityId) ? (
+                  <Link
+                    href={entityHref(alert.entityType, alert.entityId)!}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {alert.title}
+                  </Link>
+                ) : (
+                  <div className="text-sm font-medium">{alert.title}</div>
+                )}
                 <p className="text-xs text-muted-foreground">{alert.body}</p>
                 {href ? (
                   <p className="mt-1 text-xs">

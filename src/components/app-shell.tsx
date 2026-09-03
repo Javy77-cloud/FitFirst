@@ -34,6 +34,7 @@ const NAV = [
   { href: "/", label: "Home", icon: Home },
   { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
   { href: "/leads", label: "Leads", icon: Users },
+  { href: "/pipeline", label: "Pipeline", icon: Columns3 },
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/accounts", label: "Businesses", icon: Briefcase },
