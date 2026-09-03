@@ -1,5 +1,8 @@
 "use server";
 
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -20,15 +23,63 @@ import {
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
+type PersistInput = {
+  dealId?: string | null;
+  riskId?: string | null;
+  contactId?: string | null;
+  policyId?: string | null;
+  folderId?: string | null;
+  filename: string;
+  mimeType: string;
+  buffer: Buffer;
+  docType: string;
+  slot?: string;
+  tags?: string[] | null;
+};
+
+function optionalId(form: FormData, key: string): string | null {
+  const value = String(form.get(key) ?? "").trim();
+  return value || null;
+}
+
+function parseTags(value: FormDataEntryValue | null): string[] {
+  if (!value) return [];
+  return String(value)
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+async function resolveFolderId(input: {
+  folderId?: string | null;
+  dealId?: string | null;
+  contactId?: string | null;
+}): Promise<string | null> {
+  if (input.folderId) return input.folderId;
+  return null;
+}
+
 export async function persistFile(
-  dealId: string,
-  riskId: string,
-  filename: string,
-  mimeType: string,
-  buffer: Buffer,
-  docType: string,
+  dealIdOrInput: string | PersistInput,
+  riskId?: string,
+  filename?: string,
+  mimeType?: string,
+  buffer?: Buffer,
+  docType?: string,
   slot = "source_doc",
 ) {
+  const input: PersistInput =
+    typeof dealIdOrInput === "string"
+      ? {
+          dealId: dealIdOrInput,
+          riskId: riskId ?? null,
+          filename: filename ?? "upload",
+          mimeType: mimeType ?? "application/octet-stream",
+          buffer: buffer ?? Buffer.alloc(0),
+          docType: docType ?? "other",
+          slot,
+        }
+      : dealIdOrInput;
   const id = randomUUID();
   const folder = input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? "library";
   const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
@@ -41,18 +92,24 @@ export async function persistFile(
     .values({
       id,
       tenantId: DEFAULT_TENANT_ID,
-      riskId: riskId || null,
-      dealId,
-      filename,
-      mimeType,
+      riskId: input.riskId || null,
+      dealId: input.dealId || null,
+      contactId: input.contactId || null,
+      policyId: input.policyId || null,
+      filename: input.filename,
+      mimeType: input.mimeType,
       storagePath,
-      docType,
-      slot,
+      docType: input.docType,
+      slot: input.slot ?? "source_doc",
       status: "uploaded",
-      tags: input.tags,
+      tags: input.tags ?? [],
     })
     .returning();
   return doc;
+}
+
+export async function extractDocument(documentId: string, dealId: string) {
+  await runExtraction(documentId, dealId);
 }
 
 function revalidateDocumentPaths(doc: {

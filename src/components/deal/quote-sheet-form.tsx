@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
-import { sheetCounts, sourceTag } from "@/lib/quote-sheet/apply";
+import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { SheetDrop } from "@/components/deal/sheet-drop";
@@ -34,7 +34,7 @@ export function QuoteSheetForm({
   printable?: boolean;
 }) {
   const [showMore, setShowMore] = useState(false);
-  const groups = groupFields(line, { includeMore: showMore || printable });
+  const groups = groupFields(line);
   const counts = sheetCounts(sheet.values);
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
   const copyText = buildCopySheetText({

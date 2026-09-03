@@ -321,6 +321,8 @@ export async function listDeals(filter: DealListFilter = {}) {
   });
 }
 
+export type DealListRow = Awaited<ReturnType<typeof listDeals>>[number];
+
 export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {
   const session = await currentDeskSession();
   const scope = ownerWhere(session, contacts.ownerId);
@@ -395,6 +397,8 @@ export type PolicyListFilter = {
 };
 
 export async function listPolicies(filter: PolicyListFilter = {}) {
+  const session = await currentDeskSession();
+  const scope = ownerWhere(session, policies.ownerId);
   const rows = await db
     .select({
       policy: policies,

@@ -50,7 +50,7 @@ export function DealListTable({
   filterView?: string;
   showFilters?: boolean;
 }) {
-  const labels = new Map(stages.map((stage) => [stage.slug, stage.label]));
+  const labels = new Map(stages.map((stage) => [stage.slug, stage.name]));
   const visible = rows.filter(({ deal, lead, contact, risk }) =>
     matchesDealFilters(
       {

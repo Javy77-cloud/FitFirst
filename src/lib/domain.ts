@@ -161,7 +161,7 @@ export const SHOP_LINE_TO_LOB: Record<ShopLine, LineOfBusiness> = {
 export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
 export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
-export const FOLDER_KINDS = ["acord", "flyers", "marketing", "account", "deal"] as const;
+export const FOLDER_KINDS = ["acord", "flyers", "marketing", "account", "deal", "custom"] as const;
 export type FolderKind = (typeof FOLDER_KINDS)[number];
 
 export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
@@ -170,6 +170,7 @@ export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
   marketing: "Marketing",
   account: "Account",
   deal: "Deal",
+  custom: "Custom",
 };
 
 export const ESIGN_PROVIDERS = ["docusign", "adobe", "other"] as const;
@@ -192,7 +193,7 @@ export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
 export const QUOTE_FIELD_STATUSES = ["missing", "check", "confirmed"] as const;
 export type QuoteFieldStatus = (typeof QUOTE_FIELD_STATUSES)[number];
 
-export const QUOTE_FIELD_SOURCES = ["blank", "agent", "extracted", "seed", "javy"] as const;
+export const QUOTE_FIELD_SOURCES = ["blank", "agent", "extracted", "seed", "javy", "public"] as const;
 export type QuoteFieldSource = (typeof QUOTE_FIELD_SOURCES)[number];
 
 export type QuoteSheetFieldValue = {

@@ -8,11 +8,13 @@ export function QuotesPanel({
   quotes,
   logs,
   quoteResultsNote,
+  quoteDocs = [],
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
   quoteResultsNote?: string | null;
+  quoteDocs?: Document[];
 }) {
   return (
     <div className="space-y-4">
@@ -68,7 +70,7 @@ export function QuotesPanel({
             </thead>
             <tbody>
               {quotes.map(({ quote, carrier }) => {
-                const pdf = quoteDocs.find((doc) => doc.quoteId === quote.id);
+                const pdf = quoteDocs.find((doc) => doc.dealId === quote.dealId && doc.docType === "quote_pdf");
                 return (
                 <tr key={quote.id}>
                   <td className="font-medium">

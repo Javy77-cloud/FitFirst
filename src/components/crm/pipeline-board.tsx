@@ -52,9 +52,9 @@ export function PipelineBoard({
             id: "unstaged",
             tenantId: "",
             slug: "_unstaged",
-            label: "Unstaged",
+            name: "Unstaged",
             sortOrder: 999,
-            locked: false,
+            seeded: false,
             createdAt: new Date(),
           } satisfies PipelineStageRow,
         ]
@@ -82,7 +82,7 @@ export function PipelineBoard({
           return (
             <section key={stage.id} className="ff-card min-h-48 overflow-hidden">
               <div className="flex items-center justify-between border-b border-border px-3 py-2">
-                <StagePill stage={stage.label} />
+                <StagePill stage={"name" in stage ? stage.name : stage.slug} />
                 <span className="text-[11px] text-muted-foreground">{column.length}</span>
               </div>
               <div className="space-y-2 p-2">
@@ -140,7 +140,7 @@ export function PipelineBoard({
                             >
                               {movable.map((option) => (
                                 <option key={option.id} value={option.slug}>
-                                  {option.label}
+                                  {option.name}
                                 </option>
                               ))}
                             </select>
