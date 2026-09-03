@@ -241,6 +241,7 @@ Shipped on `cursor/live-desk-walkthrough-531d`:
 - Client status remains computed: Client / Former client / Not a client (Ana).
 - **Internal ask (not a chat product):** Admin tags a teammate on Contact / Lead / Deal / Business / Policy / Carrier. Reuses `record_asks` (same table as commission “ask about this”). Writes the durable `activity_logs` row and an in-app `alerts` ping (`record_ask`). No email/SMS to the tagged person. Seeded: Javy → Maya on Elena policy HO3-ELENA-2026.
 - Record edits stay pre-filled from the record (and bind copies Cov A + premises from the deal risk). Contact/Lead/Business show address + DOB the desk already has. No blank retype forms.
+- Enter-once copy: Lead mailing/city/state/ZIP/DOB → Deal risk + Quote Sheet on convert; bind copies those onto Contact/Business/Policy and fills only blank party fields. Policy/Contact/Business forms fall back to the linked Deal/Lead so the agent does not retype.
 
 Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI. Alerts list the Elena status ask with Open record.
 

@@ -19,6 +19,7 @@ import {
 } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
+import { firstFilled } from "@/lib/desk/copy-once";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,8 @@ export default async function ContactDetailPage({
     clientStatus,
     timeline,
     locations,
+    lead,
+    originRisk,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
   const premium = policies.reduce((sum, row) => sum + toNumber(row.policy.premium), 0);
@@ -80,31 +83,35 @@ export default async function ContactDetailPage({
           </div>
           <div>
             <Label className="text-xs">Phone</Label>
-            <Input name="phone" defaultValue={contact.phone ?? ""} className="mt-1 h-8" />
+            <Input name="phone" defaultValue={firstFilled(contact.phone, lead?.phone)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">Email</Label>
-            <Input name="email" defaultValue={contact.email ?? ""} className="mt-1 h-8" />
+            <Input name="email" defaultValue={firstFilled(contact.email, lead?.email)} className="mt-1 h-8" />
           </div>
           <div className="sm:col-span-2">
-            <Label className="text-xs">Mailing (copied at bind)</Label>
-            <Input name="mailingAddress" defaultValue={contact.mailingAddress ?? ""} className="mt-1 h-8" />
+            <Label className="text-xs">Mailing (copied from lead / deal — do not retype)</Label>
+            <Input
+              name="mailingAddress"
+              defaultValue={firstFilled(contact.mailingAddress, lead?.mailingAddress, originRisk?.address1)}
+              className="mt-1 h-8"
+            />
           </div>
           <div>
             <Label className="text-xs">City</Label>
-            <Input name="city" defaultValue={contact.city ?? ""} className="mt-1 h-8" />
+            <Input name="city" defaultValue={firstFilled(contact.city, lead?.city, originRisk?.city)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">State</Label>
-            <Input name="state" defaultValue={contact.state ?? ""} className="mt-1 h-8" />
+            <Input name="state" defaultValue={firstFilled(contact.state, lead?.state, originRisk?.state)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">ZIP</Label>
-            <Input name="zip" defaultValue={contact.zip ?? ""} className="mt-1 h-8" />
+            <Input name="zip" defaultValue={firstFilled(contact.zip, lead?.zip, originRisk?.zip)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">Date of birth</Label>
-            <Input name="dateOfBirth" defaultValue={contact.dateOfBirth ?? ""} className="mt-1 h-8" />
+            <Input name="dateOfBirth" defaultValue={firstFilled(contact.dateOfBirth, lead?.dateOfBirth)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">Tenure</Label>

@@ -461,6 +461,10 @@ export async function seedWireDesk() {
       effectiveDate: new Date("2026-08-15T05:00:00.000Z"),
       expirationDate: new Date("2027-08-15T05:00:00.000Z"),
       premium: "4180.00",
+      premisesAddress: "88 Harbor Key Blvd",
+      premisesCity: "Palm Bay",
+      premisesState: "FL",
+      premisesZip: "32907",
     })
     .onConflictDoUpdate({
       target: policies.id,
@@ -468,6 +472,10 @@ export async function seedWireDesk() {
         accountId: HARBOR_ACCOUNT_ID,
         contactId: null,
         status: "active",
+        premisesAddress: "88 Harbor Key Blvd",
+        premisesCity: "Palm Bay",
+        premisesState: "FL",
+        premisesZip: "32907",
         updatedAt: new Date(),
       },
     });

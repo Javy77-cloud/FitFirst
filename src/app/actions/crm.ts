@@ -20,12 +20,13 @@ import {
   pipelines,
   policies,
   quoteSheets,
+  quotes,
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
 import { activityLogBody } from "@/lib/lifecycle/activity";
-import { emptySheetValues } from "@/lib/lifecycle/quote-sheet";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
+import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import {
   accountFieldsFromSheet,
   contactFieldsFromSheet,
@@ -45,7 +46,15 @@ export async function findMatchingLead(input: LeadIdentity) {
 }
 
 export async function findOrCreateLead(
-  input: LeadIdentity & { source?: string | null; notes?: string | null },
+  input: LeadIdentity & {
+    source?: string | null;
+    notes?: string | null;
+    mailingAddress?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    dateOfBirth?: string | null;
+  },
 ) {
   const existing = await findMatchingLead(input);
   if (existing) return { lead: existing, created: false };
@@ -57,6 +66,11 @@ export async function findOrCreateLead(
       lastName: input.lastName || "Lead",
       email: input.email || null,
       phone: input.phone || null,
+      mailingAddress: input.mailingAddress || null,
+      city: input.city || null,
+      state: input.state || null,
+      zip: input.zip || null,
+      dateOfBirth: input.dateOfBirth || null,
       source: input.source || "manual",
       notes: input.notes || null,
       status: "new",
@@ -74,6 +88,11 @@ export async function createLead(formData: FormData) {
   };
   const { lead } = await findOrCreateLead({
     ...identity,
+    mailingAddress: str(formData, "mailingAddress") || null,
+    city: str(formData, "city") || null,
+    state: str(formData, "state") || null,
+    zip: str(formData, "zip") || null,
+    dateOfBirth: str(formData, "dateOfBirth") || null,
     source: str(formData, "source") || "manual",
     notes: str(formData, "notes") || null,
   });
@@ -91,6 +110,8 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     .select()
     .from(pipelines)
     .where(eq(pipelines.slug, pipelineSlug));
+  const dealState = state || lead.state || "FL";
+  const riskCopy = leadOntoRisk(lead, dealState);
 
   const [deal] = await db
     .insert(deals)
@@ -102,7 +123,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
-      state,
+      state: dealState,
       primaryNamedInsured: `${lead.firstName} ${lead.lastName}`.trim(),
     })
     .returning();
@@ -111,11 +132,13 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
-    state: deal.state,
+    ...riskCopy,
   });
 
-  const sheetValues = emptySheetValues();
-  if (lead.email) sheetValues.notes = { value: `Lead ${lead.email}`, status: "confirmed", source: "agent" };
+  const sheetValues = fillSheetFromLead(lead);
+  if (lead.email && !sheetValues.notes?.value) {
+    sheetValues.notes = { value: `Lead ${lead.email}`, status: "confirmed", source: "agent" };
+  }
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
@@ -133,10 +156,12 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
 }
 
 export async function createDealFromLead(formData: FormData) {
+  const leadId = str(formData, "leadId");
+  const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   const dealId = await convertLeadToDeal(
-    str(formData, "leadId"),
+    leadId,
     str(formData, "line") || "HO",
-    str(formData, "state") || "FL",
+    str(formData, "state") || lead?.state || "FL",
   );
   revalidatePath("/deals");
   revalidatePath("/leads");
@@ -175,20 +200,23 @@ export async function createDeal(formData: FormData) {
     .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, lead.id));
 
+  const fromLead = leadOntoRisk(lead, deal.state);
   await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
-    state: deal.state,
-    city: str(formData, "city") || null,
+    address1: fromLead.address1,
+    city: str(formData, "city") || fromLead.city,
     county: str(formData, "county") || null,
+    state: fromLead.state,
+    zip: fromLead.zip,
   });
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
-    values: emptySheetValues(),
+    values: fillSheetFromLead(lead),
   });
 
   revalidatePath("/");
@@ -308,16 +336,29 @@ export async function bindDeal(formData: FormData) {
       ...identity,
       email: lead?.email,
       phone: lead?.phone,
-      mailingAddress: risk?.address1,
-      city: risk?.city,
-      state: risk?.state ?? "FL",
-      zip: risk?.zip,
+      mailingAddress: risk?.address1 || lead?.mailingAddress,
+      city: risk?.city || lead?.city,
+      state: risk?.state || lead?.state || "FL",
+      zip: risk?.zip || lead?.zip,
     });
     const existing = accountId
       ? (await db.select().from(accounts).where(eq(accounts.id, accountId)))[0]
       : await findMatchingAccount(identity);
     if (existing) {
       accountId = existing.id;
+      const filled = fillBlankParty(existing, copied);
+      await db
+        .update(accounts)
+        .set({
+          mailingAddress: filled.mailingAddress,
+          city: filled.city,
+          state: filled.state,
+          zip: filled.zip,
+          phone: filled.phone,
+          email: filled.email,
+          updatedAt: new Date(),
+        })
+        .where(eq(accounts.id, existing.id));
     } else {
       const [account] = await db
         .insert(accounts)
@@ -353,16 +394,31 @@ export async function bindDeal(formData: FormData) {
       phone: lead?.phone,
     };
     const existing = await findMatchingContact(identity);
+    const copied = contactFieldsFromSheet(sheetValues, {
+      ...identity,
+      mailingAddress: risk?.address1 || lead?.mailingAddress,
+      city: risk?.city || lead?.city,
+      state: risk?.state || lead?.state || "FL",
+      zip: risk?.zip || lead?.zip,
+      dateOfBirth: lead?.dateOfBirth,
+    });
     if (existing) {
       contactId = existing.id;
+      const filled = fillBlankParty(existing, copied);
+      await db
+        .update(contacts)
+        .set({
+          mailingAddress: filled.mailingAddress,
+          city: filled.city,
+          state: filled.state,
+          zip: filled.zip,
+          phone: filled.phone,
+          email: filled.email,
+          dateOfBirth: filled.dateOfBirth,
+          updatedAt: new Date(),
+        })
+        .where(eq(contacts.id, existing.id));
     } else {
-      const copied = contactFieldsFromSheet(sheetValues, {
-        ...identity,
-        mailingAddress: risk?.address1,
-        city: risk?.city,
-        state: risk?.state ?? "FL",
-        zip: risk?.zip,
-      });
       const [contact] = await db
         .insert(contacts)
         .values({
@@ -397,10 +453,12 @@ export async function bindDeal(formData: FormData) {
     redirect(`/policies/${alreadyBound.id}`);
   }
 
+  const dealQuotes = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
+  const copiedQuote = dealQuotes.find((row) => row.bindable) ?? dealQuotes[0];
   const effective = new Date();
   const expiration = new Date(effective);
   expiration.setFullYear(expiration.getFullYear() + 1);
-  const premiumRaw = str(formData, "premium");
+  const premiumRaw = str(formData, "premium") || copiedQuote?.premium || null;
   const wonAt = new Date();
 
   const [policy] = await db
@@ -411,17 +469,18 @@ export async function bindDeal(formData: FormData) {
       accountId: bindTarget === "account" ? accountId : null,
       dealId,
       riskId: risk?.id,
+      carrierId: copiedQuote?.carrierId ?? null,
       policyNumber: str(formData, "policyNumber") || `FF-${Date.now().toString().slice(-8)}`,
       lineOfBusiness: deal.lineOfBusiness,
       status: "bound",
       effectiveDate: effective,
       expirationDate: expiration,
-      premium: premiumRaw ? premiumRaw : null,
-      coverageA: risk?.coverageA,
-      premisesAddress: risk?.address1,
-      premisesCity: risk?.city,
-      premisesState: risk?.state,
-      premisesZip: risk?.zip,
+      premium: premiumRaw,
+      coverageA: risk?.coverageA ?? copiedQuote?.coverageA ?? null,
+      premisesAddress: risk?.address1 || lead?.mailingAddress || null,
+      premisesCity: risk?.city || lead?.city || null,
+      premisesState: risk?.state || lead?.state || null,
+      premisesZip: risk?.zip || lead?.zip || null,
     })
     .returning();
 

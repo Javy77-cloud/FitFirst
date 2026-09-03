@@ -86,6 +86,7 @@ export default async function LeadDetailPage({
         {!deal ? (
           <form action={createDealFromLead} className="mb-4">
             <input type="hidden" name="leadId" value={lead.id} />
+            <input type="hidden" name="state" value={lead.state ?? "FL"} />
             <Button type="submit" size="sm" variant="outline">
               Convert to deal
             </Button>

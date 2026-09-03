@@ -447,6 +447,9 @@ export async function getContactWorkspace(id: string) {
         .from(leads)
         .where(and(eq(leads.tenantId, tenant()), eq(leads.convertedDealId, originDealId)))
     : [];
+  const [originRisk] = originDealId
+    ? await db.select().from(risks).where(eq(risks.dealId, originDealId))
+    : [];
   const lifetime = relatedPolicies.length;
   const inForce = relatedPolicies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
   return {
@@ -455,6 +458,7 @@ export async function getContactWorkspace(id: string) {
     deals: relatedDeals,
     businesses: linked.map((row) => row.account),
     lead: originLead ?? null,
+    originRisk: originRisk ?? null,
     policyCount: lifetime,
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
@@ -490,6 +494,9 @@ export async function getAccountWorkspace(id: string) {
     .from(contactAccounts)
     .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
     .where(and(eq(contactAccounts.tenantId, tenant()), eq(contactAccounts.accountId, id)));
+  const [originRisk] = relatedDeals[0]
+    ? await db.select().from(risks).where(eq(risks.dealId, relatedDeals[0].id))
+    : [];
   const lifetime = relatedPolicies.length;
   const inForce = relatedPolicies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
   return {
@@ -497,6 +504,7 @@ export async function getAccountWorkspace(id: string) {
     policies: relatedPolicies,
     deals: relatedDeals,
     contacts: linked.map((row) => row.contact),
+    originRisk: originRisk ?? null,
     policyCount: lifetime,
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
@@ -568,6 +576,11 @@ export async function getPolicyWorkspace(id: string) {
     .from(documents)
     .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, id)))
     .orderBy(desc(documents.createdAt));
+  const [risk] = row.policy.riskId
+    ? await db.select().from(risks).where(eq(risks.id, row.policy.riskId))
+    : row.policy.dealId
+      ? await db.select().from(risks).where(eq(risks.dealId, row.policy.dealId))
+      : [];
   const [terms, compareLogs, vehicleRows] = await Promise.all([
     db
       .select()
@@ -585,6 +598,7 @@ export async function getPolicyWorkspace(id: string) {
   ]);
   return {
     ...row,
+    risk: risk ?? null,
     files,
     timeline: await listActivityTimeline({ policyId: id }),
     comms: await listCommsForRecord({ policyId: id }),

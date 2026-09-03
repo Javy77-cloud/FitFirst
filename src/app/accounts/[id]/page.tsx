@@ -19,6 +19,7 @@ import {
 } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
+import { firstFilled } from "@/lib/desk/copy-once";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function AccountDetailPage({
     timeline,
     locations,
     certificates,
+    originRisk,
   } = workspace;
   const premium = policies.reduce((sum, row) => sum + toNumber(row.policy.premium), 0);
   const commission = await sumCommissionsForPolicies(policies.map((row) => row.policy.id));
@@ -82,20 +84,24 @@ export default async function AccountDetailPage({
             <Input name="email" defaultValue={account.email ?? ""} className="mt-1 h-8" />
           </div>
           <div className="sm:col-span-3">
-            <Label className="text-xs">Mailing</Label>
-            <Input name="mailingAddress" defaultValue={account.mailingAddress ?? ""} className="mt-1 h-8" />
+            <Label className="text-xs">Mailing (copied from the deal — do not retype)</Label>
+            <Input
+              name="mailingAddress"
+              defaultValue={firstFilled(account.mailingAddress, originRisk?.address1)}
+              className="mt-1 h-8"
+            />
           </div>
           <div>
             <Label className="text-xs">City</Label>
-            <Input name="city" defaultValue={account.city ?? ""} className="mt-1 h-8" />
+            <Input name="city" defaultValue={firstFilled(account.city, originRisk?.city)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">State</Label>
-            <Input name="state" defaultValue={account.state ?? ""} className="mt-1 h-8" />
+            <Input name="state" defaultValue={firstFilled(account.state, originRisk?.state)} className="mt-1 h-8" />
           </div>
           <div>
             <Label className="text-xs">ZIP</Label>
-            <Input name="zip" defaultValue={account.zip ?? ""} className="mt-1 h-8" />
+            <Input name="zip" defaultValue={firstFilled(account.zip, originRisk?.zip)} className="mt-1 h-8" />
           </div>
           <div className="sm:col-span-3 text-xs text-muted-foreground">
             Entity {account.entityType ?? "—"} · Employees {account.employeeCount ?? "—"} · Sales{" "}

@@ -45,7 +45,13 @@ export function sheetValue(
 /** Copy matching Quote Sheet cells onto a personal Contact so bind does not retype. */
 export function contactFieldsFromSheet(
   values: Record<string, { value?: string } | undefined>,
-  fallback: ContactIdentity & { mailingAddress?: string | null; city?: string | null; state?: string | null; zip?: string | null },
+  fallback: ContactIdentity & {
+    mailingAddress?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    dateOfBirth?: string | null;
+  },
 ) {
   return {
     firstName: fallback.firstName,
@@ -56,6 +62,7 @@ export function contactFieldsFromSheet(
     city: sheetValue(values, "city") ?? fallback.city ?? null,
     state: sheetValue(values, "state") ?? fallback.state ?? "FL",
     zip: sheetValue(values, "zip") ?? fallback.zip ?? null,
+    dateOfBirth: fallback.dateOfBirth ?? null,
   };
 }
 
