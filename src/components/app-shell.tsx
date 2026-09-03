@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { alerts } from "@/lib/db/schema";
+import { AgencyMark, DeskRoleSwitcher } from "@/components/brand/desk-chrome";
 
 const NAV = [
   { href: "/", label: "Home", icon: Home },
@@ -43,16 +45,20 @@ export async function AppShell({
     .from(alerts)
     .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
+  const desk = await getResolvedDesk().catch(() => null);
+  const agencyName = desk?.agencyName ?? "Javier Garcia Insurance";
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div
+      className="flex min-h-screen bg-background"
+      data-ff-color={desk?.colorPreset ?? "agency"}
+      data-ff-font={desk?.fontPreset ?? "plex"}
+      data-ff-density={desk?.density ?? "comfortable"}
+    >
       <aside className="flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-4 py-4">
           <Link href="/" className="block">
-            <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
-            <div className="text-[11px] text-sidebar-foreground/70">
-              Filter-first P&amp;C rater
-            </div>
+            <AgencyMark agencyName={agencyName} logoUrl={desk?.logoUrl ?? null} />
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
@@ -75,10 +81,13 @@ export async function AppShell({
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
-          Single-tenant demo
-          <br />
-          No Zoho sync · no portal logins
+        <div className="space-y-3 border-t border-sidebar-border px-4 py-3">
+          {desk ? <DeskRoleSwitcher actor={desk.actor} /> : null}
+          <div className="text-[11px] text-sidebar-foreground/60">
+            Single-tenant demo
+            <br />
+            No Zoho sync · no portal logins
+          </div>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

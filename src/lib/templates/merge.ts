@@ -7,6 +7,7 @@ export type TemplateMergeValues = {
   wonDate: Date | string | null;
   reviewLink?: string;
   agentPhone?: string;
+  signature?: string;
 };
 
 const KEY_ALIASES: Record<string, keyof TemplateMergeValues | "wonDateFormatted"> = {
@@ -18,6 +19,7 @@ const KEY_ALIASES: Record<string, keyof TemplateMergeValues | "wonDateFormatted"
   won_date: "wonDateFormatted",
   review_link: "reviewLink",
   agent_phone: "agentPhone",
+  signature: "signature",
 };
 
 export function mergeTemplate(text: string, values: TemplateMergeValues): string {
@@ -29,6 +31,7 @@ export function mergeTemplate(text: string, values: TemplateMergeValues): string
     wonDateFormatted: wonDateFormatted === "—" ? "" : wonDateFormatted,
     reviewLink: values.reviewLink || AGENCY_BRAND.reviewLinkPlaceholder,
     agentPhone: values.agentPhone || AGENCY_BRAND.phone,
+    signature: values.signature || "",
   };
 
   return text.replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/gi, (_full, key: string) => {

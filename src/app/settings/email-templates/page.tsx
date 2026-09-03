@@ -4,21 +4,24 @@ import { AppShell } from "@/components/app-shell";
 import { SettingsSubnav } from "@/components/templates/email-activity";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listEmailTemplates } from "@/lib/db/template-queries";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailTemplatesPage() {
-  const templates = await listEmailTemplates();
+  const [templates, desk] = await Promise.all([listEmailTemplates(), getResolvedDesk()]);
 
   return (
     <AppShell
       title="Email templates"
       actions={
-        <Link href="/settings/email-templates/new" className={cn(buttonVariants())}>
-          New template
-        </Link>
+        desk.isAdmin ? (
+          <Link href="/settings/email-templates/new" className={cn(buttonVariants())}>
+            New template
+          </Link>
+        ) : null
       }
     >
       <SettingsSubnav current="templates" />
@@ -66,12 +69,14 @@ export default async function EmailTemplatesPage() {
                       {template.subjectEn}
                     </td>
                     <td>
-                      <form action={duplicateEmailTemplate}>
-                        <input type="hidden" name="id" value={template.id} />
-                        <Button type="submit" size="xs" variant="ghost">
-                          Duplicate
-                        </Button>
-                      </form>
+                      {desk.isAdmin ? (
+                        <form action={duplicateEmailTemplate}>
+                          <input type="hidden" name="id" value={template.id} />
+                          <Button type="submit" size="xs" variant="ghost">
+                            Duplicate
+                          </Button>
+                        </form>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

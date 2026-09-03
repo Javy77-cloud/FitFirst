@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { visibleColumns } from "@/components/brand/column-layout-fields";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { listPolicies } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function PoliciesPage() {
-  const rows = await listPolicies();
+  const [rows, desk] = await Promise.all([listPolicies(), getResolvedDesk()]);
+  const cols = visibleColumns("policies", desk.columnLayout);
   return (
     <AppShell title="Policies">
       <p className="mb-3 text-sm text-muted-foreground">
@@ -22,33 +25,37 @@ export default async function PoliciesPage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Policy</th>
-                <th>Client</th>
-                <th>Carrier</th>
-                <th>Premium</th>
-                <th>Expires</th>
+                {cols.map((col) => (
+                  <th key={col.key}>{col.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {rows.map(({ policy, contact, carrier }) => (
                 <tr key={policy.id}>
-                  <td className="font-medium">
-                    <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
-                      {policy.policyNumber}
-                    </Link>
-                  </td>
-                  <td>
-                    {contact ? (
-                      <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                        {contact.lastName}, {contact.firstName}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td>{carrier?.name ?? "—"}</td>
-                  <td>{formatMoney(policy.premium)}</td>
-                  <td>{formatDay(policy.expirationDate)}</td>
+                  {cols.map((col) => (
+                    <td key={col.key} className={col.key === "policy" ? "font-medium" : undefined}>
+                      {col.key === "policy" ? (
+                        <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
+                          {policy.policyNumber}
+                        </Link>
+                      ) : col.key === "client" ? (
+                        contact ? (
+                          <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
+                            {contact.lastName}, {contact.firstName}
+                          </Link>
+                        ) : (
+                          "—"
+                        )
+                      ) : col.key === "carrier" ? (
+                        carrier?.name ?? "—"
+                      ) : col.key === "premium" ? (
+                        formatMoney(policy.premium)
+                      ) : (
+                        formatDay(policy.expirationDate)
+                      )}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>

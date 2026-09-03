@@ -10,7 +10,7 @@ Shared locks for parallel work on this Origin repo. Product name is **FitFirst**
 - Every new table has `tenant_id`. Runtime stays single-tenant (`TENANT_ID`). No isolation, billing, or credential vault.
 - Restyle only through `--ff-*` in `src/app/globals.css`.
 
-## Claimed by TEMPLATES + TRIGGERS (this slice)
+## Claimed by TEMPLATES + TRIGGERS + agency branding (this slice)
 
 Owner: email templates + triggers (`cursor/email-templates-triggers-7f74`).
 
@@ -25,6 +25,11 @@ Client-facing mail only. Internal desk alerts stay in-app / pop-up. **Never emai
 | `contacts.preferred_language` | Spanish → ES. English, Creole, or blank → EN. |
 | `deals.won_at`, `deals.archived_at` | Won date is the schedule anchor. ARCHIVE must not cancel jobs. |
 | `src/lib/db/seed-email-templates.ts` | Seeds example copy + one queued demo on a **non-Ana** contact. |
+| `/settings/agency` | Admin: agency name, logo, default color/font/density, default column layout. |
+| `/settings/email-signatures` | Admin: EN + ES signature. Merge `{{signature}}`. |
+| `/settings/my-desk` | Per-agent colors, fonts, density, column layout. Does not touch agency chrome. |
+| `agency_brand`, `email_signatures`, `agent_ui_prefs` | Two-layer persistence. `0005_agency_brand_agent_prefs.sql`. |
+| Top-left rail | Agency name + logo. Product name is not the corner brand. |
 
 ### Send path
 
@@ -63,3 +68,5 @@ Work-email / Zoho Mail own `email_connections` and `src/lib/email/*`. This slice
 - QA + settings — desk identity on `/settings`. Keep their Agency form; add a link to Email templates.
 - Reports + automations — `would_send_logs` is in-app would-send, not this client mail path.
 - Agency ops — campaigns / SMS stubs. Client review / check-in / renewal mail lives here, not in Campaigns.
+- Roles + commissions — `users` / `ff_actor` / full login. This slice uses a **minimum Admin/Agent cookie** (`ff_desk_role`) until that lands. Prefer `getActor` when present. Do not recreate `users`.
+- CRM UI column picker (`bc-1fc5b3be`) — owns the in-list picker. Persist to `agency_brand.default_column_layout` (Admin default) or `agent_ui_prefs.column_layout` (agent override). Do not fork a second picker.

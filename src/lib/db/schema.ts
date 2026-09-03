@@ -537,4 +537,59 @@ export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
+export const agencyBrand = pgTable(
+  "agency_brand",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agencyName: text("agency_name").notNull(),
+    logoStoragePath: text("logo_storage_path"),
+    logoMime: text("logo_mime"),
+    defaultColorPreset: text("default_color_preset").notNull().default("agency"),
+    defaultFontPreset: text("default_font_preset").notNull().default("plex"),
+    defaultDensity: text("default_density").notNull().default("comfortable"),
+    defaultColumnLayout: jsonb("default_column_layout")
+      .$type<Record<string, string[]> | null>()
+      .default({}),
+    ...timestamps,
+  },
+  (t) => [index("agency_brand_tenant_idx").on(t.tenantId)],
+);
+
+export const emailSignatures = pgTable(
+  "email_signatures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    bodyEn: text("body_en").notNull(),
+    bodyEs: text("body_es").notNull(),
+    isDefault: boolean("is_default").notNull().default(true),
+    isExampleCopy: boolean("is_example_copy").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("email_signatures_tenant_idx").on(t.tenantId)],
+);
+
+export const agentUiPrefs = pgTable(
+  "agent_ui_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    actorKey: text("actor_key").notNull(),
+    colorPreset: text("color_preset"),
+    fontPreset: text("font_preset"),
+    density: text("density"),
+    columnLayout: jsonb("column_layout").$type<Record<string, string[]> | null>(),
+    ...timestamps,
+  },
+  (t) => [
+    index("agent_ui_prefs_tenant_idx").on(t.tenantId),
+    index("agent_ui_prefs_actor_idx").on(t.tenantId, t.actorKey),
+  ],
+);
+
 export type EmailSendAccount = typeof emailSendAccounts.$inferSelect;
+export type AgencyBrand = typeof agencyBrand.$inferSelect;
+export type EmailSignature = typeof emailSignatures.$inferSelect;
+export type AgentUiPref = typeof agentUiPrefs.$inferSelect;

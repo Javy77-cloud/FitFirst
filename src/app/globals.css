@@ -159,3 +159,40 @@
 .ff-table tr:hover td {
   background: #f4f8fc;
 }
+
+/* Agent/agency UI presets — remap existing --ff-* tokens only. */
+[data-ff-color="terracotta"] {
+  --ff-accent: var(--ff-flag);
+  --ff-accent-hover: var(--ff-flag);
+  --primary: var(--ff-flag);
+  --ring: var(--ff-flag);
+  --sidebar-primary: var(--ff-flag);
+  --sidebar-ring: var(--ff-flag);
+}
+[data-ff-color="forest"] {
+  --ff-accent: var(--ff-green);
+  --ff-accent-hover: var(--ff-green);
+  --primary: var(--ff-green);
+  --ring: var(--ff-green);
+  --sidebar-primary: var(--ff-green);
+  --sidebar-ring: var(--ff-green);
+}
+[data-ff-color="slate"] {
+  --ff-accent: var(--ff-navy-mid);
+  --ff-accent-hover: var(--ff-navy);
+  --primary: var(--ff-navy-mid);
+  --ring: var(--ff-navy-mid);
+  --sidebar-primary: var(--ff-navy-mid);
+  --sidebar-ring: var(--ff-navy-mid);
+}
+[data-ff-font="system"] {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+[data-ff-density="compact"] {
+  --ff-density: 0.8125rem;
+  font-size: 14px;
+}
+[data-ff-density="compact"] .ff-table th,
+[data-ff-density="compact"] .ff-table td {
+  padding: 0.35rem 0.5rem;
+}

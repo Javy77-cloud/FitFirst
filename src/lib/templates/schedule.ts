@@ -8,9 +8,11 @@ import {
 } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
+  agencyBrand,
   clientHistory,
   contacts,
   emailSendJobs,
+  emailSignatures,
   emailTemplates,
   emailTriggers,
   reviewTasks,
@@ -137,14 +139,32 @@ async function queueJob(input: {
   }
 
   const locale = pickEmailLocale(input.contact.preferredLanguage);
+  const [brand] = await db
+    .select()
+    .from(agencyBrand)
+    .where(eq(agencyBrand.tenantId, input.tenantId));
+  const [signature] = await db
+    .select()
+    .from(emailSignatures)
+    .where(
+      and(eq(emailSignatures.tenantId, input.tenantId), eq(emailSignatures.isDefault, true)),
+    );
+  const signatureBody = signature
+    ? locale === "es"
+      ? signature.bodyEs
+      : signature.bodyEn
+    : "";
   const { subject, body } = render(input.template, locale, {
     contactFirstName: input.contact.firstName,
-    agencyName: AGENCY_BRAND.name,
+    agencyName: brand?.agencyName || AGENCY_BRAND.name,
     policyType: input.policyType,
     wonDate: input.wonDate,
     reviewLink: AGENCY_BRAND.reviewLinkPlaceholder,
     agentPhone: AGENCY_BRAND.phone,
+    signature: signatureBody,
   });
+  const bodyWithSig =
+    signatureBody && !body.includes(signatureBody) ? `${body}\n\n${signatureBody}` : body;
 
   const holdReason = input.contact.email ? EMAIL_JOB_HOLD : "missing_contact_email";
 
@@ -160,7 +180,7 @@ async function queueJob(input: {
       toEmail: input.contact.email,
       locale,
       subject,
-      body,
+      body: bodyWithSig,
       sendFromProvider: input.trigger.sendFromProvider as SendFromProvider,
       status: "queued",
       holdReason,

@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { SettingsSubnav } from "@/components/templates/email-activity";
 import { buttonVariants } from "@/components/ui/button";
+import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listEmailJobs, listEmailTemplates, listEmailTriggers } from "@/lib/db/template-queries";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [templates, triggers, jobs] = await Promise.all([
+  const [desk, templates, triggers, jobs] = await Promise.all([
+    getResolvedDesk(),
     listEmailTemplates(),
     listEmailTriggers(),
     listEmailJobs(),
@@ -16,35 +19,47 @@ export default async function SettingsPage() {
 
   return (
     <AppShell title="Settings">
+      <SettingsSubnav current="hub" />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Desk settings for Javier Garcia Insurance. Client mail lives in the template library.
-        Internal alerts stay in-app — nothing emails the broker.
+        Two layers: <strong>Agency</strong> (Admin) sets the default look and standardized
+        client mail. <strong>My desk</strong> is each agent&apos;s colors, fonts, density, and
+        columns. No SaaS billing. Nothing emails the broker.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <section className="ff-card p-4">
-          <h2 className="text-sm font-semibold text-navy">Email templates</h2>
+          <h2 className="text-sm font-semibold text-navy">Agency (Admin)</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {templates.length} client templates, each with English and Spanish. Seeded bodies are
-            example copy you can edit.
+            Logo + {desk.agencyName} in the top-left. {templates.length} templates. Signatures
+            and triggers for client mail.
           </p>
-          <Link
-            href="/settings/email-templates"
-            className={cn(buttonVariants(), "mt-3")}
-          >
-            Open template library
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/settings/agency" className={cn(buttonVariants())}>
+              Agency branding
+            </Link>
+            <Link
+              href="/settings/email-templates"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Templates
+            </Link>
+            <Link
+              href="/settings/email-signatures"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Signatures
+            </Link>
+          </div>
         </section>
         <section className="ff-card p-4">
-          <h2 className="text-sm font-semibold text-navy">Email triggers</h2>
+          <h2 className="text-sm font-semibold text-navy">My desk (Agent)</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {triggers.filter((row) => row.trigger.enabled).length} of {triggers.length} triggers
-            on. {queued} send{queued === 1 ? "" : "s"} waiting on a connected inbox.
+            Acting as {desk.actor.label}. Color {desk.colorPreset}, {desk.fontPreset} font,{" "}
+            {desk.density} density. {queued} queued client send
+            {queued === 1 ? "" : "s"}. {triggers.filter((row) => row.trigger.enabled).length}{" "}
+            triggers on.
           </p>
-          <Link
-            href="/settings/email-triggers"
-            className={cn(buttonVariants({ variant: "outline" }), "mt-3")}
-          >
-            Manage triggers
+          <Link href="/settings/my-desk" className={cn(buttonVariants({ variant: "outline" }), "mt-3")}>
+            Edit my desk
           </Link>
         </section>
       </div>

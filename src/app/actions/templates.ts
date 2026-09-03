@@ -14,6 +14,7 @@ import {
 } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { emailTemplates, emailTriggers } from "@/lib/db/schema";
+import { getDeskActor, isAdminActor } from "@/lib/brand/desk-role";
 import { markSendAccountDemoConnected } from "@/lib/templates/connectors";
 import { processDueEmailJobs } from "@/lib/templates/send";
 
@@ -54,7 +55,13 @@ function asUnit(value: string): EmailDelayUnit {
   return "days";
 }
 
+async function requireAdmin() {
+  const actor = await getDeskActor();
+  if (!isAdminActor(actor)) redirect("/settings/my-desk?error=admin-only");
+}
+
 export async function saveEmailTemplate(formData: FormData) {
+  await requireAdmin();
   const id = str(formData, "id");
   const values = {
     name: str(formData, "name") || "Untitled template",
@@ -90,6 +97,7 @@ export async function saveEmailTemplate(formData: FormData) {
 }
 
 export async function duplicateEmailTemplate(formData: FormData) {
+  await requireAdmin();
   const id = str(formData, "id");
   const [src] = await db
     .select()
@@ -118,6 +126,7 @@ export async function duplicateEmailTemplate(formData: FormData) {
 }
 
 export async function saveEmailTrigger(formData: FormData) {
+  await requireAdmin();
   const id = str(formData, "id");
   await db
     .update(emailTriggers)

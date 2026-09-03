@@ -67,6 +67,21 @@ Bind (Closed Won) schedules the review and four-month check-in. Seed loads one q
 
 Live OAuth is not implemented. Use **Connect demo** on the triggers page, or the work-email inbox slice when that branch is merged.
 
+## Agency branding and two settings layers
+
+The top-left rail is the **agency name** (and logo), not the product name.
+
+**What to click (Javy walkthrough)**
+
+1. **Settings** in the rail — Overview of Agency vs My desk.
+2. Stay **Admin** (rail footer). **Agency branding** — change the agency name, upload a logo, set default color / font / density / columns.
+3. **Templates** and **Signatures** — EN + ES client copy. Agents cannot save these.
+4. Switch **Agent** in the rail footer. **My desk** — terracotta/compact/etc. for this actor only. Agency logo and templates stay put.
+5. Open **Deals** / **Contacts** — hidden columns follow the saved layout.
+6. Home → **Open Ana Dib HO3 shop** — still unbound, Cov A **$321,000**.
+
+Roles/login is a sibling. This desk uses a minimum Admin/Agent switch until that lands. No SaaS billing. No live Zoho writes.
+
 ## Schema
 
 Every table has `tenant_id` from day one. Runtime is single-tenant (`TENANT_ID` in `.env`). No multi-tenant isolation, credential vault, billing, or Zoho sync.

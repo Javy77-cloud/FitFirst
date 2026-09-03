@@ -1,0 +1,139 @@
+import { saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
+import { AppShell } from "@/components/app-shell";
+import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
+import { SettingsSubnav } from "@/components/templates/email-activity";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getAgencyBrand, getResolvedDesk } from "@/lib/db/brand-queries";
+import {
+  COLOR_PRESET_LABELS,
+  COLOR_PRESETS,
+  DENSITY_PRESET_LABELS,
+  DENSITY_PRESETS,
+  FONT_PRESET_LABELS,
+  FONT_PRESETS,
+} from "@/lib/domain";
+
+export const dynamic = "force-dynamic";
+
+export default async function AgencySettingsPage() {
+  const [desk, brand] = await Promise.all([getResolvedDesk(), getAgencyBrand()]);
+
+  return (
+    <AppShell title="Agency branding">
+      <SettingsSubnav current="agency" />
+      {!desk.isAdmin ? (
+        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Agency logo, name, templates, and signatures are Admin-only. Switch to Admin in the
+          rail, or use My desk for your own colors and columns.
+        </p>
+      ) : (
+        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+          Agency chrome every agent inherits. Logo sits with the agency name in the top-left —
+          FitFirst is not the corner brand. This is not billing or a second settings app.
+        </p>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <form action={saveAgencyBrand} className="ff-card space-y-4 p-4">
+          <fieldset disabled={!desk.isAdmin} className="space-y-4">
+            <div>
+              <Label htmlFor="agencyName" className="text-xs">
+                Agency name
+              </Label>
+              <Input
+                id="agencyName"
+                name="agencyName"
+                required
+                defaultValue={desk.agencyName}
+                className="mt-1 h-8"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <Label className="text-xs">Default color</Label>
+                <select
+                  name="defaultColorPreset"
+                  defaultValue={brand?.defaultColorPreset ?? "agency"}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  {COLOR_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {COLOR_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Default font</Label>
+                <select
+                  name="defaultFontPreset"
+                  defaultValue={brand?.defaultFontPreset ?? "plex"}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  {FONT_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {FONT_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Default density</Label>
+                <select
+                  name="defaultDensity"
+                  defaultValue={brand?.defaultDensity ?? "comfortable"}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  {DENSITY_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {DENSITY_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <ColumnLayoutFields
+              prefix="agencyCol_"
+              layout={desk.columnLayout}
+              note="Agency default columns. The CRM list picker (sibling) should write this same JSON — do not fork a second picker on the lists."
+            />
+            {desk.isAdmin ? (
+              <Button type="submit" size="sm">
+                Save agency defaults
+              </Button>
+            ) : null}
+          </fieldset>
+        </form>
+
+        <section className="ff-card space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-navy">Logo</h2>
+          <div className="flex items-center gap-3">
+            {desk.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={desk.logoUrl}
+                alt=""
+                className="size-14 rounded-md border border-border bg-card object-contain p-1"
+              />
+            ) : (
+              <div className="flex size-14 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+                No file
+              </div>
+            )}
+            <div className="text-sm text-muted-foreground">{desk.agencyName}</div>
+          </div>
+          {desk.isAdmin ? (
+            <form action={uploadAgencyLogo} className="space-y-2">
+              <Input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+              <Button type="submit" size="sm" variant="outline">
+                Upload logo
+              </Button>
+            </form>
+          ) : null}
+        </section>
+      </div>
+    </AppShell>
+  );
+}
