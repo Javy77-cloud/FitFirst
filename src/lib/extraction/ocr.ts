@@ -1,3 +1,4 @@
+import path from "node:path";
 import { extractFieldsFromText, type ExtractedField } from "./extract";
 
 export type IngestEngine = "pdf_text" | "ocr";
@@ -63,6 +64,7 @@ export async function recognizeImageText(buffer: Buffer): Promise<string> {
   const Tesseract = await import("tesseract.js");
   const result = await Tesseract.recognize(buffer, "eng", {
     logger: () => undefined,
+    cachePath: path.join(process.cwd(), ".tesseract-cache"),
   });
   return (result.data.text ?? "").replace(/\r/g, "").trim();
 }
