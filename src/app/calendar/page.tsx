@@ -309,7 +309,7 @@ function MonthGrid({
           return (
             <div
               key={toDateParam(cell)}
-              className={`min-h-24 border-b border-r border-border p-1 ${inMonth ? "bg-card" : "bg-muted/40"}`}
+              className={`min-h-36 border-b border-r border-border p-1 ${inMonth ? "bg-card" : "bg-muted/40"}`}
             >
               <Link
                 href={href({ view: "day", date: toDateParam(cell), new: "1", kind: "task" })}
@@ -320,7 +320,7 @@ function MonthGrid({
                 {cell.getDate()}
               </Link>
               <div className="space-y-0.5">
-                {dayItems.slice(0, 3).map((item) => (
+                {dayItems.map((item) => (
                   <Link
                     key={item.id}
                     href={href({ activity: item.id, date: toDateParam(cell) })}
@@ -329,9 +329,6 @@ function MonthGrid({
                     {item.title}
                   </Link>
                 ))}
-                {dayItems.length > 3 ? (
-                  <div className="px-1 text-[10px] text-muted-foreground">+{dayItems.length - 3} more</div>
-                ) : null}
               </div>
             </div>
           );
