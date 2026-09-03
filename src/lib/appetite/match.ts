@@ -118,6 +118,15 @@ export function matchCarrier(
     });
   }
 
+  if (rule.appointed === false) {
+    reasons.push({
+      code: "not_appointed",
+      message: "Not appointed to write this line",
+      severity: "fail",
+    });
+    fitScore -= 40;
+  }
+
   if (risk.coverageA != null && rule.minCovA != null) {
     if (risk.coverageA < rule.minCovA) {
       const stretch = risk.coverageA >= rule.minCovA * 0.9;

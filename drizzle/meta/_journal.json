@@ -36,6 +36,13 @@
       "when": 1788399000000,
       "tag": "0004_desk_wire",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788403000000,
+      "tag": "0005_overnight_ams",
+      "breakpoints": true
     }
   ]
 }

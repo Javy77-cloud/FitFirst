@@ -141,8 +141,8 @@ export async function seedWireDesk() {
     .update(deals)
     .set({
       pipelineId: PIPELINE_PC_ID,
-      pipelineStage: "quote_sent",
-      pipelineStageSlug: "quote_sent",
+      pipelineStage: "shopping",
+      pipelineStageSlug: "shopping",
       updatedAt: new Date(),
     })
     .where(eq(deals.id, DEAL_ID));

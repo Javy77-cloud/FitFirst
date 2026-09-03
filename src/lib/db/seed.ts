@@ -17,6 +17,11 @@ import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
 import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
 import { seedLifecycleDemo } from "./seed-lifecycle";
 import { seedWireDesk } from "./seed-wire";
+import { seedOwnerBook } from "./seed-owner-book";
+import { seedWave1ZohoBook } from "./seed-wave1";
+import { seedMergeDuplicates } from "./seed-merge";
+import { seedAppointmentsAndSheets, seedOrtegaFitDeal } from "./seed-shop-fits";
+import { seedCompleteness } from "./seed-completeness";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -315,4 +320,10 @@ export async function seed() {
 
   await seedLifecycleDemo();
   await seedWireDesk();
+  await seedOwnerBook();
+  await seedAppointmentsAndSheets();
+  await seedOrtegaFitDeal();
+  await seedCompleteness();
+  await seedMergeDuplicates();
+  await seedWave1ZohoBook();
 }

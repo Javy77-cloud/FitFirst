@@ -1,0 +1,101 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
+import { DEFAULT_TENANT_ID, OCCUPANCIES, type Occupancy } from "@/lib/domain";
+import { defaultOccupancyForLine } from "@/lib/locations";
+import { db } from "@/lib/db";
+import { locations } from "@/lib/db/schema";
+
+function str(form: FormData, key: string) {
+  return String(form.get(key) ?? "").trim();
+}
+
+function occupancyFrom(form: FormData): Occupancy {
+  const raw = str(form, "occupancy");
+  if ((OCCUPANCIES as readonly string[]).includes(raw)) return raw as Occupancy;
+  return defaultOccupancyForLine(str(form, "line") || "HO");
+}
+
+export async function createLocation(formData: FormData) {
+  const contactId = str(formData, "contactId") || null;
+  const businessId = str(formData, "businessId") || null;
+  if (!contactId && !businessId) {
+    throw new Error("A location must belong to a contact or a business.");
+  }
+
+  const street = str(formData, "street");
+  const city = str(formData, "city");
+  const zip = str(formData, "zip");
+  if (!street || !city || !zip) {
+    throw new Error("Street, city, and ZIP are required.");
+  }
+
+  await db.insert(locations).values({
+    tenantId: DEFAULT_TENANT_ID,
+    contactId,
+    businessId,
+    street,
+    city,
+    state: str(formData, "state") || "FL",
+    zip,
+    occupancy: occupancyFrom(formData),
+  });
+
+  if (contactId) revalidatePath(`/contacts/${contactId}`);
+  if (businessId) revalidatePath(`/businesses/${businessId}`);
+  revalidatePath("/contacts");
+  revalidatePath("/businesses");
+  revalidatePath("/policies");
+}
+
+export async function findOrCreateLocationFromAddress(input: {
+  contactId?: string | null;
+  businessId?: string | null;
+  street?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  occupancy?: string | null;
+}) {
+  const street = input.street?.trim() ?? "";
+  const city = input.city?.trim() ?? "";
+  const zip = input.zip?.trim() ?? "";
+  if (!street || !city || !zip) return null;
+  if (!input.contactId && !input.businessId) return null;
+
+  const occupancy = (input.occupancy?.trim() ||
+    defaultOccupancyForLine("HO")) as Occupancy;
+
+  const existing = await db
+    .select()
+    .from(locations)
+    .where(
+      and(
+        eq(locations.tenantId, DEFAULT_TENANT_ID),
+        eq(locations.street, street),
+        eq(locations.city, city),
+        eq(locations.zip, zip),
+        input.contactId
+          ? eq(locations.contactId, input.contactId)
+          : eq(locations.businessId, input.businessId!),
+      ),
+    );
+
+  if (existing[0]) return existing[0];
+
+  const [row] = await db
+    .insert(locations)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      contactId: input.contactId ?? null,
+      businessId: input.businessId ?? null,
+      street,
+      city,
+      state: input.state?.trim() || "FL",
+      zip,
+      occupancy,
+    })
+    .returning();
+  return row;
+}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getContactWorkspace } from "@/lib/db/queries";
@@ -24,6 +25,7 @@ export default async function ContactDetailPage({
     activePolicyCount,
     clientStatus,
     timeline,
+    locations,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
 
@@ -88,6 +90,8 @@ export default async function ContactDetailPage({
           )}
         </section>
       </div>
+
+      <LocationsList locations={locations} />
 
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">

@@ -1,8 +1,12 @@
 import { notFound } from "next/navigation";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
+import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { VehiclesList } from "@/components/desk-ams-panels";
 import { RecordLink } from "@/components/record-links";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
@@ -18,7 +22,8 @@ export default async function PolicyDetailPage({
   const { id } = await params;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const { policy, contact, account, carrier, deal, files, timeline } = workspace;
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
+  const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
 
   return (
     <AppShell title={policy.policyNumber}>
@@ -39,7 +44,15 @@ export default async function PolicyDetailPage({
         ) : null}
         {account ? <RecordLink href={`/accounts/${account.id}`}>Business {account.name}</RecordLink> : null}
         {deal ? <RecordLink href={`/deals/${deal.id}`}>Deal {deal.title}</RecordLink> : null}
+        <Link
+          href={`/policies/${policy.id}/compare`}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        >
+          Compare renewal
+        </Link>
       </div>
+
+      {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Issued policy files</h2>

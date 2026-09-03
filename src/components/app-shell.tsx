@@ -29,6 +29,12 @@ const NAV = [
   { href: "/accounts", label: "Businesses", icon: Briefcase },
   { href: "/policies", label: "Policies", icon: Shield },
   { href: "/forms", label: "Forms", icon: FileStack },
+  { href: "/quotes", label: "Quotes", icon: ClipboardList },
+  { href: "/merge", label: "Merge", icon: Users },
+  { href: "/work-queue", label: "Work queue", icon: ListChecks },
+  { href: "/claims", label: "Claims log", icon: FileStack },
+  { href: "/commissions", label: "Commissions", icon: Briefcase },
+  { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/logs", label: "Decline log", icon: FileStack },
@@ -57,7 +63,7 @@ export async function AppShell({
           <Link href="/" className="block">
             <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
             <div className="text-[11px] text-sidebar-foreground/70">
-              Filter-first P&amp;C rater
+              Owner desk · filter-first P&amp;C
             </div>
           </Link>
         </div>

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     "Lead to deal shopping, master risk worksheet, document extraction with confidence, and in-appetite carrier ranking.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plex.variable} ${plexMono.variable} h-full`}>
       <body className="min-h-full">{children}</body>

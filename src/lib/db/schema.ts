@@ -55,6 +55,14 @@ export const leads = pgTable(
     status: text("status").notNull().default("new"),
     notes: text("notes"),
     convertedDealId: uuid("converted_deal_id"),
+    mailingAddress: text("mailing_address"),
+    city: text("city"),
+    state: text("state"),
+    zip: text("zip"),
+    dateOfBirth: text("date_of_birth"),
+    mergedIntoId: uuid("merged_into_id"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ownerId: uuid("owner_id"),
     ...timestamps,
   },
   (t) => [index("leads_tenant_idx").on(t.tenantId)],
@@ -79,6 +87,18 @@ export const contacts = pgTable(
     notes: text("notes"),
     lifeNotes: text("life_notes"),
     healthNotes: text("health_notes"),
+    dateOfBirth: text("date_of_birth"),
+    language: text("language"),
+    maritalStatus: text("marital_status"),
+    clientStatus: text("client_status"),
+    lifetimePolicyCount: integer("lifetime_policy_count").notNull().default(0),
+    accountId: uuid("account_id"),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
+    status: text("status").notNull().default("active"),
+    mergedIntoId: uuid("merged_into_id"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ownerId: uuid("owner_id"),
     ...timestamps,
   },
   (t) => [index("contacts_tenant_idx").on(t.tenantId)],
@@ -107,6 +127,11 @@ export const deals = pgTable(
     wonAt: timestamp("won_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     archiveScheduledAt: timestamp("archive_scheduled_at", { withTimezone: true }),
+    ownerId: uuid("owner_id"),
+    shopLines: jsonb("shop_lines").$type<string[] | null>(),
+    coverageAmount: integer("coverage_amount"),
+    propertyOneliner: text("property_oneliner"),
+    currentCarrier: text("current_carrier"),
     ...timestamps,
   },
   (t) => [
@@ -192,6 +217,22 @@ export const policies = pgTable(
     expirationDate: timestamp("expiration_date", { withTimezone: true }).notNull(),
     premium: numeric("premium", { precision: 12, scale: 2 }),
     coverageA: integer("coverage_a"),
+    formType: text("form_type"),
+    originalEffectiveDate: timestamp("original_effective_date", { withTimezone: true }),
+    billingFrequency: text("billing_frequency"),
+    termMonths: integer("term_months"),
+    producer: text("producer"),
+    premisesAddress: text("premises_address"),
+    premisesCity: text("premises_city"),
+    premisesState: text("premises_state"),
+    premisesZip: text("premises_zip"),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    endReason: text("end_reason"),
+    ownerId: uuid("owner_id"),
+    coverageLimits: jsonb("coverage_limits").$type<Record<string, string> | null>(),
+    locationId: uuid("location_id"),
     ...timestamps,
   },
   (t) => [
@@ -235,6 +276,7 @@ export const reviewTasks = pgTable(
     dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("open"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    workItemId: uuid("work_item_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -299,6 +341,24 @@ export const accounts = pgTable(
     yearsInBusiness: integer("years_in_business"),
     naics: text("naics"),
     operations: text("operations"),
+    operationsDescription: text("operations_description"),
+    legalName: text("legal_name"),
+    wcClassCode: text("wc_class_code"),
+    clientSince: timestamp("client_since", { withTimezone: true }),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
+    boundPolicyCount: integer("bound_policy_count").notNull().default(0),
+    pendingPolicyCount: integer("pending_policy_count").notNull().default(0),
+    lifetimePolicyCount: integer("lifetime_policy_count").notNull().default(0),
+    primaryAddress1: text("primary_address1"),
+    primaryCity: text("primary_city"),
+    primaryCounty: text("primary_county"),
+    primaryState: text("primary_state"),
+    primaryZip: text("primary_zip"),
+    mailingSameAsPrimary: boolean("mailing_same_as_primary").notNull().default(true),
+    officerContactId: uuid("officer_contact_id"),
+    website: text("website"),
+    isExample: boolean("is_example").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -527,6 +587,7 @@ export const activities = pgTable(
     accountId: uuid("account_id"),
     dealId: uuid("deal_id").references(() => deals.id),
     policyId: uuid("policy_id").references(() => policies.id),
+    leadId: uuid("lead_id").references(() => leads.id),
     ...timestamps,
   },
   (t) => [
@@ -685,6 +746,362 @@ export const emailSendJobs = pgTable(
   (t) => [index("email_jobs_anchor_idx").on(t.tenantId, t.anchorKind, t.status)],
 );
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    role: text("role").notNull().default("agent"),
+    passwordHash: text("password_hash"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("users_tenant_idx").on(t.tenantId)],
+);
+
+export const carrierAppointments = pgTable(
+  "carrier_appointments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id),
+    writtenLine: text("written_line").notNull(),
+    appointed: boolean("appointed").notNull().default(true),
+    sellingAgency: text("selling_agency"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("carrier_appointments_line_uidx").on(t.tenantId, t.carrierId, t.writtenLine),
+  ],
+);
+
+export const locations = pgTable(
+  "locations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    leadId: uuid("lead_id").references(() => leads.id),
+    accountId: uuid("account_id").references(() => accounts.id),
+    kind: text("kind").notNull().default("mailing"),
+    label: text("label"),
+    address1: text("address1"),
+    street: text("street"),
+    city: text("city"),
+    county: text("county"),
+    state: text("state"),
+    zip: text("zip"),
+    occupancy: text("occupancy"),
+    ...timestamps,
+  },
+  (t) => [index("locations_tenant_idx").on(t.tenantId)],
+);
+
+export const mergeCandidates = pgTable(
+  "merge_candidates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    entityType: text("entity_type").notNull(),
+    leftId: uuid("left_id").notNull(),
+    rightId: uuid("right_id").notNull(),
+    matchReasons: jsonb("match_reasons").$type<string[]>().notNull().default([]),
+    status: text("status").notNull().default("open"),
+    keeperId: uuid("keeper_id"),
+    duplicateId: uuid("duplicate_id"),
+    mergedAt: timestamp("merged_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("merge_candidates_tenant_idx").on(t.tenantId, t.status)],
+);
+
+export const mergeEvents = pgTable(
+  "merge_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    entityType: text("entity_type").notNull(),
+    keeperId: uuid("keeper_id").notNull(),
+    duplicateId: uuid("duplicate_id").notNull(),
+    copiedFields: jsonb("copied_fields").$type<string[]>().notNull().default([]),
+    relinked: jsonb("relinked").$type<Record<string, number>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+);
+
+export const issuedCertificates = pgTable(
+  "issued_certificates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    accountId: uuid("account_id").references(() => accounts.id),
+    businessId: uuid("business_id"),
+    certificateNumber: text("certificate_number").notNull(),
+    holderName: text("holder_name").notNull(),
+    holderAddress: text("holder_address"),
+    jobLocation: text("job_location"),
+    lines: jsonb("lines").$type<string[]>().notNull().default([]),
+    producerName: text("producer_name"),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
+    status: text("status").notNull().default("issued"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+);
+
+export const claims = pgTable(
+  "claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id").references(() => policies.id),
+    dateReported: timestamp("date_reported", { withTimezone: true }),
+    dateOfLoss: timestamp("date_of_loss", { withTimezone: true }),
+    causeType: text("cause_type"),
+    description: text("description"),
+    reportedHow: text("reported_how"),
+    carrierClaimNumber: text("carrier_claim_number"),
+    status: text("status").notNull().default("inquiry"),
+    ...timestamps,
+  },
+  (t) => [index("claims_tenant_idx").on(t.tenantId)],
+);
+
+export const claimNotes = pgTable("claim_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  claimId: uuid("claim_id")
+    .notNull()
+    .references(() => claims.id),
+  body: text("body").notNull(),
+  postedBy: text("posted_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const claimAttachments = pgTable("claim_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  claimId: uuid("claim_id")
+    .notNull()
+    .references(() => claims.id),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  storagePath: text("storage_path").notNull(),
+  docType: text("doc_type").notNull().default("other"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const claimActivity = pgTable("claim_activity", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  claimId: uuid("claim_id")
+    .notNull()
+    .references(() => claims.id),
+  eventType: text("event_type").notNull(),
+  body: text("body").notNull(),
+  actor: text("actor"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const commissions = pgTable(
+  "commissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agentId: uuid("agent_id"),
+    policyId: uuid("policy_id").references(() => policies.id),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    lineOfBusiness: text("line_of_business"),
+    premium: numeric("premium", { precision: 12, scale: 2 }),
+    ratePct: numeric("rate_pct", { precision: 6, scale: 3 }),
+    amount: numeric("amount", { precision: 12, scale: 2 }),
+    status: text("status").notNull().default("pending"),
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    paidDate: timestamp("paid_date", { withTimezone: true }),
+    period: text("period"),
+    ...timestamps,
+  },
+  (t) => [index("commissions_tenant_idx").on(t.tenantId, t.status)],
+);
+
+export const commissionEvents = pgTable("commission_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  commissionId: uuid("commission_id").references(() => commissions.id),
+  actorId: uuid("actor_id"),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const agencySettings = pgTable("agency_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const recordAsks = pgTable("record_asks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  entityType: text("entity_type").notNull(),
+  entityId: uuid("entity_id").notNull(),
+  authorId: uuid("author_id"),
+  kind: text("kind").notNull().default("question"),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("open"),
+  resolvedBy: uuid("resolved_by"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const carrierGoals = pgTable("carrier_goals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  carrierId: uuid("carrier_id").references(() => carriers.id),
+  year: integer("year").notNull(),
+  premiumGoal: numeric("premium_goal", { precision: 14, scale: 2 }),
+  policyGoal: integer("policy_goal"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const drivers = pgTable("drivers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  policyId: uuid("policy_id").references(() => policies.id),
+  dealId: uuid("deal_id").references(() => deals.id),
+  quoteSheetId: uuid("quote_sheet_id"),
+  riskId: uuid("risk_id"),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  dateOfBirth: text("date_of_birth"),
+  licenseNumber: text("license_number"),
+  licenseState: text("license_state"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  ...timestamps,
+});
+
+export const vehicles = pgTable("vehicles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  policyId: uuid("policy_id").references(() => policies.id),
+  dealId: uuid("deal_id").references(() => deals.id),
+  quoteSheetId: uuid("quote_sheet_id"),
+  riskId: uuid("risk_id"),
+  year: integer("year"),
+  make: text("make"),
+  model: text("model"),
+  vin: text("vin"),
+  usage: text("usage"),
+  garagingZip: text("garaging_zip"),
+  garagingAddress: text("garaging_address"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  ...timestamps,
+});
+
+export const policyTerms = pgTable("policy_terms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  policyId: uuid("policy_id")
+    .notNull()
+    .references(() => policies.id),
+  role: text("role").notNull().default("current"),
+  termEffective: timestamp("term_effective", { withTimezone: true }).notNull(),
+  termExpiration: timestamp("term_expiration", { withTimezone: true }).notNull(),
+  premium: numeric("premium", { precision: 12, scale: 2 }),
+  aopDeductible: text("aop_deductible"),
+  hurricaneDeductible: text("hurricane_deductible"),
+  comprehensiveDeductible: text("comprehensive_deductible"),
+  collisionDeductible: text("collision_deductible"),
+  coverages: jsonb("coverages").$type<Record<string, string> | null>(),
+  notes: text("notes"),
+  source: text("source"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const renewalCompareLogs = pgTable("renewal_compare_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  policyId: uuid("policy_id").references(() => policies.id),
+  currentTermId: uuid("current_term_id"),
+  proposedTermId: uuid("proposed_term_id"),
+  eventType: text("event_type").notNull(),
+  currentPremium: numeric("current_premium", { precision: 12, scale: 2 }),
+  proposedPremium: numeric("proposed_premium", { precision: 12, scale: 2 }),
+  delta: numeric("delta", { precision: 12, scale: 2 }),
+  pct: numeric("pct", { precision: 8, scale: 4 }),
+  summary: text("summary"),
+  snapshot: jsonb("snapshot"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const policyEvents = pgTable("policy_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  policyId: uuid("policy_id").references(() => policies.id),
+  kind: text("kind").notNull(),
+  effectiveDate: timestamp("effective_date", { withTimezone: true }),
+  reason: text("reason"),
+  summary: text("summary"),
+  changeSet: jsonb("change_set"),
+  premisesKey: text("premises_key"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const policyAttachments = pgTable("policy_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  policyId: uuid("policy_id").references(() => policies.id),
+  eventId: uuid("event_id"),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  storagePath: text("storage_path").notNull(),
+  docType: text("doc_type").notNull().default("other"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const policyWorkItems = pgTable(
+  "policy_work_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    assigneeId: uuid("assignee_id"),
+    workStatus: text("work_status").notNull().default("ready"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("policy_work_items_policy_uidx").on(t.tenantId, t.policyId)],
+);
+
+export const policyWorkFlags = pgTable("policy_work_flags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  workItemId: uuid("work_item_id").references(() => policyWorkItems.id),
+  policyId: uuid("policy_id"),
+  flag: text("flag").notNull(),
+  createdBy: uuid("created_by"),
+  clearedAt: timestamp("cleared_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const policyWorkNotes = pgTable("policy_work_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  workItemId: uuid("work_item_id").references(() => policyWorkItems.id),
+  authorId: uuid("author_id"),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -709,3 +1126,15 @@ export type FormTemplate = typeof formTemplates.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
+export type Location = typeof locations.$inferSelect;
+export type MergeCandidate = typeof mergeCandidates.$inferSelect;
+export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
+export type Claim = typeof claims.$inferSelect;
+export type Commission = typeof commissions.$inferSelect;
+export type Driver = typeof drivers.$inferSelect;
+export type Vehicle = typeof vehicles.$inferSelect;
+export type PolicyTerm = typeof policyTerms.$inferSelect;
+export type RenewalCompareLog = typeof renewalCompareLogs.$inferSelect;
+export type PolicyWorkItem = typeof policyWorkItems.$inferSelect;

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { getAccountWorkspace } from "@/lib/db/queries";
@@ -24,6 +25,8 @@ export default async function AccountDetailPage({
     activePolicyCount,
     clientStatus,
     timeline,
+    locations,
+    certificates,
   } = workspace;
 
   return (
@@ -88,6 +91,9 @@ export default async function AccountDetailPage({
           </ul>
         )}
       </section>
+      <LocationsList locations={locations} />
+      <CertificatesList accountId={account.id} certificates={certificates} />
+
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
           Commercial policies

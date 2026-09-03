@@ -16,11 +16,14 @@
   --ff-sidebar-muted: #93a7be;
   --ff-accent: #1d6fb8;
   --ff-accent-hover: #185c99;
-  --ff-canvas: #eef1f5;
+  --ff-paper: #f7f3ec;
+  --ff-terracotta: #b4532a;
+  --ff-wash: #f3eee6;
+  --ff-canvas: #f7f3ec;
   --ff-ink: #1c2430;
   --ff-muted: #5c6b7a;
-  --ff-card: #ffffff;
-  --ff-border: #d5dde6;
+  --ff-card: #fffcf7;
+  --ff-border: #e2d6c6;
   --ff-green: #1f7a4d;
   --ff-green-bg: #e4f5ec;
   --ff-yellow: #8a6500;
@@ -42,11 +45,11 @@
   --popover-foreground: var(--ff-ink);
   --primary: var(--ff-accent);
   --primary-foreground: #ffffff;
-  --secondary: #e4ebf3;
+  --secondary: var(--ff-wash);
   --secondary-foreground: var(--ff-navy);
-  --muted: #e4ebf3;
+  --muted: var(--ff-wash);
   --muted-foreground: var(--ff-muted);
-  --accent: #e4ebf3;
+  --accent: var(--ff-wash);
   --accent-foreground: var(--ff-navy);
   --destructive: var(--ff-red);
   --border: var(--ff-border);
@@ -152,7 +155,7 @@
   color: var(--ff-muted);
   padding: 0.45rem 0.65rem;
   border-bottom: 1px solid var(--border);
-  background: #f7f9fb;
+  background: var(--ff-wash);
   white-space: nowrap;
 }
 .ff-table td {
@@ -161,5 +164,16 @@
   vertical-align: top;
 }
 .ff-table tr:hover td {
-  background: #f4f8fc;
+  background: var(--ff-wash);
+}
+
+.ff-completeness {
+  border: 1px solid var(--ff-border);
+  border-radius: var(--radius);
+  background: var(--ff-card);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.ff-completeness-compact {
+  padding: 0.5rem 0.75rem;
 }

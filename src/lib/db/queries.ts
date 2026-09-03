@@ -1,7 +1,23 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
-import { db } from "./index";
+import { addUtcDays, DESK_AS_OF, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
+import {
+  buildOwnerHome,
+  filterByAssignee,
+  IN_FORCE_STATUSES,
+  LAPSE_STATUSES,
+  OPEN_QUOTE_STAGES,
+  QUOTE_SENT_STAGES,
+  WON_STAGES,
+  type CommissionTotals,
+  type HomeDeal,
+  type HomePolicy,
+  type HomeTask,
+} from "@/lib/home/aggregate";
+import { detectOwnerHomeTables } from "@/lib/home/optional-tables";
+import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
+import { db, sql as rawSql } from "./index";
 import {
   accounts,
   activities,
@@ -17,17 +33,24 @@ import {
   emailSendJobs,
   extractedFields,
   formTemplates,
+  issuedCertificates,
   leads,
+  locations,
+  mergeCandidates,
   pipelineStages,
   pipelines,
   policies,
+  policyTerms,
   quoteAttemptLogs,
   quoteSheets,
   quotes,
+  renewalCompareLogs,
   reviewTasks,
   risks,
   tenants,
+  vehicles,
 } from "./schema";
+import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
 import {
   hitFromBusiness,
   hitFromContact,
@@ -130,8 +153,26 @@ export async function listLeads() {
   return db.select().from(leads).where(eq(leads.tenantId, tenant())).orderBy(desc(leads.createdAt));
 }
 
-export async function listDeals() {
-  return db.select().from(deals).where(eq(deals.tenantId, tenant())).orderBy(desc(deals.updatedAt));
+export type DealListFilter = {
+  stage?: string;
+  attention?: string;
+};
+
+export async function listDeals(filter: DealListFilter = {}) {
+  const rows = await db
+    .select()
+    .from(deals)
+    .where(eq(deals.tenantId, tenant()))
+    .orderBy(desc(deals.updatedAt));
+  return rows.filter((deal) => {
+    const stage = deal.pipelineStage.toLowerCase();
+    if (filter.attention === "bound_pending") return WON_STAGES.has(stage);
+    if (filter.stage === "open") return OPEN_QUOTE_STAGES.has(stage);
+    if (filter.stage === "quote_sent") return QUOTE_SENT_STAGES.has(stage);
+    if (filter.stage === "won") return WON_STAGES.has(stage);
+    if (filter.stage) return stage === filter.stage.toLowerCase();
+    return true;
+  });
 }
 
 export async function listContacts() {
@@ -184,8 +225,17 @@ export async function listAccounts() {
   });
 }
 
-export async function listPolicies() {
-  return db
+export type PolicyListFilter = {
+  status?: string;
+  written?: string;
+  renewal?: string;
+  line?: string;
+  carrier?: string;
+  attention?: string;
+};
+
+export async function listPolicies(filter: PolicyListFilter = {}) {
+  const rows = await db
     .select({
       policy: policies,
       contact: contacts,
@@ -198,6 +248,39 @@ export async function listPolicies() {
     .leftJoin(carriers, eq(policies.carrierId, carriers.id))
     .where(eq(policies.tenantId, tenant()))
     .orderBy(asc(policies.expirationDate));
+
+  const asOf = DESK_AS_OF;
+  return rows.filter(({ policy }) => {
+    const status = policy.status.toLowerCase();
+    if (filter.attention === "lapse") return LAPSE_STATUSES.has(status);
+    if (filter.status === "in_force") return IN_FORCE_STATUSES.has(status);
+    if (filter.written === "this_month") {
+      return (
+        IN_FORCE_STATUSES.has(status) &&
+        policy.effectiveDate >= startOfUtcMonth(asOf) &&
+        policy.effectiveDate <= endOfUtcMonth(asOf)
+      );
+    }
+    if (filter.written === "last_month") {
+      const last = priorMonth(asOf);
+      return (
+        IN_FORCE_STATUSES.has(status) &&
+        policy.effectiveDate >= startOfUtcMonth(last) &&
+        policy.effectiveDate <= endOfUtcMonth(last)
+      );
+    }
+    if (filter.renewal === "30" || filter.renewal === "60") {
+      const days = filter.renewal === "30" ? 30 : 60;
+      return (
+        IN_FORCE_STATUSES.has(status) &&
+        policy.expirationDate > asOf &&
+        policy.expirationDate <= addUtcDays(asOf, days)
+      );
+    }
+    if (filter.line) return policy.lineOfBusiness.toUpperCase() === filter.line.toUpperCase();
+    if (filter.carrier) return policy.carrierId === filter.carrier;
+    return true;
+  });
 }
 
 export async function getLead(id: string) {
@@ -251,6 +334,10 @@ export async function getContactWorkspace(id: string) {
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
     timeline: await listActivityTimeline({ contactId: id }),
+    locations: await db
+      .select()
+      .from(locations)
+      .where(and(eq(locations.tenantId, tenant()), eq(locations.contactId, id))),
   };
 }
 
@@ -288,6 +375,14 @@ export async function getAccountWorkspace(id: string) {
     activePolicyCount: inForce,
     clientStatus: clientStatusFromCounts(lifetime, inForce),
     timeline: await listActivityTimeline({ accountId: id }),
+    locations: await db
+      .select()
+      .from(locations)
+      .where(and(eq(locations.tenantId, tenant()), eq(locations.accountId, id))),
+    certificates: await db
+      .select()
+      .from(issuedCertificates)
+      .where(and(eq(issuedCertificates.tenantId, tenant()), eq(issuedCertificates.accountId, id))),
   };
 }
 
@@ -312,10 +407,28 @@ export async function getPolicyWorkspace(id: string) {
     .from(documents)
     .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, id)))
     .orderBy(desc(documents.createdAt));
+  const [terms, compareLogs, vehicleRows] = await Promise.all([
+    db
+      .select()
+      .from(policyTerms)
+      .where(and(eq(policyTerms.tenantId, tenant()), eq(policyTerms.policyId, id))),
+    db
+      .select()
+      .from(renewalCompareLogs)
+      .where(and(eq(renewalCompareLogs.tenantId, tenant()), eq(renewalCompareLogs.policyId, id))),
+    db
+      .select()
+      .from(vehicles)
+      .where(and(eq(vehicles.tenantId, tenant()), eq(vehicles.policyId, id)))
+      .orderBy(asc(vehicles.sortOrder)),
+  ]);
   return {
     ...row,
     files,
     timeline: await listActivityTimeline({ policyId: id }),
+    terms,
+    compareLogs,
+    vehicles: vehicleRows,
   };
 }
 
@@ -581,12 +694,267 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
     }
   }
   for (const row of accountRows) {
-    if (matchesQuery(q, row.name, row.dba, row.ein, row.city)) hits.push(hitFromBusiness(row));
+    if (matchesQuery(q, row.name, row.legalName, row.dba, row.ein, row.city)) {
+      hits.push(hitFromBusiness(row));
+    }
   }
   for (const row of policyRows) {
     if (matchesQuery(q, row.policyNumber, row.lineOfBusiness)) hits.push(hitFromPolicy(row));
   }
   return rankHits(hits, q).slice(0, 24);
+}
+
+function contactName(contact: { firstName: string; lastName: string } | null): string {
+  if (!contact) return "Unknown account";
+  if (contact.firstName.includes(" ")) return `${contact.firstName} ${contact.lastName}`.trim();
+  return `${contact.lastName}, ${contact.firstName}`;
+}
+
+async function loadCommissionTotals(scope: OwnerHomeScope): Promise<CommissionTotals> {
+  const tables = await detectOwnerHomeTables();
+  if (!tables.commissions) return null;
+  try {
+    const rows = await rawSql<{ pending: string; paid: string }[]>`
+      select
+        coalesce(sum(amount) filter (where status = 'pending'), 0)::text as pending,
+        coalesce(sum(amount) filter (where status = 'paid'), 0)::text as paid
+      from commissions
+      where tenant_id = ${scope.tenantId}
+        and (
+          ${scope.agentUserId}::uuid is null
+          or agent_id = ${scope.agentUserId}::uuid
+        )
+    `;
+    const row = rows[0];
+    return { pending: Number(row?.pending ?? 0), paid: Number(row?.paid ?? 0) };
+  } catch {
+    return null;
+  }
+}
+
+async function loadOpportunityGapCount(scope: OwnerHomeScope): Promise<number | null> {
+  const tables = await detectOwnerHomeTables();
+  if (!tables.opportunities) return null;
+  try {
+    const rows = await rawSql<{ n: number }[]>`
+      select count(*)::int as n
+      from opportunities
+      where tenant_id = ${scope.tenantId}
+        and coalesce(status, 'open') not in ('closed', 'won', 'lost', 'dismissed')
+    `;
+    return Number(rows[0]?.n ?? 0);
+  } catch {
+    return null;
+  }
+}
+
+export async function ownerHomeDashboard() {
+  const scope = await currentOwnerHomeScope();
+  const tables = await detectOwnerHomeTables();
+
+  const policyRows = await db
+    .select({
+      policy: policies,
+      contact: contacts,
+      carrier: carriers,
+    })
+    .from(policies)
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .where(eq(policies.tenantId, scope.tenantId));
+
+  const dealRows = await db.select().from(deals).where(eq(deals.tenantId, scope.tenantId));
+  const taskRows = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, scope.tenantId), eq(reviewTasks.status, "open")))
+    .orderBy(asc(reviewTasks.dueDate));
+
+  const homePolicies: HomePolicy[] = policyRows.map(({ policy, contact, carrier }) => ({
+    id: policy.id,
+    contactId: policy.contactId ?? "",
+    carrierId: policy.carrierId,
+    carrierName: carrier?.name ?? null,
+    contactName: contactName(contact),
+    policyNumber: policy.policyNumber,
+    lineOfBusiness: policy.lineOfBusiness,
+    status: policy.status,
+    premium: policy.premium == null ? 0 : Number(policy.premium),
+    effectiveDate: policy.effectiveDate,
+    expirationDate: policy.expirationDate,
+    ownerId: policy.ownerId ?? null,
+  }));
+
+  const homeDeals: HomeDeal[] = dealRows.map((deal) => ({
+    id: deal.id,
+    title: deal.title,
+    pipelineStage: deal.pipelineStage,
+    lineOfBusiness: deal.lineOfBusiness,
+    boundAt: deal.boundAt,
+    updatedAt: deal.updatedAt,
+    contactId: deal.contactId,
+    ownerId: deal.ownerId ?? null,
+  }));
+
+  const homeTasks: HomeTask[] = taskRows.map((task) => ({
+    id: task.id,
+    title: task.title,
+    dueDate: task.dueDate,
+    kind: task.kind,
+    dealId: task.dealId,
+    policyId: task.policyId,
+    contactId: task.contactId,
+  }));
+
+  const scopedPolicies = filterByAssignee(
+    homePolicies,
+    scope.agentUserId,
+    Boolean(tables.assigneeColumn),
+  );
+  const scopedDeals = filterByAssignee(
+    homeDeals,
+    scope.agentUserId,
+    Boolean(tables.dealAssigneeColumn),
+  );
+
+  const [commissions, opportunityCount] = await Promise.all([
+    loadCommissionTotals(scope),
+    loadOpportunityGapCount(scope),
+  ]);
+
+  const snapshot = buildOwnerHome({
+    asOf: DESK_AS_OF,
+    policies: scopedPolicies,
+    deals: scopedDeals,
+    tasks: homeTasks,
+    commissions,
+  });
+  if (opportunityCount != null) snapshot.gapCount = opportunityCount;
+
+  return { snapshot, scope, tables };
+}
+
+export async function listBoundPendingDeals() {
+  const [dealRows, policyRows] = await Promise.all([
+    db.select().from(deals).where(eq(deals.tenantId, tenant())),
+    db.select({ contactId: policies.contactId }).from(policies).where(eq(policies.tenantId, tenant())),
+  ]);
+  const covered = new Set(policyRows.map((p) => p.contactId));
+  return dealRows.filter(
+    (deal) =>
+      WON_STAGES.has(deal.pipelineStage.toLowerCase()) &&
+      (!deal.contactId || !covered.has(deal.contactId)),
+  );
+}
+
+export async function listOpenMergeCandidates() {
+  return db
+    .select()
+    .from(mergeCandidates)
+    .where(and(eq(mergeCandidates.tenantId, tenant()), eq(mergeCandidates.status, "open")))
+    .orderBy(desc(mergeCandidates.createdAt));
+}
+
+async function mergeBundle(entityType: string, id: string) {
+  if (entityType === "lead") {
+    const [person] = await db.select().from(leads).where(eq(leads.id, id));
+    const relatedDeals = await db.select().from(deals).where(eq(deals.leadId, id));
+    const locRows = await db.select().from(locations).where(eq(locations.leadId, id));
+    const actRows = await db.select().from(activities).where(eq(activities.leadId, id));
+    return {
+      person: person ?? { id, firstName: "Unknown", lastName: "Lead", status: "active" },
+      deals: relatedDeals,
+      policies: [] as (typeof policies.$inferSelect)[],
+      locations: locRows,
+      activities: actRows,
+    };
+  }
+  const [person] = await db.select().from(contacts).where(eq(contacts.id, id));
+  const relatedDeals = await db.select().from(deals).where(eq(deals.contactId, id));
+  const relatedPolicies = await db.select().from(policies).where(eq(policies.contactId, id));
+  const locRows = await db.select().from(locations).where(eq(locations.contactId, id));
+  const actRows = await db.select().from(activities).where(eq(activities.contactId, id));
+  return {
+    person: person ?? { id, firstName: "Unknown", lastName: "Contact", status: "active" },
+    deals: relatedDeals,
+    policies: relatedPolicies,
+    locations: locRows,
+    activities: actRows,
+  };
+}
+
+export async function getMergeReview(id: string) {
+  const [candidate] = await db
+    .select()
+    .from(mergeCandidates)
+    .where(and(eq(mergeCandidates.tenantId, tenant()), eq(mergeCandidates.id, id)));
+  if (!candidate) return null;
+  const [left, right] = await Promise.all([
+    mergeBundle(candidate.entityType, candidate.leftId),
+    mergeBundle(candidate.entityType, candidate.rightId),
+  ]);
+  return { candidate, entityType: candidate.entityType, left, right };
+}
+
+export async function listQuoteTrackingShops(dealId?: string) {
+  const logRows = await db
+    .select({ log: quoteAttemptLogs, deal: deals, carrier: carriers })
+    .from(quoteAttemptLogs)
+    .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
+    .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+    .where(
+      dealId
+        ? and(eq(quoteAttemptLogs.tenantId, tenant()), eq(quoteAttemptLogs.dealId, dealId))
+        : eq(quoteAttemptLogs.tenantId, tenant()),
+    );
+  const quoteRows = await db
+    .select({ quote: quotes, deal: deals, carrier: carriers })
+    .from(quotes)
+    .innerJoin(deals, eq(quotes.dealId, deals.id))
+    .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
+    .where(
+      dealId ? and(eq(quotes.tenantId, tenant()), eq(quotes.dealId, dealId)) : eq(quotes.tenantId, tenant()),
+    );
+  const policyRows = await db
+    .select()
+    .from(policies)
+    .where(eq(policies.tenantId, tenant()));
+
+  const attempts = logRows.map(({ log, deal, carrier }) => ({
+    id: log.id,
+    dealId: deal.id,
+    dealTitle: deal.title,
+    dealStage: deal.pipelineStage,
+    carrierId: carrier.id,
+    carrierName: carrier.name,
+    line: log.lineOfBusiness,
+    result: log.result,
+    bindable: log.bindable,
+    premium: log.premium,
+    quoteNumber: log.quoteNumber,
+    attemptedAt: log.attemptedAt,
+    why: log.why,
+    quoteId: log.id,
+  }));
+  const comparison = quoteRows.map(({ quote, deal, carrier }) => ({
+    id: quote.id,
+    dealId: deal.id,
+    dealTitle: deal.title,
+    dealStage: deal.pipelineStage,
+    carrierId: carrier.id,
+    carrierName: carrier.name,
+    line: deal.lineOfBusiness,
+    bindable: quote.bindable,
+    premium: quote.premium,
+    quoteNumber: quote.quoteNumber,
+    createdAt: quote.createdAt,
+    notes: quote.notes,
+    quoteAttemptLogId: quote.quoteAttemptLogId,
+  }));
+  const bound = policyRows
+    .filter((p) => p.dealId && p.carrierId)
+    .map((p) => ({ dealId: p.dealId!, carrierId: p.carrierId!, policyId: p.id }));
+  return groupTrackingShops(buildTrackingRows(attempts, bound, comparison));
 }
 
 export async function historyForContact(contactId: string) {

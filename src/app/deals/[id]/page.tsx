@@ -15,6 +15,9 @@ import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
+import { HealthStrip } from "@/components/completeness/health-strip";
+import { reportFromSheet } from "@/lib/completeness/report";
+import type { ShopLine } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +47,10 @@ export default async function DealPage({
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
   const isAna = deal.id === DEAL_ID;
+  const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
+  const health = quoteSheet
+    ? reportFromSheet(sheetLine, quoteSheet.values)
+    : null;
 
   return (
     <AppShell
@@ -100,9 +107,17 @@ export default async function DealPage({
 
       {isAna ? (
         <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-xs text-fit-yellow">
-          Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Eight markets, zero bindable.
-          Do not bind this shop. No policy from these quotes.
+          Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
+          bind this shop. Quotes are not coverage.
         </div>
+      ) : null}
+
+      {health ? (
+        <HealthStrip
+          report={health}
+          title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
+          href={`/deals/${deal.id}?tab=quote-sheet`}
+        />
       ) : null}
 
       {!risk ? (

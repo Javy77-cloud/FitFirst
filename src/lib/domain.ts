@@ -204,6 +204,7 @@ export type AppetiteRuleInput = {
   portalStatus: "open" | "closed" | "takeout_only";
   dontWriteNotes: string | null;
   writtenLines: string[];
+  appointed?: boolean | null;
 };
 
 export type PriorAttempt = {
@@ -256,3 +257,103 @@ export function clientStatusLabel(status: ClientStatus): string {
   if (status === "former_client") return "Former Client";
   return "Not a client";
 }
+
+export {
+  APPOINTMENT_LINES,
+  SELLING_AGENCIES,
+  WRITTEN_LINE_LABELS,
+  appointmentLine,
+  writtenLineLabel,
+  writesDealLine,
+  MATCH_REASONS,
+  MERGE_ENTITY_TYPES,
+  MERGE_STATUSES,
+  RECORD_STATUSES,
+  MATCH_REASON_LABELS,
+  formatDate,
+  CLAIM_STATUSES,
+  CLAIM_REPORT_CHANNELS,
+  CLAIM_CAUSES,
+  CLAIM_ACTIVITY_TYPES,
+  USER_ROLES,
+  COMMISSION_STATUSES,
+  ASK_STATUSES,
+  ASK_KINDS,
+  ASK_ENTITY_TYPES,
+  OWNER_ENTITY_TYPES,
+  COMMISSION_RANGES,
+  COMMISSION_VIEWS,
+  DEFAULT_COMMISSION_RATE_PCT,
+  DEFAULT_PRODUCER_SPLIT_PCT,
+  sellingAgencyLabel,
+  formatRatePct,
+  LOCATION_LINES,
+  OCCUPANCIES,
+  OCCUPANCY_LABELS,
+  isLocationLine,
+  occupancyLabel,
+  lineLabel,
+  VEHICLE_USES,
+  VEHICLE_USE_LABELS,
+  vehicleUseLabel,
+  formatDob,
+  formatVehicleTitle,
+  TASK_PIPELINE_STAGES,
+  ACTIVITY_PRIORITIES,
+  CALL_DIRECTIONS,
+  CALL_OUTCOMES,
+  MEETING_LOG_EVENTS,
+  formatDuration,
+  statusLabel,
+  pipelineLabel,
+  CERTIFIABLE_LINES,
+  isCertifiableLine,
+  TRACKING_STATUSES,
+} from "./domain-ams";
+export type {
+  AppointmentLine,
+  SellingAgency,
+  MatchReason,
+  MergeEntityType,
+  MergeStatus,
+  ClaimStatus,
+  ClaimReportChannel,
+  ClaimCause,
+  ClaimActivityType,
+  UserRole,
+  CommissionStatus,
+  AskStatus,
+  AskKind,
+  AskEntityType,
+  OwnerEntityType,
+  CommissionRange,
+  CommissionView,
+  LocationLine,
+  Occupancy,
+  VehicleUse,
+  TaskPipelineStage,
+  ActivityPriority,
+  CallDirection,
+  CallOutcome,
+  MeetingLogEvent,
+  CertifiableLine,
+  TrackingStatus,
+} from "./domain-ams";
+
+export {
+  POLICY_CHANGE_KINDS,
+  isInForceStatus,
+  isEndedStatus,
+  policyStatusLabel,
+} from "./policy/status";
+export type { PolicyChangeKind } from "./policy/status";
+
+export {
+  WORK_STATUSES,
+  WORK_FLAGS,
+  WORK_REMINDER_KIND,
+  WORK_PING_KIND,
+  workStatusLabel,
+  workFlagLabel,
+} from "./work-queue/types";
+export type { WorkStatus, WorkFlag } from "./work-queue/types";

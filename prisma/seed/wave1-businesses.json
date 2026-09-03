@@ -1,0 +1,42 @@
+[
+  {
+    "zoho_id": "6742853000009104755",
+    "legal_name": "VP Painting & Construction",
+    "dba": null,
+    "primary_contact_zoho_id": "6742853000003768508",
+    "employee_count": 14,
+    "annual_sales": 600000,
+    "payroll_total": 450000,
+    "fein": null,
+    "wc_class_code": null,
+    "street": "4656 E JIMMY LN",
+    "city": "Eagle Mountain",
+    "state": "UT",
+    "zip": "84005",
+    "phone": "385-221-7269",
+    "email": null,
+    "operations": "painters",
+    "client_since": "2026-06-01",
+    "is_example": false
+  },
+  {
+    "zoho_id": "6742853000010666008",
+    "legal_name": "E-Pac Business Center",
+    "dba": null,
+    "primary_contact_zoho_id": "6742853000009315158",
+    "employee_count": 2,
+    "annual_sales": 165000,
+    "payroll_total": 70000,
+    "fein": null,
+    "wc_class_code": "8017",
+    "street": "1153 Malabar Rd NE Suite 11",
+    "city": "Palm Bya",
+    "state": "FL",
+    "zip": "32907",
+    "phone": "321-728-2415",
+    "email": null,
+    "operations": "mailbox store",
+    "client_since": "2026-08-29",
+    "is_example": false
+  }
+]

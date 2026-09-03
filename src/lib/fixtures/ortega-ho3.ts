@@ -1,0 +1,22 @@
+/** Inland masonry Home shop that should fit appointed first-wave markets. Not Ana. */
+export const ORTEGA_FIT = {
+  firstName: "Luis",
+  lastName: "Ortega",
+  title: "Ortega · Winter Garden HO3",
+  address1: "814 Citron Loop",
+  city: "Winter Garden",
+  county: "Orange",
+  state: "FL",
+  zip: "34787",
+  yearBuilt: 2018,
+  roofYear: 2022,
+  roofCovering: "architectural shingle",
+  construction: "masonry",
+  occupancy: "owner",
+  stories: 1,
+  openingProtection: "impact",
+  pool: false,
+  protectionClass: "3",
+  milesToCoast: 42,
+  coverageA: 425000,
+} as const;
