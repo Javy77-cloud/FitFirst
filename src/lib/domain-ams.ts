@@ -97,13 +97,21 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const COMMISSION_STATUSES = ["pending", "payable", "paid", "held"] as const;
 export type CommissionStatus = (typeof COMMISSION_STATUSES)[number];
 
-export const ASK_STATUSES = ["open", "done"] as const;
+export const ASK_STATUSES = ["open", "done", "resolved"] as const;
 export type AskStatus = (typeof ASK_STATUSES)[number];
 
-export const ASK_KINDS = ["question", "payout"] as const;
+export const ASK_KINDS = ["question", "payout", "status"] as const;
 export type AskKind = (typeof ASK_KINDS)[number];
 
-export const ASK_ENTITY_TYPES = ["commission", "policy"] as const;
+export const ASK_ENTITY_TYPES = [
+  "commission",
+  "policy",
+  "contact",
+  "lead",
+  "deal",
+  "account",
+  "carrier",
+] as const;
 export type AskEntityType = (typeof ASK_ENTITY_TYPES)[number];
 
 export const OWNER_ENTITY_TYPES = ["lead", "contact", "deal", "policy"] as const;

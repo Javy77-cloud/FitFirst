@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { ClickToCall } from "@/components/click-to-call";
 import { LocationsList } from "@/components/desk-ams-panels";
+import { AskOnRecord } from "@/components/record-ask";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getContactWorkspace } from "@/lib/db/queries";
@@ -43,6 +45,12 @@ export default async function ContactDetailPage({
         <span className="text-muted-foreground">
           {contact.phone ?? contact.email ?? "No phone or email"}
         </span>
+        <ClickToCall
+          entityType="contact"
+          entityId={contact.id}
+          name={`${contact.firstName} ${contact.lastName}`}
+          phone={contact.phone}
+        />
       </div>
 
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
@@ -140,6 +148,14 @@ export default async function ContactDetailPage({
           accountId={businesses[0]?.id}
         />
       </div>
+      <AskOnRecord
+        entityType="contact"
+        entityId={contact.id}
+        contactId={contact.id}
+        policyId={latestPolicyId}
+        dealId={deals[0]?.id}
+        accountId={businesses[0]?.id}
+      />
 
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">Deals</div>

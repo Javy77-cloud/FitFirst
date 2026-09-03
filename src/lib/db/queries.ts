@@ -31,6 +31,8 @@ import {
   deals,
   documents,
   emailSendJobs,
+  emailTemplates,
+  emailTriggers,
   extractedFields,
   formTemplates,
   claimAttachments,
@@ -46,9 +48,11 @@ import {
   quoteSheets,
   quotes,
   renewalCompareLogs,
+  recordAsks,
   reviewTasks,
   risks,
   tenants,
+  users,
   vehicles,
 } from "./schema";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
@@ -491,6 +495,53 @@ export async function listQuoteLogs() {
     .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
     .where(eq(quoteAttemptLogs.tenantId, tenant()))
     .orderBy(desc(quoteAttemptLogs.attemptedAt));
+}
+
+export async function listDeskUsers() {
+  return db
+    .select()
+    .from(users)
+    .where(and(eq(users.tenantId, tenant()), eq(users.active, true)))
+    .orderBy(asc(users.name));
+}
+
+export async function listRecordAsks(entityType: string, entityId: string) {
+  return db
+    .select()
+    .from(recordAsks)
+    .where(
+      and(
+        eq(recordAsks.tenantId, tenant()),
+        eq(recordAsks.entityType, entityType),
+        eq(recordAsks.entityId, entityId),
+      ),
+    )
+    .orderBy(desc(recordAsks.createdAt));
+}
+
+export async function listEmailTemplates() {
+  return db
+    .select()
+    .from(emailTemplates)
+    .where(eq(emailTemplates.tenantId, tenant()))
+    .orderBy(asc(emailTemplates.name));
+}
+
+export async function listEmailTriggers() {
+  return db
+    .select()
+    .from(emailTriggers)
+    .where(eq(emailTriggers.tenantId, tenant()))
+    .orderBy(asc(emailTriggers.delayDays));
+}
+
+export async function getCarrier(id: string) {
+  const [row] = await db
+    .select({ carrier: carriers, rule: appetiteRules })
+    .from(carriers)
+    .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
+    .where(and(eq(carriers.tenantId, tenant()), eq(carriers.id, id)));
+  return row ?? null;
 }
 
 export async function listAlerts(unreadOnly = false) {

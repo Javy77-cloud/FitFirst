@@ -630,6 +630,8 @@ export const activities = pgTable(
     dueAt: timestamp("due_at", { withTimezone: true }),
     startAt: timestamp("start_at", { withTimezone: true }),
     endAt: timestamp("end_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    outcome: text("outcome"),
     assignee: text("assignee"),
     contactId: uuid("contact_id").references(() => contacts.id),
     accountId: uuid("account_id"),
@@ -1000,6 +1002,7 @@ export const recordAsks = pgTable("record_asks", {
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id").notNull(),
   authorId: uuid("author_id"),
+  assigneeId: uuid("assignee_id"),
   kind: text("kind").notNull().default("question"),
   body: text("body").notNull(),
   status: text("status").notNull().default("open"),
@@ -1182,6 +1185,7 @@ export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
 export type Business = Account;
 export type Claim = typeof claims.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
+export type RecordAsk = typeof recordAsks.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type PolicyTerm = typeof policyTerms.$inferSelect;

@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { markAlertRead } from "@/app/actions/alerts";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { listAlerts } from "@/lib/db/queries";
+import { recordHref } from "@/lib/desk/record-href";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,14 @@ export default async function AlertsPage() {
                   {alert.severity} · {alert.kind}
                   {alert.readAt ? " · read" : " · unread"}
                 </div>
+                {recordHref(alert.entityType, alert.entityId) ? (
+                  <Link
+                    href={recordHref(alert.entityType, alert.entityId)!}
+                    className="mt-1 inline-block text-xs text-primary hover:underline"
+                  >
+                    Open record
+                  </Link>
+                ) : null}
               </div>
               {!alert.readAt ? (
                 <form action={markAlertRead}>

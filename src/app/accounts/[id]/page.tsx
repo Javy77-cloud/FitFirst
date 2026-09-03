@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { ClickToCall } from "@/components/click-to-call";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
+import { AskOnRecord } from "@/components/record-ask";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { getAccountWorkspace } from "@/lib/db/queries";
@@ -39,6 +41,12 @@ export default async function AccountDetailPage({
         <span>
           Active / bound / pending <strong>{activePolicyCount}</strong>
         </span>
+        <ClickToCall
+          entityType="account"
+          entityId={account.id}
+          name={account.name}
+          phone={account.phone ?? contacts[0]?.phone}
+        />
       </div>
       <section className="ff-card mb-4 p-4 text-sm">
         <h2 className="text-sm font-semibold text-navy">Account 360 · commercial profile</h2>
@@ -137,6 +145,14 @@ export default async function AccountDetailPage({
           dealId={deals[0]?.id}
         />
       </div>
+      <AskOnRecord
+        entityType="account"
+        entityId={account.id}
+        accountId={account.id}
+        contactId={contacts[0]?.id}
+        policyId={policies[0]?.policy.id}
+        dealId={deals[0]?.id}
+      />
       {deals.length > 0 ? (
         <section className="ff-card overflow-hidden">
           <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">

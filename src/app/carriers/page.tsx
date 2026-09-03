@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { formatMoney } from "@/lib/domain";
 import { listCarriers } from "@/lib/db/queries";
@@ -27,7 +28,9 @@ export default async function CarriersPage() {
             {rows.map(({ carrier, rule }) => (
               <tr key={`${carrier.id}-${rule?.id ?? "none"}`}>
                 <td className="font-medium">
-                  {carrier.name}
+                  <Link href={`/carriers/${carrier.id}`} className="text-primary hover:underline">
+                    {carrier.name}
+                  </Link>
                   <div className="text-[11px] text-muted-foreground">
                     {(carrier.writtenLines ?? []).join(", ")}
                   </div>

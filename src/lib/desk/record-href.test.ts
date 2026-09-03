@@ -1,0 +1,15 @@
+import { describe, expect, it } from "vitest";
+import { recordHref } from "./record-href";
+
+describe("recordHref", () => {
+  it("covers every Ask-a-teammate record type", () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    expect(recordHref("contact", id)).toBe(`/contacts/${id}`);
+    expect(recordHref("account", id)).toBe(`/accounts/${id}`);
+    expect(recordHref("lead", id)).toBe(`/leads/${id}`);
+    expect(recordHref("deal", id)).toBe(`/deals/${id}`);
+    expect(recordHref("policy", id)).toBe(`/policies/${id}`);
+    expect(recordHref("carrier", id)).toBe(`/carriers/${id}`);
+    expect(recordHref("commission", id)).toBeNull();
+  });
+});

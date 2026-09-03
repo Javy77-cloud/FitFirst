@@ -26,6 +26,7 @@ import { seedUsersAndBook } from "./seed-book";
 import { seedClaimsBook } from "./seed-claims";
 import { seedAutoBook } from "./seed-auto";
 import { seedBookRenewals } from "./seed-book-renewals";
+import { seedCommsAsks } from "./seed-comms";
 
 const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
@@ -334,4 +335,5 @@ export async function seed() {
   await seedClaimsBook();
   await seedAutoBook();
   await seedBookRenewals();
+  await seedCommsAsks();
 }

@@ -3,7 +3,9 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { ClickToCall } from "@/components/click-to-call";
 import { VehiclesList } from "@/components/desk-ams-panels";
+import { AskOnRecord } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -50,6 +52,14 @@ export default async function PolicyDetailPage({
         >
           Compare renewal
         </Link>
+        {contact?.phone ? (
+          <ClickToCall
+            entityType="policy"
+            entityId={policy.id}
+            name={policy.policyNumber}
+            phone={contact.phone}
+          />
+        ) : null}
       </div>
 
       {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
@@ -115,6 +125,14 @@ export default async function PolicyDetailPage({
           dealId={deal?.id}
         />
       </div>
+      <AskOnRecord
+        entityType="policy"
+        entityId={policy.id}
+        policyId={policy.id}
+        contactId={contact?.id}
+        accountId={account?.id}
+        dealId={deal?.id}
+      />
     </AppShell>
   );
 }

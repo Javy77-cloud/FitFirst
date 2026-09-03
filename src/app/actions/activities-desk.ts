@@ -39,6 +39,14 @@ function revalidateRelated(related: {
   if (related.dealId) revalidatePath(`/deals/${related.dealId}`);
 }
 
+function durationSecondsFromForm(form: FormData) {
+  const raw = str(form, "durationMinutes") || str(form, "durationSeconds");
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return str(form, "durationMinutes") ? Math.round(n * 60) : Math.round(n);
+}
+
 export async function logDeskActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
   const title =
@@ -47,6 +55,11 @@ export async function logDeskActivity(formData: FormData) {
   const related = relatedFromForm(formData);
   const eventType = kind === "call" ? "logged" : "created";
   const status = kind === "call" ? "completed" : str(formData, "status") || "open";
+  const durationSeconds = durationSecondsFromForm(formData);
+  const outcome = str(formData, "outcome") || null;
+  if (kind === "call" && (!durationSeconds || !outcome)) {
+    throw new Error("Call log needs a duration and an outcome.");
+  }
 
   const [activity] = await db
     .insert(activities)
@@ -59,6 +72,8 @@ export async function logDeskActivity(formData: FormData) {
       dueAt: when(formData, "dueAt"),
       startAt: when(formData, "startAt"),
       endAt: when(formData, "endAt"),
+      durationSeconds,
+      outcome,
       assignee: str(formData, "assignee") || null,
       ...related,
     })
@@ -69,7 +84,7 @@ export async function logDeskActivity(formData: FormData) {
     activityId: activity.id,
     kind,
     eventType,
-    body: activityLogBody(kind, eventType, title),
+    body: activityLogBody(kind, eventType, title, { durationSeconds, outcome }),
     contactId: related.contactId,
     accountId: related.accountId,
     policyId: related.policyId,

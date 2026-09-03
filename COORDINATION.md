@@ -222,6 +222,16 @@ Camila Auto `QBE-PA-66103` still has an empty vehicle schedule. The intended Aut
 
 Deal `Dib · Palm Bay HO3` = **shopping**. Contact policies = **0**. Cov A = **$321,000** javy/confirmed. Fixture file not edited.
 
+## Communication QA (`cursor/comms-qa-9e37`)
+
+Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live Zoho. Did not rebuild lists / pipeline / calendar / commissions.
+
+- Ask a teammate (admin v1) on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown required. Seeded Javy → Maya on `HO3-ELENA-2026` (`record_asks` + activity log + Alerts).
+- Activity form logs duration + outcome on calls.
+- Click-to-call is an in-app Alerts ping (`click_to_call`). `/phone` stays a stub.
+- Settings shows email template library + trigger stubs. Nothing sends.
+- Alerts list includes the Elena ask and a work-queue ping. In-app only.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

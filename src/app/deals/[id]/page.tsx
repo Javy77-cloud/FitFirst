@@ -16,6 +16,7 @@ import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { HealthStrip } from "@/components/completeness/health-strip";
+import { AskOnRecord } from "@/components/record-ask";
 import { reportFromSheet } from "@/lib/completeness/report";
 import type { ShopLine } from "@/lib/domain";
 
@@ -174,6 +175,15 @@ export default async function DealPage({
         </Link>
         .
       </p>
+      <AskOnRecord
+        entityType="deal"
+        entityId={deal.id}
+        dealId={deal.id}
+        leadId={lead?.id}
+        contactId={contact?.id}
+        accountId={account?.id}
+        policyId={boundPolicies[0]?.id}
+      />
     </AppShell>
   );
 }

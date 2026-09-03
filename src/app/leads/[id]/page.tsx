@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { createDealFromLead } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { ClickToCall } from "@/components/click-to-call";
+import { AskOnRecord } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { getLead } from "@/lib/db/queries";
@@ -27,7 +29,15 @@ export default async function LeadDetailPage({
       <section className="ff-card max-w-xl space-y-2 p-4 text-sm">
         <div>
           <span className="text-xs text-muted-foreground">Phone</span>
-          <div>{lead.phone ?? "—"}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span>{lead.phone ?? "—"}</span>
+            <ClickToCall
+              entityType="lead"
+              entityId={lead.id}
+              name={`${lead.firstName} ${lead.lastName}`}
+              phone={lead.phone}
+            />
+          </div>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Email</span>
@@ -46,6 +56,13 @@ export default async function LeadDetailPage({
           </form>
         ) : null}
       </section>
+      <AskOnRecord
+        entityType="lead"
+        entityId={lead.id}
+        leadId={lead.id}
+        dealId={deal?.id}
+        contactId={deal?.contactId}
+      />
     </AppShell>
   );
 }
