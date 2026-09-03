@@ -95,6 +95,18 @@ export default async function ContactDetailPage({
             <Input name="city" defaultValue={contact.city ?? ""} className="mt-1 h-8" />
           </div>
           <div>
+            <Label className="text-xs">State</Label>
+            <Input name="state" defaultValue={contact.state ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">ZIP</Label>
+            <Input name="zip" defaultValue={contact.zip ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">Date of birth</Label>
+            <Input name="dateOfBirth" defaultValue={contact.dateOfBirth ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
             <Label className="text-xs">Tenure</Label>
             <div className="mt-1 text-sm">{formatDay(contact.tenureStart)}</div>
           </div>

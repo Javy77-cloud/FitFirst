@@ -96,6 +96,29 @@ export default async function PolicyDetailPage({
             <Input name="premium" defaultValue={policy.premium ?? ""} className="mt-1 h-8" />
           </div>
           <div>
+            <Label className="text-xs">Cov A (copied at bind — do not retype)</Label>
+            <Input
+              name="coverageA"
+              defaultValue={policy.coverageA != null ? String(policy.coverageA) : ""}
+              className="mt-1 h-8"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Premises (copied from the deal risk)</Label>
+            <Input name="premisesAddress" defaultValue={policy.premisesAddress ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">Premises city</Label>
+            <Input name="premisesCity" defaultValue={policy.premisesCity ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">State / ZIP</Label>
+            <div className="mt-1 flex gap-2">
+              <Input name="premisesState" defaultValue={policy.premisesState ?? ""} className="h-8 w-20" />
+              <Input name="premisesZip" defaultValue={policy.premisesZip ?? ""} className="h-8" />
+            </div>
+          </div>
+          <div>
             <Label className="text-xs">Premium frequency</Label>
             <select
               name="billingFrequency"

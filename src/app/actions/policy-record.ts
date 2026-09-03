@@ -60,6 +60,13 @@ export async function updatePolicyRecord(formData: FormData) {
       commission4Pct: commission4 || null,
       producer: str(formData, "producer") || null,
       formType: str(formData, "formType") || existing.formType,
+      coverageA: str(formData, "coverageA")
+        ? Number(str(formData, "coverageA")) || existing.coverageA
+        : existing.coverageA,
+      premisesAddress: str(formData, "premisesAddress") || existing.premisesAddress,
+      premisesCity: str(formData, "premisesCity") || existing.premisesCity,
+      premisesState: str(formData, "premisesState") || existing.premisesState,
+      premisesZip: str(formData, "premisesZip") || existing.premisesZip,
       updatedAt: new Date(),
     })
     .where(eq(policies.id, id));

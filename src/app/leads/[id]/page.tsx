@@ -56,6 +56,26 @@ export default async function LeadDetailPage({
             <Input name="email" defaultValue={lead.email ?? ""} className="mt-1 h-8" />
           </div>
           <div className="sm:col-span-2">
+            <Label className="text-xs">Mailing</Label>
+            <Input name="mailingAddress" defaultValue={lead.mailingAddress ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">City</Label>
+            <Input name="city" defaultValue={lead.city ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">State</Label>
+            <Input name="state" defaultValue={lead.state ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">ZIP</Label>
+            <Input name="zip" defaultValue={lead.zip ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">Date of birth</Label>
+            <Input name="dateOfBirth" defaultValue={lead.dateOfBirth ?? ""} className="mt-1 h-8" />
+          </div>
+          <div className="sm:col-span-2">
             <Label className="text-xs">Notes</Label>
             <Input name="notes" defaultValue={lead.notes ?? ""} className="mt-1 h-8" />
           </div>

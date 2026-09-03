@@ -30,6 +30,7 @@ export async function updateContactRecord(formData: FormData) {
       city: str(formData, "city") || existing.city,
       state: str(formData, "state") || existing.state,
       zip: str(formData, "zip") || existing.zip,
+      dateOfBirth: str(formData, "dateOfBirth") || existing.dateOfBirth,
       updatedAt: new Date(),
     })
     .where(eq(contacts.id, id));
@@ -51,7 +52,10 @@ export async function updateAccountRecord(formData: FormData) {
       ein: str(formData, "ein") || existing.ein,
       phone: str(formData, "phone") || existing.phone,
       email: str(formData, "email") || existing.email,
+      mailingAddress: str(formData, "mailingAddress") || existing.mailingAddress,
       city: str(formData, "city") || existing.city,
+      state: str(formData, "state") || existing.state,
+      zip: str(formData, "zip") || existing.zip,
       updatedAt: new Date(),
     })
     .where(eq(accounts.id, id));
@@ -73,6 +77,11 @@ export async function updateLeadRecord(formData: FormData) {
       lastName: str(formData, "lastName") || existing.lastName,
       phone: str(formData, "phone") || existing.phone,
       email: str(formData, "email") || existing.email,
+      mailingAddress: str(formData, "mailingAddress") || existing.mailingAddress,
+      city: str(formData, "city") || existing.city,
+      state: str(formData, "state") || existing.state,
+      zip: str(formData, "zip") || existing.zip,
+      dateOfBirth: str(formData, "dateOfBirth") || existing.dateOfBirth,
       notes: str(formData, "notes") || existing.notes,
       updatedAt: new Date(),
     })

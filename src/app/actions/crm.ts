@@ -418,6 +418,10 @@ export async function bindDeal(formData: FormData) {
       expirationDate: expiration,
       premium: premiumRaw ? premiumRaw : null,
       coverageA: risk?.coverageA,
+      premisesAddress: risk?.address1,
+      premisesCity: risk?.city,
+      premisesState: risk?.state,
+      premisesZip: risk?.zip,
     })
     .returning();
 

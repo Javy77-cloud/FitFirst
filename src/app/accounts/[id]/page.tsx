@@ -81,9 +81,21 @@ export default async function AccountDetailPage({
             <Label className="text-xs">Email</Label>
             <Input name="email" defaultValue={account.email ?? ""} className="mt-1 h-8" />
           </div>
+          <div className="sm:col-span-3">
+            <Label className="text-xs">Mailing</Label>
+            <Input name="mailingAddress" defaultValue={account.mailingAddress ?? ""} className="mt-1 h-8" />
+          </div>
           <div>
             <Label className="text-xs">City</Label>
             <Input name="city" defaultValue={account.city ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">State</Label>
+            <Input name="state" defaultValue={account.state ?? ""} className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label className="text-xs">ZIP</Label>
+            <Input name="zip" defaultValue={account.zip ?? ""} className="mt-1 h-8" />
           </div>
           <div className="sm:col-span-3 text-xs text-muted-foreground">
             Entity {account.entityType ?? "—"} · Employees {account.employeeCount ?? "—"} · Sales{" "}

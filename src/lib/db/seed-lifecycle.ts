@@ -387,6 +387,10 @@ export async function seedLifecycleDemo() {
       expirationDate: new Date("2027-09-01T05:00:00.000Z"),
       premium: "2840.00",
       coverageA: 385000,
+      premisesAddress: "412 Harbor Isle Dr",
+      premisesCity: "Melbourne",
+      premisesState: "FL",
+      premisesZip: "32935",
     })
     .onConflictDoUpdate({
       target: policies.id,
@@ -396,6 +400,10 @@ export async function seedLifecycleDemo() {
         status: "active",
         premium: "2840.00",
         coverageA: 385000,
+        premisesAddress: "412 Harbor Isle Dr",
+        premisesCity: "Melbourne",
+        premisesState: "FL",
+        premisesZip: "32935",
         updatedAt: new Date(),
       },
     });
