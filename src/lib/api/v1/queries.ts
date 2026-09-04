@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, or, type SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { ApiActor } from "@/lib/auth/api";
 import { visibleOwnerId } from "@/lib/auth/rbac";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -20,7 +21,7 @@ import { serializeActivity, serializeCommission, serializeContact, serializeDeal
 
 const tenant = () => DEFAULT_TENANT_ID;
 
-function ownerEq(actor: ApiActor, column: typeof contacts.ownerId) {
+function ownerEq(actor: ApiActor, column: AnyPgColumn) {
   const ownerId = visibleOwnerId(actor);
   return ownerId ? eq(column, ownerId) : undefined;
 }
