@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ColumnPicker } from "@/components/crm/column-picker";
+import { SheetHeader } from "@/components/sheet/sheet-header";
 import { LinkedValue } from "@/components/crm/linked-value";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { formatTenure } from "@/lib/crm/display";
@@ -48,9 +49,9 @@ export function AccountListTable({
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col.id} data-col={col.id}>
+                <SheetHeader key={col.id} table={tableId} col={col.id} dataCol={col.id}>
                   {col.header}
-                </th>
+                </SheetHeader>
               ))}
             </tr>
           </thead>
@@ -65,45 +66,45 @@ export function AccountListTable({
               rows.map((c) =>
                 kind === "commercial" ? (
                   <tr key={c.id}>
-                    <td data-col="legal" className="font-medium">
+                    <td data-col="legal" data-sheet-col="legal" className="font-medium">
                       <Link href={`/contacts/${c.id}`} className="text-primary hover:underline">
                         {accountDisplayName(c)}
                       </Link>
                     </td>
-                    <td data-col="contact">
+                    <td data-col="contact" data-sheet-col="contact">
                       {c.lastName}, {c.firstName}
                     </td>
-                    <td data-col="phone">
+                    <td data-col="phone" data-sheet-col="phone">
                       <LinkedValue value={c.phone} kind="tel" />
                     </td>
-                    <td data-col="email">
+                    <td data-col="email" data-sheet-col="email">
                       <LinkedValue value={c.email} kind="email" />
                     </td>
-                    <td data-col="city">{c.city ?? "—"}</td>
-                    <td data-col="state">{c.state ?? "—"}</td>
-                    <td data-col="lifetime">{c.policyCount}</td>
-                    <td data-col="active">{c.activePolicyCount}</td>
-                    <td data-col="tenure">{formatTenure(c.tenureStart)}</td>
+                    <td data-col="city" data-sheet-col="city">{c.city ?? "—"}</td>
+                    <td data-col="state" data-sheet-col="state">{c.state ?? "—"}</td>
+                    <td data-col="lifetime" data-sheet-col="lifetime">{c.policyCount}</td>
+                    <td data-col="active" data-sheet-col="active">{c.activePolicyCount}</td>
+                    <td data-col="tenure" data-sheet-col="tenure">{formatTenure(c.tenureStart)}</td>
                   </tr>
                 ) : (
                   <tr key={c.id}>
-                    <td data-col="name" className="font-medium">
+                    <td data-col="name" data-sheet-col="name" className="font-medium">
                       <Link href={`/contacts/${c.id}`} className="text-primary hover:underline">
                         {accountDisplayName(c)}
                       </Link>
                     </td>
-                    <td data-col="phone">
+                    <td data-col="phone" data-sheet-col="phone">
                       <LinkedValue value={c.phone} kind="tel" />
                     </td>
-                    <td data-col="email">
+                    <td data-col="email" data-sheet-col="email">
                       <LinkedValue value={c.email} kind="email" />
                     </td>
-                    <td data-col="city">{c.city ?? "—"}</td>
-                    <td data-col="state">{c.state ?? "—"}</td>
-                    <td data-col="lifetime">{c.policyCount}</td>
-                    <td data-col="active">{c.activePolicyCount}</td>
-                    <td data-col="tenure">{formatTenure(c.tenureStart)}</td>
-                    <td data-col="notes">
+                    <td data-col="city" data-sheet-col="city">{c.city ?? "—"}</td>
+                    <td data-col="state" data-sheet-col="state">{c.state ?? "—"}</td>
+                    <td data-col="lifetime" data-sheet-col="lifetime">{c.policyCount}</td>
+                    <td data-col="active" data-sheet-col="active">{c.activePolicyCount}</td>
+                    <td data-col="tenure" data-sheet-col="tenure">{formatTenure(c.tenureStart)}</td>
+                    <td data-col="notes" data-sheet-col="notes">
                       {[c.lifeNotes, c.healthNotes].filter(Boolean).join(" · ") || "—"}
                     </td>
                   </tr>

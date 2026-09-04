@@ -13,6 +13,7 @@ import { pipelineHref } from "@/lib/wire/pipeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Col } from "@/components/column-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -124,23 +125,23 @@ export default async function PipelinePage({
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Deal</th>
-                <th>Stage</th>
-                <th>Line</th>
+                <Col table="pipeline" col="title" as="th">Deal</Col>
+                <Col table="pipeline" col="stage" as="th">Stage</Col>
+                <Col table="pipeline" col="line" as="th">Line</Col>
               </tr>
             </thead>
             <tbody>
               {cards.map((deal) => (
                 <tr key={deal.id}>
-                  <td>
+                  <Col table="pipeline" col="title">
                     <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
                       {deal.title}
                     </Link>
-                  </td>
-                  <td>
+                  </Col>
+                  <Col table="pipeline" col="stage" sortValue={deal.pipelineStage}>
                     <StagePill stage={deal.pipelineStage} />
-                  </td>
-                  <td>{deal.lineOfBusiness}</td>
+                  </Col>
+                  <Col table="pipeline" col="line">{deal.lineOfBusiness}</Col>
                 </tr>
               ))}
             </tbody>

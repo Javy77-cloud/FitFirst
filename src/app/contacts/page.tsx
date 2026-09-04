@@ -29,7 +29,7 @@ export default async function ContactsPage({
   return (
     <AppShell
       title="Contacts"
-      actions={<ColumnPicker tableKey="contacts" initial={defaultColumns("contacts")} />}
+      columns={<ColumnPicker tableKey="contacts" initial={defaultColumns("contacts")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Client = at least one Active / Bound / Pending policy. Former client = lifetime ≥ 1 and

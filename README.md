@@ -54,6 +54,8 @@ Communications (email, SMS, calls, meetings, tasks) write a durable log on the C
 
 Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
 
+List sheets (Tasks, Leads, Deals, Contacts, Businesses, Policies, Quotes, Work queue, Claims, Commissions, Carriers, and the other desk tables) share one header control: click a column to sort A→Z / Z→A, or open the header menu to pin it. The Columns picker stays on the title row.
+
 Click path and leftover bugs live in `COORDINATION.md`.
 
 Docker: `docker compose up --build` (same port).

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { Col } from "@/components/column-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { listOpenMergeCandidates } from "@/lib/db/queries";
@@ -69,10 +70,10 @@ export default async function MergeQueuePage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Pair</th>
-                <th>Type</th>
-                <th>Why they match</th>
-                <th></th>
+                <Col table="merge" col="pair" as="th">Pair</Col>
+                <Col table="merge" col="type" as="th">Type</Col>
+                <Col table="merge" col="reason" as="th">Why they match</Col>
+                <Col table="merge" col="action" as="th">Review</Col>
               </tr>
             </thead>
             <tbody>
@@ -85,13 +86,15 @@ export default async function MergeQueuePage() {
                 );
                 return (
                   <tr key={row.id}>
-                    <td className="font-medium">
+                    <Col table="merge" col="pair" className="font-medium" sortValue={`${left} ${right}`}>
                       {left}
                       <span className="mx-1.5 text-muted-foreground">·</span>
                       {right}
-                    </td>
-                    <td className="capitalize">{row.entityType}</td>
-                    <td>
+                    </Col>
+                    <Col table="merge" col="type" className="capitalize">
+                      {row.entityType}
+                    </Col>
+                    <Col table="merge" col="reason" sortValue={reasons.join(", ")}>
                       <div className="flex flex-wrap gap-1">
                         {reasons.map((reason) => (
                           <Badge key={reason} variant="secondary">
@@ -99,15 +102,15 @@ export default async function MergeQueuePage() {
                           </Badge>
                         ))}
                       </div>
-                    </td>
-                    <td className="text-right">
+                    </Col>
+                    <Col table="merge" col="action" className="text-right">
                       <Link
                         href={`/merge/${row.id}`}
                         className={cn(buttonVariants({ size: "sm" }))}
                       >
                         Review
                       </Link>
-                    </td>
+                    </Col>
                   </tr>
                 );
               })}

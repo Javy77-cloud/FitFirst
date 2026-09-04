@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Col } from "@/components/column-picker";
 import { TrackingStatusBadge } from "@/components/quotes/status-badge";
 import { formatMoney } from "@/lib/domain";
 import { cheapestQuotedSummary, type TrackingShop } from "@/lib/quotes/tracking";
@@ -24,20 +25,25 @@ export function TrackingTable({
       <table className="ff-table">
         <thead>
           <tr>
-            <th>Rank</th>
-            <th>Carrier</th>
-            <th>Line</th>
-            <th>Status</th>
-            <th>Premium</th>
-            <th>Quote #</th>
-            <th>Date</th>
-            <th>Links</th>
+            <Col table="quotes" col="rank" as="th">Rank</Col>
+            <Col table="quotes" col="carrier" as="th">Carrier</Col>
+            <Col table="quotes" col="line" as="th">Line</Col>
+            <Col table="quotes" col="status" as="th">Status</Col>
+            <Col table="quotes" col="premium" as="th">Premium</Col>
+            <Col table="quotes" col="quoteNumber" as="th">Quote #</Col>
+            <Col table="quotes" col="date" as="th">Date</Col>
+            <Col table="quotes" col="links" as="th">Links</Col>
           </tr>
         </thead>
         <tbody>
           {shop.rows.map((row) => (
             <tr key={row.id} id={`track-${row.id}`}>
-              <td className="whitespace-nowrap text-xs">
+              <Col
+                table="quotes"
+                col="rank"
+                className="whitespace-nowrap text-xs"
+                sortValue={row.cheapestQuotedRank ?? 999}
+              >
                 {row.cheapestQuotedRank != null ? (
                   <span className={row.cheapestQuotedRank === 1 ? "font-semibold text-navy" : ""}>
                     #{row.cheapestQuotedRank}
@@ -46,23 +52,32 @@ export function TrackingTable({
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
-              </td>
-              <td className="font-medium">
+              </Col>
+              <Col table="quotes" col="carrier" className="font-medium">
                 {row.carrierName}
                 {row.bindable ? null : row.status === "quoted" ? (
                   <div className="text-[11px] text-fit-flag">Quoted · not bindable</div>
                 ) : null}
-              </td>
-              <td>{row.line}</td>
-              <td>
+              </Col>
+              <Col table="quotes" col="line">{row.line}</Col>
+              <Col table="quotes" col="status" sortValue={row.status}>
                 <TrackingStatusBadge status={row.status} />
-              </td>
-              <td>{formatMoney(row.premium)}</td>
-              <td className="font-mono text-xs">{row.quoteNumber ?? "—"}</td>
-              <td className="whitespace-nowrap text-xs">
+              </Col>
+              <Col table="quotes" col="premium" sortValue={row.premium}>
+                {formatMoney(row.premium)}
+              </Col>
+              <Col table="quotes" col="quoteNumber" className="font-mono text-xs">
+                {row.quoteNumber ?? "—"}
+              </Col>
+              <Col
+                table="quotes"
+                col="date"
+                className="whitespace-nowrap text-xs"
+                sortValue={row.attemptedAt.toISOString()}
+              >
                 {row.attemptedAt.toISOString().slice(0, 10)}
-              </td>
-              <td className="text-xs">
+              </Col>
+              <Col table="quotes" col="links" className="text-xs">
                 <div className="flex flex-wrap gap-x-2 gap-y-1">
                   {showDealLink ? (
                     <Link
@@ -83,7 +98,7 @@ export function TrackingTable({
                     <span className="text-muted-foreground">No log</span>
                   )}
                 </div>
-              </td>
+              </Col>
             </tr>
           ))}
         </tbody>

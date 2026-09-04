@@ -45,13 +45,11 @@ export default async function DealsPage({
     <AppShell
       title="Deals"
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />
-          <Link href="/deals/new" className={cn(buttonVariants())}>
-            New shopping deal
-          </Link>
-        </div>
+        <Link href="/deals/new" className={cn(buttonVariants())}>
+          New shopping deal
+        </Link>
       }
+      columns={<ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
       {filter.stage || filter.attention ? (
@@ -113,7 +111,9 @@ export default async function DealsPage({
                   <Col table="deals" col="phone">{contact?.phone ?? account?.phone ?? "—"}</Col>
                   <Col table="deals" col="email">{contact?.email ?? account?.email ?? "—"}</Col>
                   <Col table="deals" col="assigned">{deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—"}</Col>
-                  <Col table="deals" col="premium">{formatMoney(deal.coverageAmount)}</Col>
+                  <Col table="deals" col="premium" sortValue={deal.coverageAmount}>
+                    {formatMoney(deal.coverageAmount)}
+                  </Col>
                   <Col table="deals" col="updated">{formatDay(deal.updatedAt)}</Col>
                   <Col table="deals" col="comms">
                     <DealRowComms

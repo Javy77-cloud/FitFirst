@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { ColumnPicker, Col } from "@/components/column-picker";
+import { defaultColumns } from "@/lib/desk/columns";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { claims, policies, contacts } from "@/lib/db/schema";
@@ -16,7 +18,10 @@ export default async function ClaimsPage() {
     .where(eq(claims.tenantId, DEFAULT_TENANT_ID));
 
   return (
-    <AppShell title="Claims log">
+    <AppShell
+      title="Claims log"
+      columns={<ColumnPicker tableKey="claims" initial={defaultColumns("claims")} />}
+    >
       <p className="mb-3 text-sm text-muted-foreground">
         Desk log only — not a carrier claims system. Inquiry, referred to carrier, or closed.
       </p>
@@ -29,27 +34,29 @@ export default async function ClaimsPage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Status</th>
-                <th>Carrier claim</th>
-                <th>Cause</th>
-                <th>Policy</th>
-                <th>Party</th>
+                <Col table="claims" col="status" as="th">Status</Col>
+                <Col table="claims" col="carrierClaim" as="th">Carrier claim</Col>
+                <Col table="claims" col="cause" as="th">Cause</Col>
+                <Col table="claims" col="policy" as="th">Policy</Col>
+                <Col table="claims" col="party" as="th">Party</Col>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ claim, policy, contact }) => (
                 <tr key={claim.id}>
-                  <td>
+                  <Col table="claims" col="status">
                     <Link href={`/claims/${claim.id}`} className="font-medium text-primary hover:underline">
                       {claim.status}
                     </Link>
-                  </td>
-                  <td className="font-mono text-xs">{claim.carrierClaimNumber ?? "—"}</td>
-                  <td>{claim.causeType ?? "—"}</td>
-                  <td>{policy?.policyNumber ?? "—"}</td>
-                  <td>
+                  </Col>
+                  <Col table="claims" col="carrierClaim" className="font-mono text-xs">
+                    {claim.carrierClaimNumber ?? "—"}
+                  </Col>
+                  <Col table="claims" col="cause">{claim.causeType ?? "—"}</Col>
+                  <Col table="claims" col="policy">{policy?.policyNumber ?? "—"}</Col>
+                  <Col table="claims" col="party">
                     {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
-                  </td>
+                  </Col>
                 </tr>
               ))}
             </tbody>

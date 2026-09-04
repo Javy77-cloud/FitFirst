@@ -25,7 +25,7 @@ export default async function AccountsPage({
   return (
     <AppShell
       title="Businesses"
-      actions={<ColumnPicker tableKey="accounts" initial={defaultColumns("accounts")} />}
+      columns={<ColumnPicker tableKey="accounts" initial={defaultColumns("accounts")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Commercial bind creates a Business. Client status is computed from in-force commercial

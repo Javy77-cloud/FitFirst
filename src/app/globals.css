@@ -181,6 +181,24 @@
 .ff-table tr:hover td {
   background: var(--ff-wash);
 }
+.ff-table th.ff-sheet-th {
+  padding-right: 0.35rem;
+}
+.ff-table th.ff-col-pinned,
+.ff-table td.ff-col-pinned {
+  position: sticky;
+  left: var(--ff-pin-left, 0px);
+  z-index: 2;
+  background: var(--ff-card);
+  box-shadow: inset -1px 0 0 var(--border);
+}
+.ff-table th.ff-col-pinned {
+  z-index: 4;
+  background: var(--ff-wash);
+}
+.ff-table tbody tr:hover td.ff-col-pinned {
+  background: var(--ff-wash);
+}
 
 .ff-completeness {
   border: 1px solid var(--ff-border);

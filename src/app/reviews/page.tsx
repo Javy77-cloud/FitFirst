@@ -5,6 +5,7 @@ import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
 import { ColumnPicker } from "@/components/crm/column-picker";
+import { SheetHeader } from "@/components/sheet/sheet-header";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
 
 const EXPIRING_COLUMNS = [
@@ -82,21 +83,21 @@ export default async function ReviewsPage() {
               <thead>
                 <tr>
                   {EXPIRING_COLUMNS.map((col) => (
-                    <th key={col.id} data-col={col.id}>
+                    <SheetHeader key={col.id} table="reviews-expiring" col={col.id} dataCol={col.id}>
                       {col.header}
-                    </th>
+                    </SheetHeader>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {expiring.map(({ policy, contact }) => (
                   <tr key={policy.id}>
-                    <td data-col="policy">
+                    <td data-col="policy" data-sheet-col="policy">
                       <Link href={`/policies/${policy.id}`} className="font-medium text-primary hover:underline">
                         {policy.policyNumber}
                       </Link>
                     </td>
-                    <td data-col="client">
+                    <td data-col="client" data-sheet-col="client">
                       {contact ? (
                         <Link href={`/contacts/${contact.id}`} className="hover:underline">
                           {accountDisplayName(contact)}
@@ -105,7 +106,11 @@ export default async function ReviewsPage() {
                         "—"
                       )}
                     </td>
-                    <td data-col="expires">
+                    <td
+                      data-col="expires"
+                      data-sheet-col="expires"
+                      data-sort={policy.expirationDate.toISOString()}
+                    >
                       <ExpirationBadge date={policy.expirationDate} />
                     </td>
                   </tr>

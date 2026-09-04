@@ -74,6 +74,66 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "kind", label: "Kind", defaultOn: true },
     { key: "related", label: "Related", defaultOn: true },
   ],
+  quotes: [
+    { key: "rank", label: "Rank", defaultOn: true },
+    { key: "carrier", label: "Carrier", defaultOn: true },
+    { key: "line", label: "Line", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "premium", label: "Premium", defaultOn: true },
+    { key: "quoteNumber", label: "Quote #", defaultOn: true },
+    { key: "date", label: "Date", defaultOn: true },
+    { key: "links", label: "Links", defaultOn: true },
+  ],
+  claims: [
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "carrierClaim", label: "Carrier claim", defaultOn: true },
+    { key: "cause", label: "Cause", defaultOn: true },
+    { key: "policy", label: "Policy", defaultOn: true },
+    { key: "party", label: "Party", defaultOn: true },
+  ],
+  commissions: [
+    { key: "policy", label: "Policy", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "amount", label: "Amount", defaultOn: true },
+  ],
+  "queue-attention": [
+    { key: "kind", label: "Kind", defaultOn: true },
+    { key: "item", label: "Item", defaultOn: true },
+    { key: "detail", label: "Detail", defaultOn: true },
+  ],
+  "queue-open": [
+    { key: "number", label: "Policy", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "party", label: "Party", defaultOn: true },
+    { key: "expires", label: "Expires", defaultOn: true },
+  ],
+  pipeline: [
+    { key: "title", label: "Deal", defaultOn: true },
+    { key: "stage", label: "Stage", defaultOn: true },
+    { key: "line", label: "Line", defaultOn: true },
+  ],
+  merge: [
+    { key: "pair", label: "Pair", defaultOn: true },
+    { key: "type", label: "Type", defaultOn: true },
+    { key: "reason", label: "Why they match", defaultOn: true },
+    { key: "action", label: "Review", defaultOn: true },
+  ],
+  "home-deals": [
+    { key: "title", label: "Deal", defaultOn: true },
+    { key: "stage", label: "Stage", defaultOn: true },
+    { key: "line", label: "Line", defaultOn: true },
+  ],
+  "decline-log": [
+    { key: "date", label: "Date", defaultOn: true },
+    { key: "carrier", label: "Carrier", defaultOn: true },
+    { key: "deal", label: "Deal", defaultOn: true },
+    { key: "result", label: "Result", defaultOn: true },
+    { key: "bindable", label: "Bindable", defaultOn: true },
+    { key: "premium", label: "Premium", defaultOn: true },
+    { key: "covA", label: "Cov A tried", defaultOn: false },
+    { key: "why", label: "Why", defaultOn: true },
+    { key: "snapshot", label: "Snapshot", defaultOn: false },
+  ],
 };
 
 export function defaultColumns(tableKey: string): string[] {

@@ -1,5 +1,7 @@
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { ColumnPicker, Col } from "@/components/column-picker";
+import { defaultColumns } from "@/lib/desk/columns";
 import { formatMoney } from "@/lib/domain";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -21,7 +23,10 @@ export default async function CommissionsPage() {
     .reduce((sum, r) => sum + Number(r.commission.amount ?? 0), 0);
 
   return (
-    <AppShell title="Commissions">
+    <AppShell
+      title="Commissions"
+      columns={<ColumnPicker tableKey="commissions" initial={defaultColumns("commissions")} />}
+    >
       <p className="mb-3 text-sm text-muted-foreground">
         Per-policy agency earnings. Pending vs paid. No live carrier payouts.
       </p>
@@ -44,17 +49,21 @@ export default async function CommissionsPage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Policy</th>
-                <th>Status</th>
-                <th>Amount</th>
+                <Col table="commissions" col="policy" as="th">Policy</Col>
+                <Col table="commissions" col="status" as="th">Status</Col>
+                <Col table="commissions" col="amount" as="th">Amount</Col>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ commission, policy }) => (
                 <tr key={commission.id}>
-                  <td>{policy?.policyNumber ?? "—"}</td>
-                  <td className="uppercase">{commission.status}</td>
-                  <td>{formatMoney(commission.amount)}</td>
+                  <Col table="commissions" col="policy">{policy?.policyNumber ?? "—"}</Col>
+                  <Col table="commissions" col="status" className="uppercase">
+                    {commission.status}
+                  </Col>
+                  <Col table="commissions" col="amount" sortValue={commission.amount}>
+                    {formatMoney(commission.amount)}
+                  </Col>
                 </tr>
               ))}
             </tbody>

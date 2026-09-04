@@ -54,7 +54,7 @@ export default async function PoliciesPage({
   return (
     <AppShell
       title="Policies"
-      actions={<ColumnPicker tableKey="policies" initial={defaultColumns("policies")} />}
+      columns={<ColumnPicker tableKey="policies" initial={defaultColumns("policies")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
       <form className="mb-3 flex flex-wrap gap-2 text-sm">
@@ -135,7 +135,9 @@ export default async function PoliciesPage({
                   </Col>
                   <Col table="policies" col="line">{policy.lineOfBusiness}</Col>
                   <Col table="policies" col="carrier">{carrier?.name ?? "—"}</Col>
-                  <Col table="policies" col="premium">{formatMoney(policy.premium)}</Col>
+                  <Col table="policies" col="premium" sortValue={policy.premium}>
+                    {formatMoney(policy.premium)}
+                  </Col>
                   <Col table="policies" col="effective">{formatDay(policy.effectiveDate)}</Col>
                   <Col table="policies" col="expires">{formatDay(policy.expirationDate)}</Col>
                   <Col table="policies" col="assigned">{policy.ownerId ? users.get(policy.ownerId) ?? "—" : "—"}</Col>
