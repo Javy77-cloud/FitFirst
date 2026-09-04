@@ -282,6 +282,16 @@ Shipped on `cursor/live-desk-walkthrough-531d`:
 
 Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI. Alerts list the Elena status ask with Open record.
 
+## Desk unblock (`cursor/desk-unblock-compile-eeac`)
+
+Off `cursor/feel-pass-consolidate-5e5c`. Shared leftover that blocked Mac Chrome feel-pass:
+
+- Restored `AGENCY_BRAND`, color/font/density presets, `LIST_COLUMN_CATALOG`, `defaultColumnLayout`, `resolveColumnKeys` (and template/document constants) on `@/lib/domain` from cb1393c + later slices.
+- `policies/page.tsx` no longer has two tbody renderers. ColumnPicker is actions-only; `Col` matches thead.
+- Leads / carriers list pages use the same picker. Brand fixture IDs restored. CRM/documents helpers that pages import compile again.
+
+Companion comms+nav work should reuse these domain exports rather than inventing a second brand module. Ana fixture untouched. No live Zoho.
+
 ## Feel-pass consolidate (`cursor/feel-pass-consolidate-5e5c`)
 
 One Mac Chrome feel branch. Starts from `cursor/live-desk-walkthrough-531d` (overnight re-QA + records). Merges QA + today’s pack walkthrough tips. Additive migrations only (`0008_comms_qa`, `0009_pack_addons`). Ana fixture untouched. No live Zoho writes.

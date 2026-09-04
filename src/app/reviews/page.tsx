@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
-import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
 import { ColumnPicker } from "@/components/crm/column-picker";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
@@ -37,25 +36,25 @@ export default async function ReviewsPage() {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {queue.map(({ task, contact, policy }) => (
+              {queue.map((task) => (
                 <li key={task.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <div className="text-sm font-medium">{task.title}</div>
                     <div className="text-[11px] text-muted-foreground">
                       {taskKindLabel(task.kind)} · due {formatIsoDate(task.dueDate)}
-                      {contact ? (
+                      {task.contactId ? (
                         <>
                           {" · "}
-                          <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                            {accountDisplayName(contact)}
+                          <Link href={`/contacts/${task.contactId}`} className="text-primary hover:underline">
+                            Contact
                           </Link>
                         </>
                       ) : null}
-                      {policy ? (
+                      {task.policyId ? (
                         <>
                           {" · "}
-                          <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
-                            {policy.policyNumber}
+                          <Link href={`/policies/${task.policyId}`} className="text-primary hover:underline">
+                            Policy
                           </Link>
                         </>
                       ) : null}

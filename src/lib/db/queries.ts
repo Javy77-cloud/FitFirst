@@ -526,6 +526,44 @@ export async function getContactWorkspace(id: string) {
   };
 }
 
+export async function getContact360(id: string) {
+  const workspace = await getContactWorkspace(id);
+  if (!workspace) return null;
+  return {
+    ...workspace,
+    counts: { active: workspace.activePolicyCount, lifetime: workspace.policyCount },
+  };
+}
+
+export async function matchReplacementNotice(input: {
+  address1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  policyNumber?: string | null;
+}) {
+  const rows = await db.select().from(policies).where(eq(policies.tenantId, tenant()));
+  const wanted = (input.policyNumber ?? "").trim();
+  const cancelled = rows.find(
+    (row) =>
+      wanted &&
+      row.policyNumber === wanted &&
+      (row.status === "cancelled" || row.status === "expired"),
+  );
+  const city = (input.city ?? "").trim().toLowerCase();
+  const zip = (input.zip ?? "").trim();
+  const matches = rows.filter((row) => {
+    if (row.status === "cancelled" || row.status === "expired") return false;
+    const sameCity = !city || (row.premisesCity ?? "").toLowerCase() === city;
+    const sameZip = !zip || (row.premisesZip ?? "") === zip;
+    return sameCity && sameZip;
+  });
+  return {
+    ignoredCancelledNumber: cancelled?.policyNumber ?? null,
+    matches: matches.map((policy) => ({ policy })),
+  };
+}
+
 export async function getAccountWorkspace(id: string) {
   if (!isUuid(id)) return null;
   const [account] = await db
@@ -829,10 +867,11 @@ export async function getDealWorkspace(dealId: string) {
   const [account] = deal.accountId
     ? await db.select().from(accounts).where(eq(accounts.id, deal.accountId))
     : [];
-  const [quoteSheet] = await db
+  const sheets = await db
     .select()
     .from(quoteSheets)
     .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, dealId)));
+  const quoteSheet = sheets[0];
   const boundPolicies = await db
     .select()
     .from(policies)
@@ -849,6 +888,7 @@ export async function getDealWorkspace(dealId: string) {
     contact,
     account: account ?? null,
     quoteSheet: quoteSheet ?? null,
+    sheets,
     boundPolicies,
     timeline: await listActivityTimeline({ dealId }),
     comms: await listCommsForRecord({ dealId }),
