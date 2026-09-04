@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ attention?: string; book?: string }>;
+  searchParams: Promise<{ attention?: string; book?: string; locked?: string }>;
 }) {
   const params = await searchParams;
   const session = await currentDeskSession();
@@ -37,6 +37,13 @@ export default async function HomePage({
         </Link>
       }
     >
+      {params.locked === "modules" ? (
+        <p className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-sm text-fit-yellow">
+          Modules are off for this login. Ask an Admin to turn on &quot;Can access modules&quot;
+          under Settings → People / Agents.
+        </p>
+      ) : null}
+
       <OwnerDesk
         snapshot={home.snapshot}
         scope={home.scope}

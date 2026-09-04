@@ -18,6 +18,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 company meetings:** Admin Calendar **Company meeting** / **Training** with video URL and invite Whole agency / Office / Territory / Management. Invited agents get an in-app alert and the event. Personal Video / In-Home / In-Office stay.
 
+**Batch 4 People / Agents:** Admin Settings → People / Agents — create, freeze, notify, password reset, MFA enroll stubs, and recovery links. Javy and Maya stay enrolled so the Mac desk still opens. Ana stays unbound at Cov A **$321,000**.
+
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
 Contact record: Ask a teammate is Admin-only on every record. Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
@@ -70,8 +72,11 @@ npm run dev -- --port 43147
 
 Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
 
-- **Admin** — Javy Rivera (`javy@fitfirst.local` / `javy`). Whole book. Settings, integration connect, global lists, Ask a teammate, appetite/carrier edit.
-- **Agent** — Maya Chen (`maya@fitfirst.local` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.
+- **Admin** — Javy Rivera (`javy@fitfirst.local` or username `javy` / `javy`). Whole book. Settings, People / Agents, integration connect, global lists, Ask a teammate, appetite/carrier edit.
+- **Agent** — Maya Chen (`maya@fitfirst.local` or username `maya` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.
+- **Frozen demo** — Luis Vega (`luis@fitfirst.local` / username `luis`). Frozen. Cannot sign in until Admin unfreezes.
+
+**Settings → People / Agents** (`/settings/agents`) is Admin-only. Create an agent (username or email; they set the password on the invite stub, then enroll MFA). List shows Active / Frozen / Removed and 2-step Enrolled / Pending. Actions: Freeze, Unfreeze, Remove (soft), Notify, Reset password stub, MFA recovery stub, Force re-enroll MFA, Open performance report. Javy is enrolled TOTP; Maya enrolled email; Nora Frost is pending invite + MFA. Privilege toggles: can access modules, can see agency widgets, office / territory hooks.
 
 Leads are the person record (name, DOB, contact, address, insurance wanted). Deal-level document upload still requires an existing Deal name. The left-nav **Forms** row is now **Documents** (`/documents`). Inside: **Forms** (ACORD, cancellation, AOR, fillable + Scan & suggest) and **Library** (marketing, carrier flyers, appetite guides, misc). Folders nest; create, rename, and move stay inside one area. `/forms` redirects to Documents → Forms. Quote Sheet fill stays at `/forms/[slug]`. Ana stays untouched.
 
@@ -93,7 +98,9 @@ List sheets share one header control: click a column to sort A→Z / Z→A, or o
 
 Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim**. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
 
-Settings has a nested left menu: Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency (chrome, **Offices**, **Territories**), and Admin vs Agent prefs.
+Settings has a nested left menu: **People / Agents**, Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency (chrome, **Offices**, **Territories**), and Admin vs Agent prefs.
+
+**People / Agents (Admin).** Settings → People / Agents. Create a producer, freeze or remove a login, send an in-app note, push a password reset stub, and enroll MFA (authenticator / email / SMS stubs). Recovery links are Admin-only. Seeded: Javy and Maya enrolled; Luis Vega frozen; Nora Frost pending MFA.
 
 **Offices + Territories (Admin).** Settings → Agency → Offices / Territories. An office has a name, state(s), address, and optional timezone. Agents can sit in more than one office, including desks in different states. A territory has a name, states/counties or a freeform geo label, and optional linked offices. Admin assigns people on those pages. Home (Admin) can filter Company-wide, per office, or per territory — helpers live in `src/lib/org` for other bots. Seed: Palm Bay FL (Javy primary + Maya) and Savannah GA (Javy); Space Coast territory linked to Palm Bay. Agents still cannot open Admin Settings. The catalog lists Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Google Meet, DocuSign, Dropbox Sign, plus Facebook, Instagram, X, LinkedIn, and Google Business Profile. Each card is bring-your-own (agency pays) with a **Connect stub** and **Not connected** / **Connected (stub)** badges. No live OAuth. No Zoho.
 

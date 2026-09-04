@@ -35,7 +35,7 @@ export async function seedHomeDashboard() {
         id: HOME_AGENT_IDS.luis,
         tenantId: TENANT_ID,
         name: "Luis Mena",
-        email: "luis@fitfirst.local",
+        email: "luis.mena@fitfirst.local",
         role: "agent",
         active: true,
         meetingAddress: "Suite 114 · producer desk",

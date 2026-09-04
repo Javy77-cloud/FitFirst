@@ -99,15 +99,36 @@ export const users = pgTable(
     tenantId: tenantCol(),
     name: text("name").notNull(),
     email: text("email").notNull(),
+    username: text("username"),
     role: text("role").notNull().default("agent"),
     passwordHash: text("password_hash"),
     active: boolean("active").notNull().default(true),
+    accessStatus: text("access_status").notNull().default("active"),
+    canAccessModules: boolean("can_access_modules").notNull().default(true),
+    canSeeAgencyWidgets: boolean("can_see_agency_widgets").notNull().default(true),
+    officeLabel: text("office_label"),
+    territoryLabel: text("territory_label"),
+    mustSetPassword: boolean("must_set_password").notNull().default(false),
+    inviteToken: text("invite_token"),
+    inviteExpiresAt: timestamp("invite_expires_at", { withTimezone: true }),
+    resetToken: text("reset_token"),
+    resetExpiresAt: timestamp("reset_expires_at", { withTimezone: true }),
+    mfaEnrolled: boolean("mfa_enrolled").notNull().default(false),
+    mustEnrollMfa: boolean("must_enroll_mfa").notNull().default(true),
+    mfaMethod: text("mfa_method"),
+    totpSecret: text("totp_secret"),
+    mfaPhone: text("mfa_phone"),
+    recoveryToken: text("recovery_token"),
+    recoveryExpiresAt: timestamp("recovery_expires_at", { withTimezone: true }),
+    frozenAt: timestamp("frozen_at", { withTimezone: true }),
+    removedAt: timestamp("removed_at", { withTimezone: true }),
     meetingAddress: text("meeting_address"),
     ...timestamps,
   },
   (t) => [
     index("users_tenant_idx").on(t.tenantId),
     uniqueIndex("users_tenant_email_idx").on(t.tenantId, t.email),
+    uniqueIndex("users_tenant_username_idx").on(t.tenantId, t.username),
   ],
 );
 
@@ -927,12 +948,45 @@ export const alerts = pgTable(
     entityId: uuid("entity_id"),
     /** When set, the ping is for this desk user. Null stays agency-wide. */
     userId: uuid("user_id"),
+    recipientUserId: uuid("recipient_user_id"),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
+);
+
+/** Admin → agent in-app messages. Nothing emails. */
+export const deskMessages = pgTable(
+  "desk_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fromUserId: uuid("from_user_id").notNull(),
+    toUserId: uuid("to_user_id").notNull(),
+    body: text("body").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("desk_messages_to_idx").on(t.tenantId, t.toUserId, t.createdAt)],
+);
+
+/** SMS / email MFA stub codes. Authenticator uses users.totp_secret. */
+export const mfaChallenges = pgTable(
+  "mfa_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id").notNull(),
+    channel: text("channel").notNull(),
+    destination: text("destination").notNull(),
+    code: text("code").notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("mfa_challenges_user_idx").on(t.tenantId, t.userId, t.createdAt)],
 );
 
 /** Consumed from agency-ops: task / meeting / call. TEST-DESK adds account_id. */
@@ -1920,6 +1974,8 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
+export type DeskMessage = typeof deskMessages.$inferSelect;
+export type MfaChallenge = typeof mfaChallenges.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type CalendarInvite = typeof calendarInvites.$inferSelect;

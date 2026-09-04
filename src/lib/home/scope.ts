@@ -37,14 +37,25 @@ export async function currentOwnerHomeScope(bookScope?: BookScope): Promise<Owne
     const { currentDeskSession } = await import("@/lib/auth/session");
     const session = await currentDeskSession();
     if (session.signedIn) {
-      const mine = !session.isAdmin || parseBookScope(scope) === "my_book";
+      if (session.isAdmin) {
+        const mine = parseBookScope(scope) === "my_book";
+        return {
+          tenantId,
+          role: session.role,
+          agentUserId: mine ? session.userId : null,
+          label: mine ? "My book" : "Agency-wide",
+          bookScope: parseBookScope(scope),
+          canToggleBook: true,
+        };
+      }
+      const seeAgency = Boolean(session.user?.canSeeAgencyWidgets);
       return {
         tenantId,
         role: session.role,
-        agentUserId: mine ? session.userId : null,
-        label: mine ? "My book" : "Agency-wide",
-        bookScope: session.isAdmin ? parseBookScope(scope) : "my_book",
-        canToggleBook: session.isAdmin,
+        agentUserId: seeAgency ? null : session.userId,
+        label: seeAgency ? "Agency-wide" : "My book",
+        bookScope: seeAgency ? "agency" : "my_book",
+        canToggleBook: false,
       };
     }
     const jar = await cookies();
