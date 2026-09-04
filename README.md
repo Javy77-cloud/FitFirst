@@ -25,14 +25,7 @@ Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-git fetch origin cursor/mac-ready-batch3-7pm
-git checkout -B cursor/mac-ready-batch3-7pm origin/cursor/mac-ready-batch3-7pm
-cp .env.example .env
-# Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
-npm install
-npm run db:migrate
-npm run db:seed
-npm run dev -- --port 43147
+cd ~/FitFirst && git fetch origin && git checkout -B cursor/mac-ready-batch4-7pm origin/cursor/mac-ready-batch4-7pm && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
 ```
 
 Hard-refresh Chrome. Open a Contact (no Ask panel; opt-outs + Email/Call/SMS). Open Leads and confirm deal stage. Column picker on Leads includes every New Lead field.
