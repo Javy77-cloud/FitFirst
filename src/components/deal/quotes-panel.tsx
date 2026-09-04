@@ -3,7 +3,10 @@ import { DeskDetails } from "@/components/desk-details";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
+import { matchQuotePdf } from "@/lib/files/quote-match";
+import { filePreviewHref } from "@/lib/files/urls";
 import { AppetiteCapture } from "./appetite-capture";
+import { DocFileActions } from "./doc-file-actions";
 
 export function QuotesPanel({
   dealId,
@@ -13,6 +16,10 @@ export function QuotesPanel({
   quoteDocs = [],
   unlocked = false,
   carriers = [],
+  contactId,
+  accountId,
+  email,
+  phone,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -21,6 +28,10 @@ export function QuotesPanel({
   quoteDocs?: Document[];
   unlocked?: boolean;
   carriers?: { id: string; name: string }[];
+  contactId?: string | null;
+  accountId?: string | null;
+  email?: string | null;
+  phone?: string | null;
 }) {
   return (
     <div className="space-y-4">
@@ -90,7 +101,7 @@ export function QuotesPanel({
             </thead>
             <tbody>
               {quotes.map(({ quote, carrier }) => {
-                const pdf = quoteDocs.find((doc) => doc.dealId === quote.dealId && doc.docType === "quote_pdf");
+                const pdf = matchQuotePdf(quote, carrier, quoteDocs);
                 return (
                 <tr key={quote.id}>
                   <td className="font-medium">
@@ -109,9 +120,21 @@ export function QuotesPanel({
                   </td>
                   <td>
                     {pdf ? (
-                      <a href={`/api/documents/${pdf.id}`} className="text-xs text-primary hover:underline">
-                        Open PDF
-                      </a>
+                      <div className="space-y-1">
+                        <a href={filePreviewHref(pdf.id)} className="text-xs text-primary hover:underline">
+                          Open PDF
+                        </a>
+                        <DocFileActions
+                          documentId={pdf.id}
+                          filename={pdf.filename}
+                          dealId={dealId}
+                          contactId={contactId}
+                          accountId={accountId}
+                          email={email}
+                          phone={phone}
+                          compact
+                        />
+                      </div>
                     ) : (
                       <span className="text-[11px] text-muted-foreground">Pending finalize</span>
                     )}

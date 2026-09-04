@@ -10,12 +10,24 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
+import { filePreviewHref, isQuoteAttachment } from "@/lib/files/urls";
+import { DocFileActions } from "./doc-file-actions";
 import { QuotingLinePicker } from "./quoting-line-picker";
+
+type FileComms = {
+  contactId?: string | null;
+  accountId?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
 
 export function DocumentsPanel({
   dealId,
   riskId,
   contactId,
+  accountId,
+  email,
+  phone,
   docs,
   fields,
   quotingForm,
@@ -23,16 +35,24 @@ export function DocumentsPanel({
   dealId: string;
   riskId: string;
   contactId?: string | null;
+  accountId?: string | null;
+  email?: string | null;
+  phone?: string | null;
   docs: Document[];
   fields: ExtractedFieldRow[];
   quotingForm?: string | null;
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
-  const sourceDocs = docs.filter(
-    (d) => d.slot !== "quote_pdf" && d.slot !== "policy_file" && d.slot !== "signed_app",
-  );
-  const quotePdfs = docs.filter((d) => d.slot === "quote_pdf");
+  const quotePdfs = docs.filter((d) => isQuoteAttachment(d));
   const signedApps = docs.filter((d) => d.slot === "signed_app" || d.docType === "signed_app");
+  const sourceDocs = docs.filter(
+    (d) =>
+      !isQuoteAttachment(d) &&
+      d.slot !== "policy_file" &&
+      d.slot !== "signed_app" &&
+      d.docType !== "signed_app",
+  );
+  const comms: FileComms = { contactId, accountId, email, phone };
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
@@ -98,7 +118,7 @@ export function DocumentsPanel({
               </Button>
             </form>
           </div>
-          <DocTable docs={sourceDocs} dealId={dealId} empty="No source documents yet." />
+          <DocTable docs={sourceDocs} dealId={dealId} comms={comms} empty="No source documents yet." />
           {sourceDocs.length > 0 ? (
             <div className="mt-3">
               <QuotingLinePicker
@@ -122,12 +142,12 @@ export function DocumentsPanel({
             <input type="hidden" name="slot" value="quote_pdf" />
             <input type="hidden" name="docType" value="quote_pdf" />
             <Label className="text-xs">Quote PDF</Label>
-            <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+            <input name="file" type="file" accept=".pdf,application/pdf,text/plain" required className="mt-1 block w-full text-xs" />
             <Button type="submit" size="sm">
               Attach quote PDF
             </Button>
           </form>
-          <DocTable docs={quotePdfs} dealId={dealId} empty="No issued quote PDFs yet." />
+          <DocTable docs={quotePdfs} dealId={dealId} comms={comms} empty="No issued quote PDFs yet." />
         </section>
 
         <section className="ff-card p-4">
@@ -147,7 +167,7 @@ export function DocumentsPanel({
               Attach signed app
             </Button>
           </form>
-          <DocTable docs={signedApps} dealId={dealId} empty="No signed apps yet." />
+          <DocTable docs={signedApps} dealId={dealId} comms={comms} empty="No signed apps yet." />
         </section>
       </div>
 
@@ -224,10 +244,12 @@ export function DocumentsPanel({
 function DocTable({
   docs,
   dealId,
+  comms,
   empty,
 }: {
   docs: Document[];
   dealId: string;
+  comms: FileComms;
   empty: string;
 }) {
   if (docs.length === 0) {
@@ -240,25 +262,41 @@ function DocTable({
           <th>File</th>
           <th>Type</th>
           <th>Slot</th>
-          <th></th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {docs.map((doc) => (
           <tr key={doc.id}>
-            <td className="font-medium">{doc.filename}</td>
+            <td className="font-medium">
+              <a href={filePreviewHref(doc.id)} className="text-navy hover:underline">
+                {doc.filename}
+              </a>
+            </td>
             <td className="uppercase">{doc.docType.replaceAll("_", " ")}</td>
             <td className="text-[11px] uppercase">{doc.slot.replaceAll("_", " ")}</td>
             <td>
-              {doc.slot === "source_doc" ? (
-                <form action={extractExisting}>
-                  <input type="hidden" name="documentId" value={doc.id} />
-                  <input type="hidden" name="dealId" value={dealId} />
-                  <Button type="submit" variant="ghost" size="xs">
-                    Re-extract
-                  </Button>
-                </form>
-              ) : null}
+              <div className="flex flex-col items-start gap-1">
+                <DocFileActions
+                  documentId={doc.id}
+                  filename={doc.filename}
+                  dealId={dealId}
+                  contactId={comms.contactId}
+                  accountId={comms.accountId}
+                  email={comms.email}
+                  phone={comms.phone}
+                  compact
+                />
+                {doc.slot === "source_doc" && !isQuoteAttachment(doc) ? (
+                  <form action={extractExisting}>
+                    <input type="hidden" name="documentId" value={doc.id} />
+                    <input type="hidden" name="dealId" value={dealId} />
+                    <Button type="submit" variant="ghost" size="xs">
+                      Re-extract
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
             </td>
           </tr>
         ))}

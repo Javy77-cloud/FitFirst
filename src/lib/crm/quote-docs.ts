@@ -52,11 +52,12 @@ export async function attachFinalizedQuotePdfs(dealId: string): Promise<number> 
       tenantId: DEFAULT_TENANT_ID,
       riskId: risk.id,
       dealId,
-      quoteId: quote.id,
+      contactId: risk.contactId ?? null,
       filename,
       mimeType: "application/pdf",
       storagePath,
       docType: QUOTE_PDF_DOC_TYPE,
+      slot: "quote_pdf",
       status: "attached",
     });
   }
