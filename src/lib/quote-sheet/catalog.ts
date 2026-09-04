@@ -19,6 +19,8 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built" },
   { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories" },
   { key: "square_feet", label: "Square feet", group: "Dwelling", input: "number", extractKey: "square_feet" },
+  { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number", extractKey: "beds" },
+  { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number", extractKey: "baths" },
   { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction" },
   { key: "occupancy", label: "Occupancy", group: "Dwelling", extractKey: "occupancy" },
   { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year" },
@@ -67,7 +69,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     key: "wind_hail_deductible",
     label: "Wind / hail deductible",
     group: "Coverages",
-    extractKey: "wind_hail_deductible",
+    extractKey: "wind_deductible",
   },
   {
     key: "replacement_cost_estimate",
@@ -110,11 +112,12 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "policy_number", label: "Policy number", group: "Current policy", extractKey: "policy_number" },
   { key: "form", label: "Form", group: "Current policy", extractKey: "form" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
+  { key: "flood_zone", label: "Flood zone", group: "Inspections", extractKey: "flood_zone" },
   { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
   { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
-  { key: "four_point_date", label: "4-point date", group: "Inspections" },
-  { key: "four_point_result", label: "4-point result", group: "Inspections" },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections" },
+  { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date" },
+  { key: "four_point_result", label: "4-point result", group: "Inspections", extractKey: "four_point_result" },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form" },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
 ];
 
@@ -216,9 +219,19 @@ export function emptySheetValues(line: ShopLine): Record<string, QuoteSheetField
   return values;
 }
 
+const EXTRACT_ALIASES: Record<string, string> = {
+  wind_hail_deductible: "wind_deductible",
+  address: "address",
+};
+
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {
+  const aliased = EXTRACT_ALIASES[extractKey] ?? extractKey;
   const match = fieldsForLine(line).find(
-    (field) => field.extractKey === extractKey || field.key === extractKey,
+    (field) =>
+      field.extractKey === extractKey ||
+      field.extractKey === aliased ||
+      field.key === extractKey ||
+      field.key === aliased,
   );
   return match?.key ?? null;
 }

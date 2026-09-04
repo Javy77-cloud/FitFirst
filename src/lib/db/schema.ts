@@ -16,7 +16,7 @@ import {
 export type QuoteSheetFieldValue = {
   value: string;
   status: "missing" | "check" | "confirmed";
-  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public" | "photo-ocr";
   /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
   sourceLabel?: string;
 };
@@ -1012,6 +1012,33 @@ export const extractionJobs = pgTable(
       .notNull(),
   },
   (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
+);
+
+/** Appetite-style correction log. Later fill prefers these over a repeated bad extract. Not ML. */
+export const fillFeedbackLogs = pgTable(
+  "fill_feedback_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
+    docType: text("doc_type").notNull(),
+    fieldKey: text("field_key").notNull(),
+    wrongValue: text("wrong_value").notNull(),
+    correctedValue: text("corrected_value").notNull(),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    reason: text("reason").notNull().default("agent_edit"),
+    line: text("line"),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("fill_feedback_tenant_idx").on(t.tenantId, t.createdAt),
+    index("fill_feedback_lookup_idx").on(t.tenantId, t.docType, t.fieldKey),
+  ],
 );
 
 export const alerts = pgTable(
@@ -2118,6 +2145,7 @@ export type LeadOfferRow = typeof leadOffers.$inferSelect;
 export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
 export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
+export type FillFeedbackLog = typeof fillFeedbackLogs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;
 export type UserDashboardPref = typeof userDashboardPrefs.$inferSelect;

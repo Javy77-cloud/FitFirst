@@ -13,7 +13,7 @@ export function QuotingLinePicker({
 }) {
   const picked = QUOTING_FORMS.find((form) => form.id === currentForm);
   return (
-    <section className="ff-card border-primary/30 p-4">
+    <section className="rounded-md border border-primary/30 bg-card p-3">
       <h3 className="text-sm font-semibold text-navy">What are we quoting?</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         {sourceDocCount > 0

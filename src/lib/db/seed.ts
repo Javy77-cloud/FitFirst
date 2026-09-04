@@ -499,4 +499,6 @@ export async function seed() {
   await seedPiiVault();
   await seedMfaDemo();
   await seedCarrierPortals();
+  const { seedFillFeedback } = await import("./seed-fill-feedback");
+  await seedFillFeedback();
 }

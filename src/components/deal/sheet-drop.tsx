@@ -55,7 +55,9 @@ export function SheetDrop({
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="riskId" value={riskId} />
         <input type="hidden" name="line" value={line} />
-        <input type="hidden" name="docType" value="dec" />
+        <input type="hidden" name="docType" value="auto" />
+        <input type="hidden" name="after" value="fill-sheet" />
+        <input type="hidden" name="returnTab" value="quote-sheet" />
         <div className="flex flex-wrap items-center gap-3">
           <input
             ref={inputRef}

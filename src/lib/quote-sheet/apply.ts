@@ -91,8 +91,8 @@ export function applyExtractedToSheet(
     values[key] = {
       value: nextValue,
       status: "check",
-      source: "extracted",
-      sourceLabel: item.sourceLabel ?? "Uploaded dec",
+      source,
+      sourceLabel: item.sourceLabel ?? (source === "photo-ocr" ? "Photo" : "Uploaded dec"),
     };
     filledKeys.push(key);
   }

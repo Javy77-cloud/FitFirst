@@ -24,16 +24,22 @@ export default async function QuotesBoardPage({
     <AppShell
       title="Quotes"
       actions={
-        <Link href="/deals/new" className={cn(buttonVariants({ size: "sm" }))}>
-          New shopping deal
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/quotes/fill-feedback" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Fill Feedback log
+          </Link>
+          <Link href="/deals/new" className={cn(buttonVariants({ size: "sm" }))}>
+            New shopping deal
+          </Link>
+        </div>
       }
       columns={<ColumnPicker tableKey="quotes" initial={defaultColumns("quotes")} />}
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         Every shop already run — appetite logs and quote comparison rows — in one place. Status
         is quoted, declined, skip, or bound. Cheapest quoted is ranked per deal. Fold a shop you
-        are not working. This board does not call a carrier or rater.
+        are not working. This board does not call a carrier or rater. Mapped-field corrections
+        live on the Fill Feedback log — rule/log based, not ML.
       </p>
 
       {deal ? (

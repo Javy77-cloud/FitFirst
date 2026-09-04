@@ -567,18 +567,21 @@ Admin-only encrypted quoting-portal username + password on the carrier record. A
 - Seed: American Traditions `FF-AT-1048` and People's Trust `FF-PT-2201`. Existing Tailrow / American Integrity get agency codes only.
 - Incoming `0027_carrier_portal_secrets` renumbered to `0033_carrier_portal_secrets`. Ana fixture untouched. One Pipeline. Sidebar hex unchanged.
 
-## WAVE2 — Deal quote PDF view / email / SMS / print (`bc-405a83e9`)
+## WAVE2 — Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`)
 
-Wave-1 consolidator finished **without** this bot. It was still **RUNNING** (`FitFirst fix Deal quote PDF view`, `bc-405a83e9-25ff-47fa-b738-5035d72aba1b`) with **no remote branch** at wave-1 close.
+Merged onto `cursor/mac-ready-batch4-7pm`. Deal Issued quote PDFs open in-browser (`/files/[id]` + `/api/files/[id]`), download, and Email / SMS / Print stubs. Elena seeds two real quote PDFs. Ana unbound (Cov A **$321,000**). No new migration. One Pipeline. Alerts off the sidebar.
 
-When its branch appears:
+## WAVE3 leftover
 
-```bash
-git fetch origin
-git branch -r | rg -i 'pdf|deal-doc|quote-pdf'
-git checkout cursor/mac-ready-batch4-7pm
-git merge origin/<that-branch>
-```
+Fill Learning (`cursor/fill-learning-log-efeb`) is the next merge on this branch — `fill_learning_logs` as **0035** (incoming `0021` must be renumbered). Do not bind Ana (Cov A **$321,000**). Additive migrations only — after 0035 the next free number is **0036**. One Pipeline. Alerts off the sidebar. Build green.
 
-Keep Deal Issued quote PDFs, view / email / SMS / print. Do not bind Ana (Cov A **$321,000**). Additive migrations only — next free number is **0034**. One Pipeline. Alerts off the sidebar. Build green.
+## DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0034_fill_feedback`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+**What was broken:** Deal Documents upload extracted fields onto `extracted_fields` / risk but never wrote `quote_sheets`. “Fill master sheet” (`setQuotingLine`) and “Fill blanks from source docs” only copied leftover extract rows through the thin lifecycle mapper — they did not re-parse dec / wind mit / 4-point. SheetDrop “Upload and fill” also skipped the Quote Sheet writer. Wind mit / 4-point could be skipped when `inferShopLine` saw “flood”. Inspection keys (`four_point_date`, `wind_mit_form`) lacked catalog extractKeys.
+
+**Fix:** Upload / pick line / Fill master sheet all call `runFillDealSheets` (parse source docs → blanks-only Quote Sheet). HO source docs stay on the home line. Deal Documents is a 5-step flow with progress, errors, source-vs-sheet review, visual approve, then Send to Fill. Super-Copy still reads the filled sheet.
+
+**Fill Feedback log** (`fill_feedback_logs`, `/quotes/fill-feedback`): when an agent/Admin corrects a mapped field after ingest, or marks a paste field wrong, store doc type / field / wrong / corrected / optional carrier. Later fill prefers that correction when the same extract repeats. Rule/log based — not ML. Seeded two Elena demo rows (roof covering; hurricane deductible).
 

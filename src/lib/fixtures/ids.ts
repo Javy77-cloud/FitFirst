@@ -427,6 +427,12 @@ export const SEEDED_DESK_AGENTS = [
   { id: PENDING_MFA_USER_ID, slug: "nora", displayName: "Nora Frost", role: "agent" },
 ] as const;
 
+/** Fill Feedback / Learning Log demo rows. Off Ana / Elena owner blocks. */
+export const FILL_FEEDBACK_IDS = {
+  roofCovering: "b0341111-b034-4111-8111-b03411111101",
+  hurricaneDed: "b0341111-b034-4111-8111-b03411111102",
+} as const;
+
 export const CARRIER_IDS = {
   qbe: "33333333-3333-4333-8333-333333333301",
   benchmark: "33333333-3333-4333-8333-333333333302",

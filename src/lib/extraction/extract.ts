@@ -47,22 +47,32 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "coverage_a",
-    re: /(?:coverage\s*a(?:\s*\([^)]*\)|\s+dwelling)?|cov\.?\s*a|dwelling(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    re: /(?:coverage\s*a(?:\s*\([^)]*\)|\s+dwelling)?|cov\.?\s*a|dwelling(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*A\.\s*Dwelling\s+\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
   },
   {
     key: "coverage_b",
-    re: /(?:coverage\s*b(?:\s*\([^)]*\)|\s+other\s*structures)?|cov\.?\s*b|other\s*structures)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    re: /(?:coverage\s*b(?:\s*\([^)]*\)|\s+other\s*structures)?|cov\.?\s*b|other\s*structures)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*B\.\s*Other\s+Structures\s+\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
   },
   {
     key: "coverage_c",
-    re: /(?:coverage\s*c(?:\s*\([^)]*\)|\s+personal\s*property)?|cov\.?\s*c|personal\s*property|contents(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    re: /(?:coverage\s*c(?:\s*\([^)]*\)|\s+personal\s*property)?|cov\.?\s*c|personal\s*property|contents(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*C\.\s*Personal\s+Property\s+\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
   },
   {
     key: "coverage_d",
-    re: /(?:coverage\s*d(?:\s*\([^)]*\)|\s+loss\s*of\s*use)?|cov\.?\s*d|loss\s*of\s*use|additional\s*living)\s*[:#]\s*\$?\s*([\d,]{3,})/i,
+    re: /(?:coverage\s*d(?:\s*\([^)]*\)|\s+loss\s*of\s*use)?|cov\.?\s*d|loss\s*of\s*use|additional\s*living)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*D\.\s*Loss\s+of\s+Use\s+\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_e",
+    re: /(?:coverage\s*e(?:\s*\([^)]*\)|\s+liability)?|cov\.?\s*e|personal\s+liability)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*E\.\s*Personal\s+Liability\s+\$?\s*([\d,]{3,})/im,
+    normalize: normalizeMoney,
+  },
+  {
+    key: "coverage_f",
+    re: /(?:coverage\s*f(?:\s*\([^)]*\)|\s+medical)?|cov\.?\s*f|medical\s+payments)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*F\.\s*Medical\s+Payments\s+\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
   },
   {
@@ -203,6 +213,26 @@ const PATTERNS: Pattern[] = [
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
   {
+    key: "secondary_named_insured",
+    re: /(?:additional|secondary)\s+named\s+insured\s*[:#]\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "mailing_address",
+    re: /mailing\s+address\s*[:#]\s*([^\n]+)/i,
+    normalize: (s) => s.replace(/\s+/g, " ").trim(),
+  },
+  {
+    key: "ordinance_or_law",
+    re: /ordinance\s+or\s+law\s*[:#]?\s*(\d+%|\$?[\d,]+)/i,
+    normalize: (s) => s.replace(/\s+/g, "").trim(),
+  },
+  {
+    key: "water_backup",
+    re: /water\s+backup\s*[:#]?\s*\$?\s*([\d,]{3,})/i,
+    normalize: normalizeMoney,
+  },
+  {
     key: "effective_date",
     re: /(?:effective(?:\s*date)?|policy\s*effective|inception)\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
     normalize: (s) => s,
@@ -224,7 +254,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "four_point_date",
-    re: /(?:4[\s-]*point|four[\s-]*point)\s*(?:date|insp)?\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    re: /(?:4[\s-]*point|four[\s-]*point)\s*(?:inspection\s*)?(?:date|insp)?\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
     normalize: (s) => s,
   },
   {
@@ -234,7 +264,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "wind_mit_form",
-    re: /(?:wind\s*mit(?:igation)?(?:\s*form)?|oir[\s-]?b[\s-]?1[\s-]?802)\s*[:#]\s*([^\n]+)/i,
+    re: /(?:wind\s*mit(?:igation)?(?:\s*form)?|oir[\s-]?b[\s-]?1[\s-]?1802|oir[\s-]?b[\s-]?1[\s-]?802)\s*[:#]\s*([^\n]+)/i,
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
   {
@@ -342,8 +372,9 @@ function fromPatterns(text: string, penalty: number): ExtractedField[] {
   const fields: ExtractedField[] = [];
   for (const pattern of PATTERNS) {
     const match = pattern.re.exec(text);
-    if (!match?.[1]) continue;
-    const built = toField(pattern.key, match[1].trim(), pattern.normalize, penalty);
+    const raw = (match?.[1] ?? match?.[2] ?? "").trim();
+    if (!raw) continue;
+    const built = toField(pattern.key, raw, pattern.normalize, penalty);
     if (built) fields.push(built);
   }
   return fields;
@@ -398,6 +429,9 @@ function normalizerFor(key: string): (raw: string) => string {
     key === "coverage_b" ||
     key === "coverage_c" ||
     key === "coverage_d" ||
+    key === "coverage_e" ||
+    key === "coverage_f" ||
+    key === "water_backup" ||
     key === "replacement_cost_estimate" ||
     key === "current_premium" ||
     key === "liability_pd" ||

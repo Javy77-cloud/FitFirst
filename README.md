@@ -4,9 +4,9 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-1 consolidate on `cursor/mac-ready-batch3-7pm`)
+**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-2 on WAVE-1: Deal quote PDFs + DOC → master sheet fill)
 
-**Wave 2 leftover:** Deal quote PDF view / email / SMS / print bot (`bc-405a83e9`) had not pushed a branch when wave 1 closed. Merge it onto this branch when `git branch -r | rg -i 'pdf|deal-doc|quote-pdf'` shows it. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`) plus DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`). Fill Learning (`cursor/fill-learning-log-efeb`) is next on this same branch. See `COORDINATION.md`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -179,7 +179,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 ## BATCH3 quoting (ASAP test)
 
 1. **Lead → Deal.** Open a Lead. Convert when ready. Source docs stay off the Lead.
-2. **Deal drop.** On the Deal, upload a dec / 4-point / wind mit (or sample clean dec). Pick **HO3 homeowners**. That fills the HO3 master sheet and prepares empty Auto + GL + WC worksheets.
+2. **Deal drop.** On the Deal **Documents** tab: upload a dec / 4-point / wind mit (or a sample). Detect type from the filename. Pick **HO3 homeowners**. **Fill master sheet** parses those source docs into the HO3 Quote Sheet (blanks only; yellow missing / blue CHECK) and prepares empty Auto + GL + WC worksheets. Super-Copy / Chrome Fill read that sheet — never the raw PDFs. Corrections write the **Fill Feedback** log (`/quotes/fill-feedback`).
 3. **Visual approve.** Quote Sheet tab: glance yellow/blue cells. Check **I visually reviewed this master sheet**, click **Approve and unlock quoting**, then confirm **Are you sure?**
 4. **Handoff.** After unlock: **Copy sheet**, **Send to Fill**, or **Open Fill window**. Prefer the Chrome Fill add-on (`extensions/fill`). No per-agent bot. If the add-on is missing, copy/paste in the new window.
 5. **Appetite log.** Quotes tab → quoted / declined / maybe. `maybe` does not change filter-first matching.

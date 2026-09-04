@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import { CLEAN_DEC_TEXT, MESSY_WIND_MIT_TEXT } from "@/lib/fixtures/sample-docs";
 import { GARCIA_AUTO_DEC_TEXT, GARCIA_DEC_TEXT } from "@/lib/fixtures/sample-garcia-dec";
+import { PHOTO_DEC_TEXT } from "@/lib/fixtures/sample-photo-dec";
 import { extractFieldsFromText } from "./extract";
 
 describe("document extraction confidence", () => {

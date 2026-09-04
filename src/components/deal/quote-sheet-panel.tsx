@@ -1,36 +1,42 @@
 import Link from "next/link";
 import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
-import { DeskDetails } from "@/components/desk-details";
-import { Button, buttonVariants } from "@/components/ui/button";
-import type { QuoteSheetFieldValue } from "@/lib/domain";
+import { buttonVariants } from "@/components/ui/button";
+import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
-import { groupFields } from "@/lib/quote-sheet/catalog";
-import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { quotingFormById } from "@/lib/quoting/forms";
 import { cn } from "@/lib/utils";
 import { QuoteHandoff } from "./quote-handoff";
 import { SheetApproveGate } from "./sheet-approve-gate";
+import { QuoteSheetForm } from "./quote-sheet-form";
+import { FillSubmitButton } from "./fill-progress";
 
 export function QuoteSheetPanel({
   dealId,
+  dealTitle,
   values,
   line = "home",
   quotingForm,
   unlocked,
   approvedBy,
   sheetLines = [],
+  sheet,
+  contact,
+  riskId,
 }: {
   dealId: string;
+  dealTitle?: string;
   values: Record<string, QuoteSheetFieldValue> | null;
   line?: string;
   quotingForm?: string | null;
   unlocked: boolean;
   approvedBy?: string | null;
   sheetLines?: string[];
+  sheet?: QuoteSheet | null;
+  contact?: Contact | null;
+  riskId?: string;
 }) {
-  const sheet = values ?? {};
+  const cells = values ?? {};
   const shopLine = (line as ShopLine) ?? "home";
-  const groups = groupFields(shopLine);
   const form = quotingFormById(quotingForm ?? "");
   const formLabel = form?.label ?? SHOP_LINE_LABELS[shopLine] ?? "Master sheet";
   const lines = sheetLines.length > 0 ? sheetLines : [shopLine];
@@ -50,10 +56,14 @@ export function QuoteSheetPanel({
             <form action={fillQuoteSheetBlanks}>
               <input type="hidden" name="dealId" value={dealId} />
               <input type="hidden" name="line" value={shopLine} />
-              <Button type="submit" size="sm">
-                Fill blanks from source docs
-              </Button>
+              <FillSubmitButton
+                label="Fill blanks from source docs"
+                pendingLabel="Reading source docs…"
+              />
             </form>
+            <Link href="/quotes/fill-feedback" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+              Fill Feedback log
+            </Link>
             <Link
               href={`/api/deals/${dealId}/quote-sheets/${shopLine}/super-copy`}
               className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
@@ -104,50 +114,20 @@ export function QuoteSheetPanel({
         </div>
       </section>
 
-      {groups.map((group) => (
-        <DeskDetails
-          key={group.group}
-          title={group.group}
-          summary={sheetGroupSummary(group.fields, sheet)}
-          open={sheetGroupNeedsAttention(group.fields, sheet)}
-          padded={false}
-        >
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Value</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {group.fields.map((field) => {
-                const cell = sheet[field.key];
-                const status = cell?.status ?? "missing";
-                return (
-                  <tr
-                    key={field.key}
-                    className={
-                      status === "missing"
-                        ? "bg-fit-yellow-bg/60"
-                        : status === "check"
-                          ? "bg-fit-check-bg/70"
-                          : ""
-                    }
-                  >
-                    <td className="font-medium">{field.label}</td>
-                    <td>{cell?.value || "—"}</td>
-                    <td className="uppercase text-[11px]">
-                      {status}
-                      {cell?.source && cell.source !== "blank" ? ` · ${cell.source}` : ""}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </DeskDetails>
-      ))}
+      {sheet ? (
+        <QuoteSheetForm
+          dealId={dealId}
+          dealTitle={dealTitle ?? formLabel}
+          line={shopLine}
+          sheet={sheet}
+          contact={contact}
+          riskId={riskId}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No Quote Sheet row yet. Upload a source doc and pick the line to build one. {Object.keys(cells).length} preview cells.
+        </p>
+      )}
     </div>
   );
 }

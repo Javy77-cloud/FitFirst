@@ -3,7 +3,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -11,10 +11,12 @@ import {
   documents,
   extractedFields,
   extractionJobs,
+  fillFeedbackLogs,
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
 import type { Document, QuoteSheetFieldValue } from "@/lib/db/schema";
+import { applyLoggedCorrections } from "@/lib/fill-feedback/prefer";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
 import {
   coerceRiskValue,
@@ -23,7 +25,7 @@ import {
   type ExtractedField,
 } from "@/lib/extraction/extract";
 import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
-import { inferShopLine, isQuoteAttachment } from "@/lib/ingest/identity";
+import { inferShopLine, isQuoteAttachment, sourceDocFillsHome } from "@/lib/ingest/identity";
 import { ImageOcrNotImplementedError, textFromUpload } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
@@ -47,6 +49,7 @@ import {
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import { SHOP_LINES } from "@/lib/domain";
+import { currentDeskSession } from "@/lib/auth/session";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -91,6 +94,13 @@ export async function saveQuoteSheet(formData: FormData) {
     submitted[key] = String(value);
   }
   const values = mergeAgentEdits(sheet.values, submitted, lineRaw);
+  await logSheetCorrections({
+    dealId,
+    sheetId: sheet.id,
+    line: lineRaw,
+    before: sheet.values,
+    after: values,
+  });
   await db
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
@@ -98,6 +108,7 @@ export async function saveQuoteSheet(formData: FormData) {
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
   revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/quotes/fill-feedback");
 }
 
 export async function confirmQuoteSheetField(formData: FormData) {
@@ -193,12 +204,93 @@ export async function attachSamplePhotoDec(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
+function sourceLabelForDoc(docType: string, filename: string): string {
+  if (docType === "wind_mit") return "Wind mit";
+  if (docType === "four_point") return "4-point";
+  if (docType === "inspection") return "Inspection";
+  if (docType === "photo") return "Photo";
+  if (docType === "current_policy") return "Current policy";
+  return `Uploaded ${docType || "dec"} · ${filename}`;
+}
+
+async function loadFillCorrections() {
+  return db
+    .select()
+    .from(fillFeedbackLogs)
+    .where(eq(fillFeedbackLogs.tenantId, DEFAULT_TENANT_ID))
+    .orderBy(desc(fillFeedbackLogs.createdAt));
+}
+
+async function logSheetCorrections(input: {
+  dealId: string;
+  sheetId: string;
+  line: string;
+  before: Record<string, QuoteSheetFieldValue>;
+  after: Record<string, QuoteSheetFieldValue>;
+  reason?: string;
+}) {
+  const session = await currentDeskSession().catch(() => null);
+  const who = session?.name || "desk";
+  for (const [key, next] of Object.entries(input.after)) {
+    const prev = input.before[key];
+    if (!prev) continue;
+    const extracted = prev.source === "extracted" || prev.source === "public";
+    if (!extracted) continue;
+    if (next.source !== "agent") continue;
+    if (prev.value.trim() === next.value.trim()) continue;
+    if (!prev.value.trim() || !next.value.trim()) continue;
+    await db.insert(fillFeedbackLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: input.dealId,
+      quoteSheetId: input.sheetId,
+      docType: prev.sourceLabel?.toLowerCase().includes("wind")
+        ? "wind_mit"
+        : prev.sourceLabel?.toLowerCase().includes("4-point")
+          ? "four_point"
+          : "dec",
+      fieldKey: key,
+      wrongValue: prev.value,
+      correctedValue: next.value,
+      reason: input.reason ?? "agent_edit",
+      line: input.line,
+      createdBy: who,
+    });
+  }
+}
+
+export async function markPasteFieldWrong(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const lineRaw = str(formData, "line") || "home";
+  const fieldKey = str(formData, "fieldKey");
+  const wrongValue = str(formData, "wrongValue") || str(formData, fieldKey);
+  const note = str(formData, "note") || "Marked wrong on paste / review";
+  if (!dealId || !fieldKey || !wrongValue) throw new Error("Pick a field that was pasted wrong.");
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const session = await currentDeskSession().catch(() => null);
+  await db.insert(fillFeedbackLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId,
+    quoteSheetId: sheet.id,
+    docType: str(formData, "docType") || "dec",
+    fieldKey,
+    wrongValue,
+    correctedValue: note,
+    reason: "paste_wrong",
+    line: lineRaw,
+    createdBy: session?.name || "desk",
+  });
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/quotes/fill-feedback");
+}
+
 export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
   const sheet = await ensureQuoteSheet(dealId, line);
   const docs = await db
     .select()
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+  const corrections = await loadFillCorrections();
 
   let values: Record<string, QuoteSheetFieldValue> = { ...sheet.values };
   if (Object.keys(values).length === 0) values = emptySheetValues(line);
@@ -237,18 +329,32 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
     try {
       const text = await textFromUpload(buffer, doc.mimeType, doc.filename);
+      if (!text.trim()) {
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          engine: "pdf_text",
+          status: "failed",
+          message: `${doc.filename} has no readable text. Try a text export or the sample dec / 4-point / wind mit.`,
+        });
+        continue;
+      }
       const inferred = inferShopLine(text, doc.filename, doc.docType);
-      if (inferred !== line) {
+      const hoOntoHome = sourceDocFillsHome(doc.docType) && line === "home";
+      if (inferred !== line && !hoOntoHome) {
         continue;
       }
       const extracted = extractFieldsFromText(text);
+      const learned = applyLoggedCorrections(extracted.fields, doc.docType, corrections);
       const applied = applyExtractedToSheet(
         line,
         values,
-        extracted.fields.map((field) => ({
+        learned.fields.map((field) => ({
           fieldKey: field.fieldKey,
           normalizedValue: field.normalizedValue,
-          sourceLabel: "Uploaded dec",
+          sourceLabel: sourceLabelForDoc(doc.docType, doc.filename),
         })),
       );
       values = applied.values;
@@ -360,9 +466,20 @@ async function fillSheetFromPhoto(input: {
   values: Record<string, QuoteSheetFieldValue>;
 }): Promise<Record<string, QuoteSheetFieldValue>> {
   const ocr = await extractFromImage(input.buffer, input.doc.filename, input.doc.mimeType);
-  const applied = applyExtractedToSheet(input.line, input.values, ocr.fields, {
-    source: "photo-ocr",
-  });
+  const corrections = await loadFillCorrections();
+  const learned = applyLoggedCorrections(ocr.fields, input.doc.docType, corrections);
+  const applied = applyExtractedToSheet(
+    input.line,
+    input.values,
+    learned.fields.map((field) => ({
+      fieldKey: field.fieldKey,
+      normalizedValue: field.normalizedValue,
+      sourceLabel: sourceLabelForDoc(input.doc.docType, input.doc.filename),
+    })),
+    {
+      source: "photo-ocr",
+    },
+  );
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, input.doc.id));
   for (const field of ocr.fields) {

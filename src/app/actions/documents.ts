@@ -6,11 +6,22 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
+import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
 import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
-import { alerts, documentFolders, documents, extractedFields, policies, risks } from "@/lib/db/schema";
+import {
+  alerts,
+  deals,
+  documentFolders,
+  documents,
+  extractedFields,
+  extractionJobs,
+  policies,
+  risks,
+} from "@/lib/db/schema";
+import { inferDocType } from "@/lib/ingest/identity";
+import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import { libraryHref } from "@/lib/documents/library";
 import {
   coerceRiskValue,
@@ -22,6 +33,8 @@ import { textFromUpload } from "@/lib/extraction/pdf";
 import {
   CLEAN_DEC_FILENAME,
   CLEAN_DEC_TEXT,
+  MELBOURNE_FOUR_POINT_FILENAME,
+  MELBOURNE_FOUR_POINT_TEXT,
   MESSY_WIND_MIT_FILENAME,
   MESSY_WIND_MIT_TEXT,
 } from "@/lib/fixtures/sample-docs";
@@ -166,7 +179,9 @@ export async function uploadDocument(formData: FormData) {
     const rawType = String(formData.get("docType") ?? "").trim();
     const docType = rawType && rawType !== "auto"
       ? coerceDealUploadDocType(rawType)
-      : coerceDealUploadDocType(inferFromName(file.name, library));
+      : coerceDealUploadDocType(
+          dealId ? inferDocType(file.name, rawType) : inferFromName(file.name, library),
+        );
     const slot = String(formData.get("slot") ?? "") || (resolvedFolder ? "library_file" : slotForDocType(docType));
     const doc = await persistFile({
       dealId,
@@ -188,7 +203,15 @@ export async function uploadDocument(formData: FormData) {
     }
     last = doc;
   }
+  if (last?.dealId && last.slot === "source_doc") {
+    await fillDealSheetIfReady(last.dealId, String(formData.get("line") ?? ""));
+  }
   if (last) revalidateDocumentPaths(last);
+  if (last?.dealId && String(formData.get("after") ?? "") === "fill-sheet") {
+    const line = String(formData.get("line") ?? "home") || "home";
+    const tab = String(formData.get("returnTab") ?? "documents") || "documents";
+    redirect(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`);
+  }
   if (formData.get("library")) {
     redirect(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }));
   }
@@ -256,45 +279,58 @@ export async function uploadDealDocuments(formData: FormData) {
     }
   }
 
+  if (stored > 0) {
+    await fillDealSheetIfReady(match.id, "");
+  }
+
   if (stored === 0) {
     redirect("/deals?notice=no-files");
   }
   revalidatePath("/deals");
   revalidatePath(`/deals/${match.id}`);
   revalidatePath("/documents");
-  redirect(`/deals/${match.id}?tab=documents&notice=uploaded`);
+  redirect(`/deals/${match.id}?tab=documents&notice=filled`);
 }
 
 export async function uploadSampleDocument(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const riskId = String(formData.get("riskId") ?? "");
   const sample = String(formData.get("sample") ?? "clean");
-  const messy = sample === "messy";
-  const filename = messy ? MESSY_WIND_MIT_FILENAME : CLEAN_DEC_FILENAME;
-  const text = messy ? MESSY_WIND_MIT_TEXT : CLEAN_DEC_TEXT;
-  const docType = messy ? "wind_mit" : "dec";
+  const pack =
+    sample === "messy"
+      ? { filename: MESSY_WIND_MIT_FILENAME, text: MESSY_WIND_MIT_TEXT, docType: "wind_mit" as const }
+      : sample === "four_point"
+        ? {
+            filename: MELBOURNE_FOUR_POINT_FILENAME,
+            text: MELBOURNE_FOUR_POINT_TEXT,
+            docType: "four_point" as const,
+          }
+        : { filename: CLEAN_DEC_FILENAME, text: CLEAN_DEC_TEXT, docType: "dec" as const };
   const doc = await persistFile({
     dealId,
     riskId,
     contactId: null,
     policyId: null,
     folderId: await resolveFolderId({ folderId: null, dealId, contactId: null }),
-    filename,
+    filename: pack.filename,
     mimeType: "text/plain",
-    buffer: Buffer.from(text, "utf8"),
-    docType,
-    tags: [messy ? "wind-mit" : "dec"],
+    buffer: Buffer.from(pack.text, "utf8"),
+    docType: pack.docType,
+    tags: [pack.docType],
   });
   if (doc.riskId) {
     await runExtraction(doc.id, dealId);
   }
+  await fillDealSheetIfReady(dealId, String(formData.get("line") ?? ""));
   revalidateDocumentPaths(doc);
+  redirect(`/deals/${dealId}?tab=documents&notice=filled`);
 }
 
 export async function markDocumentType(formData: FormData) {
   const documentId = String(formData.get("documentId") ?? "");
   const dealId = String(formData.get("dealId") ?? "");
   await runExtraction(documentId, dealId);
+  await fillDealSheetIfReady(dealId, String(formData.get("line") ?? ""));
   revalidatePath(`/deals/${dealId}`);
 }
 
@@ -303,13 +339,70 @@ export async function extractExisting(formData: FormData) {
   return markDocumentType(formData);
 }
 
+async function fillDealSheetIfReady(dealId: string, lineHint: string) {
+  if (!dealId) return;
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const line = (lineHint || deal?.quotingLine || "home") as ShopLine;
+  try {
+    await runFillDealSheets(dealId, line);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Fill failed";
+    await db.insert(extractionJobs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      engine: "pdf_text",
+      status: "failed",
+      message,
+    });
+  }
+}
+
 async function runExtraction(documentId: string, dealId: string) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) throw new Error("Document not found");
   const abs = path.join(uploadRoot, doc.storagePath);
   const { readFile } = await import("node:fs/promises");
-  const buffer = await readFile(abs);
-  const text = await textFromUpload(buffer, doc.mimeType, doc.filename);
+  let buffer: Buffer;
+  try {
+    buffer = await readFile(abs);
+  } catch {
+    await db
+      .update(documents)
+      .set({ status: "failed" })
+      .where(eq(documents.id, documentId));
+    if (dealId) {
+      await db.insert(extractionJobs).values({
+        tenantId: DEFAULT_TENANT_ID,
+        dealId,
+        documentId,
+        engine: "pdf_text",
+        status: "failed",
+        message: `Could not read ${doc.filename} from storage.`,
+      });
+    }
+    return;
+  }
+  let text = "";
+  try {
+    text = await textFromUpload(buffer, doc.mimeType, doc.filename);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not read document";
+    await db
+      .update(documents)
+      .set({ status: "failed" })
+      .where(eq(documents.id, documentId));
+    if (dealId) {
+      await db.insert(extractionJobs).values({
+        tenantId: DEFAULT_TENANT_ID,
+        dealId,
+        documentId,
+        engine: "pdf_text",
+        status: "failed",
+        message,
+      });
+    }
+    return;
+  }
   const result = extractFieldsFromText(text);
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));

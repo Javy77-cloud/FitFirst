@@ -67,6 +67,8 @@ export default async function DealPage({
     account,
     quoteSheet,
     sheets,
+    jobs,
+    fillFeedback,
     boundPolicies,
     timeline,
   } = workspace;
@@ -159,6 +161,12 @@ export default async function DealPage({
           Files stored on this deal.
         </p>
       ) : null}
+      {notice === "filled" ? (
+        <p className="mb-3 rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">
+          Master sheet filled from source docs (blanks only). Yellow is missing. Blue is CHECK.
+          Glance, then approve before quoting unlocks. Super-Copy reads this sheet — not the PDFs.
+        </p>
+      ) : null}
 
       {isAna ? (
         <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-xs text-fit-yellow">
@@ -209,6 +217,12 @@ export default async function DealPage({
                     docs={docs}
                     fields={fields}
                     quotingForm={deal.quotingForm}
+                    sheetValues={activeSheet?.values ?? null}
+                    sheetLine={sheetLine}
+                    unlocked={unlocked}
+                    approvedBy={deal.sheetApprovedBy}
+                    jobs={jobs}
+                    fillFeedback={fillFeedback}
                   />
                 ),
               },
@@ -218,12 +232,16 @@ export default async function DealPage({
                 content: (
                   <QuoteSheetPanel
                     dealId={deal.id}
+                    dealTitle={deal.title}
                     values={activeSheet?.values ?? null}
                     line={sheetLine}
                     quotingForm={deal.quotingForm}
                     unlocked={unlocked}
                     approvedBy={deal.sheetApprovedBy}
                     sheetLines={sheets.map((sheet) => sheet.line)}
+                    sheet={activeSheet}
+                    contact={contact}
+                    riskId={risk.id}
                   />
                 ),
               },
