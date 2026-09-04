@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace } from "@/lib/db/queries";
+import { getDealWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
+import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { HealthStrip } from "@/components/completeness/health-strip";
 import { reportFromSheet } from "@/lib/completeness/report";
 import type { ShopLine } from "@/lib/domain";
@@ -46,6 +47,7 @@ export default async function DealPage({
     boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
+  const comms = await listRecordActivities({ dealId: deal.id });
   const isAna = deal.id === DEAL_ID;
   const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
   const health = quoteSheet
@@ -166,6 +168,10 @@ export default async function DealPage({
           ]}
         />
       )}
+
+      <div className="mt-4">
+        <QuickCommsBoard items={comms} dealId={deal.id} />
+      </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
         Shopping lives here.{" "}

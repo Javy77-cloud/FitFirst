@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, activityLogs } from "@/lib/db/schema";
-import { activityLogBody, assertRelatedRecord } from "@/lib/lifecycle/activity";
+import {
+  activityLogBody,
+  assertRelatedRecord,
+  defaultActivityTitle,
+  hasRelatedRecord,
+} from "@/lib/lifecycle/activity";
 import { and, eq } from "drizzle-orm";
 
 function str(form: FormData, key: string) {
@@ -18,13 +23,18 @@ function when(form: FormData, key: string) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function relatedFromForm(form: FormData) {
-  return assertRelatedRecord({
+function relatedFromForm(form: FormData, requireRelated: boolean) {
+  const related = {
     contactId: str(form, "contactId") || null,
     accountId: str(form, "accountId") || null,
     policyId: str(form, "policyId") || null,
     dealId: str(form, "dealId") || null,
-  });
+    leadId: str(form, "leadId") || null,
+  };
+  if (requireRelated || hasRelatedRecord(related)) {
+    return assertRelatedRecord(related);
+  }
+  return related;
 }
 
 function revalidateRelated(related: {
@@ -32,20 +42,23 @@ function revalidateRelated(related: {
   accountId?: string | null;
   policyId?: string | null;
   dealId?: string | null;
+  leadId?: string | null;
 }) {
+  revalidatePath("/calendar");
+  revalidatePath("/tasks");
   if (related.contactId) revalidatePath(`/contacts/${related.contactId}`);
   if (related.accountId) revalidatePath(`/accounts/${related.accountId}`);
   if (related.policyId) revalidatePath(`/policies/${related.policyId}`);
   if (related.dealId) revalidatePath(`/deals/${related.dealId}`);
+  if (related.leadId) revalidatePath(`/leads/${related.leadId}`);
 }
 
 export async function logDeskActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
-  const title =
-    str(formData, "title") ||
-    (kind === "call" ? "Logged call" : kind === "meeting" ? "Meeting" : "Task");
-  const related = relatedFromForm(formData);
-  const eventType = kind === "call" ? "logged" : "created";
+  const title = str(formData, "title") || defaultActivityTitle(kind);
+  const requireRelated = str(formData, "allowOrphan") !== "1";
+  const related = relatedFromForm(formData, requireRelated);
+  const eventType = kind === "call" || kind === "email" || kind === "sms" ? "logged" : "created";
   const status = kind === "call" ? "completed" : str(formData, "status") || "open";
 
   const [activity] = await db
@@ -57,7 +70,7 @@ export async function logDeskActivity(formData: FormData) {
       notes: str(formData, "notes") || null,
       status,
       dueAt: when(formData, "dueAt"),
-      startAt: when(formData, "startAt"),
+      startAt: when(formData, "startAt") ?? when(formData, "dueAt"),
       endAt: when(formData, "endAt"),
       assignee: str(formData, "assignee") || null,
       ...related,

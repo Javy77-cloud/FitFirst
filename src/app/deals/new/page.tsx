@@ -1,16 +1,17 @@
 import { createDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { LinePicker } from "@/components/deal/line-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function NewDealPage() {
   return (
-    <AppShell title="New shopping deal">
+    <AppShell title="Create deal">
       <form action={createDeal} className="ff-card max-w-xl space-y-3 p-4">
         <p className="text-sm text-muted-foreground">
           Creates a lead and a shopping deal with an empty master risk. Contact and policy wait
-          until bind.
+          until bind. Pick personal or commercial, then the most-used line.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -32,22 +33,6 @@ export default function NewDealPage() {
             <Input id="phone" name="phone" className="mt-1 h-8" />
           </div>
           <div>
-            <Label htmlFor="line" className="text-xs">
-              Line
-            </Label>
-            <select
-              id="line"
-              name="line"
-              defaultValue="HO"
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            >
-              <option value="HO">Homeowners</option>
-              <option value="AUTO">Auto</option>
-              <option value="FLOOD">Flood</option>
-              <option value="UMBRELLA">Umbrella</option>
-            </select>
-          </div>
-          <div>
             <Label htmlFor="city" className="text-xs">
               City
             </Label>
@@ -60,8 +45,9 @@ export default function NewDealPage() {
             <Input id="county" name="county" className="mt-1 h-8" />
           </div>
         </div>
+        <LinePicker defaultCode="HO" />
         <Button type="submit" size="sm">
-          Open worksheet
+          Create deal
         </Button>
       </form>
     </AppShell>

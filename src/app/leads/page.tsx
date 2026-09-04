@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { createDealFromLead, createLead } from "@/app/actions/crm";
+import { createLead } from "@/app/actions/crm";
+import { ChooseFiles } from "@/components/choose-files";
+import { StartShopForm } from "@/components/leads/start-shop-form";
 import { dropLeadPacket, dropSampleDecPacket, stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
@@ -73,7 +75,7 @@ export default async function LeadsPage() {
               PDF or text. Named insured + phone or email matches an existing lead. Empty file
               uses the Melbourne sample.
             </p>
-            <input name="file" type="file" className="block w-full text-xs" />
+            <ChooseFiles name="file" />
             <Button type="submit" size="sm">
               Import packet
             </Button>
@@ -116,12 +118,7 @@ export default async function LeadsPage() {
                           Open deal
                         </Link>
                       ) : (
-                        <form action={createDealFromLead}>
-                          <input type="hidden" name="leadId" value={lead.id} />
-                          <Button type="submit" size="xs">
-                            Start shop
-                          </Button>
-                        </form>
+                        <StartShopForm leadId={lead.id} />
                       )}
                     </td>
                   </tr>

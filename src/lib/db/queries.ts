@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import type { Activity } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { addUtcDays, DESK_AS_OF, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
@@ -83,11 +84,15 @@ export async function listActivityTimeline(filter: {
   contactId?: string | null;
   accountId?: string | null;
   policyId?: string | null;
+  dealId?: string | null;
+  leadId?: string | null;
 }): Promise<TimelineItem[]> {
   const logClauses = [
     filter.contactId ? eq(activityLogs.contactId, filter.contactId) : undefined,
     filter.accountId ? eq(activityLogs.accountId, filter.accountId) : undefined,
     filter.policyId ? eq(activityLogs.policyId, filter.policyId) : undefined,
+    filter.dealId ? eq(activityLogs.dealId, filter.dealId) : undefined,
+    filter.leadId ? eq(activities.leadId, filter.leadId) : undefined,
   ].filter((clause): clause is SQL => Boolean(clause));
   const historyClauses = [
     filter.contactId ? eq(clientHistory.contactId, filter.contactId) : undefined,
@@ -999,4 +1004,71 @@ export async function historyForContact(contactId: string) {
     .from(clientHistory)
     .where(and(eq(clientHistory.tenantId, tenant()), eq(clientHistory.contactId, contactId)))
     .orderBy(desc(clientHistory.occurredAt));
+}
+
+export function serializeActivity(row: Activity) {
+  return {
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    notes: row.notes,
+    status: row.status,
+    dueAt: row.dueAt?.toISOString() ?? null,
+    startAt: row.startAt?.toISOString() ?? null,
+    endAt: row.endAt?.toISOString() ?? null,
+    dealId: row.dealId,
+    leadId: row.leadId,
+    contactId: row.contactId,
+    accountId: row.accountId,
+    policyId: row.policyId,
+  };
+}
+
+export type SerializedActivity = ReturnType<typeof serializeActivity>;
+
+export async function listRecordActivities(filter: { dealId?: string; leadId?: string }) {
+  const clauses = [eq(activities.tenantId, tenant())];
+  if (filter.dealId) clauses.push(eq(activities.dealId, filter.dealId));
+  if (filter.leadId) clauses.push(eq(activities.leadId, filter.leadId));
+  const rows = await db
+    .select()
+    .from(activities)
+    .where(and(...clauses))
+    .orderBy(desc(activities.createdAt));
+  return rows.map(serializeActivity);
+}
+
+export async function listCalendarActivities() {
+  const rows = await db
+    .select()
+    .from(activities)
+    .where(eq(activities.tenantId, tenant()))
+    .orderBy(asc(activities.dueAt), asc(activities.startAt));
+  return rows.map(serializeActivity);
+}
+
+export async function listCalendarRelatedOptions() {
+  const [dealRows, leadRows] = await Promise.all([
+    db
+      .select({ id: deals.id, title: deals.title })
+      .from(deals)
+      .where(eq(deals.tenantId, tenant()))
+      .orderBy(desc(deals.updatedAt)),
+    db
+      .select({
+        id: leads.id,
+        firstName: leads.firstName,
+        lastName: leads.lastName,
+      })
+      .from(leads)
+      .where(eq(leads.tenantId, tenant()))
+      .orderBy(desc(leads.createdAt)),
+  ]);
+  return {
+    deals: dealRows,
+    leads: leadRows.map((row) => ({
+      id: row.id,
+      title: `${row.lastName}, ${row.firstName}`,
+    })),
+  };
 }

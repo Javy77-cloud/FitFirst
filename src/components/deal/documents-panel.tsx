@@ -7,6 +7,7 @@ import {
   uploadSampleDocument,
 } from "@/app/actions/documents";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -61,11 +62,11 @@ export function DocumentsPanel({
                 <Label htmlFor="file" className="text-xs">
                   File (PDF or text)
                 </Label>
-                <input id="file" name="file" type="file" required className="mt-1 block w-full text-xs" />
+                <ChooseFiles id="file" name="file" required className="mt-1" />
               </div>
             </div>
             <Button type="submit" size="sm">
-              Upload source doc
+              Create
             </Button>
           </form>
 
@@ -102,9 +103,9 @@ export function DocumentsPanel({
             <input type="hidden" name="slot" value="quote_pdf" />
             <input type="hidden" name="docType" value="quote_pdf" />
             <Label className="text-xs">Quote PDF</Label>
-            <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+            <ChooseFiles name="file" required className="mt-1" />
             <Button type="submit" size="sm">
-              Attach quote PDF
+              Upload
             </Button>
           </form>
           <DocTable docs={quotePdfs} dealId={dealId} empty="No issued quote PDFs yet." />

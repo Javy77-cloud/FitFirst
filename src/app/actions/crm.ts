@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isRedirectError, pipelineSlugForLine, shopLineForLob } from "@/lib/lifecycle/shop";
 import { db } from "@/lib/db";
 import { refreshPartyCounts } from "@/lib/db/queries";
 import {
@@ -81,16 +82,40 @@ export async function createLead(formData: FormData) {
   redirect(`/leads/${lead.id}`);
 }
 
-export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL") {
-  const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
-  if (!lead) throw new Error("Lead not found");
-  if (lead.convertedDealId) return lead.convertedDealId;
-
-  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
-  const [pipeline] = await db
+async function resolvePipelineId(line: string) {
+  const slug = pipelineSlugForLine(line);
+  const [matched] = await db
     .select()
     .from(pipelines)
-    .where(eq(pipelines.slug, pipelineSlug));
+    .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.slug, slug)))
+    .limit(1);
+  if (matched) return matched.id;
+  const [fallback] = await db
+    .select()
+    .from(pipelines)
+    .where(eq(pipelines.tenantId, DEFAULT_TENANT_ID))
+    .orderBy(asc(pipelines.sortOrder))
+    .limit(1);
+  return fallback?.id ?? null;
+}
+
+export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL") {
+  if (!leadId) throw new Error("Lead is required to start a shop.");
+  const [lead] = await db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.id, leadId), eq(leads.tenantId, DEFAULT_TENANT_ID)));
+  if (!lead) throw new Error("Lead not found");
+  if (lead.convertedDealId) {
+    const [existing] = await db
+      .select()
+      .from(deals)
+      .where(and(eq(deals.id, lead.convertedDealId), eq(deals.tenantId, DEFAULT_TENANT_ID)));
+    if (existing) return existing.id;
+  }
+
+  const pipelineId = await resolvePipelineId(line);
+  const shopLine = shopLineForLob(line);
 
   const [deal] = await db
     .insert(deals)
@@ -99,7 +124,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
       leadId,
       title: `${lead.lastName} · ${line} shop`,
       pipelineStage: "shopping",
-      pipelineId: pipeline?.id ?? null,
+      pipelineId,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
       state,
@@ -110,7 +135,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
+    riskType: shopLine === "auto" ? "auto" : "property",
     state: deal.state,
   });
 
@@ -120,7 +145,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
+    line: shopLine,
     values: sheetValues,
   });
 
@@ -132,15 +157,26 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   return deal.id;
 }
 
-export async function createDealFromLead(formData: FormData) {
-  const dealId = await convertLeadToDeal(
-    str(formData, "leadId"),
-    str(formData, "line") || "HO",
-    str(formData, "state") || "FL",
-  );
-  revalidatePath("/deals");
-  revalidatePath("/leads");
-  redirect(`/deals/${dealId}`);
+export async function createDealFromLead(formData: FormData): Promise<{ error: string } | void> {
+  try {
+    const dealId = await convertLeadToDeal(
+      str(formData, "leadId"),
+      str(formData, "line") || "HO",
+      str(formData, "state") || leadState(formData),
+    );
+    revalidatePath("/deals");
+    revalidatePath("/leads");
+    redirect(`/deals/${dealId}`);
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    return {
+      error: error instanceof Error ? error.message : "Could not start the shop.",
+    };
+  }
+}
+
+function leadState(formData: FormData) {
+  return str(formData, "state") || "FL";
 }
 
 export async function createDeal(formData: FormData) {
@@ -158,14 +194,20 @@ export async function createDeal(formData: FormData) {
     redirect(`/deals/${lead.convertedDealId}`);
   }
 
+  const line = str(formData, "line") || "HO";
+  const shopLine = shopLineForLob(line);
+  const pipelineId = await resolvePipelineId(line);
+
   const [deal] = await db
     .insert(deals)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
-      title: `${lastName} · ${str(formData, "line") || "HO"} shop`,
+      title: `${lastName} · ${line} shop`,
       pipelineStage: "shopping",
-      lineOfBusiness: str(formData, "line") || "HO",
+      pipelineId,
+      pipelineStageSlug: "gather",
+      lineOfBusiness: line,
       state: str(formData, "state") || "FL",
     })
     .returning();
@@ -178,7 +220,7 @@ export async function createDeal(formData: FormData) {
   await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
+    riskType: shopLine === "auto" ? "auto" : "property",
     state: deal.state,
     city: str(formData, "city") || null,
     county: str(formData, "county") || null,
@@ -187,7 +229,7 @@ export async function createDeal(formData: FormData) {
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
+    line: shopLine,
     values: emptySheetValues(),
   });
 

@@ -1,12 +1,12 @@
 export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
   return (
-    <form action="/search" method="get" className="flex items-center gap-1">
+    <form action="/search" method="get" className="flex max-w-xl items-center gap-1">
       <input
         type="search"
         name="q"
         defaultValue={defaultQuery}
         placeholder="Search leads, deals, contacts, businesses, policies"
-        className="h-8 w-40 rounded-md border border-input bg-card px-2 text-xs md:w-64"
+        className="h-8 w-full min-w-40 rounded-md border border-input bg-card px-2 text-xs md:min-w-72"
       />
       <button
         type="submit"

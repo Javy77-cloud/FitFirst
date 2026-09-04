@@ -3,6 +3,7 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { ChooseFiles } from "@/components/choose-files";
 import { VehiclesList } from "@/components/desk-ams-panels";
 import { RecordLink } from "@/components/record-links";
 import { buttonVariants } from "@/components/ui/button";
@@ -78,7 +79,7 @@ export default async function PolicyDetailPage({
           </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">File</Label>
-            <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+            <ChooseFiles name="file" required className="mt-1" />
           </div>
           <Button type="submit" size="sm">
             Attach issued file

@@ -61,13 +61,14 @@
   --chart-4: var(--ff-red);
   --chart-5: var(--ff-navy);
   --radius: 0.4rem;
-  --sidebar: var(--ff-navy);
-  --sidebar-foreground: var(--ff-sidebar-text);
+  --ff-sidebar-blue: #1d4e89;
+  --sidebar: var(--ff-sidebar-blue);
+  --sidebar-foreground: #e8f1fb;
   --sidebar-primary: var(--ff-accent);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--ff-navy-mid);
+  --sidebar-accent: #163a68;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1c3b5c;
+  --sidebar-border: #2a5a96;
   --sidebar-ring: var(--ff-accent);
 }
 

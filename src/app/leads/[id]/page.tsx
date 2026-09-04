@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import { createDealFromLead } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
+import { StartShopForm } from "@/components/leads/start-shop-form";
 import { RecordLink } from "@/components/record-links";
-import { Button } from "@/components/ui/button";
-import { getLead } from "@/lib/db/queries";
+import { getLead, listRecordActivities } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,7 @@ export default async function LeadDetailPage({
   const row = await getLead(id);
   if (!row) notFound();
   const { lead, deal } = row;
+  const comms = await listRecordActivities({ leadId: lead.id });
 
   return (
     <AppShell title={`${lead.lastName}, ${lead.firstName}`}>
@@ -38,14 +39,14 @@ export default async function LeadDetailPage({
           <p className="whitespace-pre-wrap text-muted-foreground">{lead.notes ?? "—"}</p>
         </div>
         {!deal ? (
-          <form action={createDealFromLead} className="pt-2">
-            <input type="hidden" name="leadId" value={lead.id} />
-            <Button type="submit" size="sm">
-              Convert to deal
-            </Button>
-          </form>
+          <div className="pt-2">
+            <StartShopForm leadId={lead.id} label="Start shop" showLine size="sm" />
+          </div>
         ) : null}
       </section>
+      <div className="mt-4 max-w-xl">
+        <QuickCommsBoard items={comms} leadId={lead.id} />
+      </div>
     </AppShell>
   );
 }

@@ -4,6 +4,7 @@ import {
   fileNonRenewal,
   uploadPolicyAttachment,
 } from "@/app/actions/policies";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +38,7 @@ function FileField() {
   return (
     <div>
       <Label className="text-xs">Optional source PDF / notice</Label>
-      <Input name="file" type="file" className="mt-1 h-9" />
+      <ChooseFiles name="file" className="mt-1" />
     </div>
   );
 }

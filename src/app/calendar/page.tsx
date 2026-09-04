@@ -1,22 +1,22 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DeskCalendar } from "@/components/calendar/desk-calendar";
+import { listCalendarActivities, listCalendarRelatedOptions } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
+  const [items, related] = await Promise.all([
+    listCalendarActivities(),
+    listCalendarRelatedOptions(),
+  ]);
+
   return (
-    <AppShell title="Calendar">
+    <AppShell title="Calendar" eyebrow="Desk">
       <p className="mb-3 text-sm text-muted-foreground">
-        Calendar UI belongs to agency-ops. This desk logs tasks, meetings, and calls on Contact
-        and Policy 360 — it does not run a calendar sync.
+        In-desk calendar. Month, week, and day on the first row; task through SMS on the second.
+        Drag an event onto another day. Nothing syncs off this computer.
       </p>
-      <p className="text-sm">
-        Open the{" "}
-        <Link href="/tasks" className="text-primary hover:underline">
-          Tasks
-        </Link>{" "}
-        list or log a call from a Contact or Policy timeline.
-      </p>
+      <DeskCalendar items={items} deals={related.deals} leads={related.leads} />
     </AppShell>
   );
 }

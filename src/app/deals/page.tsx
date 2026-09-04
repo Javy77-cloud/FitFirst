@@ -41,7 +41,7 @@ export default async function DealsPage({
       title="Deals"
       actions={
         <Link href="/deals/new" className={cn(buttonVariants())}>
-          New shopping deal
+          Create deal
         </Link>
       }
     >

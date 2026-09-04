@@ -86,9 +86,16 @@ export type ClientStatus = (typeof CLIENT_STATUSES)[number];
 
 export const BIND_TARGETS = ["contact", "account"] as const;
 
-/** Consumed from agency-ops. Softphone / calendar UI stays on that slice. */
-export const ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+export const ACTIVITY_KINDS = ["task", "meeting", "call", "email", "sms"] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+
+export const ACTIVITY_KIND_LABEL: Record<ActivityKind, string> = {
+  task: "Task",
+  meeting: "Meeting",
+  call: "Call",
+  email: "Email",
+  sms: "SMS",
+};
 
 export const ACTIVITY_STATUSES = ["open", "completed", "cancelled"] as const;
 export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
@@ -119,14 +126,30 @@ export type ShopLine = (typeof SHOP_LINES)[number];
 
 export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
   HO: "home",
+  HO3: "home",
+  HO6: "home",
+  HO4: "home",
+  DWELLING: "home",
+  PROPERTY: "home",
   AUTO: "auto",
+  PA: "auto",
+  MOTORCYCLE: "auto",
+  COMM_AUTO: "auto",
   RV: "rec_rv",
+  BOAT: "rec_rv",
   FLOOD: "flood",
+  NFIP: "flood",
   UMBRELLA: "umbrella",
+  CUMBRELLA: "umbrella",
   LIFE: "life",
   HEALTH: "health",
   WC: "workers_comp",
   GL: "general_liability",
+  BOP: "general_liability",
+  CYBER: "general_liability",
+  INLAND_MARINE: "general_liability",
+  PACKAGE: "general_liability",
+  GARAGE: "general_liability",
 };
 
 export const QUOTE_FIELD_STATUSES = ["missing", "check", "confirmed"] as const;

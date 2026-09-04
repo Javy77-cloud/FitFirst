@@ -52,12 +52,34 @@ export async function moveActivityDay(formData: FormData) {
   const id = str(formData, "activityId") || str(formData, "id");
   const dueAt = str(formData, "dueAt");
   if (!id || !dueAt) return;
-  const when = new Date(dueAt);
-  if (Number.isNaN(when.getTime())) return;
+  const target = new Date(dueAt);
+  if (Number.isNaN(target.getTime())) return;
+  const [row] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!row) return;
+
+  const from = row.dueAt ?? row.startAt ?? target;
+  const fromDay = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
+  const toDay = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
+  const delta = toDay - fromDay;
+  const shift = (value: Date | null) => (value ? new Date(value.getTime() + delta) : null);
+
   await db
     .update(activities)
-    .set({ dueAt: when, updatedAt: new Date() })
-    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+    .set({
+      dueAt: shift(row.dueAt) ?? target,
+      startAt: shift(row.startAt),
+      endAt: shift(row.endAt),
+      updatedAt: new Date(),
+    })
+    .where(eq(activities.id, id));
+
+  revalidatePath("/calendar");
+  revalidatePath("/tasks");
+  if (row.dealId) revalidatePath(`/deals/${row.dealId}`);
+  if (row.leadId) revalidatePath(`/leads/${row.leadId}`);
 }
 
 export async function setPipelineStage(formData: FormData) {
