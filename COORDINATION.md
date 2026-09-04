@@ -580,5 +580,15 @@ git checkout cursor/mac-ready-batch4-7pm
 git merge origin/<that-branch>
 ```
 
-Keep Deal Issued quote PDFs, view / email / SMS / print. Do not bind Ana (Cov A **$321,000**). Additive migrations only — next free number is **0034**. One Pipeline. Alerts off the sidebar. Build green.
+Keep Deal Issued quote PDFs, view / email / SMS / print. Do not bind Ana (Cov A **$321,000**). Additive migrations only — next free number is **0035**. One Pipeline. Alerts off the sidebar. Build green.
+
+## DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0034_fill_feedback`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+**What was broken:** Deal Documents upload extracted fields onto `extracted_fields` / risk but never wrote `quote_sheets`. “Fill master sheet” (`setQuotingLine`) and “Fill blanks from source docs” only copied leftover extract rows through the thin lifecycle mapper — they did not re-parse dec / wind mit / 4-point. SheetDrop “Upload and fill” also skipped the Quote Sheet writer. Wind mit / 4-point could be skipped when `inferShopLine` saw “flood”. Inspection keys (`four_point_date`, `wind_mit_form`) lacked catalog extractKeys.
+
+**Fix:** Upload / pick line / Fill master sheet all call `runFillDealSheets` (parse source docs → blanks-only Quote Sheet). HO source docs stay on the home line. Deal Documents is a 5-step flow with progress, errors, source-vs-sheet review, visual approve, then Send to Fill. Super-Copy still reads the filled sheet.
+
+**Fill Feedback log** (`fill_feedback_logs`, `/quotes/fill-feedback`): when an agent/Admin corrects a mapped field after ingest, or marks a paste field wrong, store doc type / field / wrong / corrected / optional carrier. Later fill prefers that correction when the same extract repeats. Rule/log based — not ML. Seeded two Elena demo rows (roof covering; hurricane deductible).
 

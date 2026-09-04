@@ -55,5 +55,15 @@ describe("drop ingest identity", () => {
     expect(isSourceDocType("current_policy")).toBe(true);
     expect(isSourceDocType("quote")).toBe(false);
     expect(isQuoteAttachment("quote", "later-quote.pdf")).toBe(true);
+    expect(isQuoteAttachment("quote_pdf", "issued.pdf")).toBe(true);
+    expect(isQuoteAttachment("wind_mit", "wind-mit-quote-notes.pdf")).toBe(false);
+    expect(isQuoteAttachment("four_point", "4-point.pdf")).toBe(false);
+  });
+
+  it("keeps wind mit and 4-point on the homeowners sheet even if flood is mentioned", () => {
+    expect(
+      inferShopLine("Flood zone X noted on the page", "client-wind-mit.pdf", "wind_mit"),
+    ).toBe("home");
+    expect(inferShopLine("FOUR POINT INSPECTION", "4-point.pdf", "four_point")).toBe("home");
   });
 });

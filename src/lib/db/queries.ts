@@ -75,6 +75,8 @@ import {
   pipelines,
   policies,
   policyTerms,
+  extractionJobs,
+  fillFeedbackLogs,
   quoteAttemptLogs,
   quoteSheets,
   quotes,
@@ -1003,6 +1005,20 @@ export async function listQuoteLogs() {
     .orderBy(desc(quoteAttemptLogs.attemptedAt));
 }
 
+export async function listFillFeedbackLogs() {
+  return db
+    .select({
+      log: fillFeedbackLogs,
+      deal: deals,
+      carrier: carriers,
+    })
+    .from(fillFeedbackLogs)
+    .leftJoin(deals, eq(fillFeedbackLogs.dealId, deals.id))
+    .leftJoin(carriers, eq(fillFeedbackLogs.carrierId, carriers.id))
+    .where(eq(fillFeedbackLogs.tenantId, tenant()))
+    .orderBy(desc(fillFeedbackLogs.createdAt));
+}
+
 export async function listAlerts(unreadOnly = false) {
   const session = await currentDeskSession();
   const visible = alertVisibleWhere(session, tenant());
@@ -1103,6 +1119,18 @@ export async function getDealWorkspace(dealId: string) {
     .from(quoteSheets)
     .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, dealId)));
   const quoteSheet = sheets[0];
+  const jobs = await db
+    .select()
+    .from(extractionJobs)
+    .where(and(eq(extractionJobs.tenantId, tenant()), eq(extractionJobs.dealId, dealId)))
+    .orderBy(desc(extractionJobs.createdAt))
+    .limit(20);
+  const fillFeedback = await db
+    .select()
+    .from(fillFeedbackLogs)
+    .where(and(eq(fillFeedbackLogs.tenantId, tenant()), eq(fillFeedbackLogs.dealId, dealId)))
+    .orderBy(desc(fillFeedbackLogs.createdAt))
+    .limit(20);
   const boundPolicies = await db
     .select()
     .from(policies)
@@ -1120,6 +1148,8 @@ export async function getDealWorkspace(dealId: string) {
     account: account ?? null,
     quoteSheet: quoteSheet ?? null,
     sheets,
+    jobs,
+    fillFeedback,
     boundPolicies,
     timeline: await listActivityTimeline({ dealId }),
     comms: await listCommsForRecord({ dealId }),

@@ -43,12 +43,12 @@ export const HOME_SHEET_FIELDS: QuoteFieldDef[] = [
   },
   { key: "pool", label: "Pool", group: "Roof / wind", extractKey: "pool" },
   { key: "coverage_a", label: "Coverage A (dwelling)", group: "Coverages", extractKey: "coverage_a" },
-  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages" },
-  { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages" },
-  { key: "aop_deductible", label: "AOP deductible", group: "Coverages" },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
-  { key: "four_point_date", label: "4-point date", group: "Inspections" },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections" },
+  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", extractKey: "coverage_b" },
+  { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages", extractKey: "hurricane_deductible" },
+  { key: "aop_deductible", label: "AOP deductible", group: "Coverages", extractKey: "aop_deductible" },
+  { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
+  { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date" },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form" },
   { key: "notes", label: "Shop notes", group: "Notes" },
 ];
 

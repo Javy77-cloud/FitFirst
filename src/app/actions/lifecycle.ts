@@ -5,14 +5,12 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { eq } from "drizzle-orm";
+import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   documents,
-  extractedFields,
   leads,
-  quoteSheets,
   quotes,
   risks,
 } from "@/lib/db/schema";
@@ -22,10 +20,9 @@ import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { connectionOwnerFor, ingestSocialLead } from "@/lib/leads/offers";
 import { parseLeadFromPacket } from "@/lib/lifecycle/lead-match";
 import { buildQuoteResultsNote } from "@/lib/lifecycle/quote-results";
-import { emptySheetValues, fillSheetBlanks } from "@/lib/lifecycle/quote-sheet";
+import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import { MELBOURNE_HO_DEC_TEXT } from "@/lib/fixtures/sample-docs";
 import { textFromUpload } from "@/lib/extraction/pdf";
-import { extractFieldsFromText } from "@/lib/extraction/extract";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -206,48 +203,10 @@ export async function finalizeQuoteResults(formData: FormData) {
 
 export async function fillQuoteSheetBlanks(formData: FormData) {
   const dealId = str(formData, "dealId");
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  const fields = risk
-    ? await db.select().from(extractedFields).where(eq(extractedFields.riskId, risk.id))
-    : [];
-  const line = str(formData, "line") || "home";
-  const [sheet] =
-    (
-      await db
-        .select()
-        .from(quoteSheets)
-        .where(
-          and(
-            eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
-            eq(quoteSheets.dealId, dealId),
-            eq(quoteSheets.line, line),
-          ),
-        )
-    ) ?? [];
-  const current = sheet?.values ?? emptySheetValues();
-  const filled = fillSheetBlanks(
-    current,
-    fields.map((field) => ({
-      fieldKey: field.fieldKey,
-      normalizedValue: field.normalizedValue,
-      confidence: Number(field.confidence),
-      flagged: field.flagged,
-    })),
-  );
-  if (sheet) {
-    await db
-      .update(quoteSheets)
-      .set({ values: filled.values, updatedAt: new Date() })
-      .where(eq(quoteSheets.id, sheet.id));
-  } else {
-    await db.insert(quoteSheets).values({
-      tenantId: DEFAULT_TENANT_ID,
-      dealId,
-      line,
-      values: filled.values,
-    });
-  }
+  const line = (str(formData, "line") || "home") as ShopLine;
+  await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}?tab=quote-sheet&line=${line}&notice=filled`);
 }
 
 export async function ensureLeadNotes(leadId: string, extra: string) {

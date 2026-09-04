@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
+import { confirmQuoteSheetField, markPasteFieldWrong, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -137,6 +137,10 @@ export function QuoteSheetForm({
           <Button type="submit" size="sm" variant="secondary">
             Save Quote Sheet
           </Button>
+          <p className="text-[11px] text-muted-foreground">
+            Saving a correction after ingest writes the Fill Feedback log. Mark paste wrong when a
+            carrier field was mapped incorrectly.
+          </p>
           <Link
             href={`/api/deals/${dealId}/quote-sheets/${line}/super-copy`}
             className="inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[0.8rem] font-medium"
@@ -207,18 +211,32 @@ function SheetField({
             <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
           ) : null}
         </Label>
-        {cell.status === "check" && !readOnly ? (
-          <Button
-            type="submit"
-            formAction={confirmQuoteSheetField}
-            name="fieldKey"
-            value={fieldKey}
-            variant="ghost"
-            size="xs"
-          >
-            Confirm
-          </Button>
-        ) : null}
+        <div className="flex gap-1">
+          {cell.status === "check" && !readOnly ? (
+            <Button
+              type="submit"
+              formAction={confirmQuoteSheetField}
+              name="fieldKey"
+              value={fieldKey}
+              variant="ghost"
+              size="xs"
+            >
+              Confirm
+            </Button>
+          ) : null}
+          {cell.value.trim() && !readOnly && cell.source !== "javy" ? (
+            <Button
+              type="submit"
+              formAction={markPasteFieldWrong}
+              name="fieldKey"
+              value={fieldKey}
+              variant="ghost"
+              size="xs"
+            >
+              Mark paste wrong
+            </Button>
+          ) : null}
+        </div>
       </div>
       {input === "textarea" ? (
         <Textarea

@@ -67,7 +67,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     key: "wind_hail_deductible",
     label: "Wind / hail deductible",
     group: "Coverages",
-    extractKey: "wind_hail_deductible",
+    extractKey: "wind_deductible",
   },
   {
     key: "replacement_cost_estimate",
@@ -112,9 +112,9 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
   { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
   { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
-  { key: "four_point_date", label: "4-point date", group: "Inspections" },
-  { key: "four_point_result", label: "4-point result", group: "Inspections" },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections" },
+  { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date" },
+  { key: "four_point_result", label: "4-point result", group: "Inspections", extractKey: "four_point_result" },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form" },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
 ];
 
@@ -216,9 +216,19 @@ export function emptySheetValues(line: ShopLine): Record<string, QuoteSheetField
   return values;
 }
 
+const EXTRACT_ALIASES: Record<string, string> = {
+  wind_hail_deductible: "wind_deductible",
+  address: "address",
+};
+
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {
+  const aliased = EXTRACT_ALIASES[extractKey] ?? extractKey;
   const match = fieldsForLine(line).find(
-    (field) => field.extractKey === extractKey || field.key === extractKey,
+    (field) =>
+      field.extractKey === extractKey ||
+      field.extractKey === aliased ||
+      field.key === extractKey ||
+      field.key === aliased,
   );
   return match?.key ?? null;
 }

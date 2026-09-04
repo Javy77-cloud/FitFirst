@@ -58,14 +58,31 @@ export function isSourceDocType(docType: string): boolean {
 }
 
 export function isQuoteAttachment(docType: string, filename?: string): boolean {
-  if (docType === "quote") return true;
-  return Boolean(filename && /quote/.test(filename.toLowerCase()));
+  if (isSourceDocType(docType)) return false;
+  if (docType === "quote" || docType === "quote_pdf") return true;
+  return Boolean(filename && /(?:^|[^a-z])quote(?:[^a-z]|$)/i.test(filename));
+}
+
+const HO_SOURCE_TYPES = new Set(["dec", "wind_mit", "four_point", "inspection", "current_policy"]);
+
+/** Dec / wind mit / 4-point stay on the homeowners sheet unless they are clearly another line. */
+export function sourceDocFillsHome(docType: string): boolean {
+  return HO_SOURCE_TYPES.has(docType);
 }
 
 /** Home first. Only move off Home when the packet is clearly another line. */
 export function inferShopLine(text: string, filename: string, docType: string): ShopLine {
   const blob = `${filename}\n${text}`.toLowerCase();
-  if (docType === "quote") return "home";
+  if (docType === "quote" || docType === "quote_pdf") return "home";
+  if (sourceDocFillsHome(docType)) {
+    if (
+      /\bvin\b|personal auto|auto (policy|dec)|vehicle year/.test(blob) &&
+      !/homeowners|coverage a|wind mit|4[- ]?point|four[- ]?point/.test(blob)
+    ) {
+      return "auto";
+    }
+    return "home";
+  }
   if (/\bvin\b|personal auto|auto (policy|dec)|vehicle year/.test(blob) && !/homeowners|coverage a/.test(blob)) {
     return "auto";
   }

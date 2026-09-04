@@ -224,7 +224,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "four_point_date",
-    re: /(?:4[\s-]*point|four[\s-]*point)\s*(?:date|insp)?\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    re: /(?:4[\s-]*point|four[\s-]*point)\s*(?:inspection\s*)?(?:date|insp)?\s*[:#]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
     normalize: (s) => s,
   },
   {
@@ -234,7 +234,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "wind_mit_form",
-    re: /(?:wind\s*mit(?:igation)?(?:\s*form)?|oir[\s-]?b[\s-]?1[\s-]?802)\s*[:#]\s*([^\n]+)/i,
+    re: /(?:wind\s*mit(?:igation)?(?:\s*form)?|oir[\s-]?b[\s-]?1[\s-]?1802|oir[\s-]?b[\s-]?1[\s-]?802)\s*[:#]\s*([^\n]+)/i,
     normalize: (s) => s.replace(/\s+/g, " ").trim(),
   },
   {

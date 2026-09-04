@@ -13,13 +13,12 @@ import { DEAL_ID } from "@/lib/fixtures/ids";
 import { db } from "@/lib/db";
 import {
   deals,
-  extractedFields,
   quoteAttemptLogs,
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
-import { fillSheetBlanks } from "@/lib/lifecycle/quote-sheet";
+import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import {
   canUnlockQuoting,
   isAppetiteCaptureResult,
@@ -63,46 +62,6 @@ async function ensureSheetsForDeal(dealId: string, lines: ShopLine[]) {
     .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
 }
 
-async function fillLineFromExtracted(dealId: string, line: ShopLine) {
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  const fields = risk
-    ? await db.select().from(extractedFields).where(eq(extractedFields.riskId, risk.id))
-    : [];
-  const [sheet] = await db
-    .select()
-    .from(quoteSheets)
-    .where(
-      and(
-        eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
-        eq(quoteSheets.dealId, dealId),
-        eq(quoteSheets.line, line),
-      ),
-    );
-  const current = sheet?.values ?? emptySheetValues(line);
-  const filled = fillSheetBlanks(
-    current,
-    fields.map((field) => ({
-      fieldKey: field.fieldKey,
-      normalizedValue: field.normalizedValue,
-      confidence: Number(field.confidence),
-      flagged: field.flagged,
-    })),
-  );
-  if (sheet) {
-    await db
-      .update(quoteSheets)
-      .set({ values: filled.values, updatedAt: new Date() })
-      .where(eq(quoteSheets.id, sheet.id));
-  } else {
-    await db.insert(quoteSheets).values({
-      tenantId: DEFAULT_TENANT_ID,
-      dealId,
-      line,
-      values: filled.values,
-    });
-  }
-}
-
 export async function setQuotingLine(formData: FormData) {
   const dealId = str(formData, "dealId");
   const formId = str(formData, "quotingForm");
@@ -116,9 +75,7 @@ export async function setQuotingLine(formData: FormData) {
 
   const lines = sheetsToPrepare(formId);
   await ensureSheetsForDeal(dealId, lines);
-  if (formId === "HO3" || form.shopLine === "home") {
-    await fillLineFromExtracted(dealId, "home");
-  }
+  await runFillDealSheets(dealId, form.shopLine);
 
   await db
     .update(deals)

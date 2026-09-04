@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 const STEPS = [
   {
     title: "BATCH3 ASAP — Lead → Deal → approve → paste",
-    body: "Convert a lead when ready. On the Deal, drop a dec / 4-point / wind mit, pick HO3 (Auto + commercial sheets are prepared). Glance the master sheet, check visual review, then confirm “are you sure?” Chrome Fill / Copy sheet / Open Fill window unlock after that. Log quoted / declined / maybe. Ana Cov A $321,000 stays shopping — do not bind.",
+    body: "Convert a lead when ready. On the Deal Documents tab: upload a dec / 4-point / wind mit → pick HO3 → Fill master sheet → review yellow/CHECK (source vs sheet) → visual approve. Super-Copy / Send to Fill read the filled Quote Sheet, never the PDFs. Corrections write the Fill Feedback log. Ana Cov A $321,000 stays shopping — do not bind.",
     href: `/deals/${DEAL_ID}?tab=quote-sheet`,
     cta: "Open Ana shop (approve, do not bind)",
   },
