@@ -43,7 +43,8 @@ export async function connectIntegrationStub(formData: FormData) {
   const patch = {
     connected: true,
     displayLabel: entry.label,
-    notes: "BYO stub. Agency connects later. No credentials stored. FitFirst does not buy Twilio.",
+    notes:
+      "BYO stub. FitFirst is plug-only. Agency connects and pays later. No credentials stored. FitFirst does not subscribe to Twilio.",
     lastStatus: stub.status,
     connectedAt: new Date(),
     updatedAt: new Date(),

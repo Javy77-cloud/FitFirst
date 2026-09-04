@@ -240,32 +240,40 @@ export type QuotingFormId = (typeof QUOTING_FORMS)[number]["id"];
 
 export const INTEGRATION_CATEGORIES = [
   "email",
+  "email_campaigns",
   "calendar",
-  "phone",
-  "sms",
+  "phone_sms",
   "video",
   "esign",
 ] as const;
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
 
-export const INTEGRATION_CATALOG = [
-  { category: "email" as const, provider: "google", label: "Google" },
-  { category: "email" as const, provider: "outlook", label: "Outlook" },
-  { category: "email" as const, provider: "yahoo", label: "Yahoo" },
-  { category: "calendar" as const, provider: "google", label: "Google Calendar" },
-  { category: "calendar" as const, provider: "outlook", label: "Outlook Calendar" },
-  { category: "phone" as const, provider: "twilio", label: "Twilio" },
-  { category: "phone" as const, provider: "vonage", label: "Vonage" },
-  { category: "phone" as const, provider: "telnyx", label: "Telnyx" },
-  { category: "phone" as const, provider: "bandwidth", label: "Bandwidth" },
-  { category: "sms" as const, provider: "twilio", label: "Twilio SMS" },
-  { category: "sms" as const, provider: "messagebird", label: "MessageBird" },
-  { category: "sms" as const, provider: "telnyx", label: "Telnyx SMS" },
-  { category: "video" as const, provider: "zoom", label: "Zoom" },
-  { category: "video" as const, provider: "meet", label: "Google Meet" },
-  { category: "esign" as const, provider: "docusign", label: "DocuSign" },
-  { category: "esign" as const, provider: "dropbox_sign", label: "Dropbox Sign" },
-] as const;
+export type IntegrationCatalogItem = {
+  category: IntegrationCategory;
+  provider: string;
+  label: string;
+  optional?: boolean;
+};
+
+/** Agency BYO catalog. FitFirst is plug-only — the agency pays. No FitFirst Twilio subscribe. */
+export const INTEGRATION_CATALOG: readonly IntegrationCatalogItem[] = [
+  { category: "email", provider: "google", label: "Gmail / Google Workspace" },
+  { category: "email", provider: "outlook", label: "Microsoft Outlook / 365" },
+  { category: "email", provider: "yahoo", label: "Yahoo" },
+  { category: "email_campaigns", provider: "mailchimp", label: "Mailchimp" },
+  { category: "email_campaigns", provider: "constant_contact", label: "Constant Contact" },
+  { category: "email_campaigns", provider: "sendgrid", label: "SendGrid (transactional)" },
+  { category: "calendar", provider: "google", label: "Google Calendar" },
+  { category: "calendar", provider: "outlook", label: "Outlook Calendar" },
+  { category: "phone_sms", provider: "twilio", label: "Twilio" },
+  { category: "phone_sms", provider: "ringcentral", label: "RingCentral" },
+  { category: "phone_sms", provider: "lightspeed_voice", label: "Lightspeed Voice" },
+  { category: "phone_sms", provider: "bandwidth", label: "Bandwidth", optional: true },
+  { category: "video", provider: "zoom", label: "Zoom" },
+  { category: "video", provider: "meet", label: "Google Meet" },
+  { category: "esign", provider: "docusign", label: "DocuSign" },
+  { category: "esign", provider: "dropbox_sign", label: "Dropbox Sign" },
+];
 
 export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "flood", "won-lost", "archive"] as const;
 

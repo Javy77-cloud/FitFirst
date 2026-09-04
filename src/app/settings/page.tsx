@@ -59,20 +59,29 @@ export default async function SettingsPage() {
           </SettingsSection>
 
           <SettingsSection
-            id="integrations"
-            title="Integrations"
+            id="communications"
+            title="Communications / Integrations"
             badge="Admin"
-            summary="Email, calendar, phone/SMS, video, e-sign. BYO stubs. Do not buy Twilio."
+            summary="BYO stubs. Agency pays. FitFirst does not subscribe to Twilio."
             defaultOpen
           >
             <p className="text-sm text-muted-foreground">
-              Google / Outlook / Yahoo email, Google / Outlook calendar, Twilio plus popular
-              phone and SMS alternatives, Zoom / Meet, and DocuSign / Dropbox Sign. Agency
-              connects later. No credentials stored.
+              Email (Gmail / Workspace, Outlook / 365, Yahoo), campaigns (Mailchimp, Constant
+              Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice,
+              Bandwidth optional), Zoom / Meet, and DocuSign / Dropbox Sign. Plug-only — no
+              vendor keys stored.
             </p>
-            <Link href="/settings/integrations" className="mt-3 inline-block text-sm text-primary hover:underline">
-              Open integrations hub
-            </Link>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+              <Link href="/settings/integrations" className="text-sm text-primary hover:underline">
+                Open communications hub
+              </Link>
+              <Link href="/settings/phone" className="text-sm text-primary hover:underline">
+                Phone line stub
+              </Link>
+              <Link href="/settings/email-templates" className="text-sm text-primary hover:underline">
+                Email templates
+              </Link>
+            </div>
           </SettingsSection>
 
           <SettingsSection

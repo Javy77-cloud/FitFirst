@@ -115,7 +115,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 5. **Appetite log.** Quotes tab → quoted / declined / maybe. `maybe` does not change filter-first matching.
 6. **Ana lock.** `Dib · Palm Bay HO3` Cov A **$321,000**. Stay shopping. Do not bind.
 7. **Admin-only.** Master risk + Markets/appetite stay Admin. Ask a teammate on Deal is hidden for agents.
-8. **Integrations.** Settings → Integrations: email (Google/Outlook/Yahoo), calendar (Google/Outlook), phone/SMS (Twilio + alternatives), video (Zoom/Meet), e-sign (DocuSign + Dropbox Sign). Stubs only. Do not buy Twilio.
+8. **Communications / Integrations.** Settings → Communications: email (Gmail/Workspace, Outlook/365, Yahoo), campaigns (Mailchimp, Constant Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice, Bandwidth optional), Zoom/Meet, DocuSign + Dropbox Sign. Plug-only. Agency pays. FitFirst does not subscribe to Twilio.
 
 ## Communication (this desk)
 

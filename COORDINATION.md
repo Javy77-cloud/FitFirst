@@ -399,7 +399,7 @@ Owner: this branch. Additive `0015_batch3_quoting`. Did not edit the Ana fixture
 - Master sheet requires visual review + “are you sure?” before quoting unlocks. Chrome Fill / Copy sheet / Open Fill window stay locked until then. No per-agent bot.
 - Quotes tab logs quoted / declined / maybe. `maybe` is filtered out of match priors.
 - Master risk + Markets are Admin-only. Ask a teammate on Deal is `hideWhenNotAdmin`.
-- Settings → Integrations: email / calendar / phone / SMS / video / e-sign BYO stubs. Do not buy Twilio.
+- Settings → Communications / Integrations: email (Gmail/Workspace, Outlook/365, Yahoo), campaigns (Mailchimp, Constant Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice, Bandwidth optional), Zoom/Meet, DocuSign + Dropbox Sign. Plug-only. Agency pays. No FitFirst Twilio subscribe.
 
 ASAP click path: Ana deal → pick HO3 if needed → Quote Sheet → approve + confirm → Copy sheet / Open Fill window → Quotes tab log maybe. Cov A **$321,000**. Do not bind.
 

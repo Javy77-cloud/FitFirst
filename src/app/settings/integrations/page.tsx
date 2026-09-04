@@ -14,23 +14,23 @@ export const dynamic = "force-dynamic";
 const CATEGORY_COPY: Record<(typeof INTEGRATION_CATEGORIES)[number], { title: string; summary: string }> = {
   email: {
     title: "Email",
-    summary: "Google, Outlook, Yahoo. BYO later. Nothing sends from this desk.",
+    summary: "Gmail / Google Workspace, Microsoft Outlook / 365, Yahoo. Inbox later. Nothing sends.",
+  },
+  email_campaigns: {
+    title: "Email campaigns",
+    summary: "Mailchimp, Constant Contact, and SendGrid for transactional. Agency pays the vendor.",
   },
   calendar: {
     title: "Calendar",
-    summary: "Google and Outlook stay stubs. The desk calendar is already the working board.",
+    summary: "Google Calendar and Outlook Calendar. Desk month/week/day is the working board.",
   },
-  phone: {
-    title: "Phone",
-    summary: "Twilio plus Vonage, Telnyx, Bandwidth. Agency pays. FitFirst does not buy numbers.",
-  },
-  sms: {
-    title: "SMS",
-    summary: "Twilio, MessageBird, Telnyx. Stub connect only. No texts leave the desk.",
+  phone_sms: {
+    title: "Phone / SMS",
+    summary: "Twilio, RingCentral, Lightspeed Voice. Bandwidth optional. FitFirst does not subscribe.",
   },
   video: {
     title: "Video",
-    summary: "Zoom and Google Meet under Communications. Meeting links later — not a softphone.",
+    summary: "Zoom and Google Meet. Meeting links later — not a softphone.",
   },
   esign: {
     title: "E-sign",
@@ -52,15 +52,15 @@ export default async function IntegrationsSettingsPage({
   const byKey = new Map(rows.map((row) => [`${row.category}:${row.provider}`, row]));
 
   return (
-    <AppShell title="Integrations">
+    <AppShell title="Communications / Integrations">
       <SettingsSubnav current="integrations" />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Bring-your-own connectors. The agency connects later. Do not paste vendor keys. FitFirst
-        does not buy Twilio. Status is a stub so the desk can show intended providers.
+        Settings → Communications / Integrations. FitFirst is plug-only. The agency connects and
+        pays the vendor later. Do not paste keys. FitFirst does not buy or subscribe to Twilio.
       </p>
       {notice === "stub-connected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Marked connected as a stub. No vendor was called.
+          Marked connected as a stub. No vendor was called. Agency pays later.
         </p>
       ) : null}
       {notice === "stub-disconnected" ? (
@@ -83,9 +83,9 @@ export default async function IntegrationsSettingsPage({
               key={category}
               id={category}
               title={copy.title}
-              badge={category === "video" ? "Communications" : "Admin"}
+              badge="Communications"
               summary={copy.summary}
-              defaultOpen={category === "email" || category === "phone"}
+              defaultOpen={category === "email" || category === "phone_sms"}
             >
               <ul className="space-y-2">
                 {items.map((item) => {
@@ -97,9 +97,16 @@ export default async function IntegrationsSettingsPage({
                       className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
                     >
                       <div>
-                        <div className="text-sm font-medium text-navy">{item.label}</div>
+                        <div className="text-sm font-medium text-navy">
+                          {item.label}
+                          {item.optional ? (
+                            <span className="ml-2 text-[10px] font-semibold uppercase text-muted-foreground">
+                              Optional
+                            </span>
+                          ) : null}
+                        </div>
                         <div className="text-[11px] text-muted-foreground">
-                          {connected ? "connected (stub)" : "not connected"}
+                          {connected ? "connected (stub) · agency pays" : "not connected · plug later"}
                           {row?.lastStatus ? ` · ${row.lastStatus}` : ""}
                         </div>
                       </div>
