@@ -53,6 +53,7 @@ import { seedHomeDashboard } from "./seed-home-dashboard";
 import { seedDocumentLibraries } from "./seed-documents";
 import { seedAutomationsHub } from "./seed-automations";
 import { seedSocialConnectors } from "./seed-social";
+import { seedPiiVault } from "./seed-pii";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -489,4 +490,5 @@ export async function seed() {
   await seedDocumentLibraries();
   await seedAutomationsHub();
   await seedSocialConnectors();
+  await seedPiiVault();
 }

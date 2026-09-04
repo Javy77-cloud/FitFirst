@@ -358,6 +358,9 @@ export const contacts = pgTable(
     mergedIntoId: uuid("merged_into_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
+    ssnEnc: text("ssn_enc"),
+    ssnIv: text("ssn_iv"),
+    ssnLast4: text("ssn_last4"),
     ...timestamps,
   },
   (t) => [
@@ -692,6 +695,10 @@ export const accounts = pgTable(
     activePolicyCount: integer("active_policy_count").notNull().default(0),
     dba: text("dba"),
     ein: text("ein"),
+    einEnc: text("ein_enc"),
+    einIv: text("ein_iv"),
+    einLast4: text("ein_last4"),
+    einLookup: text("ein_lookup"),
     entityType: text("entity_type"),
     employeeCount: integer("employee_count"),
     annualSales: numeric("annual_sales", { precision: 14, scale: 2 }),
@@ -724,6 +731,7 @@ export const accounts = pgTable(
   (t) => [
     index("accounts_tenant_idx").on(t.tenantId),
     index("accounts_ein_idx").on(t.tenantId, t.ein),
+    index("accounts_ein_lookup_idx").on(t.tenantId, t.einLookup),
   ],
 );
 
@@ -1466,6 +1474,9 @@ export const drivers = pgTable("drivers", {
   lastName: text("last_name").notNull(),
   dateOfBirth: text("date_of_birth"),
   licenseNumber: text("license_number"),
+  licenseNumberEnc: text("license_number_enc"),
+  licenseNumberIv: text("license_number_iv"),
+  licenseNumberLast4: text("license_number_last4"),
   licenseState: text("license_state"),
   sortOrder: integer("sort_order").notNull().default(0),
   ...timestamps,
@@ -1936,6 +1947,21 @@ export const socialLeadOffers = pgTable(
   ],
 );
 
+export const piiRevealLogs = pgTable(
+  "pii_reveal_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    fieldKey: text("field_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("pii_reveal_logs_entity_idx").on(t.tenantId, t.entityType, t.entityId)],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -2025,6 +2051,7 @@ export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type LeadOfferRow = typeof leadOffers.$inferSelect;
 export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
+export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;

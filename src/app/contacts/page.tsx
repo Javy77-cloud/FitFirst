@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { defaultColumns } from "@/lib/desk/columns";
 import { listContacts, listUsersById } from "@/lib/db/queries";
+import { ssnMaskFromRow } from "@/lib/pii/vault";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,10 @@ export default async function ContactsPage({
             <Label className="text-xs">Phone</Label>
             <Input name="phone" className="mt-1 h-8" />
           </div>
+          <div>
+            <Label className="text-xs">SSN</Label>
+            <Input name="ssn" autoComplete="off" className="mt-1 h-8" placeholder="Encrypted at rest" />
+          </div>
           <AddressFieldset streetName="mailingAddress" streetLabel="Mailing address" />
           <Button type="submit" size="sm">
             Save contact
@@ -94,6 +99,7 @@ export default async function ContactsPage({
                 <Col table="contacts" col="state" as="th">State</Col>
                 <Col table="contacts" col="zip" as="th">ZIP</Col>
                 <Col table="contacts" col="dateOfBirth" as="th">Date of birth</Col>
+                <Col table="contacts" col="ssn" as="th">SSN</Col>
                 <Col table="contacts" col="language" as="th">Language</Col>
                 <Col table="contacts" col="maritalStatus" as="th">Marital status</Col>
                 <Col table="contacts" col="notes" as="th">Notes</Col>
@@ -107,7 +113,7 @@ export default async function ContactsPage({
             <SheetTbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={19} className="text-muted-foreground">
+                  <td colSpan={20} className="text-muted-foreground">
                     Empty book. Bind a deal or add an existing client.
                   </td>
                 </tr>
@@ -131,6 +137,7 @@ export default async function ContactsPage({
                     <Col table="contacts" col="state">{c.state ?? "—"}</Col>
                     <Col table="contacts" col="zip">{c.zip ?? "—"}</Col>
                     <Col table="contacts" col="dateOfBirth">{c.dateOfBirth || "—"}</Col>
+                    <Col table="contacts" col="ssn">{ssnMaskFromRow(c) ?? "—"}</Col>
                     <Col table="contacts" col="language">{c.language ?? "—"}</Col>
                     <Col table="contacts" col="maritalStatus">{c.maritalStatus ?? "—"}</Col>
                     <Col table="contacts" col="notes">{c.notes ?? "—"}</Col>

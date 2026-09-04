@@ -20,6 +20,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 People / Agents:** Admin Settings → People / Agents — create, freeze, notify, password reset, MFA enroll stubs, and recovery links. Javy and Maya stay enrolled so the Mac desk still opens. Ana stays unbound at Cov A **$321,000**.
 
+**PII at rest:** SSN, EIN/FEIN, and driver license numbers are AES-256-GCM encrypted with `PII_ENCRYPTION_KEY` before write. Postgres stores ciphertext + IV + last4 only. Lists show `***-**-1234` (or EIN/DL mask). Reveal is Admin or owning Agent and writes `pii_reveal_logs` (no decrypted value). Ana has no SSN. Elena demo SSN is fake encrypted `000-00-4444`. Harbor / Ruiz Tile EINs and Soto DL are sealed at seed.
+
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
 Contact record: Ask a teammate is Admin-only on every record. Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
@@ -35,8 +37,10 @@ Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-cd ~/FitFirst && git fetch origin && git checkout -B cursor/mac-ready-batch4-7pm origin/cursor/mac-ready-batch4-7pm && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
+cd ~/FitFirst && git fetch origin && git checkout -B cursor/mac-ready-batch4-7pm origin/cursor/mac-ready-batch4-7pm && cp -n .env.example .env && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
 ```
+
+Keep `PII_ENCRYPTION_KEY` from `.env.example` (64 hex chars — local Mac demo key, not production). Changing it makes existing ciphertext unreadable; re-run `db:seed`. Postgres stays on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`).
 
 Hard-refresh Chrome. Settings → Social: Facebook / Instagram / GBP are seeded connected. As Maya, GBP is locked until Javy saves **Allow agents to monitor GBP**. Social pulse and Home show demo numbers. Open as Lead from an Instagram inquiry lands on Priya Shah.
 
@@ -69,6 +73,8 @@ npm run db:migrate
 npm run db:seed
 npm run dev -- --port 43147
 ```
+
+**PII at rest:** SSN, EIN/FEIN, and driver license numbers are AES-256-GCM encrypted with `PII_ENCRYPTION_KEY` before write. Postgres stores ciphertext + IV + last4 only. Lists show `***-**-1234` (or EIN/DL mask). Reveal is Admin or owning Agent and writes `pii_reveal_logs` (no decrypted value). Ana has no SSN. Elena demo SSN is fake encrypted `000-00-4444`. Harbor / Ruiz Tile EINs and Soto DL are sealed at seed.
 
 Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
 

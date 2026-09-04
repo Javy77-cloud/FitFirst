@@ -559,6 +559,7 @@ export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[
     { key: "state", label: "State" },
     { key: "zip", label: "ZIP" },
     { key: "dateOfBirth", label: "Date of birth" },
+    { key: "ssn", label: "SSN" },
     { key: "language", label: "Language" },
     { key: "maritalStatus", label: "Marital status" },
     { key: "notes", label: "Notes" },

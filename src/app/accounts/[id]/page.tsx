@@ -27,6 +27,8 @@ import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
 import { businessSectionsForRole, canAskTeammateOnBusiness } from "@/lib/desk/business-sections";
 import { isUuid } from "@/lib/ids";
+import { einMaskFromRow } from "@/lib/pii/vault";
+import { MaskedPiiField } from "@/components/pii/masked-field";
 
 export const dynamic = "force-dynamic";
 
@@ -94,7 +96,7 @@ export default async function AccountDetailPage({
           <RecordSection
             id="overview"
             title="Overview"
-            summary={`${phone || email || account.ein || "No phone, email, or EIN"} · status from policies, not a stored flag`}
+            summary={`${phone || email || einMaskFromRow(account) || "No phone, email, or EIN"} · status from policies, not a stored flag`}
             collapsible={false}
           >
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
@@ -116,7 +118,15 @@ export default async function AccountDetailPage({
               ) : null}
               <div>
                 <dt className="text-xs text-muted-foreground">EIN / FEIN</dt>
-                <dd>{account.ein || "—"}</dd>
+                <dd>
+                  <MaskedPiiField
+                    entityType="account"
+                    entityId={account.id}
+                    field="ein"
+                    mask={einMaskFromRow(account)}
+                    canReveal={session.isAdmin || session.isAgent}
+                  />
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Phone</dt>
@@ -177,7 +187,16 @@ export default async function AccountDetailPage({
               </div>
               <div>
                 <Label className="text-xs">EIN / FEIN</Label>
-                <Input name="ein" defaultValue={account.ein ?? ""} className="mt-1 h-8" />
+                <Input
+                  name="ein"
+                  defaultValue=""
+                  placeholder={einMaskFromRow(account) ?? "Replace EIN"}
+                  autoComplete="off"
+                  className="mt-1 h-8"
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Stored encrypted. Leave blank to keep {einMaskFromRow(account) ?? "empty"}.
+                </p>
               </div>
               <div>
                 <Label className="text-xs">Phone</Label>
