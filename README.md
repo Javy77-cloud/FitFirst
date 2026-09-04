@@ -109,8 +109,10 @@ Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). 
 
 Right of Smart Search on every AppShell page:
 
+- **Smart Search** stays in the header with a stronger navy outline. Search is not a left-nav row.
+- The top-left **page title matches the active module** (Home, Pipeline, Leads, Contacts, Deals, Policies, Documents, …). A record name can sit under it.
 - **Refresh** reloads the current desk view.
-- **Notifications** lists in-app alerts plus links to Alerts, Work queue, Tasks, and Calendar.
+- **Alerts** (bell) is the alerts module — in-app alerts plus dismiss. Alerts is not a left-nav row.
 - **What’s New** is a short changelog of desk features (stub entries).
 - **Recently accessed** shows the last contacts, deals, and policies (local visits, with a book stub fallback).
 - **Quick actions** open Add Lead, Add Deal, Add Policy (bind stub), Add Task, and Add Meeting.

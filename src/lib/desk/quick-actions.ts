@@ -18,7 +18,6 @@ export const SUPPORT_COPY = "Coming soon — we'll wire this later.";
 export const PROFILE_SETTINGS_HREF = "/settings/my-desk";
 
 export const NOTIFICATION_LINKS = [
-  { href: "/alerts", label: "All alerts" },
   { href: "/work-queue", label: "Work queue" },
   { href: "/tasks", label: "Open tasks" },
   { href: "/calendar", label: "Calendar" },

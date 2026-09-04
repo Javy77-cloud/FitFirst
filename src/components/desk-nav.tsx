@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
   Briefcase,
   Building2,
   ClipboardList,
@@ -15,7 +14,6 @@ import {
   Phone,
   Kanban,
   ListChecks,
-  Search,
   Shield,
   Users,
   type LucideIcon,
@@ -41,21 +39,13 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Commissions: Briefcase,
   Tasks: ListChecks,
   Calendar,
-  Search,
   Carriers: Building2,
-  Alerts: Bell,
   Phone,
   Support: LifeBuoy,
   Settings: ClipboardList,
 };
 
-export function DeskNav({
-  unread,
-  variant,
-}: {
-  unread: number;
-  variant: "sidebar" | "mobile";
-}) {
+export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {
   const pathname = usePathname() ?? "";
 
   if (variant === "mobile") {
@@ -100,11 +90,6 @@ export function DeskNav({
           >
             <Icon className="size-3.5 opacity-80" />
             <span className="flex-1">{item.label}</span>
-            {item.href === "/alerts" && unread > 0 ? (
-              <span className="rounded-sm bg-fit-flag px-1.5 text-[10px] font-semibold text-white">
-                {unread}
-              </span>
-            ) : null}
           </Link>
         );
       })}

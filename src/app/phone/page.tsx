@@ -31,7 +31,7 @@ export default async function PhonePage() {
   const connected = Boolean(telephony?.connected);
 
   return (
-    <AppShell title="Phone call log">
+    <AppShell title="Phone">
       <p className="mb-3 text-sm text-muted-foreground">
         In-desk call log — not a softphone. Every entry attaches to a Contact, Policy, Deal, Lead,
         or Business the same way platform auto-activity does. Duration and outcome are required.

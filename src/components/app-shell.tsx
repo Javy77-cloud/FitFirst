@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { DeskNav } from "@/components/desk-nav";
 import { HeaderUtilities } from "@/components/desk/header-utilities";
+import { ModuleHeading } from "@/components/desk/module-heading";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
 import { logoutDesk } from "@/app/actions/auth";
@@ -12,12 +14,12 @@ import { listAlerts, listRecentRecordStub } from "@/lib/db/queries";
 export async function AppShell({
   children,
   title,
-  eyebrow,
   actions,
   columns,
 }: {
   children: ReactNode;
   title: string;
+  /** Kept so callers can pass a leftover worksheet label; header uses the module name. */
   eyebrow?: string;
   actions?: ReactNode;
   /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
@@ -29,7 +31,7 @@ export async function AppShell({
     listAlerts(),
     listRecentRecordStub(8),
   ]);
-  const headerAlerts = alertRows.slice(0, 8).map(toHeaderAlert);
+  const headerAlerts = alertRows.map(toHeaderAlert);
   const unread = alertRows.filter((row) => !row.readAt).length;
 
   return (
@@ -56,7 +58,7 @@ export async function AppShell({
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
-          <DeskNav unread={unread} variant="sidebar" />
+          <DeskNav variant="sidebar" />
         </nav>
         <div className="border-t border-sidebar-border px-4 py-3 text-xs text-sidebar-foreground/70">
           <div className="font-medium text-sidebar-foreground">{session.name || "Not signed in"}</div>
@@ -83,17 +85,18 @@ export async function AppShell({
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-          <DeskNav unread={unread} variant="mobile" />
+          <DeskNav variant="mobile" />
         </nav>
         <header className="relative z-40 flex flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border bg-card px-5 py-3">
-          <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              {eyebrow ?? "Personal lines worksheet"}
-            </div>
-            <h1 className="text-lg font-semibold text-navy">{title}</h1>
-          </div>
+          <ModuleHeading pageTitle={title} />
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-visible">
-            <SmartSearch />
+            <Suspense
+              fallback={
+                <div className="h-9 w-48 rounded-md border-2 border-navy bg-card md:w-80" />
+              }
+            >
+              <SmartSearch />
+            </Suspense>
             <HeaderUtilities
               pageTitle={title}
               session={{

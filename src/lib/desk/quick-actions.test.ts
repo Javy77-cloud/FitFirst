@@ -23,6 +23,11 @@ describe("header quick actions", () => {
     expect(SUPPORT_HREF).toBe("/support");
     expect(SUPPORT_COPY).toBe("Coming soon — we'll wire this later.");
     expect(PROFILE_SETTINGS_HREF).toBe("/settings/my-desk");
-    expect(NOTIFICATION_LINKS.some((link) => link.href === "/alerts")).toBe(true);
+    expect(NOTIFICATION_LINKS.some((link) => link.href === "/alerts")).toBe(false);
+    expect(NOTIFICATION_LINKS.map((link) => link.href)).toEqual([
+      "/work-queue",
+      "/tasks",
+      "/calendar",
+    ]);
   });
 });

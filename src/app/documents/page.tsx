@@ -75,7 +75,7 @@ export default async function DocumentsPage({
 
   return (
     <AppShell
-      title="Document Manager"
+      title="Documents"
       actions={
         <Link href="/esign" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
           E-sign envelopes

@@ -22,7 +22,7 @@ export default async function QuotesBoardPage({
 
   return (
     <AppShell
-      title="Quote tracking"
+      title="Quotes"
       actions={
         <Link href="/deals/new" className={cn(buttonVariants({ size: "sm" }))}>
           New shopping deal

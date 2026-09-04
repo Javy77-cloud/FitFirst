@@ -42,7 +42,7 @@ export default async function MergeQueuePage() {
 
   return (
     <AppShell
-      title="Merge review"
+      title="Merge"
       actions={
         <form action={scanForDuplicates}>
           <Button type="submit" variant="outline" size="sm">

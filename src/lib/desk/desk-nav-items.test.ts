@@ -10,4 +10,13 @@ describe("desk nav chrome", () => {
     expect(DESK_NAV_ITEMS.filter((item) => item.href === "/settings")).toHaveLength(1);
     expect(DESK_NAV_ITEMS.some((item) => item.href === "/support")).toBe(true);
   });
+
+  it("moves Alerts and Search out of the left nav into top chrome", () => {
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    expect(hrefs).not.toContain("/alerts");
+    expect(hrefs).not.toContain("/search");
+    expect(labels).not.toContain("Alerts");
+    expect(labels).not.toContain("Search");
+  });
 });

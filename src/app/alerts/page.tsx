@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AlertsPage() {
   const rows = await listAlerts();
   return (
-    <AppShell title="In-app alerts">
+    <AppShell title="Alerts">
       <p className="mb-3 text-sm text-muted-foreground">
         Alerts stay in the desk. Nothing emails the agent.
       </p>

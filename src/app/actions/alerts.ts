@@ -9,6 +9,7 @@ import { alerts, clientHistory, reviewTasks } from "@/lib/db/schema";
 export async function markAlertRead(formData: FormData) {
   const id = String(formData.get("alertId") ?? "");
   await db.update(alerts).set({ readAt: new Date() }).where(eq(alerts.id, id));
+  revalidatePath("/", "layout");
   revalidatePath("/");
   revalidatePath("/alerts");
 }

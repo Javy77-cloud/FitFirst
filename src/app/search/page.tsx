@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { SmartSearch } from "@/components/smart-search";
 import { smartSearch } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -14,13 +13,11 @@ export default async function SearchPage({
   const hits = q.trim() ? await smartSearch(q) : [];
 
   return (
-    <AppShell title="Smart Search">
-      <div className="mb-4 ff-card p-4">
-        <SmartSearch defaultQuery={q} />
-        <p className="mt-2 text-xs text-muted-foreground">
-          Finds Lead, Deal, Contact, Business, and Policy by name. Quotes are not coverage.
-        </p>
-      </div>
+    <AppShell title="Search">
+      <p className="mb-3 text-sm text-muted-foreground">
+        Use Smart Search in the header. Finds Lead, Deal, Contact, Business, and Policy by name.
+        Quotes are not coverage.
+      </p>
       {!q.trim() ? (
         <p className="text-sm text-muted-foreground">Type Elena, Harbor, HO3-ELENA, or Ana.</p>
       ) : hits.length === 0 ? (

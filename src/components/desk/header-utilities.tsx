@@ -12,6 +12,7 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
+import { markAlertRead } from "@/app/actions/alerts";
 import { logoutDesk } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,8 +141,8 @@ export function HeaderUtilities({
               variant="ghost"
               size="icon-sm"
               className={chromeButtonClass()}
-              aria-label="Notifications"
-              title="Notifications"
+              aria-label="Alerts"
+              title="Alerts"
             />
           }
         >
@@ -153,22 +154,38 @@ export function HeaderUtilities({
           ) : null}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80 min-w-72">
-          <DropdownMenuLabel>In-app alerts</DropdownMenuLabel>
+          <DropdownMenuLabel>Alerts</DropdownMenuLabel>
           {alerts.length === 0 ? (
-            <p className="px-1.5 py-3 text-xs text-muted-foreground">No alerts.</p>
+            <p className="px-1.5 py-3 text-xs text-muted-foreground">
+              No in-app alerts. Nothing emails the agent.
+            </p>
           ) : (
-            alerts.map((alert) => (
-              <DropdownMenuItem
-                key={alert.id}
-                className="items-start"
-                render={<Link href={alert.href ?? "/alerts"} />}
-              >
-                <span className="min-w-0">
-                  <span className={cn("block truncate", !alert.read && "font-semibold")}>{alert.title}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{alert.body}</span>
-                </span>
-              </DropdownMenuItem>
-            ))
+            <div className="max-h-80 overflow-y-auto">
+              {alerts.map((alert) => (
+                <div key={alert.id} className="flex items-start gap-1 px-0.5 py-1">
+                  <DropdownMenuItem
+                    className="min-w-0 flex-1 items-start"
+                    render={<Link href={alert.href ?? "/work-queue"} />}
+                  >
+                    <span className="min-w-0">
+                      <span className={cn("block truncate", !alert.read && "font-semibold")}>{alert.title}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">{alert.body}</span>
+                    </span>
+                  </DropdownMenuItem>
+                  {!alert.read ? (
+                    <form action={markAlertRead} onClick={(event) => event.stopPropagation()}>
+                      <input type="hidden" name="alertId" value={alert.id} />
+                      <button
+                        type="submit"
+                        className="rounded px-1 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-navy"
+                      >
+                        Dismiss
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Quick links</DropdownMenuLabel>
