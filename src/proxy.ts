@@ -2,10 +2,50 @@ import { NextResponse, type NextRequest } from "next/server";
 import { adminRedirectPath, isAdminOnlyPath, isPublicPath } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
 import { isMfaChallengePath, isMfaSetupPath } from "@/lib/auth/mfa";
+import { isDeskUuid } from "@/lib/desk-id";
 import { isModulePath } from "@/lib/people/privileges";
+
+const RECORD = /^\/(leads|deals|contacts|policies|tasks|claims|accounts|businesses|merge|meetings)\/([^/]+)/;
+const RESERVED = new Set(["new", "compare", "agents"]);
+
+function invalidRecordHtml() {
+  return new NextResponse(
+    `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 · FitFirst</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; font-family: ui-sans-serif, system-ui, sans-serif;
+        background: #f7f3ec; color: #111827; text-align: center; padding: 2rem; }
+      .kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5c6b7a; }
+      h1 { margin: .5rem 0 0; font-size: 1.75rem; }
+      p { max-width: 28rem; color: #5c6b7a; line-height: 1.5; }
+      a { color: #1d6fb8; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="kicker">404</div>
+    <h1>Page not found</h1>
+    <p>That record is not on this desk. Invalid IDs stay 404 — they do not crash the desk.</p>
+    <p><a href="/">Back to Home</a></p>
+  </body>
+</html>`,
+    {
+      status: 404,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    },
+  );
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const record = pathname.match(RECORD);
+  if (record && !RESERVED.has(record[2]) && !isDeskUuid(record[2])) {
+    return invalidRecordHtml();
+  }
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }

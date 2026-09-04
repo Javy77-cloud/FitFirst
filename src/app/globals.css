@@ -188,7 +188,6 @@
 .ff-table tr:hover td {
   background: var(--ff-wash);
 }
-<<<<<<< HEAD
 .ff-table .ff-col-manage {
   position: sticky;
   right: 0;
@@ -202,7 +201,8 @@
   background: var(--card);
 }
 .ff-table tr:hover td.ff-col-manage {
-=======
+  background: var(--ff-wash);
+}
 .ff-table th.ff-sheet-th {
   padding-right: 0.35rem;
 }
@@ -230,7 +230,6 @@
   background: var(--ff-wash);
 }
 .ff-table tbody tr:hover td.ff-col-pinned {
->>>>>>> origin/cursor/mac-ready-batch4-7pm
   background: var(--ff-wash);
 }
 
@@ -244,12 +243,10 @@
 .ff-completeness-compact {
   padding: 0.5rem 0.75rem;
 }
-<<<<<<< HEAD
 .ff-completeness-blockers {
   font-size: 1rem;
   line-height: 1.45;
 }
-=======
 
 /* Agent/agency UI presets — remap existing --ff-* tokens only. */
 [data-ff-color="terracotta"] {
@@ -352,4 +349,3 @@
 .ff-doc-yellow { background: var(--ff-yellow); color: #fff; }
 .ff-doc-flag { background: var(--ff-flag); color: #fff; }
 .ff-doc-muted { background: var(--ff-canvas); color: var(--ff-navy); border: 1px solid var(--ff-border); }
->>>>>>> origin/cursor/mac-ready-batch4-7pm
