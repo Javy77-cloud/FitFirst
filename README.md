@@ -116,6 +116,16 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 npm test
 ```
 
+## Known leftovers
+
+- `/documents` still 500 (`Object.entries` on null). Not a NAV item.
+- `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names). Desk routes compile under Turbopack.
+- `/phone` is a call log + trunk stub. No PSTN. Google Calendar stays a stub.
+- Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.
+- Search is substring, so `Ana` also lists Camila.
+- Camila Auto `QBE-PA-66103` still has an empty vehicle schedule (Soto `FF-PA-4401` is the 2/2 seed).
+- Policy compare stays the thin reader (ComparePanel not reattached).
+
 ## Out of scope
 
 Multi-tenant isolation, credential vaults, billing, live Zoho writes, rater APIs, fake AI scores, emails, building a second CRM.

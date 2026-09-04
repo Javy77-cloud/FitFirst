@@ -376,6 +376,8 @@ Starts from `cursor/full-desk-test-4d20`. Merges Batch 1 (Home donut, Pipeline o
 - One Pipeline sidebar row. Life/Health stay as `/pipeline` tabs. Seed always writes `pipeline_stages.pipeline_id`.
 - Sidebar stays navy (`--ff-sidebar` / ink) — not washed to white.
 
+HTTP smoke on this branch (dev + seeded Postgres, port 43147): every app-shell NAV route 200. Elena / Ana / Harbor records 200. Invalid UUIDs 404. Ana deal `Dib · Palm Bay HO3` stays **Quote Sent**, Cov A **$321,000**, 0 policies. `/quotes` is quote tracking (no `HO3-ELENA` policy number). `/carriers/:id` 200 (calendar slice). `/documents` still 500.
+
 ## Quotes collapse + Claims add + Commissions filters (`cursor/quotes-claims-commissions-4af1`)
 
 Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not write Zoho.
