@@ -50,10 +50,15 @@ export async function stubSocialLead() {
     lastName: "Shah",
     email: "priya.shah@example.com",
     phone: "(407) 555-0199",
-    source: "social_stub",
+    city: "Orlando",
+    state: "FL",
+    zip: "32801",
+    insuranceTypeDesired: "HO",
+    source: "instagram",
     notes: "Instagram stub: asked for an HO3 quote and said a dec is coming. No live social sync.",
   });
   revalidatePath("/leads");
+  revalidatePath("/social");
   redirect(`/leads/${lead.id}`);
 }
 

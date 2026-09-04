@@ -23,8 +23,14 @@ function languageLabel(value: string | null) {
 
 export const dynamic = "force-dynamic";
 
-export default async function LeadsPage() {
-  const rows = await listLeads();
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [rows, query] = await Promise.all([listLeads(), searchParams]);
+  const notice = typeof query.notice === "string" ? query.notice : undefined;
+  const retrieved = typeof query.n === "string" ? query.n : undefined;
   return (
     <AppShell
       title="Leads"
@@ -33,8 +39,15 @@ export default async function LeadsPage() {
       <p className="mb-3 text-sm text-muted-foreground">
         Capture the person first: name, date of birth, contact, address, and the insurance they
         want. Dec pages, wind mits, and 4-points belong on the Deal after you start a shop. Never
-        duplicate — match by name plus phone or email.
+        duplicate — match by name plus phone or email. Inbound Facebook / Instagram / X / LinkedIn /
+        GBP asks open from Social pulse as Leads.
       </p>
+      {notice === "social-retrieved" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          Retrieved {retrieved ?? "new"} social inquir{retrieved === "1" ? "y" : "ies"} as Leads.
+          Same person match as Stub social lead. No live vendor sync.
+        </p>
+      ) : null}
       <div className="mb-4 flex flex-wrap gap-2">
         <form action={stubEmailLead}>
           <Button type="submit" size="sm" variant="outline">
@@ -46,6 +59,9 @@ export default async function LeadsPage() {
             Stub social lead
           </Button>
         </form>
+        <Link href="/social" className="inline-flex items-center text-sm text-primary hover:underline">
+          Social pulse
+        </Link>
       </div>
       <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <form action={createLead} className="ff-card space-y-3 p-4">

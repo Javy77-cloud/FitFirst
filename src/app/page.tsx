@@ -10,6 +10,9 @@ import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { entityHref } from "@/lib/crm/display";
 import { cn } from "@/lib/utils";
 import { parseAttentionWindow } from "@/lib/home/attention-window";
+import { currentDeskSession } from "@/lib/auth/session";
+import { loadSocialPulse } from "@/lib/social/store";
+import { HomeSocialPulse } from "@/components/social/home-pulse";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +22,15 @@ export default async function HomePage({
   searchParams: Promise<{ attention?: string }>;
 }) {
   const params = await searchParams;
-  const [{ snapshot, scope, tables }, { recentDeals, unread }, lineSettings] = await Promise.all([
-    ownerHomeDashboard(),
-    dashboardStats(),
-    loadDeskLineSettings(),
-  ]);
+  const session = await currentDeskSession();
+  const role = session.isAdmin ? "admin" : "agent";
+  const [{ snapshot, scope, tables }, { recentDeals, unread }, lineSettings, socialPulse] =
+    await Promise.all([
+      ownerHomeDashboard(),
+      dashboardStats(),
+      loadDeskLineSettings(),
+      loadSocialPulse(role),
+    ]);
   const attentionWindow = parseAttentionWindow(params.attention);
 
   return (
@@ -42,6 +49,10 @@ export default async function HomePage({
         lineSettings={lineSettings}
         attentionWindow={attentionWindow}
       />
+
+      <div className="mt-4">
+        <HomeSocialPulse pulse={socialPulse} />
+      </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden">

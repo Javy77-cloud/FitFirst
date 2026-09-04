@@ -71,7 +71,13 @@ const STEPS = [
     cta: "Go to Deals",
   },
   {
-    title: "9. Run-it-yourself: stub lead → deal → bind",
+    title: "9. Social + GBP connectors",
+    body: "Settings → Social: connect stubs for Facebook, Instagram, X, LinkedIn, and Google Business Profile. Pulse shows demo followers / views after connect. GBP stays locked for agents until Admin allows monitoring. Open as Lead reuses the social → Lead path (Priya Shah from Instagram).",
+    href: "/social",
+    cta: "Open social pulse",
+  },
+  {
+    title: "10. Run-it-yourself: stub lead → deal → bind",
     body: "Stub email or social lead → Convert to deal → upload a source dec → Fill Quote Sheet blanks → build stub quotes for green markets → Finalize quote results (cheapest first) → attach a quote PDF → Bind. That is the only step that creates a Contact/Business and a Policy (status Bound).",
     href: "/leads",
     cta: "Start from Leads",

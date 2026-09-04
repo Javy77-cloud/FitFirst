@@ -22,12 +22,15 @@ import { markSendAccountDemoConnected } from "@/lib/templates/connectors";
 function revalidateIntegrationSurfaces() {
   revalidatePath("/settings");
   revalidatePath("/settings/integrations");
+  revalidatePath("/settings/social");
   revalidatePath("/settings/communications");
   revalidatePath("/settings/email");
   revalidatePath("/settings/video");
   revalidatePath("/settings/sms");
   revalidatePath("/settings/phone");
   revalidatePath("/calendar");
+  revalidatePath("/social");
+  revalidatePath("/");
 }
 
 async function assertAdmin() {
@@ -214,7 +217,8 @@ export async function connectCatalogStub(formData: FormData) {
     // Legacy tables may be mid-migrate. Catalog row is the settings shape.
   }
   revalidateIntegrationSurfaces();
-  redirect(`/settings/integrations?notice=connected&provider=${provider.id}`);
+  const next = safeIntegrationReturn(String(formData.get("next") ?? ""));
+  redirect(`${next}?notice=connected&provider=${provider.id}`);
 }
 
 export async function disconnectCatalogStub(formData: FormData) {
@@ -238,5 +242,10 @@ export async function disconnectCatalogStub(formData: FormData) {
     // Catalog row is enough for the badge.
   }
   revalidateIntegrationSurfaces();
-  redirect(`/settings/integrations?notice=disconnected&provider=${provider.id}`);
+  const next = safeIntegrationReturn(String(formData.get("next") ?? ""));
+  redirect(`${next}?notice=disconnected&provider=${provider.id}`);
+}
+
+function safeIntegrationReturn(raw: string): "/settings/integrations" | "/settings/social" {
+  return raw === "/settings/social" ? "/settings/social" : "/settings/integrations";
 }

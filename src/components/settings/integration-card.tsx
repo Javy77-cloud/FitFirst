@@ -6,9 +6,11 @@ import type { CatalogItem } from "@/lib/integrations/catalog-store";
 export function IntegrationCard({
   item,
   canEdit,
+  returnTo = "/settings/integrations",
 }: {
   item: CatalogItem;
   canEdit: boolean;
+  returnTo?: "/settings/integrations" | "/settings/social";
 }) {
   return (
     <article
@@ -50,6 +52,7 @@ export function IntegrationCard({
           item.connected ? (
             <form action={disconnectCatalogStub}>
               <input type="hidden" name="provider" value={item.id} />
+              <input type="hidden" name="next" value={returnTo} />
               <Button type="submit" size="sm" variant="outline">
                 Disconnect
               </Button>
@@ -57,6 +60,7 @@ export function IntegrationCard({
           ) : (
             <form action={connectCatalogStub}>
               <input type="hidden" name="provider" value={item.id} />
+              <input type="hidden" name="next" value={returnTo} />
               <Button type="submit" size="sm">
                 Connect stub
               </Button>

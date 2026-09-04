@@ -13,6 +13,11 @@ export const LEAD_SOURCES = [
   "dec_drop",
   "email_stub",
   "social_stub",
+  "facebook",
+  "instagram",
+  "x",
+  "linkedin",
+  "google_business_profile",
 ] as const;
 
 export const LEAD_LANGUAGES = [

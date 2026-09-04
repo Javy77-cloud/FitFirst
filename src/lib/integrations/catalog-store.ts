@@ -116,6 +116,7 @@ export async function listCatalogByCategory(): Promise<
     "phone_sms",
     "video",
     "esign",
+    "social",
   ];
   return order.map((category) => ({
     category,

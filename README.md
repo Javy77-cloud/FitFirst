@@ -4,7 +4,9 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch3-7pm` (batch-3 consolidate on `cursor/mac-ready-overnight-3bad`)
+**Mac desk-test branch (batch 3):** `cursor/mac-ready-batch3-7pm`
+
+**Side branch (batch 4 — social + GBP):** `cursor/mac-ready-batch4-social-d88f`
 
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
@@ -21,8 +23,8 @@ Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-git fetch origin cursor/mac-ready-batch3-7pm
-git checkout -B cursor/mac-ready-batch3-7pm origin/cursor/mac-ready-batch3-7pm
+git fetch origin cursor/mac-ready-batch4-social-d88f
+git checkout -B cursor/mac-ready-batch4-social-d88f origin/cursor/mac-ready-batch4-social-d88f
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
 npm install
@@ -31,7 +33,9 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Hard-refresh Chrome. Open a Contact (no Ask panel; opt-outs + Email/Call/SMS). Open Leads and confirm deal stage. Column picker on Leads includes every New Lead field.
+Hard-refresh Chrome. Settings → Social: Facebook / Instagram / GBP are seeded connected. As Maya, GBP is locked until Javy saves **Allow agents to monitor GBP**. Social pulse and Home show demo numbers. Open as Lead from an Instagram inquiry lands on Priya Shah.
+
+Batch 3 Mac desk-test (no social) stays on `cursor/mac-ready-batch3-7pm`. Do not edit the Ana Dib fixture.
 
 If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.
 
@@ -84,7 +88,9 @@ List sheets share one header control: click a column to sort A→Z / Z→A, or o
 
 Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim**. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
 
-Settings has a nested left menu: Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency, and Admin vs Agent prefs. The catalog lists Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Google Meet, DocuSign, and Dropbox Sign. Each card is bring-your-own (agency pays) with a **Connect stub** and **Not connected** / **Connected (stub)** badges. No live OAuth. No Zoho.
+Settings has a nested left menu: Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency, and Admin vs Agent prefs. The catalog lists Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Google Meet, DocuSign, Dropbox Sign, plus Facebook, Instagram, X, LinkedIn, and Google Business Profile. Each card is bring-your-own (agency pays) with a **Connect stub** and **Not connected** / **Connected (stub)** badges. No live OAuth. No Zoho.
+
+**Social pulse** (`/social` and the Home widget) shows demo followers / engagement / views after a connect stub. Seed connects Facebook, Instagram, and GBP. **GBP policy:** Admin must toggle **Allow agents to monitor GBP** before agents see listing numbers or GBP inquiries. Inbound social asks open as Leads (same path as Stub social lead).
 
 Settings → Lines: hide Life or Health for agencies that do not write those books (pipeline switcher and filters follow). One Pipeline nav row — Life and Health stay as tabs on `/pipeline`. Life chips default to Term / Whole / IUL / Final Expense. Health chips default to Marketplace / Medicare Advantage / Medicare A&B / Supplemental. Selling Agency picklists stay off unless you turn them on in Settings.
 
@@ -140,7 +146,8 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 - **Phone call log** (`/phone`) — duration + outcome, attached like platform auto-activity. Admin **Phone line** settings are a Twilio/BYO stub. No PSTN.
 - **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
-- **Integrations catalog** (`/settings/integrations`) — BYO providers (Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Meet, DocuSign, Dropbox Sign). Connect stub only. Agency pays. No Zoho. No live OAuth.
+- **Integrations catalog** (`/settings/integrations`) — BYO providers (Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Meet, DocuSign, Dropbox Sign, Facebook, Instagram, X, LinkedIn, Google Business Profile). Connect stub only. Agency pays. No Zoho. No live OAuth.
+- **Social / GBP** (`/settings/social`, `/social`) — connect stubs + pulse. Admin gate on GBP before agents monitor. Inquiries → Lead. No vendor spend.
 - **Alerts** stay in-desk (asks + work-queue pings).
 - **Meetings** from a pipeline card: Video-call, In-Home, or In-Office. Settings → Communications stores Zoom / Meet / BYO stubs plus the agency office and each agent’s meeting address.
 

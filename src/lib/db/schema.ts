@@ -128,6 +128,8 @@ export const agencySettings = pgTable(
     meetUrl: text("meet_url"),
     byoVideoUrl: text("byo_video_url"),
     videoProvider: text("video_provider").notNull().default("none"),
+    /** Admin must enable this before agents can see GBP pulse / inquiries. */
+    allowAgentsMonitorGbp: boolean("allow_agents_monitor_gbp").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],

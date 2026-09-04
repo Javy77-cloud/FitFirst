@@ -15,6 +15,7 @@ import {
   Kanban,
   ListChecks,
   Search,
+  Share2,
   Shield,
   Users,
   Wallet,
@@ -25,6 +26,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/get-started", label: "Get Started", icon: ListChecks },
   { href: "/", label: "Home", icon: Home },
+  { href: "/social", label: "Social", icon: Share2 },
   { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/deals", label: "Deals", icon: ClipboardList },

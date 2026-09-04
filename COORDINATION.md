@@ -468,3 +468,14 @@ Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Ana fixture untouched
 - **E-sign stubs:** Settings → E-sign. DocuSign and Dropbox Sign BYO. No vendor keys. Signed apps still attach on the Deal.
 
 Migration `0015_esign_settings`.
+
+## BATCH4 social + GBP connectors (`cursor/mac-ready-batch4-social-d88f`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`#c5ddf4`). No live OAuth. No vendor spend.
+
+- Settings → Social / Integrations catalog: Facebook, Instagram, X, LinkedIn, Google Business Profile connect/disconnect stubs. BYO — agency pays.
+- `/social` pulse + Home widget: demo followers / engagement / views after a connect stub. Seed connects FB, IG, GBP.
+- Inbound inquiry → Lead via `findOrCreateLead` (Priya Shah Instagram is the existing stub path).
+- GBP Admin gate: `agency_settings.allow_agents_monitor_gbp` (default false). Agents see a locked GBP card until Admin enables monitoring.
+
+Migration `0021_social_gbp`.

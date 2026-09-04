@@ -37,6 +37,11 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/businesses/abc", "/accounts")).toBe(true);
   });
 
+  it("highlights Social on the pulse page", () => {
+    expect(navItemIsActive("/social", "/social")).toBe(true);
+    expect(navItemIsActive("/", "/social")).toBe(false);
+  });
+
   it("highlights Settings on nested settings pages", () => {
     expect(navItemIsActive("/settings", "/settings")).toBe(true);
     expect(navItemIsActive("/settings/phone", "/settings")).toBe(true);
