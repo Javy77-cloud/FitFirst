@@ -153,7 +153,7 @@ npm test
 ## Known leftovers
 
 - `/documents` still 500 (`Object.entries` on null). Not a NAV item.
-- `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names). Desk routes compile under Turbopack.
+- `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names). `npm run build` is green because Next skips that leftover (`typescript.ignoreBuildErrors`). Desk routes compile under Turbopack.
 - `/phone` is a call log + trunk stub. No PSTN. Google Calendar stays a stub.
 - Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.
 - Search is substring, so `Ana` also lists Camila.
