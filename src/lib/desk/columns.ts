@@ -199,6 +199,14 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "due", label: "Task due", defaultOn: true },
     { key: "priority", label: "Priority", defaultOn: true },
   ],
+  "queue-portal": [
+    { key: "kind", label: "Kind", defaultOn: true },
+    { key: "item", label: "Request", defaultOn: true },
+    { key: "policy", label: "Policy", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "submitted", label: "Submitted", defaultOn: true },
+    { key: "detail", label: "Payload", defaultOn: true },
+  ],
   pipeline: [
     { key: "title", label: "Deal", defaultOn: true },
     { key: "stage", label: "Stage", defaultOn: true },

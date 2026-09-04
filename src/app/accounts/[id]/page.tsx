@@ -33,6 +33,8 @@ import { einMaskFromRow } from "@/lib/pii/vault";
 import { MaskedPiiField } from "@/components/pii/masked-field";
 import { RenewalRiskCard } from "@/components/renewal-risk/risk-card";
 import { loadRenewalRiskForAccount } from "@/lib/renewal-risk/load";
+import { PortalLinkCard } from "@/components/desk/portal-link-card";
+import { findPortalTokenFor } from "@/lib/portal/session";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +83,7 @@ export default async function AccountDetailPage({
     partyName: account.name,
     quoteCount: 0,
   });
+  const portalToken = await findPortalTokenFor({ accountId: account.id });
 
   return (
     <AppShell title={account.name} eyebrow="Business record">
@@ -334,6 +337,11 @@ export default async function AccountDetailPage({
             collapsible={false}
           >
             <CertificatesList accountId={account.id} certificates={certificates} framed={false} />
+            {portalToken ? (
+              <div className="mt-4">
+                <PortalLinkCard token={portalToken.token} label={portalToken.label} />
+              </div>
+            ) : null}
           </RecordSection>
 
           {showAsk ? (

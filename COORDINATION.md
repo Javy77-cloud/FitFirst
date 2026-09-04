@@ -700,6 +700,19 @@ Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_commission_reconciliat
 
 **Seed shortfalls:** Shah HO (Maya) $180 / $215.60 short; Hale HO (Javy) $198 / $262.08 short; Harbor GL (Javy) $250 / $318.12 short; Elena Ruiz HO (Maya) disputed — missing AFA statement. Paid rows seed as earned. Ana is not in this set.
 
+## DIFF F — Client portal stubs (`cursor/client-portal-stubs-3bd3`)
+
+Last differentiator pack merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_client_portal` remapped to `0045_client_portal`. Portal token PKs remapped off version-history `b036…` to `b045…`. Ana fixture untouched (unbound, Cov A **$321,000**). **No Ana token.** One Pipeline. Sidebar hex unchanged.
+
+Public / token self-serve pages. Stub auth is the token in the URL — no desk password.
+
+- `/portal` landing (agency brand) plus `/portal/[token]` home, ID cards, COI, policy change.
+- Seeded tokens: Elena `elena-ruiz-2026` (ID card + change), Harbor `harbor-key-2026` (reuse `COI-20260820-0001` or request a new holder).
+- Reuses the existing `CertificateStub` + `issued_certificates` row. Matching holder name reuses the stub and does not queue a duplicate.
+- New COI / policy-change submissions write `portal_requests` and enqueue the existing policy work item + note + in-app task. The note has every field so the desk does not rekey. Does **not** call `filePolicyChange` (policy stays as-is until the desk files it).
+- ID card: branded stub from the in-force policy; download uses the issued `policy_file` / `policy_id` document via `/api/portal/[token]/files/[id]`.
+- Desk: stub link on Elena Contact, Harbor Business, and those Policies. Work queue has a Client portal requests section.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0044**. Diff H added no migration. Next free additive migration is **0045**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running client portal (`cursor/client-portal-stubs-3bd3` exists but the bot is still running). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

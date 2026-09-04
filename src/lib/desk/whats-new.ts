@@ -9,6 +9,12 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+    id: "client-portal",
+    title: "Client portal stubs",
+    body: "Insureds open a token link for an ID card, a COI, or a policy-change request. The desk gets a work-queue row with every field filled. Ana has no token and stays shopping.",
+    date: "2026-09-04",
+  },
+  {
     id: "commission-recon",
     title: "Commission reconciliation",
     body: "Admin marks expected vs received as short, disputed, or match. Agents see only their own earned / pending / disputed. Ana stays $0 and unbound.",

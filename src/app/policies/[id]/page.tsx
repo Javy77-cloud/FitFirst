@@ -32,6 +32,8 @@ import {
   insuranceFamilyFromPolicy,
   type InsuranceFamily,
 } from "@/lib/desk/policy-family";
+import { PortalLinkCard } from "@/components/desk/portal-link-card";
+import { findPortalTokenFor } from "@/lib/portal/session";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +67,10 @@ export default async function PolicyDetailPage({
     effectiveDate: policy.effectiveDate,
   });
   const thisCommission = await sumCommissionsForPolicies([policy.id]);
+  const portalToken = await findPortalTokenFor({
+    contactId: contact?.id,
+    accountId: account?.id,
+  });
   const [commission] = await db
     .select()
     .from(commissions)
@@ -231,6 +237,11 @@ export default async function PolicyDetailPage({
             Compare renewal
           </Link>
         </div>
+        {portalToken ? (
+          <div className="mt-4">
+            <PortalLinkCard token={portalToken.token} label={portalToken.label} />
+          </div>
+        ) : null}
       </RecordSection>
     </AppShell>
   );

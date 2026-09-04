@@ -2396,3 +2396,50 @@ export type UserOffice = typeof userOffices.$inferSelect;
 export type UserTerritory = typeof userTerritories.$inferSelect;
 export type LeadRoutingRule = typeof leadRoutingRules.$inferSelect;
 export type LeadRoutingLog = typeof leadRoutingLogs.$inferSelect;
+
+export const portalTokens = pgTable(
+  "portal_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    token: text("token").notNull(),
+    label: text("label").notNull(),
+    kind: text("kind").notNull().default("personal"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id").references(() => accounts.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("portal_tokens_token_uidx").on(t.tenantId, t.token),
+    index("portal_tokens_contact_idx").on(t.tenantId, t.contactId),
+    index("portal_tokens_account_idx").on(t.tenantId, t.accountId),
+  ],
+);
+
+export const portalRequests = pgTable(
+  "portal_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    tokenId: uuid("token_id").references(() => portalTokens.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id").references(() => accounts.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("open"),
+    summary: text("summary").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    workItemId: uuid("work_item_id"),
+    reusedCertificateId: uuid("reused_certificate_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("portal_requests_tenant_idx").on(t.tenantId, t.status),
+    index("portal_requests_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+export type PortalToken = typeof portalTokens.$inferSelect;
+export type PortalRequest = typeof portalRequests.$inferSelect;

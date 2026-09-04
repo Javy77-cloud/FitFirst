@@ -4,11 +4,11 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator + Diff H/G + Pack C + Diff J recon)
+**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator — last pack in)
 
-**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration), Diff G policy + document version timelines (`0042_policy_doc_versions`), Pack C lead routing + renewal-risk (`0043_lead_routing_renewal_risk`), and Diff J commission recon (`cursor/commission-recon-diffj-1757`, incoming `0036` remapped to `0044_commission_reconciliations`). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
+**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration), Diff G policy + document version timelines (`0042_policy_doc_versions`), Pack C lead routing + renewal-risk (`0043_lead_routing_renewal_risk`), Diff J commission recon (`0044_commission_reconciliations`), and Diff F client portal stubs (`cursor/client-portal-stubs-3bd3`, incoming `0036` remapped to `0045_client_portal`). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0045**. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0046**. See `COORDINATION.md`.
 
 **DIFF H:** Rule-based coverage-gap English on Contact / Business / Deal (auto-no-home, flood, umbrella, GL-no-WC — in-force only). Deal quote compare explains cheapest / deductibles / bindable in English. Closed Won is one-click **Contact + Policy** or **Business + Policy**. Documents stepper labels the master sheet → Fill path (zero rekey). Ana stays unbound at Cov A **$321,000**; `bindDeal` refuses that shop.
 
@@ -17,6 +17,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 **Pack C — lead routing + renewal-risk:** Admin Settings → Brand / Agency → Lead routing (territory + line + capacity). Home **Renewal-risk flags** plus Contact / Business Overview cards. Hale HO is Critical; Ana has 0 policies so no score. Incoming `0036_lead_routing_renewal_risk` remapped to `0043_lead_routing_renewal_risk`.
 
 **DIFF J — commission recon:** Admin `/commissions` is expected vs received (mark short / disputed / match by hand; no carrier download). Agent sees own earned / pending / disputed only. Seeded shortfalls: Shah HO, Hale HO, Harbor GL; Elena Ruiz HO disputed. Ana stays $0 / unbound. Incoming `0036_commission_reconciliations` remapped to `0044_commission_reconciliations`.
+
+**DIFF F — client portal stubs:** Public `/portal` + token URLs for ID cards, COI, and policy-change requests. Seeded Elena `elena-ruiz-2026` and Harbor `harbor-key-2026`. **No Ana token.** Desk links on Elena Contact / Harbor Business / those Policies. Work queue lists portal requests. Incoming `0036_client_portal` remapped to `0045_client_portal`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -53,6 +55,8 @@ Policies are Life / Health / P&C with family fields, Zoho-style auto name, statu
 **E&O Compliance (Admin):** `/compliance` — append-only trail of client email / SMS / call / meeting / document view / reveal PII / policy change (who, when, what, record ids). Live gap flags: no activity 90 days before renewal, Bound/Pending missing a signed app, Quote Sent with no follow-up task. Flags also land in Alerts for Javy. Nothing emails. Agents cannot open the page.
 
 Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
+
+**Client portal (DIFF F):** Public token pages at `/portal` (no desk password). Elena `elena-ruiz-2026` views/downloads the HO3 ID card stub and submits a policy change. Harbor `harbor-key-2026` reuses `COI-20260820-0001` or requests a new holder. Requests write the full payload onto the work queue so the desk does not rekey. Agency name from Settings → Brand. Ana has no token. Additive `0036_client_portal`.
 
 ## Run locally (Mac)
 
@@ -113,6 +117,8 @@ Open [http://localhost:43147](http://localhost:43147). `/login` requires a **pas
 Leads are the person record (name, DOB, contact, address, insurance wanted). Deal-level document upload still requires an existing Deal name. The left-nav **Forms** row is now **Documents** (`/documents`). Inside: **Forms** (ACORD, cancellation, AOR, fillable + Scan & suggest) and **Library** (marketing, carrier flyers, appetite guides, misc). Folders nest; create, rename, and move stay inside one area. `/forms` redirects to Documents → Forms. Quote Sheet fill stays at `/forms/[slug]`. Ana stays untouched.
 
 Click path and leftover bugs live in `COORDINATION.md`.
+
+**Client portal stubs:** `/portal` (or login → Client portal). Elena ID card + change request. Harbor COI reuse / new request. Work queue shows the payload. Ana is not linked.
 
 **Settings → E-sign** is Admin BYO for DocuSign or Dropbox Sign (stub only). **Settings → Master risk** is the Admin appetite worksheet — not a Deal tab.
 

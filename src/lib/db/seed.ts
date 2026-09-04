@@ -61,6 +61,7 @@ import { seedEoAudit } from "./seed-eo-audit";
 import { seedCampaignSequences } from "./seed-campaign-sequences";
 import { seedApiTokens } from "./seed-api-tokens";
 import { seedPolicyDocVersions } from "./seed-versions";
+import { seedClientPortal } from "./seed-portal";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -532,4 +533,5 @@ export async function seed() {
   await seedLeadRoutingAndRenewalRisk();
   const { seedCommissionReconciliations } = await import("./seed-commission-recon");
   await seedCommissionReconciliations();
+  await seedClientPortal();
 }
