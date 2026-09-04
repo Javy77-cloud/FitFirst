@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
 import { listBoundPendingDeals, listDeals, type DealListFilter } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { DEAL_STAGES, LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
@@ -89,19 +90,20 @@ export default async function DealsPage({
         </p>
       ) : null}
       <section className="ff-card overflow-hidden">
-        <table className="ff-table">
-          <thead>
-            <tr>
-              <th>Deal</th>
-              <th>Stage</th>
-              <th>Line</th>
-              <th>State</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((deal) => (
-              <tr key={deal.id}>
-                <td>
+        <ColumnTable
+          moduleId="deals"
+          columns={[
+            { id: "deal", label: "Deal", locked: true },
+            { id: "stage", label: "Stage" },
+            { id: "line", label: "Line" },
+            { id: "state", label: "State" },
+          ]}
+          empty="No deals match this filter."
+          rows={rows.map((deal) => ({
+            key: deal.id,
+            cells: {
+              deal: (
+                <>
                   <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
                     {deal.title}
                   </Link>
@@ -118,16 +120,14 @@ export default async function DealsPage({
                       </Link>
                     </div>
                   ) : null}
-                </td>
-                <td>
-                  <StagePill stage={deal.pipelineStage} />
-                </td>
-                <td>{deal.lineOfBusiness}</td>
-                <td>{deal.state}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </>
+              ),
+              stage: <StagePill stage={deal.pipelineStage} />,
+              line: deal.lineOfBusiness,
+              state: deal.state,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

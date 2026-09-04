@@ -167,6 +167,21 @@
 .ff-table tr:hover td {
   background: var(--ff-wash);
 }
+.ff-table .ff-col-manage {
+  position: sticky;
+  right: 0;
+  width: 2rem;
+  min-width: 2rem;
+  padding: 0.2rem 0.15rem;
+  text-align: right;
+  background: var(--ff-wash);
+}
+.ff-table td.ff-col-manage {
+  background: var(--card);
+}
+.ff-table tr:hover td.ff-col-manage {
+  background: var(--ff-wash);
+}
 
 .ff-completeness {
   border: 1px solid var(--ff-border);

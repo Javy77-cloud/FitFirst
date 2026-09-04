@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { matchesField, pickFilterParams } from "@/lib/saved-filters";
@@ -66,40 +67,31 @@ export default async function ContactsPage({
           </Button>
         </form>
         <section className="ff-card overflow-hidden">
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Lifetime</th>
-                <th>In-force</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-muted-foreground">
-                    Empty book. Bind a deal or add an existing client.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((c) => (
-                  <tr key={c.id}>
-                    <td className="font-medium">
-                      <RecordLink href={`/contacts/${c.id}`}>
-                        {c.lastName}, {c.firstName}
-                      </RecordLink>
-                    </td>
-                    <td>
-                      <ClientStatusPill status={c.clientStatus} />
-                    </td>
-                    <td>{c.policyCount}</td>
-                    <td>{c.activePolicyCount}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <ColumnTable
+            moduleId="contacts"
+            columns={[
+              { id: "name", label: "Name", locked: true },
+              { id: "status", label: "Status" },
+              { id: "lifetime", label: "Lifetime" },
+              { id: "inForce", label: "In-force" },
+            ]}
+            empty="Empty book. Bind a deal or add an existing client."
+            rows={rows.map((c) => ({
+              key: c.id,
+              cells: {
+                name: (
+                  <span className="font-medium">
+                    <RecordLink href={`/contacts/${c.id}`}>
+                      {c.lastName}, {c.firstName}
+                    </RecordLink>
+                  </span>
+                ),
+                status: <ClientStatusPill status={c.clientStatus} />,
+                lifetime: c.policyCount,
+                inForce: c.activePolicyCount,
+              },
+            }))}
+          />
         </section>
       </div>
     </AppShell>

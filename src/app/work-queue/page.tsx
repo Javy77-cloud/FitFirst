@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
@@ -51,69 +52,59 @@ export default async function WorkQueuePage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Needs attention
         </div>
-        {attention.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">Queue is clear.</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Kind</th>
-                <th>Item</th>
-                <th>Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attention.map((item) => (
-                <tr key={item.id}>
-                  <td className="uppercase">{item.kind.replaceAll("_", " ")}</td>
-                  <td>
-                    <Link href={item.href} className="font-medium text-primary hover:underline">
-                      {item.title}
-                    </Link>
-                  </td>
-                  <td className="text-base text-muted-foreground">{item.detail}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <ColumnTable
+          moduleId="work-queue-attention"
+          columns={[
+            { id: "kind", label: "Kind" },
+            { id: "item", label: "Item", locked: true },
+            { id: "detail", label: "Detail" },
+          ]}
+          empty="Queue is clear."
+          rows={attention.map((item) => ({
+            key: item.id,
+            cells: {
+              kind: <span className="uppercase">{item.kind.replaceAll("_", " ")}</span>,
+              item: (
+                <Link href={item.href} className="font-medium text-primary hover:underline">
+                  {item.title}
+                </Link>
+              ),
+              detail: <span className="text-base text-muted-foreground">{item.detail}</span>,
+            },
+          }))}
+        />
       </section>
 
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Bound / pending / lapse
         </div>
-        {open.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">Nothing waiting on the book.</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Status</th>
-                <th>Party</th>
-                <th>Expires</th>
-              </tr>
-            </thead>
-            <tbody>
-              {open.map(({ policy, contact, account }) => (
-                <tr key={policy.id}>
-                  <td>
-                    <Link
-                      href={`/policies/${policy.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {policy.policyNumber}
-                    </Link>
-                  </td>
-                  <td className="uppercase">{policy.status}</td>
-                  <td>{contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—"}</td>
-                  <td>{policy.expirationDate.toISOString().slice(0, 10)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <ColumnTable
+          moduleId="work-queue-policies"
+          columns={[
+            { id: "policy", label: "Policy", locked: true },
+            { id: "status", label: "Status" },
+            { id: "party", label: "Party" },
+            { id: "expires", label: "Expires" },
+          ]}
+          empty="Nothing waiting on the book."
+          rows={open.map(({ policy, contact, account }) => ({
+            key: policy.id,
+            cells: {
+              policy: (
+                <Link
+                  href={`/policies/${policy.id}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {policy.policyNumber}
+                </Link>
+              ),
+              status: <span className="uppercase">{policy.status}</span>,
+              party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
+              expires: policy.expirationDate.toISOString().slice(0, 10),
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

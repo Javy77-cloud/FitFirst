@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -46,40 +47,33 @@ export default async function ClaimsPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No claims on the book yet. Log one from a policy record when the slice seed is wired.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Carrier claim</th>
-                <th>Cause</th>
-                <th>Policy</th>
-                <th>Party</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ claim, policy, contact }) => (
-                <tr key={claim.id}>
-                  <td>
-                    <Link href={`/claims/${claim.id}`} className="font-medium text-primary hover:underline">
-                      {claim.status}
-                    </Link>
-                  </td>
-                  <td className="font-mono text-xs">{claim.carrierClaimNumber ?? "—"}</td>
-                  <td>{claim.causeType ?? "—"}</td>
-                  <td>{policy?.policyNumber ?? "—"}</td>
-                  <td>
-                    {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <ColumnTable
+          moduleId="claims"
+          columns={[
+            { id: "status", label: "Status", locked: true },
+            { id: "carrierClaim", label: "Carrier claim" },
+            { id: "cause", label: "Cause" },
+            { id: "policy", label: "Policy" },
+            { id: "party", label: "Party" },
+          ]}
+          empty="No claims on the book yet. Log one from a policy record when the slice seed is wired."
+          rows={rows.map(({ claim, policy, contact }) => ({
+            key: claim.id,
+            cells: {
+              status: (
+                <Link href={`/claims/${claim.id}`} className="font-medium text-primary hover:underline">
+                  {claim.status}
+                </Link>
+              ),
+              carrierClaim: (
+                <span className="font-mono text-xs">{claim.carrierClaimNumber ?? "—"}</span>
+              ),
+              cause: claim.causeType ?? "—",
+              policy: policy?.policyNumber ?? "—",
+              party: contact ? `${contact.lastName}, ${contact.firstName}` : "—",
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

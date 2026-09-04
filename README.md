@@ -23,6 +23,8 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 **Named list filters:** a slim bar under each list title (status/stage/line chips, Save as…). Saved in `localStorage` per module (`ff-saved-filters:v1:<module>`). On Leads, Deals, Policies, Contacts, Carriers, Businesses, plus Quotes, Claims, Tasks, and Work queue.
 
+**Column visibility:** a quiet sliders icon sits in the last header cell of each list table (not the page chrome). It opens a checklist of fields for that module. Choice is stored in `localStorage` (`ff-list-columns:v1:<module>`). Same modules as named filters; Work queue has two tables (`work-queue-attention`, `work-queue-policies`).
+
 Desk chrome: grouped sidebar (one section open), blue rail with an off-white active row, colored top-bar icons, search left of those icons, in-desk calendar, and **Choose files** on uploads. Start shop from a lead opens a shopping deal. Deal and lead pages use Quick Communications instead of the old quick log. **Support** is a floating Help center (not a sidebar module). Helper / process / cross-sell copy reads at ~15px (`text-base`). Ana Dib stays shopping / unbound / Cov A $321,000.
 
 Docker: `docker compose up --build` (same port).

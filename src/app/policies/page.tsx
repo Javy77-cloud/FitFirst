@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { listPolicies, type PolicyListFilter } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
@@ -101,48 +102,41 @@ export default async function PoliciesPage({
         </p>
       ) : null}
       <section className="ff-card overflow-hidden">
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No policies match. Bind a shopping deal when a market is actually written.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Status</th>
-                <th>Party</th>
-                <th>Carrier</th>
-                <th>Premium</th>
-                <th>Expires</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ policy, contact, account, carrier }) => (
-                <tr key={policy.id}>
-                  <td className="font-medium">
-                    <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                  </td>
-                  <td className="uppercase">{policy.status}</td>
-                  <td>
-                    {contact ? (
-                      <RecordLink href={`/contacts/${contact.id}`}>
-                        {contact.lastName}, {contact.firstName}
-                      </RecordLink>
-                    ) : account ? (
-                      <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td>{carrier?.name ?? "—"}</td>
-                  <td>{formatMoney(policy.premium)}</td>
-                  <td>{formatDay(policy.expirationDate)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <ColumnTable
+          moduleId="policies"
+          columns={[
+            { id: "policy", label: "Policy", locked: true },
+            { id: "status", label: "Status" },
+            { id: "party", label: "Party" },
+            { id: "carrier", label: "Carrier" },
+            { id: "premium", label: "Premium" },
+            { id: "expires", label: "Expires" },
+          ]}
+          empty="No policies match. Bind a shopping deal when a market is actually written."
+          rows={rows.map(({ policy, contact, account, carrier }) => ({
+            key: policy.id,
+            cells: {
+              policy: (
+                <span className="font-medium">
+                  <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
+                </span>
+              ),
+              status: <span className="uppercase">{policy.status}</span>,
+              party: contact ? (
+                <RecordLink href={`/contacts/${contact.id}`}>
+                  {contact.lastName}, {contact.firstName}
+                </RecordLink>
+              ) : account ? (
+                <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
+              ) : (
+                "—"
+              ),
+              carrier: carrier?.name ?? "—",
+              premium: formatMoney(policy.premium),
+              expires: formatDay(policy.expirationDate),
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

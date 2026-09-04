@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { formatMoney } from "@/lib/domain";
 import { listCarriers } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
@@ -43,32 +44,37 @@ export default async function CarriersPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
-        <table className="ff-table">
-          <thead>
-            <tr>
-              <th>Carrier</th>
-              <th>Portal</th>
-              <th>Cov A</th>
-              <th>Roof / coast / mobile</th>
-              <th>Don&apos;t write</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ carrier, rule }) => (
-              <tr key={`${carrier.id}-${rule?.id ?? "none"}`}>
-                <td className="font-medium">
+        <ColumnTable
+          moduleId="carriers"
+          columns={[
+            { id: "carrier", label: "Carrier", locked: true },
+            { id: "portal", label: "Portal" },
+            { id: "covA", label: "Cov A" },
+            { id: "rules", label: "Roof / coast / mobile" },
+            { id: "dontWrite", label: "Don't write" },
+          ]}
+          empty="No carriers match this filter."
+          rows={rows.map(({ carrier, rule }) => ({
+            key: `${carrier.id}-${rule?.id ?? "none"}`,
+            cells: {
+              carrier: (
+                <div className="font-medium">
                   {carrier.name}
                   <div className="text-base text-muted-foreground">
                     {(carrier.writtenLines ?? []).join(", ")}
                   </div>
-                </td>
-                <td className="uppercase">{carrier.portalStatus.replaceAll("_", " ")}</td>
-                <td className="text-xs">
-                  {rule
-                    ? `${formatMoney(rule.minCovA)} – ${formatMoney(rule.maxCovA)}`
-                    : "—"}
-                </td>
-                <td className="text-xs">
+                </div>
+              ),
+              portal: (
+                <span className="uppercase">{carrier.portalStatus.replaceAll("_", " ")}</span>
+              ),
+              covA: (
+                <span className="text-xs">
+                  {rule ? `${formatMoney(rule.minCovA)} – ${formatMoney(rule.maxCovA)}` : "—"}
+                </span>
+              ),
+              rules: (
+                <span className="text-xs">
                   {rule ? (
                     <>
                       max roof {rule.maxRoofAge ?? "—"}y · coast{" "}
@@ -78,12 +84,12 @@ export default async function CarriersPage({
                   ) : (
                     "—"
                   )}
-                </td>
-                <td className="text-xs">{carrier.dontWriteNotes}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </span>
+              ),
+              dontWrite: <span className="text-xs">{carrier.dontWriteNotes}</span>,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

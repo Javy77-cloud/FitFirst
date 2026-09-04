@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listReviewTasks } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
@@ -42,32 +43,27 @@ export default async function TasksPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
-        {tasks.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">No open review tasks.</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Due</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((task) => (
-                <tr key={task.id}>
-                  <td>
-                    <Link href={`/tasks/${task.id}`} className="font-medium text-primary hover:underline">
-                      {task.title}
-                    </Link>
-                  </td>
-                  <td>{task.dueDate.toISOString().slice(0, 10)}</td>
-                  <td>{task.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <ColumnTable
+          moduleId="tasks"
+          columns={[
+            { id: "task", label: "Task", locked: true },
+            { id: "due", label: "Due" },
+            { id: "status", label: "Status" },
+          ]}
+          empty="No open review tasks."
+          rows={tasks.map((task) => ({
+            key: task.id,
+            cells: {
+              task: (
+                <Link href={`/tasks/${task.id}`} className="font-medium text-primary hover:underline">
+                  {task.title}
+                </Link>
+              ),
+              due: task.dueDate.toISOString().slice(0, 10),
+              status: task.status,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

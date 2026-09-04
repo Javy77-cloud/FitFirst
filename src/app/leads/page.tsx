@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
+import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LEAD_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
@@ -113,51 +114,44 @@ export default async function LeadsPage({
         </div>
 
         <section className="ff-card overflow-hidden">
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Source</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-muted-foreground">
-                    {firstParam(params.status) || firstParam(params.source)
-                      ? "No leads match this filter."
-                      : "No leads yet."}
-                  </td>
-                </tr>
-              ) : (
-                rows.map((lead) => (
-                  <tr key={lead.id}>
-                    <td className="font-medium">
-                      <RecordLink href={`/leads/${lead.id}`}>
-                        {lead.lastName}, {lead.firstName}
-                      </RecordLink>
-                      <div className="text-base text-muted-foreground">
-                        {lead.phone ?? lead.email}
-                      </div>
-                    </td>
-                    <td className="uppercase">{lead.status}</td>
-                    <td>{lead.source}</td>
-                    <td>
-                      {lead.convertedDealId ? (
-                        <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
-                          Open deal
-                        </Link>
-                      ) : (
-                        <StartShopForm leadId={lead.id} />
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <ColumnTable
+            moduleId="leads"
+            columns={[
+              { id: "name", label: "Name", locked: true },
+              { id: "status", label: "Status" },
+              { id: "source", label: "Source" },
+              { id: "shop", label: "Shop" },
+            ]}
+            empty={
+              firstParam(params.status) || firstParam(params.source)
+                ? "No leads match this filter."
+                : "No leads yet."
+            }
+            rows={rows.map((lead) => ({
+              key: lead.id,
+              cells: {
+                name: (
+                  <div className="font-medium">
+                    <RecordLink href={`/leads/${lead.id}`}>
+                      {lead.lastName}, {lead.firstName}
+                    </RecordLink>
+                    <div className="text-base text-muted-foreground">
+                      {lead.phone ?? lead.email}
+                    </div>
+                  </div>
+                ),
+                status: <span className="uppercase">{lead.status}</span>,
+                source: lead.source,
+                shop: lead.convertedDealId ? (
+                  <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
+                    Open deal
+                  </Link>
+                ) : (
+                  <StartShopForm leadId={lead.id} />
+                ),
+              },
+            }))}
+          />
         </section>
       </div>
     </AppShell>
