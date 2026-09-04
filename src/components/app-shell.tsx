@@ -129,7 +129,7 @@ export async function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className="whitespace-nowrap text-primary">
+            <Link key={`${item.href}-${item.label}`} href={item.href} className="whitespace-nowrap text-primary">
               {item.label}
             </Link>
           ))}

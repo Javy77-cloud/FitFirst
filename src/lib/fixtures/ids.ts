@@ -297,12 +297,6 @@ export const EARNINGS_EVENT = {
   bellAuto: "bb444444-4444-4444-8444-000000000014",
   javyQ2: "bb444444-4444-4444-8444-000000000015",
 } as const;
-export const AGENCY_BRAND_ID = "e0121111-e012-4111-8111-e01211111101";
-export const EMAIL_SIGNATURE_ID = "e0121111-e012-4111-8111-e01211111102";
-export const AGENT_PREF_IDS = {
-  admin: "e0121111-e012-4111-8111-e01211111111",
-  agent: "e0121111-e012-4111-8111-e01211111112",
-} as const;
 
 export const CARRIER_GOAL_IDS = {
   americanIntegrity2026: "d0d00000-0000-4000-8000-000000000001",
@@ -351,13 +345,6 @@ export const SEEDED_DESK_AGENTS = [
   { id: DESK_AGENT_IDS.javy, slug: "javy", displayName: "Javy Garcia", role: "agent" },
   { id: DESK_AGENT_IDS.producer, slug: "producer", displayName: "Desk producer", role: "agent" },
 ] as const;
-
-export const AGENCY_BRAND_ID = "e0121111-e012-4111-8111-e01211111101";
-export const EMAIL_SIGNATURE_ID = "e0121111-e012-4111-8111-e01211111102";
-export const AGENT_PREF_IDS = {
-  admin: "e0121111-e012-4111-8111-e01211111111",
-  agent: "e0121111-e012-4111-8111-e01211111112",
-} as const;
 
 export const CARRIER_IDS = {
   qbe: "33333333-3333-4333-8333-333333333301",
