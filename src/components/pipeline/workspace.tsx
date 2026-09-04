@@ -25,7 +25,7 @@ export function PipelineWorkspace({
           : "Drag deals between columns. Collapse a stage when you do not need it. Bound already wrote the policy.";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-ff-pipe>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{hint}</p>
         <PipelineFieldPicker />

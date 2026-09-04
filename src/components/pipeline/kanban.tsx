@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useTransition, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { PipelineDealCard } from "@/components/pipeline/deal-card";
 import { cn } from "@/lib/utils";
@@ -39,8 +38,8 @@ export function PipelineKanban({
     window.localStorage.setItem(collapsedStorageKey(board.slug), JSON.stringify(next));
   }
 
-  function toggle(slug: string) {
-    persistCollapsed(collapsed.includes(slug) ? collapsed.filter((item) => item !== slug) : [...collapsed, slug]);
+  function toggle(slug: string, folded: boolean) {
+    persistCollapsed(folded ? [...new Set([...collapsed, slug])] : collapsed.filter((item) => item !== slug));
   }
 
   function dropOn(stageSlug: string, event: DragEvent) {
@@ -59,52 +58,62 @@ export function PipelineKanban({
       {columns.map((stage) => {
         const column =
           stage.slug === "_unstaged"
-            ? cards.filter((deal) => !known.has(deal.pipelineStageSlug ?? "") && !board.stages.some((item) => dealMatchesStage(deal, item.slug)))
+            ? cards.filter(
+                (deal) =>
+                  !known.has(deal.pipelineStageSlug ?? "") &&
+                  !board.stages.some((item) => dealMatchesStage(deal, item.slug)),
+              )
             : cards.filter((deal) => dealMatchesStage(deal, stage.slug));
         const folded = collapsed.includes(stage.slug);
+        const foldId = `fold-${board.slug}-${stage.slug}`;
         return (
-          <section
-            key={stage.id}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setOverSlug(stage.slug);
-            }}
-            onDragLeave={() => setOverSlug((current) => (current === stage.slug ? null : current))}
-            onDrop={(event) => dropOn(stage.slug, event)}
-            className={cn(
-              "ff-card flex shrink-0 flex-col overflow-hidden transition-[width]",
-              folded ? "w-11" : "w-72",
-              overSlug === stage.slug && "ring-2 ring-primary",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => toggle(stage.slug)}
-              aria-expanded={!folded}
-              aria-label={folded ? `Expand ${stage.name}` : `Collapse ${stage.name}`}
-              data-testid={`collapse-${stage.slug}`}
+          <div key={stage.id} className="relative shrink-0">
+            <input
+              key={`${foldId}-${folded}`}
+              id={foldId}
+              type="checkbox"
+              className="peer sr-only"
+              defaultChecked={folded}
+              onChange={(event) => toggle(stage.slug, event.target.checked)}
+            />
+            <section
+              onDragOver={(event) => {
+                event.preventDefault();
+                setOverSlug(stage.slug);
+              }}
+              onDragLeave={() => setOverSlug((current) => (current === stage.slug ? null : current))}
+              onDrop={(event) => dropOn(stage.slug, event)}
               className={cn(
-                "flex w-full items-center gap-2 border-b border-border bg-muted px-2 py-2 text-left hover:bg-card",
-                folded && "min-h-40 flex-col px-1 py-3",
+                "ff-card flex w-72 flex-col overflow-hidden transition-[width]",
+                "peer-checked:w-12",
+                "peer-checked:[&_[data-pipe-cards]]:hidden",
+                "peer-checked:[&_[data-pipe-collapse]]:hidden",
+                "peer-checked:[&_[data-pipe-expand]]:inline",
+                "peer-checked:[&_[data-pipe-head]]:min-h-44",
+                "peer-checked:[&_[data-pipe-head]]:flex-col",
+                "peer-checked:[&_[data-pipe-title]]:[writing-mode:vertical-rl]",
+                "peer-checked:[&_[data-pipe-title]]:rotate-180",
+                overSlug === stage.slug && "ring-2 ring-primary",
               )}
             >
-              {folded ? (
-                <ChevronRight className="size-4 shrink-0 text-navy" />
-              ) : (
-                <ChevronLeft className="size-4 shrink-0 text-navy" />
-              )}
-              <span
-                className={cn(
-                  "min-w-0 flex-1 text-sm font-semibold text-navy",
-                  folded && "write-vertical flex-none py-2 text-[11px]",
-                )}
+              <label
+                htmlFor={foldId}
+                data-testid={`collapse-${stage.slug}`}
+                data-pipe-head
+                className="flex cursor-pointer items-center gap-2 border-b border-border bg-muted px-2 py-2 text-left hover:bg-card"
               >
-                {stage.name}
-              </span>
-              <span className="text-[11px] text-muted-foreground">{column.length}</span>
-            </button>
-            {folded ? null : (
-              <div className="min-h-40 space-y-2 p-2">
+                <span data-pipe-collapse className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-semibold text-navy">
+                  Collapse
+                </span>
+                <span data-pipe-expand className="hidden rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-semibold text-navy">
+                  Expand
+                </span>
+                <span data-pipe-title className="min-w-0 flex-1 text-sm font-semibold text-navy">
+                  {stage.name}
+                </span>
+                <span className="text-[11px] text-muted-foreground">{column.length}</span>
+              </label>
+              <div data-pipe-cards className="min-h-40 space-y-2 p-2">
                 {column.length === 0 ? (
                   <p className="px-1 py-8 text-center text-xs text-muted-foreground">
                     Drop a deal here
@@ -120,8 +129,8 @@ export function PipelineKanban({
                   ))
                 )}
               </div>
-            )}
-          </section>
+            </section>
+          </div>
         );
       })}
     </div>
