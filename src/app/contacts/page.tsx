@@ -72,10 +72,6 @@ export default async function ContactsPage({
             <Label className="text-xs">Phone</Label>
             <Input name="phone" className="mt-1 h-8" />
           </div>
-          <div>
-            <Label className="text-xs">Email</Label>
-            <Input name="email" type="email" className="mt-1 h-8" />
-          </div>
           <Button type="submit" size="sm">
             Save contact
           </Button>
