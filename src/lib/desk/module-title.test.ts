@@ -8,6 +8,7 @@ describe("moduleTitleFromPath", () => {
     expect(moduleTitleFromPath("/leads")).toBe("Leads");
     expect(moduleTitleFromPath("/leads/new")).toBe("Leads");
     expect(moduleTitleFromPath("/contacts/abc")).toBe("Contacts");
+    expect(moduleTitleFromPath("/deals")).toBe("Deals");
     expect(moduleTitleFromPath("/deals/xyz")).toBe("Deals");
     expect(moduleTitleFromPath("/policies/p1")).toBe("Policies");
     expect(moduleTitleFromPath("/documents")).toBe("Documents");
