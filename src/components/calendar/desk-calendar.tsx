@@ -409,7 +409,10 @@ function HourRow({
                   e.dataTransfer.effectAllowed = "move";
                   onDragStart(item.id);
                 }}
-                onClick={() => onSelect(serializeCalendarActivity(item))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(serializeCalendarActivity(item));
+                }}
                 className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white ${kindClass(item.kind)}`}
                 style={{
                   height: Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4),
@@ -445,7 +448,10 @@ function EventChip({
         e.dataTransfer.effectAllowed = "move";
         onDragStart(event.id);
       }}
-      onClick={() => onSelect(serializeCalendarActivity(event))}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(serializeCalendarActivity(event));
+      }}
       className="block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-medium text-white"
       style={{ background: ACTIVITY_COLORS[event.kind] ?? "#5c6b7a" }}
     >
