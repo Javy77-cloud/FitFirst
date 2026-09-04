@@ -70,6 +70,7 @@ export async function AppShell({
   const unread = Number(count?.n ?? 0);
   const session = await currentDeskSession();
   const brand = await loadAgencyBrand();
+  const nav = NAV;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -93,7 +94,7 @@ export async function AppShell({
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const Icon = item.icon;
             return (
               <Link
@@ -131,7 +132,7 @@ export async function AppShell({
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link key={`${item.href}-${item.label}`} href={item.href} className="whitespace-nowrap text-primary">
               {item.label}
             </Link>

@@ -43,6 +43,7 @@ import { seedClaimsBook } from "./seed-claims";
 import { seedAutoBook } from "./seed-auto";
 import { seedBookRenewals } from "./seed-book-renewals";
 import { seedCommsDesk } from "./seed-comms";
+import { ensureDefaultLineSubfilters } from "./line-settings";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -436,4 +437,5 @@ export async function seed() {
   await seedAutoBook();
   await seedBookRenewals();
   await seedCommsDesk();
+  await ensureDefaultLineSubfilters();
 }

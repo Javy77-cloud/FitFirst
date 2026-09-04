@@ -57,7 +57,7 @@ export function AppetiteNotesPanel({
       </dl>
       <div className="mt-4">
         <h3 className="mb-2 text-sm font-semibold text-navy">Appointments</h3>
-        <AppointmentRows appointments={appointments} />
+        <AppointmentRows appointments={appointments} showSellingAgency={false} />
       </div>
     </section>
   );

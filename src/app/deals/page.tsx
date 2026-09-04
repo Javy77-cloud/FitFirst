@@ -9,7 +9,9 @@ import { DealRowComms } from "@/components/deal-row-comms";
 import { DeskDrop } from "@/components/desk-drop";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { listBoundPendingDeals, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +35,16 @@ export default async function DealsPage({
   const filter: DealListFilter = {
     stage: first(params.stage),
     attention: first(params.attention),
+    family: first(params.family),
+    pcSub: first(params.pcSub),
+    lifeSub: first(params.lifeSub),
+    healthSub: first(params.healthSub),
   };
-  const rows =
-    filter.attention === "bound_pending" ? await listBoundPendingDeals() : await listDeals(filter);
-  const users = await listUsersById();
+  const [rows, users, lineSettings] = await Promise.all([
+    filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
+    listUsersById(),
+    loadDeskLineSettings(),
+  ]);
   const hint =
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
@@ -55,6 +63,18 @@ export default async function DealsPage({
       columns={<ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
+      <BookFilterBar
+        action="/deals"
+        settings={lineSettings}
+        family={filter.family}
+        pcSub={filter.pcSub}
+        lifeSub={filter.lifeSub}
+        healthSub={filter.healthSub}
+        hidden={{
+          ...(filter.stage ? { stage: filter.stage } : {}),
+          ...(filter.attention ? { attention: filter.attention } : {}),
+        }}
+      />
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
         <DeskDrop compact />
         <div className="space-y-3">
@@ -82,7 +102,7 @@ export default async function DealsPage({
           <DecDropForm />
         </div>
       </div>
-      {filter.stage || filter.attention ? (
+      {filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
         <p className="mb-3 text-[12px]">
           <Link href="/deals" className="text-primary hover:underline">
             Clear filter

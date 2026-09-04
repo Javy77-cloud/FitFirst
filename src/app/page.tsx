@@ -4,15 +4,17 @@ import { OwnerDesk } from "@/components/home/owner-desk";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { markAlertRead } from "@/app/actions/alerts";
 import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { entityHref } from "@/lib/crm/display";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [{ snapshot, scope, tables }, { recentDeals, unread }] = await Promise.all([
+  const [{ snapshot, scope, tables }, { recentDeals, unread }, lineSettings] = await Promise.all([
     ownerHomeDashboard(),
     dashboardStats(),
+    loadDeskLineSettings(),
   ]);
 
   return (
@@ -24,7 +26,7 @@ export default async function HomePage() {
         </Link>
       }
     >
-      <OwnerDesk snapshot={snapshot} scope={scope} tables={tables} />
+      <OwnerDesk snapshot={snapshot} scope={scope} tables={tables} lineSettings={lineSettings} />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden">

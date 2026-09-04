@@ -23,6 +23,7 @@ export function CommissionFilters({
   carriers,
   agents,
   showAgent,
+  showSellingAgency = false,
 }: {
   view: CommissionView;
   range: CommissionRange;
@@ -35,6 +36,7 @@ export function CommissionFilters({
   carriers: Array<{ id: string; name: string }>;
   agents: Array<{ id: string; name: string }>;
   showAgent: boolean;
+  showSellingAgency?: boolean;
 }) {
   return (
     <form method="get" className="mb-4 grid gap-2 rounded-md border border-border bg-card p-3 sm:grid-cols-2 lg:grid-cols-7">
@@ -120,21 +122,23 @@ export function CommissionFilters({
       ) : (
         <div />
       )}
-      <label className="block text-[11px] text-muted-foreground">
-        Selling agency
-        <select
-          name="sellingAgency"
-          defaultValue={sellingAgency ?? ""}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        >
-          <option value="">All desks</option>
-          {SELLING_AGENCIES.map((row) => (
-            <option key={row.key} value={row.key}>
-              {row.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {showSellingAgency ? (
+        <label className="block text-[11px] text-muted-foreground">
+          Selling agency
+          <select
+            name="sellingAgency"
+            defaultValue={sellingAgency ?? ""}
+            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+          >
+            <option value="">All desks</option>
+            {SELLING_AGENCIES.map((row) => (
+              <option key={typeof row === "string" ? row : row.key} value={typeof row === "string" ? row : row.key}>
+                {typeof row === "string" ? row : row.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <div className="flex items-end gap-2 lg:col-span-7">
         <button
           type="submit"

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { MixBars } from "./mix-bars";
 import { MixDonut } from "./mix-donut";
 import { CrossSellPanel } from "./cross-sell";
+import { filterLineMix, type DeskLineSettings } from "@/lib/desk/line-settings";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -37,10 +38,12 @@ export function OwnerDesk({
   snapshot,
   scope,
   tables,
+  lineSettings,
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
   tables: OwnerHomeTables;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const asOf = snapshot.asOf.toLocaleString("en-US", {
     dateStyle: "medium",
@@ -178,7 +181,10 @@ export function OwnerDesk({
           <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
             In-force premium by policy type. Quotes are not written.
           </p>
-          <MixDonut slices={snapshot.lineMix} empty="No in-force policy types yet." />
+          <MixDonut
+            slices={lineSettings ? filterLineMix(snapshot.lineMix, lineSettings) : snapshot.lineMix}
+            empty="No in-force policy types yet."
+          />
         </section>
         <section className="ff-card p-3">
           <Header title="Carrier mix" href="/policies?status=in_force" action="Policies" />

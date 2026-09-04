@@ -119,9 +119,30 @@ export const agencySettings = pgTable(
     agencyName: text("agency_name"),
     logoPath: text("logo_path"),
     emailSignature: text("email_signature"),
+    writeLife: boolean("write_life").notNull().default(true),
+    writeHealth: boolean("write_health").notNull().default(true),
+    showSellingAgency: boolean("show_selling_agency").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
+);
+
+/** Configurable Life / Health book chips. Defaults seed Term/Whole/IUL/Final Expense and Marketplace/MA/A&B/Supplemental. */
+export const lineSubfilterOptions = pgTable(
+  "line_subfilter_options",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    book: text("book").notNull(),
+    slug: text("slug").notNull(),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index("line_subfilter_options_tenant_idx").on(t.tenantId, t.book),
+    uniqueIndex("line_subfilter_options_book_slug_uidx").on(t.tenantId, t.book, t.slug),
+  ],
 );
 
 export const leads = pgTable(
@@ -213,6 +234,7 @@ export const deals = pgTable(
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
     shopLines: jsonb("shop_lines").$type<string[]>().notNull().default(["home"]),
+    policySubType: text("policy_sub_type"),
     coverageAmount: integer("coverage_amount"),
     propertyOneliner: text("property_oneliner"),
     currentCarrier: text("current_carrier"),
@@ -1522,3 +1544,4 @@ export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
 export type SmsSettings = typeof smsSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
+export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;

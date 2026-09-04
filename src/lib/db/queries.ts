@@ -22,6 +22,12 @@ import {
 import { detectOwnerHomeTables } from "@/lib/home/optional-tables";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
+import {
+  fallbackPipelineSlug,
+  matchesLifeOrHealthSub,
+  visiblePipelineBoards,
+} from "@/lib/desk/line-settings";
+import { loadDeskLineSettings } from "./line-settings";
 import { db, sql as rawSql } from "./index";
 import {
   accounts,
@@ -298,9 +304,14 @@ export type DealListFilter = {
   stage?: string;
   attention?: string;
   ownerId?: string;
+  family?: string;
+  pcSub?: string;
+  lifeSub?: string;
+  healthSub?: string;
 };
 
 export async function listDeals(filter: DealListFilter = {}) {
+  const lineOptions = await loadDeskLineSettings();
   const rows = await db
     .select({
       deal: deals,
@@ -313,13 +324,32 @@ export async function listDeals(filter: DealListFilter = {}) {
     .where(eq(deals.tenantId, tenant()))
     .orderBy(desc(deals.updatedAt));
   return rows.filter(({ deal }) => {
+    const family = bookFamily(deal.lineOfBusiness);
+    if (family === "life" && !lineOptions.writeLife) return false;
+    if (family === "health" && !lineOptions.writeHealth) return false;
     const stage = deal.pipelineStage.toLowerCase();
     if (filter.ownerId && deal.ownerId !== filter.ownerId) return false;
     if (filter.attention === "bound_pending") return WON_STAGES.has(stage);
     if (filter.stage === "open") return OPEN_QUOTE_STAGES.has(stage);
     if (filter.stage === "quote_sent") return QUOTE_SENT_STAGES.has(stage);
     if (filter.stage === "won") return WON_STAGES.has(stage);
-    if (filter.stage) return stage === filter.stage.toLowerCase();
+    if (filter.stage && stage !== filter.stage.toLowerCase()) return false;
+    if (filter.family && family !== filter.family) return false;
+    if (filter.pcSub && filter.pcSub !== "all" && !isPcSubLine(deal.lineOfBusiness, filter.pcSub)) {
+      return false;
+    }
+    if (filter.lifeSub && filter.lifeSub !== "all") {
+      if (bookFamily(deal.lineOfBusiness) !== "life") return false;
+      if (!matchesLifeOrHealthSub(deal.policySubType, filter.lifeSub, lineOptions.lifeOptions)) {
+        return false;
+      }
+    }
+    if (filter.healthSub && filter.healthSub !== "all") {
+      if (bookFamily(deal.lineOfBusiness) !== "health") return false;
+      if (!matchesLifeOrHealthSub(deal.policySubType, filter.healthSub, lineOptions.healthOptions)) {
+        return false;
+      }
+    }
     return true;
   });
 }
@@ -396,12 +426,15 @@ export type PolicyListFilter = {
   attention?: string;
   family?: string;
   pcSub?: string;
+  lifeSub?: string;
+  healthSub?: string;
   ownerId?: string;
 };
 
 export async function listPolicies(filter: PolicyListFilter = {}) {
   const session = await currentDeskSession();
   const scope = ownerWhere(session, policies.ownerId);
+  const lineOptions = await loadDeskLineSettings();
   const rows = await db
     .select({
       policy: policies,
@@ -420,6 +453,9 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
 
   const asOf = DESK_AS_OF;
   return rows.filter(({ policy }) => {
+    const family = bookFamily(policy.lineOfBusiness);
+    if (family === "life" && !lineOptions.writeLife) return false;
+    if (family === "health" && !lineOptions.writeHealth) return false;
     const status = policy.status.toLowerCase();
     if (filter.attention === "lapse") return LAPSE_STATUSES.has(status);
     if (filter.status === "in_force") return IN_FORCE_STATUSES.has(status);
@@ -447,9 +483,27 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
       );
     }
     if (filter.ownerId && policy.ownerId !== filter.ownerId) return false;
-    if (filter.family && bookFamily(policy.lineOfBusiness) !== filter.family) return false;
+    if (filter.family && family !== filter.family) return false;
     if (filter.pcSub && filter.pcSub !== "all" && !isPcSubLine(policy.lineOfBusiness, filter.pcSub)) {
       return false;
+    }
+    if (filter.lifeSub && filter.lifeSub !== "all") {
+      if (bookFamily(policy.lineOfBusiness) !== "life") return false;
+      if (!matchesLifeOrHealthSub(policy.policySubType ?? policy.formType, filter.lifeSub, lineOptions.lifeOptions)) {
+        return false;
+      }
+    }
+    if (filter.healthSub && filter.healthSub !== "all") {
+      if (bookFamily(policy.lineOfBusiness) !== "health") return false;
+      if (
+        !matchesLifeOrHealthSub(
+          policy.policySubType ?? policy.formType,
+          filter.healthSub,
+          lineOptions.healthOptions,
+        )
+      ) {
+        return false;
+      }
     }
     if (filter.line) return policy.lineOfBusiness.toUpperCase() === filter.line.toUpperCase();
     if (filter.carrier) return policy.carrierId === filter.carrier;
@@ -999,12 +1053,14 @@ export async function listPipelines() {
   }));
 }
 
-export async function getPipelineBoard(slug: string) {
+export async function getPipelineBoard(slug: string, sub?: { lifeSub?: string; healthSub?: string }) {
   const { ensureSeededPipelines } = await import("@/lib/wire/ensure-pipelines");
   const { dealMatchesBoard, switcherBoards } = await import("@/lib/wire/pipeline");
   await ensureSeededPipelines();
-  const boards = switcherBoards(await listPipelines());
-  const board = boards.find((row) => row.slug === slug) ?? boards[0] ?? null;
+  const lineSettings = await loadDeskLineSettings();
+  const boards = visiblePipelineBoards(switcherBoards(await listPipelines()), lineSettings);
+  const wanted = fallbackPipelineSlug(slug, lineSettings);
+  const board = boards.find((row) => row.slug === wanted) ?? boards[0] ?? null;
   if (!board) return null;
   const rows = await db
     .select({
@@ -1032,7 +1088,16 @@ export async function getPipelineBoard(slug: string) {
   return {
     board,
     boards,
-    cards,
+    lineSettings,
+    cards: cards.filter((row) => {
+      if (board.slug === "life" && sub?.lifeSub && sub.lifeSub !== "all") {
+        return matchesLifeOrHealthSub(row.deal.policySubType, sub.lifeSub, lineSettings.lifeOptions);
+      }
+      if (board.slug === "health" && sub?.healthSub && sub.healthSub !== "all") {
+        return matchesLifeOrHealthSub(row.deal.policySubType, sub.healthSub, lineSettings.healthOptions);
+      }
+      return true;
+    }),
   };
 }
 

@@ -349,6 +349,17 @@ Owner: this slice. Additive only. Mirrors Contact UX from `cursor/contact-record
 - Shared `RecordSection` / `LocationsList` / `CertificatesList` / `RecordAskPanel` / `RecordComms` stay backward compatible (`collapsible`, `framed`, `hideWhenNotAdmin` default to the old Contact/Policy behavior).
 - Contact 360 is unchanged. Ana fixture untouched. Harbor Key Marine LLC stays **Client** (lifetime 1 / in-force 1, `GL-HARBOR-2026`, COI stub). Ruiz Tile stays Elena’s linked business with **0** commercial policies. No live Zoho.
 
+## Life / Health subfilters + LOB toggles (`cursor/life-health-lob-agency-8c04`)
+
+Owner: this slice. Additive only. Did not edit the Ana fixture. Did not bind Ana. No Zoho.
+
+- Configurable Life chips: Term Life, Whole Life, IUL, Final Expense (`line_subfilter_options`).
+- Configurable Health chips: Marketplace, Medicare Advantage, Medicare A&B, Supplemental.
+- Settings → Lines: add/delete those options. Admin only.
+- Settings toggles hide Life, Health, or both. Pipeline switcher and book filters on Policies / Deals follow the toggles. Hidden board URLs fall back to P-C. Sidebar keeps **one Pipeline row**.
+- Selling Agency picklists are off by default. Settings can turn them back on for multi selling-agency desks. Stored `selling_agency` values are kept as hidden fields when the picklists are off.
+- Additive schema: `agency_settings.write_life` / `write_health` / `show_selling_agency`, `deals.policy_sub_type`, table `line_subfilter_options`. Migration `0013_line_settings`.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

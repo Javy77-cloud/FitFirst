@@ -92,6 +92,13 @@
       "when": 1788478000000,
       "tag": "0012_leads_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788478100000,
+      "tag": "0013_line_settings",
+      "breakpoints": true
     }
   ]
 }

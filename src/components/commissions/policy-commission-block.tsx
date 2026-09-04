@@ -109,9 +109,11 @@ function applyLineDefaults(
 export function PolicyCommissionBlock({
   values,
   readOnly,
+  showSellingAgency = false,
 }: {
   values: PolicyCommissionBlockValues;
   readOnly?: boolean;
+  showSellingAgency?: boolean;
 }) {
   const [rateLocked, setRateLocked] = useState(false);
   const [freqLocked, setFreqLocked] = useState(false);
@@ -158,9 +160,10 @@ export function PolicyCommissionBlock({
         <div>
           <h2 className="text-sm font-semibold text-navy">Policy commission</h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            Enter Selling Agency, line, and GWP. Rate % fills from the live desk
-            (agency + line). TAC, initial, deferred, and monthly fill themselves —
-            do not retype them. No New-vs-Renewal field. Nothing writes to Zoho.
+            Enter line and GWP. Rate % fills from the live desk (agency + line).
+            TAC, initial, deferred, and monthly fill themselves — do not retype
+            them. No New-vs-Renewal field. Selling Agency stays off this form
+            unless Settings turns the picklists on.
           </p>
         </div>
         {form.commissionId && form.producerStatus ? (
@@ -179,21 +182,23 @@ export function PolicyCommissionBlock({
 
         <p className="text-[11px] font-semibold uppercase tracking-wide text-navy">You enter</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Selling agency">
-            <select
-              aria-label="Selling agency"
-              className={selectClass}
-              value={form.sellingAgency}
-              disabled={readOnly}
-              onChange={(e) => setLine({ sellingAgency: e.target.value })}
-            >
-              {SELLING_AGENCIES.map((row) => (
-                <option key={row.key} value={row.key}>
-                  {row.label}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {showSellingAgency ? (
+            <Field label="Selling agency">
+              <select
+                aria-label="Selling agency"
+                className={selectClass}
+                value={form.sellingAgency}
+                disabled={readOnly}
+                onChange={(e) => setLine({ sellingAgency: e.target.value })}
+              >
+                {SELLING_AGENCIES.map((row) => (
+                  <option key={row} value={row}>
+                    {row}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
           <Field label="Insurance type">
             <select
               aria-label="Insurance type"

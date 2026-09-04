@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney, SELLING_AGENCIES } from "@/lib/domain";
 import { getPolicyWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { ClickToCall } from "@/components/click-to-call";
 import { RecordAskPanel } from "@/components/record-ask";
@@ -35,11 +36,12 @@ export default async function PolicyDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, asks, users] = await Promise.all([
+  const [workspace, templates, asks, users, lineSettings] = await Promise.all([
     getPolicyWorkspace(id),
     listEmailTemplates(),
     listRecordAsks("policy", id),
     listDeskUsers(),
+    loadDeskLineSettings(),
   ]);
   if (!workspace) notFound();
   const { policy, contact, account, carrier, deal, risk, files, timeline, vehicles } = workspace;
@@ -160,23 +162,63 @@ export default async function PolicyDetailPage({
           </div>
           <div>
             <Label className="text-xs">Sub-type</Label>
-            <Input name="policySubType" defaultValue={policy.policySubType ?? policy.formType ?? ""} className="mt-1 h-8" />
+            {policy.lineOfBusiness === "LIFE" && lineSettings.writeLife ? (
+              <select
+                name="policySubType"
+                defaultValue={policy.policySubType ?? ""}
+                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              >
+                <option value="">—</option>
+                {lineSettings.lifeOptions.map((option) => (
+                  <option key={option.slug} value={option.label}>
+                    {option.label}
+                  </option>
+                ))}
+                {policy.policySubType &&
+                !lineSettings.lifeOptions.some((option) => option.label === policy.policySubType) ? (
+                  <option value={policy.policySubType}>{policy.policySubType}</option>
+                ) : null}
+              </select>
+            ) : policy.lineOfBusiness === "HEALTH" && lineSettings.writeHealth ? (
+              <select
+                name="policySubType"
+                defaultValue={policy.policySubType ?? ""}
+                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              >
+                <option value="">—</option>
+                {lineSettings.healthOptions.map((option) => (
+                  <option key={option.slug} value={option.label}>
+                    {option.label}
+                  </option>
+                ))}
+                {policy.policySubType &&
+                !lineSettings.healthOptions.some((option) => option.label === policy.policySubType) ? (
+                  <option value={policy.policySubType}>{policy.policySubType}</option>
+                ) : null}
+              </select>
+            ) : (
+              <Input name="policySubType" defaultValue={policy.policySubType ?? policy.formType ?? ""} className="mt-1 h-8" />
+            )}
           </div>
-          <div>
-            <Label className="text-xs">Selling agency</Label>
-            <select
-              name="sellingAgency"
-              defaultValue={policy.sellingAgency ?? ""}
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            >
-              <option value="">—</option>
-              {SELLING_AGENCIES.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {lineSettings.showSellingAgency ? (
+            <div>
+              <Label className="text-xs">Selling agency</Label>
+              <select
+                name="sellingAgency"
+                defaultValue={policy.sellingAgency ?? ""}
+                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              >
+                <option value="">—</option>
+                {SELLING_AGENCIES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <input type="hidden" name="sellingAgency" value={policy.sellingAgency ?? ""} />
+          )}
           <div>
             <Label className="text-xs">Insurance family</Label>
             <select

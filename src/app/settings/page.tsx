@@ -9,6 +9,8 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
 import { listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
+import { SettingsSubnav } from "@/components/templates/email-activity";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,17 @@ export default async function SettingsPage() {
 
   return (
     <AppShell title="Settings">
+      <SettingsSubnav current="hub" />
+      <section className="ff-card mb-4 max-w-2xl p-4">
+        <h2 className="text-sm font-semibold text-navy">Lines of business</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Life and Health subfilters, hide a book this agency does not write, and the optional
+          selling-agency picklists.
+        </p>
+        <Link href="/settings/lines" className="mt-3 inline-block text-sm text-primary hover:underline">
+          Open line settings
+        </Link>
+      </section>
       <section className="ff-card mb-4 max-w-2xl p-4">
         <h2 className="text-sm font-semibold text-navy">Phone line</h2>
         <p className="mt-2 text-sm text-muted-foreground">
