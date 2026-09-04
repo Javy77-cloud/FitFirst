@@ -33,6 +33,7 @@ export function RecordComms({
   phone,
   email,
   templates = [],
+  autoSaveHint = false,
 }: {
   contactId?: string | null;
   accountId?: string | null;
@@ -42,10 +43,17 @@ export function RecordComms({
   phone?: string | null;
   email?: string | null;
   templates?: EmailTemplate[];
+  autoSaveHint?: boolean;
 }) {
   const related = { contactId, accountId, policyId, dealId, leadId };
   return (
     <div className="space-y-4">
+      {autoSaveHint ? (
+        <p className="text-xs text-muted-foreground">
+          Send or file from this record. Each email, text, call, meeting, or task saves onto the
+          Timeline. There is no typed activity log.
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {phone ? (
           <a href={`tel:${phone}`} className="rounded-md border border-border px-2.5 py-1 text-sm text-primary">

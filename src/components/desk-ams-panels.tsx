@@ -1,33 +1,42 @@
 import Link from "next/link";
 import type { IssuedCertificate, Location, Vehicle } from "@/lib/db/schema";
 
-export function LocationsList({ locations }: { locations: Location[] }) {
+export function LocationsList({
+  locations,
+  framed = true,
+}: {
+  locations: Location[];
+  framed?: boolean;
+}) {
+  const empty = (
+    <p className={framed ? "px-4 py-6 text-sm text-muted-foreground" : "text-sm text-muted-foreground"}>
+      No premises on this 360 yet. Home, landlord, flood, and commercial hang off a street address
+      — not a Zillow value.
+    </p>
+  );
+  const list = (
+    <ul className="divide-y divide-border">
+      {locations.map((location) => (
+        <li key={location.id} className={framed ? "px-4 py-3 text-sm" : "py-3 text-sm first:pt-0"}>
+          <div className="font-medium text-navy">
+            {location.label || location.address1 || location.street || "Location"}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {[location.address1 || location.street, location.city, location.state, location.zip]
+              .filter(Boolean)
+              .join(", ") || "No street on file"}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+  if (!framed) return locations.length === 0 ? empty : list;
   return (
     <section className="ff-card mb-4 overflow-hidden">
       <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
         Insured locations
       </div>
-      {locations.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">
-          No premises on this 360 yet. Home, landlord, flood, and commercial hang off a street
-          address — not a Zillow value.
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {locations.map((location) => (
-            <li key={location.id} className="px-4 py-3 text-sm">
-              <div className="font-medium text-navy">
-                {location.label || location.address1 || location.street || "Location"}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {[location.address1 || location.street, location.city, location.state, location.zip]
-                  .filter(Boolean)
-                  .join(", ") || "No street on file"}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      {locations.length === 0 ? empty : list}
     </section>
   );
 }
@@ -71,37 +80,42 @@ export function VehiclesList({ vehicles }: { vehicles: Vehicle[] }) {
 export function CertificatesList({
   accountId,
   certificates,
+  framed = true,
 }: {
   accountId: string;
   certificates: IssuedCertificate[];
+  framed?: boolean;
 }) {
+  const empty = (
+    <p className={framed ? "px-4 py-6 text-sm text-muted-foreground" : "text-sm text-muted-foreground"}>
+      No COI stub on this Business. The certificate preview is not issued until a stub row exists
+      — this is not an ACORD form and nothing is emailed.
+    </p>
+  );
+  const list = (
+    <ul className="divide-y divide-border">
+      {certificates.map((cert) => (
+        <li key={cert.id} className={framed ? "px-4 py-2 text-sm" : "py-2 text-sm first:pt-0"}>
+          <Link
+            href={`/businesses/${accountId}/certificates/${cert.id}`}
+            className="font-medium text-primary hover:underline"
+          >
+            {cert.certificateNumber}
+          </Link>
+          <span className="ml-2 text-xs text-muted-foreground">
+            {cert.holderName} · {cert.status}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+  if (!framed) return certificates.length === 0 ? empty : list;
   return (
     <section className="ff-card mb-4 overflow-hidden">
       <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
         Certificates of Insurance
       </div>
-      {certificates.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">
-          No COI stub on this Business. The certificate preview is not issued until a stub row
-          exists — this is not an ACORD form and nothing is emailed.
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {certificates.map((cert) => (
-            <li key={cert.id} className="px-4 py-2 text-sm">
-              <Link
-                href={`/businesses/${accountId}/certificates/${cert.id}`}
-                className="font-medium text-primary hover:underline"
-              >
-                {cert.certificateNumber}
-              </Link>
-              <span className="ml-2 text-xs text-muted-foreground">
-                {cert.holderName} · {cert.status}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {certificates.length === 0 ? empty : list}
     </section>
   );
 }
