@@ -12,6 +12,7 @@ import { getCarrier, listRecordAsks } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { currentDeskSession } from "@/lib/auth/session";
 import { RecordAskPanel } from "@/components/record-ask";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function CarrierRecordPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const [row, asks, users, session] = await Promise.all([
     getCarrier(id),
     listRecordAsks("carrier", id),

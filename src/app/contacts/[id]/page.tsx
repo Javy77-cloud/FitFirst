@@ -21,6 +21,7 @@ import {
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function ContactDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const [workspace, templates, asks, users] = await Promise.all([
     getContactWorkspace(id),
     listEmailTemplates(),

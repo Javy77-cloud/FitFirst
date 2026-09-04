@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function LeadDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const [row, templates, asks, users] = await Promise.all([
     getLead(id),
     listEmailTemplates(),

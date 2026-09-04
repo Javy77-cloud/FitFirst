@@ -22,6 +22,7 @@ import { RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { toNumber } from "@/lib/commissions/math";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { DEAL_ID } from "@/lib/fixtures/ids";
+import { isUuid } from "@/lib/ids";
 import { HealthStrip } from "@/components/completeness/health-strip";
 import { reportFromSheet } from "@/lib/completeness/report";
 import type { ShopLine } from "@/lib/domain";
@@ -38,6 +39,7 @@ export default async function DealPage({
   searchParams: Promise<{ tab?: string; riskTab?: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { tab, riskTab } = await searchParams;
   const [workspace, templates, asks, users] = await Promise.all([
     getDealWorkspace(id),

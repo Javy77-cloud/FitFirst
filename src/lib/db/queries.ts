@@ -197,6 +197,7 @@ export async function listCommsForRecord(filter: {
 }
 
 export async function listRecordAsks(entityType: string, entityId: string) {
+  if (!isUuid(entityId)) return [];
   return db
     .select()
     .from(recordAsks)
@@ -238,6 +239,7 @@ export async function listEmailTriggers() {
 }
 
 export async function getCarrier(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select({ carrier: carriers, rule: appetiteRules })
     .from(carriers)

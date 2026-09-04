@@ -23,6 +23,7 @@ import { inferLineFamily, LINE_FAMILIES, LINE_FAMILY_LABEL, previewCommission } 
 import { partyLabel, policyRecordName } from "@/lib/desk/policy-name";
 import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function PolicyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const [workspace, templates, asks, users] = await Promise.all([
     getPolicyWorkspace(id),
     listEmailTemplates(),
