@@ -19,7 +19,9 @@ import { cn } from "@/lib/utils";
 import { MixBars } from "./mix-bars";
 import { MixDonut } from "./mix-donut";
 import { CrossSellPanel } from "./cross-sell";
+import { AttentionFilters } from "./attention-filters";
 import { filterLineMix, type DeskLineSettings } from "@/lib/desk/line-settings";
+import { filterAttentionItems, type AttentionWindow } from "@/lib/home/attention-window";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -39,11 +41,13 @@ export function OwnerDesk({
   scope,
   tables,
   lineSettings,
+  attentionWindow = null,
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
   tables: OwnerHomeTables;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
+  attentionWindow?: AttentionWindow | null;
 }) {
   const asOf = snapshot.asOf.toLocaleString("en-US", {
     dateStyle: "medium",
@@ -144,34 +148,50 @@ export function OwnerDesk({
         </section>
 
         <section className="ff-card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-sm font-semibold text-navy">Needs attention</h3>
               <p className="text-[11px] text-muted-foreground">
-                Work-queue flags, lapses, bound waiting on issue
+                Overdue, this week, this month, next month
               </p>
             </div>
             <Link href="/work-queue" className="text-[12px] font-medium text-primary hover:underline">
               Work queue
             </Link>
           </div>
-          {snapshot.attention.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">Nothing flagged on the book.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {snapshot.attention.map((item) => (
-                <li key={item.id}>
-                  <Link href={item.href} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/50">
-                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fit-flag" />
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-navy">{item.title}</div>
-                      <div className="text-[12px] text-muted-foreground">{item.detail}</div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="border-b border-border px-4 py-2">
+            <AttentionFilters current={attentionWindow} basePath="/" />
+          </div>
+          {(() => {
+            const rows = filterAttentionItems(snapshot.attention, snapshot.asOf, attentionWindow);
+            if (rows.length === 0) {
+              return (
+                <p className="px-4 py-6 text-sm text-muted-foreground">
+                  {snapshot.attention.length === 0
+                    ? "Nothing flagged on the book."
+                    : "Nothing in this window."}
+                </p>
+              );
+            }
+            return (
+              <ul className="divide-y divide-border">
+                {rows.map((item) => (
+                  <li key={item.id}>
+                    <Link href={item.href} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/50">
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fit-flag" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-navy">{item.title}</div>
+                        <div className="text-[12px] text-muted-foreground">
+                          {item.detail} · due {item.dueAt.toISOString().slice(0, 10)} · {item.priority} ·{" "}
+                          {item.status}
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
         </section>
       </div>
 

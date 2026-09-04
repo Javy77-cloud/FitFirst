@@ -37,7 +37,7 @@ export function SettingsSection({
           </div>
           {summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
         </div>
-        <span className="text-xs text-muted-foreground">{open ? "Minimize" : "Expand"}</span>
+        <span className="text-xs text-muted-foreground">{open ? "Collapse" : "Expand"}</span>
       </button>
       {open ? <div className="border-t border-border px-4 py-4">{children}</div> : null}
     </section>

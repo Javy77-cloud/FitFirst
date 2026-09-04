@@ -33,7 +33,7 @@ export function DeskDetails({
           {meta}
           <span className="text-xs text-muted-foreground">
             <span className="group-open:hidden">Expand</span>
-            <span className="hidden group-open:inline">Minimize</span>
+            <span className="hidden group-open:inline">Collapse</span>
           </span>
         </div>
       </summary>

@@ -112,6 +112,9 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
   "queue-attention": [
     { key: "kind", label: "Kind", defaultOn: true },
     { key: "item", label: "Item", defaultOn: true },
+    { key: "due", label: "Due date", defaultOn: true },
+    { key: "priority", label: "Priority", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
     { key: "detail", label: "Detail", defaultOn: true },
   ],
   "queue-open": [
@@ -119,6 +122,8 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "status", label: "Status", defaultOn: true },
     { key: "party", label: "Party", defaultOn: true },
     { key: "expires", label: "Expires", defaultOn: true },
+    { key: "due", label: "Task due", defaultOn: true },
+    { key: "priority", label: "Priority", defaultOn: true },
   ],
   pipeline: [
     { key: "title", label: "Deal", defaultOn: true },

@@ -20,6 +20,7 @@ export function ActivityTimeline({
   email,
   templates,
   heading = "Activity and communications",
+  autoOnly = false,
 }: {
   items: TimelineItem[];
   contactId?: string | null;
@@ -31,20 +32,28 @@ export function ActivityTimeline({
   email?: string | null;
   templates?: EmailTemplate[];
   heading?: string;
+  autoOnly?: boolean;
 }) {
   return (
     <div className="space-y-6">
-      <RecordComms
-        contactId={contactId}
-        accountId={accountId}
-        policyId={policyId}
-        dealId={dealId}
-        leadId={leadId}
-        phone={phone}
-        email={email}
-        templates={templates}
-      />
+      {autoOnly ? null : (
+        <RecordComms
+          contactId={contactId}
+          accountId={accountId}
+          policyId={policyId}
+          dealId={dealId}
+          leadId={leadId}
+          phone={phone}
+          email={email}
+          templates={templates}
+        />
+      )}
       <CommsTimeline items={items} heading={heading} />
+      {autoOnly ? (
+        <p className="text-xs text-muted-foreground">
+          Auto logs only — email, SMS, and calls written by desk work. No typed log on this policy.
+        </p>
+      ) : (
       <section>
         <h3 className="text-sm font-semibold text-navy">Quick log</h3>
         <form action={logDeskActivity} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
@@ -136,6 +145,7 @@ export function ActivityTimeline({
           </ol>
         )}
       </section>
+      )}
     </div>
   );
 }

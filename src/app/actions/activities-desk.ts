@@ -247,6 +247,21 @@ export async function rescheduleDeskActivity(formData: FormData) {
   return { ok: true };
 }
 
+export async function deleteDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId");
+  if (!id) return { error: "Missing activity." };
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) return { error: "Activity not found." };
+
+  await db.delete(activityLogs).where(eq(activityLogs.activityId, id));
+  await db.delete(activities).where(eq(activities.id, id));
+  revalidateRelated(activity);
+  return { ok: true };
+}
+
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */
 export async function saveCallOutcome(formData: FormData) {
   const id = str(formData, "id") || str(formData, "activityId");

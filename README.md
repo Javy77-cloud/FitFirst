@@ -4,17 +4,17 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/list-hydrate-fix-46dc` (hydration fix on top of `cursor/mac-ready-overnight-3bad`)
+**Mac desk-test branch:** `cursor/policies-batch3-eb71` (policies overhaul on top of `cursor/list-hydrate-fix-46dc`)
 
-Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. This branch stops the Next.js hydration overlay on list sheets (Tasks / Leads / Deals / Contacts / etc.). Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
+Policies are Life / Health / P&C with family fields, Zoho-style auto name, status colors (Active green · Lapse/Bound yellow · else red), term by family, multi-file attach, and a commission block. Cov A stays on quoting only. Policy records show auto activity — no Ask a teammate, no typed SMS/call/email log. Settings → Global lists holds policy types, sub-types, terms, statuses, and file categories (carriers stay linked). Home Needs attention filters Overdue / This week / This month / Next month. Calendar buttons are Previous month / Next month; you can delete an event and + Add any type. Quote sections say Expand / Collapse. Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-git fetch origin cursor/list-hydrate-fix-46dc
-git checkout cursor/list-hydrate-fix-46dc
+git fetch origin cursor/policies-batch3-eb71
+git checkout cursor/policies-batch3-eb71
 git reset --hard FETCH_HEAD
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
@@ -61,7 +61,7 @@ Leads are the person record (name, DOB, contact, address, insurance wanted). Dec
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No live Twilio or SendGrid.
 
-**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, and drag-drop reschedule. Google Calendar stays a stub.
+**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, drag-drop reschedule, delete, and **+ Add event** for any type. Previous month / Next month (and week/day) are labeled. Google Calendar stays a stub.
 
 **Phone** is a call log (duration + outcome, attached to Contact / Policy / Deal / Lead / Business). Admin Settings can mark a Twilio / Vonage / BYO trunk as connected — stub only; the agency pays later. Nothing dials.
 

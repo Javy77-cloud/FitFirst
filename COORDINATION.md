@@ -378,6 +378,20 @@ Starts from `cursor/full-desk-test-4d20`. Merges Batch 1 (Home donut, Pipeline o
 
 HTTP smoke on this branch (dev + seeded Postgres, port 43147): every app-shell NAV route 200. Elena / Ana / Harbor records 200. Invalid UUIDs 404. Ana deal `Dib · Palm Bay HO3` stays **Quote Sent**, Cov A **$321,000**, 0 policies. `/quotes` is quote tracking (no `HO3-ELENA` policy number). `/carriers/:id` 200 (calendar slice). `/documents` still 500.
 
+## Policies BATCH3 (`cursor/policies-batch3-eb71`)
+
+Off `cursor/list-hydrate-fix-46dc`. Additive `0015_policy_global_lists`. Ana fixture untouched. No live Zoho. Ana stays unbound.
+
+- Policy record is by insurance family (Life / Health / P&C). Sub-type and term come from Settings → Global lists (Zoho-style). Cov A is quoting only — not on the policy form.
+- P&C: annual premium, insured address with same-as mailing, effective date, policy #, auto name `{Insured} / {Sub-Type} / {Carrier} / {date}`. Status colors: Active green; Lapse/Bound yellow; else red.
+- Multi-file attach with + add another and categories. Separate from Save policy.
+- Commission section uses the existing Zoho Life 9/12+3/12 / P&C TAC / Marketplace PMPM rules.
+- Policy timeline is auto logs only. Ask a teammate and typed SMS/call/email logs are gone from the policy page.
+- Home Needs attention: Overdue / This week / This month / Next month.
+- Calendar: Previous month / Next month, delete event, + Add any event type.
+- Quotes fold labels are Expand / Collapse (not Minimize).
+- Work queue adds due date, priority, and Zoho-like status.
+
 ## List sheet hydration (`cursor/list-hydrate-fix-46dc`)
 
 Javy hit a Next.js overlay on Mac Chrome localhost:43147 after the datasheet sort/pin fold: server HTML had `data-sheet-index` on `<tr>` (stamped by `ff-sheet.js` before React committed) and the client tree omitted it. Overlay also suggested a `tbody` inside `thead` risk.
