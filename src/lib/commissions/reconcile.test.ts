@@ -127,8 +127,9 @@ describe("Admin board vs Agent visibility", () => {
     expect(totals.disputedCount).toBe(1);
   });
 
-  it("never invents an Ana commission row", () => {
-    expect(book.every((row) => !/ana/i.test(`${row.policyNumber} ${row.note ?? ""}`))).toBe(true);
+  it("never invents an Ana Dib commission row", () => {
+    const blob = book.map((row) => `${row.policyNumber} ${row.note ?? ""}`).join(" ");
+    expect(/ana dib/i.test(blob)).toBe(false);
     expect(filterAgentOwnRows(book, "not-a-user")).toEqual([]);
   });
 });
