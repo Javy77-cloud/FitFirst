@@ -6,38 +6,61 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, pipelines } from "@/lib/db/schema";
-import { archiveCancelsEmailJobs, dealStageForPipeline } from "@/lib/wire/pipeline";
+import {
+  archiveCancelsEmailJobs,
+  dealStageForPipeline,
+  isArchiveStage,
+} from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
-export async function moveDealOnBoard(formData: FormData) {
-  const dealId = str(formData, "dealId");
-  const pipelineSlug = str(formData, "pipelineSlug");
-  const stageSlug = str(formData, "stageSlug");
+async function pipelineBySlug(slug: string) {
   const [pipeline] = await db
     .select()
     .from(pipelines)
-    .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.slug, pipelineSlug)));
-  if (!pipeline) return;
+    .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.slug, slug)));
+  return pipeline ?? null;
+}
+
+export async function moveDealToStage(input: {
+  dealId: string;
+  pipelineSlug: string;
+  stageSlug: string;
+}) {
+  const { dealId, pipelineSlug, stageSlug } = input;
+  if (!dealId || !stageSlug) return;
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) return;
+
+  const target = await pipelineBySlug(pipelineSlug);
+  const archiveBoard = await pipelineBySlug("archive");
+  const now = new Date();
 
   const patch: {
-    pipelineId: string;
+    pipelineId?: string | null;
     pipelineStageSlug: string;
     pipelineStage: string;
     archivedAt?: Date | null;
     updatedAt: Date;
   } = {
-    pipelineId: pipeline.id,
     pipelineStageSlug: stageSlug,
     pipelineStage: dealStageForPipeline(stageSlug),
-    updatedAt: new Date(),
+    updatedAt: now,
   };
 
-  if (stageSlug === "archive") {
-    patch.archivedAt = new Date();
+  if (isArchiveStage(stageSlug) || pipelineSlug === "archive") {
+    patch.pipelineId = archiveBoard?.id ?? target?.id ?? deal.pipelineId;
+    patch.archivedAt = deal.archivedAt ?? now;
+    patch.pipelineStage = "archive";
+    patch.pipelineStageSlug = "archive";
     void archiveCancelsEmailJobs();
+  } else if (pipelineSlug === "won-lost") {
+    patch.archivedAt = null;
+  } else if (target) {
+    patch.pipelineId = target.id;
+    patch.archivedAt = null;
   }
 
   await db.update(deals).set(patch).where(eq(deals.id, dealId));
@@ -45,9 +68,17 @@ export async function moveDealOnBoard(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
+export async function moveDealOnBoard(formData: FormData) {
+  await moveDealToStage({
+    dealId: str(formData, "dealId"),
+    pipelineSlug: str(formData, "pipelineSlug"),
+    stageSlug: str(formData, "stageSlug"),
+  });
+}
+
 export async function archiveWonDeal(formData: FormData) {
-  formData.set("pipelineSlug", "won-lost");
+  formData.set("pipelineSlug", "archive");
   formData.set("stageSlug", "archive");
   await moveDealOnBoard(formData);
-  redirect("/pipeline?pipeline=won-lost");
+  redirect("/pipeline?pipeline=archive");
 }

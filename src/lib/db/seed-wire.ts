@@ -44,11 +44,8 @@ import {
   HARBOR_RISK_ID,
   HARBOR_SHEET_ID,
   HARBOR_TASK_ID,
-  PIPELINE_FLOOD_ID,
-  PIPELINE_HEALTH_ID,
-  PIPELINE_LIFE_ID,
+  PIPELINE_IDS_BY_SLUG,
   PIPELINE_PC_ID,
-  PIPELINE_WON_LOST_ID,
   RISK_ID,
   TENANT_ID,
   TRIGGER_REVIEW_ID,
@@ -63,13 +60,7 @@ import { SEEDED_PIPELINES } from "../wire/pipeline";
 import { scheduleWonClientEmails } from "../wire/email-jobs";
 import { buildCertificateDraft, nextCertificateNumber } from "../certificates/issue";
 
-const PIPELINE_IDS: Record<string, string> = {
-  "p-c": PIPELINE_PC_ID,
-  health: PIPELINE_HEALTH_ID,
-  life: PIPELINE_LIFE_ID,
-  "won-lost": PIPELINE_WON_LOST_ID,
-  flood: PIPELINE_FLOOD_ID,
-};
+const PIPELINE_IDS: Record<string, string> = PIPELINE_IDS_BY_SLUG;
 
 function cell(
   value: string,
@@ -146,8 +137,8 @@ export async function seedWireDesk() {
     .update(deals)
     .set({
       pipelineId: PIPELINE_PC_ID,
-      pipelineStage: "shopping",
-      pipelineStageSlug: "shopping",
+      pipelineStage: "quote_sent",
+      pipelineStageSlug: "quote_sent",
       updatedAt: new Date(),
     })
     .where(eq(deals.id, DEAL_ID));
