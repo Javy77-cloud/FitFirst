@@ -479,3 +479,11 @@ Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouc
 - GBP Admin gate: `agency_settings.allow_agents_monitor_gbp` (default false). Agents see a locked GBP card until Admin enables monitoring.
 
 Migration `0021_social_gbp`.
+
+### Javy add-on — Lead + notify + award
+
+- `src/lib/leads/offers.ts` is the contract for the home bulletin (home bot owns the board UI).
+- Social inbound on an **agent-owned** stub: `ingestSocialLead` creates/matches a Lead, sets `owner_id`, writes a targeted `alerts.user_id` ping.
+- Agency / unassigned inbound: Lead with null owner + `lead_offers.status=open`. Admin **Awards** to any agent (`awardLeadToAgent`) — assigns + notifies.
+- Settings → Social: Admin sets each stub to Agency or an agent. Seed: Instagram → Maya; FB/GBP → agency.
+- GBP monitor gate unchanged. Migration `0022_lead_offers`.

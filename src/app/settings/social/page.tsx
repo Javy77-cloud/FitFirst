@@ -1,10 +1,11 @@
-import { saveGbpAgentMonitor } from "@/app/actions/social";
+import { saveGbpAgentMonitor, saveSocialAccountOwner } from "@/app/actions/social";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { IntegrationCard } from "@/components/settings/integration-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { currentDeskSession } from "@/lib/auth/session";
 import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
+import { listUsers } from "@/lib/db/queries";
 import { loadGbpMonitorPolicy } from "@/lib/social/store";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +15,14 @@ export default async function SocialSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, groups, allowAgentsMonitorGbp, query] = await Promise.all([
+  const [session, groups, allowAgentsMonitorGbp, query, users] = await Promise.all([
     currentDeskSession(),
     listCatalogByCategory(),
     loadGbpMonitorPolicy(),
     searchParams,
+    listUsers(),
   ]);
+  const agents = users.filter((user) => user.role === "agent");
   const social = groups.find((group) => group.category === "social")?.items ?? [];
   const gbp = social.find((item) => item.id === "google_business_profile");
   const notice = typeof query.notice === "string" ? query.notice : undefined;
@@ -44,6 +47,12 @@ export default async function SocialSettingsPage({
       {notice === "disconnected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           {typeof query.provider === "string" ? query.provider : "Provider"} marked not connected.
+        </p>
+      ) : null}
+      {notice === "owner-saved" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          Account owner saved. Inbound on that stub creates a Lead for that agent (or the award
+          pool if Agency).
         </p>
       ) : null}
       {notice === "gbp-agents-off" ? (
@@ -109,6 +118,55 @@ export default async function SocialSettingsPage({
           />
         ))}
       </div>
+
+      <section className="mt-5 ff-card space-y-3 p-4">
+        <div>
+          <h2 className="text-sm font-semibold text-navy">Who owns each connected stub</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Agent-owned inbound creates a Lead and pings that agent. Agency (unassigned) goes to
+            the Admin award pool. Home bulletin reads the same offers.
+          </p>
+        </div>
+        <ul className="divide-y divide-border rounded-md border border-border">
+          {social.map((item) => {
+            const ownerName = users.find((user) => user.id === item.ownerUserId)?.name;
+            return (
+              <li key={`owner-${item.id}`} className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-medium text-navy">{item.name}</div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {item.connected
+                      ? ownerName
+                        ? `${ownerName}'s connected account`
+                        : "Agency · unassigned inbound"
+                      : "Not connected"}
+                  </p>
+                </div>
+                {session.isAdmin && item.connected ? (
+                  <form action={saveSocialAccountOwner} className="flex flex-wrap items-center gap-2">
+                    <input type="hidden" name="provider" value={item.id} />
+                    <select
+                      name="ownerUserId"
+                      defaultValue={item.ownerUserId ?? ""}
+                      className="h-8 rounded-md border border-border bg-background px-2 text-sm text-navy"
+                    >
+                      <option value="">Agency (unassigned)</option>
+                      {agents.map((agent) => (
+                        <option key={agent.id} value={agent.id}>
+                          {agent.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Button type="submit" size="sm" variant="outline">
+                      Save owner
+                    </Button>
+                  </form>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </SettingsShell>
   );
 }

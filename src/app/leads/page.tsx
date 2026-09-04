@@ -42,6 +42,11 @@ export default async function LeadsPage({
         duplicate — match by name plus phone or email. Inbound Facebook / Instagram / X / LinkedIn /
         GBP asks open from Social pulse as Leads.
       </p>
+      {notice === "awarded" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          Lead awarded. That agent got an in-app ping.
+        </p>
+      ) : null}
       {notice === "social-retrieved" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           Retrieved {retrieved ?? "new"} social inquir{retrieved === "1" ? "y" : "ies"} as Leads.

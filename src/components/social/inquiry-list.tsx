@@ -39,6 +39,11 @@ export function InquiryList({ inquiries }: { inquiries: SocialPulseInquiry[] }) 
                 <span className="ml-2 text-[11px] font-normal uppercase tracking-wide text-muted-foreground">
                   {inquiry.platformLabel}
                 </span>
+                {inquiry.routeLabel ? (
+                  <span className="ml-2 text-[11px] font-normal normal-case text-muted-foreground">
+                    · {inquiry.routeLabel}
+                  </span>
+                ) : null}
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">{inquiry.excerpt}</p>
               <p className="mt-1 text-[11px] text-muted-foreground">

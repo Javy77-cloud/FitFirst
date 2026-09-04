@@ -1,14 +1,19 @@
-import { SOCIAL_CONNECTION_IDS, TENANT_ID } from "../fixtures/ids";
+import { AGENT_USER_ID, SOCIAL_CONNECTION_IDS, TENANT_ID } from "../fixtures/ids";
 import { db } from "./index";
 import { integrationConnections } from "./schema";
 import { stubAccountLabel } from "@/lib/integrations/catalog";
 
 const SEEDED_SOCIAL = [
-  { id: SOCIAL_CONNECTION_IDS.facebook, provider: "facebook" as const },
-  { id: SOCIAL_CONNECTION_IDS.instagram, provider: "instagram" as const },
+  { id: SOCIAL_CONNECTION_IDS.facebook, provider: "facebook" as const, ownerUserId: null },
+  {
+    id: SOCIAL_CONNECTION_IDS.instagram,
+    provider: "instagram" as const,
+    ownerUserId: AGENT_USER_ID,
+  },
   {
     id: SOCIAL_CONNECTION_IDS.google_business_profile,
     provider: "google_business_profile" as const,
+    ownerUserId: null,
   },
 ] as const;
 
@@ -28,6 +33,7 @@ export async function seedSocialConnectors() {
         notes: "Seeded connect stub. No OAuth. Agency pays the vendor later.",
         lastConnectStatus: "not_implemented",
         connectedAt: now,
+        ownerUserId: row.ownerUserId,
       })
       .onConflictDoUpdate({
         target: [
@@ -43,6 +49,7 @@ export async function seedSocialConnectors() {
           notes: "Seeded connect stub. No OAuth. Agency pays the vendor later.",
           lastConnectStatus: "not_implemented",
           connectedAt: now,
+          ownerUserId: row.ownerUserId,
           updatedAt: now,
         },
       });

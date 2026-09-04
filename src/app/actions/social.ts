@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { findOrCreateLead } from "@/app/actions/crm";
+import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { agencySettings } from "@/lib/db/schema";
+import { agencySettings, integrationConnections } from "@/lib/db/schema";
 import { AGENCY_SETTINGS_ID } from "@/lib/fixtures/ids";
+import { connectionOwnerFor, ingestSocialLead } from "@/lib/leads/offers";
 import {
   canUseSocialPlatform,
   isSocialPlatformId,
@@ -17,6 +17,7 @@ import {
 import { inquiryById, SOCIAL_INQUIRY_SEEDS } from "@/lib/social/seeds";
 import { loadGbpMonitorPolicy } from "@/lib/social/store";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import { isIntegrationProviderId } from "@/lib/integrations/catalog";
 
 function refreshSocial() {
   revalidatePath("/");
@@ -76,7 +77,11 @@ export async function openSocialInquiryAsLead(formData: FormData) {
   if (!canUseSocialPlatform(inquiry.platform, role, allowAgentsMonitorGbp)) {
     redirect("/social?notice=gbp-locked");
   }
-  const { lead } = await findOrCreateLead({
+  const connectionOwnerUserId = connectionOwnerFor(
+    inquiry.platform,
+    items.map((item) => ({ id: item.id, ownerUserId: item.ownerUserId })),
+  );
+  const result = await ingestSocialLead({
     firstName: inquiry.firstName,
     lastName: inquiry.lastName,
     email: inquiry.email,
@@ -86,10 +91,16 @@ export async function openSocialInquiryAsLead(formData: FormData) {
     zip: inquiry.zip,
     insuranceTypeDesired: inquiry.insuranceTypeDesired,
     source: socialLeadSource(inquiry.platform),
+    platform: inquiry.platform,
     notes: inquiry.excerpt,
+    connectionOwnerUserId,
   });
   refreshSocial();
-  redirect(`/leads/${lead.id}`);
+  revalidatePath("/alerts");
+  if (result.assignment === "unassigned" && !session.isAdmin) {
+    redirect("/social?notice=unassigned-queued");
+  }
+  redirect(`/leads/${result.lead.id}`);
 }
 
 export async function retrieveVisibleSocialInquiries() {
@@ -107,7 +118,11 @@ export async function retrieveVisibleSocialInquiries() {
   for (const inquiry of SOCIAL_INQUIRY_SEEDS) {
     if (!connected.has(inquiry.platform)) continue;
     if (!canUseSocialPlatform(inquiry.platform, role, allowAgentsMonitorGbp)) continue;
-    const result = await findOrCreateLead({
+    const connectionOwnerUserId = connectionOwnerFor(
+      inquiry.platform,
+      items.map((item) => ({ id: item.id, ownerUserId: item.ownerUserId })),
+    );
+    const result = await ingestSocialLead({
       firstName: inquiry.firstName,
       lastName: inquiry.lastName,
       email: inquiry.email,
@@ -117,10 +132,40 @@ export async function retrieveVisibleSocialInquiries() {
       zip: inquiry.zip,
       insuranceTypeDesired: inquiry.insuranceTypeDesired,
       source: socialLeadSource(inquiry.platform),
+      platform: inquiry.platform,
       notes: inquiry.excerpt,
+      connectionOwnerUserId,
     });
     if (result.created) created += 1;
   }
   refreshSocial();
+  revalidatePath("/alerts");
   redirect(created > 0 ? `/leads?notice=social-retrieved&n=${created}` : "/social?notice=no-new-inquiries");
+}
+
+export async function saveSocialAccountOwner(formData: FormData) {
+  await assertAdmin();
+  const raw = String(formData.get("provider") ?? "");
+  if (!isIntegrationProviderId(raw) || !isSocialPlatformId(raw)) {
+    redirect("/settings/social?notice=unknown-provider");
+  }
+  const ownerRaw = String(formData.get("ownerUserId") ?? "").trim();
+  const ownerUserId = ownerRaw || null;
+  const [row] = await db
+    .select()
+    .from(integrationConnections)
+    .where(
+      and(
+        eq(integrationConnections.tenantId, DEFAULT_TENANT_ID),
+        eq(integrationConnections.provider, raw),
+      ),
+    );
+  if (row) {
+    await db
+      .update(integrationConnections)
+      .set({ ownerUserId, updatedAt: new Date() })
+      .where(eq(integrationConnections.id, row.id));
+  }
+  refreshSocial();
+  redirect("/settings/social?notice=owner-saved");
 }

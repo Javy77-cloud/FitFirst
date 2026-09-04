@@ -28,6 +28,7 @@ export type SocialPulseCard = {
 
 export type SocialPulseInquiry = SocialInquirySeed & {
   platformLabel: string;
+  routeLabel?: string;
 };
 
 export type SocialPulseSnapshot = {

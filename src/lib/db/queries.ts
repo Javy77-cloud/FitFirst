@@ -960,11 +960,21 @@ export async function listQuoteLogs() {
     .orderBy(desc(quoteAttemptLogs.attemptedAt));
 }
 
+function alertAudienceWhere(session: DeskSession) {
+  if (session.isAdmin) return undefined;
+  if (!session.userId) return sql`false`;
+  return or(isNull(alerts.userId), eq(alerts.userId, session.userId));
+}
+
 export async function listAlerts(unreadOnly = false) {
-  const where = unreadOnly
-    ? and(eq(alerts.tenantId, tenant()), isNull(alerts.readAt))
-    : eq(alerts.tenantId, tenant());
-  return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
+  const session = await currentDeskSession();
+  const audience = alertAudienceWhere(session);
+  const unread = unreadOnly ? isNull(alerts.readAt) : undefined;
+  return db
+    .select()
+    .from(alerts)
+    .where(and(eq(alerts.tenantId, tenant()), unread, audience))
+    .orderBy(desc(alerts.createdAt));
 }
 
 export async function listReviewQueue() {
@@ -1124,7 +1134,11 @@ export async function dashboardStats() {
       shopping: sql<number>`(select count(*) from deals where tenant_id = ${tenant()} and pipeline_stage = 'shopping'${ownerSql})`,
       contacts: sql<number>`(select count(*) from contacts where tenant_id = ${tenant()}${ownerSql})`,
       policies: sql<number>`(select count(*) from policies where tenant_id = ${tenant()}${ownerSql})`,
-      unreadAlerts: sql<number>`(select count(*) from alerts where tenant_id = ${tenant()} and read_at is null)`,
+      unreadAlerts: sql<number>`(select count(*) from alerts where tenant_id = ${tenant()} and read_at is null${
+        session.isAdmin || !session.userId
+          ? sql``
+          : sql` and (user_id is null or user_id = ${session.userId})`
+      })`,
     })
     .from(tenants)
     .where(eq(tenants.id, tenant()));

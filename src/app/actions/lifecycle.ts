@@ -17,6 +17,9 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { convertLeadToDeal, findOrCreateLead } from "@/app/actions/crm";
+import { currentDeskSession } from "@/lib/auth/session";
+import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import { connectionOwnerFor, ingestSocialLead } from "@/lib/leads/offers";
 import { parseLeadFromPacket } from "@/lib/lifecycle/lead-match";
 import { buildQuoteResultsNote } from "@/lib/lifecycle/quote-results";
 import { emptySheetValues, fillSheetBlanks } from "@/lib/lifecycle/quote-sheet";
@@ -45,7 +48,12 @@ export async function stubEmailLead() {
 }
 
 export async function stubSocialLead() {
-  const { lead } = await findOrCreateLead({
+  const items = await listCatalogItems();
+  const connectionOwnerUserId = connectionOwnerFor(
+    "instagram",
+    items.map((item) => ({ id: item.id, ownerUserId: item.ownerUserId })),
+  );
+  const { lead, assignment } = await ingestSocialLead({
     firstName: "Priya",
     lastName: "Shah",
     email: "priya.shah@example.com",
@@ -55,10 +63,18 @@ export async function stubSocialLead() {
     zip: "32801",
     insuranceTypeDesired: "HO",
     source: "instagram",
+    platform: "instagram",
     notes: "Instagram stub: asked for an HO3 quote and said a dec is coming. No live social sync.",
+    connectionOwnerUserId,
   });
   revalidatePath("/leads");
   revalidatePath("/social");
+  revalidatePath("/alerts");
+  revalidatePath("/");
+  const session = await currentDeskSession();
+  if (assignment === "unassigned" && !session.isAdmin) {
+    redirect("/social?notice=unassigned-queued");
+  }
   redirect(`/leads/${lead.id}`);
 }
 
