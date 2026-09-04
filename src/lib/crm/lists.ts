@@ -1,4 +1,5 @@
 import { accountDisplayName } from "./bind";
+import { formatPersonName } from "./display";
 
 export type ColumnSpec = {
   id: string;
@@ -120,7 +121,7 @@ export function insuredContactName(input: {
     firstName: string;
     lastName: string;
   } | null;
-  lead?: { firstName: string; lastName: string } | null;
+  lead?: { firstName: string; middleName?: string | null; lastName: string } | null;
 }): string {
   if (input.primaryNamedInsured?.trim()) {
     return input.secondaryNamedInsured?.trim()
@@ -128,7 +129,7 @@ export function insuredContactName(input: {
       : input.primaryNamedInsured.trim();
   }
   if (input.contact) return accountDisplayName(input.contact);
-  if (input.lead) return `${input.lead.lastName}, ${input.lead.firstName}`;
+  if (input.lead) return formatPersonName(input.lead);
   return "—";
 }
 

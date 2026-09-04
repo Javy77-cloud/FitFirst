@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { createDealFromLead, createLead } from "@/app/actions/crm";
-import { dropLeadPacket, dropSampleDecPacket, stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
+import { stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { LeadFormFields } from "@/components/crm/lead-form-fields";
 import { LineSelect } from "@/components/crm/line-select";
-import { DeskDrop } from "@/components/desk-drop";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { formatPersonName } from "@/lib/crm/display";
+import { LINE_LABELS } from "@/lib/crm/bind";
 import { defaultColumns } from "@/lib/desk/columns";
-import { formatDay } from "@/lib/domain";
+import { formatDay, type LineOfBusiness } from "@/lib/domain";
 import { listLeads } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -23,15 +23,11 @@ export default async function LeadsPage() {
       actions={<ColumnPicker tableKey="leads" initial={defaultColumns("leads")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
-        Create or match by name + phone or email. Never duplicate. A dropped dec becomes a lead
-        first; the deal is the shop. Quotes still do not create a policy.
+        Capture the person first: name, date of birth, contact, address, and the insurance they
+        want. Dec pages, wind mits, and 4-points belong on the Deal after you start a shop. Never
+        duplicate — match by name plus phone or email.
       </p>
       <div className="mb-4 flex flex-wrap gap-2">
-        <form action={dropSampleDecPacket}>
-          <Button type="submit" size="sm" variant="outline">
-            Drop Melbourne dec (matches Elena)
-          </Button>
-        </form>
         <form action={stubEmailLead}>
           <Button type="submit" size="sm" variant="outline">
             Stub email lead
@@ -43,51 +39,17 @@ export default async function LeadsPage() {
           </Button>
         </form>
       </div>
-      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <form action={createLead} className="ff-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold text-navy">New lead</h2>
-            <div>
-              <Label htmlFor="firstName" className="text-xs">
-                First name
-              </Label>
-              <Input id="firstName" name="firstName" required className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label htmlFor="lastName" className="text-xs">
-                Last name
-              </Label>
-              <Input id="lastName" name="lastName" required className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label htmlFor="phone" className="text-xs">
-                Phone
-              </Label>
-              <Input id="phone" name="phone" className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label htmlFor="email" className="text-xs">
-                Email
-              </Label>
-              <Input id="email" name="email" type="email" className="mt-1 h-8" />
-            </div>
-            <Button type="submit" size="sm">
-              Save lead
-            </Button>
-          </form>
-          <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold text-navy">Drop a dec packet</h2>
-            <p className="text-xs text-muted-foreground">
-              PDF or text. Named insured + phone or email matches an existing lead. Empty file
-              uses the Melbourne sample.
-            </p>
-            <input name="file" type="file" className="block w-full text-xs" />
-            <Button type="submit" size="sm">
-              Import packet
-            </Button>
-          </form>
-          <DeskDrop compact />
-        </div>
+      <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <form action={createLead} className="ff-card space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-navy">New lead</h2>
+          <p className="text-xs text-muted-foreground">
+            People record only. Start a shop from the table when you are ready to quote.
+          </p>
+          <LeadFormFields />
+          <Button type="submit" size="sm">
+            Save lead
+          </Button>
+        </form>
 
         <section className="ff-card overflow-x-auto">
           {rows.length === 0 ? (
@@ -99,6 +61,7 @@ export default async function LeadsPage() {
                   <Col table="leads" col="name" as="th">Name</Col>
                   <Col table="leads" col="status" as="th">Status</Col>
                   <Col table="leads" col="source" as="th">Source</Col>
+                  <Col table="leads" col="line" as="th">Insurance</Col>
                   <Col table="leads" col="phone" as="th">Phone</Col>
                   <Col table="leads" col="email" as="th">Email</Col>
                   <Col table="leads" col="created" as="th">Created</Col>
@@ -109,14 +72,18 @@ export default async function LeadsPage() {
                 {rows.map((lead) => (
                   <tr key={lead.id}>
                     <Col table="leads" col="name" className="font-medium">
-                      <RecordLink href={`/leads/${lead.id}`}>
-                        {lead.lastName}, {lead.firstName}
-                      </RecordLink>
+                      <RecordLink href={`/leads/${lead.id}`}>{formatPersonName(lead)}</RecordLink>
                     </Col>
                     <Col table="leads" col="status" className="uppercase">
                       {lead.status}
                     </Col>
                     <Col table="leads" col="source">{lead.source}</Col>
+                    <Col table="leads" col="line">
+                      {lead.insuranceTypeDesired
+                        ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ??
+                          lead.insuranceTypeDesired)
+                        : "—"}
+                    </Col>
                     <Col table="leads" col="phone">{lead.phone ?? "—"}</Col>
                     <Col table="leads" col="email">{lead.email ?? "—"}</Col>
                     <Col table="leads" col="created">{formatDay(lead.createdAt)}</Col>
@@ -128,7 +95,10 @@ export default async function LeadsPage() {
                       ) : (
                         <form action={createDealFromLead} className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
                           <input type="hidden" name="leadId" value={lead.id} />
-                          <LineSelect id={`line-${lead.id}`} defaultValue="HO" />
+                          <LineSelect
+                            id={`line-${lead.id}`}
+                            defaultValue={lead.insuranceTypeDesired ?? "HO"}
+                          />
                           <Button type="submit" size="xs">
                             Start shop
                           </Button>

@@ -5,11 +5,22 @@ import {
   expirationTone,
   expirationToneClass,
   formatIsoDate,
+  formatPersonName,
   formatTenure,
   taskKindLabel,
 } from "./display";
 
 describe("CRM display helpers", () => {
+  it("formats last, first middle and skips a blank middle", () => {
+    expect(formatPersonName({ firstName: "Elena", lastName: "Ruiz" })).toBe("Ruiz, Elena");
+    expect(formatPersonName({ firstName: "Elena", middleName: "M", lastName: "Ruiz" })).toBe(
+      "Ruiz, Elena M",
+    );
+    expect(formatPersonName({ firstName: "Elena", middleName: "  ", lastName: "Ruiz" })).toBe(
+      "Ruiz, Elena",
+    );
+  });
+
   it("formats tenure from the book start date", () => {
     const asOf = new Date("2026-09-02T12:00:00.000Z");
     expect(formatTenure(null, asOf)).toBe("—");

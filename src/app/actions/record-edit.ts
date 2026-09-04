@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { db } from "@/lib/db";
 import { accounts, contacts, leads } from "@/lib/db/schema";
 
@@ -70,19 +71,24 @@ export async function updateLeadRecord(formData: FormData) {
     .from(leads)
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, id)));
   if (!existing) return;
+  const values = leadValuesFromForm(formData);
   await db
     .update(leads)
     .set({
-      firstName: str(formData, "firstName") || existing.firstName,
-      lastName: str(formData, "lastName") || existing.lastName,
-      phone: str(formData, "phone") || existing.phone,
-      email: str(formData, "email") || existing.email,
-      mailingAddress: str(formData, "mailingAddress") || existing.mailingAddress,
-      city: str(formData, "city") || existing.city,
-      state: str(formData, "state") || existing.state,
-      zip: str(formData, "zip") || existing.zip,
-      dateOfBirth: str(formData, "dateOfBirth") || existing.dateOfBirth,
-      notes: str(formData, "notes") || existing.notes,
+      firstName: values.firstName || existing.firstName,
+      middleName: values.middleName ?? existing.middleName,
+      lastName: values.lastName || existing.lastName,
+      phone: values.phone || existing.phone,
+      email: values.email || existing.email,
+      mailingAddress: values.mailingAddress || existing.mailingAddress,
+      city: values.city || existing.city,
+      state: values.state || existing.state,
+      zip: values.zip || existing.zip,
+      dateOfBirth: values.dateOfBirth || existing.dateOfBirth,
+      insuranceTypeDesired: values.insuranceTypeDesired || existing.insuranceTypeDesired,
+      preferredLanguage: values.preferredLanguage || existing.preferredLanguage,
+      source: values.source || existing.source,
+      notes: values.notes || existing.notes,
       updatedAt: new Date(),
     })
     .where(eq(leads.id, id));

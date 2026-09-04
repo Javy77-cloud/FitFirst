@@ -34,14 +34,16 @@ export function rankHits(hits: SearchHit[], query: string): SearchHit[] {
 export function hitFromLead(row: {
   id: string;
   firstName: string;
+  middleName?: string | null;
   lastName: string;
   email?: string | null;
   phone?: string | null;
 }): SearchHit {
+  const given = [row.firstName, row.middleName].filter((part) => part?.trim()).join(" ");
   return {
     kind: "lead",
     id: row.id,
-    title: `${row.lastName}, ${row.firstName}`,
+    title: `${row.lastName}, ${given}`.replace(/, $/, ""),
     subtitle: [row.email, row.phone].filter(Boolean).join(" · ") || "Lead",
     href: `/leads/${row.id}`,
   };

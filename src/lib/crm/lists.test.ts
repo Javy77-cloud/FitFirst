@@ -147,6 +147,13 @@ describe("insured / contact name", () => {
         lead: { firstName: "Ana", lastName: "Dib" },
       }),
     ).toBe("Dib, Ana");
+    expect(
+      insuredContactName({
+        primaryNamedInsured: "  ",
+        contact: null,
+        lead: { firstName: "Elena", middleName: "M", lastName: "Ruiz" },
+      }),
+    ).toBe("Ruiz, Elena M");
   });
 
   it("links the contact when present, otherwise the lead, and never a blank party URL", () => {

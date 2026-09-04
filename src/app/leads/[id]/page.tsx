@@ -4,14 +4,17 @@ import { updateLeadRecord } from "@/app/actions/record-edit";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { ClickToCall } from "@/components/click-to-call";
+import { LeadFormFields } from "@/components/crm/lead-form-fields";
+import { LineSelect } from "@/components/crm/line-select";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { formatPersonName } from "@/lib/crm/display";
+import { LINE_LABELS } from "@/lib/crm/bind";
 import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
+import type { LineOfBusiness } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
@@ -31,71 +34,40 @@ export default async function LeadDetailPage({
   ]);
   if (!row) notFound();
   const { lead, deal, timeline } = row;
+  const lineLabel = lead.insuranceTypeDesired
+    ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
+    : null;
 
   return (
-    <AppShell title={`${lead.lastName}, ${lead.firstName}`}>
+    <AppShell title={formatPersonName(lead)}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <span className="uppercase text-muted-foreground">{lead.status}</span>
         <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
+        {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
+        {lead.preferredLanguage ? (
+          <span className="uppercase text-muted-foreground">{lead.preferredLanguage}</span>
+        ) : null}
         <ClickToCall
           entityType="lead"
           entityId={lead.id}
-          name={`${lead.firstName} ${lead.lastName}`}
+          name={formatPersonName(lead)}
           phone={lead.phone}
         />
       </div>
 
-      <RecordSection id="record" title="This lead" summary="Info already on the lead — do not retype">
-        <form action={updateLeadRecord} className="mb-4 grid gap-2 sm:grid-cols-2">
+      <RecordSection id="record" title="This lead" summary="Person and coverage they asked for — source docs wait for the deal">
+        <form action={updateLeadRecord} className="mb-4 space-y-3">
           <input type="hidden" name="leadId" value={lead.id} />
-          <div>
-            <Label className="text-xs">First</Label>
-            <Input name="firstName" defaultValue={lead.firstName} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Last</Label>
-            <Input name="lastName" defaultValue={lead.lastName} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Phone</Label>
-            <Input name="phone" defaultValue={lead.phone ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Email</Label>
-            <Input name="email" defaultValue={lead.email ?? ""} className="mt-1 h-8" />
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">Mailing</Label>
-            <Input name="mailingAddress" defaultValue={lead.mailingAddress ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">City</Label>
-            <Input name="city" defaultValue={lead.city ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">State</Label>
-            <Input name="state" defaultValue={lead.state ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">ZIP</Label>
-            <Input name="zip" defaultValue={lead.zip ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Date of birth</Label>
-            <Input name="dateOfBirth" defaultValue={lead.dateOfBirth ?? ""} className="mt-1 h-8" />
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">Notes</Label>
-            <Input name="notes" defaultValue={lead.notes ?? ""} className="mt-1 h-8" />
-          </div>
+          <LeadFormFields lead={lead} />
           <Button type="submit" size="sm">
             Save lead
           </Button>
         </form>
         {!deal ? (
-          <form action={createDealFromLead} className="mb-4">
+          <form action={createDealFromLead} className="mb-4 flex flex-wrap items-end gap-2">
             <input type="hidden" name="leadId" value={lead.id} />
             <input type="hidden" name="state" value={lead.state ?? "FL"} />
+            <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
             <Button type="submit" size="sm" variant="outline">
               Convert to deal
             </Button>
@@ -123,7 +95,10 @@ export default async function LeadDetailPage({
         {deal ? (
           <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
         ) : (
-          <p className="text-sm text-muted-foreground">No deal yet. Convert when you start the shop.</p>
+          <p className="text-sm text-muted-foreground">
+            No deal yet. Convert when you start the shop. Drop a dec, wind mit, or 4-point on the
+            deal — not here.
+          </p>
         )}
       </RecordSection>
     </AppShell>

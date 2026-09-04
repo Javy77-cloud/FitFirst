@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { dropLeadPacket, dropSampleDecPacket } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { DecDropForm } from "@/components/crm/dec-drop-form";
 import { DealRowComms } from "@/components/deal-row-comms";
+import { DeskDrop } from "@/components/desk-drop";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { listBoundPendingDeals, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
@@ -54,6 +57,33 @@ export default async function DealsPage({
       }
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
+      <div className="mb-4 grid gap-4 lg:grid-cols-2">
+        <DeskDrop compact />
+        <div className="space-y-3">
+          <form action={dropSampleDecPacket} className="ff-card space-y-2 p-4">
+            <h2 className="text-sm font-semibold text-navy">Melbourne sample dec</h2>
+            <p className="text-xs text-muted-foreground">
+              Matches Elena Ruiz (name + phone/email) and attaches the dec on her deal. A new
+              named insured opens a new shop. Source docs stay on the deal.
+            </p>
+            <Button type="submit" size="sm" variant="outline">
+              Drop Melbourne dec (matches Elena)
+            </Button>
+          </form>
+          <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
+            <h2 className="text-sm font-semibold text-navy">Drop a dec, wind mit, or 4-point</h2>
+            <p className="text-xs text-muted-foreground">
+              PDF or text. Named insured + phone or email matches an existing lead. Empty file
+              uses the Melbourne sample. The file attaches to the shopping deal.
+            </p>
+            <input name="file" type="file" className="block w-full text-xs" />
+            <Button type="submit" size="sm">
+              Import packet onto a deal
+            </Button>
+          </form>
+          <DecDropForm />
+        </div>
+      </div>
       {filter.stage || filter.attention ? (
         <p className="mb-3 text-[12px]">
           <Link href="/deals" className="text-primary hover:underline">
