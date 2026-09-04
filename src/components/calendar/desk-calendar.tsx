@@ -282,7 +282,7 @@ export function DeskCalendar({
                 </span>
                 <span className="font-medium text-navy">{row.title}</span>
                 <span className="text-xs text-muted-foreground">{formatTime(row.startAt ?? row.dueAt)}</span>
-                <Button type="button" size="xs" variant="outline" onClick={() => openEvent(serializeCalendarActivity(row))}>
+                <Button type="button" size="sm" variant="outline" onClick={() => openEvent(serializeCalendarActivity(row))}>
                   Edit
                 </Button>
               </li>
