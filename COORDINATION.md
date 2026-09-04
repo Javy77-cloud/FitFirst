@@ -6,8 +6,8 @@ Runtime stays single-tenant (`TENANT_ID`). New tables carry `tenant_id`. Checked
 
 ## Locked lifecycle (do not invent a different funnel)
 
-1. A lead arrives (manual, email/social stub, or a dropped dec / wind mit / 4-point / inspection). Create or match a Lead (name + phone or email when present; **never duplicate**).
-2. Convert that Lead into a Deal. The Deal is the shopping record. Source docs (dec, 4-point, wind mit, inspections) live on Deal attachments. Fill Quote Sheet blanks from those docs (yellow missing / blue CHECK). **Do not create a Policy from a quote.**
+1. A lead arrives (manual or email/social stub). Create or match a Lead (name + phone or email when present; **never duplicate**). The Lead is the person: first / middle / last, DOB, email, phone, address, insurance type desired, source, language, notes.
+2. Convert that Lead into a Deal. The Deal is the shopping record. Source docs (dec, 4-point, wind mit, inspections) are dropped **on the Deal only** — not on Leads. Fill Quote Sheet blanks from those docs (yellow missing / blue CHECK). **Do not create a Policy from a quote.**
 3. When quotes are finalized: room on the Deal for issued-quote PDFs **plus** a ranked quote-results note (cheapest first). Quotes never become Policies.
 4. Bind / Closed Won: Deal produces a Contact (personal lines) or a Business/Account (commercial). Copy matching fields so the agent does not retype. Then create **one Policy per bound line**, attached to that Contact or Business. Policy exists only after accept/apply (status Bound / Pending / Active — never Quote-only).
 5. Every Policy is its own record. Contact and Business show policy counts: **lifetime** + **active/bound/pending**. Same person can have personal Contact policies **and** be linked to a Business.
@@ -70,7 +70,14 @@ Consume their types. Leave extension points. Do **not** restyle `src/lib/quote-s
 | QA + Settings Get Started (`cursor/qa-settings-get-started-12e1`) | They own `desk_settings` / `onboarding_items`. This slice’s `/get-started` is the **lifecycle click path**. On merge, keep both checklists or nest theirs under Settings. |
 | Account 360 | Reuse `documents` + `review_tasks`. `documents.contact_id` is additive. Do not fork a files table. |
 | CRM UI bind/history | Bind remains the **only** path that inserts a policy from a deal. |
-| Agency operating tools (`cursor/agency-operating-tools-e272`) | Owns `/calendar`, `/tasks`, Google Calendar stub, **softphone / dialer**. Consume `activities` `{ kind: task\|meeting\|call, contact_id, deal_id, policy_id }`. TEST-DESK adds `account_id` + `activity_logs` (required). Do not restyle their calendar or build a phone. On merge, keep one `activities` table and add `account_id` if missing. |
+| Agency operating tools (`cursor/agency-operating-tools-e272`) | Owns `/calendar`, `/tasks`, Google Calendar stub. Consume `activities` `{ kind: task\|meeting\|call, contact_id, deal_id, policy_id }`. TEST-DESK adds `account_id` + `activity_logs` (required). Calendar is now a real month/week/day board (same `activities` table). `/phone` is a call log, not a softphone. Telephony connect is an Admin stub. |
+
+## Calendar + phone + carrier + settings (`cursor/calendar-phone-carriers-0cc7`)
+
+- `/calendar` — month / week / day, hourly slots 7a–7p, type filters, edit dialog, drag-drop reschedule. Writes `activities` + `activity_logs`.
+- `/phone` — call log with related-record FKs. `/settings/phone` Admin stub for Twilio / Vonage / BYO. No purchase, no keys stored.
+- Carrier record expands Zoho-like fields (NAIC, AM Best, UW/AM, claims/billing, NB/renewal %, appetite / don't-write). **Ask a teammate** stays Admin-only on Carrier.
+- Settings hub is two columns: Admin vs Agent, collapsible sections.
 
 Ana Home Coverage A **$321,000** (`source: javy`) is confirmed. Never flag it CHECK. Never overwrite it. Do not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Do not change `src/lib/appetite/match.ts`.
 
@@ -98,7 +105,7 @@ After `npm run db:migrate && npm run db:seed` (or `docker compose up --build`):
 
 ### Run-it-yourself path (proves match + bind)
 
-1. **Leads** → **Drop a dec packet** (use `fixtures/sample-melbourne-ho-dec.txt` or the stub button). Name + phone/email **matches Elena** — you stay on her lead, no duplicate.
+1. **Deals** → **Drop a dec / wind mit / 4-point** (use `fixtures/sample-melbourne-ho-dec.txt` or the Melbourne sample button). Name + phone/email **matches Elena** — you stay on her deal, no duplicate. Leads do not accept package drop.
 2. Or **Stub email lead** / **Stub social lead** — new names create new leads; same name+phone/email matches.
 3. On a new unmatched lead: **Start shop** → Deal (shopping) + empty Quote Sheet. Upload a source dec. **Fill Quote Sheet blanks** (yellow/blue only).
 4. **Quotes** → build stub quotes for green markets (filter-first; do not change appetite). **Finalize quote results** writes the cheapest-first note. Attach quote PDFs in the issued-quote slot.
@@ -119,7 +126,7 @@ The parallel slices were a pile of pages. This pass makes one click-path:
 | Forms stub | `/forms` + `/forms/fl-ho3?dealId=` call `fillFormFromSheet` against `quote_sheets.values`. |
 | Account 360 | `/contacts/[id]` and `/accounts/[id]` (also `/businesses/[id]` alias). Lifetime + active/bound/pending counts come from `policies` rows, including newly bound ones. Activity timeline is the existing `activities` + `activity_logs` hook — softphone agent may still be finishing; do not rewrite `/calendar` or phone files. |
 | Commercial Business | Same `accounts` table (no second businesses table). EIN/FEIN, employees, sales, W-2/1099. Harbor Key Marine LLC is the commercial Closed Won demo. Ruiz Tile stays Elena’s linked personal+business pair with zero commercial policies. |
-| Multi-pipeline | Real links: `/pipeline?pipeline=p-c\|health\|life\|won-lost\|flood`. Flood is the admin-added board. Closed Won / Bind writes Policy. ARCHIVE later does **not** cancel `email_send_jobs` hung on `won_date`. |
+| Multi-pipeline | Real links: `/pipeline?pipeline=p-c\|health\|life\|flood\|won-lost\|archive`. Label is **P&C pipeline**. Won-Lost and Archive are separate tabs. Flood is a normal board (no Admin). Closed Won / Bind writes Policy. ARCHIVE later does **not** cancel `email_send_jobs` hung on `won_date`. |
 | Email templates | Seeded thank-you + Google review. Bind calls `scheduleWonClientEmails`. `archiveCancelsEmailJobs()` is `false`. |
 | Smart Search | `/search?q=` and `GET /api/search` find Lead, Deal, Contact, Business, Policy by name. |
 | Dedup | Second bind of the same person reuses Contact (name + email/phone). Business matches EIN then exact legal name. Same person can hold a personal Contact and a linked Business. |
@@ -194,6 +201,43 @@ Boot: `npm run db:migrate && npm run db:seed` succeeded on Postgres `fitfirst` /
 
 Observed, **not filed** (pre-existing / accepted, not a fixer miss): Search is substring, so `Ana` also lists the Camila deal (`Camila` contains `ana`). Soto’s 2 drivers are seeded; the thin policy page only lists vehicles (same leftover pattern as ComparePanel not reattached). Do not invent Camila vehicles.
 
+### Errors / smoke (`cursor/errors-smoke-qa-74df`) after re-QA `cursor/overnight-re-qa-531d`
+
+Owner: errors-smoke. Additive only. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Did not bind Ana. Did not write Zoho. Did not merge Rosa Keene.
+
+Boot: `npm run db:migrate && npm run db:seed` on Postgres `fitfirst` / `fitfirst_dev`. App at **43147**.
+
+**Patched on this branch:** invalid record ids (`not-a-uuid`) 500'd Contact / Business / Policy / Deal / Lead / Claim / Merge / Forms `dealId` / Quote tracker `?deal=` / Fill API / COI preview. Postgres `22P02 invalid input syntax for type uuid`. Loaders now `isUuid()`-guard and 404 / empty instead of throwing. Empty deal filters show a sentence instead of a header-only table.
+
+**Smoke (HTTP + SQL). Ana locked. No Zoho writes.**
+
+| Path | Status | Notes |
+| --- | --- | --- |
+| Home / owner desk | 200 | In-force **56** (55 active + 1 bound). Written $118,726.67. Copy: Ana $321,000 HO3 is pipeline, not written. Cookie `ff_role=agent` → “Your book” 200. |
+| Elena 360 `/contacts/4444…444` | 200 | **Client**, lifetime 1 / in-force 1, `HO3-ELENA-2026` $2,840, Ruiz Tile LLC. No total-premium / total-commission rollup. |
+| Ana 360 `/contacts/2222…224` | 200 | **Not a client**, 0 / 0 policies. Quotes did not become coverage. |
+| Harbor `/accounts/6666…665` | **200** | First load OK. EIN 59-1234567, `GL-HARBOR-2026` $4,180, COI stub. Alias `/businesses/:id` 307. |
+| Policy `HO3-ELENA-2026` | 200 | Premium $2,840 renders. No commission fields on the policy page (no throw). |
+| Ana Quote Sheet / Markets | 200 | Cov A **$321,000** visible. Markets **0 green / 0 yellow / 10 red**. No invented policy numbers. |
+| Carriers list `/carriers` | 200 | Appetite table. `/carriers/:id` **404** — no detail route. Decline area is `/logs` 200. |
+| Calendar `/calendar` | 200 | Stub pointing at Tasks. |
+| Settings `/settings` | 200 | Phone-line stub only. No Agency vs My desk tabs (scope lives on Home via cookie). |
+| Forms `/forms` + `/forms/fl-ho3?dealId=Ana` | 200 | Ana Cov A 321000. Bad `dealId` 200 “no deal”. Missing slug 404. |
+| Missing UUID | 404 | Graceful “Record not found”. Empty list filters 200. |
+
+### Ranked leftovers (not patched)
+
+**Major**
+- **No carrier detail.** `GET /carriers/<id>` 404. List has no row links. Decline log is `/logs`.
+- **Policy commission fields absent.** `/policies/4444…445` shows premium only. `/commissions` 200 ($1,132.28 pending / $804.50 paid) is the working surface.
+- **360 has no premium/commission totals.** Related policies list per-row premium; no sum on Elena or Ana click-in.
+- **Settings has no Agency vs My desk.** `/settings` is the phone stub. Owner/agent switch is Home cookie `ff_role` / `ff_actor`.
+
+**Minor**
+- Search substring still lists Camila when querying `Ana` (accepted leftover).
+- `/phone` stub (QA-13 accepted). Do not build a softphone.
+- Custom 404 copy is in the RSC payload; Next still wraps `NEXT_HTTP_ERROR_FALLBACK;404`.
+
 ### Open bugs (leftovers only)
 
 **QA-13 No live phone.** `/phone` is a stub. Softphone JS is not mounted. Task/Call on 360 is the working path. Accepted — do not build a live softphone.
@@ -222,6 +266,195 @@ Camila Auto `QBE-PA-66103` still has an empty vehicle schedule. The intended Aut
 
 Deal `Dib · Palm Bay HO3` = **shopping**. Contact policies = **0**. Cov A = **$321,000** javy/confirmed. Fixture file not edited.
 
+## Live desk walkthrough (this branch)
+
+Additive on the fixer + overnight re-QA book. No live Zoho writes. Ana stays shopping / 0 policies / Cov A $321,000.
+
+Shipped on `cursor/live-desk-walkthrough-531d`:
+
+- Larger global type and left menu. Agency name + logo slot (Settings, Admin) — not hardcoded FitFirst in chrome.
+- Admin (Javy) vs Agent (Maya) login. Unauthenticated still behaves as Admin so click-paths work.
+- Home: compact mix + cross-sell from in-force policies only.
+- Deals / Contacts / Businesses / Policies / Carriers / Tasks: column picker, richer defaults, Deals row comms.
+- Policies list: Insured (not Party), P&C / Life / Health + Home/Auto/Flood/Commercial subfilter. Name click is the policy record (UUID 500 on empty `convertedDealId` fixed).
+- Two-section collapsible records (this record + related on the same page) for Contact, Business, Lead, Deal, Policy, Carrier.
+- **Communications timeline on the record:** every send/receive writes `activity_logs` (direction, thread, full body). Email inbound + outbound share a thread (`Re:`/`Fwd:` stripped). SMS sent/received on the same thread. Uses existing email template stubs. No Twilio/SendGrid, no second mailbox.
+- Pipeline: create deal, Admin add/relabel/delete stages, columns + table view.
+- Tasks CRUD. Calendar lists colored activities + quick-add. Google Calendar stays stub.
+- Policy record: Effective + X-Date, Selling Agency (AFA / First Connect / Agentero / Agility / BackNine), Zoho commission math (Life 9/12+3/12, P&C TAC, Marketplace PMPM on the policy, MA TAC=GWP). **No Medicare new/renewal field.** Renewal tasks 30/60 on, 90 off. OEP stay-put is an internal task only.
+- Client status remains computed: Client / Former client / Not a client (Ana).
+- **Internal ask (not a chat product):** Admin tags a teammate on Contact / Lead / Deal / Business / Policy / Carrier. Reuses `record_asks` (same table as commission “ask about this”). Writes the durable `activity_logs` row and an in-app `alerts` ping (`record_ask`). No email/SMS to the tagged person. Seeded: Javy → Maya on Elena policy HO3-ELENA-2026.
+- Record edits stay pre-filled from the record (and bind copies Cov A + premises from the deal risk). Contact/Lead/Business show address + DOB the desk already has. No blank retype forms.
+- Enter-once copy: Lead mailing/city/state/ZIP/DOB → Deal risk + Quote Sheet on convert; bind copies those onto Contact/Business/Policy and fills only blank party fields. Policy/Contact/Business forms fall back to the linked Deal/Lead so the agent does not retype.
+
+Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI. Alerts list the Elena status ask with Open record.
+
+## Desk merge unblock (`cursor/desk-merge-unblock-f2e7`)
+
+Mac-ready umbrella for localhost:43147. Starts from `cursor/desk-unblock-compile-eeac` and merges:
+
+- `cursor/crm-core-routes-9f03`
+- `cursor/ams-ops-routes-compile-2e23`
+- `cursor/list-pages-jsx-43c4`
+- `cursor/comms-nav-smoke-9493`
+
+Conflicts favored compile + working Col-based list pages. Ana fixture untouched (unbound, Cov A $321,000). Quotes still do not create a policy. No live Zoho. Navy sidebar tokens (`--ff-sidebar` / `--ff-bg`) restored so the desk does not wash to a white rail. `getReviewTask` 404s on non-UUID ids.
+
+Also merged `cursor/restore-brand-domain-exports-a266`. It only re-added `AGENCY_BRAND`, color/font/density presets, `LIST_COLUMN_CATALOG`, and brand fixture IDs — already present from desk-unblock/crm-core. Duplicate block stripped so `domain.ts` stays one file. Agency / My desk presets unchanged (`agency`, `terracotta`, `forest`, `slate`).
+
+HTTP smoke on this branch (dev + seeded Postgres): every app-shell NAV route returned 200. Ana deal `Dib · Palm Bay HO3` stays **Shopping**, Cov A **$321,000**. `/quotes` is quote tracking (no `HO3-ELENA` policy number). `/tasks/foo` 404s. `/documents` still 500s (`Object.entries` on null) — not a NAV item.
+
+`next build` Turbopack **compiles**; `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names, commission extras).
+
+Full desk QA (every NAV route + CRM + comms) should run next on this branch.
+
+## Desk unblock (`cursor/desk-unblock-compile-eeac`)
+
+Off `cursor/feel-pass-consolidate-5e5c`. Shared leftover that blocked Mac Chrome feel-pass:
+
+- Restored `AGENCY_BRAND`, color/font/density presets, `LIST_COLUMN_CATALOG`, `defaultColumnLayout`, `resolveColumnKeys` (and template/document constants) on `@/lib/domain` from cb1393c + later slices.
+- `policies/page.tsx` no longer has two tbody renderers. ColumnPicker is actions-only; `Col` matches thead.
+- Leads / carriers list pages use the same picker. Brand fixture IDs restored. CRM/documents helpers that pages import compile again.
+
+Companion comms+nav work should reuse these domain exports rather than inventing a second brand module. Ana fixture untouched. No live Zoho.
+
+## Feel-pass consolidate (`cursor/feel-pass-consolidate-5e5c`)
+
+One Mac Chrome feel branch. Starts from `cursor/live-desk-walkthrough-531d` (overnight re-QA + records). Merges QA + today’s pack walkthrough tips. Additive migrations only (`0008_comms_qa`, `0009_pack_addons`). Ana fixture untouched. No live Zoho writes.
+
+## Communication QA (`cursor/comms-qa-9e37`)
+
+Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live Zoho.
+
+- Ask a teammate (admin v1) on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown required. Seeded Javy → Maya on `HO3-ELENA-2026` (`record_asks` + activity log + Alerts).
+- Activity form logs duration + outcome on calls.
+- Click-to-call is an in-app Alerts ping (`click_to_call`). `/phone` stays a stub.
+- Settings shows email template library + trigger stubs. Nothing sends.
+- Alerts list includes the Elena ask and a work-queue ping. In-app only.
+
+## Errors smoke QA (`cursor/errors-smoke-qa-74df`)
+
+Invalid record UUIDs return 404 instead of a Postgres 22P02 500. `isUuid` guards live in loaders.
+
+## Pipeline overhaul (`cursor/pipeline-overhaul-d52a`)
+
+Owner: this branch. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays unbound, Cov A **$321,000**. No live Zoho.
+
+- Switcher tabs: **P&C pipeline**, Health, Life, Flood, **Won-Lost**, **Archive**. Flood has no Admin badge and no Admin stage panel.
+- Columns sit side-by-side (horizontal scroll) and collapse from the header.
+- Edit stages on any board: add / rename / remove / reorder. Not admin-gated.
+- Drag deals between columns. Closed Won still has **Move to Archive**. Archive does not cancel won-date emails.
+- **Columns** picker show/hides the same deal details on cards and the table view.
+
+## Business record UX (`cursor/business-record-ux-132e`)
+
+Owner: this slice. Additive only. Mirrors Contact UX from `cursor/contact-record-ux-5288` on **Business / Accounts** only.
+
+- Left jump menu on `/accounts/[id]` (alias `/businesses/[id]`): Overview, Business information, Address, Policies, Deals, People, Locations, Certificates, Ask a teammate (Admin only), Email/SMS/calls, Timeline.
+- Timeline is auto-saved desk work. No typed “log activity” form on Business.
+- Ask a teammate is hidden for agents on every record (Contact, Deal, Policy, Lead, Business, Carrier). The framed panel is Admin-only.
+- Shared `RecordSection` / `LocationsList` / `CertificatesList` / `RecordAskPanel` / `RecordComms` stay backward compatible (`collapsible`, `framed`, `hideWhenNotAdmin` default to the old Contact/Policy behavior).
+- Contact 360 is unchanged. Ana fixture untouched. Harbor Key Marine LLC stays **Client** (lifetime 1 / in-force 1, `GL-HARBOR-2026`, COI stub). Ruiz Tile stays Elena’s linked business with **0** commercial policies. No live Zoho.
+
+## Life / Health subfilters + LOB toggles (`cursor/life-health-lob-agency-8c04`)
+
+Owner: this slice. Additive only. Did not edit the Ana fixture. Did not bind Ana. No Zoho.
+
+- Configurable Life chips: Term Life, Whole Life, IUL, Final Expense (`line_subfilter_options`).
+- Configurable Health chips: Marketplace, Medicare Advantage, Medicare A&B, Supplemental.
+- Settings → Lines: add/delete those options. Admin only.
+- Settings toggles hide Life, Health, or both. Pipeline switcher and book filters on Policies / Deals follow the toggles. Hidden board URLs fall back to P-C. Sidebar keeps **one Pipeline row**.
+- Selling Agency picklists are off by default. Settings can turn them back on for multi selling-agency desks. Stored `selling_agency` values are kept as hidden fields when the picklists are off.
+- Additive schema: `agency_settings.write_life` / `write_health` / `show_selling_agency`, `deals.policy_sub_type`, table `line_subfilter_options`. Migration `0013_line_settings`.
+
+## Overnight Mac-ready merge (`cursor/mac-ready-overnight-3bad`)
+
+Starts from `cursor/full-desk-test-4d20`. Merges Batch 1 (Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, Contact UX) and Batch 2 (Business UX, Life/Health LOB, Quotes/Claims/Commissions, Datasheet sort/pin, Calendar/Phone/Carriers/Settings). Conflicts favored compile + working UX.
+
+- Ana fixture untouched: shopping / Quote Sent, unbound, Cov A **$321,000**. Quotes do not become policies. No live Zoho. Every new table has `tenant_id`.
+- Additive migrations only: `0012_leads_profile`, `0013_line_settings`, `0014_calendar_phone_carriers`.
+- One Pipeline sidebar row. Life/Health stay as `/pipeline` tabs. Seed always writes `pipeline_stages.pipeline_id`.
+- Sidebar stays navy (`--ff-sidebar` / ink) — not washed to white.
+
+HTTP smoke on this branch (dev + seeded Postgres, port 43147): every app-shell NAV route 200. Elena / Ana / Harbor records 200. Invalid UUIDs 404. Ana deal `Dib · Palm Bay HO3` stays **Quote Sent**, Cov A **$321,000**, 0 policies. `/quotes` is quote tracking (no `HO3-ELENA` policy number). `/carriers/:id` 200 (calendar slice). `/documents` still 500.
+
+## Pipeline board UX + Meetings (`cursor/pipeline-meetings-11f3`)
+
+Owner: BATCH3. Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Did not edit the Ana fixture. Ana stays Quote Sent / unbound, Cov A **$321,000**. No live Zoho.
+
+- Stage columns collapse from a small up/down arrow on the right of the header.
+- Pipeline cards: one **Call** (no Dial), no Mail, plus **Meeting**.
+- Meetings: Video-call / In-Home / In-Office. In-Office = agency + per-agent address. In-Home = Deal/Lead address. Video = Zoom / Meet / BYO stubs on Settings → Communications (`0015_meetings_comms`).
+- Ask a teammate stays off pipeline cards. Admin-only on records.
+
+## Policies BATCH3 (`cursor/policies-batch3-eb71`)
+
+Off `cursor/list-hydrate-fix-46dc`. Additive `0018_policy_global_lists` (renumbered from 0015 on merge). Ana fixture untouched. No live Zoho. Ana stays unbound.
+
+- Policy record is by insurance family (Life / Health / P&C). Sub-type and term come from Settings → Global lists (Zoho-style). Cov A is quoting only — not on the policy form.
+- P&C: annual premium, insured address with same-as mailing, effective date, policy #, auto name `{Insured} / {Sub-Type} / {Carrier} / {date}`. Status colors: Active green; Lapse/Bound yellow; else red.
+- Multi-file attach with + add another and categories. Separate from Save policy.
+- Commission section uses the existing Zoho Life 9/12+3/12 / P&C TAC / Marketplace PMPM rules.
+- Policy timeline is auto logs only. Ask a teammate and typed SMS/call/email logs are gone from the policy page.
+- Home Needs attention: Overdue / This week / This month / Next month.
+- Calendar: Previous month / Next month, delete event, + Add any event type.
+- Quotes fold labels are Expand / Collapse (not Minimize).
+- Work queue adds due date, priority, and Zoho-like status.
+
+## List sheet hydration (`cursor/list-hydrate-fix-46dc`)
+
+Javy hit a Next.js overlay on Mac Chrome localhost:43147 after the datasheet sort/pin fold: server HTML had `data-sheet-index` on `<tr>` (stamped by `ff-sheet.js` before React committed) and the client tree omitted it. Overlay also suggested a `tbody` inside `thead` risk.
+
+Fix:
+
+- React renders `data-sheet-index` on both server and first client paint via `SheetTbody`.
+- `ff-sheet.js` waits for `SheetBoot` (`data-ff-hydrated`) before sorting, pinning, or writing attributes. No more `load + 1ms` race.
+- Sort/pin only touch `table > tbody` (`:scope > tbody`), never a body nested under `thead`.
+- Ana stays unbound, Cov A **$321,000**. No Zoho.
+
+Mac pull: fetch `cursor/pipeline-meetings-11f3`, `git reset --hard FETCH_HEAD`, `npm run db:migrate`, restart `npm run dev -- --port 43147`. Ana stays unbound / $321k.
+
+## BATCH3 quoting + integrations (`cursor/batch3-quoting-handoff-cca5`)
+
+Owner: this branch. Additive `0015_batch3_quoting`. Did not edit the Ana fixture. Did not bind Ana. Did not change `src/lib/appetite/match.ts`.
+
+- Lead convert stays the shop start. After a Deal source-doc drop, pick line / policy form. HO3 fills the home master sheet and prepares Auto + GL + WC worksheets.
+- Master sheet requires visual review + “are you sure?” before quoting unlocks. Chrome Fill / Copy sheet / Open Fill window stay locked until then. No per-agent bot.
+- Quotes tab logs quoted / declined / maybe. `maybe` is filtered out of match priors.
+- Master risk + Markets are Admin-only. Ask a teammate on Deal is `hideWhenNotAdmin`.
+- Settings → Communications / Integrations: email (Gmail/Workspace, Outlook/365, Yahoo), campaigns (Mailchimp, Constant Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice, Bandwidth optional), Zoom/Meet, DocuSign + Dropbox Sign. Plug-only. Agency pays. No FitFirst Twilio subscribe.
+
+ASAP click path: Ana deal → pick HO3 if needed → Quote Sheet → approve + confirm → Copy sheet / Open Fill window → Quotes tab log maybe. Cov A **$321,000**. Do not bind.
+
+## Quotes collapse + Claims add + Commissions filters (`cursor/quotes-claims-commissions-4af1`)
+
+Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not write Zoho.
+
+- **Quotes:** `/quotes` shops, deal Quotes tab (ranked / comparison / attempt log), and Quote Sheet groups use `DeskDetails`. Open when there is work (quoted/declined, missing/CHECK); fold skip-only or complete groups.
+- **Claims:** `/claims` has a prominent **Add new claim**. `/claims/new` is the stub create flow. `logClaim` saves a `claims` row with or without a policy, then opens the claim.
+- **Commissions:** `/commissions` filters Life / Health / P&C + Home/Auto/Flood/Commercial (or Life/Health subs) and date windows last year / 6 months / 3 months / month / quarter plus next month / 3 months / 6 months / quarter / year. Ana remains $0 / unbound.
+
+## Settings IA + Integrations catalog (`cursor/settings-ia-integrations-e4fb`)
+
+Owner: this slice. Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Did not edit the Ana fixture. Did not bind Ana. No Zoho in the catalog. No live OAuth.
+
+- Settings left menu is nested: parent → children. Groups: Communications (email, SMS, phone, video), Integrations (catalog hub), Lines / Global lists, Brand / Agency, Admin vs Agent prefs.
+- `/settings/integrations` is the connectable catalog. BYO — agency pays. Connect stub + **Not connected** / **Connected (stub)** badges.
+- Catalog (no Zoho): Email Gmail / Outlook / Yahoo; Campaigns Mailchimp / Constant Contact / SendGrid; Calendar Google / Outlook; Phone/SMS Twilio / RingCentral / optional Lightspeed Voice; Video Zoom / Google Meet; E-sign DocuSign / Dropbox Sign.
+- Settings shape for later: `integration_connections` (`0015_integration_connections`). Gmail/Outlook/Yahoo, Google Calendar, and Twilio also flip the existing send-account / calendar / phone / SMS stub rows when present.
+- New hubs: `/settings/communications`, `/settings/email`, `/settings/video`, `/settings/lists`. Existing settings pages keep their forms and pick up the nested nav.
+
+Ana stays unbound, Cov A **$321,000**. Do not add Zoho Mail / Zoho Sign to this catalog.
+
+## PII field encryption (`cursor/pii-field-encryption-a70d`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive `0021_pii_vault`. Ana fixture untouched (unbound, Cov A **$321,000**). No live carriers.
+
+- AES-256-GCM via `PII_ENCRYPTION_KEY` (64 hex chars). Local Mac: copy `.env.example` as-is, or keep the documented demo key. Changing the key makes ciphertext unreadable — re-seed.
+- Encrypted at rest: contact SSN (`ssn_enc` / `ssn_iv` / `ssn_last4`), business EIN (`ein_enc` / `ein_iv` / `ein_last4` / `ein_lookup`), driver license (`license_number_enc` / `license_number_iv` / `license_number_last4`). Plaintext `ein` / `license_number` columns stay for additive migrate and are nulled after backfill.
+- UI lists send last4 masks only. Reveal (Admin or owning Agent) decrypts once and writes `pii_reveal_logs` without the value.
+- Seed: Elena fake SSN `000-00-4444` sealed; Harbor `59-1234567` and Ruiz Tile `59-7654321` sealed; Soto DL sealed. No plaintext SSN/DL/EIN left in Postgres after `db:seed`.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS
@@ -231,3 +464,255 @@ Deal `Dib · Palm Bay HO3` = **shopping**. Contact policies = **0**. Cov A = **$
 - Create a Policy from a quote
 - Fork a second CRM / files table / tasks table
 - Build a softphone, dialer, or live Google Calendar sync
+
+## BATCH3 deals docs + tabs + e-sign (`cursor/deals-docs-tabs-esign-5c3d`)
+
+Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). No Zoho.
+
+- **Deals list upload:** one section. Multi-line rows (doc type + file, add another line, multi-file OK). Deal name required with lookup/autofill from existing Deals (person or business). Files attach to that Deal. Melbourne sample dec button removed.
+- **Deal Documents:** Source documents, Issued quote PDFs, and **Signed app** (e-sign returns).
+- **Ask a teammate** removed from the Deal. Admin-only on Contact / Policy / Carrier / Business / Lead.
+- **Quote Sheet / Markets / Quotes:** no Ask, no manual email/SMS logs, no email-send on Quote Sheet.
+- **Master risk** is not an agent Deal tab. Admin background appetite tool at `/settings/master-risk`.
+- **E-sign stubs:** Settings → E-sign. DocuSign and Dropbox Sign BYO. No vendor keys. Signed apps still attach on the Deal.
+
+Migration `0015_esign_settings`.
+
+## BATCH4 home dashboard (`cursor/home-dashboard-widgets-89ab`)
+
+Side branch. Additive only. Keeps `--ff-sidebar: #c5ddf4` and the blue/orange tokens. Does not copy an InsuredMine dark rail. Ana stays unbound at Cov A **$321,000**. One Pipeline nav row.
+
+- Agent home is own-book KPIs. Admin toggle: **My book** vs **Agency-wide**.
+- Dense InsuredMine-like cards: active accounts, in-force premium, policies, ratios, new business / renewals / cancellations with MoM, carrier count, pipeline strip.
+- Charts keep the policy-type donut and add carrier share bars.
+- Top 10 leaderboard (this month + last month) and a seeded Q3 premium contest board. Admin can post another.
+- Birthdays (today / next week / next month) and Turning 65 (next month / next year) from Contact DOB.
+- Dashboard presets: My production / Pipeline focus / Retention. Widget settings show/hide cards. Settings → Agency can pin company widgets on agent home.
+- Migration `0021_home_dashboard`. Seed does not add people — only extra producer users, DOB updates on existing contacts, and one contest.
+- Home charts use a punchy blue/orange/teal series (not washed navy/gray). Sidebar stays `#c5ddf4`.
+- Management lead-offer board (`0022_lead_offers` + `0031_inbound_lead_offers`): Admin posts language/state referrals (French + Montana stay). Admin can also share an inbound email (from/subject/snippet/stub). Agent Take ownership creates or links a Lead, assigns the agent, posts an in-app alert, and marks Claimed by X. Seeded unassigned Renee Colbert inquiry — Maya can claim. No Ana/Elena/Rosa dupes. No new people.
+
+## BATCH4 Automations hub (`cursor/automations-hub-4d87`)
+
+Side branch off the Mac desk-test consolidate. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`#c5ddf4` / `#102033`). No domain catalog dupes.
+
+- **Nav:** one **Automations** row → `/automations`.
+- **Email campaigns:** uses existing `email_campaigns` + Mailchimp / Constant Contact / SendGrid catalog stubs. Empty state until one is connected.
+- **Bulk SMS:** `bulk_sms_drafts` stub. Empty until SMS / phone_sms is connected. Logs would send.
+- **Work email templates:** reads the existing `email_templates` library. Admin still edits in Settings.
+- **Guided builder:** `guided_automations` — Trigger (Deal stage change, Policy renewal window, Birthday, Closed Won) → Condition → Action (in-app notify, create Task, send template email). Seeded 3 examples. Prefer in-app notify.
+- **Signatures:** additive columns on `email_signatures` (`owner_user_id`, `approval_status`, review fields). Agents draft; Admin queue stub. Maya’s producer close seeds as pending.
+
+Migration `0025_automations_hub`. Do not bind Ana.
+
+## BATCH4 social + GBP connectors (`cursor/mac-ready-batch4-social-d88f`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`#c5ddf4`). No live OAuth. No vendor spend.
+
+- Settings → Social / Integrations catalog: Facebook, Instagram, X, LinkedIn, Google Business Profile connect/disconnect stubs. BYO — agency pays.
+- `/social` pulse + Home widget: demo followers / engagement / views after a connect stub. Seed connects FB, IG, GBP.
+- Inbound inquiry → Lead via `findOrCreateLead` (Priya Shah Instagram is the existing stub path).
+- GBP Admin gate: `agency_settings.allow_agents_monitor_gbp` (default false). Agents see a locked GBP card until Admin enables monitoring.
+
+Migration `0026_social_gbp`.
+
+### Javy add-on — Lead + notify + award
+
+- `src/lib/leads/offers.ts` is the contract for the home bulletin (home bot owns the board UI).
+- Social inbound on an **agent-owned** stub: `ingestSocialLead` creates/matches a Lead, sets `owner_id`, writes a targeted `alerts.user_id` ping.
+- Agency / unassigned inbound: Lead with null owner + `lead_offers.status=open`. Admin **Awards** to any agent (`awardLeadToAgent`) — assigns + notifies.
+- Settings → Social: Admin sets each stub to Agency or an agent. Seed: Instagram → Maya; FB/GBP → agency.
+- GBP monitor gate unchanged. Social inbound table is `social_lead_offers` (not management `lead_offers`). Migration `0026_social_gbp`.
+
+## BATCH4 Admin calendar company meetings (`cursor/admin-company-meetings-0864`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`--ff-sidebar: #c5ddf4`). Personal Video / In-Home / In-Office meetings stay.
+
+- Calendar event types **Company meeting** and **Training** (Admin-created). `kind` stays `meeting`; `meeting_type` is `company` or `training`.
+- Fields: title, start/end, video URL (Zoom / Meet / other http(s)), notes.
+- Invite pickers: Whole agency | Office | Territory | Management only. Uses the offices / territories tables already on this consolidator (`0023_offices_territories`).
+- Invited agents get `calendar_invites` + an in-app alert (`alerts.user_id`) and the event on their calendar (`listCalendarActivities` includes invitees).
+- Event detail **Open video**. Agents cannot create company events.
+- Migration `0027_company_meetings`. Do not bind Ana.
+
+## BATCH4 People / Agents (`cursor/admin-people-agents-8ef4`)
+
+Full roster on Settings → People / Agents. Keep this — do not replace with recovery-only Agents.
+
+- Create agent (username or email). Invite stub at `/login/invite`. They set the password, then enroll MFA.
+- Freeze / Unfreeze / Remove (soft). Frozen **Luis Vega** (`luis@fitfirst.local`) cannot sign in.
+- Notify writes an in-app desk note + Alerts ping.
+- Privileges: can access modules, can see agency widgets, office / territory hooks.
+- Password reset stub `/login/reset`. MFA recovery stub `/login/recover`. Force re-enroll.
+- Seed: Javy enrolled TOTP; Maya enrolled email; **Nora Frost** pending invite + MFA.
+- Migrations `0028_agent_admin` + `0029_mfa_recovery`. Ana unbound. One Pipeline. Alerts off the sidebar.
+
+## BATCH4 MFA + recovery (`cursor/mfa-recovery-batch4-a61a`)
+
+Parallel auth-security track. Keep **with** People / Agents — enroll, challenge, and hashed recovery tokens.
+
+- Password required on login. Hashed on `users.password_hash`; demo javy/maya still match.
+- 2FA enroll: SMS stub, email stub, or TOTP at `/enroll-mfa` and Settings → Security. Desk gated until `mfa_enrolled`.
+- Seed Javy (TOTP) + Maya (email) already enrolled with `mfa_demo_bypass`. `FF_MFA_DEMO_BYPASS=1` (default) skips the 2FA prompt so 7pm desk-test opens. Set `0` to type TOTP (`JBSWY3DPEHPK3PXP`).
+- Admin recovery: `/recover/password` and `/recover/mfa` stub links (hashed in `auth_recovery_tokens`) plus People `/login/*` stubs. Nothing emails.
+- UI: Settings → Profile, Settings → Security, Settings → People / Agents (roster + recovery).
+- Additive migration `0032_auth_mfa_recovery` (incoming `0021` renumbered). Alters `mfa_challenges` from `0029`; does not drop it. Ana fixture untouched. One Pipeline nav row. Sidebar hex unchanged.
+
+## BATCH4 carrier portal credentials (`cursor/carrier-portal-creds-06cb`)
+
+Admin-only encrypted quoting-portal username + password on the carrier record. Agency code and portal URL stay on the sheet for Agents.
+
+- AES-256-GCM via `CARRIER_SECRETS_KEY` (falls back to `PII_ENCRYPTION_KEY`, then the local demo key). Ciphertext + IV on `carriers`; never plaintext columns.
+- Reveal writes `carrier_secret_reveal_logs` (no decrypted value stored). Admin only — Agents get `hasPortalUsername/Password=false` and no username hint.
+- Seed: American Traditions `FF-AT-1048` and People's Trust `FF-PT-2201`. Existing Tailrow / American Integrity get agency codes only.
+- Incoming `0027_carrier_portal_secrets` renumbered to `0033_carrier_portal_secrets`. Ana fixture untouched. One Pipeline. Sidebar hex unchanged.
+
+## WAVE2 — Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Deal Issued quote PDFs open in-browser (`/files/[id]` + `/api/files/[id]`), download, and Email / SMS / Print stubs. Elena seeds two real quote PDFs. Ana unbound (Cov A **$321,000**). No new migration. One Pipeline. Alerts off the sidebar.
+
+## DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0034_fill_feedback`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+**What was broken:** Deal Documents upload extracted fields onto `extracted_fields` / risk but never wrote `quote_sheets`. “Fill master sheet” (`setQuotingLine`) and “Fill blanks from source docs” only copied leftover extract rows through the thin lifecycle mapper — they did not re-parse dec / wind mit / 4-point. SheetDrop “Upload and fill” also skipped the Quote Sheet writer. Wind mit / 4-point could be skipped when `inferShopLine` saw “flood”. Inspection keys (`four_point_date`, `wind_mit_form`) lacked catalog extractKeys.
+
+**Fix:** Upload / pick line / Fill master sheet all call `runFillDealSheets` (parse source docs → blanks-only Quote Sheet). HO source docs stay on the home line. Deal Documents is a 5-step flow with progress, errors, source-vs-sheet review, visual approve, then Send to Fill. Super-Copy still reads the filled sheet.
+
+**Fill Feedback log** (`fill_feedback_logs`, `/quotes/fill-feedback`): when an agent/Admin corrects a mapped field after ingest, or marks a paste field wrong, store doc type / field / wrong / corrected / optional carrier. Later fill prefers that correction when the same extract repeats. Rule/log based — not ML. Seeded two Elena demo rows (roof covering; hurricane deductible).
+
+## BATCH4 Fill Learning (`cursor/fill-learning-log-efeb`)
+
+Merged onto `cursor/mac-ready-batch4-7pm` in WAVE-2. Additive `0035_fill_learning_logs` (incoming `0021` renumbered). Ana fixture untouched (unbound, Cov A **$321,000**). Does not change `src/lib/appetite/match.ts`. One Pipeline. Sidebar hex unchanged.
+
+Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec / wind mit / 4-point / other source docs.
+
+- Table `fill_learning_logs`: date, deal_id, doc_type, field_key, extracted_value, corrected_value, corrected_by, note, optional carrier_id (paste failed).
+- Master sheet UI: **Mark mapping wrong** → save correction writes the log and updates the sheet cell. Ana Coverage A is locked.
+- Ingest hook: `runFillDealSheets` remaps extracted values via `applyLearningToExtracted` after Fill Feedback (`applyLoggedCorrections`). Extracted string must match — that is the agency-wide safety check.
+- Admin browse `/logs/fill-learning` (tab next to Appetite / decline log). Agents can still mark a mapping wrong on the sheet.
+- Seeded Elena HO corrections: wind mit roof year 2014→2019, dec CBS→masonry, 4-point comp shingle→architectural shingle. No Ana rows.
+
+## DIFF A — Producer scorecards + lifecycle glance (`cursor/producer-scorecards-glance-4f97`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Additive only. No new migration (computed from existing Leads / Deals / Policies / Claims / tasks). Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged (`#c5ddf4`).
+
+- **Scorecards** (`/scorecards`): Admin ranks every producer on conversion, retention, in-force premium, and binds. Sort tabs reuse those four metrics. Agents see **own** card + rank number — not other producers. Drill-in `/scorecards/[id]` is Admin-any / Agent-self.
+- Conversion = binds / (binds + open shops + lost). Quote Sent is a shop. Bound / Closed Won is a bind. A quoted policy is not a bind and not premium.
+- Retention = in-force / (in-force + lapsed). Premium is Active + Bound only.
+- People / Agents **Open producer scorecard** points at the same math. Legacy `/settings/agents/[id]/performance` stub now renders the scorecard strip.
+- **Glance** (`/glance?tab=`): unified Sales | Service | Claims | Renewals. URL tabs filter existing records (open deals, review tasks / endorsements / policy work, claims log, in-force renewals in 60 days). Agent-scoped. No second pipeline.
+
+## DIFFERENTIATOR pack B — E&O audit + Compliance (`cursor/eo-audit-compliance-314d`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Additive `0036_eo_audit_logs`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Nothing emails Javy.
+
+- Table `eo_audit_logs`: append-only (app insert + Postgres trigger). Who / when / what / record ids for email, SMS, call, meeting, doc view, reveal PII, policy change. No decrypted PII.
+- Writers: `writeDeskComms`, `/api/files/[id]`, `revealPiiField`, `updatePolicyRecord`, `filePolicyChange`.
+- Admin page `/compliance` (Settings + Logs tab). Live E&O flags: no client activity 90 days before renewal, Bound/Pending missing signed app, Quote Sent with no desk follow-up task.
+- Seed writes a short Elena/Harbor trail and in-app `eo_gap` alerts to Javy only. Ana stays Quote Sent / unbound.
+
+## DIFF D — Priority queue + campaign sequences (`cursor/priority-queue-campaigns-1a0d`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_campaign_sequences` renumbered to `0037_campaign_sequences`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Alerts stay in the header bell.
+
+**Work queue.** `/work-queue` leads with a **Priority queue** sorted by renewal date (soonest first), then revenue at risk (premium desc). Columns: Due / Priority / Status / $ / Account. Eligible book: Active / Bound / Pending / Lapse. Quotes are not written premium — shopping-only Ana is not a row. Priority bands: lapse/overdue Highest; ≤30 days High (Highest if $≥2,500); ≤60 days Normal (High if $≥5,000). Needs attention + Bound/pending/lapse tables stay below.
+
+**Campaign sequences.** `/automations/sequences` — five insurance catalogs: lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask. Each step is a desk Task stub or a work-email template stub (`seq-*` slugs in `email_templates`). On/Off only. Nothing sends. Seed + `ensureCampaignSequences()` keep the five rows. Review ask hangs on bind / Closed Won, not pipeline stage.
+
+## DIFF L — Interactive quote compare + video proposal stub (`cursor/quote-compare-video-11d6`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_quote_compare_video` (`deals.video_proposal_url`) renumbered to `0038_quote_compare_video`. Ana fixture untouched (unbound, Cov A **$321,000**). No Loom API. No live Zoho. One Pipeline. Sidebar hex unchanged.
+
+No branded proposal existed on the batch-4 base, so this slice ships a PDF proposal (agency letterhead + selected quotes + diffs + plain English). Stored on the Deal as `documents.slot = proposal` / `docType = proposal_pdf`.
+
+- Interactive page `/deals/[id]/compare`: select quotes (and priced attempt-log rows), highlight field diffs, write a plain-English note.
+- Quotes tab + `/quotes` board link into Compare. Documents lists branded proposals separately from issued quote PDFs.
+- Video proposal is paste-only: **Record / upload link** saved on `deals.video_proposal_url`. Host it yourself (Drive, Vimeo, YouTube). FitFirst does not record and does not call Loom.
+- Elena seed: `https://fitfirst.example/video/ruiz-melbourne-ho3`. Ana has no video URL and stays shopping / 0 policies.
+
+Click path: Elena Deal → Quotes → Open interactive compare → tick American Integrity + Tailrow → Generate branded proposal → preview PDF. Paste/clear the video URL. Ana Deal → Compare shows her priced attempts (AI quoted $5,607.53 not bindable). Do not bind Ana.
+
+## DIFFERENTIATOR pack E — branded proposals + hit/lost + quote compare (`cursor/diff-proposals-hit-ratio-4024`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_diff_pack_e` renumbered to `0039_diff_pack_e`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+- **Branded proposal PDF** from any Deal quote set: agency name / logo / color preset, side-by-side premiums, coverage summary, rule-based gap notes. Stored on Deal Attachments (`documents.slot=proposal`). Generate from Quotes, Documents, or `/deals/[id]/compare`. Elena seeds one proposal PDF plus a GeoVera compare quote (higher AOP / hurricane, no flood, Cov A $365k).
+- **Hit / lost reporting:** `quotes.lost_reason` + `quote_attempt_logs.lost_reason` picklist. Admin Home widget **Hit ratio / lost business** — quote hit %, shop hit %, carrier performance, lost-reason counts. Ana declined rows seed roof / construction reasons. Ana stays a miss (quoted, not bound).
+- **Quote compare screen** `/deals/[id]/compare`: interactive select + video URL stub (DIFF L) plus plain-English gap notes from rule text (deductible higher, no flood, lower Cov A, not bindable). Not an LLM. Ana compare falls back to her quoted attempt at $321,000.
+
+Do not bind Ana.
+
+## Claims FNOL light intake (`cursor/claims-fnol-intake-9bfe`)
+
+DIFF K merged onto `cursor/mac-ready-batch4-7pm`. Broker log — not a claims shop. Incoming `0036_claims_fnol` renumbered to `0040_claims_fnol`. Ana stays unbound, Cov A **$321,000**.
+
+- Additive `0040_claims_fnol`: `claims.contact_id`, loss location, reporter name/phone, `producer_id`, `producer_notified_at`. No reserve or adjuster columns.
+- `/claims/new` is FNOL intake. Policy + Contact stay linked (picking a policy fills the contact). Carrier claim # is optional until the carrier assigns one.
+- `/claims` is a three-column status pipeline: Inquiry → Referred to carrier → Closed. Same statuses as the existing light log. Move buttons advance the desk status.
+- Saving FNOL (or moving to referred / adding a carrier #) writes an in-app `fnol` alert to the Policy/Contact owner. Header bell opens `/claims/[id]`. Nothing emails.
+- Contact 360 and Policy 360 show the linked notices. Seed: Elena wind inquiry (no carrier #), Camila water `AI-CLM-19044` referred, Camila hail `AI-CLM-16220` closed. Maya gets the producer pings. Ana has zero claims.
+
+## Open API + clean export (`cursor/open-api-export-be9f`)
+
+DIFF I merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_api_tokens` renumbered to `0041_api_tokens`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. No lock-in copy.
+
+- Bearer tokens hashed in `api_tokens`. Seeded `ff_demo_admin` for Admin (Javy). Session cookie `ff_actor_id` also authenticates `/api/v1`.
+- List/get: `/api/v1/contacts`, `/policies`, `/deals`, `/activities` plus `/:id`. Pagination `limit`/`offset`.
+- CSV: `/api/v1/export/contacts.csv`, `/policies.csv`, `/commissions.csv`. Admin page `/settings/export`.
+- Encrypted SSN / EIN / DL stay off JSON and CSV. Agents see own book only.
+- `POST /api/v1/auth/token` issues another hashed Admin bearer. `/api/v1` is public at the proxy; the route still requires a token or session.
+
+## DIFF H — coverage gaps + bind path + Fill labels (`cursor/diff-h-coverage-bind-fill-9bd3`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. No new migration. Ana fixture untouched (unbound, Cov A **$321,000**). `bindDeal` now throws `Ana stays shopping. Do not bind this shop.` One Pipeline. Alerts off the sidebar.
+
+- **Coverage gaps (in-force only):** Contact / Business / Deal show a plain-English panel. Rules: auto-no-home, home-no-auto, home-no-flood, no-umbrella, flood-no-home, GL/BOP-no-WC, GL-no-umbrella. Quotes, quoted status, and cancelled rows never count. Ana (0 policies) stays empty with the $321k lock sentence.
+- **Quote compare:** Deal Quotes tab adds a Why-this-quote column (cheapest vs others, deductible / Cov A English, bindable vs not). Ana rows stay “Do not bind Ana.” Interactive compare + branded proposals from WAVE-1 stay.
+- **Closed Won one-click bind:** Deal header form replaced with Personal · Contact + Policy vs Commercial · Business + Policy. After bind, the path sentence names the Contact/Business and Policy. Quotes stay quotes.
+- **Master sheet → Fill labels:** Documents stepper is Drop source docs → Choose quoting line → Fill master sheet → Glance yellow / CHECK → Approve, then Send to Fill. Handoff buttons: Copy master sheet / Send master sheet to Fill / Open Fill window. Zero rekey — Fill reads the approved sheet, never the PDF.
+
+## Policy version history + document versions (`cursor/policy-version-history-aa85`)
+
+DIFF G merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_policy_doc_versions` remapped to `0042_policy_doc_versions`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Elena document IDs remapped off pack E quote/proposal `…4e1`–`…4e3`.
+
+- `policy_change_logs`: who / when / field / before / after on Policy. Sources: bind, record edit, endorsement, cancellation, non-renewal, seed.
+- Save policy (`updatePolicyRecord`), bind, and `filePolicyChange` write field diffs.
+- `document_versions` on Deal and Policy attachments. Replace keeps the prior file. Current `documents` row stays the latest.
+- UI: Policy **Change history** timeline. Deal Documents and Policy Attachments show version + Replace.
+- Seeded on Elena `HO3-ELENA-2026`: bind bound → active, premium 3120 → 2840, billing monthly → annual (Maya). Wind mit and policy dec each keep a prior copy. No Ana rows.
+
+## DIFFERENTIATOR pack C — Smart lead routing + renewal-risk (`cursor/lead-routing-renewal-risk-5b51`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_lead_routing_renewal_risk` remapped to `0043_lead_routing_renewal_risk`. Ana fixture untouched (unbound, Cov A **$321,000**). No ML. One Pipeline. Sidebar hex unchanged.
+
+**Lead routing.** Admin Settings → Brand / Agency → **Lead routing**. Rules match territory + written line (Home/Auto/…) + producer capacity (`#` open deals under the cap). First enabled rule by priority wins. Least-loaded producer in that territory, or a pinned producer if they still have room. Unassigned inbound / social with no connection owner runs the same engine. No match posts a `lead_offers.kind = unassigned` row on the Home lead-offer board (take ownership). Seed: Space Coast HO/Auto prefer Maya if she is under the open-deal cap; FL GL prefers Javy. Tessa Voss (Melbourne HO) routes to Maya; Grant Hobbs (Billings MT Auto) stays on the board.
+
+**Renewal-risk.** Pure score 0–100 from days-to-renewal (flag before the 45–75 day rate-increase window), proposed premium change if known, monoline, lapse history, and no contact 60 days. Home widget **Renewal-risk flags** (My production + Retention). Account 360 Overview on Contact and Business. Hale HO (`HP-FL-88421`, +16.6%, 28 days) is Critical. Nair Auto is Elevated. Ana has 0 policies — no score, still shopping.
+
+## DIFF J — Commission reconciliation (`cursor/commission-recon-diffj-1757`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_commission_reconciliations` remapped to `0044_commission_reconciliations`. Ana fixture untouched (unbound, Cov A **$321,000**, $0 commission). One Pipeline. Sidebar hex unchanged.
+
+**Admin** `/commissions`: expected vs received board. Expected is the policy-rule TAC already on `commissions.amount`. Received is typed by hand. Mark short / disputed / match. No carrier download.
+
+**Agent** `/commissions`: own earned / pending / disputed only. Short shows as pending (still owed). Other producers stay off the sheet.
+
+**Seed shortfalls:** Shah HO (Maya) $180 / $215.60 short; Hale HO (Javy) $198 / $262.08 short; Harbor GL (Javy) $250 / $318.12 short; Elena Ruiz HO (Maya) disputed — missing AFA statement. Paid rows seed as earned. Ana is not in this set.
+
+## DIFF F — Client portal stubs (`cursor/client-portal-stubs-3bd3`)
+
+Last differentiator pack merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_client_portal` remapped to `0045_client_portal`. Portal token PKs remapped off version-history `b036…` to `b045…`. Ana fixture untouched (unbound, Cov A **$321,000**). **No Ana token.** One Pipeline. Sidebar hex unchanged.
+
+Public / token self-serve pages. Stub auth is the token in the URL — no desk password.
+
+- `/portal` landing (agency brand) plus `/portal/[token]` home, ID cards, COI, policy change.
+- Seeded tokens: Elena `elena-ruiz-2026` (ID card + change), Harbor `harbor-key-2026` (reuse `COI-20260820-0001` or request a new holder).
+- Reuses the existing `CertificateStub` + `issued_certificates` row. Matching holder name reuses the stub and does not queue a duplicate.
+- New COI / policy-change submissions write `portal_requests` and enqueue the existing policy work item + note + in-app task. The note has every field so the desk does not rekey. Does **not** call `filePolicyChange` (policy stays as-is until the desk files it).
+- ID card: branded stub from the in-force policy; download uses the issued `policy_file` / `policy_id` document via `/api/portal/[token]/files/[id]`.
+- Desk: stub link on Elena Contact, Harbor Business, and those Policies. Work queue has a Client portal requests section.
+
+## WAVE3 leftover
+
+DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

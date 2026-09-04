@@ -34,14 +34,16 @@ export function rankHits(hits: SearchHit[], query: string): SearchHit[] {
 export function hitFromLead(row: {
   id: string;
   firstName: string;
+  middleName?: string | null;
   lastName: string;
   email?: string | null;
   phone?: string | null;
 }): SearchHit {
+  const given = [row.firstName, row.middleName].filter((part) => part?.trim()).join(" ");
   return {
     kind: "lead",
     id: row.id,
-    title: `${row.lastName}, ${row.firstName}`,
+    title: `${row.lastName}, ${given}`.replace(/, $/, ""),
     subtitle: [row.email, row.phone].filter(Boolean).join(" · ") || "Lead",
     href: `/leads/${row.id}`,
   };
@@ -67,12 +69,19 @@ export function hitFromContact(row: { id: string; firstName: string; lastName: s
   };
 }
 
-export function hitFromBusiness(row: { id: string; name: string; ein?: string | null }): SearchHit {
+export function hitFromBusiness(row: {
+  id: string;
+  name: string;
+  einLast4?: string | null;
+  ein?: string | null;
+}): SearchHit {
+  const last4 = row.einLast4 ?? (row.ein ? row.ein.replace(/\D/g, "").slice(-4) : null);
+  const mask = last4 ? `**-***${last4}` : null;
   return {
     kind: "business",
     id: row.id,
     title: row.name,
-    subtitle: row.ein ? `Business · EIN ${row.ein}` : "Business · Account 360",
+    subtitle: mask ? `Business · EIN ${mask}` : "Business · Account 360",
     href: `/accounts/${row.id}`,
   };
 }

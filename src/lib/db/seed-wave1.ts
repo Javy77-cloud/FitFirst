@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { writeEin } from "@/lib/pii/write";
 import { CONTACT_ID, TENANT_ID } from "../fixtures/ids";
 import { db } from "./index";
 import { accounts, carriers, contacts, policies } from "./schema";
@@ -190,7 +191,7 @@ export async function seedWave1ZohoBook() {
       name: row.legal_name,
       legalName: row.legal_name,
       dba: row.dba,
-      ein: row.fein,
+      ...writeEin(row.fein),
       employeeCount: row.employee_count,
       annualSales: row.annual_sales == null ? null : String(row.annual_sales),
       payrollTotal: row.payroll_total == null ? null : String(row.payroll_total),

@@ -29,6 +29,16 @@ const propertyFields: FormFieldDef[] = [
   { key: "current_carrier", label: "Current carrier", group: "Prior", sheetKey: "current_carrier" },
 ];
 
+const agencyFields: FormFieldDef[] = [
+  { key: "named_insured", label: "Named insured", group: "Party", contactKey: "name" },
+  { key: "phone", label: "Phone", group: "Party", contactKey: "phone" },
+  { key: "email", label: "Email", group: "Party", contactKey: "email" },
+  { key: "mailing", label: "Mailing address", group: "Party", contactKey: "mailing" },
+  { key: "policy_number", label: "Policy number", group: "Policy" },
+  { key: "current_carrier", label: "Current carrier", group: "Policy", sheetKey: "current_carrier" },
+  { key: "effective_date", label: "Effective date", group: "Policy" },
+];
+
 export const FORM_TEMPLATE_SEEDS: FormTemplateSeed[] = [
   {
     slug: "fl-ho3",
@@ -50,5 +60,29 @@ export const FORM_TEMPLATE_SEEDS: FormTemplateSeed[] = [
         field.key,
       ),
     ),
+  },
+  {
+    slug: "agency-cancellation",
+    name: "Cancellation request",
+    line: "HO",
+    family: "Agency form",
+    summary: "Agency cancellation request. Fill from a source dec or paste fields. Not a carrier portal.",
+    fields: [
+      ...agencyFields,
+      { key: "cancellation_date", label: "Cancellation date", group: "Request" },
+      { key: "cancellation_reason", label: "Reason", group: "Request" },
+    ],
+  },
+  {
+    slug: "agency-aor",
+    name: "Agent of record",
+    line: "HO",
+    family: "Agency form",
+    summary: "Agency AOR letter. Map fields from an uploaded dec or paste. Stub schema only.",
+    fields: [
+      ...agencyFields,
+      { key: "prior_agency", label: "Prior agency", group: "AOR" },
+      { key: "new_agency", label: "New agency", group: "AOR" },
+    ],
   },
 ];

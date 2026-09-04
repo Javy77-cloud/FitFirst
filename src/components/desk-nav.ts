@@ -37,12 +37,14 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/get-started", label: "Get Started", icon: ListChecks },
       { href: "/", label: "Home", icon: Home, match: "/" },
+      { href: "/social", label: "Social", icon: Users, match: "/social" },
       { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban, match: "/pipeline" },
       { href: "/leads", label: "Leads", icon: Users, match: "/leads" },
       { href: "/deals", label: "Deals", icon: ClipboardList, match: "/deals" },
       { href: "/quotes", label: "Quotes", icon: ClipboardList, match: "/quotes" },
       { href: "/tasks", label: "Tasks", icon: ListChecks, match: "/tasks" },
       { href: "/work-queue", label: "Work queue", icon: ListChecks, match: "/work-queue" },
+      { href: "/automations", label: "Automations", icon: ListChecks, match: "/automations" },
     ],
   },
   {
@@ -58,6 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Records",
     items: [
       { href: "/policies", label: "Policies", icon: Shield, match: "/policies" },
+      { href: "/documents", label: "Documents", icon: FileStack, match: "/documents" },
       { href: "/forms", label: "Forms", icon: FileStack, match: "/forms" },
       { href: "/merge", label: "Merge", icon: Users, match: "/merge" },
       { href: "/claims", label: "Claims log", icon: FileStack, match: "/claims" },
@@ -83,6 +86,9 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/settings?section=phone", label: "Phone", icon: Phone, match: "/settings" },
       { href: "/settings?section=agency", label: "Agency", icon: Settings, match: "/settings" },
+      { href: "/settings/offices", label: "Offices", icon: Building2, match: "/settings/offices" },
+      { href: "/settings/territories", label: "Territories", icon: Building2, match: "/settings/territories" },
+      { href: "/settings/social", label: "Social / GBP", icon: Users, match: "/settings/social" },
       { href: "/settings?section=notifications", label: "Notifications", icon: Bell, match: "/settings" },
     ],
   },

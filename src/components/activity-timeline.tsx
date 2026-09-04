@@ -12,6 +12,7 @@ export function ActivityTimeline({
   accountId,
   policyId,
   dealId,
+  leadId,
   heading = "Activity timeline",
 }: {
   items: TimelineItem[];
@@ -19,7 +20,11 @@ export function ActivityTimeline({
   accountId?: string | null;
   policyId?: string | null;
   dealId?: string | null;
+  leadId?: string | null;
   heading?: string;
+  phone?: string | null;
+  email?: string | null;
+  templates?: unknown;
 }) {
   return (
     <section className="ff-card p-4">
@@ -34,6 +39,7 @@ export function ActivityTimeline({
         {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
+        {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
         <div>
           <Label className="text-xs">Kind</Label>
           <select

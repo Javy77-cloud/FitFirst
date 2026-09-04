@@ -1,9 +1,14 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { splitCommission } from "../commissions/math";
 import {
   ADMIN_USER_ID,
   AGENCY_SETTINGS_ID,
   AGENT_USER_ID,
+  FROZEN_AGENT_ALERT_ID,
+  FROZEN_AGENT_MESSAGE_ID,
+  FROZEN_AGENT_USER_ID,
+  PENDING_MFA_INVITE,
+  PENDING_MFA_USER_ID,
   CARRIER_GOAL_IDS,
   CARRIER_IDS,
   CONTACT_ID,
@@ -29,20 +34,26 @@ import {
   LEAD_ID,
   OPP_CONTACT_IDS,
   OPP_POLICY_IDS,
+  PIPELINE_PC_ID,
   TENANT_ID,
 } from "../fixtures/ids";
+import { DEMO_JAVY_TOTP_SECRET } from "../auth/totp";
 import { db } from "./index";
 import {
   agencySettings,
   carrierGoals,
   commissionEvents,
   commissions,
+  activities,
   contacts,
   deals,
   leads,
   policies,
   recordAsks,
   users,
+  deskAgents,
+  deskMessages,
+  alerts,
 } from "./schema";
 
 type DemoCommission = {
@@ -226,17 +237,44 @@ export async function seedUsersAndBook() {
       tenantId: TENANT_ID,
       name: "Javy Rivera",
       email: "javy@fitfirst.local",
+      username: "javy",
       role: "admin",
       passwordHash: null,
       active: true,
+      accessStatus: "active",
+      canAccessModules: true,
+      canSeeAgencyWidgets: true,
+      officeLabel: "Palm Bay HQ",
+      territoryLabel: "Brevard",
+      mustSetPassword: false,
+      mfaEnrolled: true,
+      mustEnrollMfa: false,
+      mfaMethod: "totp",
+      totpSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaDemoBypass: true,
+      meetingAddress: "Suite 110 · owner desk",
     })
     .onConflictDoUpdate({
       target: users.id,
       set: {
         name: "Javy Rivera",
         email: "javy@fitfirst.local",
+        username: "javy",
         role: "admin",
         active: true,
+        accessStatus: "active",
+        canAccessModules: true,
+        canSeeAgencyWidgets: true,
+        officeLabel: "Palm Bay HQ",
+        territoryLabel: "Brevard",
+        mfaEnrolled: true,
+        mustEnrollMfa: false,
+        mfaMethod: "totp",
+        totpSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaDemoBypass: true,
+        meetingAddress: "Suite 110 · owner desk",
         updatedAt: new Date(),
       },
     });
@@ -248,19 +286,190 @@ export async function seedUsersAndBook() {
       tenantId: TENANT_ID,
       name: "Maya Chen",
       email: "maya@fitfirst.local",
+      username: "maya",
       role: "agent",
       passwordHash: null,
       active: true,
+      accessStatus: "active",
+      canAccessModules: true,
+      canSeeAgencyWidgets: false,
+      officeLabel: "Palm Bay HQ",
+      territoryLabel: "Brevard",
+      mustSetPassword: false,
+      mfaEnrolled: true,
+      mustEnrollMfa: false,
+      mfaMethod: "email",
+      mfaEmail: "maya@fitfirst.local",
+      mfaSecret: DEMO_JAVY_TOTP_SECRET,
+      totpSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaDemoBypass: true,
+      meetingAddress: "Suite 112 · producer desk",
     })
     .onConflictDoUpdate({
       target: users.id,
       set: {
         name: "Maya Chen",
         email: "maya@fitfirst.local",
+        username: "maya",
         role: "agent",
         active: true,
+        accessStatus: "active",
+        canAccessModules: true,
+        canSeeAgencyWidgets: false,
+        officeLabel: "Palm Bay HQ",
+        territoryLabel: "Brevard",
+        mfaEnrolled: true,
+        mustEnrollMfa: false,
+        mfaMethod: "email",
+        mfaEmail: "maya@fitfirst.local",
+        mfaSecret: DEMO_JAVY_TOTP_SECRET,
+        totpSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaDemoBypass: true,
+        meetingAddress: "Suite 112 · producer desk",
         updatedAt: new Date(),
       },
+    });
+
+  await db
+    .insert(users)
+    .values({
+      id: FROZEN_AGENT_USER_ID,
+      tenantId: TENANT_ID,
+      name: "Luis Vega",
+      email: "luis@fitfirst.local",
+      username: "luis",
+      role: "agent",
+      passwordHash: null,
+      active: false,
+      accessStatus: "frozen",
+      canAccessModules: false,
+      canSeeAgencyWidgets: false,
+      officeLabel: "Melbourne",
+      territoryLabel: "Brevard",
+      mustSetPassword: true,
+      mfaEnrolled: true,
+      mustEnrollMfa: false,
+      mfaMethod: "sms",
+      mfaPhone: "321-555-0188",
+      frozenAt: new Date("2026-08-15T16:00:00.000Z"),
+      meetingAddress: "Melbourne satellite",
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: "Luis Vega",
+        email: "luis@fitfirst.local",
+        username: "luis",
+        role: "agent",
+        active: false,
+        accessStatus: "frozen",
+        canAccessModules: false,
+        canSeeAgencyWidgets: false,
+        officeLabel: "Melbourne",
+        territoryLabel: "Brevard",
+        mustSetPassword: true,
+        mfaEnrolled: true,
+        mustEnrollMfa: false,
+        mfaMethod: "sms",
+        frozenAt: new Date("2026-08-15T16:00:00.000Z"),
+        meetingAddress: "Melbourne satellite",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(deskAgents)
+    .values({
+      id: FROZEN_AGENT_USER_ID,
+      tenantId: TENANT_ID,
+      slug: "luis",
+      displayName: "Luis Vega",
+      role: "agent",
+    })
+    .onConflictDoUpdate({
+      target: deskAgents.id,
+      set: { displayName: "Luis Vega", role: "agent", slug: "luis" },
+    });
+
+  await db
+    .insert(deskMessages)
+    .values({
+      id: FROZEN_AGENT_MESSAGE_ID,
+      tenantId: TENANT_ID,
+      fromUserId: ADMIN_USER_ID,
+      toUserId: FROZEN_AGENT_USER_ID,
+      body: "Desk frozen while appointments catch up. Unfreeze when you are ready to write again.",
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(alerts)
+    .values({
+      id: FROZEN_AGENT_ALERT_ID,
+      tenantId: TENANT_ID,
+      kind: "desk_message",
+      title: "Javy Rivera sent a desk note to Luis Vega",
+      body: "Desk frozen while appointments catch up. Unfreeze when you are ready to write again.",
+      severity: "info",
+      entityType: "user",
+      entityId: FROZEN_AGENT_USER_ID,
+      recipientUserId: FROZEN_AGENT_USER_ID,
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(users)
+    .values({
+      id: PENDING_MFA_USER_ID,
+      tenantId: TENANT_ID,
+      name: "Nora Frost",
+      email: "nora@fitfirst.local",
+      username: "nora",
+      role: "agent",
+      passwordHash: null,
+      active: true,
+      accessStatus: "active",
+      canAccessModules: true,
+      canSeeAgencyWidgets: false,
+      officeLabel: "Palm Bay HQ",
+      territoryLabel: "Brevard",
+      mustSetPassword: true,
+      mustEnrollMfa: true,
+      mfaEnrolled: false,
+      inviteToken: PENDING_MFA_INVITE,
+      inviteExpiresAt: new Date("2026-12-31T16:00:00.000Z"),
+      meetingAddress: "Suite 114",
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: "Nora Frost",
+        email: "nora@fitfirst.local",
+        username: "nora",
+        role: "agent",
+        active: true,
+        accessStatus: "active",
+        mustSetPassword: true,
+        mustEnrollMfa: true,
+        mfaEnrolled: false,
+        inviteToken: PENDING_MFA_INVITE,
+        inviteExpiresAt: new Date("2026-12-31T16:00:00.000Z"),
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(deskAgents)
+    .values({
+      id: PENDING_MFA_USER_ID,
+      tenantId: TENANT_ID,
+      slug: "nora",
+      displayName: "Nora Frost",
+      role: "agent",
+    })
+    .onConflictDoUpdate({
+      target: deskAgents.id,
+      set: { displayName: "Nora Frost", role: "agent", slug: "nora" },
     });
 
   await db
@@ -269,10 +478,26 @@ export async function seedUsersAndBook() {
       id: AGENCY_SETTINGS_ID,
       tenantId: TENANT_ID,
       fiscalYearStartMonth: 1,
+      agencyName: "FitFirst Insurance",
+      emailSignature: "Javy Rivera\nFitFirst Insurance",
+      officeAddress: "2100 Palm Bay Rd NE, Palm Bay, FL 32905",
+      zoomUrl: "https://zoom.us/j/fitfirst-demo",
+      meetUrl: "https://meet.google.com/fit-first-demo",
+      byoVideoUrl: "https://fitfirst.example/video/room",
+      videoProvider: "zoom",
     })
     .onConflictDoUpdate({
       target: agencySettings.id,
-      set: { fiscalYearStartMonth: 1 },
+      set: {
+        fiscalYearStartMonth: 1,
+        agencyName: "FitFirst Insurance",
+        emailSignature: "Javy Rivera\nFitFirst Insurance",
+        officeAddress: "2100 Palm Bay Rd NE, Palm Bay, FL 32905",
+        zoomUrl: "https://zoom.us/j/fitfirst-demo",
+        meetUrl: "https://meet.google.com/fit-first-demo",
+        byoVideoUrl: "https://fitfirst.example/video/room",
+        videoProvider: "zoom",
+      },
     });
 
   await db.update(leads).set({ ownerId: ADMIN_USER_ID, updatedAt: new Date() }).where(eq(leads.id, LEAD_ID));
@@ -703,4 +928,69 @@ export async function seedUsersAndBook() {
         },
       });
   }
+
+  const mayaContacts = [DEMO_CONTACT_SHAH, DEMO_CONTACT_REED, OPP_CONTACT_IDS.ruiz];
+  await db
+    .update(deals)
+    .set({ ownerId: AGENT_USER_ID, updatedAt: new Date() })
+    .where(inArray(deals.contactId, mayaContacts));
+  await db
+    .update(leads)
+    .set({ ownerId: AGENT_USER_ID, updatedAt: new Date() })
+    .where(inArray(leads.email, ["priya.shah@example.com", "tomas.reed@example.com"]));
+
+  const mayaDealId = "d0d00000-0000-4000-8000-0000000000a1";
+  await db
+    .insert(deals)
+    .values({
+      id: mayaDealId,
+      tenantId: TENANT_ID,
+      contactId: DEMO_CONTACT_SHAH,
+      title: "Shah · Orlando HO (Maya book)",
+      lineOfBusiness: "HO",
+      pipelineStage: "shopping",
+      pipelineStageSlug: "gather",
+      pipelineId: PIPELINE_PC_ID,
+      state: "FL",
+      ownerId: AGENT_USER_ID,
+      notes: "Maya Chen producer shop. Not Ana. Do not bind Ana from this row.",
+    })
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        contactId: DEMO_CONTACT_SHAH,
+        title: "Shah · Orlando HO (Maya book)",
+        pipelineId: PIPELINE_PC_ID,
+        ownerId: AGENT_USER_ID,
+        notes: "Maya Chen producer shop. Not Ana. Do not bind Ana from this row.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(activities)
+    .values({
+      id: "d0d00000-0000-4000-8000-0000000000a2",
+      tenantId: TENANT_ID,
+      kind: "meeting",
+      title: "Shah renewal check-in",
+      notes: "Maya book. Confirm HO docs before the next shop.",
+      status: "open",
+      startAt: new Date("2026-09-04T15:00:00.000Z"),
+      endAt: new Date("2026-09-04T15:30:00.000Z"),
+      dueAt: new Date("2026-09-04T15:00:00.000Z"),
+      contactId: DEMO_CONTACT_SHAH,
+      dealId: mayaDealId,
+      assignee: "Maya Chen",
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Shah renewal check-in",
+        assignee: "Maya Chen",
+        contactId: DEMO_CONTACT_SHAH,
+        dealId: mayaDealId,
+        updatedAt: new Date(),
+      },
+    });
 }

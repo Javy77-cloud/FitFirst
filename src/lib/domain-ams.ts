@@ -3,7 +3,7 @@
 export const APPOINTMENT_LINES = ["HO", "AUTO", "FLOOD", "UMBRELLA"] as const;
 export type AppointmentLine = (typeof APPOINTMENT_LINES)[number];
 
-export const SELLING_AGENCIES = ["AFA", "First Connect", "Agentero"] as const;
+export const SELLING_AGENCIES = ["AFA", "First Connect", "Agentero", "Agility", "BackNine"] as const;
 export type SellingAgency = (typeof SELLING_AGENCIES)[number];
 
 export const WRITTEN_LINE_LABELS: Record<string, string> = {
@@ -84,10 +84,12 @@ export type ClaimCause = (typeof CLAIM_CAUSES)[number];
 
 export const CLAIM_ACTIVITY_TYPES = [
   "opened",
+  "fnol_logged",
   "note_added",
   "file_added",
   "status_changed",
   "fields_updated",
+  "producer_notified",
 ] as const;
 export type ClaimActivityType = (typeof CLAIM_ACTIVITY_TYPES)[number];
 
@@ -97,13 +99,21 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const COMMISSION_STATUSES = ["pending", "payable", "paid", "held"] as const;
 export type CommissionStatus = (typeof COMMISSION_STATUSES)[number];
 
-export const ASK_STATUSES = ["open", "done"] as const;
+export const ASK_STATUSES = ["open", "done", "resolved"] as const;
 export type AskStatus = (typeof ASK_STATUSES)[number];
 
-export const ASK_KINDS = ["question", "payout"] as const;
+export const ASK_KINDS = ["question", "payout", "status"] as const;
 export type AskKind = (typeof ASK_KINDS)[number];
 
-export const ASK_ENTITY_TYPES = ["commission", "policy"] as const;
+export const ASK_ENTITY_TYPES = [
+  "commission",
+  "policy",
+  "contact",
+  "lead",
+  "deal",
+  "account",
+  "carrier",
+] as const;
 export type AskEntityType = (typeof ASK_ENTITY_TYPES)[number];
 
 export const OWNER_ENTITY_TYPES = ["lead", "contact", "deal", "policy"] as const;
@@ -114,8 +124,17 @@ export const COMMISSION_RANGES = [
   "pending",
   "paid",
   "last_30",
+  "last_year",
+  "last_6_months",
+  "last_3_months",
+  "last_month",
   "last_quarter",
   "fiscal_year",
+  "next_month",
+  "next_3_months",
+  "next_6_months",
+  "next_quarter",
+  "next_year",
   "upcoming",
 ] as const;
 export type CommissionRange = (typeof COMMISSION_RANGES)[number];
@@ -132,6 +151,8 @@ export function sellingAgencyLabel(value: string | null | undefined): string {
     afa: "AFA",
     first_connect: "First Connect",
     agentero: "Agentero",
+    agility: "Agility",
+    backnine: "BackNine",
   };
   return map[value] ?? value;
 }
@@ -239,6 +260,9 @@ export const ACTIVITY_STATUS_ALIASES: Record<string, string> = {
   completed: "completed",
   cancelled: "cancelled",
   canceled: "cancelled",
+  incomplete: "open",
+  delayed: "open",
+  rescheduled: "open",
 };
 
 export function formatDuration(totalSeconds: number | null | undefined): string {

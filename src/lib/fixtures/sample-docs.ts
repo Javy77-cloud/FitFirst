@@ -72,9 +72,30 @@ Occupancy: Owner
 Stories: 1
 Miles to Coast: 18
 Pool: No
+Wind Mitigation Form: OIR-B1-1802
+`;
+
+export const MELBOURNE_FOUR_POINT_TEXT = `FOUR POINT INSPECTION
+Named Insured: Elena Ruiz
+Location: 412 Harbor Isle Dr, Melbourne, FL 32935
+City: Melbourne
+County: Brevard
+Year Built: 2014
+Roof Year: 2019
+Roof Covering: Architectural Shingle
+Construction: Masonry
+Occupancy: Owner
+Stories: 1
+4-Point Date: 03/12/2026
+4-Point Result: Pass — electrical, plumbing, HVAC, and roof satisfactory
+Electrical: Satisfactory
+Plumbing: Satisfactory
+HVAC: Satisfactory
+Roof: Satisfactory
 `;
 
 export const CLEAN_DEC_FILENAME = "sample-palm-bay-dec.txt";
 export const MESSY_WIND_MIT_FILENAME = "sample-palm-bay-wind-mit-handwritten.txt";
 export const MELBOURNE_HO_DEC_FILENAME = "sample-melbourne-ho-dec.txt";
 export const MELBOURNE_WIND_MIT_FILENAME = "sample-melbourne-wind-mit.txt";
+export const MELBOURNE_FOUR_POINT_FILENAME = "sample-melbourne-4-point.txt";

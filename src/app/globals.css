@@ -7,12 +7,21 @@
 /*
   Design tokens. Restyle the product here — application logic
   never hardcodes these colors, radii, or densities.
+
+  Locked desk: light paper, ink/slate text, muted terracotta.
+  --ff-bg is always off-white — never charcoal, navy, or dark mode.
+  Not InsuredMine #ff6a00. CHECK blue and Quote Sheet yellow stay status-only.
 */
 :root {
+  --ff-bg: #f7f3ec;
   --ff-navy: #0c2340;
   --ff-navy-mid: #163456;
   --ff-navy-deep: #08182d;
-  --ff-sidebar-text: #d5e2f0;
+  /* Darker brand-blue rail (Javy feel-pass). Not pale #d6e8f8 / #c5ddf4. */
+  --ff-sidebar: #1d4e89;
+  --ff-sidebar-wash: #163a68;
+  --ff-sidebar-line: #2a5a96;
+  --ff-sidebar-text: #e8f1fb;
   --ff-sidebar-muted: #93a7be;
   --ff-accent: #1d6fb8;
   --ff-accent-hover: #185c99;
@@ -35,9 +44,9 @@
   --ff-check: #1d4e89;
   --ff-check-bg: #dbeafe;
   --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
-  --ff-density: 0.875rem;
+  --ff-density: 1rem;
 
-  --background: var(--ff-canvas);
+  --background: var(--ff-bg);
   --foreground: var(--ff-ink);
   --card: var(--ff-card);
   --card-foreground: var(--ff-ink);
@@ -74,6 +83,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-ff-bg: var(--ff-bg);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ibm-plex);
   --font-mono: var(--font-ibm-plex-mono);
@@ -85,6 +95,7 @@
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--ff-sidebar-muted);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -103,6 +114,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--ff-accent-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -119,6 +131,7 @@
   --color-fit-check-bg: var(--ff-check-bg);
   --color-navy: var(--ff-navy);
   --color-navy-mid: var(--ff-navy-mid);
+  --color-ink: var(--ff-ink);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -136,6 +149,9 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  a {
+    text-underline-offset: 0.15em;
+  }
 }
 
 .ff-card {
@@ -145,10 +161,15 @@
   box-shadow: var(--ff-shadow);
 }
 
+.write-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
 .ff-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 0.9rem;
 }
 .ff-table th {
   text-align: left;
@@ -167,6 +188,7 @@
 .ff-table tr:hover td {
   background: var(--ff-wash);
 }
+<<<<<<< HEAD
 .ff-table .ff-col-manage {
   position: sticky;
   right: 0;
@@ -180,6 +202,35 @@
   background: var(--card);
 }
 .ff-table tr:hover td.ff-col-manage {
+=======
+.ff-table th.ff-sheet-th {
+  padding-right: 0.35rem;
+}
+.ff-table th.ff-sheet-th[aria-sort="ascending"] [data-icon="none"],
+.ff-table th.ff-sheet-th[aria-sort="descending"] [data-icon="none"] {
+  display: none;
+}
+.ff-table th.ff-sheet-th[aria-sort="ascending"] [data-icon="asc"],
+.ff-table th.ff-sheet-th[aria-sort="descending"] [data-icon="desc"] {
+  display: inline;
+}
+.ff-table th.ff-col-pinned [data-icon="pin"] {
+  display: inline;
+}
+.ff-table th.ff-col-pinned,
+.ff-table td.ff-col-pinned {
+  position: sticky;
+  left: var(--ff-pin-left, 0px);
+  z-index: 2;
+  background: var(--ff-card);
+  box-shadow: inset -1px 0 0 var(--border);
+}
+.ff-table th.ff-col-pinned {
+  z-index: 4;
+  background: var(--ff-wash);
+}
+.ff-table tbody tr:hover td.ff-col-pinned {
+>>>>>>> origin/cursor/mac-ready-batch4-7pm
   background: var(--ff-wash);
 }
 
@@ -193,7 +244,112 @@
 .ff-completeness-compact {
   padding: 0.5rem 0.75rem;
 }
+<<<<<<< HEAD
 .ff-completeness-blockers {
   font-size: 1rem;
   line-height: 1.45;
 }
+=======
+
+/* Agent/agency UI presets — remap existing --ff-* tokens only. */
+[data-ff-color="terracotta"] {
+  --ff-accent: var(--ff-flag);
+  --ff-accent-hover: var(--ff-flag);
+  --primary: var(--ff-flag);
+  --ring: var(--ff-flag);
+  --sidebar-primary: var(--ff-flag);
+  --sidebar-ring: var(--ff-flag);
+}
+[data-ff-color="forest"] {
+  --ff-accent: var(--ff-green);
+  --ff-accent-hover: var(--ff-green);
+  --primary: var(--ff-green);
+  --ring: var(--ff-green);
+  --sidebar-primary: var(--ff-green);
+  --sidebar-ring: var(--ff-green);
+}
+[data-ff-color="slate"] {
+  --ff-accent: var(--ff-navy-mid);
+  --ff-accent-hover: var(--ff-navy);
+  --primary: var(--ff-navy-mid);
+  --ring: var(--ff-navy-mid);
+  --sidebar-primary: var(--ff-navy-mid);
+  --sidebar-ring: var(--ff-navy-mid);
+}
+[data-ff-font="system"] {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+[data-ff-density="compact"] {
+  --ff-density: 0.8125rem;
+  font-size: 14px;
+}
+[data-ff-density="compact"] .ff-table th,
+[data-ff-density="compact"] .ff-table td {
+  padding: 0.35rem 0.5rem;
+}
+
+.ff-cal-task {
+  background: var(--ff-accent);
+  color: #ffffff;
+}
+.ff-cal-meeting {
+  background: var(--ff-green);
+  color: #ffffff;
+}
+.ff-cal-call {
+  background: var(--ff-yellow);
+  color: #ffffff;
+}
+.ff-cal-sms {
+  background: var(--ff-flag);
+  color: #ffffff;
+}
+.ff-cal-email {
+  background: var(--ff-navy);
+  color: #ffffff;
+}
+.ff-cal-company {
+  background: var(--ff-flag);
+  color: #ffffff;
+}
+.ff-cal-training {
+  background: var(--ff-accent);
+  color: #ffffff;
+}
+.ff-stub {
+  background: var(--ff-flag-bg);
+  color: var(--ff-flag);
+  border: 1px solid color-mix(in srgb, var(--ff-flag) 25%, var(--ff-border));
+}
+
+.ff-doc-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid var(--ff-border);
+  background: var(--ff-card);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.75rem 0.75rem;
+  min-height: 7.5rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--ff-shadow);
+}
+.ff-doc-tile:hover {
+  border-color: var(--ff-accent);
+}
+.ff-doc-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ff-doc-navy { background: var(--ff-navy); color: #fff; }
+.ff-doc-accent { background: var(--ff-accent); color: #fff; }
+.ff-doc-green { background: var(--ff-green); color: #fff; }
+.ff-doc-yellow { background: var(--ff-yellow); color: #fff; }
+.ff-doc-flag { background: var(--ff-flag); color: #fff; }
+.ff-doc-muted { background: var(--ff-canvas); color: var(--ff-navy); border: 1px solid var(--ff-border); }
+>>>>>>> origin/cursor/mac-ready-batch4-7pm

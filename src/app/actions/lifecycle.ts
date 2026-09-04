@@ -5,24 +5,26 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { eq } from "drizzle-orm";
+import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   documents,
-  extractedFields,
   leads,
-  quoteSheets,
   quotes,
   risks,
 } from "@/lib/db/schema";
 import { convertLeadToDeal, findOrCreateLead } from "@/app/actions/crm";
+import { currentDeskSession } from "@/lib/auth/session";
+import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import { connectionOwnerFor, ingestSocialLead } from "@/lib/leads/offers";
 import { parseLeadFromPacket } from "@/lib/lifecycle/lead-match";
 import { buildQuoteResultsNote } from "@/lib/lifecycle/quote-results";
-import { emptySheetValues, fillSheetBlanks } from "@/lib/lifecycle/quote-sheet";
+import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import { MELBOURNE_HO_DEC_TEXT } from "@/lib/fixtures/sample-docs";
+import { inferMimeFromName } from "@/lib/files/urls";
+import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import { textFromUpload } from "@/lib/extraction/pdf";
-import { extractFieldsFromText } from "@/lib/extraction/extract";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -45,15 +47,33 @@ export async function stubEmailLead() {
 }
 
 export async function stubSocialLead() {
-  const { lead } = await findOrCreateLead({
+  const items = await listCatalogItems();
+  const connectionOwnerUserId = connectionOwnerFor(
+    "instagram",
+    items.map((item) => ({ id: item.id, ownerUserId: item.ownerUserId })),
+  );
+  const { lead, assignment } = await ingestSocialLead({
     firstName: "Priya",
     lastName: "Shah",
     email: "priya.shah@example.com",
     phone: "(407) 555-0199",
-    source: "social_stub",
+    city: "Orlando",
+    state: "FL",
+    zip: "32801",
+    insuranceTypeDesired: "HO",
+    source: "instagram",
+    platform: "instagram",
     notes: "Instagram stub: asked for an HO3 quote and said a dec is coming. No live social sync.",
+    connectionOwnerUserId,
   });
   revalidatePath("/leads");
+  revalidatePath("/social");
+  revalidatePath("/alerts");
+  revalidatePath("/");
+  const session = await currentDeskSession();
+  if (assignment === "unassigned" && !session.isAdmin) {
+    redirect("/social?notice=unassigned-queued");
+  }
   redirect(`/leads/${lead.id}`);
 }
 
@@ -63,9 +83,14 @@ export async function dropSampleDecPacket() {
     ...parsed,
     source: "dropped_dec",
     notes: parsed.notes,
+    insuranceTypeDesired: "HO",
   });
+  const dealId = lead.convertedDealId ?? (await convertLeadToDeal(lead.id, "HO", "FL"));
+  await attachSourceText(dealId, "sample-melbourne-ho-dec.txt", MELBOURNE_HO_DEC_TEXT);
   revalidatePath("/leads");
-  redirect(`/leads/${lead.id}`);
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}`);
 }
 
 export async function dropLeadPacket(formData: FormData) {
@@ -86,13 +111,14 @@ export async function dropLeadPacket(formData: FormData) {
     ...parsed,
     source: "dropped_dec",
     notes: parsed.notes,
+    insuranceTypeDesired: "HO",
   });
 
   const dealId = lead.convertedDealId ?? (await convertLeadToDeal(lead.id, "HO", "FL"));
   await attachSourceText(dealId, filename, text);
   revalidatePath(`/leads/${lead.id}`);
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/leads/${lead.id}`);
+  redirect(`/deals/${dealId}`);
 }
 
 async function attachSourceText(dealId: string, filename: string, text: string) {
@@ -114,14 +140,23 @@ async function attachSourceText(dealId: string, filename: string, text: string) 
     slot: "source_doc",
     status: "uploaded",
   });
+  await recordInitialDocumentVersion({
+    id,
+    filename,
+    mimeType: "text/plain",
+    storagePath,
+    docType: "dec",
+  });
 }
 
 export async function uploadDealSlot(formData: FormData) {
   const dealId = str(formData, "dealId");
   const riskId = str(formData, "riskId") || null;
   const policyId = str(formData, "policyId") || null;
-  const slot = str(formData, "slot") || "source_doc";
-  const docType = str(formData, "docType") || (slot === "quote_pdf" ? "quote_pdf" : "other");
+  const docType = str(formData, "docType") || (str(formData, "slot") === "quote_pdf" ? "quote_pdf" : "other");
+  const slot =
+    str(formData, "slot") ||
+    (docType === "signed_app" ? "signed_app" : docType === "quote_pdf" || docType === "quote" ? "quote_pdf" : "source_doc");
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
   const id = randomUUID();
@@ -136,11 +171,18 @@ export async function uploadDealSlot(formData: FormData) {
     dealId: dealId || null,
     policyId,
     filename: file.name,
-    mimeType: file.type || "application/octet-stream",
+    mimeType: inferMimeFromName(file.name, file.type),
     storagePath,
     docType,
     slot,
     status: "uploaded",
+  });
+  await recordInitialDocumentVersion({
+    id,
+    filename: file.name,
+    mimeType: inferMimeFromName(file.name, file.type),
+    storagePath,
+    docType,
   });
   if (dealId) revalidatePath(`/deals/${dealId}`);
   if (policyId) revalidatePath(`/policies/${policyId}`);
@@ -177,38 +219,10 @@ export async function finalizeQuoteResults(formData: FormData) {
 
 export async function fillQuoteSheetBlanks(formData: FormData) {
   const dealId = str(formData, "dealId");
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  const fields = risk
-    ? await db.select().from(extractedFields).where(eq(extractedFields.riskId, risk.id))
-    : [];
-  const [sheet] = await db
-    .select()
-    .from(quoteSheets)
-    .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
-  const current = sheet?.values ?? emptySheetValues();
-  const filled = fillSheetBlanks(
-    current,
-    fields.map((field) => ({
-      fieldKey: field.fieldKey,
-      normalizedValue: field.normalizedValue,
-      confidence: Number(field.confidence),
-      flagged: field.flagged,
-    })),
-  );
-  if (sheet) {
-    await db
-      .update(quoteSheets)
-      .set({ values: filled.values, updatedAt: new Date() })
-      .where(eq(quoteSheets.id, sheet.id));
-  } else {
-    await db.insert(quoteSheets).values({
-      tenantId: DEFAULT_TENANT_ID,
-      dealId,
-      line: "home",
-      values: filled.values,
-    });
-  }
+  const line = (str(formData, "line") || "home") as ShopLine;
+  await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}?tab=quote-sheet&line=${line}&notice=filled`);
 }
 
 export async function ensureLeadNotes(leadId: string, extra: string) {

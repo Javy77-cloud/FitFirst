@@ -43,6 +43,293 @@
       "when": 1788403000000,
       "tag": "0005_overnight_ams",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788458000000,
+      "tag": "0006_live_desk",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788464500000,
+      "tag": "0007_record_ask_assignee",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788469800000,
+      "tag": "0008_comms_qa",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788472000000,
+      "tag": "0009_pack_addons",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788475000000,
+      "tag": "0010_deal_account_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788475100000,
+      "tag": "0011_agency_settings_updated_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788478000000,
+      "tag": "0012_leads_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788478100000,
+      "tag": "0013_line_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788478200000,
+      "tag": "0014_calendar_phone_carriers",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788478300000,
+      "tag": "0015_meetings_comms",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788480000000,
+      "tag": "0016_contact_opt_outs",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788527000000,
+      "tag": "0017_esign_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788527100000,
+      "tag": "0018_policy_global_lists",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788527200000,
+      "tag": "0019_batch3_quoting",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788527300000,
+      "tag": "0020_integration_connections",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788529400000,
+      "tag": "0021_home_dashboard",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788530000000,
+      "tag": "0022_lead_offers",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788531000000,
+      "tag": "0023_offices_territories",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788532000000,
+      "tag": "0024_documents_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788533000000,
+      "tag": "0025_automations_hub",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788534000000,
+      "tag": "0026_social_gbp",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1788535000000,
+      "tag": "0027_company_meetings",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1788536000000,
+      "tag": "0028_agent_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1788537000000,
+      "tag": "0029_mfa_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1788538000000,
+      "tag": "0030_pii_vault",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1788539000000,
+      "tag": "0031_inbound_lead_offers",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788540000000,
+      "tag": "0032_auth_mfa_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788541000000,
+      "tag": "0033_carrier_portal_secrets",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788542000000,
+      "tag": "0034_fill_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1788543000000,
+      "tag": "0035_fill_learning_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788544000000,
+      "tag": "0036_eo_audit_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1788545000000,
+      "tag": "0037_campaign_sequences",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788546000000,
+      "tag": "0038_quote_compare_video",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1788547000000,
+      "tag": "0039_diff_pack_e",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1788548000000,
+      "tag": "0040_claims_fnol",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1788549000000,
+      "tag": "0041_api_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1788550000000,
+      "tag": "0042_policy_doc_versions",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1788551000000,
+      "tag": "0043_lead_routing_renewal_risk",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1788552000000,
+      "tag": "0044_commission_reconciliations",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1788553000000,
+      "tag": "0045_client_portal",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1788554000000,
+      "tag": "0046_merge_schema_align",
+      "breakpoints": true
     }
   ]
 }

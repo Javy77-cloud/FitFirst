@@ -6,9 +6,11 @@ import type { CarrierMatch } from "@/lib/appetite/match";
 export function MarketsPanel({
   dealId,
   matches,
+  unlocked = false,
 }: {
   dealId: string;
   matches: CarrierMatch[];
+  unlocked?: boolean;
 }) {
   const greens = matches.filter((m) => m.band === "green");
   const yellows = matches.filter((m) => m.band === "yellow");
@@ -27,8 +29,8 @@ export function MarketsPanel({
         </div>
         <form action={shopInAppetiteAction}>
           <input type="hidden" name="dealId" value={dealId} />
-          <Button type="submit" size="sm" disabled={greens.length === 0}>
-            Build stub quotes for green markets
+          <Button type="submit" size="sm" disabled={greens.length === 0 || !unlocked}>
+            {unlocked ? "Build stub quotes for green markets" : "Approve sheet to shop"}
           </Button>
         </form>
       </div>

@@ -1,0 +1,29 @@
+import { SUPPORT_HREF } from "@/lib/desk/quick-actions";
+
+/** Left-nav rows. One Pipeline. One Settings. Support stub stays so we do not drop it. */
+export const DESK_NAV_ITEMS = [
+  { href: "/get-started", label: "Get Started" },
+  { href: "/", label: "Home" },
+  { href: "/social", label: "Social" },
+  { href: "/pipeline?pipeline=p-c", label: "Pipeline" },
+  { href: "/leads", label: "Leads" },
+  { href: "/deals", label: "Deals" },
+  { href: "/contacts", label: "Contacts" },
+  { href: "/accounts", label: "Businesses" },
+  { href: "/policies", label: "Policies" },
+  { href: "/documents", label: "Documents" },
+  { href: "/quotes", label: "Quotes" },
+  { href: "/merge", label: "Merge" },
+  { href: "/work-queue", label: "Work queue" },
+  { href: "/claims", label: "Claims log" },
+  { href: "/commissions", label: "Commissions" },
+  { href: "/scorecards", label: "Scorecards" },
+  { href: "/glance", label: "Glance" },
+  { href: "/tasks", label: "Tasks" },
+  { href: "/automations", label: "Automations" },
+  { href: "/calendar", label: "Calendar" },
+  { href: "/carriers", label: "Carriers" },
+  { href: "/phone", label: "Phone" },
+  { href: SUPPORT_HREF, label: "Support" },
+  { href: "/settings", label: "Settings" },
+] as const;

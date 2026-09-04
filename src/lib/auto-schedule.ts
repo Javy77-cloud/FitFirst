@@ -1,5 +1,6 @@
 import { formatDob, formatVehicleTitle, vehicleUseLabel } from "@/lib/domain";
 import type { Driver, Vehicle } from "@/lib/db/schema";
+import { licenseMaskFromRow } from "@/lib/pii/vault";
 
 export type ScheduleScope = {
   policyId?: string | null;
@@ -76,7 +77,7 @@ export function formatAutoCopyPack(input: {
     lines.push("  (none)");
   } else {
     drivers.forEach((driver, index) => {
-      const license = [driver.licenseState, driver.licenseNumber].filter(Boolean).join(" ");
+      const license = [driver.licenseState, licenseMaskFromRow(driver)].filter(Boolean).join(" ");
       const contact = driver.contactId
         ? `contact ${driver.contactName ?? driver.contactId}`
         : "contact not linked";

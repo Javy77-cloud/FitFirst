@@ -1,8 +1,10 @@
 export type LeadIdentity = {
   firstName: string;
   lastName: string;
+  middleName?: string | null;
   email?: string | null;
   phone?: string | null;
+  insuranceTypeDesired?: string | null;
 };
 
 export function normalizeName(value: string | null | undefined): string {

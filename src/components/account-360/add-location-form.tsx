@@ -1,6 +1,7 @@
 "use client";
 
 import { createLocation } from "@/app/actions/locations";
+import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,13 +26,11 @@ export function AddLocationForm({
           <Label htmlFor="loc-street" className="text-xs">
             Street
           </Label>
-          <Input
+          <AddressAutofill
             id="loc-street"
             name="street"
             required
             autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
             className="mt-1 h-8"
             placeholder="Street address"
           />

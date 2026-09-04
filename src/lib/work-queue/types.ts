@@ -22,6 +22,8 @@ export type WorkFlag = (typeof WORK_FLAGS)[number];
 
 export const WORK_REMINDER_KIND = "work_reminder";
 export const WORK_PING_KIND = "work_ping";
+export const PORTAL_REQUEST_KIND = "portal_request";
+export const PORTAL_PING_KIND = "portal_ping";
 
 const WORK_STATUS_LABELS: Record<WorkStatus, string> = {
   waiting_on_insured: "Waiting on insured",

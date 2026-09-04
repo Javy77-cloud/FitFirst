@@ -16,7 +16,9 @@ import {
 export type QuoteSheetFieldValue = {
   value: string;
   status: "missing" | "check" | "confirmed";
-  source: "blank" | "agent" | "extracted" | "seed" | "javy";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public" | "public-records" | "photo-ocr";
+  /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
+  sourceLabel?: string;
 };
 
 /** Renewal compare coverage row. Stored on policy_terms.coverages. */
@@ -90,12 +92,280 @@ export const tenants = pgTable("tenants", {
     .notNull(),
 });
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    username: text("username"),
+    role: text("role").notNull().default("agent"),
+    passwordHash: text("password_hash"),
+    active: boolean("active").notNull().default(true),
+    accessStatus: text("access_status").notNull().default("active"),
+    canAccessModules: boolean("can_access_modules").notNull().default(true),
+    canSeeAgencyWidgets: boolean("can_see_agency_widgets").notNull().default(true),
+    officeLabel: text("office_label"),
+    territoryLabel: text("territory_label"),
+    mustSetPassword: boolean("must_set_password").notNull().default(false),
+    inviteToken: text("invite_token"),
+    inviteExpiresAt: timestamp("invite_expires_at", { withTimezone: true }),
+    resetToken: text("reset_token"),
+    resetExpiresAt: timestamp("reset_expires_at", { withTimezone: true }),
+    mfaEnrolled: boolean("mfa_enrolled").notNull().default(false),
+    mustEnrollMfa: boolean("must_enroll_mfa").notNull().default(true),
+    mfaMethod: text("mfa_method"),
+    totpSecret: text("totp_secret"),
+    mfaSecret: text("mfa_secret"),
+    mfaPhone: text("mfa_phone"),
+    mfaEmail: text("mfa_email"),
+    mfaDemoBypass: boolean("mfa_demo_bypass").notNull().default(false),
+    recoveryToken: text("recovery_token"),
+    recoveryExpiresAt: timestamp("recovery_expires_at", { withTimezone: true }),
+    frozenAt: timestamp("frozen_at", { withTimezone: true }),
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+    meetingAddress: text("meeting_address"),
+    ...timestamps,
+  },
+  (t) => [
+    index("users_tenant_idx").on(t.tenantId),
+    uniqueIndex("users_tenant_email_idx").on(t.tenantId, t.email),
+    uniqueIndex("users_tenant_username_idx").on(t.tenantId, t.username),
+  ],
+);
+
+/** Admin-issued password or MFA recovery links. Stub only — nothing emails. */
+export const authRecoveryTokens = pgTable(
+  "auth_recovery_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    stubToken: text("stub_token"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    ...timestamps,
+  },
+  (t) => [
+    index("auth_recovery_tokens_user_idx").on(t.userId),
+    index("auth_recovery_tokens_hash_idx").on(t.tokenHash),
+  ],
+);
+
+/** Hashed bearer tokens for /api/v1. Plaintext is shown once at issue. */
+export const apiTokens = pgTable(
+  "api_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    tokenHash: text("token_hash").notNull(),
+    label: text("label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("api_tokens_tenant_idx").on(t.tenantId),
+    uniqueIndex("api_tokens_hash_idx").on(t.tokenHash),
+  ],
+);
+
+/** SMS / email stub codes for enroll or login verify. TOTP does not use this. */
+export const mfaChallenges = pgTable(
+  "mfa_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    method: text("method").notNull(),
+    codeHash: text("code_hash").notNull(),
+    stubCode: text("stub_code"),
+    destination: text("destination"),
+    purpose: text("purpose").notNull().default("verify"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("mfa_challenges_user_idx").on(t.userId)],
+);
+
+export const agencySettings = pgTable(
+  "agency_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
+    agencyName: text("agency_name"),
+    logoPath: text("logo_path"),
+    emailSignature: text("email_signature"),
+    writeLife: boolean("write_life").notNull().default(true),
+    writeHealth: boolean("write_health").notNull().default(true),
+    showSellingAgency: boolean("show_selling_agency").notNull().default(false),
+    officeAddress: text("office_address"),
+    zoomUrl: text("zoom_url"),
+    meetUrl: text("meet_url"),
+    byoVideoUrl: text("byo_video_url"),
+    videoProvider: text("video_provider").notNull().default("none"),
+    showCompanyWidgets: boolean("show_company_widgets").notNull().default(false),
+    /** Admin must enable this before agents can see GBP pulse / inquiries. */
+    allowAgentsMonitorGbp: boolean("allow_agents_monitor_gbp").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
+);
+
+/** Physical desks. An agent can sit in more than one office (different states ok). */
+export const offices = pgTable(
+  "offices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    states: jsonb("states").$type<string[]>().notNull().default([]),
+    address: text("address"),
+    timezone: text("timezone"),
+    ...timestamps,
+  },
+  (t) => [
+    index("offices_tenant_idx").on(t.tenantId),
+    uniqueIndex("offices_tenant_name_uidx").on(t.tenantId, t.name),
+  ],
+);
+
+/** Geo books. Optional office links. Agents resolve through membership + linked offices. */
+export const territories = pgTable(
+  "territories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    states: jsonb("states").$type<string[]>().notNull().default([]),
+    counties: jsonb("counties").$type<string[]>().notNull().default([]),
+    geoLabel: text("geo_label"),
+    ...timestamps,
+  },
+  (t) => [
+    index("territories_tenant_idx").on(t.tenantId),
+    uniqueIndex("territories_tenant_name_uidx").on(t.tenantId, t.name),
+  ],
+);
+
+export const territoryOffices = pgTable(
+  "territory_offices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    territoryId: uuid("territory_id")
+      .notNull()
+      .references(() => territories.id, { onDelete: "cascade" }),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("territory_offices_uidx").on(t.tenantId, t.territoryId, t.officeId),
+    index("territory_offices_office_idx").on(t.tenantId, t.officeId),
+  ],
+);
+
+export const userOffices = pgTable(
+  "user_offices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id, { onDelete: "cascade" }),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("user_offices_uidx").on(t.tenantId, t.userId, t.officeId),
+    index("user_offices_office_idx").on(t.tenantId, t.officeId),
+  ],
+);
+
+export const userTerritories = pgTable(
+  "user_territories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    territoryId: uuid("territory_id")
+      .notNull()
+      .references(() => territories.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("user_territories_uidx").on(t.tenantId, t.userId, t.territoryId),
+    index("user_territories_territory_idx").on(t.tenantId, t.territoryId),
+  ],
+);
+
+/** Zoho-style global picklists: policy types, sub-types, terms, statuses, file categories. */
+export const globalLists = pgTable(
+  "global_lists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    listKey: text("list_key").notNull(),
+    family: text("family"),
+    parentSlug: text("parent_slug"),
+    slug: text("slug").notNull(),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    color: text("color"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    index("global_lists_tenant_idx").on(t.tenantId, t.listKey),
+    uniqueIndex("global_lists_key_slug_uidx").on(t.tenantId, t.listKey, t.slug),
+  ],
+);
+
+/** Configurable Life / Health book chips. Defaults seed Term/Whole/IUL/Final Expense and Marketplace/MA/A&B/Supplemental. */
+export const lineSubfilterOptions = pgTable(
+  "line_subfilter_options",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    book: text("book").notNull(),
+    slug: text("slug").notNull(),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index("line_subfilter_options_tenant_idx").on(t.tenantId, t.book),
+    uniqueIndex("line_subfilter_options_book_slug_uidx").on(t.tenantId, t.book, t.slug),
+  ],
+);
+
 export const leads = pgTable(
   "leads",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     firstName: text("first_name").notNull(),
+    middleName: text("middle_name"),
     lastName: text("last_name").notNull(),
     email: text("email"),
     phone: text("phone"),
@@ -108,12 +378,17 @@ export const leads = pgTable(
     state: text("state"),
     zip: text("zip"),
     dateOfBirth: text("date_of_birth"),
+    insuranceTypeDesired: text("insurance_type_desired"),
+    preferredLanguage: text("preferred_language"),
     mergedIntoId: uuid("merged_into_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
     ...timestamps,
   },
-  (t) => [index("leads_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("leads_tenant_idx").on(t.tenantId),
+    index("leads_owner_idx").on(t.tenantId, t.ownerId),
+  ],
 );
 
 export const contacts = pgTable(
@@ -137,7 +412,13 @@ export const contacts = pgTable(
     healthNotes: text("health_notes"),
     dateOfBirth: text("date_of_birth"),
     language: text("language"),
+    preferredLanguage: text("preferred_language"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     maritalStatus: text("marital_status"),
+    emailOptOut: boolean("email_opt_out").notNull().default(false),
+    smsOptOut: boolean("sms_opt_out").notNull().default(false),
+    emailOptedOutAt: timestamp("email_opted_out_at", { withTimezone: true }),
+    smsOptedOutAt: timestamp("sms_opted_out_at", { withTimezone: true }),
     clientStatus: text("client_status"),
     lifetimePolicyCount: integer("lifetime_policy_count").notNull().default(0),
     accountId: uuid("account_id"),
@@ -147,9 +428,15 @@ export const contacts = pgTable(
     mergedIntoId: uuid("merged_into_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
+    ssnEnc: text("ssn_enc"),
+    ssnIv: text("ssn_iv"),
+    ssnLast4: text("ssn_last4"),
     ...timestamps,
   },
-  (t) => [index("contacts_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("contacts_tenant_idx").on(t.tenantId),
+    index("contacts_owner_idx").on(t.tenantId, t.ownerId),
+  ],
 );
 
 export const deals = pgTable(
@@ -169,6 +456,12 @@ export const deals = pgTable(
     quoteResultsNote: text("quote_results_note"),
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
+    shopLines: jsonb("shop_lines").$type<string[]>().notNull().default(["home"]),
+    policySubType: text("policy_sub_type"),
+    coverageAmount: integer("coverage_amount"),
+    propertyOneliner: text("property_oneliner"),
+    currentCarrier: text("current_carrier"),
+    accountKind: text("account_kind").notNull().default("personal"),
     boundAt: timestamp("bound_at", { withTimezone: true }),
     pipelineId: uuid("pipeline_id"),
     pipelineStageSlug: text("pipeline_stage_slug"),
@@ -176,15 +469,19 @@ export const deals = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     archiveScheduledAt: timestamp("archive_scheduled_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
-    shopLines: jsonb("shop_lines").$type<string[] | null>(),
-    coverageAmount: integer("coverage_amount"),
-    propertyOneliner: text("property_oneliner"),
-    currentCarrier: text("current_carrier"),
+    quotingLine: text("quoting_line"),
+    quotingForm: text("quoting_form"),
+    sheetApprovedAt: timestamp("sheet_approved_at", { withTimezone: true }),
+    sheetApprovedBy: text("sheet_approved_by"),
+    quotingUnlocked: boolean("quoting_unlocked").notNull().default(false),
+    /** Pasted record/upload link for a video proposal. No Loom API. */
+    videoProposalUrl: text("video_proposal_url"),
     ...timestamps,
   },
   (t) => [
     index("deals_tenant_idx").on(t.tenantId),
     index("deals_stage_idx").on(t.tenantId, t.pipelineStage),
+    index("deals_owner_idx").on(t.tenantId, t.ownerId),
   ],
 );
 
@@ -198,11 +495,81 @@ export const carriers = pgTable(
     writtenLines: jsonb("written_lines").$type<string[]>().notNull().default([]),
     dontWriteNotes: text("dont_write_notes"),
     portalStatus: text("portal_status").notNull().default("open"),
+    portalUrl: text("portal_url"),
+    portalLogin: text("portal_login"),
+    agencyCode: text("agency_code"),
+    portalUsernameEnc: text("portal_username_enc"),
+    portalUsernameIv: text("portal_username_iv"),
+    portalUsernameHint: text("portal_username_hint"),
+    portalPasswordEnc: text("portal_password_enc"),
+    portalPasswordIv: text("portal_password_iv"),
+    portalSecretsUpdatedAt: timestamp("portal_secrets_updated_at", { withTimezone: true }),
+    customerServicePhone: text("customer_service_phone"),
+    agentPhone: text("agent_phone"),
+    website: text("website"),
+    agentPortalUrl: text("agent_portal_url"),
+    carrierInfo: text("carrier_info"),
+    amBestRating: text("am_best_rating"),
+    underwriterName: text("underwriter_name"),
+    underwriterEmail: text("underwriter_email"),
+    underwriterPhone: text("underwriter_phone"),
+    accountManagerName: text("account_manager_name"),
+    accountManagerEmail: text("account_manager_email"),
+    accountManagerPhone: text("account_manager_phone"),
+    claimsPhone: text("claims_phone"),
+    billingPhone: text("billing_phone"),
+    newBusinessCommPct: text("new_business_comm_pct"),
+    renewalCommPct: text("renewal_comm_pct"),
+    territory: text("territory"),
+    preferredSubmission: text("preferred_submission"),
+    bindingAuthority: text("binding_authority"),
+    appetiteNotes: text("appetite_notes"),
     active: boolean("active").notNull().default(true),
     fixtureTag: text("fixture_tag"),
     ...timestamps,
   },
   (t) => [index("carriers_tenant_idx").on(t.tenantId)],
+);
+
+/** Admin-only reveal / readiness checks. Never stores the secret itself. */
+export const carrierSecretRevealLogs = pgTable(
+  "carrier_secret_reveal_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    fieldKey: text("field_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("carrier_secret_reveal_logs_carrier_idx").on(t.tenantId, t.carrierId, t.createdAt)],
+);
+
+export const carrierAppointments = pgTable(
+  "carrier_appointments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id),
+    writtenLine: text("written_line").notNull(),
+    appointed: boolean("appointed").notNull().default(false),
+    sellingAgency: text("selling_agency").notNull(),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("carrier_appointments_tenant_idx").on(t.tenantId),
+    uniqueIndex("carrier_appointments_carrier_line_uidx").on(
+      t.tenantId,
+      t.carrierId,
+      t.writtenLine,
+    ),
+  ],
 );
 
 export const risks = pgTable(
@@ -268,8 +635,20 @@ export const policies = pgTable(
     formType: text("form_type"),
     originalEffectiveDate: timestamp("original_effective_date", { withTimezone: true }),
     billingFrequency: text("billing_frequency"),
+    renewalDate: timestamp("renewal_date", { withTimezone: true }),
+    commissionFamily: text("commission_family"),
+    sellingAgency: text("selling_agency"),
+    policySubType: text("policy_sub_type"),
+    insuredCount: integer("insured_count"),
+    commission4Pct: numeric("commission4_pct", { precision: 6, scale: 3 }),
+    oepStart: timestamp("oep_start", { withTimezone: true }),
     termMonths: integer("term_months"),
     producer: text("producer"),
+    insuranceType: text("insurance_type"),
+    policyType: text("policy_type"),
+    policyTerm: text("policy_term"),
+    faceAmount: numeric("face_amount", { precision: 14, scale: 2 }),
+    insuredSameAsMailing: boolean("insured_same_as_mailing").notNull().default(false),
     premisesAddress: text("premises_address"),
     premisesCity: text("premises_city"),
     premisesState: text("premises_state"),
@@ -281,11 +660,16 @@ export const policies = pgTable(
     ownerId: uuid("owner_id"),
     coverageLimits: jsonb("coverage_limits").$type<Record<string, string> | null>(),
     locationId: uuid("location_id"),
+    gwp: numeric("gwp", { precision: 12, scale: 2 }),
+    commission4: numeric("commission4", { precision: 12, scale: 2 }),
+    premiumFrequency: text("premium_frequency"),
+    numberOfInsured: integer("number_of_insured"),
     ...timestamps,
   },
   (t) => [
     index("policies_tenant_idx").on(t.tenantId),
     index("policies_exp_idx").on(t.tenantId, t.expirationDate),
+    index("policies_owner_idx").on(t.tenantId, t.ownerId),
   ],
 );
 
@@ -308,6 +692,31 @@ export const clientHistory = pgTable(
       .notNull(),
   },
   (t) => [index("client_history_tenant_idx").on(t.tenantId, t.contactId)],
+);
+
+export const policyChangeLogs = pgTable(
+  "policy_change_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id, { onDelete: "cascade" }),
+    changedBy: uuid("changed_by").references(() => users.id),
+    changedByName: text("changed_by_name").notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).defaultNow().notNull(),
+    fieldKey: text("field_key").notNull(),
+    fieldLabel: text("field_label").notNull(),
+    beforeValue: text("before_value"),
+    afterValue: text("after_value"),
+    source: text("source").notNull().default("record_edit"),
+    eventId: uuid("event_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("policy_change_logs_policy_idx").on(t.tenantId, t.policyId, t.changedAt),
+    index("policy_change_logs_field_idx").on(t.tenantId, t.policyId, t.fieldKey),
+  ],
 );
 
 export const reviewTasks = pgTable(
@@ -335,6 +744,30 @@ export const reviewTasks = pgTable(
   ],
 );
 
+export const documentFolders = pgTable(
+  "document_folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    kind: text("kind").notNull().default("custom"),
+    slug: text("slug"),
+    description: text("description"),
+    parentId: uuid("parent_id"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    sortOrder: integer("sort_order").notNull().default(0),
+    library: text("library").notNull().default("shared"),
+    ...timestamps,
+  },
+  (t) => [
+    index("document_folders_tenant_idx").on(t.tenantId, t.kind),
+    index("document_folders_parent_idx").on(t.tenantId, t.parentId),
+    index("document_folders_library_idx").on(t.tenantId, t.library),
+  ],
+);
+
 export const documents = pgTable(
   "documents",
   {
@@ -351,6 +784,11 @@ export const documents = pgTable(
     docType: text("doc_type").notNull().default("other"),
     slot: text("slot").notNull().default("source_doc"),
     status: text("status").notNull().default("uploaded"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    folderId: uuid("folder_id"),
+    library: text("library").notNull().default("shared"),
+    fillable: boolean("fillable").notNull().default(false),
+    formTemplateId: uuid("form_template_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -359,6 +797,32 @@ export const documents = pgTable(
     index("documents_tenant_risk_idx").on(t.tenantId, t.riskId),
     index("documents_tenant_deal_slot_idx").on(t.tenantId, t.dealId, t.slot),
     index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
+    index("documents_tenant_folder_idx").on(t.tenantId, t.folderId),
+    index("documents_tenant_library_idx").on(t.tenantId, t.library),
+  ],
+);
+
+export const documentVersions = pgTable(
+  "document_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    storagePath: text("storage_path").notNull(),
+    docType: text("doc_type").notNull().default("other"),
+    uploadedBy: uuid("uploaded_by").references(() => users.id),
+    uploadedByName: text("uploaded_by_name"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("document_versions_doc_idx").on(t.tenantId, t.documentId, t.versionNumber),
+    uniqueIndex("document_versions_doc_ver_uidx").on(t.tenantId, t.documentId, t.versionNumber),
   ],
 );
 
@@ -380,6 +844,10 @@ export const accounts = pgTable(
     activePolicyCount: integer("active_policy_count").notNull().default(0),
     dba: text("dba"),
     ein: text("ein"),
+    einEnc: text("ein_enc"),
+    einIv: text("ein_iv"),
+    einLast4: text("ein_last4"),
+    einLookup: text("ein_lookup"),
     entityType: text("entity_type"),
     employeeCount: integer("employee_count"),
     annualSales: numeric("annual_sales", { precision: 14, scale: 2 }),
@@ -412,6 +880,7 @@ export const accounts = pgTable(
   (t) => [
     index("accounts_tenant_idx").on(t.tenantId),
     index("accounts_ein_idx").on(t.tenantId, t.ein),
+    index("accounts_ein_lookup_idx").on(t.tenantId, t.einLookup),
   ],
 );
 
@@ -447,6 +916,9 @@ export const quoteSheets = pgTable(
       .references(() => deals.id),
     line: text("line").notNull(),
     values: jsonb("values").$type<Record<string, QuoteSheetFieldValue>>().notNull().default({}),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedBy: text("approved_by"),
+    quotingUnlocked: boolean("quoting_unlocked").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -463,9 +935,7 @@ export const extractedFields = pgTable(
     documentId: uuid("document_id")
       .notNull()
       .references(() => documents.id),
-    riskId: uuid("risk_id")
-      .notNull()
-      .references(() => risks.id),
+    riskId: uuid("risk_id").references(() => risks.id),
     fieldKey: text("field_key").notNull(),
     rawValue: text("raw_value").notNull(),
     normalizedValue: text("normalized_value").notNull(),
@@ -542,6 +1012,7 @@ export const quoteAttemptLogs = pgTable(
     covATried: integer("cov_a_tried"),
     covAForced: integer("cov_a_forced"),
     why: text("why"),
+    lostReason: text("lost_reason"),
     snapYearBuilt: integer("snap_year_built"),
     snapRoofYear: integer("snap_roof_year"),
     snapRoofCovering: text("snap_roof_covering"),
@@ -590,12 +1061,89 @@ export const quotes = pgTable(
     bindable: boolean("bindable").notNull().default(false),
     coverageGaps: jsonb("coverage_gaps").$type<string[]>().notNull().default([]),
     notes: text("notes"),
+    lostReason: text("lost_reason"),
     stub: boolean("stub").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (t) => [index("quotes_tenant_deal_idx").on(t.tenantId, t.dealId)],
+);
+
+export const extractionJobs = pgTable(
+  "extraction_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
+    engine: text("engine").notNull(),
+    status: text("status").notNull(),
+    filledKeys: jsonb("filled_keys").$type<string[]>().notNull().default([]),
+    skippedKeys: jsonb("skipped_keys").$type<string[]>().notNull().default([]),
+    message: text("message"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
+);
+
+/** Appetite-style correction log. Later fill prefers these over a repeated bad extract. Not ML. */
+export const fillFeedbackLogs = pgTable(
+  "fill_feedback_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
+    docType: text("doc_type").notNull(),
+    fieldKey: text("field_key").notNull(),
+    wrongValue: text("wrong_value").notNull(),
+    correctedValue: text("corrected_value").notNull(),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    reason: text("reason").notNull().default("agent_edit"),
+    line: text("line"),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("fill_feedback_tenant_idx").on(t.tenantId, t.createdAt),
+    index("fill_feedback_lookup_idx").on(t.tenantId, t.docType, t.fieldKey),
+  ],
+);
+
+/** Agency memory for dec / wind mit / 4-point → master-sheet field mapping. */
+export const fillLearningLogs = pgTable(
+  "fill_learning_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    loggedAt: timestamp("logged_at", { withTimezone: true }).defaultNow().notNull(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    docType: text("doc_type").notNull(),
+    fieldKey: text("field_key").notNull(),
+    extractedValue: text("extracted_value").notNull().default(""),
+    correctedValue: text("corrected_value").notNull(),
+    correctedBy: text("corrected_by").notNull(),
+    correctedByUserId: uuid("corrected_by_user_id").references(() => users.id),
+    note: text("note"),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    shopLine: text("shop_line").notNull().default("home"),
+    ...timestamps,
+  },
+  (t) => [
+    index("fill_learning_tenant_idx").on(t.tenantId),
+    index("fill_learning_lookup_idx").on(t.tenantId, t.docType, t.fieldKey),
+    index("fill_learning_deal_idx").on(t.tenantId, t.dealId),
+  ],
 );
 
 export const alerts = pgTable(
@@ -609,12 +1157,30 @@ export const alerts = pgTable(
     severity: text("severity").notNull().default("info"),
     entityType: text("entity_type"),
     entityId: uuid("entity_id"),
+    /** When set, the ping is for this desk user. Null stays agency-wide. */
+    userId: uuid("user_id"),
+    recipientUserId: uuid("recipient_user_id"),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
+);
+
+/** Admin → agent in-app messages. Nothing emails. */
+export const deskMessages = pgTable(
+  "desk_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fromUserId: uuid("from_user_id").notNull(),
+    toUserId: uuid("to_user_id").notNull(),
+    body: text("body").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("desk_messages_to_idx").on(t.tenantId, t.toUserId, t.createdAt)],
 );
 
 /** Consumed from agency-ops: task / meeting / call. TEST-DESK adds account_id. */
@@ -630,12 +1196,24 @@ export const activities = pgTable(
     dueAt: timestamp("due_at", { withTimezone: true }),
     startAt: timestamp("start_at", { withTimezone: true }),
     endAt: timestamp("end_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    outcome: text("outcome"),
     assignee: text("assignee"),
     contactId: uuid("contact_id").references(() => contacts.id),
     accountId: uuid("account_id"),
     dealId: uuid("deal_id").references(() => deals.id),
     policyId: uuid("policy_id").references(() => policies.id),
     leadId: uuid("lead_id").references(() => leads.id),
+    phoneNumber: text("phone_number"),
+    direction: text("direction"),
+    meetingType: text("meeting_type"),
+    meetingLocation: text("meeting_location"),
+    videoProvider: text("video_provider"),
+    videoUrl: text("video_url"),
+    inviteAudience: text("invite_audience"),
+    inviteOfficeId: uuid("invite_office_id"),
+    inviteTerritoryId: uuid("invite_territory_id"),
+    createdByUserId: uuid("created_by_user_id"),
     ...timestamps,
   },
   (t) => [
@@ -665,6 +1243,13 @@ export const activityLogs = pgTable(
     accountId: uuid("account_id"),
     policyId: uuid("policy_id").references(() => policies.id),
     dealId: uuid("deal_id").references(() => deals.id),
+    leadId: uuid("lead_id").references(() => leads.id),
+    direction: text("direction"),
+    threadKey: text("thread_key"),
+    subject: text("subject"),
+    fromAddress: text("from_address"),
+    toAddress: text("to_address"),
+    durationSeconds: integer("duration_seconds"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -674,6 +1259,30 @@ export const activityLogs = pgTable(
     index("activity_logs_contact_idx").on(t.tenantId, t.contactId),
     index("activity_logs_account_idx").on(t.tenantId, t.accountId),
     index("activity_logs_policy_idx").on(t.tenantId, t.policyId),
+    index("activity_logs_deal_idx").on(t.tenantId, t.dealId),
+    index("activity_logs_thread_idx").on(t.tenantId, t.threadKey),
+  ],
+);
+
+/** Invited desk users for Admin company / training events. */
+export const calendarInvites = pgTable(
+  "calendar_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("calendar_invites_uidx").on(t.tenantId, t.activityId, t.userId),
+    index("calendar_invites_user_idx").on(t.tenantId, t.userId),
   ],
 );
 
@@ -735,9 +1344,29 @@ export const formTemplates = pgTable(
     family: text("family"),
     summary: text("summary"),
     fields: jsonb("fields").$type<FormFieldDef[]>().notNull().default([]),
+    fillable: boolean("fillable").notNull().default(true),
+    folderId: uuid("folder_id"),
     ...timestamps,
   },
   (t) => [uniqueIndex("form_templates_slug_uidx").on(t.tenantId, t.slug)],
+);
+
+export const formFills = pgTable(
+  "form_fills",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    formTemplateId: uuid("form_template_id")
+      .notNull()
+      .references(() => formTemplates.id),
+    sourceDocumentId: uuid("source_document_id").references(() => documents.id),
+    folderId: uuid("folder_id"),
+    values: jsonb("values").$type<Record<string, string>>().notNull().default({}),
+    sourceText: text("source_text"),
+    status: text("status").notNull().default("draft"),
+    ...timestamps,
+  },
+  (t) => [index("form_fills_tenant_template_idx").on(t.tenantId, t.formTemplateId)],
 );
 
 export const emailTemplates = pgTable(
@@ -747,9 +1376,16 @@ export const emailTemplates = pgTable(
     tenantId: tenantCol(),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
-    subject: text("subject").notNull(),
-    body: text("body").notNull(),
+    subject: text("subject").notNull().default(""),
+    body: text("body").notNull().default(""),
     locale: text("locale").notNull().default("en"),
+    kind: text("kind"),
+    subjectEn: text("subject_en"),
+    bodyEn: text("body_en"),
+    subjectEs: text("subject_es"),
+    bodyEs: text("body_es"),
+    isSeeded: boolean("is_seeded").notNull().default(false),
+    isExampleCopy: boolean("is_example_copy").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("email_templates_slug_uidx").on(t.tenantId, t.slug)],
@@ -760,11 +1396,18 @@ export const emailTriggers = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    kind: text("kind").notNull(),
+    kind: text("kind").notNull().default("custom"),
     name: text("name").notNull(),
+    slug: text("slug"),
     delayDays: integer("delay_days").notNull().default(0),
+    delayAmount: integer("delay_amount"),
+    delayUnit: text("delay_unit"),
+    eventKind: text("event_kind"),
     templateId: uuid("template_id"),
     hangOff: text("hang_off").notNull().default("won_date"),
+    sendFromProvider: text("send_from_provider"),
+    emailClient: boolean("email_client").notNull().default(false),
+    createBrokerTask: boolean("create_broker_task").notNull().default(false),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -787,45 +1430,18 @@ export const emailSendJobs = pgTable(
     anchorAt: timestamp("anchor_at", { withTimezone: true }).notNull(),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("queued"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    toEmail: text("to_email"),
+    subject: text("subject"),
+    body: text("body"),
+    sendFromProvider: text("send_from_provider"),
+    holdReason: text("hold_reason"),
+    lastError: text("last_error"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    locale: text("locale"),
+    ...timestamps,
   },
   (t) => [index("email_jobs_anchor_idx").on(t.tenantId, t.anchorKind, t.status)],
-);
-
-export const users = pgTable(
-  "users",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: tenantCol(),
-    name: text("name").notNull(),
-    email: text("email").notNull(),
-    role: text("role").notNull().default("agent"),
-    passwordHash: text("password_hash"),
-    active: boolean("active").notNull().default(true),
-    ...timestamps,
-  },
-  (t) => [index("users_tenant_idx").on(t.tenantId)],
-);
-
-export const carrierAppointments = pgTable(
-  "carrier_appointments",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: tenantCol(),
-    carrierId: uuid("carrier_id")
-      .notNull()
-      .references(() => carriers.id),
-    writtenLine: text("written_line").notNull(),
-    appointed: boolean("appointed").notNull().default(true),
-    sellingAgency: text("selling_agency"),
-    notes: text("notes"),
-    ...timestamps,
-  },
-  (t) => [
-    uniqueIndex("carrier_appointments_line_uidx").on(t.tenantId, t.carrierId, t.writtenLine),
-  ],
 );
 
 export const locations = pgTable(
@@ -907,16 +1523,26 @@ export const claims = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     policyId: uuid("policy_id").references(() => policies.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
     dateReported: timestamp("date_reported", { withTimezone: true }),
     dateOfLoss: timestamp("date_of_loss", { withTimezone: true }),
     causeType: text("cause_type"),
     description: text("description"),
     reportedHow: text("reported_how"),
     carrierClaimNumber: text("carrier_claim_number"),
+    lossLocation: text("loss_location"),
+    reporterName: text("reporter_name"),
+    reporterPhone: text("reporter_phone"),
+    producerId: uuid("producer_id"),
+    producerNotifiedAt: timestamp("producer_notified_at", { withTimezone: true }),
     status: text("status").notNull().default("inquiry"),
     ...timestamps,
   },
-  (t) => [index("claims_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("claims_tenant_idx").on(t.tenantId),
+    index("claims_contact_idx").on(t.tenantId, t.contactId),
+    index("claims_status_idx").on(t.tenantId, t.status),
+  ],
 );
 
 export const claimNotes = pgTable("claim_notes", {
@@ -971,6 +1597,23 @@ export const commissions = pgTable(
     dueDate: timestamp("due_date", { withTimezone: true }),
     paidDate: timestamp("paid_date", { withTimezone: true }),
     period: text("period"),
+    insuranceType: text("insurance_type"),
+    policyType: text("policy_type"),
+    policySubType: text("policy_sub_type"),
+    sellingAgency: text("selling_agency"),
+    gwp: numeric("gwp", { precision: 12, scale: 2 }),
+    commission4: numeric("commission4", { precision: 12, scale: 2 }),
+    premiumFrequency: text("premium_frequency"),
+    numberOfInsured: integer("number_of_insured"),
+    paymentStatus: text("payment_status"),
+    paymentReferenceBatch: text("payment_reference_batch"),
+    initialCommission: numeric("initial_commission", { precision: 12, scale: 2 }),
+    deferredCommission: numeric("deferred_commission", { precision: 12, scale: 2 }),
+    monthlyCommission: numeric("monthly_commission", { precision: 12, scale: 2 }),
+    totalAnnualCommission: numeric("total_annual_commission", { precision: 12, scale: 2 }),
+    agencyAmount: numeric("agency_amount", { precision: 12, scale: 2 }),
+    producerAmount: numeric("producer_amount", { precision: 12, scale: 2 }),
+    paidByUserId: uuid("paid_by_user_id"),
     ...timestamps,
   },
   (t) => [index("commissions_tenant_idx").on(t.tenantId, t.status)],
@@ -987,12 +1630,73 @@ export const commissionEvents = pgTable("commission_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const agencySettings = pgTable("agency_settings", {
+/** Manual expected-vs-received catch. Not a carrier download. */
+export const commissionReconciliations = pgTable(
+  "commission_reconciliations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    agentId: uuid("agent_id"),
+    expectedAmount: numeric("expected_amount", { precision: 12, scale: 2 }).notNull(),
+    receivedAmount: numeric("received_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+    variance: numeric("variance", { precision: 12, scale: 2 }).notNull().default("0"),
+    status: text("status").notNull().default("pending"),
+    note: text("note"),
+    markedBy: uuid("marked_by"),
+    markedAt: timestamp("marked_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("commission_recon_commission_uidx").on(t.tenantId, t.commissionId),
+    index("commission_recon_tenant_idx").on(t.tenantId, t.status),
+    index("commission_recon_agent_idx").on(t.tenantId, t.agentId),
+  ],
+);
+
+export const deskColumnPrefs = pgTable(
+  "desk_column_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id"),
+    tableKey: text("table_key").notNull(),
+    columns: jsonb("columns").$type<string[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("desk_column_prefs_uidx").on(t.tenantId, t.userId, t.tableKey)],
+);
+
+/** Configurable commission rates. No official carrier/CMS rates hardcoded. */
+export const commissionRateSettings = pgTable("commission_rate_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenantId: tenantCol(),
-  fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lineFamily: text("line_family").notNull(),
+  ratePct: numeric("rate_pct", { precision: 6, scale: 3 }),
+  perPersonMonth: numeric("per_person_month", { precision: 10, scale: 2 }),
+  medicareNew: numeric("medicare_new", { precision: 10, scale: 2 }),
+  medicareRenewal: numeric("medicare_renewal", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  ...timestamps,
 });
+
+export const policyAutomations = pgTable(
+  "policy_automations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id").references(() => policies.id),
+    kind: text("kind").notNull(),
+    fireOn: timestamp("fire_on", { withTimezone: true }),
+    status: text("status").notNull().default("open"),
+    body: text("body"),
+    ...timestamps,
+  },
+  (t) => [index("policy_automations_tenant_idx").on(t.tenantId, t.policyId, t.kind)],
+);
 
 export const recordAsks = pgTable("record_asks", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1000,6 +1704,7 @@ export const recordAsks = pgTable("record_asks", {
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id").notNull(),
   authorId: uuid("author_id"),
+  assigneeId: uuid("assignee_id"),
   kind: text("kind").notNull().default("question"),
   body: text("body").notNull(),
   status: text("status").notNull().default("open"),
@@ -1031,6 +1736,9 @@ export const drivers = pgTable("drivers", {
   lastName: text("last_name").notNull(),
   dateOfBirth: text("date_of_birth"),
   licenseNumber: text("license_number"),
+  licenseNumberEnc: text("license_number_enc"),
+  licenseNumberIv: text("license_number_iv"),
+  licenseNumberLast4: text("license_number_last4"),
   licenseState: text("license_state"),
   sortOrder: integer("sort_order").notNull().default(0),
   ...timestamps,
@@ -1150,6 +1858,494 @@ export const policyWorkNotes = pgTable("policy_work_notes", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const deskAgents = pgTable(
+  "desk_agents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    displayName: text("display_name").notNull(),
+    role: text("role").notNull().default("agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("desk_agents_tenant_idx").on(t.tenantId),
+    uniqueIndex("desk_agents_slug_uidx").on(t.tenantId, t.slug),
+  ],
+);
+
+export const columnLayouts = pgTable(
+  "column_layouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agentId: uuid("agent_id").references(() => deskAgents.id),
+    tableId: text("table_id").notNull(),
+    columnIds: jsonb("column_ids").$type<string[]>().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("column_layouts_lookup_idx").on(t.tenantId, t.tableId, t.agentId)],
+);
+
+export const emailSendAccounts = pgTable(
+  "email_send_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    status: text("status").notNull().default("disconnected"),
+    accountEmail: text("account_email"),
+    ...timestamps,
+  },
+  (t) => [index("email_send_accounts_tenant_idx").on(t.tenantId)],
+);
+
+export const agencyBrand = pgTable(
+  "agency_brand",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agencyName: text("agency_name").notNull(),
+    logoStoragePath: text("logo_storage_path"),
+    logoMime: text("logo_mime"),
+    defaultColorPreset: text("default_color_preset").notNull().default("agency"),
+    defaultFontPreset: text("default_font_preset").notNull().default("plex"),
+    defaultDensity: text("default_density").notNull().default("comfortable"),
+    defaultColumnLayout: jsonb("default_column_layout")
+      .$type<Record<string, string[]> | null>()
+      .default({}),
+    ...timestamps,
+  },
+  (t) => [index("agency_brand_tenant_idx").on(t.tenantId)],
+);
+
+export const emailSignatures = pgTable(
+  "email_signatures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    bodyEn: text("body_en").notNull(),
+    bodyEs: text("body_es").notNull(),
+    isDefault: boolean("is_default").notNull().default(true),
+    isExampleCopy: boolean("is_example_copy").notNull().default(true),
+    ownerUserId: uuid("owner_user_id").references(() => users.id),
+    approvalStatus: text("approval_status").notNull().default("live"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewNote: text("review_note"),
+    ...timestamps,
+  },
+  (t) => [index("email_signatures_tenant_idx").on(t.tenantId)],
+);
+
+/** Named Trigger → Condition → Action rules. Not per-policy fire jobs. */
+export const guidedAutomations = pgTable(
+  "guided_automations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    triggerKind: text("trigger_kind").notNull(),
+    triggerValue: text("trigger_value"),
+    conditionKind: text("condition_kind").notNull().default("always"),
+    conditionValue: text("condition_value"),
+    actionKind: text("action_kind").notNull(),
+    actionValue: text("action_value"),
+    enabled: boolean("enabled").notNull().default(true),
+    isExample: boolean("is_example").notNull().default(false),
+    createdBy: uuid("created_by").references(() => users.id),
+    ...timestamps,
+  },
+  (t) => [index("guided_automations_tenant_idx").on(t.tenantId)],
+);
+
+/** Bulk SMS compose stub. Requires an SMS integration. Nothing texts a client. */
+export const bulkSmsDrafts = pgTable(
+  "bulk_sms_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    body: text("body").notNull(),
+    audienceLabel: text("audience_label"),
+    status: text("status").notNull().default("draft"),
+    createdBy: uuid("created_by").references(() => users.id),
+    ...timestamps,
+  },
+  (t) => [index("bulk_sms_drafts_tenant_idx").on(t.tenantId)],
+);
+
+export const agentUiPrefs = pgTable(
+  "agent_ui_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    actorKey: text("actor_key").notNull(),
+    colorPreset: text("color_preset"),
+    fontPreset: text("font_preset"),
+    density: text("density"),
+    columnLayout: jsonb("column_layout").$type<Record<string, string[]> | null>(),
+    ...timestamps,
+  },
+  (t) => [index("agent_ui_prefs_actor_idx").on(t.tenantId, t.actorKey)],
+);
+
+export const calendarConnections = pgTable(
+  "calendar_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull().default("google"),
+    connected: boolean("connected").notNull().default(false),
+    displayEmail: text("display_email"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+    lastSyncDirection: text("last_sync_direction"),
+    lastSyncStatus: text("last_sync_status"),
+    ...timestamps,
+  },
+  (t) => [index("calendar_connections_tenant_idx").on(t.tenantId, t.provider)],
+);
+
+export const emailCampaigns = pgTable(
+  "email_campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    audienceType: text("audience_type").notNull(),
+    audienceValue: text("audience_value").notNull(),
+    status: text("status").notNull().default("draft"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("email_campaigns_tenant_idx").on(t.tenantId)],
+);
+
+export const campaignSendLogs = pgTable(
+  "campaign_send_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => emailCampaigns.id),
+    recipientEmail: text("recipient_email"),
+    recipientName: text("recipient_name"),
+    outcome: text("outcome").notNull().default("would_send"),
+    detail: text("detail"),
+    loggedAt: timestamp("logged_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("campaign_send_logs_campaign_idx").on(t.tenantId, t.campaignId)],
+);
+
+/** Enable/disable catalog for the five insurance sequences (Task + email stubs). */
+export const campaignSequences = pgTable(
+  "campaign_sequences",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    summary: text("summary").notNull(),
+    audience: text("audience").notNull(),
+    anchor: text("anchor").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    steps: jsonb("steps").$type<import("@/lib/campaign-sequences/types").SequenceStep[]>().notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("campaign_sequences_slug_uidx").on(t.tenantId, t.slug),
+    index("campaign_sequences_tenant_idx").on(t.tenantId),
+  ],
+);
+
+export const smsSettings = pgTable("sms_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  provider: text("provider").notNull().default("none"),
+  connected: boolean("connected").notNull().default(false),
+  displayFrom: text("display_from"),
+  notes: text("notes"),
+  lastConnectStatus: text("last_connect_status"),
+  ...timestamps,
+});
+
+/** Agency-paid BYO trunk. Stub only — no Twilio purchase, no credentials stored. */
+export const telephonySettings = pgTable(
+  "telephony_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull().default("none"),
+    connected: boolean("connected").notNull().default(false),
+    displayFrom: text("display_from"),
+    accountLabel: text("account_label"),
+    notes: text("notes"),
+    lastConnectStatus: text("last_connect_status"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("telephony_settings_tenant_idx").on(t.tenantId)],
+);
+
+/** BYO e-sign stubs. No vendor keys stored. DocuSign / Dropbox Sign only in Settings. */
+export const esignSettings = pgTable(
+  "esign_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull().default("none"),
+    connected: boolean("connected").notNull().default(false),
+    accountLabel: text("account_label"),
+    notes: text("notes"),
+    lastConnectStatus: text("last_connect_status"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("esign_settings_tenant_idx").on(t.tenantId)],
+);
+
+/** BYO connector catalog. Stub only — no OAuth, no vendor keys. */
+export const integrationConnections = pgTable(
+  "integration_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    category: text("category").notNull(),
+    provider: text("provider").notNull(),
+    connected: boolean("connected").notNull().default(false),
+    displayLabel: text("display_label"),
+    accountLabel: text("account_label"),
+    notes: text("notes"),
+    lastStatus: text("last_status"),
+    lastConnectStatus: text("last_connect_status"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }),
+    /** Social stub owner. Null = agency / unassigned inbound. */
+    ownerUserId: uuid("owner_user_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("integration_connections_tenant_idx").on(t.tenantId, t.category),
+    uniqueIndex("integration_connections_pair_uidx").on(t.tenantId, t.category, t.provider),
+  ],
+);
+
+/** Per-user home layout: preset, hidden widgets, admin My book vs Agency-wide. */
+export const userDashboardPrefs = pgTable(
+  "user_dashboard_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id").notNull(),
+    preset: text("preset").notNull().default("my_production"),
+    hiddenWidgets: jsonb("hidden_widgets").$type<string[]>().notNull().default([]),
+    bookScope: text("book_scope").notNull().default("agency"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("user_dashboard_prefs_user_uidx").on(t.tenantId, t.userId)],
+);
+
+/** Admin-posted production contest. Standings are computed from the book. */
+export const contests = pgTable(
+  "contests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    title: text("title").notNull(),
+    rules: text("rules").notNull(),
+    metric: text("metric").notNull().default("premium"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    createdBy: uuid("created_by"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("contests_tenant_idx").on(t.tenantId)],
+);
+
+/** Admin posts a referral or shares an inbound email for agents to claim. */
+export const leadOffers = pgTable(
+  "lead_offers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    title: text("title").notNull(),
+    details: text("details").notNull(),
+    kind: text("kind").notNull().default("referral"),
+    language: text("language"),
+    state: text("state"),
+    leadId: uuid("lead_id"),
+    postedBy: uuid("posted_by").notNull(),
+    status: text("status").notNull().default("open"),
+    awardedTo: uuid("awarded_to"),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }),
+    emailFrom: text("email_from"),
+    emailSubject: text("email_subject"),
+    emailSnippet: text("email_snippet"),
+    emailBody: text("email_body"),
+    emailStubId: text("email_stub_id"),
+    claimedBy: uuid("claimed_by"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("lead_offers_tenant_idx").on(t.tenantId, t.status)],
+);
+
+export const leadOfferClaims = pgTable(
+  "lead_offer_claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    offerId: uuid("offer_id")
+      .notNull()
+      .references(() => leadOffers.id),
+    agentId: uuid("agent_id").notNull(),
+    note: text("note"),
+    relation: text("relation"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("lead_offer_claims_agent_uidx").on(t.tenantId, t.offerId, t.agentId)],
+);
+
+/**
+ * Inbound / social lead offers. Separate from management lead_offers.
+ * Social inbound create Lead + notify + award.
+ */
+export const socialLeadOffers = pgTable(
+  "social_lead_offers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id),
+    source: text("source").notNull(),
+    platform: text("platform"),
+    status: text("status").notNull().default("open"),
+    ownerUserId: uuid("owner_user_id"),
+    offeredToUserId: uuid("offered_to_user_id"),
+    awardedByUserId: uuid("awarded_by_user_id"),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }),
+    alertId: uuid("alert_id"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("social_lead_offers_tenant_status_idx").on(t.tenantId, t.status),
+    uniqueIndex("social_lead_offers_lead_uidx").on(t.tenantId, t.leadId),
+  ],
+);
+
+/** Admin-editable auto-route rules. Territory + written line + producer capacity. */
+export const leadRoutingRules = pgTable(
+  "lead_routing_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(10),
+    territoryId: uuid("territory_id"),
+    writtenLine: text("written_line"),
+    maxOpenDeals: integer("max_open_deals").notNull().default(12),
+    producerId: uuid("producer_id"),
+    ...timestamps,
+  },
+  (t) => [index("lead_routing_rules_tenant_idx").on(t.tenantId, t.sortOrder)],
+);
+
+/** Why a lead was assigned or posted to the offer board. */
+export const leadRoutingLogs = pgTable(
+  "lead_routing_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id),
+    ruleId: uuid("rule_id"),
+    producerId: uuid("producer_id"),
+    outcome: text("outcome").notNull(),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("lead_routing_logs_lead_idx").on(t.tenantId, t.leadId)],
+);
+
+export const piiRevealLogs = pgTable(
+  "pii_reveal_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    fieldKey: text("field_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("pii_reveal_logs_entity_idx").on(t.tenantId, t.entityType, t.entityId)],
+);
+
+/**
+ * Immutable E&O audit trail. Append-only in app + Postgres trigger.
+ * Never store decrypted PII here — record ids and a short summary only.
+ */
+export const eoAuditLogs = pgTable(
+  "eo_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name").notNull().default("Desk"),
+    action: text("action").notNull(),
+    summary: text("summary").notNull(),
+    entityType: text("entity_type"),
+    entityId: uuid("entity_id"),
+    contactId: uuid("contact_id"),
+    accountId: uuid("account_id"),
+    policyId: uuid("policy_id"),
+    dealId: uuid("deal_id"),
+    leadId: uuid("lead_id"),
+    documentId: uuid("document_id"),
+    activityId: uuid("activity_id"),
+    meta: jsonb("meta").$type<Record<string, unknown> | null>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("eo_audit_logs_when_idx").on(t.tenantId, t.occurredAt),
+    index("eo_audit_logs_action_idx").on(t.tenantId, t.action),
+    index("eo_audit_logs_contact_idx").on(t.tenantId, t.contactId),
+    index("eo_audit_logs_policy_idx").on(t.tenantId, t.policyId),
+    index("eo_audit_logs_deal_idx").on(t.tenantId, t.dealId),
+  ],
+);
+
+export const signatureEnvelopes = pgTable(
+  "signature_envelopes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    provider: text("provider").notNull().default("docusign"),
+    status: text("status").notNull().default("draft"),
+    signerName: text("signer_name"),
+    signerEmail: text("signer_email"),
+    subject: text("subject"),
+    lastProviderResult: text("last_provider_result"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("signature_envelopes_tenant_idx").on(t.tenantId)],
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
@@ -1157,31 +2353,44 @@ export type Account = typeof accounts.$inferSelect;
 export type ContactAccount = typeof contactAccounts.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type Risk = typeof risks.$inferSelect;
+export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type Document = typeof documents.$inferSelect;
+export type PolicyChangeLog = typeof policyChangeLogs.$inferSelect;
+export type DocumentVersion = typeof documentVersions.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;
+export type CarrierSecretRevealLog = typeof carrierSecretRevealLogs.$inferSelect;
+export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
+export type FillLearningLog = typeof fillLearningLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
+export type DeskMessage = typeof deskMessages.$inferSelect;
+export type MfaChallenge = typeof mfaChallenges.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type CalendarInvite = typeof calendarInvites.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type PipelineStage = typeof pipelineStages.$inferSelect;
 export type FormTemplate = typeof formTemplates.$inferSelect;
+export type FormFill = typeof formFills.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
 export type User = typeof users.$inferSelect;
-export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
+export type ApiToken = typeof apiTokens.$inferSelect;
+export type AuthRecoveryToken = typeof authRecoveryTokens.$inferSelect;
 export type Location = typeof locations.$inferSelect;
 export type MergeCandidate = typeof mergeCandidates.$inferSelect;
 export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
 export type Business = Account;
 export type Claim = typeof claims.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
+export type CommissionReconciliation = typeof commissionReconciliations.$inferSelect;
+export type RecordAsk = typeof recordAsks.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type PolicyTerm = typeof policyTerms.$inferSelect;
@@ -1190,4 +2399,90 @@ export type PolicyWorkItem = typeof policyWorkItems.$inferSelect;
 export type PolicyWorkFlag = typeof policyWorkFlags.$inferSelect;
 export type PolicyWorkNote = typeof policyWorkNotes.$inferSelect;
 export type DeskUser = User;
-export type RecordAsk = typeof recordAsks.$inferSelect;
+export type DeskColumnPref = typeof deskColumnPrefs.$inferSelect;
+export type CommissionRateSetting = typeof commissionRateSettings.$inferSelect;
+export type PolicyAutomation = typeof policyAutomations.$inferSelect;
+export type PipelineStageRow = PipelineStage;
+export type DeskAgent = typeof deskAgents.$inferSelect;
+export type ColumnLayoutRow = typeof columnLayouts.$inferSelect;
+export type EmailSendAccount = typeof emailSendAccounts.$inferSelect;
+export type AgencyBrand = typeof agencyBrand.$inferSelect;
+export type EmailSignature = typeof emailSignatures.$inferSelect;
+export type GuidedAutomation = typeof guidedAutomations.$inferSelect;
+export type BulkSmsDraft = typeof bulkSmsDrafts.$inferSelect;
+export type AgentUiPref = typeof agentUiPrefs.$inferSelect;
+export type CalendarConnection = typeof calendarConnections.$inferSelect;
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
+export type CampaignSequence = typeof campaignSequences.$inferSelect;
+export type SmsSettings = typeof smsSettings.$inferSelect;
+export type TelephonySettings = typeof telephonySettings.$inferSelect;
+export type EsignSettings = typeof esignSettings.$inferSelect;
+export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
+export type IntegrationConnection = typeof integrationConnections.$inferSelect;
+export type LeadOfferRow = typeof leadOffers.$inferSelect;
+export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
+export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;
+export type EoAuditLog = typeof eoAuditLogs.$inferSelect;
+export type ExtractionJob = typeof extractionJobs.$inferSelect;
+export type FillFeedbackLog = typeof fillFeedbackLogs.$inferSelect;
+export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
+export type GlobalListRow = typeof globalLists.$inferSelect;
+export type UserDashboardPref = typeof userDashboardPrefs.$inferSelect;
+export type Contest = typeof contests.$inferSelect;
+export type LeadOffer = typeof leadOffers.$inferSelect;
+export type LeadOfferClaim = typeof leadOfferClaims.$inferSelect;
+export type Office = typeof offices.$inferSelect;
+export type Territory = typeof territories.$inferSelect;
+export type TerritoryOffice = typeof territoryOffices.$inferSelect;
+export type UserOffice = typeof userOffices.$inferSelect;
+export type UserTerritory = typeof userTerritories.$inferSelect;
+export type LeadRoutingRule = typeof leadRoutingRules.$inferSelect;
+export type LeadRoutingLog = typeof leadRoutingLogs.$inferSelect;
+
+export const portalTokens = pgTable(
+  "portal_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    token: text("token").notNull(),
+    label: text("label").notNull(),
+    kind: text("kind").notNull().default("personal"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id").references(() => accounts.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("portal_tokens_token_uidx").on(t.tenantId, t.token),
+    index("portal_tokens_contact_idx").on(t.tenantId, t.contactId),
+    index("portal_tokens_account_idx").on(t.tenantId, t.accountId),
+  ],
+);
+
+export const portalRequests = pgTable(
+  "portal_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    tokenId: uuid("token_id").references(() => portalTokens.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id").references(() => accounts.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("open"),
+    summary: text("summary").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    workItemId: uuid("work_item_id"),
+    reusedCertificateId: uuid("reused_certificate_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("portal_requests_tenant_idx").on(t.tenantId, t.status),
+    index("portal_requests_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+export type PortalToken = typeof portalTokens.$inferSelect;
+export type PortalRequest = typeof portalRequests.$inferSelect;

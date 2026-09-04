@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { drivers, policies, vehicles } from "@/lib/db/schema";
+import { writeLicense } from "@/lib/pii/write";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -116,7 +117,7 @@ export async function addDriver(formData: FormData) {
     firstName,
     lastName,
     dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().slice(0, 10) : null,
-    licenseNumber: str(formData, "licenseNumber") || null,
+    ...writeLicense(str(formData, "licenseNumber") || null),
     licenseState: str(formData, "licenseState") || null,
     sortOrder: Number(next ?? 0),
   });

@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { parseBookScope, type BookScope } from "./presets";
+import type { BookScopeKind } from "@/lib/org/book-scope";
 
 export type DeskRole = "owner" | "admin" | "agent";
 
@@ -9,12 +11,18 @@ export type OwnerHomeScope = {
   /** Null = whole book (owner / admin). Set for Agent when assignee columns exist. */
   agentUserId: string | null;
   label: string;
+  bookScope: BookScope;
+  canToggleBook: boolean;
+  /** Admin office / territory lens. Null agent list = company-wide. */
+  bookKind?: BookScopeKind;
+  bookAgentIds?: string[] | null;
 };
 
 const OWNER_ROLES = new Set<DeskRole>(["owner", "admin"]);
 
 export function isAgencyWide(scope: OwnerHomeScope): boolean {
-  return scope.agentUserId == null && OWNER_ROLES.has(scope.role);
+  const company = (scope.bookKind ?? "company") === "company";
+  return scope.agentUserId == null && OWNER_ROLES.has(scope.role) && company;
 }
 
 /**
@@ -22,25 +30,54 @@ export function isAgencyWide(scope: OwnerHomeScope): boolean {
  * `policies.owner_id` (or `assigned_to`) exists and a user id is present.
  * Default cookie is owner so Home boots as the agency desk.
  */
-export async function currentOwnerHomeScope(): Promise<OwnerHomeScope> {
+export async function currentOwnerHomeScope(bookScope?: BookScope): Promise<OwnerHomeScope> {
   const tenantId = DEFAULT_TENANT_ID;
+  const scope = bookScope ?? "agency";
   try {
+    const { currentDeskSession } = await import("@/lib/auth/session");
+    const session = await currentDeskSession();
+    if (session.signedIn) {
+      if (session.isAdmin) {
+        const mine = parseBookScope(scope) === "my_book";
+        return {
+          tenantId,
+          role: session.role,
+          agentUserId: mine ? session.userId : null,
+          label: mine ? "My book" : "Agency-wide",
+          bookScope: parseBookScope(scope),
+          canToggleBook: true,
+        };
+      }
+      const seeAgency = Boolean(session.user?.canSeeAgencyWidgets);
+      return {
+        tenantId,
+        role: session.role,
+        agentUserId: seeAgency ? null : session.userId,
+        label: seeAgency ? "Agency-wide" : "My book",
+        bookScope: seeAgency ? "agency" : "my_book",
+        canToggleBook: false,
+      };
+    }
     const jar = await cookies();
-    const raw = jar.get("ff_actor")?.value ?? jar.get("ff_role")?.value ?? "owner";
-    const role = normalizeRole(raw);
-    const agentUserId = role === "agent" ? jar.get("ff_actor_id")?.value ?? null : null;
+    const raw = jar.get("ff_actor")?.value ?? jar.get("ff_role")?.value ?? "";
+    const role = normalizeRole(raw || "agent");
+    const mine = role === "agent" || parseBookScope(scope) === "my_book";
     return {
       tenantId,
       role,
-      agentUserId,
-      label: role === "agent" ? "Your book" : "Agency totals",
+      agentUserId: mine ? jar.get("ff_actor_id")?.value ?? null : null,
+      label: mine ? "My book" : "Agency-wide",
+      bookScope: role === "agent" ? "my_book" : parseBookScope(scope),
+      canToggleBook: role !== "agent",
     };
   } catch {
     return {
       tenantId,
-      role: "owner",
+      role: "agent",
       agentUserId: null,
-      label: "Agency totals",
+      label: "Sign in",
+      bookScope: "my_book",
+      canToggleBook: false,
     };
   }
 }

@@ -1,3 +1,4 @@
+import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +24,7 @@ export function PremisesMatchForm({
       </p>
       <div>
         <Label className="text-xs">Street</Label>
-        <Input
+        <AddressAutofill
           name="address"
           defaultValue={defaults?.address}
           placeholder="412 Oak Grove Ln"

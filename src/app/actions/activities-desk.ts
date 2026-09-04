@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { activities, activityLogs } from "@/lib/db/schema";
+import { activities, activityLogs, alerts, calendarInvites } from "@/lib/db/schema";
 import {
   activityLogBody,
   assertRelatedRecord,
@@ -160,6 +160,76 @@ export async function updateDeskActivity(formData: FormData) {
   revalidateRelated(activity);
   revalidatePath(`/tasks/${id}`);
   revalidatePath(`/meetings/${id}`);
+}
+
+export async function rescheduleDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId") || str(formData, "id");
+  const startAt = when(formData, "startAt");
+  if (!id || !startAt) return { error: "Missing activity or time." };
+
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) return { error: "Activity not found." };
+
+  const prevStart = activity.startAt ?? activity.dueAt ?? startAt;
+  const prevEnd = activity.endAt;
+  const durationMs = prevEnd
+    ? Math.max(15 * 60 * 1000, prevEnd.getTime() - prevStart.getTime())
+    : activity.kind === "meeting"
+      ? 30 * 60 * 1000
+      : 15 * 60 * 1000;
+  const endAt = when(formData, "endAt") ?? new Date(startAt.getTime() + durationMs);
+  const dueAt =
+    activity.kind === "task" || activity.kind === "sms" || activity.kind === "email"
+      ? startAt
+      : activity.dueAt ?? startAt;
+
+  await db
+    .update(activities)
+    .set({
+      startAt,
+      endAt,
+      dueAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(activities.id, id));
+
+  await db.insert(activityLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    activityId: id,
+    kind: activity.kind,
+    eventType: "rescheduled",
+    body: `${activityLogBody(activity.kind, "updated", activity.title)} · moved on calendar`,
+    contactId: activity.contactId,
+    accountId: activity.accountId,
+    policyId: activity.policyId,
+    dealId: activity.dealId,
+    leadId: activity.leadId,
+    direction: "internal",
+  });
+
+  revalidateRelated(activity);
+  revalidatePath("/phone");
+  return { ok: true };
+}
+
+export async function deleteDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId");
+  if (!id) return { error: "Missing activity." };
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) return { error: "Activity not found." };
+
+  await db.delete(activityLogs).where(eq(activityLogs.activityId, id));
+  await db.delete(calendarInvites).where(eq(calendarInvites.activityId, id));
+  await db.delete(alerts).where(and(eq(alerts.entityType, "activity"), eq(alerts.entityId, id)));
+  await db.delete(activities).where(eq(activities.id, id));
+  revalidateRelated(activity);
+  return { ok: true };
 }
 
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */

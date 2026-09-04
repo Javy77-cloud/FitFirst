@@ -1,5 +1,6 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { isDueToday, isOverdue, shouldNotifyCall, whenForActivity } from "@/lib/activities/rules";
 import { db } from "./index";
 import {
@@ -9,6 +10,7 @@ import {
   clientHistory,
   contacts,
   deals,
+  leads,
   policies,
   users,
 } from "./schema";
@@ -24,6 +26,7 @@ export async function listBusinesses() {
 }
 
 export async function getBusiness(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(accounts)
@@ -32,9 +35,9 @@ export async function getBusiness(id: string) {
 }
 
 export async function listRelatedOptions() {
-  const [contactRows, dealRows, policyRows, businessRows, userRows] = await Promise.all([
+  const [contactRows, dealRows, policyRows, businessRows, leadRows, userRows] = await Promise.all([
     db
-      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName })
+      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName, phone: contacts.phone })
       .from(contacts)
       .where(eq(contacts.tenantId, tenant()))
       .orderBy(contacts.lastName),
@@ -53,6 +56,11 @@ export async function listRelatedOptions() {
       .from(accounts)
       .where(eq(accounts.tenantId, tenant()))
       .orderBy(accounts.name),
+    db
+      .select({ id: leads.id, firstName: leads.firstName, lastName: leads.lastName })
+      .from(leads)
+      .where(eq(leads.tenantId, tenant()))
+      .orderBy(leads.lastName),
     listDeskUsers(),
   ]);
   return {
@@ -60,6 +68,7 @@ export async function listRelatedOptions() {
     deals: dealRows,
     policies: policyRows,
     businesses: businessRows,
+    leads: leadRows,
     users: userRows,
   };
 }
@@ -96,6 +105,7 @@ export async function listActivities(filter?: {
 }
 
 export async function getActivity(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select({
       activity: activities,
@@ -139,6 +149,7 @@ export async function timelineFor(filter: {
 }
 
 export async function getContactWorkspace(contactId: string) {
+  if (!isUuid(contactId)) return null;
   const [contact] = await db
     .select()
     .from(contacts)
@@ -154,6 +165,7 @@ export async function getContactWorkspace(contactId: string) {
 }
 
 export async function getPolicyWorkspace(policyId: string) {
+  if (!isUuid(policyId)) return null;
   const [row] = await db
     .select({ policy: policies, contact: contacts })
     .from(policies)

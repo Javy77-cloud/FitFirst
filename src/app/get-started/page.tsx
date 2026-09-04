@@ -8,14 +8,22 @@ import {
   ELENA_DEAL_ID,
   ELENA_LEAD_ID,
   ELENA_POLICY_ID,
+  ELENA_PORTAL_TOKEN,
   HARBOR_ACCOUNT_ID,
   HARBOR_DEAL_ID,
+  HARBOR_PORTAL_TOKEN,
 } from "@/lib/fixtures/ids";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 const STEPS = [
+  {
+    title: "BATCH3 ASAP — Lead → Deal → approve → paste",
+    body: "Convert a lead when ready. On the Deal Documents tab: upload a dec / 4-point / wind mit → pick HO3 → Fill master sheet → review yellow/CHECK (source vs sheet) → visual approve. Super-Copy / Send to Fill read the filled Quote Sheet, never the PDFs. Corrections write the Fill Feedback log. Ana Cov A $321,000 stays shopping — do not bind.",
+    href: `/deals/${DEAL_ID}?tab=quote-sheet`,
+    cta: "Open Ana shop (approve, do not bind)",
+  },
   {
     title: "1. Open this checklist",
     body: "You are here. This is the TEST-DESK path. Settings / desk identity lives on the QA slice if that branch is merged.",
@@ -48,9 +56,9 @@ const STEPS = [
   },
   {
     title: "6. Pipeline switcher is real links",
-    body: "P-C, Health, Life, Won-Lost/ARCHIVE, plus Flood (admin-added). Ana sits on Quote Sent and stays unbound. Closed Won already wrote Elena and Harbor policies. ARCHIVE later must not cancel emails hung on won date.",
+    body: "P&C pipeline, Health, Life, Flood, then Won-Lost and Archive as two tabs. Flood is a normal board — no Admin badge. Ana sits on Quote Sent and stays unbound. Closed Won already wrote Elena and Harbor policies. Archive later must not cancel emails hung on won date.",
     href: "/pipeline?pipeline=p-c",
-    cta: "Open P-C pipeline",
+    cta: "Open P&C pipeline",
   },
   {
     title: "7. Ana stays the HO3-only shop",
@@ -59,16 +67,28 @@ const STEPS = [
     cta: "Open Ana Dib shop",
   },
   {
-    title: "8. Drop a dec packet (match, never duplicate)",
-    body: "Leads → Drop a dec packet. The Melbourne sample matches Elena (name + phone/email). You stay on her lead. A new name creates a new lead.",
-    href: "/leads",
-    cta: "Go to Leads",
+    title: "8. Upload source docs onto an existing deal",
+    body: "Deals → type the Deal name (person or business) so lookup attaches files to that shop. Add lines for 4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, or a signed app. Multi-file is fine. There is no Melbourne sample button.",
+    href: "/deals",
+    cta: "Go to Deals",
   },
   {
-    title: "9. Run-it-yourself: stub lead → deal → bind",
+    title: "9. Social + GBP connectors",
+    body: "Settings → Social: connect stubs for Facebook, Instagram, X, LinkedIn, and Google Business Profile. Pulse shows demo followers / views after connect. GBP stays locked for agents until Admin allows monitoring. Open as Lead reuses the social → Lead path (Priya Shah from Instagram).",
+    href: "/social",
+    cta: "Open social pulse",
+  },
+  {
+    title: "10. Run-it-yourself: stub lead → deal → bind",
     body: "Stub email or social lead → Convert to deal → upload a source dec → Fill Quote Sheet blanks → build stub quotes for green markets → Finalize quote results (cheapest first) → attach a quote PDF → Bind. That is the only step that creates a Contact/Business and a Policy (status Bound).",
     href: "/leads",
     cta: "Start from Leads",
+  },
+  {
+    title: "11. Client portal stubs (no Ana)",
+    body: "Public token pages at /portal. Elena: view/download HO3 ID card and submit a policy change that lands on the work queue without rekey. Harbor: reuse COI-20260820-0001 or request a new holder. Ana stays unbound / no portal token.",
+    href: "/portal",
+    cta: "Open client portal",
   },
 ];
 
@@ -126,7 +146,19 @@ export default function GetStartedPage() {
             Search Elena
           </Link>
           <Link href="/pipeline?pipeline=p-c" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-            P-C pipeline
+            P&C pipeline
+          </Link>
+          <Link
+            href={`/portal/${ELENA_PORTAL_TOKEN}`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Elena portal
+          </Link>
+          <Link
+            href={`/portal/${HARBOR_PORTAL_TOKEN}`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Harbor portal
           </Link>
         </div>
       </div>

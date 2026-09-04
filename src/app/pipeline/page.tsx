@@ -1,111 +1,149 @@
 import Link from "next/link";
+import { createPipelineDeal } from "@/app/actions/pipeline-admin";
 import { AppShell } from "@/components/app-shell";
-import { StagePill } from "@/components/fit-badge";
-import { archiveWonDeal, moveDealOnBoard } from "@/app/actions/pipeline";
+import { BookFilterBar } from "@/components/desk/book-filter-bar";
+import { PipelineWorkspace } from "@/components/pipeline/workspace";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { requireSignedIn } from "@/lib/auth/guards";
 import { getPipelineBoard } from "@/lib/db/queries";
-import { pipelineHref } from "@/lib/wire/pipeline";
+import { lineForPipelineSlug } from "@/lib/desk/line-settings";
+import {
+  pipelineHref,
+  pipelinePageTitle,
+  pipelineTabLabel,
+} from "@/lib/wire/pipeline";
+import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 
 export const dynamic = "force-dynamic";
 
 export default async function PipelinePage({
   searchParams,
 }: {
-  searchParams: Promise<{ pipeline?: string }>;
+  searchParams: Promise<{ pipeline?: string; view?: string; lifeSub?: string; healthSub?: string }>;
 }) {
-  const { pipeline: slug } = await searchParams;
-  const data = await getPipelineBoard(slug || "p-c");
+  const session = await requireSignedIn();
+  const { pipeline: slug, view, lifeSub, healthSub } = await searchParams;
+  const data = await getPipelineBoard(slug || "p-c", { lifeSub, healthSub });
   if (!data) {
     return (
       <AppShell title="Pipeline">
-        <p className="text-base text-muted-foreground">No pipelines seeded yet. Run db:seed.</p>
+        <p className="text-sm text-muted-foreground">No pipelines seeded yet. Run db:seed.</p>
       </AppShell>
     );
   }
-  const { board, boards, cards } = data;
+  const { board, boards, cards, lineSettings } = data;
+  const tableView = view === "table";
+  const presented = cards.map(presentPipelineCard);
+  const subQuery =
+    (lifeSub ? `&lifeSub=${encodeURIComponent(lifeSub)}` : "") +
+    (healthSub ? `&healthSub=${encodeURIComponent(healthSub)}` : "");
 
   return (
-    <AppShell title={`${board.name} pipeline`}>
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
+    <AppShell title={pipelinePageTitle(board)}>
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         {boards.map((item) => (
           <Link
             key={item.id}
-            href={pipelineHref(item.slug)}
+            href={`${pipelineHref(item.slug, tableView ? "table" : undefined)}${item.slug === board.slug ? subQuery : ""}`}
             className={
               item.slug === board.slug
                 ? "rounded-md bg-primary px-2.5 py-1 text-primary-foreground"
                 : "rounded-md border border-border bg-card px-2.5 py-1 text-navy hover:border-primary"
             }
           >
-            {item.name}
-            {item.slug === "won-lost" ? " / ARCHIVE" : ""}
-            {!item.seeded ? " · admin" : ""}
+            {pipelineTabLabel(item)}
           </Link>
         ))}
+        <span className="ml-auto flex gap-2">
+          <Link
+            href={`${pipelineHref(board.slug)}${subQuery}`}
+            className={!tableView ? "font-semibold text-primary" : "text-muted-foreground"}
+          >
+            Board
+          </Link>
+          <Link
+            href={`${pipelineHref(board.slug, "table")}${subQuery}`}
+            className={tableView ? "font-semibold text-primary" : "text-muted-foreground"}
+          >
+            Table
+          </Link>
+        </span>
       </div>
-      <p className="mb-4 text-base text-muted-foreground">
-        Real links — P-C, Health, Life, Won-Lost/ARCHIVE, plus Flood (admin-added). Closed Won
-        writes a Policy. Moving a won deal to ARCHIVE later does not cancel emails hung on won
-        date.
-      </p>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {board.stages.map((stage) => {
-          const column = cards.filter((deal) => (deal.pipelineStageSlug || deal.pipelineStage) === stage.slug
-            || (stage.slug === "closed_won" && deal.pipelineStage === "bound" && !deal.archivedAt)
-            || (stage.slug === "quote_sent" && deal.pipelineStage === "quote_sent")
-            || (stage.slug === "archive" && Boolean(deal.archivedAt)));
-          return (
-            <section key={stage.id} className="ff-card overflow-hidden">
-              <div className="border-b border-border px-3 py-2 text-base font-semibold text-navy">
-                {stage.name}
-              </div>
-              {column.length === 0 ? (
-                <p className="px-3 py-4 text-base text-muted-foreground">Empty.</p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {column.map((deal) => (
-                    <li key={deal.id} className="px-3 py-2 text-sm">
-                      <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                        {deal.title}
-                      </Link>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <StagePill stage={deal.pipelineStage} />
-                        {stage.slug === "closed_won" ? (
-                          <form action={archiveWonDeal}>
-                            <input type="hidden" name="dealId" value={deal.id} />
-                            <button type="submit" className="text-[11px] text-primary hover:underline">
-                              Move to ARCHIVE
-                            </button>
-                          </form>
-                        ) : null}
-                        {stage.slug !== "closed_won" && stage.slug !== "archive" ? (
-                          <form action={moveDealOnBoard} className="flex items-center gap-1">
-                            <input type="hidden" name="dealId" value={deal.id} />
-                            <input type="hidden" name="pipelineSlug" value={board.slug} />
-                            <select
-                              name="stageSlug"
-                              defaultValue={stage.slug}
-                              className="h-7 rounded border border-input bg-card px-1 text-[11px]"
-                            >
-                              {board.stages.map((option) => (
-                                <option key={option.slug} value={option.slug}>
-                                  {option.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button type="submit" className="text-[11px] text-primary hover:underline">
-                              Move
-                            </button>
-                          </form>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          );
-        })}
-      </div>
+
+      {board.slug === "life" || board.slug === "health" ? (
+        <BookFilterBar
+          action="/pipeline"
+          settings={lineSettings}
+          family={board.slug}
+          lifeSub={lifeSub}
+          healthSub={healthSub}
+          hideFamily
+          hidden={{
+            pipeline: board.slug,
+            ...(tableView ? { view: "table" } : {}),
+          }}
+        />
+      ) : null}
+
+      <form
+        action={createPipelineDeal}
+        className="mb-4 flex flex-wrap items-end gap-2 rounded-md border border-border bg-card p-3"
+      >
+        <input type="hidden" name="pipelineSlug" value={board.slug} />
+        <input type="hidden" name="lineOfBusiness" value={lineForPipelineSlug(board.slug)} />
+        <Input name="title" required placeholder="New deal title" className="h-8 w-56" />
+        {board.slug === "life" ? (
+          <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+            <option value="">Life type</option>
+            {lineSettings.lifeOptions.map((option) => (
+              <option key={option.slug} value={option.label}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        {board.slug === "health" ? (
+          <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+            <option value="">Health type</option>
+            {lineSettings.healthOptions.map((option) => (
+              <option key={option.slug} value={option.label}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <select name="stageSlug" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+          {board.stages.map((stage) => (
+            <option key={stage.slug} value={stage.slug}>
+              {stage.name}
+            </option>
+          ))}
+        </select>
+        <Button type="submit" size="sm">
+          Create deal
+        </Button>
+      </form>
+
+      <PipelineWorkspace
+        canEditStages={session.isAdmin}
+        board={{
+          id: board.id,
+          slug: board.slug,
+          name: board.name,
+          kind: board.kind,
+          seeded: board.seeded,
+          stages: board.stages.map((stage) => ({
+            id: stage.id,
+            slug: stage.slug,
+            name: stage.name,
+            sortOrder: stage.sortOrder,
+            seeded: stage.seeded,
+          })),
+        }}
+        cards={presented}
+        tableView={tableView}
+      />
     </AppShell>
   );
 }

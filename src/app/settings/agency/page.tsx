@@ -1,0 +1,198 @@
+import Link from "next/link";
+import { saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
+import { saveShowCompanyWidgets } from "@/app/actions/home-dashboard";
+import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
+import { SettingsShell } from "@/components/settings/settings-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { requireAdminPage } from "@/lib/auth/guards";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { db } from "@/lib/db";
+import { agencySettings } from "@/lib/db/schema";
+import { getAgencyBrand, getResolvedDesk } from "@/lib/db/brand-queries";
+import { eq } from "drizzle-orm";
+import {
+  COLOR_PRESET_LABELS,
+  COLOR_PRESETS,
+  DENSITY_PRESET_LABELS,
+  DENSITY_PRESETS,
+  FONT_PRESET_LABELS,
+  FONT_PRESETS,
+  defaultColumnLayout,
+} from "@/lib/domain";
+
+export const dynamic = "force-dynamic";
+
+export default async function AgencySettingsPage() {
+  const session = await requireAdminPage();
+  const [desk, brand, settings] = await Promise.all([
+    getResolvedDesk(),
+    getAgencyBrand(),
+    db.select().from(agencySettings).where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID)),
+  ]);
+  void session;
+  const showCompanyWidgets = Boolean(settings[0]?.showCompanyWidgets);
+
+  return (
+    <SettingsShell title="Agency branding" current="agency">
+      {!desk.isAdmin ? (
+        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Agency logo, name, templates, and signatures are Admin-only. Switch to Admin in the
+          rail, or use My desk for your own colors and columns.
+        </p>
+      ) : (
+        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+          Agency chrome every agent inherits. Logo sits with the agency name in the top-left —
+          FitFirst is not the corner brand. This is not billing or a second settings app.
+        </p>
+      )}
+
+      {desk.isAdmin ? (
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/settings/offices"
+            className="ff-card block p-4 hover:border-primary/40"
+          >
+            <div className="text-sm font-semibold text-navy">Offices</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Name, state(s), address, optional timezone. Agents can sit in more than one desk.
+            </p>
+          </Link>
+          <Link
+            href="/settings/territories"
+            className="ff-card block p-4 hover:border-primary/40"
+          >
+            <div className="text-sm font-semibold text-navy">Territories</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              States, counties, or a freeform geo label. Link offices. Filter Home by book.
+            </p>
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <form action={saveAgencyBrand} className="ff-card space-y-4 p-4">
+          <fieldset disabled={!desk.isAdmin} className="space-y-4">
+            <div>
+              <Label htmlFor="agencyName" className="text-xs">
+                Agency name
+              </Label>
+              <Input
+                id="agencyName"
+                name="agencyName"
+                required
+                defaultValue={desk.agencyName}
+                className="mt-1 h-8"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <Label className="text-xs">Default color</Label>
+                <select
+                  name="defaultColorPreset"
+                  defaultValue={brand?.defaultColorPreset ?? "agency"}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  {COLOR_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {COLOR_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Default font</Label>
+                <select
+                  name="defaultFontPreset"
+                  defaultValue={brand?.defaultFontPreset ?? "plex"}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  {FONT_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {FONT_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Default density</Label>
+                <select
+                  name="defaultDensity"
+                  defaultValue={brand?.defaultDensity ?? "comfortable"}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  {DENSITY_PRESETS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {DENSITY_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <ColumnLayoutFields
+              prefix="agencyCol_"
+              layout={brand?.defaultColumnLayout ?? defaultColumnLayout()}
+              note="Agency default columns — not your personal override. The CRM list picker writes this same JSON on agency_brand.default_column_layout."
+            />
+            {desk.isAdmin ? (
+              <Button type="submit" size="sm">
+                Save agency defaults
+              </Button>
+            ) : null}
+          </fieldset>
+        </form>
+
+        <div className="space-y-4">
+        <section className="ff-card space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-navy">Home widgets</h2>
+          <p className="text-xs text-muted-foreground">
+            Optionally pin agency production on every agent dashboard. Does not change the blue/orange desk colors.
+          </p>
+          <form action={saveShowCompanyWidgets} className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="showCompanyWidgets"
+                value="1"
+                defaultChecked={showCompanyWidgets}
+              />
+              Show 1–2 company widgets on agent home
+            </label>
+            <Button type="submit" size="sm" variant="outline">
+              Save home widgets
+            </Button>
+          </form>
+        </section>
+
+        <section className="ff-card space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-navy">Logo</h2>
+          <div className="flex items-center gap-3">
+            {desk.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={desk.logoUrl}
+                alt=""
+                className="size-14 rounded-md border border-border bg-card object-contain p-1"
+              />
+            ) : (
+              <div className="flex size-14 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+                No file
+              </div>
+            )}
+            <div className="text-sm text-muted-foreground">{desk.agencyName}</div>
+          </div>
+          {desk.isAdmin ? (
+            <form action={uploadAgencyLogo} className="space-y-2">
+              <Input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+              <Button type="submit" size="sm" variant="outline">
+                Upload logo
+              </Button>
+            </form>
+          ) : null}
+        </section>
+        </div>
+      </div>
+    </SettingsShell>
+  );
+}

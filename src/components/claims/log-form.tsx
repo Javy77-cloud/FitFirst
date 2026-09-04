@@ -12,9 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function LogClaimForm({
   policyId,
+  policies = [],
   postedBy = "Javy",
 }: {
-  policyId: string;
+  policyId?: string;
+  policies?: Array<{ id: string; label: string }>;
   postedBy?: string;
 }) {
   return (
@@ -24,12 +26,30 @@ export function LogClaimForm({
         Use this when the insured asks the agency to record a claim. Then send them to the
         carrier site — nothing here files FNOL.
       </p>
-      <input type="hidden" name="policyId" value={policyId} />
+      {policyId && policies.length === 0 ? (
+        <input type="hidden" name="policyId" value={policyId} />
+      ) : (
+        <div>
+          <Label className="text-xs">Policy (optional on this stub)</Label>
+          <select
+            name="policyId"
+            defaultValue={policyId ?? ""}
+            className={fieldClass}
+          >
+            <option value="">No policy yet — save the row anyway</option>
+            {policies.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <input type="hidden" name="postedBy" value={postedBy} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label className="text-xs">Date reported</Label>
-          <Input name="dateReported" type="date" required className="mt-1 h-8" />
+          <Input name="dateReported" type="date" className="mt-1 h-8" />
         </div>
         <div>
           <Label className="text-xs">Date of loss</Label>
@@ -65,8 +85,8 @@ export function LogClaimForm({
           className={`${fieldClass} h-auto min-h-16`}
         />
       </div>
-      <Button type="submit" size="sm">
-        Save on this policy
+      <Button type="submit" size="lg">
+        Save claim
       </Button>
     </form>
   );

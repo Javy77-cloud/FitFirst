@@ -1,20 +1,37 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "./index";
 import {
+  APPOINTMENT_LINES,
+  type SellingAgency,
+} from "@/lib/domain";
+import {
   alerts,
   appetiteRules,
+  carrierAppointments,
   carriers,
   contacts,
   deals,
   leads,
   quoteAttemptLogs,
+  quoteSheets,
   quotes,
   reviewTasks,
   risks,
   tenants,
 } from "./schema";
+import { CARRIER_DESK } from "@/lib/carriers/desk";
 import fixture from "../fixtures/ana-dib-ho3-2026-09-02.json";
-import { CARRIER_IDS, CONTACT_ID, DEAL_ID, LEAD_ID, RISK_ID, TENANT_ID } from "../fixtures/ids";
+import {
+  ANA_HOME_SHEET_ID,
+  CARRIER_IDS,
+  CONTACT_ID,
+  DEAL_ID,
+  LEAD_ID,
+  PIPELINE_PC_ID,
+  RISK_ID,
+  TENANT_ID,
+} from "../fixtures/ids";
+import { anaHomeSheetValues, anaPropertyOneliner } from "@/lib/quote-sheet/ana-home";
 import { seedLifecycleDemo } from "./seed-lifecycle";
 import { seedWireDesk } from "./seed-wire";
 import { seedOwnerBook } from "./seed-owner-book";
@@ -23,13 +40,46 @@ import { seedMergeDuplicates } from "./seed-merge";
 import { seedAppointmentsAndSheets, seedOrtegaFitDeal } from "./seed-shop-fits";
 import { seedCompleteness } from "./seed-completeness";
 import { seedUsersAndBook } from "./seed-book";
+import { seedOfficesAndTerritories } from "./seed-offices";
 import { seedClaimsBook } from "./seed-claims";
 import { seedAutoBook } from "./seed-auto";
 import { seedBookRenewals } from "./seed-book-renewals";
-
-const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
+import { seedCommsDesk } from "./seed-comms";
+import { ensureDefaultLineSubfilters } from "./line-settings";
+import { seedCalendarDesk } from "./seed-calendar";
+import { seedCompanyMeetings } from "./seed-company-meetings";
+import { seedGlobalLists } from "./seed-global-lists";
+import { seedHomeDashboard } from "./seed-home-dashboard";
+import { seedDocumentLibraries } from "./seed-documents";
+import { seedAutomationsHub } from "./seed-automations";
+import { seedSocialConnectors } from "./seed-social";
+import { seedPiiVault } from "./seed-pii";
+import { seedMfaDemo } from "./seed-mfa";
+import { seedCarrierPortals } from "./seed-carrier-portals";
+import { seedFillLearning } from "./seed-fill-learning";
+import { seedEoAudit } from "./seed-eo-audit";
+import { seedCampaignSequences } from "./seed-campaign-sequences";
+import { seedApiTokens } from "./seed-api-tokens";
+import { seedPolicyDocVersions } from "./seed-versions";
+import { seedClientPortal } from "./seed-portal";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
+
+/** Selling paper for first-wave Home. Other lines reuse the same agency, appointed=false. */
+const HOME_SELLING_AGENCY: Record<CarrierKey, SellingAgency> = {
+  tailrow: "First Connect",
+  hoc: "AFA",
+  vyrd: "AFA",
+  qbe: "AFA",
+  vave: "Agentero",
+  benchmark: "AFA",
+  hadron: "First Connect",
+  geovera: "AFA",
+  sagesure: "First Connect",
+  americanIntegrity: "AFA",
+};
+
+const SHOP_AT = new Date(`${fixture.shopDate}T16:00:00.000Z`);
 
 export async function seedIfEmpty() {
   await seed();
@@ -56,6 +106,8 @@ export async function seed() {
       tenantId: TENANT_ID,
       firstName: "Ana",
       lastName: "Dib",
+      phone: "(321) 555-0144",
+      email: "ana.dib@desk.local",
       source: "book",
       status: "converted",
       notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
@@ -66,6 +118,8 @@ export async function seed() {
       set: {
         firstName: "Ana",
         lastName: "Dib",
+        phone: "(321) 555-0144",
+        email: "ana.dib@desk.local",
         status: "converted",
         convertedDealId: DEAL_ID,
         notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
@@ -80,6 +134,8 @@ export async function seed() {
       tenantId: TENANT_ID,
       firstName: "Ana",
       lastName: "Dib",
+      phone: "(321) 555-0144",
+      email: "ana.dib@desk.local",
       mailingAddress: fixture.risk.address1,
       city: fixture.risk.city,
       state: fixture.risk.state,
@@ -93,6 +149,8 @@ export async function seed() {
       set: {
         firstName: "Ana",
         lastName: "Dib",
+        phone: "(321) 555-0144",
+        email: "ana.dib@desk.local",
         mailingAddress: fixture.risk.address1,
         city: fixture.risk.city,
         state: fixture.risk.state,
@@ -117,6 +175,12 @@ export async function seed() {
       state: "FL",
       primaryNamedInsured: fixture.insured.primary,
       secondaryNamedInsured: fixture.insured.namedInsured,
+      shopLines: ["home"],
+      coverageAmount: fixture.risk.coverageA,
+      propertyOneliner: anaPropertyOneliner(fixture.risk),
+      currentCarrier: null,
+      accountKind: "personal",
+      pipelineId: PIPELINE_PC_ID,
       notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -127,8 +191,14 @@ export async function seed() {
         title: "Dib · Palm Bay HO3",
         pipelineStage: "shopping",
         lineOfBusiness: "HO",
+        pipelineId: PIPELINE_PC_ID,
         primaryNamedInsured: fixture.insured.primary,
         secondaryNamedInsured: fixture.insured.namedInsured,
+        shopLines: ["home"],
+        coverageAmount: fixture.risk.coverageA,
+        propertyOneliner: anaPropertyOneliner(fixture.risk),
+        currentCarrier: null,
+        accountKind: "personal",
         notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
         updatedAt: new Date(),
       },
@@ -188,8 +258,30 @@ export async function seed() {
       },
     });
 
+  const anaHomeValues = anaHomeSheetValues(fixture.risk);
+  await db
+    .insert(quoteSheets)
+    .values({
+      id: ANA_HOME_SHEET_ID,
+      tenantId: TENANT_ID,
+      dealId: DEAL_ID,
+      line: "home",
+      values: anaHomeValues,
+    })
+    .onConflictDoUpdate({
+      target: quoteSheets.id,
+      set: {
+        dealId: DEAL_ID,
+        line: "home",
+        values: anaHomeValues,
+        updatedAt: new Date(),
+      },
+    });
+
   for (const carrier of fixture.carriers) {
-    const id = CARRIER_IDS[carrier.key as CarrierKey];
+    const key = carrier.key as CarrierKey;
+    const id = CARRIER_IDS[key];
+    const desk = CARRIER_DESK[key];
     await db
       .insert(carriers)
       .values({
@@ -199,6 +291,30 @@ export async function seed() {
         writtenLines: carrier.writtenLines,
         dontWriteNotes: carrier.dontWriteNotes,
         portalStatus: carrier.portalStatus,
+        portalUrl: desk.portalUrl ?? desk.agentPortalUrl ?? null,
+        portalLogin: desk.portalLogin,
+        agencyCode: desk.agencyCode ?? null,
+        customerServicePhone: desk.customerServicePhone,
+        agentPhone: desk.agentPhone,
+        website: desk.website,
+        agentPortalUrl: desk.agentPortalUrl,
+        carrierInfo: desk.carrierInfo,
+        naic: desk.naic ?? null,
+        amBestRating: desk.amBestRating ?? null,
+        underwriterName: desk.underwriterName ?? null,
+        underwriterEmail: desk.underwriterEmail ?? null,
+        underwriterPhone: desk.underwriterPhone ?? null,
+        accountManagerName: desk.accountManagerName ?? null,
+        accountManagerEmail: desk.accountManagerEmail ?? null,
+        accountManagerPhone: desk.accountManagerPhone ?? null,
+        claimsPhone: desk.claimsPhone ?? null,
+        billingPhone: desk.billingPhone ?? null,
+        newBusinessCommPct: desk.newBusinessCommPct ?? null,
+        renewalCommPct: desk.renewalCommPct ?? null,
+        territory: desk.territory ?? null,
+        preferredSubmission: desk.preferredSubmission ?? null,
+        bindingAuthority: desk.bindingAuthority ?? null,
+        appetiteNotes: desk.appetiteNotes ?? null,
         fixtureTag: "fl-ho3-2026-09-02",
         active: true,
       })
@@ -209,12 +325,54 @@ export async function seed() {
           writtenLines: carrier.writtenLines,
           dontWriteNotes: carrier.dontWriteNotes,
           portalStatus: carrier.portalStatus,
+          portalUrl: desk.portalUrl ?? desk.agentPortalUrl ?? null,
+          portalLogin: desk.portalLogin,
+          agencyCode: desk.agencyCode ?? null,
+          customerServicePhone: desk.customerServicePhone,
+          agentPhone: desk.agentPhone,
+          website: desk.website,
+          agentPortalUrl: desk.agentPortalUrl,
+          carrierInfo: desk.carrierInfo,
+          naic: desk.naic ?? null,
+          amBestRating: desk.amBestRating ?? null,
+          underwriterName: desk.underwriterName ?? null,
+          underwriterEmail: desk.underwriterEmail ?? null,
+          underwriterPhone: desk.underwriterPhone ?? null,
+          accountManagerName: desk.accountManagerName ?? null,
+          accountManagerEmail: desk.accountManagerEmail ?? null,
+          accountManagerPhone: desk.accountManagerPhone ?? null,
+          claimsPhone: desk.claimsPhone ?? null,
+          billingPhone: desk.billingPhone ?? null,
+          newBusinessCommPct: desk.newBusinessCommPct ?? null,
+          renewalCommPct: desk.renewalCommPct ?? null,
+          territory: desk.territory ?? null,
+          preferredSubmission: desk.preferredSubmission ?? null,
+          bindingAuthority: desk.bindingAuthority ?? null,
+          appetiteNotes: desk.appetiteNotes ?? null,
           fixtureTag: "fl-ho3-2026-09-02",
           active: true,
           updatedAt: new Date(),
         },
       });
   }
+
+  await db.delete(carrierAppointments).where(eq(carrierAppointments.tenantId, TENANT_ID));
+  await db.insert(carrierAppointments).values(
+    (Object.keys(CARRIER_IDS) as CarrierKey[]).flatMap((key) => {
+      const agency = HOME_SELLING_AGENCY[key];
+      return APPOINTMENT_LINES.map((writtenLine) => ({
+        tenantId: TENANT_ID,
+        carrierId: CARRIER_IDS[key],
+        writtenLine,
+        appointed: writtenLine === "HO",
+        sellingAgency: agency,
+        notes:
+          writtenLine === "HO"
+            ? "First-wave Home appointment. Seeded appointed=true for existing shop carriers."
+            : "Explicit not-appointed. Do not treat a missing row as paper.",
+      }));
+    }),
+  );
 
   await db.delete(appetiteRules).where(eq(appetiteRules.tenantId, TENANT_ID));
   await db.insert(appetiteRules).values(
@@ -287,6 +445,23 @@ export async function seed() {
     })),
   );
 
+  const anaLostReasons: Partial<Record<CarrierKey, string>> = {
+    qbe: "uw_construction",
+    benchmark: "uw_roof",
+    hadron: "uw_roof",
+  };
+  for (const [key, reason] of Object.entries(anaLostReasons)) {
+    await db
+      .update(quoteAttemptLogs)
+      .set({ lostReason: reason })
+      .where(
+        and(
+          eq(quoteAttemptLogs.dealId, DEAL_ID),
+          eq(quoteAttemptLogs.carrierId, CARRIER_IDS[key as CarrierKey]),
+        ),
+      );
+  }
+
   await db.delete(alerts).where(eq(alerts.tenantId, TENANT_ID));
   await db.insert(alerts).values([
     {
@@ -331,7 +506,32 @@ export async function seed() {
   await seedMergeDuplicates();
   await seedWave1ZohoBook();
   await seedUsersAndBook();
+  await seedOfficesAndTerritories();
   await seedClaimsBook();
   await seedAutoBook();
   await seedBookRenewals();
+  await seedCommsDesk();
+  await ensureDefaultLineSubfilters();
+  await seedCalendarDesk();
+  await seedCompanyMeetings();
+  await seedGlobalLists();
+  await seedHomeDashboard();
+  await seedDocumentLibraries();
+  await seedAutomationsHub();
+  await seedSocialConnectors();
+  await seedPiiVault();
+  await seedMfaDemo();
+  await seedCarrierPortals();
+  const { seedFillFeedback } = await import("./seed-fill-feedback");
+  await seedFillFeedback();
+  await seedFillLearning();
+  await seedEoAudit();
+  await seedCampaignSequences();
+  await seedApiTokens();
+  await seedPolicyDocVersions();
+  const { seedLeadRoutingAndRenewalRisk } = await import("./seed-routing");
+  await seedLeadRoutingAndRenewalRisk();
+  const { seedCommissionReconciliations } = await import("./seed-commission-recon");
+  await seedCommissionReconciliations();
+  await seedClientPortal();
 }

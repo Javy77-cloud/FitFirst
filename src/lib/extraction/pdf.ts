@@ -1,8 +1,22 @@
+import { isImageUpload } from "./ocr";
+
+export class ImageOcrNotImplementedError extends Error {
+  readonly code = "not_implemented" as const;
+  constructor(filename: string) {
+    super(`Image OCR is not implemented this pass (${filename}).`);
+    this.name = "ImageOcrNotImplementedError";
+  }
+}
+
 export async function textFromUpload(
   buffer: Buffer,
   mimeType: string,
   filename: string,
 ): Promise<string> {
+  if (isImageUpload(mimeType, filename)) {
+    throw new ImageOcrNotImplementedError(filename);
+  }
+
   const isText =
     mimeType.startsWith("text/") ||
     filename.toLowerCase().endsWith(".txt") ||

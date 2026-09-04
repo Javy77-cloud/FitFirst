@@ -11,6 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, activities, deals } from "@/lib/db/schema";
+import { writeEin } from "@/lib/pii/write";
 import { ADMIN_NAME, ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import {
   completeDeskActivity,
@@ -107,6 +108,10 @@ export async function saveCallOutcome(formData: FormData) {
   return saveDeskCallOutcome(formData);
 }
 
+export async function logCallDuration(formData: FormData): Promise<void> {
+  await saveDeskCallOutcome(formData);
+}
+
 export async function finishCall(formData: FormData) {
   const { returnTo } = await saveDeskCallOutcome(formData);
   redirect(returnTo);
@@ -127,7 +132,7 @@ export async function createBusiness(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       name,
       legalName: str(formData, "legalName") || name,
-      ein: str(formData, "ein") || null,
+      ...writeEin(str(formData, "ein") || null),
       city: str(formData, "city") || null,
       state: str(formData, "state") || "FL",
     })

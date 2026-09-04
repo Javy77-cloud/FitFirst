@@ -1,0 +1,136 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { formatDay } from "@/lib/domain";
+import type { EmailSendJob } from "@/lib/db/schema";
+
+function statusLabel(job: EmailSendJob) {
+  const holdReason = "holdReason" in job ? String(job.holdReason ?? "") : "";
+  if (job.status === "queued" && holdReason === "connect_email_to_send") {
+    return "Queued — connect email to send";
+  }
+  if (job.status === "queued" && holdReason === "missing_contact_email") {
+    return "Queued — contact has no email";
+  }
+  if (job.status === "queued") return "Queued";
+  if (job.status === "sent") return "Sent";
+  return "Failed";
+}
+
+function statusVariant(job: EmailSendJob): "outline" | "secondary" | "destructive" {
+  if (job.status === "sent") return "secondary";
+  if (job.status === "failed") return "destructive";
+  return "outline";
+}
+
+export function EmailActivityList({
+  jobs,
+  empty,
+}: {
+  jobs: { job: EmailSendJob }[];
+  empty: string;
+}) {
+  if (jobs.length === 0) {
+    return <p className="px-4 py-6 text-sm text-muted-foreground">{empty}</p>;
+  }
+
+  return (
+    <ul className="divide-y divide-border">
+      {jobs.map(({ job }) => (
+        <li key={job.id} className="px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">
+                {"subject" in job && job.subject ? String(job.subject) : "Queued send"}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                To {("toEmail" in job && job.toEmail ? String(job.toEmail) : null) ?? "—"} ·{" "}
+                {("sendFromProvider" in job && job.sendFromProvider
+                  ? String(job.sendFromProvider)
+                  : "inbox")}{" "}
+                · scheduled {formatDay(job.scheduledFor)} from {job.anchorKind.replace("_", " ")}{" "}
+                {formatDay(job.anchorAt)}
+              </p>
+            </div>
+            <Badge variant={statusVariant(job)}>{statusLabel(job)}</Badge>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function HistoryList({
+  items,
+}: {
+  items: { id: string; eventType: string; body: string; occurredAt: Date }[];
+}) {
+  if (items.length === 0) {
+    return <p className="px-4 py-6 text-sm text-muted-foreground">No activity yet.</p>;
+  }
+  return (
+    <ul className="divide-y divide-border">
+      {items.map((row) => (
+        <li key={row.id} className="px-4 py-3">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            {row.eventType.replaceAll("_", " ")} · {formatDay(row.occurredAt)}
+          </div>
+          <p className="mt-1 text-sm">{row.body}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function SettingsSubnav({
+  current,
+  isAdmin = true,
+}: {
+  current:
+    | "hub"
+    | "agency"
+    | "lines"
+    | "lists"
+    | "templates"
+    | "signatures"
+    | "triggers"
+    | "my-desk"
+    | "phone"
+    | "communications"
+    | "esign"
+    | "master-risk"
+    | "integrations";
+  isAdmin?: boolean;
+}) {
+  const items = [
+    { href: "/settings", id: "hub" as const, label: "Overview", adminOnly: false },
+    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · communications", adminOnly: true },
+    { href: "/settings/agency", id: "agency" as const, label: "Admin · agency", adminOnly: true },
+    { href: "/settings/lines", id: "lines" as const, label: "Admin · lines", adminOnly: true },
+    { href: "/settings/lists", id: "lists" as const, label: "Admin · lists", adminOnly: true },
+    { href: "/settings/phone", id: "phone" as const, label: "Admin · phone", adminOnly: true },
+    { href: "/settings/communications", id: "communications" as const, label: "Communications", adminOnly: false },
+    { href: "/settings/esign", id: "esign" as const, label: "Admin · e-sign", adminOnly: true },
+    { href: "/settings/master-risk", id: "master-risk" as const, label: "Admin · master risk", adminOnly: true },
+    { href: "/settings/email-templates", id: "templates" as const, label: "Admin · templates", adminOnly: true },
+    { href: "/settings/email-signatures", id: "signatures" as const, label: "Admin · signatures", adminOnly: true },
+    { href: "/settings/email-triggers", id: "triggers" as const, label: "Admin · triggers", adminOnly: true },
+    { href: "/settings/my-desk", id: "my-desk" as const, label: "Agent · my desk", adminOnly: false },
+  ].filter((item) => isAdmin || !item.adminOnly);
+  return (
+    <div className="mb-4 flex flex-wrap gap-2">
+      {items.map((item) => (
+        <Link
+          key={item.id}
+          href={item.href}
+          className={
+            current === item.id
+              ? "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
+              : "rounded-md bg-secondary px-2.5 py-1 text-xs font-medium text-navy"
+          }
+        >
+          {item.label}
+        </Link>
+      ))}
+    </div>
+  );
+}

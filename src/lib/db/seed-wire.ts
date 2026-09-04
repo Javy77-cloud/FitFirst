@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { writeEin } from "@/lib/pii/write";
 import { db } from "./index";
 import {
   accounts,
@@ -31,6 +32,8 @@ import {
   ELENA_POLICY_ID,
   EMAIL_REVIEW_ID,
   EMAIL_THANK_YOU_ID,
+  FORM_AOR_ID,
+  FORM_CANCEL_ID,
   FORM_HO3_ID,
   FORM_PACKET_ID,
   HARBOR_ACCOUNT_ID,
@@ -44,11 +47,8 @@ import {
   HARBOR_RISK_ID,
   HARBOR_SHEET_ID,
   HARBOR_TASK_ID,
-  PIPELINE_FLOOD_ID,
-  PIPELINE_HEALTH_ID,
-  PIPELINE_LIFE_ID,
+  PIPELINE_IDS_BY_SLUG,
   PIPELINE_PC_ID,
-  PIPELINE_WON_LOST_ID,
   RISK_ID,
   TENANT_ID,
   TRIGGER_REVIEW_ID,
@@ -63,13 +63,7 @@ import { SEEDED_PIPELINES } from "../wire/pipeline";
 import { scheduleWonClientEmails } from "../wire/email-jobs";
 import { buildCertificateDraft, nextCertificateNumber } from "../certificates/issue";
 
-const PIPELINE_IDS: Record<string, string> = {
-  "p-c": PIPELINE_PC_ID,
-  health: PIPELINE_HEALTH_ID,
-  life: PIPELINE_LIFE_ID,
-  "won-lost": PIPELINE_WON_LOST_ID,
-  flood: PIPELINE_FLOOD_ID,
-};
+const PIPELINE_IDS: Record<string, string> = PIPELINE_IDS_BY_SLUG;
 
 function cell(
   value: string,
@@ -135,19 +129,19 @@ export async function seedWireDesk() {
       tenantId: TENANT_ID,
       dealId: DEAL_ID,
       line: "home",
-      values: anaValues,
+      values: anaValues as typeof quoteSheets.$inferInsert.values,
     })
     .onConflictDoUpdate({
       target: quoteSheets.id,
-      set: { values: anaValues, updatedAt: new Date() },
+      set: { values: anaValues as typeof quoteSheets.$inferInsert.values, updatedAt: new Date() },
     });
 
   await db
     .update(deals)
     .set({
       pipelineId: PIPELINE_PC_ID,
-      pipelineStage: "shopping",
-      pipelineStageSlug: "shopping",
+      pipelineStage: "quote_sent",
+      pipelineStageSlug: "quote_sent",
       updatedAt: new Date(),
     })
     .where(eq(deals.id, DEAL_ID));
@@ -166,7 +160,7 @@ export async function seedWireDesk() {
     .update(accounts)
     .set({
       dba: "Ruiz Tile",
-      ein: "59-7654321",
+      ...writeEin("59-7654321"),
       entityType: "llc",
       employeeCount: 6,
       annualSales: "890000.00",
@@ -252,8 +246,17 @@ export async function seedWireDesk() {
   await db
     .insert(formTemplates)
     .values(
-      FORM_TEMPLATE_SEEDS.map((seed, index) => ({
-        id: index === 0 ? FORM_HO3_ID : FORM_PACKET_ID,
+      FORM_TEMPLATE_SEEDS.map((seed) => ({
+        id:
+          seed.slug === "fl-ho3"
+            ? FORM_HO3_ID
+            : seed.slug === "fl-home-packet"
+              ? FORM_PACKET_ID
+              : seed.slug === "agency-cancellation"
+                ? FORM_CANCEL_ID
+                : seed.slug === "agency-aor"
+                  ? FORM_AOR_ID
+                  : undefined,
         tenantId: TENANT_ID,
         slug: seed.slug,
         name: seed.name,
@@ -262,6 +265,7 @@ export async function seedWireDesk() {
         family: seed.family,
         summary: seed.summary,
         fields: seed.fields,
+        fillable: true,
       })),
     )
     .onConflictDoNothing();
@@ -338,7 +342,7 @@ export async function seedWireDesk() {
       tenantId: TENANT_ID,
       name: "Harbor Key Marine LLC",
       dba: "Harbor Key Marine",
-      ein: "59-1234567",
+      ...writeEin("59-1234567"),
       entityType: "llc",
       email: "office@harborkey.example",
       phone: "(321) 555-0144",
@@ -363,7 +367,7 @@ export async function seedWireDesk() {
       target: accounts.id,
       set: {
         name: "Harbor Key Marine LLC",
-        ein: "59-1234567",
+        ...writeEin("59-1234567"),
         employeeCount: 14,
         annualSales: "2150000.00",
         payrollW2: "540000.00",
@@ -439,11 +443,11 @@ export async function seedWireDesk() {
       tenantId: TENANT_ID,
       dealId: HARBOR_DEAL_ID,
       line: "general_liability",
-      values: harborValues,
+      values: harborValues as typeof quoteSheets.$inferInsert.values,
     })
     .onConflictDoUpdate({
       target: quoteSheets.id,
-      set: { values: harborValues, updatedAt: new Date() },
+      set: { values: harborValues as typeof quoteSheets.$inferInsert.values, updatedAt: new Date() },
     });
 
   await db
@@ -461,6 +465,10 @@ export async function seedWireDesk() {
       effectiveDate: new Date("2026-08-15T05:00:00.000Z"),
       expirationDate: new Date("2027-08-15T05:00:00.000Z"),
       premium: "4180.00",
+      premisesAddress: "88 Harbor Key Blvd",
+      premisesCity: "Palm Bay",
+      premisesState: "FL",
+      premisesZip: "32907",
     })
     .onConflictDoUpdate({
       target: policies.id,
@@ -468,6 +476,10 @@ export async function seedWireDesk() {
         accountId: HARBOR_ACCOUNT_ID,
         contactId: null,
         status: "active",
+        premisesAddress: "88 Harbor Key Blvd",
+        premisesCity: "Palm Bay",
+        premisesState: "FL",
+        premisesZip: "32907",
         updatedAt: new Date(),
       },
     });

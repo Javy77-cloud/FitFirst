@@ -1,17 +1,16 @@
 import Link from "next/link";
+import {
+  AGENT_DEAL_TAB_LABELS,
+  AGENT_DEAL_TABS,
+  parseAgentDealTab,
+  type AgentDealTab,
+} from "@/lib/deals/tabs";
 import { cn } from "@/lib/utils";
 
-const TABS = [
-  { id: "documents", label: "Documents" },
-  { id: "risk", label: "Master risk" },
-  { id: "markets", label: "Markets" },
-  { id: "quotes", label: "Quotes" },
-] as const;
-
-export type DealTabId = (typeof TABS)[number]["id"];
+export type DealTabId = AgentDealTab;
 
 export function parseDealTab(value: string | undefined): DealTabId {
-  return TABS.some((tab) => tab.id === value) ? (value as DealTabId) : "documents";
+  return parseAgentDealTab(value);
 }
 
 export function DealTabs({
@@ -29,12 +28,12 @@ export function DealTabs({
         aria-label="Deal sections"
         className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1"
       >
-        {TABS.map((tab) => {
-          const selected = tab.id === active;
+        {AGENT_DEAL_TABS.map((tab) => {
+          const selected = tab === active;
           return (
             <Link
-              key={tab.id}
-              href={`/deals/${dealId}?tab=${tab.id}`}
+              key={tab}
+              href={`/deals/${dealId}?tab=${tab}`}
               scroll={false}
               prefetch
               className={cn(
@@ -44,7 +43,7 @@ export function DealTabs({
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {tab.label}
+              {AGENT_DEAL_TAB_LABELS[tab]}
             </Link>
           );
         })}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { SheetBoot } from "@/components/sheet/sheet-boot";
 import "./globals.css";
 
 const plex = IBM_Plex_Sans({
@@ -14,16 +15,22 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "FitFirst — P&C CRM + filter-first rater",
   description:
-    "Lead to deal shopping, master risk worksheet, document extraction with confidence, and in-appetite carrier ranking.",
+    "Lead to deal shopping, one Quote Sheet per line, Super-Copy for the rater, and filter-first carrier ranking.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plex.variable} ${plexMono.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <SheetBoot />
+        <script src="/ff-sheet.js" defer />
+      </body>
     </html>
   );
 }

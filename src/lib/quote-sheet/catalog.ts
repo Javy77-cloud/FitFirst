@@ -19,11 +19,13 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built" },
   { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories" },
   { key: "square_feet", label: "Square feet", group: "Dwelling", input: "number", extractKey: "square_feet" },
+  { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number", extractKey: "beds" },
+  { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number", extractKey: "baths" },
   { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction" },
   { key: "occupancy", label: "Occupancy", group: "Dwelling", extractKey: "occupancy" },
   { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year" },
   { key: "roof_covering", label: "Roof covering", group: "Roof / wind", extractKey: "roof_covering" },
-  { key: "roof_shape", label: "Roof shape", group: "Roof / wind" },
+  { key: "roof_shape", label: "Roof shape", group: "Roof / wind", extractKey: "roof_shape" },
   {
     key: "opening_protection",
     label: "Opening protection",
@@ -46,11 +48,29 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "pool", label: "Pool", group: "Roof / wind", extractKey: "pool" },
   { key: "mobile_home", label: "Mobile / manufactured", group: "Roof / wind", extractKey: "mobile_home" },
   { key: "coverage_a", label: "Coverage A (dwelling)", group: "Coverages", input: "number", extractKey: "coverage_a" },
-  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number" },
-  { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number" },
-  { key: "coverage_d", label: "Coverage D (loss of use)", group: "Coverages", input: "number" },
-  { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages" },
-  { key: "aop_deductible", label: "AOP deductible", group: "Coverages" },
+  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number", extractKey: "coverage_b" },
+  { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number", extractKey: "coverage_c" },
+  { key: "coverage_d", label: "Coverage D (loss of use)", group: "Coverages", input: "number", extractKey: "coverage_d" },
+  { key: "coverage_e", label: "Coverage E (liability)", group: "Coverages", input: "number", extractKey: "coverage_e" },
+  { key: "coverage_f", label: "Coverage F (medical payments)", group: "Coverages", input: "number", extractKey: "coverage_f" },
+  {
+    key: "hurricane_deductible",
+    label: "Hurricane deductible",
+    group: "Coverages",
+    extractKey: "hurricane_deductible",
+  },
+  {
+    key: "aop_deductible",
+    label: "AOP deductible",
+    group: "Coverages",
+    extractKey: "aop_deductible",
+  },
+  {
+    key: "wind_hail_deductible",
+    label: "Wind / hail deductible",
+    group: "Coverages",
+    extractKey: "wind_deductible",
+  },
   {
     key: "replacement_cost_estimate",
     label: "RCE / MSB (not Zillow)",
@@ -58,13 +78,46 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     input: "number",
     extractKey: "replacement_cost_estimate",
   },
+  {
+    key: "named_insured",
+    label: "Named insured (from dec)",
+    group: "Current policy",
+    extractKey: "named_insured",
+  },
+  {
+    key: "secondary_named_insured",
+    label: "Additional named insured (from dec)",
+    group: "Current policy",
+    extractKey: "secondary_named_insured",
+  },
+  {
+    key: "mailing_address",
+    label: "Mailing address",
+    group: "Property",
+    extractKey: "mailing_address",
+  },
+  {
+    key: "ordinance_or_law",
+    label: "Ordinance or law",
+    group: "Coverages",
+    extractKey: "ordinance_or_law",
+  },
+  {
+    key: "water_backup",
+    label: "Water backup",
+    group: "Coverages",
+    extractKey: "water_backup",
+  },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "effective_date", label: "Effective date", group: "Current policy" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "four_point_date", label: "4-point date", group: "Inspections" },
-  { key: "four_point_result", label: "4-point result", group: "Inspections" },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections" },
+  { key: "policy_number", label: "Policy number", group: "Current policy", extractKey: "policy_number" },
+  { key: "form", label: "Form", group: "Current policy", extractKey: "form" },
+  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
+  { key: "flood_zone", label: "Flood zone", group: "Inspections", extractKey: "flood_zone" },
+  { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
+  { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
+  { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date" },
+  { key: "four_point_result", label: "4-point result", group: "Inspections", extractKey: "four_point_result" },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form" },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
 ];
 
@@ -166,9 +219,19 @@ export function emptySheetValues(line: ShopLine): Record<string, QuoteSheetField
   return values;
 }
 
+const EXTRACT_ALIASES: Record<string, string> = {
+  wind_hail_deductible: "wind_deductible",
+  address: "address",
+};
+
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {
+  const aliased = EXTRACT_ALIASES[extractKey] ?? extractKey;
   const match = fieldsForLine(line).find(
-    (field) => field.extractKey === extractKey || field.key === extractKey,
+    (field) =>
+      field.extractKey === extractKey ||
+      field.extractKey === aliased ||
+      field.key === extractKey ||
+      field.key === aliased,
   );
   return match?.key ?? null;
 }

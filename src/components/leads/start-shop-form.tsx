@@ -25,9 +25,8 @@ export function StartShopForm({
       action={async (formData) => {
         setPending(true);
         setError(null);
-        const result = await createDealFromLead(formData);
+        await createDealFromLead(formData);
         setPending(false);
-        if (result?.error) setError(result.error);
       }}
     >
       <input type="hidden" name="leadId" value={leadId} />

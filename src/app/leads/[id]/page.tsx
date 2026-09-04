@@ -1,12 +1,27 @@
 import { notFound } from "next/navigation";
+import { createDealFromLead } from "@/app/actions/crm";
+import { updateLeadRecord } from "@/app/actions/record-edit";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
-import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
-import { StartShopForm } from "@/components/leads/start-shop-form";
-import { RecordContextRail } from "@/components/record-context/record-context-rail";
-import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
+import { ClickToCall } from "@/components/click-to-call";
+import { LeadFormFields } from "@/components/crm/lead-form-fields";
+import { LineSelect } from "@/components/crm/line-select";
+import { StagePill } from "@/components/fit-badge";
+import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
-import { getLead, listRecordActivities } from "@/lib/db/queries";
-import { loadRecordContext } from "@/lib/record-context";
+import { RecordSection } from "@/components/record-section";
+import { Button } from "@/components/ui/button";
+import { formatPersonName } from "@/lib/crm/display";
+import { LINE_LABELS } from "@/lib/crm/bind";
+import { AwardLeadForm } from "@/components/leads/award-form";
+import { routeLeadNow } from "@/app/actions/lead-routing";
+import { latestRoutingLog } from "@/lib/leads/apply-routing";
+import { currentDeskSession } from "@/lib/auth/session";
+import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
+import { listDeskUsers } from "@/lib/db/activity-queries";
+import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
+import type { LineOfBusiness } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -16,51 +31,122 @@ export default async function LeadDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const row = await getLead(id);
+  if (!isUuid(id)) notFound();
+  const [row, templates, asks, users, session, agents, routingLog] = await Promise.all([
+    getLead(id),
+    listEmailTemplates(),
+    listRecordAsks("lead", id),
+    listDeskUsers(),
+    currentDeskSession(),
+    listAwardableAgents(),
+    latestRoutingLog(id),
+  ]);
   if (!row) notFound();
-  const { lead, deal } = row;
-  const comms = await listRecordActivities({ leadId: lead.id });
-  const context = await loadRecordContext({
-    leadId: lead.id,
-    dealId: deal?.id,
-  });
+  const { lead, deal, timeline } = row;
+  const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
+  const lineLabel = lead.insuranceTypeDesired
+    ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
+    : null;
 
   return (
-    <AppShell title={`${lead.lastName}, ${lead.firstName}`} eyebrow="Lead">
-      <RecordDetailLayout
-        main={
-          <div>
-            <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-              <span className="uppercase text-muted-foreground">{lead.status}</span>
-              <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
-              {deal ? <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink> : null}
-            </div>
-            <section className="ff-card space-y-2 p-4 text-sm">
-              <div>
-                <span className="text-xs text-muted-foreground">Phone</span>
-                <div>{lead.phone ?? "—"}</div>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Email</span>
-                <div>{lead.email ?? "—"}</div>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Notes</span>
-                <p className="whitespace-pre-wrap text-base text-muted-foreground">{lead.notes ?? "—"}</p>
-              </div>
-              {!deal ? (
-                <div className="pt-2">
-                  <StartShopForm leadId={lead.id} label="Start shop" showLine size="sm" />
-                </div>
-              ) : null}
-            </section>
-            <div className="mt-4">
-              <QuickCommsBoard items={comms} leadId={lead.id} />
-            </div>
-          </div>
-        }
-        rail={<RecordContextRail context={context} />}
-      />
+    <AppShell title={formatPersonName(lead)}>
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+        <span className="uppercase text-muted-foreground">{lead.status}</span>
+        {deal ? <StagePill stage={deal.pipelineStage} /> : null}
+        <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
+        <span className="text-muted-foreground">
+          {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
+        </span>
+        {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
+        {lead.preferredLanguage ? (
+          <span className="uppercase text-muted-foreground">{lead.preferredLanguage}</span>
+        ) : null}
+        <ClickToCall
+          entityType="lead"
+          entityId={lead.id}
+          name={formatPersonName(lead)}
+          phone={lead.phone}
+        />
+      </div>
+
+      {routingLog ? (
+        <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+          {routingLog.outcome === "assigned" ? "Routed" : "Unassigned"} · {routingLog.reason}
+        </p>
+      ) : null}
+
+      {session.isAdmin && !lead.ownerId ? (
+        <form action={routeLeadNow} className="mb-4">
+          <input type="hidden" name="leadId" value={lead.id} />
+          <Button type="submit" size="sm" variant="outline">
+            Run routing rules
+          </Button>
+        </form>
+      ) : null}
+
+      {session.isAdmin && !lead.ownerId && isInboundSocialSource(lead.source) ? (
+        <div className="mb-4 ff-card p-4">
+          <h2 className="text-sm font-semibold text-navy">Award this inbound</h2>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Agency-level social / inbound. Awarding assigns the Lead and pings that agent.
+          </p>
+          <AwardLeadForm leadId={lead.id} agents={agents} next={`/leads/${lead.id}`} />
+        </div>
+      ) : null}
+
+      <RecordSection id="record" title="This lead" summary="Person and coverage they asked for — source docs wait for the deal">
+        <form action={updateLeadRecord} className="mb-4 space-y-3">
+          <input type="hidden" name="leadId" value={lead.id} />
+          <LeadFormFields lead={lead} />
+          <Button type="submit" size="sm">
+            Save lead
+          </Button>
+        </form>
+        {!deal ? (
+          <form action={createDealFromLead} className="mb-4 flex flex-wrap items-end gap-2">
+            <input type="hidden" name="leadId" value={lead.id} />
+            <input type="hidden" name="state" value={lead.state ?? "FL"} />
+            <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
+            <Button type="submit" size="sm" variant="outline">
+              Convert to deal
+            </Button>
+            <p className="w-full text-[11px] text-muted-foreground">
+              Convert when ready to shop. Source docs and the master-sheet approve gate live on
+              the Deal — not here.
+            </p>
+          </form>
+        ) : null}
+        <RecordAskPanel
+          entityType="lead"
+          entityId={lead.id}
+          asks={asks}
+          users={users}
+          leadId={lead.id}
+          dealId={deal?.id}
+        />
+        <ActivityTimeline
+          items={timeline}
+          leadId={lead.id}
+          dealId={deal?.id}
+          phone={lead.phone}
+          email={lead.email}
+          templates={templates}
+        />
+      </RecordSection>
+
+      <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">
+        {deal ? (
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
+            <StagePill stage={deal.pipelineStage} />
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No deal yet. Convert when you start the shop. Drop a dec, wind mit, or 4-point on the
+            deal — not here.
+          </p>
+        )}
+      </RecordSection>
     </AppShell>
   );
 }

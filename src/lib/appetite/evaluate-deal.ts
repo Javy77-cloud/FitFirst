@@ -1,5 +1,10 @@
 import { eq } from "drizzle-orm";
-import { DEFAULT_TENANT_ID, type AppetiteRuleInput, type PriorAttempt } from "@/lib/domain";
+import {
+  appointmentLine,
+  DEFAULT_TENANT_ID,
+  type AppetiteRuleInput,
+  type PriorAttempt,
+} from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   appetiteRules,
@@ -7,11 +12,11 @@ import {
   carriers,
   quoteAttemptLogs,
   quoteSheets,
+  type Risk,
 } from "@/lib/db/schema";
 import { matchCarrier, rankFits, riskFromRecord, type CarrierMatch } from "./match";
 import { evaluateShopFits, type ShopFit } from "./shop-fits";
-import { appointmentLine } from "@/lib/domain";
-import type { Risk } from "@/lib/db/schema";
+import { isMatchPriorResult } from "@/lib/quoting/forms";
 
 export async function evaluateDealMarkets(risk: Risk): Promise<CarrierMatch[]> {
   const fits = await evaluateDealShopFits(risk);
@@ -37,19 +42,21 @@ export async function evaluateDealShopFits(risk: Risk): Promise<ShopFit[]> {
       .where(eq(quoteSheets.dealId, risk.dealId)),
   ]);
 
-  const prior: PriorAttempt[] = logs.map((log) => ({
-    carrierId: log.carrierId,
-    result: log.result as PriorAttempt["result"],
-    why: log.why,
-    bindable: log.bindable,
-    snapYearBuilt: log.snapYearBuilt,
-    snapRoofYear: log.snapRoofYear,
-    snapRoofCovering: log.snapRoofCovering,
-    snapConstruction: log.snapConstruction,
-    snapCounty: log.snapCounty,
-    snapMilesToCoast: log.snapMilesToCoast,
-    snapCoverageA: log.snapCoverageA,
-  }));
+  const prior: PriorAttempt[] = logs
+    .filter((log) => isMatchPriorResult(log.result))
+    .map((log) => ({
+      carrierId: log.carrierId,
+      result: log.result as PriorAttempt["result"],
+      why: log.why,
+      bindable: log.bindable,
+      snapYearBuilt: log.snapYearBuilt,
+      snapRoofYear: log.snapRoofYear,
+      snapRoofCovering: log.snapRoofCovering,
+      snapConstruction: log.snapConstruction,
+      snapCounty: log.snapCounty,
+      snapMilesToCoast: log.snapMilesToCoast,
+      snapCoverageA: log.snapCoverageA,
+    }));
 
   const dealLine = appointmentLine(risk.riskType === "auto" ? "AUTO" : "HO");
   const sheet = sheets[0]?.values ?? null;

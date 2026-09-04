@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
+import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
-import { DEFAULT_TENANT_ID, type AppetiteRuleInput, type PriorAttempt } from "@/lib/domain";
+import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { appointedByCarrierLine } from "@/lib/db/queries";
 import {
   appetiteRules,
   carriers,
@@ -14,6 +16,8 @@ import {
   quotes,
   risks,
 } from "@/lib/db/schema";
+import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
+import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 
 export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
@@ -23,6 +27,9 @@ export async function shopInAppetite(dealId: string) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
+  if (!quotingUnlockedForDeal(deal)) {
+    throw new Error("Approve the master sheet before shopping markets.");
+  }
 
   const rules = await db
     .select({ rule: appetiteRules, carrier: carriers })
@@ -36,53 +43,30 @@ export async function shopInAppetite(dealId: string) {
     .where(eq(quoteAttemptLogs.tenantId, DEFAULT_TENANT_ID));
 
   const snapshot = riskFromRecord(risk);
-  const prior: PriorAttempt[] = logs.map((log) => ({
-    carrierId: log.carrierId,
-    result: log.result as PriorAttempt["result"],
-    why: log.why,
-    bindable: log.bindable,
-    snapYearBuilt: log.snapYearBuilt,
-    snapRoofYear: log.snapRoofYear,
-    snapRoofCovering: log.snapRoofCovering,
-    snapConstruction: log.snapConstruction,
-    snapCounty: log.snapCounty,
-    snapMilesToCoast: log.snapMilesToCoast,
-    snapCoverageA: log.snapCoverageA,
-  }));
+  const appointedMap = await appointedByCarrierLine();
+  const prior: PriorAttempt[] = logs
+    .filter((log) => isMatchPriorResult(log.result))
+    .map((log) => ({
+      carrierId: log.carrierId,
+      result: log.result as PriorAttempt["result"],
+      why: log.why,
+      bindable: log.bindable,
+      snapYearBuilt: log.snapYearBuilt,
+      snapRoofYear: log.snapRoofYear,
+      snapRoofCovering: log.snapRoofCovering,
+      snapConstruction: log.snapConstruction,
+      snapCounty: log.snapCounty,
+      snapMilesToCoast: log.snapMilesToCoast,
+      snapCoverageA: log.snapCoverageA,
+    }));
 
   const matches = rankFits(
-    rules.map(({ rule, carrier }) =>
-      matchCarrier(
-        snapshot,
-        {
-          carrierId: carrier.id,
-          carrierName: carrier.name,
-          lineOfBusiness: rule.lineOfBusiness,
-          minCovA: rule.minCovA,
-          maxCovA: rule.maxCovA,
-          minYearBuilt: rule.minYearBuilt,
-          maxRoofAge: rule.maxRoofAge,
-          allowedRoofCoverings: rule.allowedRoofCoverings,
-          coastalAllowed: rule.coastalAllowed,
-          minMilesToCoast: rule.minMilesToCoast,
-          maxMilesToCoast: rule.maxMilesToCoast,
-          mobileAllowed: rule.mobileAllowed,
-          requiresOpeningProtection: rule.requiresOpeningProtection,
-          maxStories: rule.maxStories,
-          allowedConstruction: rule.allowedConstruction,
-          allowedOccupancy: rule.allowedOccupancy,
-          allowedCounties: rule.allowedCounties,
-          excludedCounties: rule.excludedCounties,
-          countyMinCovA: rule.countyMinCovA,
-          requireReplacementCost: rule.requireReplacementCost,
-          rceFloorRatio: rule.rceFloorRatio,
-          portalStatus: carrier.portalStatus as AppetiteRuleInput["portalStatus"],
-          dontWriteNotes: carrier.dontWriteNotes,
-          writtenLines: carrier.writtenLines,
-        },
-        prior,
-      ),
-    ),
+    rules.map(({ rule, carrier }) => {
+      const line = appointmentLine(rule.lineOfBusiness);
+      const key = `${carrier.id}:${line}`;
+      const appointed = appointedMap.has(key) ? appointedMap.get(key)! : null;
+      return matchCarrier(snapshot, toAppetiteInput(carrier, rule, appointed), prior);
+    }),
   );
 
   await db.delete(quotes).where(eq(quotes.dealId, dealId));
@@ -117,6 +101,8 @@ export async function shopInAppetite(dealId: string) {
     .set({ pipelineStage: "quoting", updatedAt: new Date() })
     .where(eq(deals.id, dealId));
 
+  await attachFinalizedQuotePdfs(dealId);
+
   revalidatePath(`/deals/${dealId}`);
   return matches;
 }
@@ -138,6 +124,10 @@ export async function recordManualAttempt(formData: FormData) {
     premium: String(formData.get("premium") ?? "") || null,
     covATried: risk.coverageA,
     why: String(formData.get("why") ?? "") || null,
+    lostReason:
+      String(formData.get("result") ?? "declined") === "declined"
+        ? String(formData.get("lostReason") ?? "").trim() || null
+        : null,
     snapYearBuilt: risk.yearBuilt,
     snapRoofYear: risk.roofYear,
     snapRoofCovering: risk.roofCovering,
@@ -154,5 +144,6 @@ export async function recordManualAttempt(formData: FormData) {
   });
 
   revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/carriers/logs");
   revalidatePath("/logs");
 }

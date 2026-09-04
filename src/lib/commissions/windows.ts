@@ -25,6 +25,26 @@ export function lastCalendarQuarter(now: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+export function nextCalendarQuarter(now: Date): { start: Date; end: Date } {
+  const currentQ = Math.floor(now.getUTCMonth() / 3);
+  const nextQ = currentQ === 3 ? 0 : currentQ + 1;
+  const year = currentQ === 3 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
+  const start = new Date(Date.UTC(year, nextQ * 3, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, nextQ * 3 + 3, 1, 0, 0, 0));
+  return { start, end };
+}
+
+function monthStart(now: Date, monthDelta: number): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + monthDelta, 1, 0, 0, 0));
+}
+
+function calendarYear(year: number): { start: Date; end: Date } {
+  return {
+    start: new Date(Date.UTC(year, 0, 1, 0, 0, 0)),
+    end: new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0)),
+  };
+}
+
 export function rangeWindow(
   range: CommissionRange,
   now = new Date(),
@@ -42,7 +62,7 @@ export function rangeWindow(
   }
   if (range === "last_quarter") {
     const q = lastCalendarQuarter(now);
-    return { start: q.start, end: q.end, statuses: ["paid"], upcoming: false };
+    return { start: q.start, end: q.end, upcoming: false };
   }
   if (range === "fiscal_year") {
     const y = fiscalYearBounds(now, fiscalYearStartMonth);
@@ -50,6 +70,36 @@ export function rangeWindow(
   }
   if (range === "upcoming") {
     return { start: now, end: null, statuses: ["pending", "payable"], upcoming: true };
+  }
+  if (range === "last_year") {
+    const y = calendarYear(now.getUTCFullYear() - 1);
+    return { start: y.start, end: y.end, upcoming: false };
+  }
+  if (range === "last_6_months") {
+    return { start: monthStart(now, -6), end: now, upcoming: false };
+  }
+  if (range === "last_3_months") {
+    return { start: monthStart(now, -3), end: now, upcoming: false };
+  }
+  if (range === "last_month") {
+    return { start: monthStart(now, -1), end: monthStart(now, 0), upcoming: false };
+  }
+  if (range === "next_month") {
+    return { start: monthStart(now, 1), end: monthStart(now, 2), upcoming: true };
+  }
+  if (range === "next_3_months") {
+    return { start: monthStart(now, 1), end: monthStart(now, 4), upcoming: true };
+  }
+  if (range === "next_6_months") {
+    return { start: monthStart(now, 1), end: monthStart(now, 7), upcoming: true };
+  }
+  if (range === "next_quarter") {
+    const q = nextCalendarQuarter(now);
+    return { start: q.start, end: q.end, upcoming: true };
+  }
+  if (range === "next_year") {
+    const y = calendarYear(now.getUTCFullYear() + 1);
+    return { start: y.start, end: y.end, upcoming: true };
   }
   return { start: null, end: null, upcoming: false };
 }

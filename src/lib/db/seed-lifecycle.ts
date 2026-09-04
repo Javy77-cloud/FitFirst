@@ -1,6 +1,7 @@
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
+import { writeSsn } from "@/lib/pii/write";
 import { db } from "./index";
 import {
   accounts,
@@ -25,17 +26,29 @@ import {
   ELENA_CALL_ID,
   ELENA_CONTACT_ID,
   ELENA_DEAL_ID,
+  ELENA_DOC_DEC_ID,
+  ELENA_DOC_POLICY_DEC_ID,
+  ELENA_DOC_POLICY_ID_CARD_ID,
+  ELENA_DOC_WIND_ID,
   ELENA_LEAD_ID,
   ELENA_LOCATION_ID,
   ELENA_MEETING_ID,
   ELENA_POLICY_ID,
   ELENA_QUOTE_AI_ID,
+  ELENA_QUOTE_GEO_ID,
+  ELENA_QUOTE_PDF_AI_ID,
+  ELENA_QUOTE_PDF_GEO_ID,
+  ELENA_QUOTE_PDF_TR_ID,
+  ELENA_PROPOSAL_ID,
   ELENA_QUOTE_TAILROW_ID,
   ELENA_RISK_ID,
   ELENA_SHEET_ID,
   ELENA_TASK_ID,
   TENANT_ID,
 } from "../fixtures/ids";
+import { buildStubQuotePdf } from "../crm/quote-pdf";
+import { buildBrandedProposalPdf } from "../proposals/branded-pdf";
+import { compareQuotes, quoteToCompareInput } from "../quotes/gap-notes";
 import { activityLogBody } from "../lifecycle/activity";
 import {
   MELBOURNE_HO_DEC_FILENAME,
@@ -67,6 +80,19 @@ async function writeAttachment(
   const abs = path.join(uploadRoot, storagePath);
   await mkdir(path.dirname(abs), { recursive: true });
   await writeFile(abs, body, "utf8");
+  return storagePath;
+}
+
+async function writePdfAttachment(
+  id: string,
+  filename: string,
+  buffer: Buffer,
+  dealId: string,
+): Promise<string> {
+  const storagePath = path.join(TENANT_ID, dealId, `${id}-${filename}`);
+  const abs = path.join(uploadRoot, storagePath);
+  await mkdir(path.dirname(abs), { recursive: true });
+  await writeFile(abs, buffer);
   return storagePath;
 }
 
@@ -105,6 +131,13 @@ export async function seedLifecycleDemo() {
       lastName: "Ruiz",
       email: "elena.ruiz@example.com",
       phone: "(321) 555-0188",
+      mailingAddress: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      dateOfBirth: "1984-03-12",
+      insuranceTypeDesired: "HO",
+      preferredLanguage: "en",
       source: "dropped_dec",
       status: "converted",
       notes:
@@ -118,6 +151,13 @@ export async function seedLifecycleDemo() {
         lastName: "Ruiz",
         email: "elena.ruiz@example.com",
         phone: "(321) 555-0188",
+        mailingAddress: "412 Harbor Isle Dr",
+        city: "Melbourne",
+        state: "FL",
+        zip: "32935",
+        dateOfBirth: "1984-03-12",
+        insuranceTypeDesired: "HO",
+        preferredLanguage: "en",
         source: "dropped_dec",
         status: "converted",
         convertedDealId: ELENA_DEAL_ID,
@@ -143,6 +183,7 @@ export async function seedLifecycleDemo() {
       tenureStart: new Date("2026-09-01T15:00:00.000Z"),
       policyCount: 1,
       activePolicyCount: 1,
+      ...writeSsn("000-00-4444"),
       notes:
         "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
     })
@@ -160,6 +201,7 @@ export async function seedLifecycleDemo() {
         tenureStart: new Date("2026-09-01T15:00:00.000Z"),
         policyCount: 1,
         activePolicyCount: 1,
+        ...writeSsn("000-00-4444"),
         notes:
           "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
         updatedAt: new Date(),
@@ -237,6 +279,7 @@ export async function seedLifecycleDemo() {
   const quoteResultsNote = buildQuoteResultsNote([
     { carrierName: "American Integrity", premium: "2840", bindable: true },
     { carrierName: "Tailrow", premium: "3120", bindable: true },
+    { carrierName: "GeoVera", premium: "3640", bindable: true },
   ]);
 
   await db
@@ -256,6 +299,7 @@ export async function seedLifecycleDemo() {
       quoteResultsNote,
       notes:
         "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
+      videoProposalUrl: "https://fitfirst.example/video/ruiz-melbourne-ho3",
       boundAt: new Date("2026-09-01T15:00:00.000Z"),
     })
     .onConflictDoUpdate({
@@ -271,6 +315,7 @@ export async function seedLifecycleDemo() {
         quoteResultsNote,
         notes:
           "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
+        videoProposalUrl: "https://fitfirst.example/video/ruiz-melbourne-ho3",
         boundAt: new Date("2026-09-01T15:00:00.000Z"),
         updatedAt: new Date(),
       },
@@ -328,11 +373,11 @@ export async function seedLifecycleDemo() {
       tenantId: TENANT_ID,
       dealId: ELENA_DEAL_ID,
       line: "home",
-      values: sheetValues,
+      values: sheetValues as typeof quoteSheets.$inferInsert.values,
     })
     .onConflictDoUpdate({
       target: quoteSheets.id,
-      set: { values: sheetValues, updatedAt: new Date() },
+      set: { values: sheetValues as typeof quoteSheets.$inferInsert.values, updatedAt: new Date() },
     });
 
   await db.delete(quotes).where(eq(quotes.dealId, ELENA_DEAL_ID));
@@ -365,8 +410,24 @@ export async function seedLifecycleDemo() {
       aopDeductible: "$2,500",
       coverageA: 385000,
       bindable: true,
-      coverageGaps: [],
-      notes: "Stub quote. Second cheapest. Did not create a policy.",
+      coverageGaps: ["No flood"],
+      notes: "Stub quote. Second cheapest. Florida HO3 — flood not included.",
+      stub: true,
+    },
+    {
+      id: ELENA_QUOTE_GEO_ID,
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      riskId: ELENA_RISK_ID,
+      carrierId: CARRIER_IDS.geovera,
+      quoteNumber: "Q-GV-MEL-3640",
+      premium: "3640.00",
+      hurricaneDeductible: "5%",
+      aopDeductible: "$5,000",
+      coverageA: 365000,
+      bindable: true,
+      coverageGaps: ["No flood"],
+      notes: "Higher deductibles. Coverage A $20,000 short of the $385,000 need. No flood.",
       stub: true,
     },
   ]);
@@ -387,6 +448,11 @@ export async function seedLifecycleDemo() {
       expirationDate: new Date("2027-09-01T05:00:00.000Z"),
       premium: "2840.00",
       coverageA: 385000,
+      billingFrequency: "annual",
+      premisesAddress: "412 Harbor Isle Dr",
+      premisesCity: "Melbourne",
+      premisesState: "FL",
+      premisesZip: "32935",
     })
     .onConflictDoUpdate({
       target: policies.id,
@@ -396,6 +462,11 @@ export async function seedLifecycleDemo() {
         status: "active",
         premium: "2840.00",
         coverageA: 385000,
+        billingFrequency: "annual",
+        premisesAddress: "412 Harbor Isle Dr",
+        premisesCity: "Melbourne",
+        premisesState: "FL",
+        premisesZip: "32935",
         updatedAt: new Date(),
       },
     });
@@ -412,16 +483,102 @@ export async function seedLifecycleDemo() {
     MELBOURNE_WIND_MIT_TEXT,
     ELENA_DEAL_ID,
   );
-  const quoteAiPath = await writeAttachment(
-    "q-ai",
-    "american-integrity-quote-2840.txt",
-    "ISSUED QUOTE PDF (stub)\nAmerican Integrity HO3\nElena Ruiz · 412 Harbor Isle Dr, Melbourne FL\nPremium $2,840 · Cov A $385,000\nThis is a shopping quote. It is not a policy.\n",
+  const quoteAiPath = await writePdfAttachment(
+    ELENA_QUOTE_PDF_AI_ID,
+    "american-integrity-quote-2840.pdf",
+    await buildStubQuotePdf({
+      dealTitle: "Ruiz · Melbourne HO3",
+      carrierName: "American Integrity",
+      quoteNumber: "Q-AI-MEL-2840",
+      premium: "2840.00",
+      coverageA: 385000,
+      hurricaneDeductible: "2%",
+      aopDeductible: "$2,500",
+      bindable: true,
+    }),
     ELENA_DEAL_ID,
   );
-  const quoteTrPath = await writeAttachment(
-    "q-tr",
-    "tailrow-quote-3120.txt",
-    "ISSUED QUOTE PDF (stub)\nTailrow HO3\nElena Ruiz · 412 Harbor Isle Dr, Melbourne FL\nPremium $3,120 · Cov A $385,000\nThis is a shopping quote. It is not a policy.\n",
+  const quoteTrPath = await writePdfAttachment(
+    ELENA_QUOTE_PDF_TR_ID,
+    "tailrow-quote-3120.pdf",
+    await buildStubQuotePdf({
+      dealTitle: "Ruiz · Melbourne HO3",
+      carrierName: "Tailrow",
+      quoteNumber: "Q-TR-MEL-3120",
+      premium: "3120.00",
+      coverageA: 385000,
+      hurricaneDeductible: "2%",
+      aopDeductible: "$2,500",
+      bindable: true,
+    }),
+    ELENA_DEAL_ID,
+  );
+  const quoteGvPath = await writePdfAttachment(
+    ELENA_QUOTE_PDF_GEO_ID,
+    "geovera-quote-3640.pdf",
+    await buildStubQuotePdf({
+      dealTitle: "Ruiz · Melbourne HO3",
+      carrierName: "GeoVera",
+      quoteNumber: "Q-GV-MEL-3640",
+      premium: "3640.00",
+      coverageA: 365000,
+      hurricaneDeductible: "5%",
+      aopDeductible: "$5,000",
+      bindable: true,
+    }),
+    ELENA_DEAL_ID,
+  );
+  const proposalPath = await writePdfAttachment(
+    ELENA_PROPOSAL_ID,
+    "proposal-Ruiz_Melbourne_HO3.pdf",
+    await buildBrandedProposalPdf({
+      brand: { agencyName: "Javier Garcia Insurance", colorPreset: "agency", phone: "321-429-1182" },
+      deal: {
+        title: "Ruiz · Melbourne HO3",
+        insuredName: "Elena Ruiz",
+        line: "HO",
+        state: "FL",
+        coverageA: 385000,
+      },
+      quotes: compareQuotes(
+        [
+          quoteToCompareInput({
+            id: ELENA_QUOTE_AI_ID,
+            carrierName: "American Integrity",
+            premium: "2840.00",
+            aopDeductible: "$2,500",
+            hurricaneDeductible: "2%",
+            coverageA: 385000,
+            bindable: true,
+            coverageGaps: [],
+            notes: "Cheapest.",
+          }),
+          quoteToCompareInput({
+            id: ELENA_QUOTE_TAILROW_ID,
+            carrierName: "Tailrow",
+            premium: "3120.00",
+            aopDeductible: "$2,500",
+            hurricaneDeductible: "2%",
+            coverageA: 385000,
+            bindable: true,
+            coverageGaps: ["No flood"],
+            notes: "No flood.",
+          }),
+          quoteToCompareInput({
+            id: ELENA_QUOTE_GEO_ID,
+            carrierName: "GeoVera",
+            premium: "3640.00",
+            aopDeductible: "$5,000",
+            hurricaneDeductible: "5%",
+            coverageA: 365000,
+            bindable: true,
+            coverageGaps: ["No flood"],
+            notes: "Higher deductibles. No flood.",
+          }),
+        ],
+        { coverageA: 385000, state: "FL", line: "HO", wantsFlood: true },
+      ),
+    }),
     ELENA_DEAL_ID,
   );
   const polDecPath = await writeAttachment(
@@ -440,6 +597,7 @@ export async function seedLifecycleDemo() {
   await db.delete(documents).where(eq(documents.dealId, ELENA_DEAL_ID));
   await db.insert(documents).values([
     {
+      id: ELENA_DOC_DEC_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
@@ -452,6 +610,7 @@ export async function seedLifecycleDemo() {
       status: "extracted",
     },
     {
+      id: ELENA_DOC_WIND_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
@@ -464,28 +623,59 @@ export async function seedLifecycleDemo() {
       status: "extracted",
     },
     {
+      id: ELENA_QUOTE_PDF_AI_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
-      filename: "american-integrity-quote-2840.txt",
-      mimeType: "text/plain",
+      contactId: ELENA_CONTACT_ID,
+      filename: "american-integrity-quote-2840.pdf",
+      mimeType: "application/pdf",
       storagePath: quoteAiPath,
       docType: "quote_pdf",
       slot: "quote_pdf",
       status: "uploaded",
     },
     {
+      id: ELENA_QUOTE_PDF_TR_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
-      filename: "tailrow-quote-3120.txt",
-      mimeType: "text/plain",
+      contactId: ELENA_CONTACT_ID,
+      filename: "tailrow-quote-3120.pdf",
+      mimeType: "application/pdf",
       storagePath: quoteTrPath,
       docType: "quote_pdf",
       slot: "quote_pdf",
       status: "uploaded",
     },
     {
+      id: ELENA_QUOTE_PDF_GEO_ID,
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: "geovera-quote-3640.pdf",
+      mimeType: "application/pdf",
+      storagePath: quoteGvPath,
+      docType: "quote_pdf",
+      slot: "quote_pdf",
+      status: "uploaded",
+    },
+    {
+      id: ELENA_PROPOSAL_ID,
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: "proposal-Ruiz_Melbourne_HO3.pdf",
+      mimeType: "application/pdf",
+      storagePath: proposalPath,
+      docType: "proposal",
+      slot: "proposal",
+      status: "attached",
+    },
+    {
+      id: ELENA_DOC_POLICY_DEC_ID,
       tenantId: TENANT_ID,
       dealId: ELENA_DEAL_ID,
       policyId: ELENA_POLICY_ID,
@@ -498,6 +688,7 @@ export async function seedLifecycleDemo() {
       status: "uploaded",
     },
     {
+      id: ELENA_DOC_POLICY_ID_CARD_ID,
       tenantId: TENANT_ID,
       dealId: ELENA_DEAL_ID,
       policyId: ELENA_POLICY_ID,

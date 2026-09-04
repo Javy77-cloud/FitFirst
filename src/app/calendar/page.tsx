@@ -1,22 +1,59 @@
+import { requireSignedIn } from "@/lib/auth/guards";
 import { AppShell } from "@/components/app-shell";
 import { DeskCalendar } from "@/components/calendar/desk-calendar";
-import { listCalendarActivities, listCalendarRelatedOptions } from "@/lib/db/queries";
+import { listRelatedOptions } from "@/lib/db/activity-queries";
+import { listOfficeStubs, listTerritoryStubs } from "@/lib/db/office-queries";
+import { listCalendarActivities } from "@/lib/db/queries";
+import { DESK_AS_OF } from "@/lib/home/as-of";
+import {
+  parseCalendarView,
+  parseDateParam,
+  parseKindsParam,
+  rangeForView,
+  serializeCalendarActivity,
+} from "@/lib/ops/calendar";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage() {
-  const [items, related] = await Promise.all([
-    listCalendarActivities(),
-    listCalendarRelatedOptions(),
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const session = await requireSignedIn();
+  const query = await searchParams;
+  const view = parseCalendarView(typeof query.view === "string" ? query.view : undefined);
+  const fallback = DESK_AS_OF;
+  const anchor = parseDateParam(typeof query.date === "string" ? query.date : undefined, fallback);
+  const kinds = parseKindsParam(query.kinds);
+  const range = rangeForView(view, anchor);
+  const [rows, options, offices, territories] = await Promise.all([
+    listCalendarActivities(range.from, range.to),
+    listRelatedOptions(),
+    listOfficeStubs(),
+    listTerritoryStubs(),
   ]);
+  const events = rows.map((row) => serializeCalendarActivity(row));
+  const openEventId = typeof query.event === "string" ? query.event : null;
 
   return (
-    <AppShell title="Calendar" eyebrow="Desk">
-      <p className="mb-3 text-base text-muted-foreground">
-        In-desk calendar. Month, week, and day on the first row; task through SMS on the second.
-        Drag an event onto another day. Nothing syncs off this computer.
+    <AppShell title="Calendar">
+      <p className="mb-3 text-sm text-muted-foreground">
+        {session.isAgent
+          ? "Your tasks, calls, personal meetings, and company / training invites. Open a company event to join the video. Google Calendar connect is Admin."
+          : "Desk month, week, and day. Admins add Company meeting or Training with a video link and invite Whole agency, Office, Territory, or Management. Personal Video / In-Home / In-Office meetings stay. Google Calendar stays a stub."}
       </p>
-      <DeskCalendar items={items} deals={related.deals} leads={related.leads} />
+      <DeskCalendar
+        events={events}
+        options={options}
+        initialView={view}
+        initialDate={typeof query.date === "string" ? query.date : ""}
+        initialKinds={kinds}
+        isAdmin={session.isAdmin}
+        offices={offices}
+        territories={territories}
+        openEventId={openEventId}
+      />
     </AppShell>
   );
 }
