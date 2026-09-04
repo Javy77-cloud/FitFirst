@@ -9,6 +9,12 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+    id: "lead-routing",
+    title: "Lead routing + renewal-risk",
+    body: "Admin routing rules assign inbound leads by territory, line, and open-deal capacity. Home and Account 360 flag renewals that look shaky — Ana has no score because she is still shopping.",
+    date: "2026-09-04",
+  },
+  {
     id: "policy-versions",
     title: "Policy change history",
     body: "Policy records keep who changed which field, when, and the value before / after. Deal and Policy attachments keep prior copies when you replace a file.",

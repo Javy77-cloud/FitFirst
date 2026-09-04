@@ -15,6 +15,8 @@ describe("dashboard presets", () => {
     expect(widgetsForPreset("my_production")).toContain("lead_offers");
     expect(widgetsForPreset("pipeline_focus")).toContain("recent_deals");
     expect(widgetsForPreset("retention")).toContain("turning65");
+    expect(widgetsForPreset("retention")).toContain("renewal_risk");
+    expect(widgetsForPreset("my_production")).toContain("renewal_risk");
   });
 
   it("hides cards the user unchecked and gates company widgets for agents", () => {

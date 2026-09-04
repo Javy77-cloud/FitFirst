@@ -100,16 +100,20 @@ export async function findOrCreateLead(
     middleName?: string | null;
     insuranceTypeDesired?: string | null;
     preferredLanguage?: string | null;
+    ownerId?: string | null;
+    autoRoute?: boolean;
   },
 ) {
   const existing = await findMatchingLead(input);
   if (existing) return { lead: existing, created: false };
   const actor = await getActor();
+  const route = Boolean(input.autoRoute) || input.ownerId === null;
+  const ownerId = route ? null : (input.ownerId !== undefined ? input.ownerId : actor.id || null);
   const [lead] = await db
     .insert(leads)
     .values({
       tenantId: DEFAULT_TENANT_ID,
-      ownerId: actor.id || null,
+      ownerId,
       firstName: input.firstName || "Unknown",
       middleName: input.middleName || null,
       lastName: input.lastName || "Lead",
@@ -127,12 +131,22 @@ export async function findOrCreateLead(
       status: "new",
     })
     .returning();
+  if (lead && !lead.ownerId && route) {
+    const { applyLeadRouting } = await import("@/lib/leads/apply-routing");
+    const routed = await applyLeadRouting(lead.id);
+    if (routed?.ownerId) lead.ownerId = routed.ownerId;
+  }
   return { lead, created: true };
 }
 
 export async function createLead(formData: FormData) {
   const values = leadValuesFromForm(formData);
-  const { lead } = await findOrCreateLead(values);
+  const autoRoute = str(formData, "autoRoute") === "1";
+  const { lead } = await findOrCreateLead({
+    ...values,
+    ownerId: autoRoute ? null : undefined,
+    autoRoute,
+  });
   revalidatePath("/leads");
   redirect(`/leads/${lead.id}`);
 }

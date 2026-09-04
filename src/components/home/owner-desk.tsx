@@ -35,6 +35,8 @@ import { AttentionFilters } from "./attention-filters";
 import { DashboardToolbar } from "./dashboard-toolbar";
 import { ContestBoard } from "./contest-board";
 import { LeadOfferBoard } from "./lead-offer-board";
+import { RenewalRiskBoard } from "./renewal-risk-board";
+import type { RenewalRiskAccount } from "@/lib/renewal-risk/load";
 import { PeopleList } from "./people-list";
 import { momLabel, momTone } from "./mom-label";
 import { filterLineMix, type DeskLineSettings } from "@/lib/desk/line-settings";
@@ -71,6 +73,7 @@ export function OwnerDesk({
   bookValue = "company",
   attentionValue,
   hitLost,
+  renewalRisk = [],
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
@@ -92,6 +95,7 @@ export function OwnerDesk({
   bookValue?: string;
   attentionValue?: string;
   hitLost?: HitLostReport | null;
+  renewalRisk?: RenewalRiskAccount[];
 }) {
   void tables;
   const asOf = snapshot.asOf.toLocaleString("en-US", {
@@ -372,6 +376,8 @@ export function OwnerDesk({
           currentUserId={currentUserId}
         />
       ) : null}
+
+      {show("renewal_risk") ? <RenewalRiskBoard rows={renewalRisk} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {show("birthdays") ? (

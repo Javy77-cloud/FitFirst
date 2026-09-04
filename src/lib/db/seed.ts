@@ -528,4 +528,6 @@ export async function seed() {
   await seedCampaignSequences();
   await seedApiTokens();
   await seedPolicyDocVersions();
+  const { seedLeadRoutingAndRenewalRisk } = await import("./seed-routing");
+  await seedLeadRoutingAndRenewalRisk();
 }

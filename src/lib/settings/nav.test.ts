@@ -19,11 +19,12 @@ describe("settings nav", () => {
     expect(settingsGroupFor("compliance")).toBe("compliance");
   });
 
-  it("nests Export under Brand / Agency", () => {
+  it("nests Export and Lead routing under Brand / Agency", () => {
     expect(settingsGroupFor("export")).toBe("agency");
+    expect(settingsGroupFor("routing")).toBe("agency");
     const agency = SETTINGS_NAV.find((group) => group.id === "agency");
     expect(agency?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["agency", "offices", "territories", "export"]),
+      expect.arrayContaining(["agency", "offices", "territories", "routing", "export"]),
     );
   });
 });

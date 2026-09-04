@@ -16,6 +16,7 @@ describe("management lead offers", () => {
     expect(canClaimOffer("open", true)).toBe(false);
     expect(canClaimOffer("awarded", false)).toBe(false);
     expect(canClaimOffer("open", false, "inbound_email")).toBe(false);
+    expect(canClaimOffer("open", false, "unassigned")).toBe(false);
   });
 
   it("lets admin award only while a referral is open", () => {
@@ -29,6 +30,7 @@ describe("management lead offers", () => {
 
   it("lets an agent take ownership of an open inbound email", () => {
     expect(canTakeOwnership("open", "inbound_email")).toBe(true);
+    expect(canTakeOwnership("open", "unassigned")).toBe(true);
     expect(canTakeOwnership("claimed", "inbound_email")).toBe(false);
     expect(canTakeOwnership("open", "referral")).toBe(false);
     expect(parseLeadOfferKind("inbound_email")).toBe("inbound_email");

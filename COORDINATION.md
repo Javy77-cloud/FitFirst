@@ -682,6 +682,14 @@ DIFF G merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_policy_doc_vers
 - UI: Policy **Change history** timeline. Deal Documents and Policy Attachments show version + Replace.
 - Seeded on Elena `HO3-ELENA-2026`: bind bound → active, premium 3120 → 2840, billing monthly → annual (Maya). Wind mit and policy dec each keep a prior copy. No Ana rows.
 
+## DIFFERENTIATOR pack C — Smart lead routing + renewal-risk (`cursor/lead-routing-renewal-risk-5b51`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_lead_routing_renewal_risk` remapped to `0043_lead_routing_renewal_risk`. Ana fixture untouched (unbound, Cov A **$321,000**). No ML. One Pipeline. Sidebar hex unchanged.
+
+**Lead routing.** Admin Settings → Brand / Agency → **Lead routing**. Rules match territory + written line (Home/Auto/…) + producer capacity (`#` open deals under the cap). First enabled rule by priority wins. Least-loaded producer in that territory, or a pinned producer if they still have room. Unassigned inbound / social with no connection owner runs the same engine. No match posts a `lead_offers.kind = unassigned` row on the Home lead-offer board (take ownership). Seed: Space Coast HO/Auto prefer Maya if she is under the open-deal cap; FL GL prefers Javy. Tessa Voss (Melbourne HO) routes to Maya; Grant Hobbs (Billings MT Auto) stays on the board.
+
+**Renewal-risk.** Pure score 0–100 from days-to-renewal (flag before the 45–75 day rate-increase window), proposed premium change if known, monoline, lapse history, and no contact 60 days. Home widget **Renewal-risk flags** (My production + Retention). Account 360 Overview on Contact and Business. Hale HO (`HP-FL-88421`, +16.6%, 28 days) is Critical. Nair Auto is Elevated. Ana has 0 policies — no score, still shopping.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0042**. Diff H added no migration. Next free additive migration is **0043**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running bots (routing, commission, portal). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0043**. Diff H added no migration. Next free additive migration is **0044**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running bots (commission, portal). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
