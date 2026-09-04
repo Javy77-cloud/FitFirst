@@ -199,28 +199,7 @@ export default async function CarrierRecordPage({
         </RecordSection>
       </form>
 
-      {admin ? (
-        <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} />
-      ) : (
-        <section className="ff-card mt-4 p-4">
-          <h2 className="text-sm font-semibold text-navy">Ask a teammate</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Admin only on a Carrier. Ask Javy to tag someone.
-          </p>
-          {asks.length === 0 ? (
-            <p className="mt-3 text-xs text-muted-foreground">No asks on this carrier.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {asks.map((ask) => (
-                <li key={ask.id} className="rounded-md bg-secondary/50 px-2 py-1.5 text-sm">
-                  <span className="text-[11px] uppercase text-muted-foreground">{ask.status}</span>
-                  <p>{ask.body}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} />
 
       <RecordSection id="related" title="Related" summary="Appetite rule and decline log">
         <p className="mb-3 text-sm">

@@ -17,12 +17,12 @@ type AskProps = {
   policyId?: string | null;
   dealId?: string | null;
   leadId?: string | null;
-  /** Contact / Business record: hide the whole panel for agents. */
+  /** Always hidden for agents. Kept so Contact / Business callers stay typed. */
   hideWhenNotAdmin?: boolean;
   framed?: boolean;
 };
 
-/** Ask a teammate — admin tags from a required dropdown. In-app ping + log. */
+/** Ask a teammate — Admin only. Hidden for agents on every record. */
 export async function RecordAskPanel({
   entityType,
   entityId,
@@ -33,11 +33,10 @@ export async function RecordAskPanel({
   policyId,
   dealId,
   leadId,
-  hideWhenNotAdmin = false,
   framed = true,
 }: AskProps) {
   const session = await currentDeskSession();
-  if (hideWhenNotAdmin && !session.isAdmin) return null;
+  if (!session.isAdmin) return null;
   const [asks, users] = await Promise.all([
     asksProp ? Promise.resolve(asksProp) : listRecordAsks(entityType, entityId),
     usersProp ? Promise.resolve(usersProp) : listDeskUsers(),
@@ -60,44 +59,40 @@ export async function RecordAskPanel({
           durable log. Not a chat product.
         </p>
       )}
-      {session.isAdmin ? (
-        <form action={createRecordAsk} className="mt-3 grid gap-2 sm:grid-cols-2">
-          <input type="hidden" name="entityType" value={entityType} />
-          <input type="hidden" name="entityId" value={entityId} />
-          {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
-          {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
-          {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
-          {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
-          {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
-          <div>
-            <Label className="text-xs">Tag</Label>
-            <select
-              name="assigneeId"
-              required
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Choose person
+      <form action={createRecordAsk} className="mt-3 grid gap-2 sm:grid-cols-2">
+        <input type="hidden" name="entityType" value={entityType} />
+        <input type="hidden" name="entityId" value={entityId} />
+        {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
+        {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
+        {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
+        {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
+        {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
+        <div>
+          <Label className="text-xs">Tag</Label>
+          <select
+            name="assigneeId"
+            required
+            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+            defaultValue=""
+          >
+            <option value="" disabled>
+              Choose person
+            </option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
               </option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">Ask</Label>
-            <Input name="body" required className="mt-1 h-8" placeholder="What's the status on this?" />
-          </div>
-          <Button type="submit" size="sm">
-            Tag and log
-          </Button>
-        </form>
-      ) : (
-        <p className="mt-2 text-xs text-muted-foreground">Only an admin can tag a teammate.</p>
-      )}
+            ))}
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <Label className="text-xs">Ask</Label>
+          <Input name="body" required className="mt-1 h-8" placeholder="What's the status on this?" />
+        </div>
+        <Button type="submit" size="sm">
+          Tag and log
+        </Button>
+      </form>
       {asks.length === 0 ? (
         <p className="mt-3 text-xs text-muted-foreground">No asks on this record.</p>
       ) : (

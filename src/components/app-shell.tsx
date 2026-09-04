@@ -1,54 +1,14 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { isNull, eq, and, sql } from "drizzle-orm";
-import {
-  Bell,
-  Briefcase,
-  Building2,
-  ClipboardList,
-  Contact,
-  FileStack,
-  Calendar,
-  Home,
-  Phone,
-  Kanban,
-  ListChecks,
-  Search,
-  Shield,
-  Users,
-  Wallet,
-} from "lucide-react";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
+import { DeskNav } from "@/components/desk-nav";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
 import { logoutDesk } from "@/app/actions/auth";
 import { loadAgencyBrand } from "@/lib/desk/brand";
-
-const NAV = [
-  { href: "/get-started", label: "Get Started", icon: ListChecks },
-  { href: "/", label: "Home", icon: Home },
-  { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
-  { href: "/leads", label: "Leads", icon: Users },
-  { href: "/deals", label: "Deals", icon: ClipboardList },
-  { href: "/contacts", label: "Contacts", icon: Contact },
-  { href: "/accounts", label: "Businesses", icon: Briefcase },
-  { href: "/policies", label: "Policies", icon: Shield },
-  { href: "/forms", label: "Forms", icon: FileStack },
-  { href: "/quotes", label: "Quotes", icon: ClipboardList },
-  { href: "/merge", label: "Merge", icon: Users },
-  { href: "/work-queue", label: "Work queue", icon: ListChecks },
-  { href: "/claims", label: "Claims log", icon: FileStack },
-  { href: "/commissions", label: "Commissions", icon: Briefcase },
-  { href: "/tasks", label: "Tasks", icon: ListChecks },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/carriers", label: "Carriers", icon: Building2 },
-  { href: "/alerts", label: "Alerts", icon: Bell },
-  { href: "/phone", label: "Phone", icon: Phone },
-  { href: "/settings", label: "Settings", icon: ClipboardList },
-];
 
 export async function AppShell({
   children,
@@ -71,7 +31,6 @@ export async function AppShell({
   const unread = Number(count?.n ?? 0);
   const session = await currentDeskSession();
   const brand = await loadAgencyBrand();
-  const nav = NAV;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -95,24 +54,7 @@ export async function AppShell({
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
-          {nav.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={`${item.href}-${item.label}`}
-                href={item.href}
-                className="flex items-center gap-2 rounded-md px-2.5 py-2 text-[15px] text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white"
-              >
-                <Icon className="size-3.5 opacity-80" />
-                <span className="flex-1">{item.label}</span>
-                {item.href === "/alerts" && unread > 0 ? (
-                  <span className="rounded-sm bg-fit-flag px-1.5 text-[10px] font-semibold text-white">
-                    {unread}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
+          <DeskNav unread={unread} variant="sidebar" />
         </nav>
         <div className="border-t border-sidebar-border px-4 py-3 text-xs text-sidebar-foreground/70">
           <div className="font-medium text-white">{session.name}</div>
@@ -133,11 +75,7 @@ export async function AppShell({
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-          {nav.map((item) => (
-            <Link key={`${item.href}-${item.label}`} href={item.href} className="whitespace-nowrap text-primary">
-              {item.label}
-            </Link>
-          ))}
+          <DeskNav unread={unread} variant="mobile" />
         </nav>
         <header className="relative z-40 flex flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border bg-card px-5 py-3">
           <div className="min-w-0">

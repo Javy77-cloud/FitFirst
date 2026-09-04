@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { parseRecordAsk } from "./record-asks";
+import { canAskTeammate, parseRecordAsk } from "./record-asks";
 import { recordHref } from "./record-href";
 import { AGENT_USER_ID, ELENA_POLICY_ID } from "@/lib/fixtures/ids";
+
+describe("canAskTeammate", () => {
+  it("is Admin-only on every record", () => {
+    expect(canAskTeammate(true)).toBe(true);
+    expect(canAskTeammate(false)).toBe(false);
+  });
+});
 
 describe("parseRecordAsk", () => {
   it("rejects a typed name with no dropdown tag", () => {

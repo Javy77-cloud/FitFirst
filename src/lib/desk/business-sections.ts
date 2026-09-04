@@ -1,3 +1,5 @@
+import { canAskTeammate } from "@/lib/desk/record-asks";
+
 export type BusinessSectionId =
   | "overview"
   | "information"
@@ -43,7 +45,7 @@ export function businessSectionsForRole(isAdmin: boolean): BusinessSectionDef[] 
 }
 
 export function canAskTeammateOnBusiness(isAdmin: boolean): boolean {
-  return isAdmin;
+  return canAskTeammate(isAdmin);
 }
 
 export function relatedIdsFromEntity(entityType: string, entityId: string) {
