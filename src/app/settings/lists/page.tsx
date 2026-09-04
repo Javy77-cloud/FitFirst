@@ -3,8 +3,7 @@ import {
   addGlobalListItem,
   deleteGlobalListItem,
 } from "@/app/actions/global-lists";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -23,8 +22,38 @@ export default async function GlobalListsPage() {
   ]);
 
   return (
-    <AppShell title="Global lists">
-      <SettingsSubnav current="lists" />
+    <SettingsShell title="Lines / Global lists" current="lists">
+      <p className="mb-4 text-sm text-muted-foreground">
+        Agency-wide lists — written books, policy picklists, email templates, and won-date
+        triggers. These are not per-agent prefs.
+      </p>
+      <div className="mb-4 grid gap-3 md:grid-cols-2">
+        <Link href="/settings/lines" className="ff-card block p-4 hover:border-primary/40">
+          <h2 className="text-sm font-semibold text-navy">Lines of business</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Hide Life or Health. Subfilters and selling-agency picklists.
+          </p>
+        </Link>
+        <Link href="/settings/email-templates" className="ff-card block p-4 hover:border-primary/40">
+          <h2 className="text-sm font-semibold text-navy">Email templates</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Thank-you and review copy. English and Spanish. Nothing sends itself.
+          </p>
+        </Link>
+        <Link href="/settings/email-triggers" className="ff-card block p-4 hover:border-primary/40">
+          <h2 className="text-sm font-semibold text-navy">Triggers</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Hung on won date. ARCHIVE does not cancel. Needs a connected inbox later.
+          </p>
+        </Link>
+        <Link href="/settings/integrations" className="ff-card block p-4 hover:border-primary/40">
+          <h2 className="text-sm font-semibold text-navy">Integrations catalog</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Mailchimp, SendGrid, and the rest of the BYO list live here.
+          </p>
+        </Link>
+      </div>
+
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Zoho-style picklists used on Policies: types, sub-types, terms, statuses, and file
         categories. Carriers stay on their own records — this hub lists them so you do not hunt.
@@ -65,7 +94,7 @@ export default async function GlobalListsPage() {
           />
         ))}
       </div>
-    </AppShell>
+    </SettingsShell>
   );
 }
 

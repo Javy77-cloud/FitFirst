@@ -1,6 +1,6 @@
 import { connectDemoInbox, runDueEmailJobs, saveEmailTrigger } from "@/app/actions/templates";
-import { AppShell } from "@/components/app-shell";
-import { EmailActivityList, SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
+import { EmailActivityList } from "@/components/templates/email-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +20,9 @@ export default async function EmailTriggersPage() {
   const anyConnected = accounts.some((account) => account.connected);
 
   return (
-    <AppShell
+    <SettingsShell
       title="Email triggers"
+      current="triggers"
       actions={
         <form action={runDueEmailJobs}>
           <Button type="submit" size="sm" variant="outline">
@@ -30,7 +31,6 @@ export default async function EmailTriggersPage() {
         </form>
       }
     >
-      <SettingsSubnav current="triggers" />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Jobs hang off the won date and the policy expiration. Archiving a deal does not drop them.
         Internal renewal work is an in-app task. Client mail goes through whichever inbox is
@@ -210,6 +210,6 @@ export default async function EmailTriggersPage() {
           empty="No client sends queued. Closed Won schedules the review and four-month check-in from the won date."
         />
       </section>
-    </AppShell>
+    </SettingsShell>
   );
 }

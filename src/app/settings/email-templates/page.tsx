@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { duplicateEmailTemplate } from "@/app/actions/templates";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
@@ -14,8 +13,9 @@ export default async function EmailTemplatesPage() {
   const [templates, desk] = await Promise.all([listEmailTemplates(), getResolvedDesk()]);
 
   return (
-    <AppShell
+    <SettingsShell
       title="Email templates"
+      current="templates"
       actions={
         desk.isAdmin ? (
           <Link href="/settings/email-templates/new" className={cn(buttonVariants())}>
@@ -24,7 +24,6 @@ export default async function EmailTemplatesPage() {
         ) : null
       }
     >
-      <SettingsSubnav current="templates" />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Client-facing mail only. Every template ships English and Spanish. If a contact prefers
         Spanish we send ES; English, Creole, or blank uses EN. Seeded copy is marked so you can
@@ -92,6 +91,6 @@ export default async function EmailTemplatesPage() {
           </div>
         )}
       </section>
-    </AppShell>
+    </SettingsShell>
   );
 }

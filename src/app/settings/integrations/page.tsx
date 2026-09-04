@@ -1,132 +1,84 @@
-import { connectIntegrationStub, disconnectIntegrationStub } from "@/app/actions/integrations";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSection } from "@/components/settings/settings-section";
-import { SettingsSubnav } from "@/components/templates/email-activity";
-import { Button } from "@/components/ui/button";
+import { SettingsShell } from "@/components/settings/settings-shell";
+import { IntegrationCard } from "@/components/settings/integration-card";
+import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { currentDeskSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { integrationConnections } from "@/lib/db/schema";
-import { DEFAULT_TENANT_ID, INTEGRATION_CATALOG, INTEGRATION_CATEGORIES } from "@/lib/domain";
-import { eq } from "drizzle-orm";
+import {
+  INTEGRATION_CATEGORY_BLURB,
+  INTEGRATION_CATEGORY_LABEL,
+} from "@/lib/integrations/catalog";
+import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORY_COPY: Record<(typeof INTEGRATION_CATEGORIES)[number], { title: string; summary: string }> = {
-  email: {
-    title: "Email",
-    summary: "Gmail / Google Workspace, Microsoft Outlook / 365, Yahoo. Inbox later. Nothing sends.",
-  },
-  email_campaigns: {
-    title: "Email campaigns",
-    summary: "Mailchimp, Constant Contact, and SendGrid for transactional. Agency pays the vendor.",
-  },
-  calendar: {
-    title: "Calendar",
-    summary: "Google Calendar and Outlook Calendar. Desk month/week/day is the working board.",
-  },
-  phone_sms: {
-    title: "Phone / SMS",
-    summary: "Twilio, RingCentral, Lightspeed Voice. Bandwidth optional. FitFirst does not subscribe.",
-  },
-  video: {
-    title: "Video",
-    summary: "Zoom and Google Meet. Meeting links later — not a softphone.",
-  },
-  esign: {
-    title: "E-sign",
-    summary: "DocuSign and Dropbox Sign. Envelope send stays not_implemented.",
-  },
-};
-
-export default async function IntegrationsSettingsPage({
+export default async function IntegrationsCatalogPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, rows, query] = await Promise.all([
+  const [session, groups, query] = await Promise.all([
     currentDeskSession(),
-    db.select().from(integrationConnections).where(eq(integrationConnections.tenantId, DEFAULT_TENANT_ID)),
+    listCatalogByCategory(),
     searchParams,
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
-  const byKey = new Map(rows.map((row) => [`${row.category}:${row.provider}`, row]));
+  const provider = typeof query.provider === "string" ? query.provider : undefined;
+  const connectedCount = groups.reduce(
+    (sum, group) => sum + group.items.filter((item) => item.connected).length,
+    0,
+  );
+  const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 
   return (
-    <AppShell title="Communications / Integrations">
-      <SettingsSubnav current="integrations" />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Settings → Communications / Integrations. FitFirst is plug-only. The agency connects and
-        pays the vendor later. Do not paste keys. FitFirst does not buy or subscribe to Twilio.
+    <SettingsShell title="Integrations">
+      <p className="mb-3 text-sm text-muted-foreground">
+        Connectable providers the agency already pays. FitFirst does not bill Gmail, Twilio, Zoom,
+        or anyone else. Connect is a stub so later OAuth can land on this settings shape — no
+        vendor keys, no live token exchange.
       </p>
-      {notice === "stub-connected" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Marked connected as a stub. No vendor was called. Agency pays later.
+      <div className="mb-4 rounded-md border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm">
+        <div className="font-medium text-navy">Bring your own · agency pays</div>
+        <p className="mt-0.5 text-muted-foreground">
+          {connectedCount} of {total} marked connected. Status is{" "}
+          <ConnectionBadge connected={false} className="align-middle" /> until an admin clicks
+          Connect stub, then <ConnectionBadge connected className="align-middle" />. Nothing
+          leaves this desk.
+        </p>
+      </div>
+      {notice === "connected" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          {provider ?? "Provider"} marked connected. No OAuth ran.
         </p>
       ) : null}
-      {notice === "stub-disconnected" ? (
+      {notice === "disconnected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Stub disconnected. Desk history stays.
+          {provider ?? "Provider"} marked not connected. Desk history stays.
         </p>
       ) : null}
       {!session.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Connecting integrations is Admin-only.
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Connecting a vendor is Admin-only. Agents can see what the agency plugged in.
         </p>
       ) : null}
 
-      <div className="grid gap-3 xl:grid-cols-2">
-        {INTEGRATION_CATEGORIES.map((category) => {
-          const items = INTEGRATION_CATALOG.filter((item) => item.category === category);
-          const copy = CATEGORY_COPY[category];
-          return (
-            <SettingsSection
-              key={category}
-              id={category}
-              title={copy.title}
-              badge="Communications"
-              summary={copy.summary}
-              defaultOpen={category === "email" || category === "phone_sms"}
-            >
-              <ul className="space-y-2">
-                {items.map((item) => {
-                  const row = byKey.get(`${item.category}:${item.provider}`);
-                  const connected = Boolean(row?.connected);
-                  return (
-                    <li
-                      key={`${item.category}-${item.provider}`}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-navy">
-                          {item.label}
-                          {item.optional ? (
-                            <span className="ml-2 text-[10px] font-semibold uppercase text-muted-foreground">
-                              Optional
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {connected ? "connected (stub) · agency pays" : "not connected · plug later"}
-                          {row?.lastStatus ? ` · ${row.lastStatus}` : ""}
-                        </div>
-                      </div>
-                      {session.isAdmin ? (
-                        <form action={connected ? disconnectIntegrationStub : connectIntegrationStub}>
-                          <input type="hidden" name="category" value={item.category} />
-                          <input type="hidden" name="provider" value={item.provider} />
-                          <Button type="submit" size="xs" variant={connected ? "outline" : "secondary"}>
-                            {connected ? "Disconnect" : "Connect stub"}
-                          </Button>
-                        </form>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </SettingsSection>
-          );
-        })}
+      <div className="space-y-6">
+        {groups.map((group) => (
+          <section key={group.category} id={group.category} className="space-y-2">
+            <div>
+              <h2 className="text-sm font-semibold text-navy">
+                {INTEGRATION_CATEGORY_LABEL[group.category]}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {INTEGRATION_CATEGORY_BLURB[group.category]}
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {group.items.map((item) => (
+                <IntegrationCard key={item.id} item={item} canEdit={session.isAdmin} />
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
-    </AppShell>
+    </SettingsShell>
   );
 }

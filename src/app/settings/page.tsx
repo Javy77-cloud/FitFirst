@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { saveAgencyBrand, saveEmailTemplate, uploadAgencyLogo } from "@/app/actions/agency";
 import { saveCommissionRate } from "@/app/actions/pipeline-admin";
-import { AppShell } from "@/components/app-shell";
+import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SettingsSection } from "@/components/settings/settings-section";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,35 +11,42 @@ import { Textarea } from "@/components/ui/textarea";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
-import { getEsignSettings, getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
-import {
-  ESIGN_SETTINGS_PROVIDER_LABEL,
-  TELEPHONY_PROVIDER_LABEL,
-  type EsignSettingsProvider,
-  type TelephonyProvider,
-} from "@/lib/domain";
+import { getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
+import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import { TELEPHONY_PROVIDER_LABEL, type TelephonyProvider } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await currentDeskSession();
-  const [brand, templates, triggers, telephony, esign] = await Promise.all([
+  const [brand, templates, triggers, telephony, catalog] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),
     listEmailTriggers(),
     getTelephonySettings(),
-    getEsignSettings(),
+    listCatalogItems(),
   ]);
+  const catalogConnected = catalog.some((item) => item.connected);
   const provider = (telephony?.provider ?? "none") as TelephonyProvider;
-  const esignProvider = (esign?.provider ?? "none") as EsignSettingsProvider;
 
   return (
-    <AppShell title="Settings">
-      <SettingsSubnav current="hub" />
+    <SettingsShell title="Settings" current="overview">
       <p className="mb-4 text-sm text-muted-foreground">
-        Admin settings change the agency. Agent settings change only this desk. Sections collapse so
-        the page uses the full width instead of a single stacked column.
+        Admin settings change the agency. Agent settings change only this desk. Use the left
+        menu: Communications, Integrations, Lines / lists, Brand, then Admin vs Agent prefs.
       </p>
+      <Link
+        href="/settings/integrations"
+        className="mb-4 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+      >
+        <div>
+          <div className="text-sm font-semibold text-navy">Integrations catalog</div>
+          <p className="text-xs text-muted-foreground">
+            Gmail, Outlook, Mailchimp, Twilio, Zoom, DocuSign — Connect stub, agency pays. No Zoho.
+          </p>
+        </div>
+        <ConnectionBadge connected={catalogConnected} />
+      </Link>
 
       <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
         <div className="space-y-3">
@@ -49,21 +56,6 @@ export default async function SettingsPage() {
               {session.isAdmin ? "You can edit these" : "View only — ask Javy"}
             </span>
           </div>
-
-          <SettingsSection
-            id="lists"
-            title="Global lists"
-            badge="Admin"
-            summary="Policy types, sub-types, terms, statuses, file categories. Carriers linked."
-          >
-            <p className="text-sm text-muted-foreground">
-              Zoho-style picklists the Policy form reads. Carriers stay on /carriers — this hub
-              lists them next to the other globals.
-            </p>
-            <Link href="/settings/lists" className="mt-3 inline-block text-sm text-primary hover:underline">
-              Open global lists
-            </Link>
-          </SettingsSection>
 
           <SettingsSection
             id="lines"
@@ -81,39 +73,11 @@ export default async function SettingsPage() {
           </SettingsSection>
 
           <SettingsSection
-            id="communications"
-            title="Communications / Integrations"
-            badge="Admin"
-            summary="BYO stubs. Agency pays. FitFirst does not subscribe to Twilio."
-            defaultOpen
-          >
-            <p className="text-sm text-muted-foreground">
-              Email (Gmail / Workspace, Outlook / 365, Yahoo), campaigns (Mailchimp, Constant
-              Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice,
-              Bandwidth optional), Zoom / Meet, and DocuSign / Dropbox Sign. Plug-only — no
-              vendor keys stored. Meeting rooms and In-Office addresses stay on Communications.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-              <Link href="/settings/integrations" className="text-sm text-primary hover:underline">
-                Open communications hub
-              </Link>
-              <Link href="/settings/communications" className="text-sm text-primary hover:underline">
-                Meeting rooms
-              </Link>
-              <Link href="/settings/phone" className="text-sm text-primary hover:underline">
-                Phone line stub
-              </Link>
-              <Link href="/settings/email-templates" className="text-sm text-primary hover:underline">
-                Email templates
-              </Link>
-            </div>
-          </SettingsSection>
-
-          <SettingsSection
             id="phone"
             title="Phone line"
             badge="Admin"
             summary="Twilio or BYO trunk. Agency pays. Stub only."
+            defaultOpen
           >
             <p className="text-sm text-muted-foreground">
               Status:{" "}
@@ -138,56 +102,6 @@ export default async function SettingsPage() {
               </p>
             ) : (
               <p className="mt-2 text-xs text-muted-foreground">Only an admin can connect a trunk.</p>
-            )}
-          </SettingsSection>
-
-          <SettingsSection
-            id="esign"
-            title="E-sign"
-            badge="Admin"
-            summary="DocuSign or Dropbox Sign. BYO stub. No vendor keys."
-          >
-            <p className="text-sm text-muted-foreground">
-              Status:{" "}
-              <span className="font-medium text-navy">
-                {esign?.connected
-                  ? `${ESIGN_SETTINGS_PROVIDER_LABEL[esignProvider]} · stub connected`
-                  : "not connected"}
-              </span>
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Signed apps return on the Deal. Settings only remembers which BYO provider you
-              intend. Nothing is sent from here.
-            </p>
-            {session.isAdmin ? (
-              <p className="mt-3">
-                <Link href="/settings/esign" className="text-sm text-primary hover:underline">
-                  Open e-sign settings
-                </Link>
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-muted-foreground">Only an admin can connect a provider.</p>
-            )}
-          </SettingsSection>
-
-          <SettingsSection
-            id="master-risk"
-            title="Master risk"
-            badge="Admin"
-            summary="Background appetite worksheet. Not on the agent Deal."
-          >
-            <p className="text-sm text-muted-foreground">
-              Agents shop Documents, Quote Sheet, Markets, and Quotes. Master risk stays here as
-              the structured appetite file.
-            </p>
-            {session.isAdmin ? (
-              <p className="mt-3">
-                <Link href="/settings/master-risk" className="text-sm text-primary hover:underline">
-                  Open master risk
-                </Link>
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-muted-foreground">Admin-only background tool.</p>
             )}
           </SettingsSection>
 
@@ -362,6 +276,6 @@ export default async function SettingsPage() {
           </SettingsSection>
         </div>
       </div>
-    </AppShell>
+    </SettingsShell>
   );
 }

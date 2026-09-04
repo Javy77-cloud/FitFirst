@@ -1,7 +1,6 @@
 import { saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
-import { AppShell } from "@/components/app-shell";
 import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +21,7 @@ export default async function AgencySettingsPage() {
   const [desk, brand] = await Promise.all([getResolvedDesk(), getAgencyBrand()]);
 
   return (
-    <AppShell title="Agency branding">
-      <SettingsSubnav current="agency" />
+    <SettingsShell title="Agency branding" current="agency">
       {!desk.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Agency logo, name, templates, and signatures are Admin-only. Switch to Admin in the
@@ -135,6 +133,6 @@ export default async function AgencySettingsPage() {
           ) : null}
         </section>
       </div>
-    </AppShell>
+    </SettingsShell>
   );
 }

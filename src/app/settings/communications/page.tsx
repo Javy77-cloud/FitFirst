@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { eq } from "drizzle-orm";
 import { saveCommunicationsSettings } from "@/app/actions/meetings";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
+import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +11,48 @@ import { db } from "@/lib/db";
 import { getAgencySettings } from "@/lib/db/queries";
 import { users } from "@/lib/db/schema";
 import { ADMIN_USER_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
-import { eq } from "drizzle-orm";
+import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import type { IntegrationCategory } from "@/lib/integrations/catalog";
 import { meetingActorId, VIDEO_PROVIDER_LABEL, VIDEO_PROVIDERS } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
+
+const CHANNELS: {
+  id: IntegrationCategory | "email";
+  href: string;
+  title: string;
+  body: string;
+  categories: IntegrationCategory[];
+}[] = [
+  {
+    id: "email",
+    href: "/settings/email",
+    title: "Email",
+    body: "Gmail, Outlook, or Yahoo inbox. Templates and signatures stay under Brand / lists.",
+    categories: ["email"],
+  },
+  {
+    id: "phone_sms",
+    href: "/settings/sms",
+    title: "SMS",
+    body: "Twilio or RingCentral text. Campaigns still log would_send. Nothing texts a client.",
+    categories: ["phone_sms"],
+  },
+  {
+    id: "phone_sms",
+    href: "/settings/phone",
+    title: "Phone",
+    body: "Call log on the desk. Admin marks the agency-paid trunk. No softphone.",
+    categories: ["phone_sms"],
+  },
+  {
+    id: "video",
+    href: "/settings/video",
+    title: "Video",
+    body: "Zoom or Google Meet links later. Calendar stays in FitFirst.",
+    categories: ["video"],
+  },
+];
 
 export default async function CommunicationsSettingsPage() {
   const session = await currentDeskSession();
@@ -23,7 +62,8 @@ export default async function CommunicationsSettingsPage() {
     adminUserId: ADMIN_USER_ID,
     agentUserId: AGENT_USER_ID,
   });
-  const [actor, agency] = await Promise.all([
+  const [items, actor, agency] = await Promise.all([
+    listCatalogItems(),
     db.select().from(users).where(eq(users.id, actorId)).then((rows) => rows[0] ?? null),
     getAgencySettings(),
   ]);
@@ -31,17 +71,42 @@ export default async function CommunicationsSettingsPage() {
     "videoProvider" in agency && typeof agency.videoProvider === "string" ? agency.videoProvider : "none";
 
   return (
-    <AppShell title="Communications">
-      <SettingsSubnav current="communications" />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Video rooms and meeting addresses for pipeline appointments. Zoom / Google Meet / BYO are
-        stubs — FitFirst does not OAuth or store vendor keys. In-Office meetings use the agency
-        address plus your desk address. In-Home pulls the Deal / Lead street.
+    <SettingsShell title="Communications" current="communications">
+      <p className="mb-4 text-sm text-muted-foreground">
+        Email, SMS, phone, and video. Each channel is bring-your-own — the agency pays the
+        vendor. Open Integrations to connect the catalog.
+      </p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {CHANNELS.map((channel) => {
+          const related = items.filter((item) => channel.categories.includes(item.category));
+          const connected = related.filter((item) => item.connected).length;
+          return (
+            <Link
+              key={`${channel.title}-${channel.href}`}
+              href={channel.href}
+              className="ff-card block p-4 hover:border-primary/40"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-sm font-semibold text-navy">{channel.title}</h2>
+                <ConnectionBadge connected={connected > 0} />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{channel.body}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {connected} of {related.length} providers connected
+              </p>
+            </Link>
+          );
+        })}
+      </div>
+      <p className="mt-4 text-sm">
+        <Link href="/settings/integrations" className="text-primary hover:underline">
+          Open the Integrations catalog
+        </Link>
       </p>
 
-      <form action={saveCommunicationsSettings} className="grid gap-4 xl:grid-cols-2 xl:items-start">
+      <form action={saveCommunicationsSettings} className="mt-6 grid gap-4 xl:grid-cols-2 xl:items-start">
         <section className="ff-card space-y-3 p-4">
-          <h2 className="text-sm font-semibold text-navy">Video providers</h2>
+          <h2 className="text-sm font-semibold text-navy">Meeting rooms</h2>
           <p className="text-xs text-muted-foreground">
             {session.isAdmin
               ? "Paste the room links the desk should open. Preferred provider is used first."
@@ -131,6 +196,6 @@ export default async function CommunicationsSettingsPage() {
           </p>
         </section>
       </form>
-    </AppShell>
+    </SettingsShell>
   );
 }

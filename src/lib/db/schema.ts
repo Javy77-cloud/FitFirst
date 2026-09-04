@@ -1563,7 +1563,7 @@ export const esignSettings = pgTable(
   (t) => [uniqueIndex("esign_settings_tenant_idx").on(t.tenantId)],
 );
 
-/** Agency BYO connectors. Stub only — no OAuth, no vendor keys, no Twilio purchase. */
+/** BYO connector catalog. Stub only — no OAuth, no vendor keys. */
 export const integrationConnections = pgTable(
   "integration_connections",
   {
@@ -1573,8 +1573,10 @@ export const integrationConnections = pgTable(
     provider: text("provider").notNull(),
     connected: boolean("connected").notNull().default(false),
     displayLabel: text("display_label"),
+    accountLabel: text("account_label"),
     notes: text("notes"),
     lastStatus: text("last_status"),
+    lastConnectStatus: text("last_connect_status"),
     connectedAt: timestamp("connected_at", { withTimezone: true }),
     ...timestamps,
   },

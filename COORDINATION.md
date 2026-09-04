@@ -434,6 +434,18 @@ Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not wri
 - **Claims:** `/claims` has a prominent **Add new claim**. `/claims/new` is the stub create flow. `logClaim` saves a `claims` row with or without a policy, then opens the claim.
 - **Commissions:** `/commissions` filters Life / Health / P&C + Home/Auto/Flood/Commercial (or Life/Health subs) and date windows last year / 6 months / 3 months / month / quarter plus next month / 3 months / 6 months / quarter / year. Ana remains $0 / unbound.
 
+## Settings IA + Integrations catalog (`cursor/settings-ia-integrations-e4fb`)
+
+Owner: this slice. Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Did not edit the Ana fixture. Did not bind Ana. No Zoho in the catalog. No live OAuth.
+
+- Settings left menu is nested: parent → children. Groups: Communications (email, SMS, phone, video), Integrations (catalog hub), Lines / Global lists, Brand / Agency, Admin vs Agent prefs.
+- `/settings/integrations` is the connectable catalog. BYO — agency pays. Connect stub + **Not connected** / **Connected (stub)** badges.
+- Catalog (no Zoho): Email Gmail / Outlook / Yahoo; Campaigns Mailchimp / Constant Contact / SendGrid; Calendar Google / Outlook; Phone/SMS Twilio / RingCentral / optional Lightspeed Voice; Video Zoom / Google Meet; E-sign DocuSign / Dropbox Sign.
+- Settings shape for later: `integration_connections` (`0015_integration_connections`). Gmail/Outlook/Yahoo, Google Calendar, and Twilio also flip the existing send-account / calendar / phone / SMS stub rows when present.
+- New hubs: `/settings/communications`, `/settings/email`, `/settings/video`, `/settings/lists`. Existing settings pages keep their forms and pick up the nested nav.
+
+Ana stays unbound, Cov A **$321,000**. Do not add Zoho Mail / Zoho Sign to this catalog.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

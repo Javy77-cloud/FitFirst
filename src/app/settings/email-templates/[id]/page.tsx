@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { duplicateEmailTemplate } from "@/app/actions/templates";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { TemplateForm } from "@/components/templates/template-form";
 import { Button } from "@/components/ui/button";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
@@ -19,8 +18,9 @@ export default async function EditEmailTemplatePage({
   if (!template) notFound();
 
   return (
-    <AppShell
+    <SettingsShell
       title={template.name}
+      current="templates"
       actions={
         desk.isAdmin ? (
           <form action={duplicateEmailTemplate}>
@@ -32,7 +32,6 @@ export default async function EditEmailTemplatePage({
         ) : null
       }
     >
-      <SettingsSubnav current="templates" />
       {desk.isAdmin ? null : (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Templates are Admin-only. Agents can read the library; use My desk for colors and
@@ -51,6 +50,6 @@ export default async function EditEmailTemplatePage({
         </p>
       )}
       <TemplateForm template={template} readOnly={!desk.isAdmin} />
-    </AppShell>
+    </SettingsShell>
   );
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connectSmsStub, disconnectSmsStub } from "@/app/actions/sms";
-import { AppShell } from "@/components/app-shell";
 import { Notice, StubBanner } from "@/components/ops/stub-banner";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { getSmsSettings } from "@/lib/db/ops-queries";
 
@@ -17,7 +17,7 @@ export default async function SmsSettingsPage({
   const notice = typeof query.notice === "string" ? query.notice : undefined;
 
   return (
-    <AppShell title="SMS settings">
+    <SettingsShell title="SMS settings" current="sms">
       <Notice code={notice} />
       <StubBanner>
         Phase two. Connect SMS provider is a stub. FitFirst does not buy numbers, store Twilio
@@ -58,8 +58,11 @@ export default async function SmsSettingsPage({
           <Link href="/campaigns" className="text-sm text-primary hover:underline">
             Back to campaigns
           </Link>
+          <Link href="/settings/integrations" className="text-sm text-primary hover:underline">
+            Integrations catalog
+          </Link>
         </div>
       </section>
-    </AppShell>
+    </SettingsShell>
   );
 }

@@ -1,7 +1,6 @@
 import { saveMyDeskPrefs } from "@/app/actions/brand";
-import { AppShell } from "@/components/app-shell";
 import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { getAgentPrefs, getResolvedDesk } from "@/lib/db/brand-queries";
@@ -22,8 +21,7 @@ export default async function MyDeskPage() {
   const inheriting = !stored?.colorPreset && !stored?.fontPreset && !stored?.density;
 
   return (
-    <AppShell title="My desk">
-      <SettingsSubnav current="my-desk" />
+    <SettingsShell title="My desk" current="my-desk">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Your interface only. Does not change agency logo, templates, signatures, or another
         agent&apos;s desk. Column order is stored here; the CRM list picker writes the same
@@ -87,6 +85,6 @@ export default async function MyDeskPage() {
           Save my desk
         </Button>
       </form>
-    </AppShell>
+    </SettingsShell>
   );
 }
