@@ -9,6 +9,7 @@ import {
   monthCells,
   parseDateParam,
   parseKindsParam,
+  parseTags,
   rangeForView,
   rescheduleWindow,
   startOfWeek,
