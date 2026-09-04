@@ -468,3 +468,15 @@ Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Ana fixture untouched
 - **E-sign stubs:** Settings → E-sign. DocuSign and Dropbox Sign BYO. No vendor keys. Signed apps still attach on the Deal.
 
 Migration `0015_esign_settings`.
+
+## BATCH4 MFA + recovery (`cursor/mfa-recovery-batch4-a61a`)
+
+Parallel auth-security track off `cursor/mac-ready-batch3-7pm`. Does **not** own full agent admin — only recovery actions on `/settings/agents`.
+
+- Password required on login. Hashed on `users.password_hash`; demo javy/maya still match.
+- 2FA enroll: SMS stub, email stub, or TOTP. Desk gated until `mfa_enrolled`.
+- Seed Javy + Maya already enrolled (`totp` + `mfa_demo_bypass`). `FF_MFA_DEMO_BYPASS=1` skips the 2FA prompt so 7pm desk-test opens.
+- Admin recovery: password-reset stub link, MFA-reset stub link, force re-enroll. Nothing emails.
+- UI: Settings → Profile, Settings → Security, Settings → Agents (recovery only).
+- Additive migration `0021_auth_mfa_recovery`. Ana fixture untouched. One Pipeline nav row. Sidebar hex unchanged.
+

@@ -5,6 +5,7 @@ export const SESSION_COOKIES = {
   actor: "ff_actor",
   actorId: "ff_actor_id",
   name: "ff_actor_name",
+  mfa: "ff_mfa",
 } as const;
 
 export const ACTOR_COOKIE = SESSION_COOKIES.actorId;

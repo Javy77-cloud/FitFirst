@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { adminRedirectPath, isAdminOnlyPath, isPublicPath } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { isMfaChallengePath, isMfaSetupPath } from "@/lib/auth/mfa";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,11 +11,26 @@ export function proxy(request: NextRequest) {
 
   const userId = request.cookies.get(SESSION_COOKIES.actorId)?.value;
   const role = request.cookies.get(SESSION_COOKIES.role)?.value ?? request.cookies.get(SESSION_COOKIES.actor)?.value;
+  const mfa = request.cookies.get(SESSION_COOKIES.mfa)?.value;
   if (!userId) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(login);
+  }
+
+  if (mfa === "challenge" && !isMfaChallengePath(pathname)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/login/mfa";
+    dest.search = "";
+    return NextResponse.redirect(dest);
+  }
+
+  if (mfa === "pending" && !isMfaSetupPath(pathname)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/enroll-mfa";
+    dest.search = "";
+    return NextResponse.redirect(dest);
   }
 
   const isAdmin = role === "admin" || role === "owner";

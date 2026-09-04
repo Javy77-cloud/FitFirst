@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; reset?: string; mfareset?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, reset, mfareset } = await searchParams;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
@@ -20,14 +20,25 @@ export default async function LoginPage({
           <div className="text-xs uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
           <h1 className="text-2xl font-semibold text-navy">Sign in as Admin or Agent</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Local demo only. Role is stored on the session and enforced in middleware — not CSS.
-            No SaaS billing and no live Zoho.
+            Password is required. Javy and Maya are seeded with 2FA enrolled; a demo bypass flag
+            skips the second prompt so Mac desk-test can open the book. Role is enforced in
+            middleware — not CSS.
           </p>
         </div>
 
         {error ? (
           <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">
             Email or password did not match a desk user.
+          </p>
+        ) : null}
+        {reset ? (
+          <p className="rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">
+            Password updated. Sign in with the new password.
+          </p>
+        ) : null}
+        {mfareset ? (
+          <p className="rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">
+            2FA was cleared. Sign in, then enroll a new method before the desk opens.
           </p>
         ) : null}
 
@@ -45,16 +56,20 @@ export default async function LoginPage({
               <p className="text-sm text-muted-foreground">{DEMO_USERS.admin.email}</p>
             </div>
             <p className="text-sm text-navy/80">{DEMO_USERS.admin.summary}</p>
-            <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-              <li>Every Settings section and agency chrome</li>
-              <li>Connect email, SMS, phone, and calendar stubs</li>
-              <li>Global list defaults and pipeline stages</li>
-              <li>Ask a teammate on any record</li>
-            </ul>
+            <div>
+              <Label className="text-sm">Password</Label>
+              <Input
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="mt-1"
+              />
+            </div>
             <Button type="submit" className="mt-auto">
               Sign in as Admin
             </Button>
-            <p className="text-[11px] text-muted-foreground">Password: {DEMO_USERS.admin.password}</p>
+            <p className="text-[11px] text-muted-foreground">Seed password: {DEMO_USERS.admin.password}</p>
           </form>
 
           <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
@@ -70,16 +85,20 @@ export default async function LoginPage({
               <p className="text-sm text-muted-foreground">{DEMO_USERS.agent.email}</p>
             </div>
             <p className="text-sm text-navy/80">{DEMO_USERS.agent.summary}</p>
-            <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-              <li>Leads, contacts, deals, and policies she owns</li>
-              <li>Send client email / SMS when the agency line is connected</li>
-              <li>Calendar items assigned to her</li>
-              <li>Pipeline deals on her book — no Admin settings</li>
-            </ul>
+            <div>
+              <Label className="text-sm">Password</Label>
+              <Input
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="mt-1"
+              />
+            </div>
             <Button type="submit" className="mt-auto">
               Sign in as Agent
             </Button>
-            <p className="text-[11px] text-muted-foreground">Password: {DEMO_USERS.agent.password}</p>
+            <p className="text-[11px] text-muted-foreground">Seed password: {DEMO_USERS.agent.password}</p>
           </form>
         </div>
 

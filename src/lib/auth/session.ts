@@ -3,6 +3,8 @@ import { and, eq } from "drizzle-orm";
 import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import { capabilitiesFor, type DeskCapabilities } from "@/lib/auth/access";
 import { ACTOR_COOKIE, SESSION_COOKIE_OPTS, SESSION_COOKIES } from "@/lib/auth/cookies";
+import { resolveMfaStatus, type MfaStatus } from "@/lib/auth/mfa";
+import { verifyPassword } from "@/lib/auth/password";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
@@ -28,6 +30,10 @@ export type DeskSession = {
   isAgent: boolean;
   signedIn: boolean;
   capabilities: DeskCapabilities;
+  mfaStatus: MfaStatus;
+  mfaEnrolled: boolean;
+  mfaMethod: string | null;
+  mfaDemoBypass: boolean;
 };
 
 const DEMO_PASSWORDS: Record<string, string> = {
@@ -64,6 +70,15 @@ export function checkDemoPassword(email: string, password: string): boolean {
   return password === expected;
 }
 
+export function passwordMatchesUser(
+  user: Pick<User, "email" | "passwordHash">,
+  password: string,
+): boolean {
+  if (!password) return false;
+  if (user.passwordHash && verifyPassword(password, user.passwordHash)) return true;
+  return checkDemoPassword(user.email, password);
+}
+
 function guestSession(): DeskSession {
   return {
     user: null,
@@ -75,10 +90,14 @@ function guestSession(): DeskSession {
     isAgent: false,
     signedIn: false,
     capabilities: capabilitiesFor("guest"),
+    mfaStatus: "pending",
+    mfaEnrolled: false,
+    mfaMethod: null,
+    mfaDemoBypass: false,
   };
 }
 
-function sessionFromUser(user: User): DeskSession {
+function sessionFromUser(user: User, mfaCookie?: string): DeskSession {
   const role = normalizeRole(user.role);
   const isAdminRole = role === "admin" || role === "owner";
   return {
@@ -91,6 +110,10 @@ function sessionFromUser(user: User): DeskSession {
     isAgent: role === "agent",
     signedIn: true,
     capabilities: capabilitiesFor(isAdminRole ? "admin" : "agent"),
+    mfaStatus: resolveMfaStatus(user, mfaCookie),
+    mfaEnrolled: Boolean(user.mfaEnrolled),
+    mfaMethod: user.mfaMethod,
+    mfaDemoBypass: Boolean(user.mfaDemoBypass),
   };
 }
 
@@ -104,7 +127,7 @@ export async function currentDeskSession(): Promise<DeskSession> {
       .from(users)
       .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
     if (!user) return guestSession();
-    return sessionFromUser(user);
+    return sessionFromUser(user, jar.get(SESSION_COOKIES.mfa)?.value);
   } catch {
     return guestSession();
   }

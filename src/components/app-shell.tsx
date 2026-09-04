@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { isNull, eq, and, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -16,6 +17,7 @@ export async function AppShell({
   eyebrow,
   actions,
   columns,
+  allowMfaPending = false,
 }: {
   children: ReactNode;
   title: string;
@@ -23,6 +25,8 @@ export async function AppShell({
   actions?: ReactNode;
   /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
   columns?: ReactNode;
+  /** Settings → Security / Profile while 2FA is still being enrolled. */
+  allowMfaPending?: boolean;
 }) {
   const [count] = await db
     .select({ n: sql<number>`count(*)` })
@@ -30,6 +34,10 @@ export async function AppShell({
     .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
   const session = await currentDeskSession();
+  if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
+  if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {
+    redirect("/enroll-mfa");
+  }
   const brand = await loadAgencyBrand();
 
   return (
@@ -67,7 +75,12 @@ export async function AppShell({
                 ? "Admin · all book"
                 : "Sign in required"}
           </div>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
+            {session.signedIn ? (
+              <Link href="/settings/security" className="text-sidebar-foreground hover:underline">
+                Security
+              </Link>
+            ) : null}
             <Link href="/login" className="text-sidebar-foreground hover:underline">
               {session.signedIn ? "Switch user" : "Sign in"}
             </Link>

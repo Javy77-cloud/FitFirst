@@ -232,6 +232,9 @@ export async function seedUsersAndBook() {
       passwordHash: null,
       active: true,
       meetingAddress: "Suite 110 · owner desk",
+      mfaEnrolled: true,
+      mfaMethod: "totp",
+      mfaDemoBypass: true,
     })
     .onConflictDoUpdate({
       target: users.id,
@@ -241,6 +244,8 @@ export async function seedUsersAndBook() {
         role: "admin",
         active: true,
         meetingAddress: "Suite 110 · owner desk",
+        mfaEnrolled: true,
+        mfaDemoBypass: true,
         updatedAt: new Date(),
       },
     });
@@ -256,6 +261,9 @@ export async function seedUsersAndBook() {
       passwordHash: null,
       active: true,
       meetingAddress: "Suite 112 · producer desk",
+      mfaEnrolled: true,
+      mfaMethod: "totp",
+      mfaDemoBypass: true,
     })
     .onConflictDoUpdate({
       target: users.id,
@@ -265,6 +273,8 @@ export async function seedUsersAndBook() {
         role: "agent",
         active: true,
         meetingAddress: "Suite 112 · producer desk",
+        mfaEnrolled: true,
+        mfaDemoBypass: true,
         updatedAt: new Date(),
       },
     });

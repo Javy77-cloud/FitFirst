@@ -49,8 +49,11 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/sms")).toBe(true);
     expect(isAdminOnlyPath("/settings/phone")).toBe(true);
     expect(isAdminOnlyPath("/settings/lines")).toBe(true);
+    expect(isAdminOnlyPath("/settings/agents")).toBe(true);
     expect(isAdminOnlyPath("/settings")).toBe(false);
     expect(isAdminOnlyPath("/settings/my-desk")).toBe(false);
+    expect(isAdminOnlyPath("/settings/security")).toBe(false);
+    expect(isAdminOnlyPath("/settings/profile")).toBe(false);
     expect(isAdminOnlyPath("/pipeline")).toBe(false);
     expect(isAdminOnlyPath("/calendar")).toBe(false);
   });
@@ -58,6 +61,10 @@ describe("Admin vs Agent capabilities", () => {
   it("keeps login and fill-demo public", () => {
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/login?error=1")).toBe(true);
+    expect(isPublicPath("/login/mfa")).toBe(true);
+    expect(isPublicPath("/recover/password")).toBe(true);
+    expect(isPublicPath("/recover/mfa")).toBe(true);
+    expect(isPublicPath("/enroll-mfa")).toBe(false);
     expect(isPublicPath("/fill-demo")).toBe(true);
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/settings")).toBe(false);

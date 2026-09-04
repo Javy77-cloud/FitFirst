@@ -6,6 +6,7 @@ async function main() {
   console.log("Loaded Ana Dib HO3 shop (2026-09-02 Palm Bay fixture).");
   console.log("Loaded Elena Ruiz Melbourne HO3 click-through (bound personal path).");
   console.log("Loaded Harbor Key Marine commercial Closed Won + pipelines + Quote Sheet handoff.");
+  console.log("Javy + Maya: password hashed, TOTP enrolled, demo MFA bypass on.");
   await sql.end({ timeout: 5 });
 }
 
