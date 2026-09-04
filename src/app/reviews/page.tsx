@@ -4,7 +4,7 @@ import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
-import { ColumnPicker } from "@/components/crm/column-picker";
+import { ColumnPicker, ColumnPickerMenu } from "@/components/crm/column-picker";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
 
 const EXPIRING_COLUMNS = [
@@ -20,7 +20,10 @@ export default async function ReviewsPage() {
   const expiring = policies.filter(({ policy }) => daysUntil(policy.expirationDate) <= 90);
 
   return (
-    <AppShell title="Reviews & expirations">
+    <AppShell
+      title="Reviews & expirations"
+      columns={<ColumnPickerMenu tableId="reviews-expiring" columns={EXPIRING_COLUMNS} />}
+    >
       <p className="mb-3 text-sm text-muted-foreground">
         30/60/90 and expiration tasks stay in the desk. Completing a task writes client history.
         Nothing emails the agent.

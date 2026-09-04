@@ -1,10 +1,9 @@
 import { createDeal } from "@/app/actions/crm";
+import { AddressAutofill } from "@/components/address-autofill";
 import { AppShell } from "@/components/app-shell";
-import { LineSelect } from "@/components/crm/line-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function NewDealPage() {
   return (
@@ -58,11 +57,29 @@ export default function NewDealPage() {
               <option value="GL">General Liability</option>
             </select>
           </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="address1" className="text-xs">
+              Property address
+            </Label>
+            <AddressAutofill id="address1" name="address1" className="mt-1 h-8" />
+          </div>
           <div>
             <Label htmlFor="city" className="text-xs">
               City
             </Label>
             <Input id="city" name="city" className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label htmlFor="state" className="text-xs">
+              State
+            </Label>
+            <Input id="state" name="state" defaultValue="FL" className="mt-1 h-8" />
+          </div>
+          <div>
+            <Label htmlFor="zip" className="text-xs">
+              ZIP
+            </Label>
+            <Input id="zip" name="zip" className="mt-1 h-8" />
           </div>
           <div>
             <Label htmlFor="county" className="text-xs">

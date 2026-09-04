@@ -7,6 +7,7 @@ import { ClickToCall } from "@/components/click-to-call";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
+import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +67,11 @@ export default async function LeadDetailPage({
           </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Mailing</Label>
-            <Input name="mailingAddress" defaultValue={lead.mailingAddress ?? ""} className="mt-1 h-8" />
+            <AddressAutofill
+              name="mailingAddress"
+              defaultValue={lead.mailingAddress ?? ""}
+              className="mt-1 h-8"
+            />
           </div>
           <div>
             <Label className="text-xs">City</Label>

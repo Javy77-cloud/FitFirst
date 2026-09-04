@@ -3,6 +3,7 @@ import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
+import { AddressFieldset } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,7 @@ export default async function ContactsPage({
   return (
     <AppShell
       title="Contacts"
-      actions={<ColumnPicker tableKey="contacts" initial={defaultColumns("contacts")} />}
+      columns={<ColumnPicker tableKey="contacts" initial={defaultColumns("contacts")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Client = at least one Active / Bound / Pending policy. Former client = lifetime ≥ 1 and
@@ -72,6 +73,7 @@ export default async function ContactsPage({
             <Label className="text-xs">Phone</Label>
             <Input name="phone" className="mt-1 h-8" />
           </div>
+          <AddressFieldset streetName="mailingAddress" streetLabel="Mailing address" />
           <Button type="submit" size="sm">
             Save contact
           </Button>

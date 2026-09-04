@@ -45,13 +45,11 @@ export default async function DealsPage({
     <AppShell
       title="Deals"
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />
-          <Link href="/deals/new" className={cn(buttonVariants())}>
-            New shopping deal
-          </Link>
-        </div>
+        <Link href="/deals/new" className={cn(buttonVariants())}>
+          New shopping deal
+        </Link>
       }
+      columns={<ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
       {filter.stage || filter.attention ? (

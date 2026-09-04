@@ -19,7 +19,7 @@ export default async function CarriersPage() {
   return (
     <AppShell
       title="Carriers"
-      actions={<ColumnPicker tableKey="carriers" initial={defaultColumns("carriers")} />}
+      columns={<ColumnPicker tableKey="carriers" initial={defaultColumns("carriers")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Portal login, service phones, and carrier info first. Appetite is on the carrier record.

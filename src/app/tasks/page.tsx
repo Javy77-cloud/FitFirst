@@ -16,13 +16,11 @@ export default async function TasksPage() {
     <AppShell
       title="Tasks"
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <ColumnPicker tableKey="tasks" initial={defaultColumns("tasks")} />
-          <Link href="/tasks/new" className={cn(buttonVariants())}>
-            New task
-          </Link>
-        </div>
+        <Link href="/tasks/new" className={cn(buttonVariants())}>
+          New task
+        </Link>
       }
+      columns={<ColumnPicker tableKey="tasks" initial={defaultColumns("tasks")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Desk review tasks. Add, edit, or delete. Communication logs still live on the Contact,

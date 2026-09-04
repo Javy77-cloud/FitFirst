@@ -6,6 +6,7 @@ import { ColumnPicker, Col } from "@/components/column-picker";
 import { LineSelect } from "@/components/crm/line-select";
 import { DeskDrop } from "@/components/desk-drop";
 import { RecordLink } from "@/components/record-links";
+import { AddressFieldset } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ export default async function LeadsPage() {
   return (
     <AppShell
       title="Leads"
-      actions={<ColumnPicker tableKey="leads" initial={defaultColumns("leads")} />}
+      columns={<ColumnPicker tableKey="leads" initial={defaultColumns("leads")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Create or match by name + phone or email. Never duplicate. A dropped dec becomes a lead
@@ -71,6 +72,7 @@ export default async function LeadsPage() {
               </Label>
               <Input id="email" name="email" type="email" className="mt-1 h-8" />
             </div>
+            <AddressFieldset streetName="mailingAddress" streetLabel="Mailing address" streetId="mailingAddress" />
             <Button type="submit" size="sm">
               Save lead
             </Button>

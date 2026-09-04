@@ -1,4 +1,5 @@
 import { updateRisk } from "@/app/actions/crm";
+import { AddressAutofill } from "@/components/address-autofill";
 import { SectionTabs } from "@/components/section-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,17 @@ export function RiskForm({
             content: (
               <div className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <Field label="Address" name="address1" defaultValue={risk.address1} />
+                  <div>
+                    <Label htmlFor="address1" className="text-xs">
+                      Address
+                    </Label>
+                    <AddressAutofill
+                      id="address1"
+                      name="address1"
+                      defaultValue={risk.address1}
+                      className="mt-1 h-8"
+                    />
+                  </div>
                   <Field label="City" name="city" defaultValue={risk.city} />
                   <Field label="County" name="county" defaultValue={risk.county} />
                   <Field label="State" name="state" defaultValue={risk.state} />

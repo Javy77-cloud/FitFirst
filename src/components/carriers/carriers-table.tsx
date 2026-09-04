@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { AppointmentRows, type AppointmentRowInput } from "@/components/carriers/appointment-rows";
 import { AppetiteNotesPanel, type AppetiteNotesRule } from "@/components/carriers/appetite-notes";
-import { ColumnPicker } from "@/components/carriers/column-picker";
 import { buttonVariants } from "@/components/ui/button";
 import { colsQuery, type CarrierTableColumnId } from "@/lib/carriers/desk";
 import { cn } from "@/lib/utils";
@@ -49,9 +48,6 @@ export function CarriersTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <ColumnPicker visible={visible} notesId={notesId} />
-      </div>
       {notesRow ? (
         <AppetiteNotesPanel
           carrierName={notesRow.name}
