@@ -163,7 +163,7 @@ export function SavedFiltersBar({
           <button
             type="button"
             onClick={() => setNaming(true)}
-            className="h-7 px-1 text-xs text-muted-foreground hover:text-navy hover:underline"
+            className="h-7 rounded-md border border-border bg-card px-2 text-xs font-medium text-navy hover:bg-secondary"
           >
             Save as…
           </button>
