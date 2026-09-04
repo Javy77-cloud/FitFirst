@@ -6,13 +6,15 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch3-7pm` (batch-3 consolidate on `cursor/mac-ready-overnight-3bad`)
 
+**Batch 4 home (side branch):** `cursor/home-dashboard-widgets-89ab` — denser agent-scoped Home (KPI cards, charts, leaderboard, contest, birthdays / turning 65, dashboard presets). Same blue/orange desk. Ana stays unbound at Cov A **$321,000**.
+
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
 Contact record: Ask a teammate is Admin-only on every record. Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
 
 Deals list has one upload: pick an existing Deal by person or business name, then add typed file lines (4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, signed app). Inside the Deal: Source documents, Issued quote PDFs, and Signed app. Ask a teammate and email/SMS logs are off Quote Sheet, Markets, and Quotes. Master risk is Admin-only at Settings. E-sign stubs are DocuSign / Dropbox Sign BYO.
 
-Policies are Life / Health / P&C with family fields, Zoho-style auto name, status colors (Active green · Lapse/Bound yellow · else red), term by family, multi-file attach, and a commission block. Cov A stays on quoting only. Policy records show auto activity — no Ask a teammate, no typed SMS/call/email log. Settings → Global lists holds policy types, sub-types, terms, statuses, and file categories (carriers stay linked). Home Needs attention filters Overdue / This week / This month / Next month. Calendar buttons are Previous month / Next month; you can delete an event and + Add any type. Quote sections say Expand / Collapse.
+Policies are Life / Health / P&C with family fields, Zoho-style auto name, status colors (Active green · Lapse/Bound yellow · else red), term by family, multi-file attach, and a commission block. Cov A stays on quoting only. Policy records show auto activity — no Ask a teammate, no typed SMS/call/email log. Settings → Global lists holds policy types, sub-types, terms, statuses, and file categories (carriers stay linked). Home is an agent-scoped AMS dashboard: own-book KPIs (active accounts, in-force premium, policies, ratios, new business / renewals / cancellations with MoM, carrier count), a pipeline strip, carrier + line charts (policy-type donut stays), a top-10 production leaderboard, a reward/contest board, birthdays, and turning-65. Admins toggle **My book** vs **Agency-wide**. Users pick **My production**, **Pipeline focus**, or **Retention / renewals**, then hide cards in Widget settings. Settings → Agency can pin 1–2 company widgets on agent home. Home Needs attention filters Overdue / This week / This month / Next month. Calendar buttons are Previous month / Next month; you can delete an event and + Add any type. Quote sections say Expand / Collapse.
 
 Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 

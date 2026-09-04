@@ -1,5 +1,24 @@
 import { addUtcDays, sameUtcMonth } from "./as-of";
 import { attentionPriority, attentionStatus } from "./attention-window";
+import {
+  birthdayBuckets,
+  turning65Buckets,
+  type BirthdayRow,
+  type HomeContactDob,
+} from "./birthdays";
+import {
+  activeLeadCount,
+  bookRatios,
+  cancelledInMonth,
+  cancelledOrTerminatedCount,
+  carrierCount,
+  lapseCount,
+  monthCompareFor,
+  openDealCount,
+  writingsInMonth,
+  type HomeLead,
+} from "./kpis";
+import { leaderboardPair, type HomeAgent, type LeaderRow } from "./leaderboard";
 import { HOME_LINE_KEYS, HOME_LINE_LABEL, homeLineKey, type HomeLineKey } from "./lines";
 
 export const IN_FORCE_STATUSES = new Set(["active", "bound"]);
@@ -19,6 +38,7 @@ export const LOST_STAGES = new Set(["lost", "closed_lost"]);
 export type HomePolicy = {
   id: string;
   contactId: string;
+  accountId?: string | null;
   dealId?: string | null;
   carrierId: string | null;
   carrierName: string | null;
@@ -29,6 +49,8 @@ export type HomePolicy = {
   premium: number;
   effectiveDate: Date;
   expirationDate: Date;
+  originalEffectiveDate?: Date | null;
+  endedAt?: Date | null;
   ownerId?: string | null;
 };
 
@@ -342,6 +364,26 @@ export type OwnerHomeSnapshot = {
   gaps: CrossSellGap[];
   gapCount: number;
   holders: BookHolder[];
+  activeAccounts: number;
+  premiumPerAccount: number;
+  premiumPerPolicy: number;
+  policiesPerAccount: number;
+  carrierCount: number;
+  newBusiness: MonthCompare;
+  renewalsWritten: MonthCompare;
+  cancellations: MonthCompare;
+  strip: {
+    activeLeads: number;
+    openDeals: number;
+    lapseCount: number;
+    boundPending: number;
+    cancelledCount: number;
+    terminatedCount: number;
+  };
+  leaderboardThisMonth: LeaderRow[];
+  leaderboardLastMonth: LeaderRow[];
+  birthdays: { today: BirthdayRow[]; nextWeek: BirthdayRow[]; nextMonth: BirthdayRow[] };
+  turning65: { nextMonth: BirthdayRow[]; nextYear: BirthdayRow[] };
 };
 
 export function buildOwnerHome(input: {
@@ -350,8 +392,14 @@ export function buildOwnerHome(input: {
   deals: HomeDeal[];
   tasks: HomeTask[];
   commissions?: CommissionTotals;
+  leads?: HomeLead[];
+  contacts?: HomeContactDob[];
+  agents?: HomeAgent[];
 }): OwnerHomeSnapshot {
   const inForce = inForcePolicies(input.policies);
+  const ratios = bookRatios(input.policies);
+  const ended = cancelledOrTerminatedCount(input.policies);
+  const board = leaderboardPair(input.policies, input.agents ?? [], input.asOf);
   return {
     asOf: input.asOf,
     inForceCount: inForce.length,
@@ -372,5 +420,29 @@ export function buildOwnerHome(input: {
     gaps: crossSellGaps(input.policies),
     gapCount: crossSellGaps(input.policies).length,
     holders: bookHolders(input.policies),
+    activeAccounts: ratios.activeAccounts,
+    premiumPerAccount: ratios.premiumPerAccount,
+    premiumPerPolicy: ratios.premiumPerPolicy,
+    policiesPerAccount: ratios.policiesPerAccount,
+    carrierCount: carrierCount(input.policies),
+    newBusiness: monthCompareFor(input.policies, input.asOf, (rows, when) =>
+      writingsInMonth(rows, when, "new"),
+    ),
+    renewalsWritten: monthCompareFor(input.policies, input.asOf, (rows, when) =>
+      writingsInMonth(rows, when, "renewal"),
+    ),
+    cancellations: monthCompareFor(input.policies, input.asOf, cancelledInMonth),
+    strip: {
+      activeLeads: activeLeadCount(input.leads ?? []),
+      openDeals: openDealCount(input.deals.map((deal) => deal.pipelineStage)),
+      lapseCount: lapseCount(input.policies),
+      boundPending: boundWaitingOnIssue(input.deals, input.policies).length,
+      cancelledCount: ended.cancelled,
+      terminatedCount: ended.terminated,
+    },
+    leaderboardThisMonth: board.thisMonth,
+    leaderboardLastMonth: board.lastMonth,
+    birthdays: birthdayBuckets(input.contacts ?? [], input.asOf),
+    turning65: turning65Buckets(input.contacts ?? [], input.asOf),
   };
 }

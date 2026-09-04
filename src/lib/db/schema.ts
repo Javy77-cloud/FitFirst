@@ -128,6 +128,7 @@ export const agencySettings = pgTable(
     meetUrl: text("meet_url"),
     byoVideoUrl: text("byo_video_url"),
     videoProvider: text("video_provider").notNull().default("none"),
+    showCompanyWidgets: boolean("show_company_widgets").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
@@ -1586,6 +1587,39 @@ export const integrationConnections = pgTable(
   ],
 );
 
+/** Per-user home layout: preset, hidden widgets, admin My book vs Agency-wide. */
+export const userDashboardPrefs = pgTable(
+  "user_dashboard_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id").notNull(),
+    preset: text("preset").notNull().default("my_production"),
+    hiddenWidgets: jsonb("hidden_widgets").$type<string[]>().notNull().default([]),
+    bookScope: text("book_scope").notNull().default("agency"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("user_dashboard_prefs_user_uidx").on(t.tenantId, t.userId)],
+);
+
+/** Admin-posted production contest. Standings are computed from the book. */
+export const contests = pgTable(
+  "contests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    title: text("title").notNull(),
+    rules: text("rules").notNull(),
+    metric: text("metric").notNull().default("premium"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    createdBy: uuid("created_by"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("contests_tenant_idx").on(t.tenantId)],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -1670,3 +1704,5 @@ export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;
+export type UserDashboardPref = typeof userDashboardPrefs.$inferSelect;
+export type Contest = typeof contests.$inferSelect;
