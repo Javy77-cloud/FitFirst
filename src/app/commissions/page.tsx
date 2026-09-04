@@ -6,12 +6,13 @@ import { ReconStatusFilter } from "@/components/commissions/recon-status-filter"
 import { CommissionStatusPill } from "@/components/commissions/status-pill";
 import { SheetTbody } from "@/components/sheet/sheet-table";
 import { requireSignedIn } from "@/lib/auth/guards";
-import { filterCommissionRows, isCommissionPeriod } from "@/lib/commissions/filters";
+import { isCommissionPeriod } from "@/lib/commissions/filters";
 import { loadReconWorkspace } from "@/lib/commissions/load-recon";
 import {
   agentReconBucket,
   AGENT_BUCKET_LABEL,
   RECON_STATUS_LABEL,
+  filterReconBookRows,
   producerTotals,
   reconBoardTotals,
 } from "@/lib/commissions/reconcile";
@@ -43,15 +44,7 @@ export default async function CommissionsPage({
     status: session.isAdmin ? reconStatus : undefined,
   });
 
-  const rows = filterCommissionRows(
-    loaded.map((row) => ({
-      ...row,
-      lineOfBusiness: row.lineOfBusiness,
-      policyLineOfBusiness: row.lineOfBusiness,
-      status: row.paid ? "paid" : "pending",
-    })),
-    { family, sub, range },
-  );
+  const rows = filterReconBookRows(loaded, { family, sub, range });
 
   const filtered = Boolean(family || (sub && sub !== "all") || (range && range !== "all") || reconStatus);
   const adminTotals = reconBoardTotals(rows);

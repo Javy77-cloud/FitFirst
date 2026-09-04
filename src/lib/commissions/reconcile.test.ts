@@ -4,6 +4,7 @@ import {
   agentReconBucket,
   deriveReconStatus,
   filterAgentOwnRows,
+  filterReconBookRows,
   filterReconStatus,
   parseReceivedAmount,
   producerTotals,
@@ -131,5 +132,14 @@ describe("Admin board vs Agent visibility", () => {
     const blob = book.map((row) => `${row.policyNumber} ${row.note ?? ""}`).join(" ");
     expect(/ana dib/i.test(blob)).toBe(false);
     expect(filterAgentOwnRows(book, "not-a-user")).toEqual([]);
+  });
+
+  it("keeps recon short / disputed / earned when the book filter runs", () => {
+    const kept = filterReconBookRows(book, { range: "all" });
+    expect(kept.map((row) => row.status)).toEqual(["short", "disputed", "earned", "short"]);
+    const totals = reconBoardTotals(kept);
+    expect(totals.disputedCount).toBe(1);
+    expect(totals.shortCount).toBe(2);
+    expect(producerTotals(filterAgentOwnRows(kept, AGENT_USER_ID)).earned).toBeCloseTo(142);
   });
 });

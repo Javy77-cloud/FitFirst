@@ -1,3 +1,4 @@
+import { filterCommissionRows, type CommissionBookFilter } from "./filters";
 import { toNumber } from "./math";
 
 export const RECON_STATUSES = ["pending", "matched", "short", "disputed", "earned"] as const;
@@ -102,6 +103,25 @@ export function filterReconStatus(
   if (!status || status === "all") return rows;
   if (status === "shortfall") return rows.filter((row) => row.status === "short" || row.variance > 0);
   return rows.filter((row) => row.status === status);
+}
+
+/** Book / date window uses payout paid|pending. Do not overwrite recon status. */
+export function filterReconBookRows<T extends ReconWorkspaceRow>(
+  rows: T[],
+  filter: CommissionBookFilter,
+): T[] {
+  return filterCommissionRows(
+    rows.map((row) => ({
+      row,
+      lineOfBusiness: row.lineOfBusiness,
+      policyLineOfBusiness: row.lineOfBusiness,
+      status: row.paid ? "paid" : "pending",
+      dueDate: row.dueDate,
+      paidDate: row.paidDate,
+      createdAt: row.createdAt,
+    })),
+    filter,
+  ).map((wrapped) => wrapped.row);
 }
 
 export function reconBoardTotals(rows: ReconWorkspaceRow[]) {
