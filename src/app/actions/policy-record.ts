@@ -9,6 +9,7 @@ import { addUtcDays, DESK_AS_OF } from "@/lib/home/as-of";
 import { inferLineFamily, isOepLine, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
 import {
   commissionFamilyFromInsurance,
+  defaultTermForFamily,
   expirationFromTerm,
   insuranceFamilyFromPolicy,
   lineOfBusinessForFamily,
@@ -17,6 +18,7 @@ import {
 import { loadCommissionRates } from "@/lib/desk/load-rates";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { toNumber } from "@/lib/commissions/math";
+import { withHistoryDefaults } from "@/lib/policy/change-log";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 
 function str(form: FormData, key: string) {
@@ -96,9 +98,19 @@ export async function updatePolicyRecord(formData: FormData) {
     })
     .where(eq(policies.id, id));
 
+  const shownFamily = insuranceFamilyFromPolicy(existing);
   await recordPolicyFieldChanges({
     policyId: id,
-    before: existing,
+    before: withHistoryDefaults(existing, {
+      insuranceType: shownFamily,
+      commissionFamily:
+        existing.commissionFamily ||
+        commissionFamilyFromInsurance(shownFamily, existing.policySubType) ||
+        inferLineFamily(existing.lineOfBusiness, existing.commissionFamily, existing.policySubType),
+      insuredCount: existing.insuredCount ?? 1,
+      billingFrequency: existing.billingFrequency || "annual",
+      policyTerm: existing.policyTerm || defaultTermForFamily(shownFamily),
+    }),
     after: { ...existing, ...next },
     source: "record_edit",
   });

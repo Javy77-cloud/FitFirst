@@ -97,6 +97,18 @@ export function valuesEqual(before: unknown, after: unknown): boolean {
   return formatHistoryValue(before) === formatHistoryValue(after);
 }
 
+/** Fill blank stored fields with the same defaults the Policy form shows, so a save does not log phantom first-fills. */
+export function withHistoryDefaults(
+  row: Record<string, unknown>,
+  defaults: Record<string, unknown>,
+): Record<string, unknown> {
+  const next = { ...row };
+  for (const [key, fallback] of Object.entries(defaults)) {
+    if (formatHistoryValue(next[key]) === EMPTY) next[key] = fallback;
+  }
+  return next;
+}
+
 export function diffPolicyFields(
   before: Record<string, unknown>,
   after: Record<string, unknown>,

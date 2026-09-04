@@ -5,6 +5,7 @@ import {
   groupPolicyChangeLogs,
   sourceLabel,
   valuesEqual,
+  withHistoryDefaults,
 } from "./change-log";
 
 describe("policy change history", () => {
@@ -71,6 +72,41 @@ describe("policy change history", () => {
     expect(groups[0]?.fields).toHaveLength(2);
     expect(groups[1]?.source).toBe("bind");
     expect(sourceLabel("bind")).toBe("Bind");
+  });
+
+  it("does not log form defaults that were already shown as blanks", () => {
+    const stored = {
+      premisesAddress: "412 Harbor Isle Dr",
+      billingFrequency: null,
+      insuredCount: null,
+      insuranceType: null,
+      policyTerm: null,
+      commissionFamily: null,
+    };
+    const shown = withHistoryDefaults(stored, {
+      billingFrequency: "annual",
+      insuredCount: 1,
+      insuranceType: "P&C",
+      policyTerm: "12 Months",
+      commissionFamily: "pc",
+    });
+    const saved = {
+      ...shown,
+      premisesAddress: "412 Harbor Isle Drive",
+      billingFrequency: "annual",
+      insuredCount: 1,
+      insuranceType: "P&C",
+      policyTerm: "12 Months",
+      commissionFamily: "pc",
+    };
+    expect(diffPolicyFields(shown, saved)).toEqual([
+      {
+        fieldKey: "premisesAddress",
+        fieldLabel: "Premises street",
+        beforeValue: "412 Harbor Isle Dr",
+        afterValue: "412 Harbor Isle Drive",
+      },
+    ]);
   });
 
   it("never invents an Ana policy change", () => {
