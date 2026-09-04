@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listReviewTasks } from "@/lib/db/queries";
 
@@ -26,7 +27,11 @@ export default async function TasksPage() {
             <tbody>
               {tasks.map((task) => (
                 <tr key={task.id}>
-                  <td>{task.title}</td>
+                  <td>
+                    <Link href={`/tasks/${task.id}`} className="font-medium text-primary hover:underline">
+                      {task.title}
+                    </Link>
+                  </td>
                   <td>{task.dueDate.toISOString().slice(0, 10)}</td>
                   <td>{task.status}</td>
                 </tr>

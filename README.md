@@ -19,6 +19,8 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 **Home widgets:** each card has a grip (reorder) and a size menu (`1×1` / `1×2` / `2×1` / `2×2` grid spans only). Same blue/orange card chrome at every size. **Reset layout** is in the Agency totals chip. Layout is stored in `localStorage` per book (`ff-home-layout:v1:owner` vs `ff-home-layout:v1:agent:<id>`), so Agency totals and an agent book do not share a grid. Reload keeps your arrangement. Seed KPI math and the Ana unbound $321k shop are unchanged.
 
+**Detail context rail:** task, meeting, lead, claim, deal, contact, policy, and business pages use a sticky right rail (~300px) with Info / Conversations, Send Email, deal summary, and open activities. Open a task from `/tasks` or a calendar event. Ana stays unbound.
+
 Desk chrome: grouped sidebar (one section open), blue rail with an off-white active row, colored top-bar icons, search left of those icons, in-desk calendar, and **Choose files** on uploads. Start shop from a lead opens a shopping deal. Deal and lead pages use Quick Communications instead of the old quick log. **Support** is a floating Help center (not a sidebar module). Helper / process / cross-sell copy reads at ~15px (`text-base`). Ana Dib stays shopping / unbound / Cov A $321,000.
 
 Docker: `docker compose up --build` (same port).

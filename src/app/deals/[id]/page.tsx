@@ -17,7 +17,10 @@ import { getDealWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { HealthStrip } from "@/components/completeness/health-strip";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { reportFromSheet } from "@/lib/completeness/report";
+import { loadRecordContext } from "@/lib/record-context";
 import type { ShopLine } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +51,12 @@ export default async function DealPage({
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
   const comms = await listRecordActivities({ dealId: deal.id });
+  const context = await loadRecordContext({
+    dealId: deal.id,
+    leadId: deal.leadId,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+  });
   const isAna = deal.id === DEAL_ID;
   const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
   const health = quoteSheet
@@ -122,64 +131,71 @@ export default async function DealPage({
         />
       ) : null}
 
-      {!risk ? (
-        <p className="text-base text-muted-foreground">This deal is missing a master risk.</p>
-      ) : (
-        <SectionTabs
-          defaultValue="documents"
-          active={tab}
-          tabs={[
-            {
-              id: "documents",
-              label: "Documents",
-              content: (
-                <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
-              ),
-            },
-            {
-              id: "quote-sheet",
-              label: "Quote Sheet",
-              content: (
-                <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
-              ),
-            },
-            {
-              id: "risk",
-              label: "Master risk",
-              content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
-            },
-            {
-              id: "markets",
-              label: "Markets",
-              content: <MarketsPanel dealId={deal.id} matches={matches} />,
-            },
-            {
-              id: "quotes",
-              label: "Quotes",
-              content: (
-                <QuotesPanel
-                  dealId={deal.id}
-                  quotes={quotes}
-                  logs={logs}
-                  quoteResultsNote={deal.quoteResultsNote}
-                />
-              ),
-            },
-          ]}
-        />
-      )}
+      <RecordDetailLayout
+        main={
+          <div>
+            {!risk ? (
+              <p className="text-base text-muted-foreground">This deal is missing a master risk.</p>
+            ) : (
+              <SectionTabs
+                defaultValue="documents"
+                active={tab}
+                tabs={[
+                  {
+                    id: "documents",
+                    label: "Documents",
+                    content: (
+                      <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                    ),
+                  },
+                  {
+                    id: "quote-sheet",
+                    label: "Quote Sheet",
+                    content: (
+                      <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
+                    ),
+                  },
+                  {
+                    id: "risk",
+                    label: "Master risk",
+                    content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
+                  },
+                  {
+                    id: "markets",
+                    label: "Markets",
+                    content: <MarketsPanel dealId={deal.id} matches={matches} />,
+                  },
+                  {
+                    id: "quotes",
+                    label: "Quotes",
+                    content: (
+                      <QuotesPanel
+                        dealId={deal.id}
+                        quotes={quotes}
+                        logs={logs}
+                        quoteResultsNote={deal.quoteResultsNote}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            )}
 
-      <div className="mt-4">
-        <QuickCommsBoard items={comms} dealId={deal.id} />
-      </div>
+            <div className="mt-4">
+              <QuickCommsBoard items={comms} dealId={deal.id} />
+            </div>
 
-      <p className="mt-4 text-base text-muted-foreground">
-        Shopping lives here.{" "}
-        <Link href="/get-started" className="text-primary hover:underline">
-          Run the test path
-        </Link>
-        .
-      </p>
+            <p className="mt-4 text-base text-muted-foreground">
+              Shopping lives here.{" "}
+              <Link href="/get-started" className="text-primary hover:underline">
+                Run the test path
+              </Link>
+              .
+            </p>
+          </div>
+        }
+        rail={<RecordContextRail context={context} />}
+      />
     </AppShell>
   );
 }

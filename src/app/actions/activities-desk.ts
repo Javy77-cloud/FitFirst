@@ -46,6 +46,7 @@ function revalidateRelated(related: {
 }) {
   revalidatePath("/calendar");
   revalidatePath("/tasks");
+  revalidatePath("/meetings");
   if (related.contactId) revalidatePath(`/contacts/${related.contactId}`);
   if (related.accountId) revalidatePath(`/accounts/${related.accountId}`);
   if (related.policyId) revalidatePath(`/policies/${related.policyId}`);
@@ -118,6 +119,8 @@ export async function completeDeskActivity(formData: FormData) {
   });
 
   revalidateRelated(activity);
+  revalidatePath(`/tasks/${id}`);
+  revalidatePath(`/meetings/${id}`);
 }
 
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */

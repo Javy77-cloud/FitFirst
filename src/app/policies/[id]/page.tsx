@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getPolicyWorkspace } from "@/lib/db/queries";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
+import { loadRecordContext } from "@/lib/record-context";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +28,12 @@ export default async function PolicyDetailPage({
   if (!workspace) notFound();
   const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
+  const context = await loadRecordContext({
+    contactId: contact?.id,
+    accountId: account?.id,
+    dealId: deal?.id,
+    policyId: policy.id,
+  });
 
   return (
     <AppShell title={policy.policyNumber}>
@@ -53,6 +62,9 @@ export default async function PolicyDetailPage({
         </Link>
       </div>
 
+      <RecordDetailLayout
+        main={
+          <div>
       {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
       <section className="ff-card p-4">
@@ -116,6 +128,10 @@ export default async function PolicyDetailPage({
           dealId={deal?.id}
         />
       </div>
+          </div>
+        }
+        rail={<RecordContextRail context={context} />}
+      />
     </AppShell>
   );
 }

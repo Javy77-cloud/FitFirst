@@ -5,6 +5,9 @@ import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { getAccountWorkspace } from "@/lib/db/queries";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
+import { loadRecordContext } from "@/lib/record-context";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +31,12 @@ export default async function AccountDetailPage({
     locations,
     certificates,
   } = workspace;
+  const context = await loadRecordContext({
+    accountId: account.id,
+    contactId: contacts[0]?.id,
+    dealId: deals[0]?.id,
+    policyId: policies[0]?.policy.id,
+  });
 
   return (
     <AppShell title={account.name}>
@@ -40,6 +49,9 @@ export default async function AccountDetailPage({
           Active / bound / pending <strong>{activePolicyCount}</strong>
         </span>
       </div>
+      <RecordDetailLayout
+        main={
+          <div>
       <section className="ff-card mb-4 p-4 text-sm">
         <h2 className="text-base font-semibold text-navy">Account 360 · commercial profile</h2>
         <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
@@ -151,6 +163,10 @@ export default async function AccountDetailPage({
           </ul>
         </section>
       ) : null}
+          </div>
+        }
+        rail={<RecordContextRail context={context} />}
+      />
     </AppShell>
   );
 }

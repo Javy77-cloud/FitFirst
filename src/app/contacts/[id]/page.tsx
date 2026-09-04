@@ -5,6 +5,9 @@ import { LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getContactWorkspace } from "@/lib/db/queries";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
+import { loadRecordContext } from "@/lib/record-context";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +31,12 @@ export default async function ContactDetailPage({
     locations,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
+  const context = await loadRecordContext({
+    contactId: contact.id,
+    accountId: businesses[0]?.id,
+    dealId: deals[0]?.id,
+    policyId: latestPolicyId,
+  });
 
   return (
     <AppShell title={`${contact.lastName}, ${contact.firstName}`}>
@@ -45,6 +54,9 @@ export default async function ContactDetailPage({
         </span>
       </div>
 
+      <RecordDetailLayout
+        main={
+          <div>
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card p-4 text-sm">
           <h2 className="text-base font-semibold text-navy">Copied at bind</h2>
@@ -158,6 +170,10 @@ export default async function ContactDetailPage({
           </ul>
         )}
       </section>
+          </div>
+        }
+        rail={<RecordContextRail context={context} />}
+      />
     </AppShell>
   );
 }

@@ -2,11 +2,11 @@ import { ActivityRecordPage } from "@/components/record-context/activity-record-
 
 export const dynamic = "force-dynamic";
 
-export default async function TaskDetailPage({
+export default async function MeetingDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ActivityRecordPage id={id} expectKind="task" />;
+  return <ActivityRecordPage id={id} expectKind="meeting" />;
 }

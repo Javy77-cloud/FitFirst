@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { moveActivityDay } from "@/app/actions/activities";
 import { logDeskActivity } from "@/app/actions/activities-desk";
 import { Button } from "@/components/ui/button";
@@ -241,7 +242,14 @@ export function DeskCalendar({
                       KIND_TONE[(item.kind as ActivityKind) ?? "task"],
                     )}
                   >
-                    <div className="font-semibold">{item.title}</div>
+                    <Link
+                      href={
+                        item.kind === "meeting" ? `/meetings/${item.id}` : `/tasks/${item.id}`
+                      }
+                      className="font-semibold hover:underline"
+                    >
+                      {item.title}
+                    </Link>
                   </div>
                 ))}
               </div>
