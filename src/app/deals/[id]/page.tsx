@@ -13,6 +13,7 @@ import { RecordLink } from "@/components/record-links";
 import { SectionTabs } from "@/components/section-tabs";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { analyzeCoverageGaps } from "@/lib/coverage/gaps";
+import { dealBindParty, dealGapPartyName } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace, listCarriers, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
@@ -91,29 +92,31 @@ export default async function DealPage({
   );
   const premium = boundPolicies.reduce((sum, policy) => sum + toNumber(policy.premium), 0);
   const commission = await sumCommissionsForPolicies(boundPolicies.map((p) => p.id));
-  const partyName = account
-    ? account.name
+  const commercialPath = deal.bindTarget === "account";
+  const contactName = contact ? `${contact.lastName}, ${contact.firstName}` : null;
+  const partyName = dealGapPartyName({
+    bindTarget: deal.bindTarget,
+    contactName,
+    accountName: account?.name ?? null,
+    fallback: lead ? formatPersonName(lead) : deal.title,
+  });
+  const gapPolicies = commercialPath && account
+    ? partyPolicies.filter((policy) => policy.accountId === account.id)
     : contact
-      ? `${contact.lastName}, ${contact.firstName}`
-      : lead
-        ? formatPersonName(lead)
-        : deal.title;
+      ? partyPolicies.filter((policy) => policy.contactId === contact.id)
+      : partyPolicies;
   const gapReport = analyzeCoverageGaps({
-    policies: partyPolicies,
+    policies: gapPolicies,
     partyName,
     isAna,
     quoteCount: quotes.length,
   });
-  const boundParty = account
-    ? { id: account.id, name: account.name, href: `/accounts/${account.id}`, kind: "account" as const }
-    : contact
-      ? {
-          id: contact.id,
-          name: `${contact.lastName}, ${contact.firstName}`,
-          href: `/contacts/${contact.id}`,
-          kind: "contact" as const,
-        }
-      : null;
+  const boundParty = dealBindParty({
+    bindTarget: deal.bindTarget,
+    contact: contact ?? null,
+    account: account ?? null,
+    boundPolicies,
+  });
 
   return (
     <AppShell title={deal.title}>

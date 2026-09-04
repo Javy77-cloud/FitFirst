@@ -44,6 +44,66 @@ export function bindPathCopy(target: BindPathTarget, lineLabel = "this line"): B
   };
 }
 
+export function dealBindParty(input: {
+  bindTarget: string;
+  contact: { id: string; firstName: string; lastName: string } | null;
+  account: { id: string; name: string } | null;
+  boundPolicies?: Array<{ contactId?: string | null; accountId?: string | null }>;
+}): { kind: BindPathTarget; id: string; name: string; href: string } | null {
+  const owner = input.boundPolicies?.find((policy) => policy.accountId || policy.contactId);
+  if (owner?.accountId && input.account) {
+    return {
+      kind: "account",
+      id: input.account.id,
+      name: input.account.name,
+      href: `/accounts/${input.account.id}`,
+    };
+  }
+  if (owner?.contactId && input.contact) {
+    return {
+      kind: "contact",
+      id: input.contact.id,
+      name: `${input.contact.lastName}, ${input.contact.firstName}`,
+      href: `/contacts/${input.contact.id}`,
+    };
+  }
+  if (input.bindTarget === "account" && input.account) {
+    return {
+      kind: "account",
+      id: input.account.id,
+      name: input.account.name,
+      href: `/accounts/${input.account.id}`,
+    };
+  }
+  if (input.contact) {
+    return {
+      kind: "contact",
+      id: input.contact.id,
+      name: `${input.contact.lastName}, ${input.contact.firstName}`,
+      href: `/contacts/${input.contact.id}`,
+    };
+  }
+  if (input.account) {
+    return {
+      kind: "account",
+      id: input.account.id,
+      name: input.account.name,
+      href: `/accounts/${input.account.id}`,
+    };
+  }
+  return null;
+}
+
+export function dealGapPartyName(input: {
+  bindTarget: string;
+  contactName: string | null;
+  accountName: string | null;
+  fallback: string;
+}): string {
+  if (input.bindTarget === "account" && input.accountName) return input.accountName;
+  return input.contactName ?? input.accountName ?? input.fallback;
+}
+
 export function closedWonPathSentence(input: {
   partyKind: "contact" | "account";
   partyName: string;

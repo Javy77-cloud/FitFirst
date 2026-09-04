@@ -5,6 +5,8 @@ import {
   assertAnaUnbound,
   bindPathCopy,
   closedWonPathSentence,
+  dealBindParty,
+  dealGapPartyName,
   isAnaDeal,
 } from "./bind-path";
 
@@ -30,6 +32,34 @@ describe("Closed Won bind path", () => {
     expect(copy.button).toBe("Bind Closed Won — Business + Policy");
     expect(copy.whatHappens).toMatch(/Business/);
     expect(copy.whatHappens).toMatch(/EIN/);
+  });
+
+  it("names Elena's Closed Won as Contact + Policy even when Ruiz Tile is linked", () => {
+    const party = dealBindParty({
+      bindTarget: "contact",
+      contact: { id: "c1", firstName: "Elena", lastName: "Ruiz" },
+      account: { id: "a1", name: "Ruiz Tile LLC" },
+      boundPolicies: [{ contactId: "c1", accountId: null }],
+    });
+    expect(party?.kind).toBe("contact");
+    expect(party?.name).toBe("Ruiz, Elena");
+    expect(dealGapPartyName({
+      bindTarget: "contact",
+      contactName: "Ruiz, Elena",
+      accountName: "Ruiz Tile LLC",
+      fallback: "Ruiz · Melbourne HO3",
+    })).toBe("Ruiz, Elena");
+  });
+
+  it("names Harbor Closed Won as Business + Policy", () => {
+    const party = dealBindParty({
+      bindTarget: "account",
+      contact: { id: "c2", firstName: "Marco", lastName: "Alvarez" },
+      account: { id: "a2", name: "Harbor Key Marine LLC" },
+      boundPolicies: [{ contactId: null, accountId: "a2" }],
+    });
+    expect(party?.kind).toBe("account");
+    expect(party?.name).toBe("Harbor Key Marine LLC");
   });
 
   it("says Closed Won wrote the party plus the policy", () => {
