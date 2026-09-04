@@ -33,11 +33,15 @@ export async function upsertCampaign(formData: FormData) {
       .where(and(eq(emailCampaigns.tenantId, DEFAULT_TENANT_ID), eq(emailCampaigns.id, id)));
     revalidatePath("/campaigns");
     revalidatePath(`/campaigns/${id}`);
+    revalidatePath("/automations");
+    revalidatePath("/automations/campaigns");
     redirect(`/campaigns/${id}`);
   }
 
   const [row] = await db.insert(emailCampaigns).values(values).returning();
   revalidatePath("/campaigns");
+  revalidatePath("/automations");
+  revalidatePath("/automations/campaigns");
   redirect(`/campaigns/${row.id}`);
 }
 
@@ -84,5 +88,7 @@ export async function stubSendCampaign(formData: FormData) {
 
   revalidatePath("/campaigns");
   revalidatePath(`/campaigns/${id}`);
+  revalidatePath("/automations");
+  revalidatePath("/automations/campaigns");
   redirect(`/campaigns/${id}?notice=would-send`);
 }

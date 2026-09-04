@@ -54,4 +54,11 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/forms/fl-ho3", "/documents")).toBe(true);
     expect(navItemIsActive("/quotes", "/documents")).toBe(false);
   });
+
+  it("highlights Automations on hub and section pages", () => {
+    expect(navItemIsActive("/automations", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/signatures", "/automations")).toBe(true);
+    expect(navItemIsActive("/settings/email-templates", "/automations")).toBe(false);
+  });
 });

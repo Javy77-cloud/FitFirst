@@ -5,14 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { getResolvedDesk, listEmailSignatures } from "@/lib/db/brand-queries";
+import { getDefaultSignature, getResolvedDesk } from "@/lib/db/brand-queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailSignaturesPage() {
   const session = await requireAdminPage();
-  const [desk, signatures] = await Promise.all([getResolvedDesk(), listEmailSignatures()]);
-  const current = signatures[0];
+  const [desk, current] = await Promise.all([getResolvedDesk(), getDefaultSignature()]);
 
   return (
     <SettingsShell title="Email signatures" current="signatures">
@@ -23,7 +22,12 @@ export default async function EmailSignaturesPage() {
       ) : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
           Standardized close for client mail. Merge field <code>{"{{signature}}"}</code> — also
-          appended when a template omits it. Example copy until you uncheck that box.
+          appended when a template omits it. Example copy until you uncheck that box. Agent drafts
+          wait in{" "}
+          <a href="/automations/signatures" className="text-primary hover:underline">
+            Automations → Signatures
+          </a>{" "}
+          until Admin approves them live.
         </p>
       )}
       <form action={saveEmailSignature} className="space-y-4">

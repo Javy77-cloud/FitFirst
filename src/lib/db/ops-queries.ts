@@ -295,8 +295,11 @@ export async function getCampaign(id: string) {
 }
 
 export async function listContactTags() {
+  // Contact tags never landed on `contacts` — the campaigns stub still calls this.
+  const tagCol = (contacts as { tags?: typeof documents.tags }).tags;
+  if (!tagCol) return [];
   const rows = await db
-    .select({ tags: contacts.tags })
+    .select({ tags: tagCol })
     .from(contacts)
     .where(eq(contacts.tenantId, tenant()));
   const set = new Set<string>();
@@ -311,7 +314,12 @@ export async function resolveCampaignAudience(audienceType: string, audienceValu
     const tag = audienceValue.trim().toLowerCase();
     const rows = await db.select().from(contacts).where(eq(contacts.tenantId, tenant()));
     return rows
-      .filter((c) => (c.tags ?? []).map((t) => t.toLowerCase()).includes(tag))
+      .filter((c) => {
+        const tags = Array.isArray((c as { tags?: string[] }).tags)
+          ? (c as { tags: string[] }).tags
+          : [];
+        return tags.map((t) => t.toLowerCase()).includes(tag);
+      })
       .map((c) => ({
         name: `${c.firstName} ${c.lastName}`.trim(),
         email: c.email,

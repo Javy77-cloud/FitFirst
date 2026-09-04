@@ -50,6 +50,7 @@ import { seedCalendarDesk } from "./seed-calendar";
 import { seedGlobalLists } from "./seed-global-lists";
 import { seedHomeDashboard } from "./seed-home-dashboard";
 import { seedDocumentLibraries } from "./seed-documents";
+import { seedAutomationsHub } from "./seed-automations";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -483,4 +484,5 @@ export async function seed() {
   await seedGlobalLists();
   await seedHomeDashboard();
   await seedDocumentLibraries();
+  await seedAutomationsHub();
 }

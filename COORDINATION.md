@@ -482,3 +482,16 @@ Side branch. Additive only. Keeps `--ff-sidebar: #c5ddf4` and the blue/orange to
 - Migration `0021_home_dashboard`. Seed does not add people — only extra producer users, DOB updates on existing contacts, and one contest.
 - Home charts use a punchy blue/orange/teal series (not washed navy/gray). Sidebar stays `#c5ddf4`.
 - Management lead-offer board (`0022_lead_offers`): Admin posts language/state offers, agents claim, Admin awards. Seeded French + Montana stubs. No new people.
+
+## BATCH4 Automations hub (`cursor/automations-hub-4d87`)
+
+Side branch off the Mac desk-test consolidate. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`#c5ddf4` / `#102033`). No domain catalog dupes.
+
+- **Nav:** one **Automations** row → `/automations`.
+- **Email campaigns:** uses existing `email_campaigns` + Mailchimp / Constant Contact / SendGrid catalog stubs. Empty state until one is connected.
+- **Bulk SMS:** `bulk_sms_drafts` stub. Empty until SMS / phone_sms is connected. Logs would send.
+- **Work email templates:** reads the existing `email_templates` library. Admin still edits in Settings.
+- **Guided builder:** `guided_automations` — Trigger (Deal stage change, Policy renewal window, Birthday, Closed Won) → Condition → Action (in-app notify, create Task, send template email). Seeded 3 examples. Prefer in-app notify.
+- **Signatures:** additive columns on `email_signatures` (`owner_user_id`, `approval_status`, review fields). Agents draft; Admin queue stub. Maya’s producer close seeds as pending.
+
+Migration `0025_automations_hub`. Do not bind Ana.

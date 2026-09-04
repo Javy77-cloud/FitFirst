@@ -1571,9 +1571,52 @@ export const emailSignatures = pgTable(
     bodyEs: text("body_es").notNull(),
     isDefault: boolean("is_default").notNull().default(true),
     isExampleCopy: boolean("is_example_copy").notNull().default(true),
+    ownerUserId: uuid("owner_user_id").references(() => users.id),
+    approvalStatus: text("approval_status").notNull().default("live"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewNote: text("review_note"),
     ...timestamps,
   },
   (t) => [index("email_signatures_tenant_idx").on(t.tenantId)],
+);
+
+/** Named Trigger → Condition → Action rules. Not per-policy fire jobs. */
+export const guidedAutomations = pgTable(
+  "guided_automations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    triggerKind: text("trigger_kind").notNull(),
+    triggerValue: text("trigger_value"),
+    conditionKind: text("condition_kind").notNull().default("always"),
+    conditionValue: text("condition_value"),
+    actionKind: text("action_kind").notNull(),
+    actionValue: text("action_value"),
+    enabled: boolean("enabled").notNull().default(true),
+    isExample: boolean("is_example").notNull().default(false),
+    createdBy: uuid("created_by").references(() => users.id),
+    ...timestamps,
+  },
+  (t) => [index("guided_automations_tenant_idx").on(t.tenantId)],
+);
+
+/** Bulk SMS compose stub. Requires an SMS integration. Nothing texts a client. */
+export const bulkSmsDrafts = pgTable(
+  "bulk_sms_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    body: text("body").notNull(),
+    audienceLabel: text("audience_label"),
+    status: text("status").notNull().default("draft"),
+    createdBy: uuid("created_by").references(() => users.id),
+    ...timestamps,
+  },
+  (t) => [index("bulk_sms_drafts_tenant_idx").on(t.tenantId)],
 );
 
 export const agentUiPrefs = pgTable(
@@ -1850,6 +1893,8 @@ export type ColumnLayoutRow = typeof columnLayouts.$inferSelect;
 export type EmailSendAccount = typeof emailSendAccounts.$inferSelect;
 export type AgencyBrand = typeof agencyBrand.$inferSelect;
 export type EmailSignature = typeof emailSignatures.$inferSelect;
+export type GuidedAutomation = typeof guidedAutomations.$inferSelect;
+export type BulkSmsDraft = typeof bulkSmsDrafts.$inferSelect;
 export type AgentUiPref = typeof agentUiPrefs.$inferSelect;
 export type CalendarConnection = typeof calendarConnections.$inferSelect;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;

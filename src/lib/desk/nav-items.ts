@@ -17,6 +17,7 @@ export const DESK_NAV_ITEMS = [
   { href: "/claims", label: "Claims log" },
   { href: "/commissions", label: "Commissions" },
   { href: "/tasks", label: "Tasks" },
+  { href: "/automations", label: "Automations" },
   { href: "/calendar", label: "Calendar" },
   { href: "/carriers", label: "Carriers" },
   { href: "/phone", label: "Phone" },

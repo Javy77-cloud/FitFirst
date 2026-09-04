@@ -49,9 +49,14 @@ export default async function CampaignsPage({
     <AppShell
       title="Campaigns"
       actions={
-        <Link href="/settings/sms" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-          SMS settings
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/automations" className={cn(buttonVariants({ size: "sm" }))}>
+            Automations hub
+          </Link>
+          <Link href="/settings/sms" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+            SMS settings
+          </Link>
+        </div>
       }
     >
       <StubBanner>

@@ -29,7 +29,11 @@ export default async function EmailTemplatesPage() {
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Client-facing mail only. Every template ships English and Spanish. If a contact prefers
         Spanish we send ES; English, Creole, or blank uses EN. Seeded copy is marked so you can
-        rewrite it in your voice.
+        rewrite it in your voice. The same library is on{" "}
+        <Link href="/automations/templates" className="text-primary hover:underline">
+          Automations → Work email templates
+        </Link>
+        .
       </p>
       <section className="ff-card overflow-hidden">
         {templates.length === 0 ? (

@@ -17,6 +17,7 @@ const MODULE_PREFIXES: readonly [string, string][] = [
   ["/claims", "Claims log"],
   ["/commissions", "Commissions"],
   ["/tasks", "Tasks"],
+  ["/automations", "Automations"],
   ["/calendar", "Calendar"],
   ["/meetings", "Calendar"],
   ["/search", "Search"],

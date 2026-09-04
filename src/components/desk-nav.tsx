@@ -16,6 +16,7 @@ import {
   ListChecks,
   Shield,
   Users,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   "Claims log": FileStack,
   Commissions: Briefcase,
   Tasks: ListChecks,
+  Automations: Workflow,
   Calendar,
   Carriers: Building2,
   Phone,
