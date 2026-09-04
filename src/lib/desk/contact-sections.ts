@@ -5,6 +5,7 @@ export type ContactSectionId =
   | "information"
   | "address"
   | "policies"
+  | "claims"
   | "deals"
   | "businesses"
   | "locations"
@@ -24,6 +25,7 @@ export const CONTACT_SECTIONS: ContactSectionDef[] = [
   { id: "information", label: "Contact information" },
   { id: "address", label: "Address" },
   { id: "policies", label: "Policies" },
+  { id: "claims", label: "Claims" },
   { id: "deals", label: "Deals" },
   { id: "businesses", label: "Businesses" },
   { id: "locations", label: "Locations" },

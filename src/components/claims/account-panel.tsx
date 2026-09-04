@@ -6,9 +6,13 @@ import { claimCountsLabel, summarizeClaims } from "@/lib/claims";
 export function AccountClaimsPanel({
   contactName,
   rows,
+  contactId,
+  policyId,
 }: {
   contactName: string;
   rows: ClaimListRow[];
+  contactId?: string | null;
+  policyId?: string | null;
 }) {
   const summary = summarizeClaims(rows);
   return (
@@ -20,13 +24,28 @@ export function AccountClaimsPanel({
           </div>
           <p className="text-lg font-semibold text-navy">{claimCountsLabel(summary)}</p>
           <p className="text-xs text-muted-foreground">
-            {contactName}: every claim hangs off one policy. Open = inquiry or referred to
-            carrier.
+            {contactName}: each notice links a Policy and a Contact. Open = inquiry or referred to
+            carrier. FNOL stays on the carrier site.
           </p>
         </div>
-        <Link href="/claims" className="text-sm text-primary hover:underline">
-          All desk claims
-        </Link>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link
+            href={
+              contactId || policyId
+                ? `/claims/new?${new URLSearchParams({
+                    ...(contactId ? { contact: contactId } : {}),
+                    ...(policyId ? { policy: policyId } : {}),
+                  }).toString()}`
+                : "/claims/new"
+            }
+            className="text-primary hover:underline"
+          >
+            FNOL intake
+          </Link>
+          <Link href="/claims" className="text-primary hover:underline">
+            All desk claims
+          </Link>
+        </div>
       </div>
       <ClaimsDeskNotice compact />
       <div className="ff-card overflow-hidden">

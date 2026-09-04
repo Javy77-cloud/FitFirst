@@ -16,4 +16,19 @@ describe("toHeaderAlert", () => {
     expect(alert.read).toBe(false);
     expect(alert.href).toBe("/policies/p1");
   });
+
+  it("maps an FNOL ping onto the claim record", () => {
+    const alert = toHeaderAlert({
+      id: "a2",
+      title: "FNOL · Ruiz, Camila · AI-HO-66102",
+      body: "Water notice is referred to carrier. Carrier claim AI-CLM-19044.",
+      severity: "warning",
+      kind: "fnol",
+      readAt: null,
+      entityType: "claim",
+      entityId: "c1",
+    });
+    expect(alert.href).toBe("/claims/c1");
+    expect(alert.kind).toBe("fnol");
+  });
 });

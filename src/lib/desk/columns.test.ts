@@ -40,5 +40,8 @@ describe("table column pickers", () => {
     const claims = new Set((TABLE_COLUMNS.claims ?? []).map((col) => col.key));
     expect(claims.has("dateOfLoss")).toBe(true);
     expect(claims.has("description")).toBe(true);
+    expect(claims.has("carrierClaim")).toBe(true);
+    expect(claims.has("policy")).toBe(true);
+    expect(claims.has("party")).toBe(true);
   });
 });

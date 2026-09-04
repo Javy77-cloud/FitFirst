@@ -285,6 +285,7 @@ export const CLAIM_IDS = {
   inquiry: "ee111111-1111-4111-8111-000000000001",
   referred: "ee111111-1111-4111-8111-000000000002",
   ruizHoWater: "ee111111-1111-4111-8111-000000000003",
+  closedHail: "ee111111-1111-4111-8111-000000000004",
 } as const;
 export const CLAIM_NOTE_IDS = {
   ruizHoWater: "ee111111-1111-4111-8111-000000000011",
@@ -296,6 +297,14 @@ export const CLAIM_ACTIVITY_IDS = {
   ruizOpened: "ee111111-1111-4111-8111-000000000031",
   ruizNote: "ee111111-1111-4111-8111-000000000032",
   ruizFile: "ee111111-1111-4111-8111-000000000033",
+  ruizNotified: "ee111111-1111-4111-8111-000000000034",
+  elenaOpened: "ee111111-1111-4111-8111-000000000035",
+  elenaNotified: "ee111111-1111-4111-8111-000000000036",
+  hailClosed: "ee111111-1111-4111-8111-000000000037",
+} as const;
+export const CLAIM_ALERT_IDS = {
+  ruizMaya: "ee111111-1111-4111-8111-000000000041",
+  elenaMaya: "ee111111-1111-4111-8111-000000000042",
 } as const;
 
 /** Soto Orlando PA — off the pipeline 5555…501 block so IDs do not collide. */

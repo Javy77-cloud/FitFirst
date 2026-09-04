@@ -6,6 +6,7 @@ export function recordHref(entityType?: string | null, entityId?: string | null)
   if (entityType === "lead") return `/leads/${entityId}`;
   if (entityType === "deal") return `/deals/${entityId}`;
   if (entityType === "policy") return `/policies/${entityId}`;
+  if (entityType === "claim") return `/claims/${entityId}`;
   if (entityType === "carrier") return `/carriers/${entityId}`;
   if (entityType === "activity") return `/calendar?event=${entityId}`;
   return null;

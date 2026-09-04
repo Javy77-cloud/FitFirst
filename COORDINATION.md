@@ -595,4 +595,14 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+
+## Claims FNOL light intake (`cursor/claims-fnol-intake-9bfe`)
+
+DIFF K on `cursor/mac-ready-batch4-7pm`. Broker log — not a claims shop. Ana stays unbound, Cov A **$321,000**.
+
+- Additive `0036_claims_fnol`: `claims.contact_id`, loss location, reporter name/phone, `producer_id`, `producer_notified_at`. No reserve or adjuster columns.
+- `/claims/new` is FNOL intake. Policy + Contact stay linked (picking a policy fills the contact). Carrier claim # is optional until the carrier assigns one.
+- `/claims` is a three-column status pipeline: Inquiry → Referred to carrier → Closed. Same statuses as the existing light log. Move buttons advance the desk status.
+- Saving FNOL (or moving to referred / adding a carrier #) writes an in-app `fnol` alert to the Policy/Contact owner. Header bell opens `/claims/[id]`. Nothing emails.
+- Contact 360 and Policy 360 show the linked notices. Seed: Elena wind inquiry (no carrier #), Camila water `AI-CLM-19044` referred, Camila hail `AI-CLM-16220` closed. Maya gets the producer pings. Ana has zero claims.
