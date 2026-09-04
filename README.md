@@ -4,11 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator: scorecards, E&O, priority queue, quote compare + video, hit/lost, FNOL, Open API/export)
+**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator + Diff H gaps/bind)
 
-**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), and Open API + CSV export (`cursor/open-api-export-be9f`, incoming `0036` renumbered to `0041_api_tokens`). Ana stays unbound at Cov A **$321,000**. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
+**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), and Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
 
 **Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0042**. See `COORDINATION.md`.
+
+**DIFF H:** Rule-based coverage-gap English on Contact / Business / Deal (auto-no-home, flood, umbrella, GL-no-WC — in-force only). Deal quote compare explains cheapest / deductibles / bindable in English. Closed Won is one-click **Contact + Policy** or **Business + Policy**. Documents stepper labels the master sheet → Fill path (zero rekey). Ana stays unbound at Cov A **$321,000**; `bindDeal` refuses that shop.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -270,7 +272,7 @@ npm test
 - Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.
 - Search is substring, so `Ana` also lists Camila.
 - Camila Auto `QBE-PA-66103` still has an empty vehicle schedule (Soto `FF-PA-4401` is the 2/2 seed).
-- Policy compare stays the thin reader (ComparePanel not reattached). Deal quote compare is live at `/deals/[id]/compare` (rule-text gaps, not LLM).
+- Policy renewal compare stays the thin reader (ComparePanel not reattached). Deal Quotes comparison has English “why this quote” copy. Interactive compare is live at `/deals/[id]/compare` (rule-text gaps, not LLM).
 
 ## Out of scope
 

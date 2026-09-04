@@ -2,6 +2,7 @@ import { canAskTeammate } from "@/lib/desk/record-asks";
 
 export type BusinessSectionId =
   | "overview"
+  | "gaps"
   | "information"
   | "address"
   | "policies"
@@ -28,6 +29,7 @@ export type RecordSectionDef = {
 /** Zoho-style Business jump list. Mirrors Contact. Ask a teammate stays Admin-only. */
 export const BUSINESS_SECTIONS: BusinessSectionDef[] = [
   { id: "overview", label: "Overview" },
+  { id: "gaps", label: "Coverage gaps" },
   { id: "information", label: "Business information" },
   { id: "address", label: "Address" },
   { id: "policies", label: "Policies" },

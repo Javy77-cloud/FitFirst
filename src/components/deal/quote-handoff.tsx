@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  COPY_SHEET_LABEL,
+  FILL_HANDOFF_HINT,
+  FILL_HANDOFF_TITLE,
+  OPEN_FILL_LABEL,
+  SEND_TO_FILL_LABEL,
+} from "@/lib/quoting/fill-path";
 import { FILL_MESSAGE_SOURCE, FILL_MESSAGE_TYPE, FILL_STORAGE_KEY } from "@/lib/wire/sheet-packet";
 
 export function QuoteHandoff({
@@ -20,8 +27,8 @@ export function QuoteHandoff({
   if (!unlocked) {
     return (
       <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-        Carrier paste stays locked until you approve the {formLabel} master sheet. No per-agent
-        bot. Chrome Fill / copy sheet unlock after the two-step confirm.
+        Send to Fill stays locked until you approve the {formLabel} master sheet. No per-agent
+        bot. Copy master sheet / Send to Fill unlock after the two-step confirm.
       </div>
     );
   }
@@ -40,7 +47,7 @@ export function QuoteHandoff({
     try {
       const packet = await loadPacket("copy");
       await navigator.clipboard.writeText(JSON.stringify(packet, null, 2)).catch(() => undefined);
-      setNote("Copied Super-Copy from the same Quote Sheet record. Paste into the carrier portal.");
+      setNote("Copied the approved master sheet. Paste into the carrier portal — zero rekey.");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Copy failed.");
     }
@@ -52,7 +59,7 @@ export function QuoteHandoff({
       window.localStorage.setItem(FILL_STORAGE_KEY, JSON.stringify(sheet));
       window.postMessage({ source: FILL_MESSAGE_SOURCE, type: FILL_MESSAGE_TYPE, sheet }, "*");
       await navigator.clipboard.writeText(JSON.stringify(sheet, null, 2)).catch(() => undefined);
-      setNote("Sent the Quote Sheet to Fill (clipboard + localStorage). Not a raw PDF.");
+      setNote("Sent the approved master sheet to Fill (clipboard + localStorage). Not a raw PDF.");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Send to Fill failed.");
     }
@@ -65,7 +72,7 @@ export function QuoteHandoff({
       window.postMessage({ source: FILL_MESSAGE_SOURCE, type: FILL_MESSAGE_TYPE, sheet }, "*");
       window.open("/fill-demo", "fitfirst-fill", "noopener,noreferrer,width=1100,height=800");
       setNote(
-        "Opened a new window for carrier paste. Chrome Fill add-on reads this same packet if installed.",
+        "Opened Fill. Chrome Fill reads this same approved master sheet if the add-on is installed.",
       );
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Could not open Fill window.");
@@ -74,21 +81,17 @@ export function QuoteHandoff({
 
   return (
     <div className="rounded-md border border-border bg-card p-3">
-      <p className="text-sm font-semibold text-navy">Carrier paste handoff</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Prefer the Chrome Fill add-on (`extensions/fill`) or Copy sheet. This desk does not run a
-        per-agent bot. If the add-on is not installed, copy the sheet and paste in a new browser
-        window.
-      </p>
+      <p className="text-sm font-semibold text-navy">5 · {FILL_HANDOFF_TITLE}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{FILL_HANDOFF_HINT}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={copySheet}>
-          Copy sheet
+          {COPY_SHEET_LABEL}
         </Button>
         <Button type="button" size="sm" variant="secondary" onClick={sendToFill}>
-          Send to Fill
+          {SEND_TO_FILL_LABEL}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={openFillWindow}>
-          Open Fill window
+          {OPEN_FILL_LABEL}
         </Button>
         <a href="/fill-demo" target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
           Fill demo

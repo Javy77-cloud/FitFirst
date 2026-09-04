@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { GapPanel } from "@/components/coverage/gap-panel";
+import { BindPath } from "@/components/deal/bind-path";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { QuotingLinePicker } from "@/components/deal/quoting-line-picker";
 import { MarketsPanel } from "@/components/deal/markets-panel";
@@ -9,10 +10,10 @@ import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { analyzeCoverageGaps } from "@/lib/coverage/gaps";
+import { dealBindParty, dealGapPartyName } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace, listCarriers, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
@@ -70,6 +71,7 @@ export default async function DealPage({
     jobs,
     fillFeedback,
     boundPolicies,
+    partyPolicies,
     timeline,
   } = workspace;
   const matches = session.isAdmin && risk ? await evaluateDealMarkets(risk) : [];
@@ -90,33 +92,34 @@ export default async function DealPage({
   );
   const premium = boundPolicies.reduce((sum, policy) => sum + toNumber(policy.premium), 0);
   const commission = await sumCommissionsForPolicies(boundPolicies.map((p) => p.id));
+  const commercialPath = deal.bindTarget === "account";
+  const contactName = contact ? `${contact.lastName}, ${contact.firstName}` : null;
+  const partyName = dealGapPartyName({
+    bindTarget: deal.bindTarget,
+    contactName,
+    accountName: account?.name ?? null,
+    fallback: lead ? formatPersonName(lead) : deal.title,
+  });
+  const gapPolicies = commercialPath && account
+    ? partyPolicies.filter((policy) => policy.accountId === account.id)
+    : contact
+      ? partyPolicies.filter((policy) => policy.contactId === contact.id)
+      : partyPolicies;
+  const gapReport = analyzeCoverageGaps({
+    policies: gapPolicies,
+    partyName,
+    isAna,
+    quoteCount: quotes.length,
+  });
+  const boundParty = dealBindParty({
+    bindTarget: deal.bindTarget,
+    contact: contact ?? null,
+    account: account ?? null,
+    boundPolicies,
+  });
 
   return (
-    <AppShell
-      title={deal.title}
-      actions={
-        deal.pipelineStage !== "bound" && !isAna ? (
-          <form action={bindDeal} className="flex flex-wrap items-center gap-2">
-            <input type="hidden" name="dealId" value={deal.id} />
-            <select
-              name="bindTarget"
-              defaultValue={deal.bindTarget}
-              className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-            >
-              <option value="contact">Personal — create Contact</option>
-              <option value="account">Commercial — create Business</option>
-            </select>
-            <Input name="businessName" placeholder="Business name (commercial)" className="h-8 w-44" />
-            <Input name="ein" placeholder="EIN / FEIN" className="h-8 w-32" />
-            <Input name="policyNumber" placeholder="Policy # at bind" className="h-8 w-36" />
-            <Input name="premium" placeholder="Premium" className="h-8 w-24" />
-            <Button type="submit" size="sm" variant="secondary">
-              Bind (creates contact/business + policy)
-            </Button>
-          </form>
-        ) : null
-      }
-    >
+    <AppShell title={deal.title}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
         <span>{LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness}</span>
@@ -175,6 +178,22 @@ export default async function DealPage({
           coverage.
         </div>
       ) : null}
+
+      <div className="mb-4 grid gap-3 lg:grid-cols-2">
+        <BindPath
+          dealId={deal.id}
+          defaultTarget={deal.bindTarget === "account" ? "account" : "contact"}
+          lineLabel={LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness}
+          isAna={isAna}
+          bound={deal.pipelineStage === "bound" || deal.pipelineStage === "closed_won"}
+          party={boundParty}
+          policies={boundPolicies.map((policy) => ({ id: policy.id, policyNumber: policy.policyNumber }))}
+        />
+        <GapPanel
+          report={gapReport}
+          href={account ? `/accounts/${account.id}` : contact ? `/contacts/${contact.id}` : undefined}
+        />
+      </div>
 
       <RecordSection id="record" title="This deal" summary="Shopping, quotes, and communications on this record">
         {health ? (
@@ -278,6 +297,7 @@ export default async function DealPage({
                     accountId={account?.id}
                     email={contact?.email ?? account?.email}
                     phone={contact?.phone ?? account?.phone}
+                    isAna={isAna}
                   />
                 ),
               },

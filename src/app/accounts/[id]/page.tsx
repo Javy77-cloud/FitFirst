@@ -9,6 +9,7 @@ import { RecordComms } from "@/components/record-comms";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { RecordSectionNav } from "@/components/record-section-nav";
+import { GapPanel } from "@/components/coverage/gap-panel";
 import { RelatedDeals, RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
 import { businessSectionsForRole, canAskTeammateOnBusiness } from "@/lib/desk/business-sections";
+import { analyzeCoverageGaps } from "@/lib/coverage/gaps";
 import { isUuid } from "@/lib/ids";
 import { einMaskFromRow } from "@/lib/pii/vault";
 import { MaskedPiiField } from "@/components/pii/masked-field";
@@ -71,6 +73,11 @@ export default async function AccountDetailPage({
   const state = firstFilled(account.state, originRisk?.state);
   const zip = firstFilled(account.zip, originRisk?.zip);
   const latestPolicyId = policies[0]?.policy.id ?? null;
+  const gapReport = analyzeCoverageGaps({
+    policies: policies.map((row) => row.policy),
+    partyName: account.name,
+    quoteCount: 0,
+  });
 
   return (
     <AppShell title={account.name} eyebrow="Business record">
@@ -171,6 +178,15 @@ export default async function AccountDetailPage({
             {account.notes ? (
               <p className="mt-2 text-sm text-muted-foreground">{account.notes}</p>
             ) : null}
+          </RecordSection>
+
+          <RecordSection
+            id="gaps"
+            title="Coverage gaps"
+            summary="In-force commercial lines only. Quotes do not count."
+            collapsible={false}
+          >
+            <GapPanel report={gapReport} />
           </RecordSection>
 
           <RecordSection

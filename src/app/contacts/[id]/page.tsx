@@ -9,6 +9,7 @@ import { RecordComms } from "@/components/record-comms";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { AccountClaimsPanel } from "@/components/claims/account-panel";
+import { GapPanel } from "@/components/coverage/gap-panel";
 import { RelatedDeals, RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ import {
 import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
 import { contactSectionsForRole } from "@/lib/desk/contact-sections";
+import { analyzeCoverageGaps } from "@/lib/coverage/gaps";
+import { CONTACT_ID } from "@/lib/fixtures/ids";
 import { isUuid } from "@/lib/ids";
 import { currentDeskSession } from "@/lib/auth/session";
 import { ssnMaskFromRow } from "@/lib/pii/vault";
@@ -70,6 +73,12 @@ export default async function ContactDetailPage({
   const zip = firstFilled(contact.zip, lead?.zip, originRisk?.zip);
   const dob = firstFilled(contact.dateOfBirth, lead?.dateOfBirth);
   const displayName = `${contact.lastName}, ${contact.firstName}`;
+  const gapReport = analyzeCoverageGaps({
+    policies: policies.map((row) => row.policy),
+    partyName: displayName,
+    isAna: contact.id === CONTACT_ID,
+    quoteCount: 0,
+  });
 
   return (
     <AppShell title={displayName} eyebrow="Contact record">
@@ -165,6 +174,15 @@ export default async function ContactDetailPage({
             {contact.notes ? (
               <p className="mt-3 text-sm text-muted-foreground">{contact.notes}</p>
             ) : null}
+          </RecordSection>
+
+          <RecordSection
+            id="gaps"
+            title="Coverage gaps"
+            summary="In-force only. Quotes on a shop do not count as coverage."
+            collapsible={false}
+          >
+            <GapPanel report={gapReport} />
           </RecordSection>
 
           <RecordSection

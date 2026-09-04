@@ -15,6 +15,8 @@ describe("business record sections", () => {
     expect(admin.some((s) => s.id === "ask")).toBe(true);
     expect(agent.some((s) => s.id === "ask")).toBe(false);
     expect(agent.some((s) => s.id === "timeline")).toBe(true);
+    expect(agent.some((s) => s.id === "gaps")).toBe(true);
+    expect(agent.find((s) => s.id === "gaps")?.label).toBe("Coverage gaps");
     expect(admin.some((s) => s.id === "certificates")).toBe(true);
     expect(agent.map((s) => s.label).join(" ")).not.toMatch(/activity log/i);
     expect(agent.map((s) => s.label).join(" ")).not.toMatch(/quick log/i);
