@@ -1427,16 +1427,26 @@ export const claims = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     policyId: uuid("policy_id").references(() => policies.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
     dateReported: timestamp("date_reported", { withTimezone: true }),
     dateOfLoss: timestamp("date_of_loss", { withTimezone: true }),
     causeType: text("cause_type"),
     description: text("description"),
     reportedHow: text("reported_how"),
     carrierClaimNumber: text("carrier_claim_number"),
+    lossLocation: text("loss_location"),
+    reporterName: text("reporter_name"),
+    reporterPhone: text("reporter_phone"),
+    producerId: uuid("producer_id"),
+    producerNotifiedAt: timestamp("producer_notified_at", { withTimezone: true }),
     status: text("status").notNull().default("inquiry"),
     ...timestamps,
   },
-  (t) => [index("claims_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("claims_tenant_idx").on(t.tenantId),
+    index("claims_contact_idx").on(t.tenantId, t.contactId),
+    index("claims_status_idx").on(t.tenantId, t.status),
+  ],
 );
 
 export const claimNotes = pgTable("claim_notes", {

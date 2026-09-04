@@ -9,9 +9,16 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+<<<<<<< HEAD
     id: "eo-compliance",
     title: "E&O Compliance desk",
     body: "Admin Compliance holds an append-only client-interaction trail and simple gap flags. Alerts stay in-app — nothing emails Javy.",
+    date: "2026-09-04",
+  },
+  {
+    id: "claims-fnol",
+    title: "FNOL claims log",
+    body: "Log a first notice, keep the carrier claim number, move Inquiry → Referred to carrier → Closed, and ping the producer in-app. Policy and Contact stay linked. No reserves or adjusters.",
     date: "2026-09-04",
   },
   {

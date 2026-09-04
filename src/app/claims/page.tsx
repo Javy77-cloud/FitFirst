@@ -1,50 +1,65 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
+import { ClaimStatusBadge } from "@/components/claims/status-badge";
+import { ClaimStatusPipeline } from "@/components/claims/status-pipeline";
 import { SheetTbody } from "@/components/sheet/sheet-table";
 import { buttonVariants } from "@/components/ui/button";
+import { claimCauseLabel, claimChannelLabel, summarizeClaimPipeline, summarizeClaims } from "@/lib/claims";
+import { listDeskClaims } from "@/lib/db/claim-queries";
 import { defaultColumns } from "@/lib/desk/columns";
-import { DEFAULT_TENANT_ID, formatDay } from "@/lib/domain";
-import { db } from "@/lib/db";
-import { claims, policies, contacts } from "@/lib/db/schema";
+import { formatDay } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClaimsPage() {
-  const rows = await db
-    .select({ claim: claims, policy: policies, contact: contacts })
-    .from(claims)
-    .leftJoin(policies, eq(claims.policyId, policies.id))
-    .leftJoin(contacts, eq(policies.contactId, contacts.id))
-    .where(eq(claims.tenantId, DEFAULT_TENANT_ID));
+  const rows = await listDeskClaims();
+  const summary = summarizeClaims(rows.map((row) => row.claim));
+  const pipeline = summarizeClaimPipeline(rows.map((row) => row.claim));
 
   return (
     <AppShell
       title="Claims log"
       actions={
         <Link href="/claims/new" className={cn(buttonVariants({ size: "lg" }))}>
-          Add new claim
+          FNOL intake
         </Link>
       }
       columns={<ColumnPicker tableKey="claims" initial={defaultColumns("claims")} />}
     >
-      <p className="mb-3 text-sm text-muted-foreground">
-        Desk log only — not a carrier claims system. Inquiry, referred to carrier, or closed.
-        Use Add new claim to record a notice, then send the insured to the carrier site.
+      <ClaimsDeskNotice />
+      <p className="mt-3 mb-4 text-sm text-muted-foreground">
+        Broker status pipeline — inquiry, referred to carrier, closed. {summary.total} on the log ·{" "}
+        {summary.open} open · {pipeline.inquiry} inquiry · {pipeline.referred_to_carrier} referred ·{" "}
+        {pipeline.closed} closed. Carrier claim # lives on the card. No reserves. No adjusters.
       </p>
-      <section className="ff-card overflow-hidden">
+
+      <ClaimStatusPipeline
+        rows={rows.map(({ claim, policy, contact }) => ({
+          id: claim.id,
+          status: claim.status,
+          causeType: claim.causeType,
+          description: claim.description,
+          dateOfLoss: claim.dateOfLoss,
+          dateReported: claim.dateReported,
+          carrierClaimNumber: claim.carrierClaimNumber,
+          policyId: claim.policyId ?? policy?.id ?? null,
+          policyNumber: policy?.policyNumber ?? null,
+          contactId: claim.contactId ?? contact?.id ?? null,
+          contactName: contact ? `${contact.lastName}, ${contact.firstName}` : null,
+        }))}
+      />
+
+      <section className="ff-card mt-4 overflow-hidden">
         {rows.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-sm text-muted-foreground">
-              No claims on the book yet. Log a notice here — this does not file FNOL.
+              No FNOL notices on the book yet. Log one here — this does not file with the carrier.
             </p>
-            <Link
-              href="/claims/new"
-              className={cn(buttonVariants({ size: "lg" }), "mt-4")}
-            >
-              Add new claim
+            <Link href="/claims/new" className={cn(buttonVariants({ size: "lg" }), "mt-4")}>
+              FNOL intake
             </Link>
           </div>
         ) : (
@@ -59,28 +74,48 @@ export default async function ClaimsPage() {
                 <Col table="claims" col="dateOfLoss" as="th">Date of loss</Col>
                 <Col table="claims" col="description" as="th">Short why</Col>
                 <Col table="claims" col="policy" as="th">Policy</Col>
-                <Col table="claims" col="party" as="th">Party</Col>
+                <Col table="claims" col="party" as="th">Contact</Col>
+                <Col table="claims" col="producer" as="th">Producer ping</Col>
               </tr>
             </thead>
             <SheetTbody>
-              {rows.map(({ claim, policy, contact }) => (
+              {rows.map(({ claim, policy, contact, producer }) => (
                 <tr key={claim.id}>
                   <Col table="claims" col="status">
                     <Link href={`/claims/${claim.id}`} className="font-medium text-primary hover:underline">
-                      {claim.status}
+                      <ClaimStatusBadge status={claim.status} />
                     </Link>
                   </Col>
                   <Col table="claims" col="carrierClaim" className="font-mono text-xs">
                     {claim.carrierClaimNumber ?? "—"}
                   </Col>
-                  <Col table="claims" col="cause">{claim.causeType ?? "—"}</Col>
-                  <Col table="claims" col="channel">{claim.reportedHow ?? "—"}</Col>
+                  <Col table="claims" col="cause">{claimCauseLabel(claim.causeType ?? "other")}</Col>
+                  <Col table="claims" col="channel">{claimChannelLabel(claim.reportedHow ?? "phone")}</Col>
                   <Col table="claims" col="dateReported">{formatDay(claim.dateReported)}</Col>
                   <Col table="claims" col="dateOfLoss">{formatDay(claim.dateOfLoss)}</Col>
                   <Col table="claims" col="description">{claim.description ?? "—"}</Col>
-                  <Col table="claims" col="policy">{policy?.policyNumber ?? "—"}</Col>
+                  <Col table="claims" col="policy">
+                    {policy ? (
+                      <Link href={`/policies/${policy.id}`} className="text-primary hover:underline">
+                        {policy.policyNumber}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </Col>
                   <Col table="claims" col="party">
-                    {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}
+                    {contact ? (
+                      <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
+                        {contact.lastName}, {contact.firstName}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </Col>
+                  <Col table="claims" col="producer">
+                    {claim.producerNotifiedAt
+                      ? `Pinged ${producer?.name ?? "producer"}`
+                      : producer?.name ?? "—"}
                   </Col>
                 </tr>
               ))}

@@ -84,10 +84,12 @@ export type ClaimCause = (typeof CLAIM_CAUSES)[number];
 
 export const CLAIM_ACTIVITY_TYPES = [
   "opened",
+  "fnol_logged",
   "note_added",
   "file_added",
   "status_changed",
   "fields_updated",
+  "producer_notified",
 ] as const;
 export type ClaimActivityType = (typeof CLAIM_ACTIVITY_TYPES)[number];
 

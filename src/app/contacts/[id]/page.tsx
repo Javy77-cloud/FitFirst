@@ -8,12 +8,14 @@ import { LocationsList } from "@/components/desk-ams-panels";
 import { RecordComms } from "@/components/record-comms";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
+import { AccountClaimsPanel } from "@/components/claims/account-panel";
 import { RelatedDeals, RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { listClaimsForContact } from "@/lib/db/claim-queries";
 import {
   getContactWorkspace,
   listEmailTemplates,
@@ -36,10 +38,11 @@ export default async function ContactDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, session] = await Promise.all([
+  const [workspace, templates, session, claimRows] = await Promise.all([
     getContactWorkspace(id),
     listEmailTemplates(),
     currentDeskSession(),
+    listClaimsForContact(id),
   ]);
   if (!workspace) notFound();
   const {
@@ -253,6 +256,32 @@ export default async function ContactDetailPage({
           >
             <RelatedRollups premium={premium} commission={commission} />
             <RelatedPolicies rows={policies} />
+          </RecordSection>
+
+          <RecordSection
+            id="claims"
+            title="Claims"
+            summary="FNOL desk log linked to this Contact and their policies"
+            collapsible={false}
+          >
+            <AccountClaimsPanel
+              contactName={displayName}
+              contactId={contact.id}
+              rows={claimRows.map(({ claim, policy, contact: party }) => ({
+                id: claim.id,
+                status: claim.status,
+                causeType: claim.causeType ?? "other",
+                description: claim.description,
+                reportedHow: claim.reportedHow ?? "phone",
+                dateReported: claim.dateReported ?? claim.createdAt,
+                dateOfLoss: claim.dateOfLoss,
+                carrierClaimNumber: claim.carrierClaimNumber,
+                policyId: claim.policyId ?? policy?.id ?? null,
+                policyNumber: policy?.policyNumber,
+                contactId: claim.contactId ?? party?.id ?? contact.id,
+                contactName: party ? `${party.lastName}, ${party.firstName}` : displayName,
+              }))}
+            />
           </RecordSection>
 
           <RecordSection

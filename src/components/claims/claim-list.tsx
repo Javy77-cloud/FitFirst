@@ -14,8 +14,10 @@ export type ClaimListRow = {
   dateReported: Date;
   dateOfLoss: Date | null;
   carrierClaimNumber: string | null;
-  policyId: string;
+  policyId: string | null;
   policyNumber?: string;
+  contactId?: string | null;
+  contactName?: string | null;
 };
 
 export function ClaimList({
@@ -56,9 +58,17 @@ export function ClaimList({
             </Col>
             {showPolicy ? (
               <Col table="claim-rows" col="policy">
-                <Link href={`/policies/${row.policyId}`} className="text-primary hover:underline">
-                  {row.policyNumber ?? "Policy"}
-                </Link>
+                {row.policyId ? (
+                  <Link href={`/policies/${row.policyId}`} className="text-primary hover:underline">
+                    {row.policyNumber ?? "Policy"}
+                  </Link>
+                ) : row.contactId ? (
+                  <Link href={`/contacts/${row.contactId}`} className="text-primary hover:underline">
+                    {row.contactName ?? "Contact"}
+                  </Link>
+                ) : (
+                  "—"
+                )}
               </Col>
             ) : null}
             <Col table="claim-rows" col="why">

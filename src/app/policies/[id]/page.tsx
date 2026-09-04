@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { AccountClaimsPanel } from "@/components/claims/account-panel";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { VehiclesList } from "@/components/desk-ams-panels";
@@ -9,6 +10,7 @@ import { dayInput } from "@/components/related-tables";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DEFAULT_TENANT_ID, formatMoney } from "@/lib/domain";
+import { listClaimsForPolicy } from "@/lib/db/claim-queries";
 import { getPolicyWorkspace, listEmailTemplates, sumCommissionsForPolicies } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { loadGlobalLists, labelsFor } from "@/lib/db/global-lists";
@@ -39,11 +41,12 @@ export default async function PolicyDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, lineSettings, lists] = await Promise.all([
+  const [workspace, templates, lineSettings, lists, claimRows] = await Promise.all([
     getPolicyWorkspace(id),
     listEmailTemplates(),
     loadDeskLineSettings(),
     loadGlobalLists(),
+    listClaimsForPolicy(id),
   ]);
   if (!workspace) notFound();
   const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
@@ -172,6 +175,30 @@ export default async function PolicyDetailPage({
             bookPremium: policy.premium ?? "",
           }}
           showSellingAgency={lineSettings.showSellingAgency}
+        />
+      </RecordSection>
+
+      <RecordSection id="claims" title="Claims" summary="FNOL desk log on this Policy + Contact">
+        <AccountClaimsPanel
+          contactName={party || displayName}
+          contactId={contact?.id}
+          policyId={policy.id}
+          rows={claimRows.map(({ claim, policy: linkedPolicy, contact: linkedContact }) => ({
+            id: claim.id,
+            status: claim.status,
+            causeType: claim.causeType ?? "other",
+            description: claim.description,
+            reportedHow: claim.reportedHow ?? "phone",
+            dateReported: claim.dateReported ?? claim.createdAt,
+            dateOfLoss: claim.dateOfLoss,
+            carrierClaimNumber: claim.carrierClaimNumber,
+            policyId: claim.policyId ?? linkedPolicy?.id ?? policy.id,
+            policyNumber: linkedPolicy?.policyNumber ?? policy.policyNumber,
+            contactId: claim.contactId ?? linkedContact?.id ?? contact?.id ?? null,
+            contactName: linkedContact
+              ? `${linkedContact.lastName}, ${linkedContact.firstName}`
+              : party || null,
+          }))}
         />
       </RecordSection>
 

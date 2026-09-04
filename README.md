@@ -6,9 +6,9 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator: scorecards, E&O, priority queue, quote compare + video, hit/lost proposals)
 
-**DIFF WAVE-1 (this branch):** Producer scorecards + Glance (`cursor/producer-scorecards-glance-4f97`), E&O audit (`0036_eo_audit_logs`), priority queue + campaign sequences (`0037_campaign_sequences`), quote compare + video stub (`0038_quote_compare_video`), and branded proposals + hit/lost (`cursor/diff-proposals-hit-ratio-4024`, incoming `0036` renumbered to `0039_diff_pack_e`). Ana stays unbound at Cov A **$321,000**. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
+**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O audit (`0036`), priority queue + campaigns (`0037`), quote compare + video (`0038`), branded proposals + hit/lost (`0039_diff_pack_e`), and Claims FNOL (`cursor/claims-fnol-intake-9bfe`, incoming `0036` renumbered to `0040_claims_fnol`). Ana stays unbound at Cov A **$321,000**. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0040**. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0041**. See `COORDINATION.md`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -120,7 +120,7 @@ Communications (email, SMS, calls, meetings, tasks) write a durable log on the C
 
 List sheets share one header control: click a column to sort A→Z / Z→A, or open the header menu to pin it. The Columns picker stays on the title row.
 
-Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim**. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
+Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log is a broker FNOL desk: intake form, inquiry → referred to carrier → closed pipeline, carrier claim #, Policy + Contact links, and an in-app producer ping. FitFirst does not file FNOL, set reserves, or assign adjusters. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
 
 Settings has a nested left menu: **People / Agents**, Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency (chrome, **Offices**, **Territories**), and Admin vs Agent prefs.
 

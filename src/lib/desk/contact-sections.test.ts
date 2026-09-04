@@ -16,6 +16,7 @@ describe("contact record sections", () => {
     expect(agent.some((s) => s.id === "ask")).toBe(false);
     expect(agent.some((s) => s.id === "timeline")).toBe(true);
     expect(agent.some((s) => s.id === "optouts")).toBe(true);
+    expect(agent.some((s) => s.id === "claims")).toBe(true);
     expect(admin.map((s) => s.label).join(" ")).not.toMatch(/ask a teammate/i);
     expect(agent.map((s) => s.label).join(" ")).not.toMatch(/activity log/i);
   });
