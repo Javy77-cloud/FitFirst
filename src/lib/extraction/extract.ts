@@ -204,7 +204,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "form",
-    re: /(?:policy\s*form|ho\s*form|form)\s*[:#]?\s*(HO[-\s]?[0-9]+|[A-Z0-9-]{2,12})/i,
+    re: /(?:policy\s*form|ho\s*form)\s*[:#]?\s*([A-Z0-9-]{2,12})|(?:^|\n)\s*form\s*[:#]\s*(HO[-\s]?[0-9]+)/im,
     normalize: (s) => s.replace(/\s+/g, "").toUpperCase(),
   },
   {

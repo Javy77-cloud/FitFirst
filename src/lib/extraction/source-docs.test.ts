@@ -24,5 +24,6 @@ describe("HO source docs map onto the master sheet", () => {
     expect(result.values.opening_protection.value).toBe("full");
     expect(result.values.coverage_a.value).toBe("");
     expect(result.values.coverage_a.status).toBe("missing");
+    expect(result.values.form.value).toBe("");
   });
 });
