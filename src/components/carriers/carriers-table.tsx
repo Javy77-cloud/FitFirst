@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 export type CarrierTableRow = {
   id: string;
   name: string;
+  agencyCode: string | null;
   portalLogin: string | null;
   customerServicePhone: string | null;
   agentPhone: string | null;
@@ -62,7 +63,8 @@ export function CarriersTable({
           <thead>
             <tr>
               <th>Carrier</th>
-              {show("portalLogin") ? <th>Portal login</th> : null}
+              {show("agencyCode") ? <th>Agency code</th> : null}
+              {show("portalLogin") ? <th>Portal name</th> : null}
               {show("customerServicePhone") ? <th>Customer-service phone</th> : null}
               {show("agentPhone") ? <th>Agent phone</th> : null}
               {show("website") ? <th>Website / agent portal</th> : null}
@@ -86,6 +88,9 @@ export function CarriersTable({
                 return (
                   <tr key={row.id}>
                     <td className="font-medium">{row.name}</td>
+                    {show("agencyCode") ? (
+                      <td className="text-xs">{row.agencyCode || "—"}</td>
+                    ) : null}
                     {show("portalLogin") ? (
                       <td className="text-xs">{row.portalLogin || "—"}</td>
                     ) : null}

@@ -6,6 +6,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-1 consolidate on `cursor/mac-ready-batch3-7pm`)
 
+**Carrier portal credentials (this side branch):** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code is visible to Agents for quoting. Portal URL stays on the carrier for later fill. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately.
+
 **Batch 4 top chrome:** InsuredMine-style top-right utilities on the desk header (Refresh, alerts, What’s New, profile, recently accessed, quick add, Support stub). Same chrome for Admin and Agent. Sidebar stays light-blue `#c5ddf4` with near-black ink. Alerts is not a left-nav row — the header bell owns alerts.
 
 **Batch 4 home:** denser agent-scoped Home (KPI cards, charts, leaderboard, contest, birthdays / turning 65, dashboard presets). Admin office / territory book filter. Same blue/orange desk. Ana stays unbound at Cov A **$321,000**.

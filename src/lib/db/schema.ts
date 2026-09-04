@@ -401,6 +401,13 @@ export const carriers = pgTable(
     portalStatus: text("portal_status").notNull().default("open"),
     portalUrl: text("portal_url"),
     portalLogin: text("portal_login"),
+    agencyCode: text("agency_code"),
+    portalUsernameEnc: text("portal_username_enc"),
+    portalUsernameIv: text("portal_username_iv"),
+    portalUsernameHint: text("portal_username_hint"),
+    portalPasswordEnc: text("portal_password_enc"),
+    portalPasswordIv: text("portal_password_iv"),
+    portalSecretsUpdatedAt: timestamp("portal_secrets_updated_at", { withTimezone: true }),
     customerServicePhone: text("customer_service_phone"),
     agentPhone: text("agent_phone"),
     website: text("website"),
@@ -426,6 +433,23 @@ export const carriers = pgTable(
     ...timestamps,
   },
   (t) => [index("carriers_tenant_idx").on(t.tenantId)],
+);
+
+/** Admin-only reveal / readiness checks. Never stores the secret itself. */
+export const carrierSecretRevealLogs = pgTable(
+  "carrier_secret_reveal_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    fieldKey: text("field_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("carrier_secret_reveal_logs_carrier_idx").on(t.tenantId, t.carrierId, t.createdAt)],
 );
 
 export const carrierAppointments = pgTable(
@@ -1887,6 +1911,7 @@ export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;
+export type CarrierSecretRevealLog = typeof carrierSecretRevealLogs.$inferSelect;
 export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;

@@ -41,6 +41,7 @@ import {
   visiblePipelineBoards,
 } from "@/lib/desk/line-settings";
 import { loadDeskLineSettings } from "./line-settings";
+import { publicCarrierView } from "@/lib/carriers/secrets";
 import { db, sql as rawSql } from "./index";
 import {
   accounts,
@@ -266,12 +267,14 @@ export async function listEmailTriggers() {
 
 export async function getCarrier(id: string) {
   if (!isUuid(id)) return null;
+  const session = await currentDeskSession();
   const [row] = await db
     .select({ carrier: carriers, rule: appetiteRules })
     .from(carriers)
     .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
     .where(and(eq(carriers.tenantId, tenant()), eq(carriers.id, id)));
-  return row ?? null;
+  if (!row) return null;
+  return { carrier: publicCarrierView(row.carrier, session.isAdmin), rule: row.rule };
 }
 
 export async function listCalendarActivities(_from: Date, _to: Date) {
@@ -936,7 +939,8 @@ export async function getPolicyWorkspace(id: string) {
 }
 
 export async function listCarriers() {
-  return db
+  const session = await currentDeskSession();
+  const rows = await db
     .select({
       carrier: carriers,
       rule: appetiteRules,
@@ -945,6 +949,10 @@ export async function listCarriers() {
     .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
     .where(eq(carriers.tenantId, tenant()))
     .orderBy(asc(carriers.name));
+  return rows.map(({ carrier, rule }) => ({
+    carrier: publicCarrierView(carrier, session.isAdmin),
+    rule,
+  }));
 }
 
 export async function listCarrierAppointments() {

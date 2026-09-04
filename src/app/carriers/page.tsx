@@ -23,8 +23,9 @@ export default async function CarriersPage() {
       columns={<ColumnPicker tableKey="carriers" initial={defaultColumns("carriers")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
-        Portal login, service phones, and carrier info first. Appetite is on the carrier record.
-        Decline log is parked here, not on the left menu.
+        Agency code, service phones, and carrier info first. Quoting-portal username and password
+        stay on the carrier record — Admin only, encrypted. Appetite is on the record. Decline log
+        is parked here, not on the left menu.
       </p>
       <p className="mb-3 text-sm">
         <Link href="/logs" className="text-primary hover:underline">
@@ -39,7 +40,8 @@ export default async function CarriersPage() {
               <Col table="carriers" col="naic" as="th">NAIC</Col>
               <Col table="carriers" col="amBest" as="th">AM Best</Col>
               <Col table="carriers" col="territory" as="th">Territory</Col>
-              <Col table="carriers" col="portalLogin" as="th">Portal login</Col>
+              <Col table="carriers" col="agencyCode" as="th">Agency code</Col>
+              <Col table="carriers" col="portalLogin" as="th">Portal</Col>
               <Col table="carriers" col="csPhone" as="th">Customer service</Col>
               <Col table="carriers" col="uw" as="th">Underwriter</Col>
               <Col table="carriers" col="uwEmail" as="th">UW email</Col>
@@ -66,6 +68,7 @@ export default async function CarriersPage() {
                 <Col table="carriers" col="naic">{carrier.naic ?? "—"}</Col>
                 <Col table="carriers" col="amBest">{carrier.amBestRating ?? "—"}</Col>
                 <Col table="carriers" col="territory">{carrier.territory ?? "—"}</Col>
+                <Col table="carriers" col="agencyCode">{carrier.agencyCode ?? "—"}</Col>
                 <Col table="carriers" col="portalLogin" className="uppercase">
                   {carrier.portalStatus.replaceAll("_", " ")}
                 </Col>
