@@ -5,7 +5,7 @@ import { ColumnPicker, Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
 import { buttonVariants } from "@/components/ui/button";
 import { defaultColumns } from "@/lib/desk/columns";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { DEFAULT_TENANT_ID, formatDay } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { claims, policies, contacts } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,10 @@ export default async function ClaimsPage() {
                 <Col table="claims" col="status" as="th">Status</Col>
                 <Col table="claims" col="carrierClaim" as="th">Carrier claim</Col>
                 <Col table="claims" col="cause" as="th">Cause</Col>
+                <Col table="claims" col="channel" as="th">How they told us</Col>
+                <Col table="claims" col="dateReported" as="th">Date reported</Col>
+                <Col table="claims" col="dateOfLoss" as="th">Date of loss</Col>
+                <Col table="claims" col="description" as="th">Short why</Col>
                 <Col table="claims" col="policy" as="th">Policy</Col>
                 <Col table="claims" col="party" as="th">Party</Col>
               </tr>
@@ -70,6 +74,10 @@ export default async function ClaimsPage() {
                     {claim.carrierClaimNumber ?? "—"}
                   </Col>
                   <Col table="claims" col="cause">{claim.causeType ?? "—"}</Col>
+                  <Col table="claims" col="channel">{claim.reportedHow ?? "—"}</Col>
+                  <Col table="claims" col="dateReported">{formatDay(claim.dateReported)}</Col>
+                  <Col table="claims" col="dateOfLoss">{formatDay(claim.dateOfLoss)}</Col>
+                  <Col table="claims" col="description">{claim.description ?? "—"}</Col>
                   <Col table="claims" col="policy">{policy?.policyNumber ?? "—"}</Col>
                   <Col table="claims" col="party">
                     {contact ? `${contact.lastName}, ${contact.firstName}` : "—"}

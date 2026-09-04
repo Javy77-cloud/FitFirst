@@ -8,18 +8,20 @@ import {
 } from "./contact-sections";
 
 describe("contact record sections", () => {
-  it("lists a left-nav jump set that includes timeline and hides Ask for agents", () => {
+  it("lists a left-nav jump set with timeline and opt-outs, and no Ask", () => {
     const admin = contactSectionsForRole(true);
     const agent = contactSectionsForRole(false);
     expect(admin.map((s) => s.id)).toEqual(CONTACT_SECTIONS.map((s) => s.id));
-    expect(admin.some((s) => s.id === "ask")).toBe(true);
+    expect(admin.some((s) => s.id === "ask")).toBe(false);
     expect(agent.some((s) => s.id === "ask")).toBe(false);
     expect(agent.some((s) => s.id === "timeline")).toBe(true);
+    expect(agent.some((s) => s.id === "optouts")).toBe(true);
+    expect(admin.map((s) => s.label).join(" ")).not.toMatch(/ask a teammate/i);
     expect(agent.map((s) => s.label).join(" ")).not.toMatch(/activity log/i);
   });
 
-  it("keeps Ask a teammate Admin-only", () => {
-    expect(canAskTeammateOnContact(true)).toBe(true);
+  it("removes Ask a teammate from Contact for every role", () => {
+    expect(canAskTeammateOnContact(true)).toBe(false);
     expect(canAskTeammateOnContact(false)).toBe(false);
   });
 

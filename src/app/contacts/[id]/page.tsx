@@ -5,7 +5,6 @@ import { ClickToCall } from "@/components/click-to-call";
 import { ContactSectionNav } from "@/components/contact-section-nav";
 import { ContactTimeline } from "@/components/contact-timeline";
 import { LocationsList } from "@/components/desk-ams-panels";
-import { RecordAskPanel } from "@/components/record-ask";
 import { RecordComms } from "@/components/record-comms";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
@@ -14,18 +13,15 @@ import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { currentDeskSession } from "@/lib/auth/session";
 import { formatDay, formatMoney } from "@/lib/domain";
 import {
   getContactWorkspace,
   listEmailTemplates,
-  listRecordAsks,
   sumCommissionsForPolicies,
 } from "@/lib/db/queries";
-import { listDeskUsers } from "@/lib/db/activity-queries";
 import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
-import { canAskTeammateOnContact, contactSectionsForRole } from "@/lib/desk/contact-sections";
+import { contactSectionsForRole } from "@/lib/desk/contact-sections";
 import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
@@ -37,12 +33,9 @@ export default async function ContactDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, asks, users, session] = await Promise.all([
+  const [workspace, templates] = await Promise.all([
     getContactWorkspace(id),
     listEmailTemplates(),
-    listRecordAsks("contact", id),
-    listDeskUsers(),
-    currentDeskSession(),
   ]);
   if (!workspace) notFound();
   const {
@@ -61,8 +54,7 @@ export default async function ContactDetailPage({
   const latestPolicyId = policies[0]?.policy.id ?? null;
   const premium = policies.reduce((sum, row) => sum + toNumber(row.policy.premium), 0);
   const commission = await sumCommissionsForPolicies(policies.map((row) => row.policy.id));
-  const showAsk = canAskTeammateOnContact(session.isAdmin);
-  const sections = contactSectionsForRole(session.isAdmin);
+  const sections = contactSectionsForRole(false);
   const phone = firstFilled(contact.phone, lead?.phone);
   const email = firstFilled(contact.email, lead?.email);
   const mailing = firstFilled(contact.mailingAddress, lead?.mailingAddress, originRisk?.address1);
@@ -142,6 +134,14 @@ export default async function ContactDetailPage({
                   <dd>{contact.maritalStatus}</dd>
                 </div>
               ) : null}
+              <div>
+                <dt className="text-xs text-muted-foreground">Email opt-out</dt>
+                <dd>{contact.emailOptOut ? `Yes${contact.emailOptedOutAt ? ` · ${formatDay(contact.emailOptedOutAt)}` : ""}` : "No"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">SMS opt-out</dt>
+                <dd>{contact.smsOptOut ? `Yes${contact.smsOptedOutAt ? ` · ${formatDay(contact.smsOptedOutAt)}` : ""}` : "No"}</dd>
+              </div>
             </dl>
             {contact.notes ? (
               <p className="mt-3 text-sm text-muted-foreground">{contact.notes}</p>
@@ -263,32 +263,10 @@ export default async function ContactDetailPage({
             <LocationsList locations={locations} framed={false} />
           </RecordSection>
 
-          {showAsk ? (
-            <RecordSection
-              id="ask"
-              title="Ask a teammate"
-              summary="Admin only — tag from the dropdown. Hidden for agents."
-              collapsible={false}
-            >
-              <RecordAskPanel
-                entityType="contact"
-                entityId={contact.id}
-                asks={asks}
-                users={users}
-                contactId={contact.id}
-                policyId={latestPolicyId}
-                dealId={deals[0]?.id}
-                accountId={businesses[0]?.id}
-                hideWhenNotAdmin
-                framed={false}
-              />
-            </RecordSection>
-          ) : null}
-
           <RecordSection
             id="work"
             title="Email, SMS, calls"
-            summary="Do the work from this contact. It saves onto the Timeline."
+            summary="Call, email, or text from this contact. Timeline fills when the desk sends or receives."
             collapsible={false}
           >
             <RecordComms
@@ -300,7 +278,57 @@ export default async function ContactDetailPage({
               email={contact.email}
               templates={templates}
               autoSaveHint
+              hideManualLogs
+              emailOptOut={contact.emailOptOut}
+              smsOptOut={contact.smsOptOut}
             />
+          </RecordSection>
+
+          <RecordSection
+            id="optouts"
+            title="Opt-outs"
+            summary="SMS and email opt-out tracking on this contact"
+            collapsible={false}
+          >
+            <form action={updateContactRecord} className="grid gap-3 sm:grid-cols-2">
+              <input type="hidden" name="contactId" value={contact.id} />
+              <input type="hidden" name="saveOptOuts" value="1" />
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="emailOptOut"
+                  defaultChecked={contact.emailOptOut}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="font-medium text-navy">Email opt-out</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {contact.emailOptOut
+                      ? `Recorded ${formatDay(contact.emailOptedOutAt)}`
+                      : "Not opted out. Check to stop desk email."}
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="smsOptOut"
+                  defaultChecked={contact.smsOptOut}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="font-medium text-navy">SMS opt-out</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {contact.smsOptOut
+                      ? `Recorded ${formatDay(contact.smsOptedOutAt)}`
+                      : "Not opted out. Check to stop desk texts."}
+                  </span>
+                </span>
+              </label>
+              <Button type="submit" size="sm">
+                Save opt-outs
+              </Button>
+            </form>
           </RecordSection>
 
           <RecordSection

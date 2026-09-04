@@ -6,13 +6,20 @@ import { ColumnPicker, Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
 import { LeadFormFields } from "@/components/crm/lead-form-fields";
 import { LineSelect } from "@/components/crm/line-select";
+import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { LEAD_LANGUAGES } from "@/lib/crm/lead-fields";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, type LineOfBusiness } from "@/lib/domain";
 import { listLeads } from "@/lib/db/queries";
+
+function languageLabel(value: string | null) {
+  if (!value) return "—";
+  return LEAD_LANGUAGES.find((lang) => lang.value === value)?.label ?? value;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -60,11 +67,22 @@ export default async function LeadsPage() {
               <thead>
                 <tr>
                   <Col table="leads" col="name" as="th">Name</Col>
+                  <Col table="leads" col="firstName" as="th">First name</Col>
+                  <Col table="leads" col="middleName" as="th">Middle name</Col>
+                  <Col table="leads" col="lastName" as="th">Last name</Col>
+                  <Col table="leads" col="dateOfBirth" as="th">Date of birth</Col>
                   <Col table="leads" col="status" as="th">Status</Col>
+                  <Col table="leads" col="stage" as="th">Deal stage</Col>
                   <Col table="leads" col="source" as="th">Source</Col>
-                  <Col table="leads" col="line" as="th">Insurance</Col>
+                  <Col table="leads" col="line" as="th">Insurance type desired</Col>
                   <Col table="leads" col="phone" as="th">Phone</Col>
                   <Col table="leads" col="email" as="th">Email</Col>
+                  <Col table="leads" col="mailingAddress" as="th">Address</Col>
+                  <Col table="leads" col="city" as="th">City</Col>
+                  <Col table="leads" col="state" as="th">State</Col>
+                  <Col table="leads" col="zip" as="th">ZIP</Col>
+                  <Col table="leads" col="preferredLanguage" as="th">Preferred language</Col>
+                  <Col table="leads" col="notes" as="th">Notes</Col>
                   <Col table="leads" col="created" as="th">Created</Col>
                   <Col table="leads" col="action" as="th">Shop</Col>
                 </tr>
@@ -75,8 +93,25 @@ export default async function LeadsPage() {
                     <Col table="leads" col="name" className="font-medium">
                       <RecordLink href={`/leads/${lead.id}`}>{formatPersonName(lead)}</RecordLink>
                     </Col>
+                    <Col table="leads" col="firstName">{lead.firstName}</Col>
+                    <Col table="leads" col="middleName">{lead.middleName ?? "—"}</Col>
+                    <Col table="leads" col="lastName">{lead.lastName}</Col>
+                    <Col table="leads" col="dateOfBirth">{lead.dateOfBirth || "—"}</Col>
                     <Col table="leads" col="status" className="uppercase">
                       {lead.status}
+                    </Col>
+                    <Col table="leads" col="stage">
+                      {lead.dealStage ? (
+                        lead.relatedDealId ? (
+                          <RecordLink href={`/deals/${lead.relatedDealId}`}>
+                            <StagePill stage={lead.dealStage} />
+                          </RecordLink>
+                        ) : (
+                          <StagePill stage={lead.dealStage} />
+                        )
+                      ) : (
+                        "—"
+                      )}
                     </Col>
                     <Col table="leads" col="source">{lead.source}</Col>
                     <Col table="leads" col="line">
@@ -87,6 +122,12 @@ export default async function LeadsPage() {
                     </Col>
                     <Col table="leads" col="phone">{lead.phone ?? "—"}</Col>
                     <Col table="leads" col="email">{lead.email ?? "—"}</Col>
+                    <Col table="leads" col="mailingAddress">{lead.mailingAddress ?? "—"}</Col>
+                    <Col table="leads" col="city">{lead.city ?? "—"}</Col>
+                    <Col table="leads" col="state">{lead.state ?? "—"}</Col>
+                    <Col table="leads" col="zip">{lead.zip ?? "—"}</Col>
+                    <Col table="leads" col="preferredLanguage">{languageLabel(lead.preferredLanguage)}</Col>
+                    <Col table="leads" col="notes">{lead.notes ?? "—"}</Col>
                     <Col table="leads" col="created">{formatDay(lead.createdAt)}</Col>
                     <Col table="leads" col="action">
                       {lead.convertedDealId ? (

@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { ClickToCall } from "@/components/click-to-call";
 import { LeadFormFields } from "@/components/crm/lead-form-fields";
 import { LineSelect } from "@/components/crm/line-select";
+import { StagePill } from "@/components/fit-badge";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
@@ -42,6 +43,7 @@ export default async function LeadDetailPage({
     <AppShell title={formatPersonName(lead)}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <span className="uppercase text-muted-foreground">{lead.status}</span>
+        {deal ? <StagePill stage={deal.pipelineStage} /> : null}
         <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
         {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
         {lead.preferredLanguage ? (
@@ -93,7 +95,10 @@ export default async function LeadDetailPage({
 
       <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">
         {deal ? (
-          <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
+            <StagePill stage={deal.pipelineStage} />
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">
             No deal yet. Convert when you start the shop. Drop a dec, wind mit, or 4-point on the
