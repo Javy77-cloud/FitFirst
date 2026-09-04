@@ -1074,7 +1074,7 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
   ]);
   const hits: SearchHit[] = [];
   for (const row of leadRows) {
-    if (matchesQuery(q, row.firstName, row.lastName, row.email, row.phone)) hits.push(hitFromLead(row));
+    if (matchesQuery(q, row.firstName, row.middleName, row.lastName, row.email, row.phone)) hits.push(hitFromLead(row));
   }
   for (const row of dealRows) {
     if (matchesQuery(q, row.title, row.primaryNamedInsured, row.notes)) hits.push(hitFromDeal(row));

@@ -59,10 +59,10 @@ const STEPS = [
     cta: "Open Ana Dib shop",
   },
   {
-    title: "8. Drop a dec packet (match, never duplicate)",
-    body: "Leads → Drop a dec packet. The Melbourne sample matches Elena (name + phone/email). You stay on her lead. A new name creates a new lead.",
-    href: "/leads",
-    cta: "Go to Leads",
+    title: "8. Drop a dec, wind mit, or 4-point on the deal",
+    body: "Deals → drop a source packet. The Melbourne sample matches Elena (name + phone/email) and stays on her deal. A new name opens a new shop. Leads hold the person only — no package drop there.",
+    href: "/deals",
+    cta: "Go to Deals",
   },
   {
     title: "9. Run-it-yourself: stub lead → deal → bind",

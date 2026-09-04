@@ -44,6 +44,7 @@ import {
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
+import { leadValuesFromForm, namedInsuredFromLead } from "@/lib/crm/lead-fields";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import {
   accountFieldsFromSheet,
@@ -91,6 +92,9 @@ export async function findOrCreateLead(
     state?: string | null;
     zip?: string | null;
     dateOfBirth?: string | null;
+    middleName?: string | null;
+    insuranceTypeDesired?: string | null;
+    preferredLanguage?: string | null;
   },
 ) {
   const existing = await findMatchingLead(input);
@@ -100,6 +104,7 @@ export async function findOrCreateLead(
     .values({
       tenantId: DEFAULT_TENANT_ID,
       firstName: input.firstName || "Unknown",
+      middleName: input.middleName || null,
       lastName: input.lastName || "Lead",
       email: input.email || null,
       phone: input.phone || null,
@@ -108,6 +113,8 @@ export async function findOrCreateLead(
       state: input.state || null,
       zip: input.zip || null,
       dateOfBirth: input.dateOfBirth || null,
+      insuranceTypeDesired: input.insuranceTypeDesired || null,
+      preferredLanguage: input.preferredLanguage || null,
       source: input.source || "manual",
       notes: input.notes || null,
       status: "new",
@@ -117,22 +124,8 @@ export async function findOrCreateLead(
 }
 
 export async function createLead(formData: FormData) {
-  const identity = {
-    firstName: str(formData, "firstName") || "Unknown",
-    lastName: str(formData, "lastName") || "Lead",
-    email: str(formData, "email") || null,
-    phone: str(formData, "phone") || null,
-  };
-  const { lead } = await findOrCreateLead({
-    ...identity,
-    mailingAddress: str(formData, "mailingAddress") || null,
-    city: str(formData, "city") || null,
-    state: str(formData, "state") || null,
-    zip: str(formData, "zip") || null,
-    dateOfBirth: str(formData, "dateOfBirth") || null,
-    source: str(formData, "source") || "manual",
-    notes: str(formData, "notes") || null,
-  });
+  const values = leadValuesFromForm(formData);
+  const { lead } = await findOrCreateLead(values);
   revalidatePath("/leads");
   redirect(`/leads/${lead.id}`);
 }
@@ -142,7 +135,13 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   if (!lead) throw new Error("Lead not found");
   if (lead.convertedDealId) return lead.convertedDealId;
 
-  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
+  const dealLine =
+    (LINES.includes(line as (typeof LINES)[number]) ? line : null) ||
+    (lead.insuranceTypeDesired && LINES.includes(lead.insuranceTypeDesired as (typeof LINES)[number])
+      ? lead.insuranceTypeDesired
+      : "HO");
+  const pipelineSlug =
+    dealLine === "HEALTH" ? "health" : dealLine === "LIFE" ? "life" : dealLine === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db
     .select()
     .from(pipelines)
@@ -150,26 +149,26 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   const dealState = state || lead.state || "FL";
   const riskCopy = leadOntoRisk(lead, dealState);
 
-  const shopLines = shopLinesFromLine(line);
+  const shopLines = shopLinesFromLine(dealLine);
   const [deal] = await db
     .insert(deals)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId,
-      title: `${lead.lastName} · ${line} shop`,
+      title: `${lead.lastName} · ${dealLine} shop`,
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
-      lineOfBusiness: line,
+      lineOfBusiness: dealLine,
       state: dealState,
-      primaryNamedInsured: `${lead.firstName} ${lead.lastName}`.trim(),
+      primaryNamedInsured: namedInsuredFromLead(lead),
     })
     .returning();
 
   await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
+    riskType: dealLine === "AUTO" ? "auto" : "property",
     ...riskCopy,
   });
 
@@ -181,7 +180,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
+    line: dealLine === "AUTO" ? "auto" : "home",
     values: sheetValues,
   });
   await insertSheetsForDeal(deal.id, shopLines);
@@ -199,7 +198,7 @@ export async function createDealFromLead(formData: FormData) {
   const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   const dealId = await convertLeadToDeal(
     leadId,
-    str(formData, "line") || "HO",
+    str(formData, "line") || lead?.insuranceTypeDesired || "HO",
     str(formData, "state") || lead?.state || "FL",
   );
   revalidatePath("/deals");
@@ -289,6 +288,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       lastName,
       email: str(formData, "email") || null,
       phone: str(formData, "phone") || null,
+      insuranceTypeDesired: line,
       source: "dec_drop",
       status: "converted",
       notes: str(formData, "notes") || `Dec drop: ${file.name}`,

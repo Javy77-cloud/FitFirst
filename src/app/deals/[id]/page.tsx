@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { formatPersonName } from "@/lib/crm/display";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { getDealWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
@@ -103,7 +104,7 @@ export default async function DealPage({
         <span className="text-muted-foreground">{deal.state}</span>
         {lead ? (
           <RecordLink href={`/leads/${lead.id}`}>
-            Lead {lead.lastName}, {lead.firstName}
+            Lead {formatPersonName(lead)}
           </RecordLink>
         ) : null}
         {contact ? (
@@ -229,7 +230,7 @@ export default async function DealPage({
         <div className="mb-3 flex flex-wrap gap-3 text-sm">
           {lead ? (
             <RecordLink href={`/leads/${lead.id}`}>
-              Lead {lead.lastName}, {lead.firstName}
+              Lead {formatPersonName(lead)}
             </RecordLink>
           ) : null}
           {contact ? (

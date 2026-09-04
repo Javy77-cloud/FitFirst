@@ -1,3 +1,19 @@
+export type PersonName = {
+  firstName?: string | null;
+  middleName?: string | null;
+  lastName?: string | null;
+};
+
+/** Last, First Middle — skips a blank middle. */
+export function formatPersonName(person: PersonName): string {
+  const last = (person.lastName ?? "").trim();
+  const first = (person.firstName ?? "").trim();
+  const middle = (person.middleName ?? "").trim();
+  const given = [first, middle].filter(Boolean).join(" ");
+  if (last && given) return `${last}, ${given}`;
+  return last || given || "—";
+}
+
 export type ExpirationTone = "overdue" | "urgent" | "soon" | "ok";
 
 export function startOfUtcDay(value: Date): number {

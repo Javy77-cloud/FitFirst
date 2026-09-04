@@ -63,9 +63,14 @@ export async function dropSampleDecPacket() {
     ...parsed,
     source: "dropped_dec",
     notes: parsed.notes,
+    insuranceTypeDesired: "HO",
   });
+  const dealId = lead.convertedDealId ?? (await convertLeadToDeal(lead.id, "HO", "FL"));
+  await attachSourceText(dealId, "sample-melbourne-ho-dec.txt", MELBOURNE_HO_DEC_TEXT);
   revalidatePath("/leads");
-  redirect(`/leads/${lead.id}`);
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}`);
 }
 
 export async function dropLeadPacket(formData: FormData) {
@@ -86,13 +91,14 @@ export async function dropLeadPacket(formData: FormData) {
     ...parsed,
     source: "dropped_dec",
     notes: parsed.notes,
+    insuranceTypeDesired: "HO",
   });
 
   const dealId = lead.convertedDealId ?? (await convertLeadToDeal(lead.id, "HO", "FL"));
   await attachSourceText(dealId, filename, text);
   revalidatePath(`/leads/${lead.id}`);
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/leads/${lead.id}`);
+  redirect(`/deals/${dealId}`);
 }
 
 async function attachSourceText(dealId: string, filename: string, text: string) {

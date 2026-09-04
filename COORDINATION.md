@@ -6,8 +6,8 @@ Runtime stays single-tenant (`TENANT_ID`). New tables carry `tenant_id`. Checked
 
 ## Locked lifecycle (do not invent a different funnel)
 
-1. A lead arrives (manual, email/social stub, or a dropped dec / wind mit / 4-point / inspection). Create or match a Lead (name + phone or email when present; **never duplicate**).
-2. Convert that Lead into a Deal. The Deal is the shopping record. Source docs (dec, 4-point, wind mit, inspections) live on Deal attachments. Fill Quote Sheet blanks from those docs (yellow missing / blue CHECK). **Do not create a Policy from a quote.**
+1. A lead arrives (manual or email/social stub). Create or match a Lead (name + phone or email when present; **never duplicate**). The Lead is the person: first / middle / last, DOB, email, phone, address, insurance type desired, source, language, notes.
+2. Convert that Lead into a Deal. The Deal is the shopping record. Source docs (dec, 4-point, wind mit, inspections) are dropped **on the Deal only** — not on Leads. Fill Quote Sheet blanks from those docs (yellow missing / blue CHECK). **Do not create a Policy from a quote.**
 3. When quotes are finalized: room on the Deal for issued-quote PDFs **plus** a ranked quote-results note (cheapest first). Quotes never become Policies.
 4. Bind / Closed Won: Deal produces a Contact (personal lines) or a Business/Account (commercial). Copy matching fields so the agent does not retype. Then create **one Policy per bound line**, attached to that Contact or Business. Policy exists only after accept/apply (status Bound / Pending / Active — never Quote-only).
 5. Every Policy is its own record. Contact and Business show policy counts: **lifetime** + **active/bound/pending**. Same person can have personal Contact policies **and** be linked to a Business.
@@ -98,7 +98,7 @@ After `npm run db:migrate && npm run db:seed` (or `docker compose up --build`):
 
 ### Run-it-yourself path (proves match + bind)
 
-1. **Leads** → **Drop a dec packet** (use `fixtures/sample-melbourne-ho-dec.txt` or the stub button). Name + phone/email **matches Elena** — you stay on her lead, no duplicate.
+1. **Deals** → **Drop a dec / wind mit / 4-point** (use `fixtures/sample-melbourne-ho-dec.txt` or the Melbourne sample button). Name + phone/email **matches Elena** — you stay on her deal, no duplicate. Leads do not accept package drop.
 2. Or **Stub email lead** / **Stub social lead** — new names create new leads; same name+phone/email matches.
 3. On a new unmatched lead: **Start shop** → Deal (shopping) + empty Quote Sheet. Upload a source dec. **Fill Quote Sheet blanks** (yellow/blue only).
 4. **Quotes** → build stub quotes for green markets (filter-first; do not change appetite). **Finalize quote results** writes the cheapest-first note. Attach quote PDFs in the issued-quote slot.

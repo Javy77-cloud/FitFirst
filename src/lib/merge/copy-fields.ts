@@ -21,6 +21,9 @@ export const LEAD_COPY_FIELDS = [
   "state",
   "zip",
   "dateOfBirth",
+  "middleName",
+  "insuranceTypeDesired",
+  "preferredLanguage",
   "source",
   "convertedDealId",
 ] as const;
