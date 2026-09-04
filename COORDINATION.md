@@ -329,6 +329,14 @@ Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live
 
 Invalid record UUIDs return 404 instead of a Postgres 22P02 500. `isUuid` guards live in loaders.
 
+## Quotes collapse + Claims add + Commissions filters (`cursor/quotes-claims-commissions-4af1`)
+
+Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not write Zoho.
+
+- **Quotes:** `/quotes` shops, deal Quotes tab (ranked / comparison / attempt log), and Quote Sheet groups use `DeskDetails`. Open when there is work (quoted/declined, missing/CHECK); fold skip-only or complete groups.
+- **Claims:** `/claims` has a prominent **Add new claim**. `/claims/new` is the stub create flow. `logClaim` saves a `claims` row with or without a policy, then opens the claim.
+- **Commissions:** `/commissions` filters Life / Health / P&C + Home/Auto/Flood/Commercial (or Life/Health subs) and date windows last year / 6 months / 3 months / month / quarter plus next month / 3 months / 6 months / quarter / year. Ana remains $0 / unbound.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

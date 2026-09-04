@@ -54,6 +54,8 @@ Communications (email, SMS, calls, meetings, tasks) write a durable log on the C
 
 Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
 
+**This branch (`cursor/quotes-claims-commissions-4af1`):** Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim** that writes a desk row (policy optional). Commissions filters by Life / Health / P&C plus line subfilters, and last/next year, quarter, month, 3 months, and 6 months. Ana stays shopping / $0 commission / unbound. No Zoho.
+
 Click path and leftover bugs live in `COORDINATION.md`.
 
 Docker: `docker compose up --build` (same port).

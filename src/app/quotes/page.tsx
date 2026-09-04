@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DeskDetails } from "@/components/desk-details";
 import { ShopSummary, TrackingTable } from "@/components/quotes/tracking-table";
 import { StagePill } from "@/components/fit-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { listQuoteTrackingShops } from "@/lib/db/queries";
+import { shopSectionOpen } from "@/lib/quotes/collapse";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +29,8 @@ export default async function QuotesBoardPage({
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         Every shop already run — appetite logs and quote comparison rows — in one place. Status
-        is quoted, declined, skip, or bound. Cheapest quoted is ranked per deal. This board does
-        not call a carrier or rater.
+        is quoted, declined, skip, or bound. Cheapest quoted is ranked per deal. Fold a shop you
+        are not working. This board does not call a carrier or rater.
       </p>
 
       {deal ? (
@@ -47,34 +49,29 @@ export default async function QuotesBoardPage({
       ) : (
         <div className="space-y-4">
           {shops.map((shop) => (
-            <section key={shop.dealId} className="ff-card overflow-hidden">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={`/deals/${shop.dealId}?tab=quotes`}
-                      className="text-sm font-semibold text-navy hover:underline"
-                    >
-                      {shop.dealTitle}
-                    </Link>
-                    <StagePill stage={shop.dealStage} />
-                    <span className="text-xs text-muted-foreground">{shop.line}</span>
-                  </div>
-                  <div className="mt-1">
-                    <ShopSummary shop={shop} />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Link href={`/deals/${shop.dealId}?tab=quotes`} className="text-primary hover:underline">
-                    Open deal
-                  </Link>
-                  <Link href={`/quotes?deal=${shop.dealId}`} className="text-primary hover:underline">
-                    This shop only
-                  </Link>
-                </div>
+            <DeskDetails
+              key={shop.dealId}
+              open={shopSectionOpen(shop, Boolean(deal))}
+              padded={false}
+              title={
+                <span className="flex flex-wrap items-center gap-2">
+                  {shop.dealTitle}
+                  <StagePill stage={shop.dealStage} />
+                  <span className="font-normal text-xs text-muted-foreground">{shop.line}</span>
+                </span>
+              }
+              summary={<ShopSummary shop={shop} />}
+            >
+              <div className="flex flex-wrap gap-3 border-b border-border px-4 py-2 text-xs">
+                <Link href={`/deals/${shop.dealId}?tab=quotes`} className="text-primary hover:underline">
+                  Open deal
+                </Link>
+                <Link href={`/quotes?deal=${shop.dealId}`} className="text-primary hover:underline">
+                  This shop only
+                </Link>
               </div>
               <TrackingTable shop={shop} showDealLink />
-            </section>
+            </DeskDetails>
           ))}
         </div>
       )}

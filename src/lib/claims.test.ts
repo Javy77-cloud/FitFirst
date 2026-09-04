@@ -7,6 +7,7 @@ import {
   claimStatusLabel,
   isClaimStatus,
   isOpenClaimStatus,
+  claimCreateValues,
   summarizeClaims,
 } from "./claims";
 
@@ -42,6 +43,16 @@ describe("light claims log", () => {
 
   it("keeps Ana off the demo claim host", () => {
     expect(OPP_CONTACT_IDS.ruiz).not.toBe(CONTACT_ID);
+  });
+
+  it("saves a stub claim row without a policy", () => {
+    const row = claimCreateValues({
+      description: "Water notice, no policy picked yet",
+    });
+    expect(row.policyId).toBeNull();
+    expect(row.status).toBe("inquiry");
+    expect(row.causeType).toBe("other");
+    expect(row.dateReported).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it("tells the broker to handle the claim on the carrier site", () => {

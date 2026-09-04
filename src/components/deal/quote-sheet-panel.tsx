@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
+import { DeskDetails } from "@/components/desk-details";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { QuoteSheetFieldValue } from "@/lib/domain";
 import { groupHomeFields } from "@/lib/lifecycle/quote-sheet";
+import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { cn } from "@/lib/utils";
 import { SheetHandoffButtons } from "./sheet-handoff";
 
@@ -60,10 +62,13 @@ export function QuoteSheetPanel({
       </section>
 
       {groups.map((group) => (
-        <section key={group.group} className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-            {group.group}
-          </div>
+        <DeskDetails
+          key={group.group}
+          title={group.group}
+          summary={sheetGroupSummary(group.fields, sheet)}
+          open={sheetGroupNeedsAttention(group.fields, sheet)}
+          padded={false}
+        >
           <table className="ff-table">
             <thead>
               <tr>
@@ -98,7 +103,7 @@ export function QuoteSheetPanel({
               })}
             </tbody>
           </table>
-        </section>
+        </DeskDetails>
       ))}
     </div>
   );

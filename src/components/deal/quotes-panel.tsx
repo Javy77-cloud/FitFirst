@@ -1,4 +1,5 @@
 import { finalizeQuoteResults } from "@/app/actions/lifecycle";
+import { DeskDetails } from "@/components/desk-details";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
@@ -18,15 +19,15 @@ export function QuotesPanel({
 }) {
   return (
     <div className="space-y-4">
-      <section className="ff-card p-4">
+      <DeskDetails
+        title="Ranked quote results"
+        summary="Cheapest first. This note stays on the deal. Quotes never become policies."
+        open={Boolean(quoteResultsNote)}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-navy">Ranked quote results</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cheapest first. This note stays on the deal. Quotes never become policies — bind is
-              the only path that writes a policy.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Bind is the only path that writes a policy. Finalize after you have stub quotes.
+          </p>
           <form action={finalizeQuoteResults}>
             <input type="hidden" name="dealId" value={dealId} />
             <Button type="submit" size="sm" variant="outline">
@@ -43,12 +44,18 @@ export function QuotesPanel({
             No ranked note yet. Build stub quotes, then finalize.
           </p>
         )}
-      </section>
+      </DeskDetails>
 
-      <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-          Quote comparison
-        </div>
+      <DeskDetails
+        title="Quote comparison"
+        summary={
+          quotes.length
+            ? `${quotes.length} quote${quotes.length === 1 ? "" : "s"} on this deal`
+            : "Empty until you log stub quotes"
+        }
+        open={quotes.length > 0}
+        padded={false}
+      >
         {quotes.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
             No quotes on this deal. Filter markets first, then build stub quotes for green fits.
@@ -102,7 +109,7 @@ export function QuotesPanel({
             </tbody>
           </table>
         )}
-      </section>
+      </DeskDetails>
 
       {quoteDocs.length > 0 ? (
         <p className="text-xs text-muted-foreground">
@@ -111,10 +118,12 @@ export function QuotesPanel({
         </p>
       ) : null}
 
-      <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-          Attempt log on this deal
-        </div>
+      <DeskDetails
+        title="Attempt log on this deal"
+        summary={logs.length ? `${logs.length} attempt${logs.length === 1 ? "" : "s"}` : "No attempts yet"}
+        open={logs.length > 0}
+        padded={false}
+      >
         {logs.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No attempts recorded.</p>
         ) : (
@@ -143,7 +152,7 @@ export function QuotesPanel({
             </tbody>
           </table>
         )}
-      </section>
+      </DeskDetails>
     </div>
   );
 }

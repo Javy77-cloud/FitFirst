@@ -122,8 +122,17 @@ export const COMMISSION_RANGES = [
   "pending",
   "paid",
   "last_30",
+  "last_year",
+  "last_6_months",
+  "last_3_months",
+  "last_month",
   "last_quarter",
   "fiscal_year",
+  "next_month",
+  "next_3_months",
+  "next_6_months",
+  "next_quarter",
+  "next_year",
   "upcoming",
 ] as const;
 export type CommissionRange = (typeof COMMISSION_RANGES)[number];

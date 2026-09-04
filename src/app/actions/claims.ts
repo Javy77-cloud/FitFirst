@@ -58,13 +58,18 @@ function revalidateClaimSurfaces(claimId: string, policyId: string, contactId?: 
 
 export async function logClaim(formData: FormData) {
   const policyId = str(formData, "policyId");
-  const [policy] = await db
-    .select()
-    .from(policies)
-    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
-  if (!policy) throw new Error("Policy not found");
+  const policy = policyId
+    ? (
+        await db
+          .select()
+          .from(policies)
+          .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)))
+      )[0]
+    : undefined;
+  if (policyId && !policy) throw new Error("Policy not found");
 
-  const dateReported = day(str(formData, "dateReported"));
+  const dateReported =
+    day(str(formData, "dateReported")) ?? day(new Date().toISOString().slice(0, 10));
   if (!dateReported) throw new Error("Date reported is required.");
 
   const causeType = str(formData, "causeType") || "other";
@@ -81,7 +86,7 @@ export async function logClaim(formData: FormData) {
     .insert(claims)
     .values({
       tenantId: DEFAULT_TENANT_ID,
-      policyId,
+      policyId: policy?.id ?? null,
       dateReported,
       dateOfLoss: day(str(formData, "dateOfLoss")),
       causeType,
@@ -95,11 +100,18 @@ export async function logClaim(formData: FormData) {
   await recordActivity(
     claim.id,
     "opened",
-    `Logged ${causeType.replaceAll("_", " ")} notice on ${policy.policyNumber}. Status: ${claimStatusLabel(status)}.`,
+    policy
+      ? `Logged ${causeType.replaceAll("_", " ")} notice on ${policy.policyNumber}. Status: ${claimStatusLabel(status)}.`
+      : `Logged ${causeType.replaceAll("_", " ")} desk notice without a policy. Status: ${claimStatusLabel(status)}.`,
     who,
   );
 
-  revalidateClaimSurfaces(claim.id, policyId, policy.contactId);
+  if (policy) {
+    revalidateClaimSurfaces(claim.id, policy.id, policy.contactId);
+  } else {
+    revalidatePath(`/claims/${claim.id}`);
+    revalidatePath("/claims");
+  }
   redirect(`/claims/${claim.id}`);
 }
 
