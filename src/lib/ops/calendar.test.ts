@@ -7,6 +7,7 @@ import {
   isActivityKind,
   kindClass,
   monthCells,
+  parseCalendarView,
   parseDateParam,
   parseKindsParam,
   parseTags,
@@ -99,6 +100,11 @@ describe("calendar helpers", () => {
     expect(week.to.getDay()).toBe(6);
     const month = rangeForView("month", new Date(2026, 8, 3));
     expect(month.from.getDay()).toBe(0);
+  });
+
+  it("defaults an unknown view to month", () => {
+    expect(parseCalendarView("week")).toBe("week");
+    expect(parseCalendarView("nope")).toBe("month");
   });
 
   it("parses date params and week days", () => {

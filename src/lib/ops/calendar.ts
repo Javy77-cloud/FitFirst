@@ -28,6 +28,10 @@ export function isCalendarView(value: string | null | undefined): value is Calen
   return value === "month" || value === "week" || value === "day";
 }
 
+export function parseCalendarView(value: string | undefined): CalendarView {
+  return isCalendarView(value) ? value : "month";
+}
+
 export function parseKindsParam(raw: string | string[] | undefined | null): string[] {
   const value = Array.isArray(raw) ? raw.join(",") : raw ?? "";
   const kinds = value

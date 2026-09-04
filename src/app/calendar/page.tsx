@@ -1,9 +1,10 @@
 import { AppShell } from "@/components/app-shell";
-import { DeskCalendar, parseCalendarView } from "@/components/calendar/desk-calendar";
+import { DeskCalendar } from "@/components/calendar/desk-calendar";
 import { listRelatedOptions } from "@/lib/db/activity-queries";
 import { listCalendarActivities } from "@/lib/db/queries";
 import { DESK_AS_OF } from "@/lib/home/as-of";
 import {
+  parseCalendarView,
   parseDateParam,
   parseKindsParam,
   rangeForView,

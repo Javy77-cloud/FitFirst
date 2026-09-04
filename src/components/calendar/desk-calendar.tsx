@@ -18,7 +18,6 @@ import {
   eventHeightPx,
   filterCalendarActivities,
   formatTime,
-  isCalendarView,
   kindClass,
   monthCells,
   rescheduleWindow,
@@ -582,6 +581,3 @@ function CalendarEditor({
   );
 }
 
-export function parseCalendarView(value: string | undefined): CalendarView {
-  return isCalendarView(value) ? value : "month";
-}
