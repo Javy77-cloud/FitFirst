@@ -294,7 +294,13 @@ export function DocumentsPanel({
                 Open interactive compare
               </Link>
             </div>
-            <DocTable docs={proposals} dealId={dealId} comms={comms} empty="No branded proposal PDFs yet." />
+            <DocTable
+              docs={proposals}
+              dealId={dealId}
+              comms={comms}
+              versionsByDoc={versionsByDoc}
+              empty="No branded proposal PDFs yet."
+            />
           </section>
 
           <section className="ff-card p-4">
@@ -450,13 +456,13 @@ function DocTable({
   docs,
   dealId,
   comms,
-  versionsByDoc,
+  versionsByDoc = new Map(),
   empty,
 }: {
   docs: Document[];
   dealId: string;
   comms: FileComms;
-  versionsByDoc: Map<string, DocumentVersionRow[]>;
+  versionsByDoc?: Map<string, DocumentVersionRow[]>;
   empty: string;
 }) {
   if (docs.length === 0) {

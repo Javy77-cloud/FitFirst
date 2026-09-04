@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { db } from "./index";
 import {
   activities,
@@ -281,6 +282,7 @@ export async function listCampaigns() {
 }
 
 export async function getCampaign(id: string) {
+  if (!isUuid(id)) return null;
   const [campaign] = await db
     .select()
     .from(emailCampaigns)

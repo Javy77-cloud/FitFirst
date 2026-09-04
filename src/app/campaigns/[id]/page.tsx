@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getCampaign, resolveCampaignAudience } from "@/lib/db/ops-queries";
 import { CAMPAIGN_AUDIENCE_TYPES } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function CampaignDetailPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const query = await searchParams;
   const data = await getCampaign(id);
   if (!data) notFound();

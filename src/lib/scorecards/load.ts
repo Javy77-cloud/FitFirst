@@ -70,7 +70,7 @@ export async function loadProducerScorecards(sortRaw?: string | null): Promise<{
 export async function loadOneScorecard(userId: string, sortRaw?: string | null) {
   const { session, ranked, sort } = await loadProducerScorecards(sortRaw);
   const card = ranked.find((row) => row.userId === userId) ?? null;
-  if (!card) return { session, sort, ranked, card: null, allowed: false };
+  if (!card) return { session, sort, ranked, card: null, allowed: true };
   const allowed = session.isAdmin || session.userId === card.userId;
-  return { session, sort, ranked, card: allowed ? card : null, allowed };
+  return { session, sort, ranked, card, allowed };
 }

@@ -17,8 +17,8 @@ export default async function ProducerScorecardPage({
   const { id } = await params;
   const q = await searchParams;
   const { session, sort, ranked, card, allowed } = await loadOneScorecard(id, q.sort);
-  if (!allowed) redirect("/scorecards");
   if (!card) notFound();
+  if (!allowed) redirect("/scorecards");
 
   return (
     <AppShell title="Scorecards">
