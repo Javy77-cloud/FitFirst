@@ -593,6 +593,18 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 - Admin browse `/logs/fill-learning` (tab next to Appetite / decline log). Agents can still mark a mapping wrong on the sheet.
 - Seeded Elena HO corrections: wind mit roof year 2014→2019, dec CBS→masonry, 4-point comp shingle→architectural shingle. No Ana rows.
 
+## DIFF A — Producer scorecards + lifecycle glance (`cursor/producer-scorecards-glance-4f97`)
+
+Side branch off `cursor/mac-ready-batch4-7pm`. Additive only. No new migration (computed from existing Leads / Deals / Policies / Claims / tasks). Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged (`#c5ddf4`).
+
+- **Scorecards** (`/scorecards`): Admin ranks every producer on conversion, retention, in-force premium, and binds. Sort tabs reuse those four metrics. Agents see **own** card + rank number — not other producers. Drill-in `/scorecards/[id]` is Admin-any / Agent-self.
+- Conversion = binds / (binds + open shops + lost). Quote Sent is a shop. Bound / Closed Won is a bind. A quoted policy is not a bind and not premium.
+- Retention = in-force / (in-force + lapsed). Premium is Active + Bound only.
+- People / Agents **Open producer scorecard** points at the same math. Legacy `/settings/agents/[id]/performance` stub now renders the scorecard strip.
+- **Glance** (`/glance?tab=`): unified Sales | Service | Claims | Renewals. URL tabs filter existing records (open deals, review tasks / endorsements / policy work, claims log, in-force renewals in 60 days). Agent-scoped. No second pipeline.
+
+Next free additive migration is still **0036**. Do not bind Ana.
+
 ## WAVE3 leftover
 
 Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

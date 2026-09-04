@@ -20,6 +20,16 @@ describe("desk nav chrome", () => {
     expect(labels).not.toContain("Search");
   });
 
+  it("adds Scorecards and Glance without a second Pipeline row", () => {
+    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    expect(labels).toContain("Scorecards");
+    expect(labels).toContain("Glance");
+    expect(hrefs).toContain("/scorecards");
+    expect(hrefs).toContain("/glance");
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+  });
+
   it("uses Documents instead of Forms on the left nav", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
