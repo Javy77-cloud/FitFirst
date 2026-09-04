@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActorSwitcher } from "@/components/actor-switcher";
-import { groupIdForPath, NAV_GROUPS, pathIsActive } from "@/components/desk-nav";
+import { groupIdForPath, NAV_GROUPS, PINNED_HOME, pathIsActive } from "@/components/desk-nav";
 import { logoutDesk } from "@/app/actions/auth";
 import type { Actor } from "@/lib/auth/rbac";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,8 @@ export function DeskSidebar({
   const pathname = usePathname();
   const search = useSearchParams();
   const [openId, setOpenId] = useState(() => groupIdForPath(pathname));
+  const HomeIcon = PINNED_HOME.icon;
+  const homeActive = pathIsActive(pathname, PINNED_HOME);
 
   useEffect(() => {
     setOpenId(groupIdForPath(pathname));
@@ -40,6 +42,18 @@ export function DeskSidebar({
         </Link>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+        <Link
+          href={PINNED_HOME.href}
+          className={cn(
+            "mb-1 flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] font-semibold",
+            homeActive
+              ? "bg-[var(--ff-card)] text-navy"
+              : "text-white hover:bg-sidebar-accent hover:text-white",
+          )}
+        >
+          <HomeIcon className="size-3.5 opacity-80" />
+          <span className="flex-1">{PINNED_HOME.label}</span>
+        </Link>
         {NAV_GROUPS.map((group) => {
           const open = openId === group.id;
           return (

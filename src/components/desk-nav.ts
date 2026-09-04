@@ -30,13 +30,15 @@ export type NavGroup = {
   items: NavItem[];
 };
 
+/** Always visible, never inside a Sales/Service/Settings accordion. */
+export const PINNED_HOME: NavItem = { href: "/", label: "Home", icon: Home, match: "/" };
+
 export const NAV_GROUPS: NavGroup[] = [
   {
     id: "work",
     label: "Work",
     items: [
       { href: "/get-started", label: "Get Started", icon: ListChecks },
-      { href: "/", label: "Home", icon: Home, match: "/" },
       { href: "/social", label: "Social", icon: Users, match: "/social" },
       { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban, match: "/pipeline" },
       { href: "/leads", label: "Leads", icon: Users, match: "/leads" },
@@ -94,7 +96,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export const FLAT_NAV = NAV_GROUPS.flatMap((group) => group.items);
+export const FLAT_NAV = [PINNED_HOME, ...NAV_GROUPS.flatMap((group) => group.items)];
 
 export function pathIsActive(pathname: string, item: NavItem): boolean {
   const match = item.match ?? item.href.split("?")[0];
@@ -103,6 +105,7 @@ export function pathIsActive(pathname: string, item: NavItem): boolean {
 }
 
 export function groupIdForPath(pathname: string): string {
+  if (pathIsActive(pathname, PINNED_HOME)) return "";
   for (const group of NAV_GROUPS) {
     if (group.items.some((item) => pathIsActive(pathname, item))) return group.id;
   }
