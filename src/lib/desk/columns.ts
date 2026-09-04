@@ -1,3 +1,5 @@
+import { PIPELINE_FIELDS } from "@/lib/wire/pipeline";
+
 export type ColumnDef = {
   key: string;
   label: string;
@@ -5,6 +7,11 @@ export type ColumnDef = {
 };
 
 export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
+  pipeline_fields: PIPELINE_FIELDS.map((field) => ({
+    key: field.id,
+    label: field.label,
+    defaultOn: field.defaultOn,
+  })),
   leads: [
     { key: "name", label: "Name", defaultOn: true },
     { key: "status", label: "Status", defaultOn: true },

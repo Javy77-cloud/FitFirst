@@ -6,11 +6,53 @@ export type SeededPipeline = {
   stages: { slug: string; name: string }[];
 };
 
-/** Real switcher boards. Flood is the admin-added extra board. */
+export type PipelineFieldId =
+  | "title"
+  | "insured"
+  | "phone"
+  | "email"
+  | "address"
+  | "line"
+  | "state"
+  | "city"
+  | "coverageA"
+  | "carrier"
+  | "stage"
+  | "updated"
+  | "bound";
+
+export type PipelineFieldDef = {
+  id: PipelineFieldId;
+  label: string;
+  defaultOn: boolean;
+  required?: boolean;
+};
+
+/** Deal details that cards, columns, and the table can show or hide. Title stays on. */
+export const PIPELINE_FIELDS: PipelineFieldDef[] = [
+  { id: "title", label: "Deal title", defaultOn: true, required: true },
+  { id: "insured", label: "Insured / contact", defaultOn: true },
+  { id: "phone", label: "Phone", defaultOn: true },
+  { id: "email", label: "Email", defaultOn: true },
+  { id: "address", label: "Address", defaultOn: true },
+  { id: "line", label: "Line", defaultOn: true },
+  { id: "state", label: "State", defaultOn: true },
+  { id: "city", label: "City", defaultOn: false },
+  { id: "coverageA", label: "Coverage A", defaultOn: true },
+  { id: "carrier", label: "Current carrier", defaultOn: false },
+  { id: "stage", label: "Stage", defaultOn: false },
+  { id: "updated", label: "Updated", defaultOn: false },
+  { id: "bound", label: "Bound", defaultOn: false },
+];
+
+/**
+ * Real switcher boards. Flood is a normal shopping board (not admin-added).
+ * Won-Lost and Archive are separate parking tabs.
+ */
 export const SEEDED_PIPELINES: SeededPipeline[] = [
   {
     slug: "p-c",
-    name: "P-C",
+    name: "P&C pipeline",
     kind: "shopping",
     seeded: true,
     stages: [
@@ -49,17 +91,10 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
     ],
   },
   {
-    slug: "won-lost",
-    name: "Won-Lost",
-    kind: "parking",
-    seeded: true,
-    stages: [{ slug: "archive", name: "ARCHIVE" }],
-  },
-  {
     slug: "flood",
     name: "Flood",
     kind: "shopping",
-    seeded: false,
+    seeded: true,
     stages: [
       { slug: "gather", name: "Gather Info" },
       { slug: "quote_sent", name: "Quote Sent" },
@@ -67,18 +102,67 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
       { slug: "closed_lost", name: "Closed Lost" },
     ],
   },
+  {
+    slug: "won-lost",
+    name: "Won-Lost",
+    kind: "parking",
+    seeded: true,
+    stages: [
+      { slug: "closed_won", name: "Closed Won" },
+      { slug: "closed_lost", name: "Closed Lost" },
+    ],
+  },
+  {
+    slug: "archive",
+    name: "Archive",
+    kind: "parking",
+    seeded: true,
+    stages: [{ slug: "archive", name: "ARCHIVE" }],
+  },
 ];
 
-export function pipelineHref(slug: string) {
-  return `/pipeline?pipeline=${encodeURIComponent(slug)}`;
+export function pipelineHref(slug: string, view?: string) {
+  const viewQ = view === "table" ? "&view=table" : "";
+  return `/pipeline?pipeline=${encodeURIComponent(slug)}${viewQ}`;
+}
+
+export function pipelineTabLabel(board: { slug: string; name: string }) {
+  return board.name;
+}
+
+export function pipelinePageTitle(board: { name: string }) {
+  return /pipeline/i.test(board.name) ? board.name : `${board.name} pipeline`;
+}
+
+export function isAdminPipelineBadge(_board: { slug: string; seeded: boolean }) {
+  return false;
 }
 
 export function isClosedWonStage(slug: string | null | undefined) {
   return slug === "closed_won" || slug === "bound";
 }
 
+export function isClosedLostStage(slug: string | null | undefined) {
+  return slug === "closed_lost" || slug === "lost";
+}
+
 export function isArchiveStage(slug: string | null | undefined) {
   return slug === "archive";
+}
+
+export function isArchivedDeal(deal: {
+  archivedAt?: Date | string | null;
+  pipelineStage?: string | null;
+  pipelineStageSlug?: string | null;
+}) {
+  return Boolean(deal.archivedAt) || isArchiveStage(deal.pipelineStageSlug) || isArchiveStage(deal.pipelineStage);
+}
+
+export function dealStageKey(deal: {
+  pipelineStage: string;
+  pipelineStageSlug?: string | null;
+}) {
+  return deal.pipelineStageSlug || deal.pipelineStage;
 }
 
 /** ARCHIVE later must not cancel emails hung on won date. */
@@ -99,5 +183,91 @@ export function dealStageForPipeline(slug: string) {
   if (slug === "archive") return "archive";
   if (slug === "quote_sent") return "quote_sent";
   if (slug === "quotes" || slug === "review") return "quoting";
+  if (slug === "shopping") return "shopping";
   return "shopping";
+}
+
+export function dealMatchesStage(
+  deal: {
+    pipelineStage: string;
+    pipelineStageSlug?: string | null;
+    archivedAt?: Date | string | null;
+  },
+  stageSlug: string,
+) {
+  if (stageSlug === "archive") return isArchivedDeal(deal);
+  if (isArchivedDeal(deal)) return false;
+  const key = dealStageKey(deal);
+  if (stageSlug === "closed_won") return isClosedWonStage(key) || isClosedWonStage(deal.pipelineStage);
+  if (stageSlug === "closed_lost") return isClosedLostStage(key) || isClosedLostStage(deal.pipelineStage);
+  if (stageSlug === "quote_sent") return key === "quote_sent" || deal.pipelineStage === "quote_sent";
+  if (stageSlug === "gather") {
+    return key === "gather" || key === "shopping" || deal.pipelineStage === "shopping";
+  }
+  return key === stageSlug;
+}
+
+export function dealMatchesBoard(
+  deal: {
+    pipelineId?: string | null;
+    pipelineStage: string;
+    pipelineStageSlug?: string | null;
+    archivedAt?: Date | string | null;
+  },
+  board: { id: string; slug: string; kind: string },
+) {
+  if (board.slug === "archive") return isArchivedDeal(deal);
+  if (isArchivedDeal(deal)) return false;
+  if (board.slug === "won-lost") {
+    const key = dealStageKey(deal);
+    return isClosedWonStage(key) || isClosedWonStage(deal.pipelineStage) || isClosedLostStage(key) || isClosedLostStage(deal.pipelineStage);
+  }
+  return deal.pipelineId === board.id;
+}
+
+export function defaultPipelineFieldIds() {
+  return PIPELINE_FIELDS.filter((field) => field.defaultOn).map((field) => field.id);
+}
+
+export function parsePipelineFields(raw: string | null | undefined): PipelineFieldId[] {
+  const allowed = new Set(PIPELINE_FIELDS.map((field) => field.id));
+  const picked = (raw ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part): part is PipelineFieldId => allowed.has(part as PipelineFieldId));
+  const required = PIPELINE_FIELDS.filter((field) => field.required).map((field) => field.id);
+  const next = [...picked];
+  for (const id of required) {
+    if (!next.includes(id)) next.unshift(id);
+  }
+  return next.length ? next : defaultPipelineFieldIds();
+}
+
+export function collapsedStorageKey(pipelineSlug: string) {
+  return `ff-pipe-collapse:${pipelineSlug}`;
+}
+
+export function parseCollapsedStages(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return raw
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+}
+
+export function switcherBoards<T extends { slug: string; name: string; sortOrder?: number }>(boards: T[]) {
+  const order = SEEDED_PIPELINES.map((board) => board.slug);
+  return [...boards].sort((a, b) => {
+    const ai = order.indexOf(a.slug);
+    const bi = order.indexOf(b.slug);
+    if (ai === -1 && bi === -1) return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 }

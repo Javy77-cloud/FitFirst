@@ -119,7 +119,7 @@ The parallel slices were a pile of pages. This pass makes one click-path:
 | Forms stub | `/forms` + `/forms/fl-ho3?dealId=` call `fillFormFromSheet` against `quote_sheets.values`. |
 | Account 360 | `/contacts/[id]` and `/accounts/[id]` (also `/businesses/[id]` alias). Lifetime + active/bound/pending counts come from `policies` rows, including newly bound ones. Activity timeline is the existing `activities` + `activity_logs` hook — softphone agent may still be finishing; do not rewrite `/calendar` or phone files. |
 | Commercial Business | Same `accounts` table (no second businesses table). EIN/FEIN, employees, sales, W-2/1099. Harbor Key Marine LLC is the commercial Closed Won demo. Ruiz Tile stays Elena’s linked personal+business pair with zero commercial policies. |
-| Multi-pipeline | Real links: `/pipeline?pipeline=p-c\|health\|life\|won-lost\|flood`. Flood is the admin-added board. Closed Won / Bind writes Policy. ARCHIVE later does **not** cancel `email_send_jobs` hung on `won_date`. |
+| Multi-pipeline | Real links: `/pipeline?pipeline=p-c\|health\|life\|flood\|won-lost\|archive`. Label is **P&C pipeline**. Won-Lost and Archive are separate tabs. Flood is a normal board (no Admin). Closed Won / Bind writes Policy. ARCHIVE later does **not** cancel `email_send_jobs` hung on `won_date`. |
 | Email templates | Seeded thank-you + Google review. Bind calls `scheduleWonClientEmails`. `archiveCancelsEmailJobs()` is `false`. |
 | Smart Search | `/search?q=` and `GET /api/search` find Lead, Deal, Contact, Business, Policy by name. |
 | Dedup | Second bind of the same person reuses Contact (name + email/phone). Business matches EIN then exact legal name. Same person can hold a personal Contact and a linked Business. |
@@ -328,6 +328,16 @@ Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live
 ## Errors smoke QA (`cursor/errors-smoke-qa-74df`)
 
 Invalid record UUIDs return 404 instead of a Postgres 22P02 500. `isUuid` guards live in loaders.
+
+## Pipeline overhaul (`cursor/pipeline-overhaul-d52a`)
+
+Owner: this branch. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays unbound, Cov A **$321,000**. No live Zoho.
+
+- Switcher tabs: **P&C pipeline**, Health, Life, Flood, **Won-Lost**, **Archive**. Flood has no Admin badge and no Admin stage panel.
+- Columns sit side-by-side (horizontal scroll) and collapse from the header.
+- Edit stages on any board: add / rename / remove / reorder. Not admin-gated.
+- Drag deals between columns. Closed Won still has **Move to Archive**. Archive does not cancel won-date emails.
+- **Columns** picker show/hides the same deal details on cards and the table view.
 
 ## Do not
 

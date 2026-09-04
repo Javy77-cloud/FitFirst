@@ -6,7 +6,7 @@ import type { PipelineStageRow } from "@/lib/db/schema";
 export function StageEditor({ stages }: { stages: PipelineStageRow[] }) {
   return (
     <section className="ff-card p-4">
-      <h2 className="text-sm font-semibold text-navy">Admin stage editor</h2>
+      <h2 className="text-sm font-semibold text-navy">Stage editor</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Add, relabel, or delete columns. Bound is locked — bind is the only way a deal lands there.
       </p>

@@ -4,14 +4,26 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/desk-merge-unblock-f2e7` (compile umbrella + CRM + AMS/OPS + list JSX + comms UUID guard).
+**Mac desk-test branch:** `cursor/pipeline-overhaul-d52a`
+
+Pipeline overhaul on this branch:
+
+- Personal-lines tab is **P&C pipeline** (slug stays `p-c`).
+- **Won-Lost** and **Archive** are two tabs, not one combined “Won-Lost / ARCHIVE”.
+- **Flood** is a normal board — no Admin badge, no Admin stage panel.
+- Columns sit side-by-side and collapse from the header chevron.
+- **Edit stages** on any board: add, rename, remove, reorder.
+- Drag a deal card onto another column to move it.
+- **Columns** picker chooses which deal details show on cards and the table. Title stays on.
+
+Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture.
 
 ## Run locally (Mac)
 
 ```bash
-git fetch origin cursor/desk-merge-unblock-f2e7
-git checkout cursor/desk-merge-unblock-f2e7
-git pull origin cursor/desk-merge-unblock-f2e7
+git fetch origin cursor/pipeline-overhaul-d52a
+git checkout cursor/pipeline-overhaul-d52a
+git pull origin cursor/pipeline-overhaul-d52a
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
 npm install
@@ -20,7 +32,17 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.
+If this desk already had the old combined Won-Lost/ARCHIVE tab, migrate + seed (or just open `/pipeline` — `ensureSeededPipelines` splits Archive onto its own board and renames P-C). If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.
+
+**Click the new pipeline:**
+
+1. Sidebar **Pipeline** → **P&C pipeline**. Ana is on Quote Sent, unbound, Cov A $321,000.
+2. Elena Ruiz and Harbor Key Marine sit on Closed Won. Drag one to Review, then back.
+3. Collapse **Meet / Quotes**. Expand it again.
+4. **Edit stages** → add a column, rename it, move it with ← →, then remove it.
+5. **Columns** → hide Email, show Current carrier. Same picker applies to **Table**.
+6. Open **Won-Lost** (Closed Won / Closed Lost only). Open **Archive** (separate tab).
+7. Open **Flood**. Confirm there is no Admin label. Stages edit the same way as P&C.
 
 **Docker Postgres (this repo):**
 
@@ -62,7 +84,7 @@ Docker: `docker compose up --build` (same port).
 
 - **Elena Ruiz · Melbourne HO3** — Lead → Deal → Quote Sheet → Contact + Policy `HO3-ELENA-2026`. Linked business **Ruiz Tile LLC** has no commercial policy.
 - **Harbor Key Marine LLC** — commercial Closed Won. EIN 59-1234567, GL policy `GL-HARBOR-2026` on the Business. COI stub on the Business. Not Keystone Holdings (`TR-GL-22019`).
-- **Ana Dib HO3** — `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Stage **shopping**, unbound, Cov A **$321,000**. Do not bind. Do not edit that fixture.
+- **Ana Dib HO3** — `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Stage **Quote Sent**, unbound, Cov A **$321,000**. Do not bind. Do not edit that fixture.
 - **Ortega · Winter Garden HO3** — inland masonry shop for Markets auto-fits.
 - **Rosa Keene** — open merge pair on email (do not merge Ana).
 - Wave-1 book names when seeded: Mario Cromartie, Virginia Palacios, Fritzs Seraphin, VP Painting & Construction.

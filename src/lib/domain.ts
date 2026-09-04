@@ -215,7 +215,7 @@ export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
   general_liability: "General Liability",
 };
 
-export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "won-lost", "flood"] as const;
+export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "flood", "won-lost", "archive"] as const;
 
 export const RISK_TYPES = ["property", "auto"] as const;
 export type RiskType = (typeof RISK_TYPES)[number];

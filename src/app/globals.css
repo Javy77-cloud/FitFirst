@@ -159,6 +159,11 @@
   box-shadow: var(--ff-shadow);
 }
 
+.write-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
 .ff-table {
   width: 100%;
   border-collapse: collapse;

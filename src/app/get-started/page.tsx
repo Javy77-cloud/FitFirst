@@ -48,9 +48,9 @@ const STEPS = [
   },
   {
     title: "6. Pipeline switcher is real links",
-    body: "P-C, Health, Life, Won-Lost/ARCHIVE, plus Flood (admin-added). Ana sits on Quote Sent and stays unbound. Closed Won already wrote Elena and Harbor policies. ARCHIVE later must not cancel emails hung on won date.",
+    body: "P&C pipeline, Health, Life, Flood, then Won-Lost and Archive as two tabs. Flood is a normal board — no Admin badge. Ana sits on Quote Sent and stays unbound. Closed Won already wrote Elena and Harbor policies. Archive later must not cancel emails hung on won date.",
     href: "/pipeline?pipeline=p-c",
-    cta: "Open P-C pipeline",
+    cta: "Open P&C pipeline",
   },
   {
     title: "7. Ana stays the HO3-only shop",
@@ -126,7 +126,7 @@ export default function GetStartedPage() {
             Search Elena
           </Link>
           <Link href="/pipeline?pipeline=p-c" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-            P-C pipeline
+            P&C pipeline
           </Link>
         </div>
       </div>

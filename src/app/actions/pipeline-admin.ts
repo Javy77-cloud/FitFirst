@@ -2,22 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, pipelineStages, pipelines } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
+import { dealStageForPipeline } from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
 function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "")
-    .slice(0, 40) || "stage";
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+      .slice(0, 40) || "stage"
+  );
 }
 
 async function assertAdmin() {
@@ -35,13 +38,15 @@ export async function createPipelineDeal(formData: FormData) {
     .select()
     .from(pipelines)
     .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.slug, pipelineSlug)));
+  const archived = stageSlug === "archive" || pipelineSlug === "archive";
   await db.insert(deals).values({
     tenantId: DEFAULT_TENANT_ID,
     title,
     lineOfBusiness: str(formData, "lineOfBusiness") || "HO",
-    pipelineStage: stageSlug === "closed_won" ? "bound" : stageSlug === "quote_sent" ? "quote_sent" : "shopping",
+    pipelineStage: dealStageForPipeline(stageSlug),
     pipelineStageSlug: stageSlug,
     pipelineId: pipeline?.id,
+    archivedAt: archived ? new Date() : null,
     state: "FL",
   });
   revalidatePath("/pipeline");
@@ -49,7 +54,6 @@ export async function createPipelineDeal(formData: FormData) {
 }
 
 export async function addPipelineStage(formData: FormData) {
-  await assertAdmin();
   const pipelineId = str(formData, "pipelineId");
   const name = str(formData, "name");
   if (!pipelineId || !name) return;
@@ -57,18 +61,31 @@ export async function addPipelineStage(formData: FormData) {
     .select({ n: sql<number>`coalesce(max(${pipelineStages.sortOrder}), -1) + 1` })
     .from(pipelineStages)
     .where(eq(pipelineStages.pipelineId, pipelineId));
+  const existing = await db
+    .select({ slug: pipelineStages.slug })
+    .from(pipelineStages)
+    .where(
+      and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.pipelineId, pipelineId)),
+    );
+  const taken = new Set(existing.map((row) => row.slug));
+  let slug = str(formData, "slug") || slugify(name);
+  if (taken.has(slug)) {
+    let i = 2;
+    while (taken.has(`${slug}_${i}`)) i += 1;
+    slug = `${slug}_${i}`;
+  }
   await db.insert(pipelineStages).values({
     tenantId: DEFAULT_TENANT_ID,
     pipelineId,
     name,
-    slug: str(formData, "slug") || slugify(name),
+    slug,
     sortOrder: Number(n ?? 0),
+    seeded: false,
   });
   revalidatePath("/pipeline");
 }
 
 export async function relabelPipelineStage(formData: FormData) {
-  await assertAdmin();
   const id = str(formData, "stageId");
   const name = str(formData, "name");
   if (!id || !name) return;
@@ -80,12 +97,67 @@ export async function relabelPipelineStage(formData: FormData) {
 }
 
 export async function deletePipelineStage(formData: FormData) {
-  await assertAdmin();
   const id = str(formData, "stageId");
   if (!id) return;
+  const [stage] = await db
+    .select()
+    .from(pipelineStages)
+    .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
+  if (!stage) return;
+  const siblings = await db
+    .select()
+    .from(pipelineStages)
+    .where(
+      and(
+        eq(pipelineStages.tenantId, DEFAULT_TENANT_ID),
+        eq(pipelineStages.pipelineId, stage.pipelineId),
+      ),
+    )
+    .orderBy(asc(pipelineStages.sortOrder));
+  if (siblings.length <= 1) return;
+  const fallback = siblings.find((row) => row.id !== id);
+  if (fallback) {
+    await db
+      .update(deals)
+      .set({
+        pipelineStageSlug: fallback.slug,
+        pipelineStage: dealStageForPipeline(fallback.slug),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.pipelineStageSlug, stage.slug)),
+      );
+  }
   await db
     .delete(pipelineStages)
     .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
+  revalidatePath("/pipeline");
+}
+
+export async function reorderPipelineStage(formData: FormData) {
+  const id = str(formData, "stageId");
+  const direction = Number(str(formData, "direction") || "0");
+  if (!id || (direction !== -1 && direction !== 1)) return;
+  const [stage] = await db
+    .select()
+    .from(pipelineStages)
+    .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
+  if (!stage) return;
+  const siblings = await db
+    .select()
+    .from(pipelineStages)
+    .where(
+      and(
+        eq(pipelineStages.tenantId, DEFAULT_TENANT_ID),
+        eq(pipelineStages.pipelineId, stage.pipelineId),
+      ),
+    )
+    .orderBy(asc(pipelineStages.sortOrder));
+  const index = siblings.findIndex((row) => row.id === id);
+  const swap = siblings[index + direction];
+  if (!swap) return;
+  await db.update(pipelineStages).set({ sortOrder: swap.sortOrder }).where(eq(pipelineStages.id, stage.id));
+  await db.update(pipelineStages).set({ sortOrder: stage.sortOrder }).where(eq(pipelineStages.id, swap.id));
   revalidatePath("/pipeline");
 }
 

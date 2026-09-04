@@ -1000,20 +1000,43 @@ export async function listPipelines() {
 }
 
 export async function getPipelineBoard(slug: string) {
-  const boards = await listPipelines();
+  const { ensureSeededPipelines } = await import("@/lib/wire/ensure-pipelines");
+  const { dealMatchesBoard, switcherBoards } = await import("@/lib/wire/pipeline");
+  await ensureSeededPipelines();
+  const boards = switcherBoards(await listPipelines());
   const board = boards.find((row) => row.slug === slug) ?? boards[0] ?? null;
   if (!board) return null;
-  const cards = await db
-    .select()
+  const rows = await db
+    .select({
+      deal: deals,
+      contact: contacts,
+      lead: leads,
+      risk: risks,
+      account: accounts,
+    })
     .from(deals)
+    .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .leftJoin(leads, eq(deals.leadId, leads.id))
+    .leftJoin(accounts, eq(deals.accountId, accounts.id))
+    .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
     .orderBy(desc(deals.updatedAt));
+  const seen = new Set<string>();
+  const cards = [];
+  for (const row of rows) {
+    if (seen.has(row.deal.id)) continue;
+    if (!dealMatchesBoard(row.deal, board)) continue;
+    seen.add(row.deal.id);
+    cards.push(row);
+  }
   return {
     board,
     boards,
-    cards: cards.filter((deal) => deal.pipelineId === board.id),
+    cards,
   };
 }
+
+export type PipelineCardRow = Awaited<NonNullable<Awaited<ReturnType<typeof getPipelineBoard>>>>["cards"][number];
 
 export async function listFormTemplates() {
   return db
