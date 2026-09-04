@@ -37,6 +37,8 @@ function refreshBrand() {
   revalidatePath("/settings/my-desk");
   revalidatePath("/settings/email-templates");
   revalidatePath("/settings/email-signatures");
+  revalidatePath("/automations");
+  revalidatePath("/automations/signatures");
   revalidatePath("/settings/email-triggers");
   revalidatePath("/leads");
   revalidatePath("/contacts");

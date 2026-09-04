@@ -371,3 +371,12 @@ export const CARRIER_IDS = {
   americanIntegrity: "33333333-3333-4333-8333-333333333309",
   vave: "33333333-3333-4333-8333-333333333310",
 } as const;
+
+/** Automations hub seeds. Do not reuse Ana IDs. */
+export const GUIDED_AUTOMATION_IDS = {
+  closedWonNotify: "a0701111-a070-4111-8111-a07011111101",
+  renewalTask: "a0701111-a070-4111-8111-a07011111102",
+  quoteSentNotify: "a0701111-a070-4111-8111-a07011111103",
+} as const;
+export const MAYA_SIGNATURE_DRAFT_ID = "a0701111-a070-4111-8111-a07011111111";
+

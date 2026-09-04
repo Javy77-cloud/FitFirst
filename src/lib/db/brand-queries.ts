@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or, isNull } from "drizzle-orm";
 import { AGENCY_BRAND, DEFAULT_TENANT_ID, defaultColumnLayout } from "@/lib/domain";
 import { getDeskActor } from "@/lib/brand/desk-role";
 import { resolveUiPrefs, type ResolvedUiPrefs } from "@/lib/brand/resolve";
@@ -19,7 +19,13 @@ export async function getDefaultSignature() {
   const [row] = await db
     .select()
     .from(emailSignatures)
-    .where(and(eq(emailSignatures.tenantId, tenant()), eq(emailSignatures.isDefault, true)));
+    .where(
+      and(
+        eq(emailSignatures.tenantId, tenant()),
+        eq(emailSignatures.isDefault, true),
+        or(eq(emailSignatures.approvalStatus, "live"), isNull(emailSignatures.approvalStatus)),
+      ),
+    );
   if (row) return row;
   const [any] = await db
     .select()

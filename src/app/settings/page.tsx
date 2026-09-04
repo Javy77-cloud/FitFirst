@@ -37,6 +37,18 @@ export default async function SettingsPage() {
           : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
       <Link
+        href="/automations"
+        className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+      >
+        <div>
+          <div className="text-sm font-semibold text-navy">Automations hub</div>
+          <p className="text-xs text-muted-foreground">
+            Campaigns, bulk SMS, templates, guided builder, and signature approval — one nav row,
+            not buried only here.
+          </p>
+        </div>
+      </Link>
+      <Link
         href="/settings/integrations"
         className="mb-4 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
       >

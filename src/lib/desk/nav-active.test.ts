@@ -41,4 +41,11 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/settings", "/settings")).toBe(true);
     expect(navItemIsActive("/settings/phone", "/settings")).toBe(true);
   });
+
+  it("highlights Automations on hub and section pages", () => {
+    expect(navItemIsActive("/automations", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/signatures", "/automations")).toBe(true);
+    expect(navItemIsActive("/settings/email-templates", "/automations")).toBe(false);
+  });
 });

@@ -17,6 +17,7 @@ import {
   Search,
   Shield,
   Users,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItemIsActive } from "@/lib/desk/nav-active";
@@ -37,6 +38,7 @@ const NAV = [
   { href: "/claims", label: "Claims log", icon: FileStack },
   { href: "/commissions", label: "Commissions", icon: Briefcase },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
+  { href: "/automations", label: "Automations", icon: Workflow },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
