@@ -45,7 +45,9 @@ import { seedBookRenewals } from "./seed-book-renewals";
 import { seedCommsDesk } from "./seed-comms";
 import { ensureDefaultLineSubfilters } from "./line-settings";
 import { seedCalendarDesk } from "./seed-calendar";
+import { seedCompanyMeetings } from "./seed-company-meetings";
 import { seedGlobalLists } from "./seed-global-lists";
+import { seedOfficesAndTerritories } from "./seed-offices";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -473,5 +475,7 @@ export async function seed() {
   await seedCommsDesk();
   await ensureDefaultLineSubfilters();
   await seedCalendarDesk();
+  await seedOfficesAndTerritories();
+  await seedCompanyMeetings();
   await seedGlobalLists();
 }

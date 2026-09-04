@@ -10,6 +10,7 @@ describe("recordHref", () => {
     expect(recordHref("deal", id)).toBe(`/deals/${id}`);
     expect(recordHref("lead", id)).toBe(`/leads/${id}`);
     expect(recordHref("carrier", id)).toBe(`/carriers/${id}`);
+    expect(recordHref("activity", id)).toBe(`/calendar?event=${id}`);
     expect(recordHref("commission", id)).toBeNull();
     expect(recordHref("policy", null)).toBeNull();
   });

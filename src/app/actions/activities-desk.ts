@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { activities, activityLogs } from "@/lib/db/schema";
+import { activities, activityLogs, alerts, calendarInvites } from "@/lib/db/schema";
 import { activityLogBody, assertRelatedRecord, hasCommsRecord } from "@/lib/lifecycle/activity";
 import { currentDeskSession } from "@/lib/auth/session";
 import { writeDeskComms } from "@/lib/desk/write-comms";
@@ -259,6 +259,8 @@ export async function deleteDeskActivity(formData: FormData) {
   if (!activity) return { error: "Activity not found." };
 
   await db.delete(activityLogs).where(eq(activityLogs.activityId, id));
+  await db.delete(calendarInvites).where(eq(calendarInvites.activityId, id));
+  await db.delete(alerts).where(and(eq(alerts.entityType, "activity"), eq(alerts.entityId, id)));
   await db.delete(activities).where(eq(activities.id, id));
   revalidateRelated(activity);
   return { ok: true };

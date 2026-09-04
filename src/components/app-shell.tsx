@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { isNull, eq, and, sql } from "drizzle-orm";
+import { isNull, and, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
 import { DeskNav } from "@/components/desk-nav";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
+import { alertVisibleWhere } from "@/lib/alerts/visibility";
 import { logoutDesk } from "@/app/actions/auth";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 
@@ -24,12 +25,12 @@ export async function AppShell({
   /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
   columns?: ReactNode;
 }) {
+  const session = await currentDeskSession();
   const [count] = await db
     .select({ n: sql<number>`count(*)` })
     .from(alerts)
-    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
+    .where(and(alertVisibleWhere(session, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
   const unread = Number(count?.n ?? 0);
-  const session = await currentDeskSession();
   const brand = await loadAgencyBrand();
 
   return (

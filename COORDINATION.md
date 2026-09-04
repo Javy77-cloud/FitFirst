@@ -468,3 +468,15 @@ Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Ana fixture untouched
 - **E-sign stubs:** Settings → E-sign. DocuSign and Dropbox Sign BYO. No vendor keys. Signed apps still attach on the Deal.
 
 Migration `0015_esign_settings`.
+
+## BATCH4 Admin calendar company meetings (`cursor/admin-company-meetings-0864`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`--ff-sidebar: #c5ddf4`). Personal Video / In-Home / In-Office meetings stay.
+
+- Calendar event types **Company meeting** and **Training** (Admin-created). `kind` stays `meeting`; `meeting_type` is `company` or `training`.
+- Fields: title, start/end, video URL (Zoom / Meet / other http(s)), notes.
+- Invite pickers: Whole agency | Office | Territory | Management only. Offices / territories are stub tables (`0021_offices_territories`) with seed ids Palm Bay, Savannah, Space Coast — same shape as the offices bot so merge is `CREATE TABLE IF NOT EXISTS`.
+- Invited agents get `calendar_invites` + an in-app alert (`alerts.user_id`) and the event on their calendar (`listCalendarActivities` includes invitees).
+- Event detail **Open video**. Agents cannot create company events.
+- Migrations: `0021_offices_territories`, `0022_company_meetings`.
+

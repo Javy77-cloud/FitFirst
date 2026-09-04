@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
+import { alertVisibleWhere } from "@/lib/alerts/visibility";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
@@ -35,6 +36,7 @@ import {
   agencySettings,
   activityLogs,
   alerts,
+  calendarInvites,
   appetiteRules,
   carrierAppointments,
   carriers,
@@ -258,11 +260,26 @@ export async function getCarrier(id: string) {
 
 export async function listCalendarActivities(_from: Date, _to: Date) {
   const session = await currentDeskSession();
+  const invited =
+    session.userId
+      ? exists(
+          db
+            .select({ id: calendarInvites.id })
+            .from(calendarInvites)
+            .where(
+              and(
+                eq(calendarInvites.activityId, activities.id),
+                eq(calendarInvites.userId, session.userId),
+                eq(calendarInvites.tenantId, tenant()),
+              ),
+            ),
+        )
+      : sql`false`;
   const scope = session.isAdmin
     ? undefined
     : session.name
-      ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""))
-      : sql`false`;
+      ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""), invited)
+      : invited;
   return db
     .select()
     .from(activities)
@@ -961,9 +978,9 @@ export async function listQuoteLogs() {
 }
 
 export async function listAlerts(unreadOnly = false) {
-  const where = unreadOnly
-    ? and(eq(alerts.tenantId, tenant()), isNull(alerts.readAt))
-    : eq(alerts.tenantId, tenant());
+  const session = await currentDeskSession();
+  const visible = alertVisibleWhere(session, tenant());
+  const where = unreadOnly ? and(visible, isNull(alerts.readAt)) : visible;
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 }
 
@@ -1124,7 +1141,7 @@ export async function dashboardStats() {
       shopping: sql<number>`(select count(*) from deals where tenant_id = ${tenant()} and pipeline_stage = 'shopping'${ownerSql})`,
       contacts: sql<number>`(select count(*) from contacts where tenant_id = ${tenant()}${ownerSql})`,
       policies: sql<number>`(select count(*) from policies where tenant_id = ${tenant()}${ownerSql})`,
-      unreadAlerts: sql<number>`(select count(*) from alerts where tenant_id = ${tenant()} and read_at is null)`,
+      unreadAlerts: sql<number>`(select count(*) from alerts where tenant_id = ${tenant()} and read_at is null and (${session.isAdmin} or user_id is null or user_id = ${session.userId ?? "" }))`,
     })
     .from(tenants)
     .where(eq(tenants.id, tenant()));

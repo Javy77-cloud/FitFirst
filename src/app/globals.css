@@ -285,6 +285,14 @@
   background: var(--ff-navy);
   color: #ffffff;
 }
+.ff-cal-company {
+  background: var(--ff-flag);
+  color: #ffffff;
+}
+.ff-cal-training {
+  background: var(--ff-accent);
+  color: #ffffff;
+}
 .ff-stub {
   background: var(--ff-flag-bg);
   color: var(--ff-flag);

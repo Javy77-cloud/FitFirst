@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   deleteDeskActivity,
@@ -8,6 +8,10 @@ import {
   rescheduleDeskActivity,
   updateDeskActivity,
 } from "@/app/actions/activities-desk";
+import {
+  CompanyMeetingForm,
+  type InviteCatalogOption,
+} from "@/components/calendar/company-meeting-form";
 import { RelatedRecordFields, type RelatedOptions } from "@/components/desk/related-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +19,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ACTIVITY_COLORS } from "@/lib/desk/comms";
 import { CALL_OUTCOMES } from "@/lib/domain";
+import { isCompanyEventType, videoHrefFromEvent, type CompanyEventType } from "@/lib/meetings/company";
 import {
   activitiesOnDay,
   addDays,
   addMonths,
   dayHours,
   eventHeightPx,
+  eventToneColor,
   filterCalendarActivities,
   formatTime,
   kindClass,
@@ -57,12 +63,20 @@ export function DeskCalendar({
   initialView,
   initialDate,
   initialKinds,
+  isAdmin = false,
+  offices = [],
+  territories = [],
+  openEventId = null,
 }: {
   events: CalendarEvent[];
   options: RelatedOptions;
   initialView: CalendarView;
   initialDate: string;
   initialKinds: string[];
+  isAdmin?: boolean;
+  offices?: InviteCatalogOption[];
+  territories?: InviteCatalogOption[];
+  openEventId?: string | null;
 }) {
   const router = useRouter();
   const [view, setView] = useState<CalendarView>(initialView);
@@ -71,7 +85,7 @@ export function DeskCalendar({
     return Number.isNaN(d.getTime()) ? new Date() : d;
   });
   const [kinds, setKinds] = useState<string[]>(initialKinds.length ? initialKinds : [...KINDS]);
-  const [editing, setEditing] = useState<CalendarEvent | "new" | null>(null);
+  const [editing, setEditing] = useState<CalendarEvent | "new" | "company" | "training" | null>(null);
   const [draftKind, setDraftKind] = useState<(typeof KINDS)[number]>("task");
   const [draftStart, setDraftStart] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +96,12 @@ export function DeskCalendar({
     () => filterCalendarActivities(events, { kinds }),
     [events, kinds],
   );
+
+  useEffect(() => {
+    if (!openEventId) return;
+    const match = events.find((row) => row.id === openEventId);
+    if (match) setEditing(match);
+  }, [openEventId, events]);
 
   function go(nextView: CalendarView, nextDate: Date, nextKinds = kinds) {
     setView(nextView);
@@ -197,6 +217,27 @@ export function DeskCalendar({
           <Button type="button" size="sm" onClick={() => openNew()}>
             + Add event
           </Button>
+          {isAdmin ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-fit-flag text-white hover:bg-fit-flag/90"
+                onClick={() => {
+                  setDraftStart("");
+                  setEditing("company");
+                }}
+              >
+                + Company meeting
+              </Button>
+              <Button type="button" size="sm" onClick={() => {
+                setDraftStart("");
+                setEditing("training");
+              }}>
+                + Training
+              </Button>
+            </>
+          ) : null}
           {KINDS.map((kind) => (
             <Button
               key={kind}
@@ -294,9 +335,9 @@ export function DeskCalendar({
               <li key={row.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
                 <span
                   className="rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"
-                  style={{ background: ACTIVITY_COLORS[row.kind] ?? "#5c6b7a" }}
+                  style={{ background: eventToneColor(row) }}
                 >
-                  {row.kind}
+                  {isCompanyEventType(row.meetingType) ? row.meetingType : row.kind}
                 </span>
                 <span className="font-medium text-navy">{row.title}</span>
                 <span className="text-xs text-muted-foreground">{formatTime(row.startAt ?? row.dueAt)}</span>
@@ -309,7 +350,22 @@ export function DeskCalendar({
         )}
       </section>
 
-      {editing ? (
+      {editing === "company" || editing === "training" || (editing && editing !== "new" && isCompanyEventType(editing.meetingType)) ? (
+        <CompanyMeetingForm
+          event={editing === "company" || editing === "training" ? null : editing}
+          isAdmin={isAdmin}
+          defaultType={(editing === "training" || (typeof editing === "object" && editing.meetingType === "training")
+            ? "training"
+            : "company") as CompanyEventType}
+          defaultStart={draftStart}
+          offices={offices}
+          territories={territories}
+          onClose={() => {
+            setEditing(null);
+            router.refresh();
+          }}
+        />
+      ) : editing ? (
         <CalendarEditor
           event={editing === "new" ? null : editing}
           options={options}
@@ -508,10 +564,10 @@ function HourRow({
                   e.stopPropagation();
                   onSelect(serializeCalendarActivity(item));
                 }}
-                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white ${kindClass(item.kind)} ${selectedId === item.id ? "ring-2 ring-white" : ""}`}
+                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white ${kindClass(item.kind, item.meetingType)} ${selectedId === item.id ? "ring-2 ring-white" : ""}`}
                 style={{
                   height: Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4),
-                  background: ACTIVITY_COLORS[item.kind] ?? "#5c6b7a",
+                  background: eventToneColor(item),
                 }}
               >
                 <span className="block truncate">{item.title}</span>
@@ -550,7 +606,7 @@ function EventChip({
         onSelect(serializeCalendarActivity(event));
       }}
       className={`block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-medium text-white ${selected ? "ring-2 ring-navy" : ""}`}
-      style={{ background: ACTIVITY_COLORS[event.kind] ?? "#5c6b7a" }}
+      style={{ background: eventToneColor(event) }}
     >
       {formatTime(event.startAt ?? event.dueAt)} {event.title}
     </button>
@@ -672,6 +728,18 @@ function CalendarEditor({
             <Label className="text-xs">Notes</Label>
             <Textarea name="notes" defaultValue={event?.notes ?? ""} className="mt-1 min-h-16" />
           </div>
+          {event && videoHrefFromEvent(event) ? (
+            <div className="sm:col-span-2">
+              <a
+                href={videoHrefFromEvent(event)!}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Open video
+              </a>
+            </div>
+          ) : null}
           <div className="sm:col-span-2 flex flex-wrap justify-end gap-2">
             {!isNew ? (
               <Button
