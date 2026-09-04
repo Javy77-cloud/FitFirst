@@ -49,6 +49,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/sms")).toBe(true);
     expect(isAdminOnlyPath("/settings/phone")).toBe(true);
     expect(isAdminOnlyPath("/settings/lines")).toBe(true);
+    expect(isAdminOnlyPath("/settings/agents")).toBe(true);
+    expect(isAdminOnlyPath("/settings/agents/abc/performance")).toBe(true);
     expect(isAdminOnlyPath("/settings")).toBe(false);
     expect(isAdminOnlyPath("/settings/my-desk")).toBe(false);
     expect(isAdminOnlyPath("/pipeline")).toBe(false);
@@ -57,6 +59,8 @@ describe("Admin vs Agent capabilities", () => {
 
   it("keeps login and fill-demo public", () => {
     expect(isPublicPath("/login")).toBe(true);
+    expect(isPublicPath("/login/invite")).toBe(true);
+    expect(isPublicPath("/login/reset")).toBe(true);
     expect(isPublicPath("/login?error=1")).toBe(true);
     expect(isPublicPath("/fill-demo")).toBe(true);
     expect(isPublicPath("/")).toBe(false);

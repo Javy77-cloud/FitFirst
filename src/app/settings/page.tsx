@@ -58,6 +58,22 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsSection
+            id="people"
+            title="People / Agents"
+            badge="Admin"
+            summary="Create, freeze, notify, and reset passwords."
+            defaultOpen
+          >
+            <p className="text-sm text-muted-foreground">
+              Javy Rivera and Maya Chen are already on the desk. Add producers, freeze a login,
+              send an in-app note, or push a password reset stub.
+            </p>
+            <Link href="/settings/agents" className="mt-3 inline-block text-sm text-primary hover:underline">
+              Open People / Agents
+            </Link>
+          </SettingsSection>
+
+          <SettingsSection
             id="lines"
             title="Lines of business"
             badge="Admin"

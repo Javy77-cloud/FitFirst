@@ -99,15 +99,29 @@ export const users = pgTable(
     tenantId: tenantCol(),
     name: text("name").notNull(),
     email: text("email").notNull(),
+    username: text("username"),
     role: text("role").notNull().default("agent"),
     passwordHash: text("password_hash"),
     active: boolean("active").notNull().default(true),
+    accessStatus: text("access_status").notNull().default("active"),
+    canAccessModules: boolean("can_access_modules").notNull().default(true),
+    canSeeAgencyWidgets: boolean("can_see_agency_widgets").notNull().default(true),
+    officeLabel: text("office_label"),
+    territoryLabel: text("territory_label"),
+    mustSetPassword: boolean("must_set_password").notNull().default(false),
+    inviteToken: text("invite_token"),
+    inviteExpiresAt: timestamp("invite_expires_at", { withTimezone: true }),
+    resetToken: text("reset_token"),
+    resetExpiresAt: timestamp("reset_expires_at", { withTimezone: true }),
+    frozenAt: timestamp("frozen_at", { withTimezone: true }),
+    removedAt: timestamp("removed_at", { withTimezone: true }),
     meetingAddress: text("meeting_address"),
     ...timestamps,
   },
   (t) => [
     index("users_tenant_idx").on(t.tenantId),
     uniqueIndex("users_tenant_email_idx").on(t.tenantId, t.email),
+    uniqueIndex("users_tenant_username_idx").on(t.tenantId, t.username),
   ],
 );
 
@@ -820,12 +834,28 @@ export const alerts = pgTable(
     severity: text("severity").notNull().default("info"),
     entityType: text("entity_type"),
     entityId: uuid("entity_id"),
+    recipientUserId: uuid("recipient_user_id"),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (t) => [index("alerts_tenant_unread_idx").on(t.tenantId, t.readAt)],
+);
+
+/** Admin → agent in-app messages. Nothing emails. */
+export const deskMessages = pgTable(
+  "desk_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fromUserId: uuid("from_user_id").notNull(),
+    toUserId: uuid("to_user_id").notNull(),
+    body: text("body").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("desk_messages_to_idx").on(t.tenantId, t.toUserId, t.createdAt)],
 );
 
 /** Consumed from agency-ops: task / meeting / call. TEST-DESK adds account_id. */
@@ -1624,6 +1654,7 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
+export type DeskMessage = typeof deskMessages.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;

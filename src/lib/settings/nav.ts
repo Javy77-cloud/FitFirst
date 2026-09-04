@@ -1,5 +1,7 @@
 export const SETTINGS_NAV_IDS = [
   "overview",
+  "people",
+  "agents",
   "communications",
   "email",
   "sms",
@@ -40,6 +42,15 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     label: "Overview",
     hint: "Admin vs agent at a glance",
     children: [],
+  },
+  {
+    id: "people",
+    href: "/settings/agents",
+    label: "People / Agents",
+    hint: "Create, freeze, notify",
+    children: [
+      { id: "agents", href: "/settings/agents", label: "Agents", hint: "Access and status" },
+    ],
   },
   {
     id: "communications",

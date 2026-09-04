@@ -28,11 +28,12 @@ export async function currentOwnerHomeScope(): Promise<OwnerHomeScope> {
     const { currentDeskSession } = await import("@/lib/auth/session");
     const session = await currentDeskSession();
     if (session.signedIn) {
+      const seeAgency = session.isAdmin || Boolean(session.user?.canSeeAgencyWidgets);
       return {
         tenantId,
         role: session.role,
-        agentUserId: session.isAdmin ? null : session.userId,
-        label: session.isAdmin ? "Agency totals" : "Your book",
+        agentUserId: seeAgency ? null : session.userId,
+        label: seeAgency ? "Agency totals" : "Your book",
       };
     }
     const jar = await cookies();

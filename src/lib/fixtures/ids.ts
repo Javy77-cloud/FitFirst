@@ -226,6 +226,10 @@ export const HEALTH_SHEET_ID = "cc888888-8888-4888-8888-000000000804";
 
 export const ADMIN_USER_ID = "44444444-4444-4444-8444-444444444401";
 export const AGENT_USER_ID = "44444444-4444-4444-8444-444444444402";
+/** Frozen demo producer. Off ADMIN/AGENT 401–403 and Elena 441–461. */
+export const FROZEN_AGENT_USER_ID = "44444444-4444-4444-8444-4444444444f1";
+export const FROZEN_AGENT_MESSAGE_ID = "88888888-8888-4888-8888-888888888807";
+export const FROZEN_AGENT_ALERT_ID = "88888888-8888-4888-8888-888888888808";
 export const ADMIN_NAME = "Javy Rivera";
 
 export const CLAIM_CONTACT_ID = OWNER_CONTACT_IDS.ruiz;
@@ -357,6 +361,7 @@ export const SEEDED_DESK_AGENTS = [
   { id: DESK_AGENT_IDS.admin, slug: "admin", displayName: "Agency admin", role: "admin" },
   { id: DESK_AGENT_IDS.javy, slug: "javy", displayName: "Javy Garcia", role: "agent" },
   { id: DESK_AGENT_IDS.producer, slug: "producer", displayName: "Desk producer", role: "agent" },
+  { id: FROZEN_AGENT_USER_ID, slug: "luis", displayName: "Luis Vega", role: "agent" },
 ] as const;
 
 export const CARRIER_IDS = {

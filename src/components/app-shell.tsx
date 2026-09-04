@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { isNull, eq, and, sql } from "drizzle-orm";
+import { isNull, eq, and, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
@@ -24,12 +24,16 @@ export async function AppShell({
   /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
   columns?: ReactNode;
 }) {
+  const session = await currentDeskSession();
+  const recipient =
+    session.isAdmin || !session.userId
+      ? undefined
+      : or(isNull(alerts.recipientUserId), eq(alerts.recipientUserId, session.userId));
   const [count] = await db
     .select({ n: sql<number>`count(*)` })
     .from(alerts)
-    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
+    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt), recipient));
   const unread = Number(count?.n ?? 0);
-  const session = await currentDeskSession();
   const brand = await loadAgencyBrand();
 
   return (

@@ -961,9 +961,14 @@ export async function listQuoteLogs() {
 }
 
 export async function listAlerts(unreadOnly = false) {
+  const session = await currentDeskSession();
+  const recipient =
+    session.isAdmin || !session.userId
+      ? undefined
+      : or(isNull(alerts.recipientUserId), eq(alerts.recipientUserId, session.userId));
   const where = unreadOnly
-    ? and(eq(alerts.tenantId, tenant()), isNull(alerts.readAt))
-    : eq(alerts.tenantId, tenant());
+    ? and(eq(alerts.tenantId, tenant()), isNull(alerts.readAt), recipient)
+    : and(eq(alerts.tenantId, tenant()), recipient);
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 }
 

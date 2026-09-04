@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { adminRedirectPath, isAdminOnlyPath, isPublicPath } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { isModulePath } from "@/lib/people/privileges";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,6 +19,13 @@ export function proxy(request: NextRequest) {
   }
 
   const isAdmin = role === "admin" || role === "owner";
+  const canModules = request.cookies.get(SESSION_COOKIES.modules)?.value !== "0";
+  if (!isAdmin && !canModules && isModulePath(pathname)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/";
+    dest.search = "?locked=modules";
+    return NextResponse.redirect(dest);
+  }
   if (!isAdmin && isAdminOnlyPath(pathname)) {
     const dest = request.nextUrl.clone();
     const [path, query] = adminRedirectPath().split("?");

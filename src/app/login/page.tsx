@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; set?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, set } = await searchParams;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
@@ -25,9 +25,22 @@ export default async function LoginPage({
           </p>
         </div>
 
+        {set ? (
+          <p className="rounded-md bg-fit-green-bg px-3 py-2 text-sm text-fit-green">
+            Password saved. Sign in with your email or username.
+          </p>
+        ) : null}
         {error ? (
           <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">
-            Email or password did not match a desk user.
+            {error === "frozen"
+              ? "This login is frozen. Ask an Admin to unfreeze it."
+              : error === "removed"
+                ? "This login was removed."
+                : error === "invite"
+                  ? "This agent still needs the invite link to choose a password."
+                  : error === "reset"
+                    ? "That reset link is missing or expired."
+                    : "Email, username, or password did not match an active desk user."}
           </p>
         ) : null}
 
@@ -85,15 +98,16 @@ export default async function LoginPage({
 
         <form action={loginDesk} className="ff-card space-y-3 p-5">
           <div>
-            <h2 className="text-sm font-semibold text-navy">Email and password</h2>
+            <h2 className="text-sm font-semibold text-navy">Email or username</h2>
             <p className="text-xs text-muted-foreground">
-              Same demo users. After login the rail shows Admin · all book or Agent · own book.
+              Same demo users, plus any agent Admin created. After login the rail shows Admin ·
+              all book or Agent · own book.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label className="text-sm">Email</Label>
-              <Input name="email" type="email" required defaultValue={DEMO_USERS.admin.email} className="mt-1" />
+              <Label className="text-sm">Email or username</Label>
+              <Input name="email" required defaultValue={DEMO_USERS.admin.email} className="mt-1" />
             </div>
             <div>
               <Label className="text-sm">Password</Label>

@@ -1,12 +1,15 @@
 import { cookies } from "next/headers";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import { capabilitiesFor, type DeskCapabilities } from "@/lib/auth/access";
 import { ACTOR_COOKIE, SESSION_COOKIE_OPTS, SESSION_COOKIES } from "@/lib/auth/cookies";
+import { verifyPassword } from "@/lib/auth/password";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
 import { normalizeRole, type DeskRole } from "@/lib/home/scope";
+import { isDeskLoginAllowed, normalizeAccessStatus } from "@/lib/people/status";
+import { normalizeLogin } from "@/lib/people/tokens";
 
 export { ACTOR_COOKIE, SESSION_COOKIE_OPTS, SESSION_COOKIES };
 
@@ -64,6 +67,26 @@ export function checkDemoPassword(email: string, password: string): boolean {
   return password === expected;
 }
 
+export function passwordMatchesUser(user: Pick<User, "email" | "passwordHash">, password: string): boolean {
+  if (user.passwordHash && verifyPassword(password, user.passwordHash)) return true;
+  return checkDemoPassword(user.email, password);
+}
+
+export async function findUserByLogin(login: string): Promise<User | null> {
+  const key = normalizeLogin(login);
+  if (!key) return null;
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.tenantId, DEFAULT_TENANT_ID),
+        or(eq(users.email, key), eq(users.username, key)),
+      ),
+    );
+  return user ?? null;
+}
+
 function guestSession(): DeskSession {
   return {
     user: null,
@@ -104,6 +127,7 @@ export async function currentDeskSession(): Promise<DeskSession> {
       .from(users)
       .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
     if (!user) return guestSession();
+    if (!isDeskLoginAllowed(user.accessStatus ?? "active")) return guestSession();
     return sessionFromUser(user);
   } catch {
     return guestSession();
@@ -132,4 +156,4 @@ export async function getActor(): Promise<Actor> {
   };
 }
 
-export { isAdmin };
+export { isAdmin, normalizeAccessStatus };
