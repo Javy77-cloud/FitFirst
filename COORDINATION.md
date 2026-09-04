@@ -360,6 +360,14 @@ Owner: this slice. Additive only. Did not edit the Ana fixture. Did not bind Ana
 - Selling Agency picklists are off by default. Settings can turn them back on for multi selling-agency desks. Stored `selling_agency` values are kept as hidden fields when the picklists are off.
 - Additive schema: `agency_settings.write_life` / `write_health` / `show_selling_agency`, `deals.policy_sub_type`, table `line_subfilter_options`. Migration `0013_line_settings`.
 
+## Quotes collapse + Claims add + Commissions filters (`cursor/quotes-claims-commissions-4af1`)
+
+Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not write Zoho.
+
+- **Quotes:** `/quotes` shops, deal Quotes tab (ranked / comparison / attempt log), and Quote Sheet groups use `DeskDetails`. Open when there is work (quoted/declined, missing/CHECK); fold skip-only or complete groups.
+- **Claims:** `/claims` has a prominent **Add new claim**. `/claims/new` is the stub create flow. `logClaim` saves a `claims` row with or without a policy, then opens the claim.
+- **Commissions:** `/commissions` filters Life / Health / P&C + Home/Auto/Flood/Commercial (or Life/Health subs) and date windows last year / 6 months / 3 months / month / quarter plus next month / 3 months / 6 months / quarter / year. Ana remains $0 / unbound.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

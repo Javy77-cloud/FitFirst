@@ -1,155 +1,80 @@
-// @ts-nocheck — leftover commissions filter UI. Desk /commissions is a thin read table.
-import { LINES, SELLING_AGENCIES, type CommissionRange, type CommissionView } from "@/lib/domain";
+"use client";
 
-const RANGE_LABEL: Record<CommissionRange, string> = {
-  all: "All",
-  pending: "Pending",
-  paid: "Paid",
-  last_30: "Last 30 days",
-  last_quarter: "Last quarter",
-  fiscal_year: "This fiscal year",
-  upcoming: "Upcoming to be paid",
-};
+import { useState } from "react";
+import {
+  COMMISSION_BOOKS,
+  COMMISSION_PERIOD_LABEL,
+  COMMISSION_PERIODS,
+  subfiltersFor,
+} from "@/lib/commissions/filters";
 
 export function CommissionFilters({
-  view,
+  family,
+  sub,
   range,
-  from,
-  to,
-  carrierId,
-  line,
-  agentId,
-  sellingAgency,
-  carriers,
-  agents,
-  showAgent,
-  showSellingAgency = false,
 }: {
-  view: CommissionView;
-  range: CommissionRange;
-  from?: string;
-  to?: string;
-  carrierId?: string;
-  line?: string;
-  agentId?: string;
-  sellingAgency?: string;
-  carriers: Array<{ id: string; name: string }>;
-  agents: Array<{ id: string; name: string }>;
-  showAgent: boolean;
-  showSellingAgency?: boolean;
+  family?: string;
+  sub?: string;
+  range?: string;
 }) {
+  const [book, setBook] = useState(family ?? "");
+  const options = subfiltersFor(book);
+
   return (
-    <form method="get" className="mb-4 grid gap-2 rounded-md border border-border bg-card p-3 sm:grid-cols-2 lg:grid-cols-7">
-      <input type="hidden" name="view" value={view} />
+    <form method="get" className="mb-4 flex flex-wrap items-end gap-2 text-sm">
       <label className="block text-[11px] text-muted-foreground">
-        Period
+        Book
+        <select
+          name="family"
+          value={book}
+          onChange={(event) => setBook(event.target.value)}
+          className="mt-1 h-8 min-w-32 rounded-md border border-input bg-card px-2 text-sm"
+        >
+          <option value="">All books</option>
+          {COMMISSION_BOOKS.map((row) => (
+            <option key={row.value} value={row.value}>
+              {row.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-[11px] text-muted-foreground">
+        Subfilter
+        <select
+          key={book || "none"}
+          name="sub"
+          defaultValue={options.some((row) => row.value === sub) ? sub : ""}
+          disabled={options.length === 0}
+          className="mt-1 h-8 min-w-36 rounded-md border border-input bg-card px-2 text-sm disabled:opacity-60"
+        >
+          <option value="">{book ? "All in book" : "Pick a book first"}</option>
+          {options.map((row) => (
+            <option key={row.value} value={row.value}>
+              {row.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-[11px] text-muted-foreground">
+        Dates
         <select
           name="range"
-          defaultValue={range}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+          defaultValue={range ?? "all"}
+          className="mt-1 h-8 min-w-40 rounded-md border border-input bg-card px-2 text-sm"
         >
-          {(Object.keys(RANGE_LABEL) as CommissionRange[]).map((key) => (
+          {COMMISSION_PERIODS.map((key) => (
             <option key={key} value={key}>
-              {RANGE_LABEL[key]}
+              {COMMISSION_PERIOD_LABEL[key]}
             </option>
           ))}
         </select>
       </label>
-      <label className="block text-[11px] text-muted-foreground">
-        From
-        <input
-          type="date"
-          name="from"
-          defaultValue={from}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        />
-      </label>
-      <label className="block text-[11px] text-muted-foreground">
-        To
-        <input
-          type="date"
-          name="to"
-          defaultValue={to}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        />
-      </label>
-      <label className="block text-[11px] text-muted-foreground">
-        Carrier
-        <select
-          name="carrierId"
-          defaultValue={carrierId ?? ""}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        >
-          <option value="">All carriers</option>
-          {carriers.map((carrier) => (
-            <option key={carrier.id} value={carrier.id}>
-              {carrier.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block text-[11px] text-muted-foreground">
-        Line
-        <select
-          name="line"
-          defaultValue={line ?? ""}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        >
-          <option value="">All lines</option>
-          {LINES.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-      </label>
-      {showAgent ? (
-        <label className="block text-[11px] text-muted-foreground">
-          Agent
-          <select
-            name="agentId"
-            defaultValue={agentId ?? ""}
-            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-          >
-            <option value="">All agents</option>
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : (
-        <div />
-      )}
-      {showSellingAgency ? (
-        <label className="block text-[11px] text-muted-foreground">
-          Selling agency
-          <select
-            name="sellingAgency"
-            defaultValue={sellingAgency ?? ""}
-            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-          >
-            <option value="">All desks</option>
-            {SELLING_AGENCIES.map((row) => (
-              <option key={typeof row === "string" ? row : row.key} value={typeof row === "string" ? row : row.key}>
-                {typeof row === "string" ? row : row.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      <div className="flex items-end gap-2 lg:col-span-7">
-        <button
-          type="submit"
-          className="h-8 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground"
-        >
-          Apply filters
-        </button>
-        <a href={`/commissions?view=${view}`} className="h-8 rounded-md px-3 text-xs leading-8 text-muted-foreground hover:text-navy">
-          Clear
-        </a>
-      </div>
+      <button type="submit" className="h-8 rounded-md border border-input px-3 text-xs">
+        Apply
+      </button>
+      <a href="/commissions" className="h-8 px-2 text-xs leading-8 text-primary hover:underline">
+        Clear
+      </a>
     </form>
   );
 }

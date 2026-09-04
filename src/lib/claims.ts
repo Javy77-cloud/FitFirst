@@ -75,6 +75,23 @@ export function summarizeClaims(rows: { status: string }[]): {
   return { total: rows.length, open };
 }
 
+/** Stub create payload — policy is optional so /claims/new can save a row. */
+export function claimCreateValues(input: {
+  policyId?: string | null;
+  dateReported?: string;
+  causeType?: string;
+  status?: string;
+  description?: string | null;
+}) {
+  return {
+    policyId: input.policyId?.trim() || null,
+    dateReported: input.dateReported?.trim() || new Date().toISOString().slice(0, 10),
+    causeType: input.causeType?.trim() || "other",
+    status: input.status?.trim() || "inquiry",
+    description: input.description?.trim() || null,
+  };
+}
+
 export function claimCountsLabel(summary: { total: number; open: number }): string {
   if (summary.total === 0) return "0 claims";
   const claimWord = summary.total === 1 ? "claim" : "claims";

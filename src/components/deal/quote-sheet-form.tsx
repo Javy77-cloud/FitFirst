@@ -13,7 +13,9 @@ import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
+import { DeskDetails } from "@/components/desk-details";
 import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
+import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { SheetDrop } from "@/components/deal/sheet-drop";
 import { cn } from "@/lib/utils";
 
@@ -89,9 +91,13 @@ export function QuoteSheetForm({
       <input type="hidden" name="line" value={line} />
 
       {groups.map((group) => (
-        <section key={group.group} className="ff-card p-4 print:break-inside-avoid">
-          <h3 className="mb-3 text-sm font-semibold text-navy">{group.group}</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <DeskDetails
+          key={group.group}
+          title={group.group}
+          summary={sheetGroupSummary(group.fields, sheet.values)}
+          open={printable || sheetGroupNeedsAttention(group.fields, sheet.values)}
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 print:break-inside-avoid">
             {group.fields.map((field) => {
               const cell = sheet.values[field.key] ?? {
                 value: "",
@@ -114,7 +120,7 @@ export function QuoteSheetForm({
               );
             })}
           </div>
-        </section>
+        </DeskDetails>
       ))}
 
       {printable ? null : (
