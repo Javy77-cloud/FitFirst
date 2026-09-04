@@ -88,10 +88,14 @@ export default async function EmailTriggersPage() {
               <div className="lg:col-span-3">
                 <div className="text-sm font-semibold text-navy">{trigger.name}</div>
                 <p className="text-xs text-muted-foreground">
-                  {trigger.eventKind === "closed_won"
+                  {(
+                    "eventKind" in trigger ? trigger.eventKind : trigger.kind
+                  ) === "closed_won"
                     ? "Anchor: Closed Won date"
                     : "Anchor: policy expiration"}
-                  {trigger.createBrokerTask ? " · also creates an in-app broker task" : ""}
+                  {"createBrokerTask" in trigger && trigger.createBrokerTask
+                    ? " · also creates an in-app broker task"
+                    : ""}
                 </p>
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -108,7 +112,9 @@ export default async function EmailTriggersPage() {
                   type="checkbox"
                   name="emailClient"
                   value="true"
-                  defaultChecked={trigger.emailClient}
+                  defaultChecked={
+                    "emailClient" in trigger ? Boolean(trigger.emailClient) : true
+                  }
                 />
                 Email the client
               </label>
@@ -117,7 +123,9 @@ export default async function EmailTriggersPage() {
                   type="checkbox"
                   name="createBrokerTask"
                   value="true"
-                  defaultChecked={trigger.createBrokerTask}
+                  defaultChecked={
+                    "createBrokerTask" in trigger ? Boolean(trigger.createBrokerTask) : false
+                  }
                 />
                 In-app task for the broker
               </label>
@@ -128,12 +136,18 @@ export default async function EmailTriggersPage() {
                     name="delayAmount"
                     type="number"
                     min={0}
-                    defaultValue={trigger.delayAmount}
+                    defaultValue={
+                      "delayAmount" in trigger ? Number(trigger.delayAmount) : trigger.delayDays
+                    }
                     className="h-8 w-20"
                   />
                   <select
                     name="delayUnit"
-                    defaultValue={trigger.delayUnit}
+                    defaultValue={
+                      "delayUnit" in trigger && typeof trigger.delayUnit === "string"
+                        ? trigger.delayUnit
+                        : "days"
+                    }
                     className="h-8 rounded-md border border-input bg-card px-2 text-sm"
                   >
                     {EMAIL_DELAY_UNITS.map((unit) => (
@@ -148,7 +162,7 @@ export default async function EmailTriggersPage() {
                 <Label className="text-xs">Template</Label>
                 <select
                   name="templateId"
-                  defaultValue={trigger.templateId}
+                  defaultValue={trigger.templateId ?? ""}
                   className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
                 >
                   {templates.map((row) => (
@@ -163,7 +177,11 @@ export default async function EmailTriggersPage() {
                 <Label className="text-xs">Send from</Label>
                 <select
                   name="sendFromProvider"
-                  defaultValue={trigger.sendFromProvider}
+                  defaultValue={
+                    "sendFromProvider" in trigger && typeof trigger.sendFromProvider === "string"
+                      ? trigger.sendFromProvider
+                      : SEND_FROM_PROVIDERS[0]
+                  }
                   className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
                 >
                   {SEND_FROM_PROVIDERS.map((provider) => (

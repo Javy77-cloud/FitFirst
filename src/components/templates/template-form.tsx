@@ -44,7 +44,11 @@ export function TemplateForm({
           <select
             id="kind"
             name="kind"
-            defaultValue={template?.kind ?? "custom"}
+            defaultValue={
+              template && "kind" in template && typeof template.kind === "string"
+                ? template.kind
+                : "custom"
+            }
             className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
           >
             {EMAIL_TEMPLATE_KINDS.map((kind) => (
@@ -61,7 +65,9 @@ export function TemplateForm({
           type="checkbox"
           name="isExampleCopy"
           value="true"
-          defaultChecked={template?.isExampleCopy ?? true}
+          defaultChecked={
+            template && "isExampleCopy" in template ? Boolean(template.isExampleCopy) : true
+          }
         />
         Mark as example copy Javy can edit
       </label>
@@ -84,7 +90,11 @@ export function TemplateForm({
               id="subjectEn"
               name="subjectEn"
               required
-              defaultValue={template?.subjectEn ?? ""}
+              defaultValue={
+                (template && "subjectEn" in template && typeof template.subjectEn === "string"
+                  ? template.subjectEn
+                  : template?.subject) ?? ""
+              }
               className="mt-1 h-8"
             />
           </div>
@@ -97,7 +107,11 @@ export function TemplateForm({
               name="bodyEn"
               required
               rows={12}
-              defaultValue={template?.bodyEn ?? ""}
+              defaultValue={
+                (template && "bodyEn" in template && typeof template.bodyEn === "string"
+                  ? template.bodyEn
+                  : template?.body) ?? ""
+              }
               className="mt-1 font-mono text-sm"
             />
           </div>
@@ -112,7 +126,11 @@ export function TemplateForm({
               id="subjectEs"
               name="subjectEs"
               required
-              defaultValue={template?.subjectEs ?? ""}
+              defaultValue={
+                template && "subjectEs" in template && typeof template.subjectEs === "string"
+                  ? template.subjectEs
+                  : ""
+              }
               className="mt-1 h-8"
             />
           </div>
@@ -125,7 +143,11 @@ export function TemplateForm({
               name="bodyEs"
               required
               rows={12}
-              defaultValue={template?.bodyEs ?? ""}
+              defaultValue={
+                template && "bodyEs" in template && typeof template.bodyEs === "string"
+                  ? template.bodyEs
+                  : ""
+              }
               className="mt-1 font-mono text-sm"
             />
           </div>

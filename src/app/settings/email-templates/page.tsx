@@ -57,16 +57,23 @@ export default async function EmailTemplatesPage() {
                       >
                         {template.name}
                       </Link>
-                      {template.isExampleCopy ? (
+                      {"isExampleCopy" in template && template.isExampleCopy ? (
                         <div className="mt-1">
                           <Badge variant="outline">Example copy</Badge>
                         </div>
                       ) : null}
                     </td>
-                    <td className="uppercase">{template.kind.replaceAll("_", " ")}</td>
+                    <td className="uppercase">
+                      {("kind" in template && typeof template.kind === "string"
+                        ? template.kind
+                        : template.slug
+                      ).replaceAll("_", " ")}
+                    </td>
                     <td>EN + ES</td>
                     <td className="max-w-[240px] truncate text-muted-foreground">
-                      {template.subjectEn}
+                      {"subjectEn" in template && typeof template.subjectEn === "string"
+                        ? template.subjectEn
+                        : template.subject}
                     </td>
                     <td>
                       {desk.isAdmin ? (

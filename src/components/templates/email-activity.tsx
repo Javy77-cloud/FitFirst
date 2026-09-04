@@ -4,10 +4,11 @@ import { formatDay } from "@/lib/domain";
 import type { EmailSendJob } from "@/lib/db/schema";
 
 function statusLabel(job: EmailSendJob) {
-  if (job.status === "queued" && job.holdReason === "connect_email_to_send") {
+  const holdReason = "holdReason" in job ? String(job.holdReason ?? "") : "";
+  if (job.status === "queued" && holdReason === "connect_email_to_send") {
     return "Queued — connect email to send";
   }
-  if (job.status === "queued" && job.holdReason === "missing_contact_email") {
+  if (job.status === "queued" && holdReason === "missing_contact_email") {
     return "Queued — contact has no email";
   }
   if (job.status === "queued") return "Queued";
@@ -38,10 +39,15 @@ export function EmailActivityList({
         <li key={job.id} className="px-4 py-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-sm font-medium">{job.subject}</div>
+              <div className="text-sm font-medium">
+                {"subject" in job && job.subject ? String(job.subject) : "Queued send"}
+              </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                To {job.toEmail ?? "—"} · {job.sendFromProvider} · {job.locale.toUpperCase()} ·
-                scheduled {formatDay(job.scheduledFor)} from {job.anchorKind.replace("_", " ")}{" "}
+                To {("toEmail" in job && job.toEmail ? String(job.toEmail) : null) ?? "—"} ·{" "}
+                {("sendFromProvider" in job && job.sendFromProvider
+                  ? String(job.sendFromProvider)
+                  : "inbox")}{" "}
+                · scheduled {formatDay(job.scheduledFor)} from {job.anchorKind.replace("_", " ")}{" "}
                 {formatDay(job.anchorAt)}
               </p>
             </div>
