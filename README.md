@@ -4,7 +4,7 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator: scorecards, E&O, priority queue, quote compare + video, hit/lost proposals)
+**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator: scorecards, E&O, priority queue, quote compare + video, hit/lost, FNOL, Open API/export)
 
 **DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), and Open API + CSV export (`cursor/open-api-export-be9f`, incoming `0036` renumbered to `0041_api_tokens`). Ana stays unbound at Cov A **$321,000**. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
 
@@ -51,7 +51,7 @@ Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-cd ~/FitFirst && git fetch origin && git checkout -B cursor/diff-proposals-hit-ratio-4024 origin/cursor/diff-proposals-hit-ratio-4024 && cp -n .env.example .env && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
+cd ~/FitFirst && git fetch origin && git checkout -B cursor/mac-ready-batch4-7pm origin/cursor/mac-ready-batch4-7pm && cp -n .env.example .env && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
 ```
 
 Keep `PII_ENCRYPTION_KEY` from `.env.example` (64 hex chars — local Mac demo key, not production). Changing it makes existing ciphertext unreadable; re-run `db:seed`. Postgres stays on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`).
