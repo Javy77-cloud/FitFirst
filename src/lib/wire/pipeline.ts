@@ -235,12 +235,13 @@ export function parsePipelineFields(raw: string | null | undefined): PipelineFie
     .split(",")
     .map((part) => part.trim())
     .filter((part): part is PipelineFieldId => allowed.has(part as PipelineFieldId));
+  if (picked.length === 0) return defaultPipelineFieldIds();
   const required = PIPELINE_FIELDS.filter((field) => field.required).map((field) => field.id);
   const next = [...picked];
   for (const id of required) {
     if (!next.includes(id)) next.unshift(id);
   }
-  return next.length ? next : defaultPipelineFieldIds();
+  return next;
 }
 
 export function collapsedStorageKey(pipelineSlug: string) {
