@@ -80,7 +80,8 @@ export function isSkipResult(result: string | null | undefined): boolean {
 
 export function hitPct(bound: number, quoted: number): number {
   if (quoted <= 0) return 0;
-  return Math.round((bound / quoted) * 1000) / 10;
+  const raw = Math.round((bound / quoted) * 1000) / 10;
+  return Math.min(100, raw);
 }
 
 function avg(values: number[]): number | null {
@@ -161,12 +162,13 @@ export function buildHitLostReport(input: {
     if (boundKeys.has(key)) continue;
     boundKeys.add(key);
     boundDealIds.add(policy.dealId);
+    if (!quotedKeys.has(key)) continue;
     bucket(policy.carrierId, policy.carrierName ?? policy.carrierId).bound += 1;
   }
 
   const quotedCount = quotedKeys.size;
   const declinedCount = declinedKeys.size;
-  const boundCount = boundKeys.size;
+  const boundCount = [...boundKeys].filter((key) => quotedKeys.has(key)).length;
   const shopsQuoted = quotedDealIds.size;
   const shopsBound = [...boundDealIds].filter((id) => quotedDealIds.has(id)).length;
 
@@ -201,7 +203,7 @@ export function buildHitLostReport(input: {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
   const carriers: CarrierPerfRow[] = [...byCarrier.values()]
-    .filter((row) => row.quoted > 0 || row.declined > 0 || row.bound > 0)
+    .filter((row) => row.quoted > 0 || row.declined > 0)
     .map((row) => ({
       carrierId: row.carrierId,
       carrierName: row.carrierName,

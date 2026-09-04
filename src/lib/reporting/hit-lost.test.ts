@@ -7,6 +7,7 @@ describe("hitPct", () => {
     expect(hitPct(1, 4)).toBe(25);
     expect(hitPct(1, 3)).toBe(33.3);
     expect(hitPct(0, 0)).toBe(0);
+    expect(hitPct(8, 4)).toBe(100);
   });
 });
 
@@ -134,5 +135,57 @@ describe("buildHitLostReport", () => {
       policies: [],
     });
     expect(report.quotedCount).toBe(1);
+  });
+
+  it("ignores in-force book policies that were never quoted, so hit % cannot exceed 100", () => {
+    const report = buildHitLostReport({
+      attempts: [
+        {
+          id: "a1",
+          dealId: DEAL_ID,
+          carrierId: CARRIER_IDS.americanIntegrity,
+          carrierName: "American Integrity",
+          result: "quoted",
+          bindable: false,
+          premium: 5607.53,
+          lostReason: null,
+        },
+      ],
+      quotes: [
+        {
+          id: "q1",
+          dealId: ELENA_DEAL_ID,
+          carrierId: CARRIER_IDS.americanIntegrity,
+          carrierName: "American Integrity",
+          premium: 2840,
+          lostReason: null,
+        },
+      ],
+      policies: [
+        {
+          dealId: ELENA_DEAL_ID,
+          carrierId: CARRIER_IDS.americanIntegrity,
+          carrierName: "American Integrity",
+        },
+        {
+          dealId: "book-only-deal",
+          carrierId: CARRIER_IDS.americanIntegrity,
+          carrierName: "American Integrity",
+        },
+        {
+          dealId: "heritage-book",
+          carrierId: "heritage",
+          carrierName: "Heritage Property & Casualty",
+        },
+      ],
+    });
+    expect(report.quotedCount).toBe(2);
+    expect(report.boundCount).toBe(1);
+    expect(report.quoteHitPct).toBe(50);
+    expect(report.quoteHitPct).toBeLessThanOrEqual(100);
+    expect(report.carriers.some((c) => c.carrierName === "Heritage Property & Casualty")).toBe(false);
+    const ai = report.carriers.find((c) => c.carrierId === CARRIER_IDS.americanIntegrity);
+    expect(ai?.bound).toBe(1);
+    expect(ai?.hitPct).toBe(50);
   });
 });
