@@ -4,7 +4,7 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/list-hydrate-fix-46dc` (hydration fix on top of `cursor/mac-ready-overnight-3bad`)
+**Mac desk-test branch:** `cursor/settings-ia-integrations-e4fb` (Settings IA + Integrations catalog on top of `cursor/list-hydrate-fix-46dc`)
 
 Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. This branch stops the Next.js hydration overlay on list sheets (Tasks / Leads / Deals / Contacts / etc.). Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
@@ -13,8 +13,8 @@ Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + addre
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-git fetch origin cursor/list-hydrate-fix-46dc
-git checkout cursor/list-hydrate-fix-46dc
+git fetch origin cursor/settings-ia-integrations-e4fb
+git checkout cursor/settings-ia-integrations-e4fb
 git reset --hard FETCH_HEAD
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
@@ -73,6 +73,8 @@ List sheets share one header control: click a column to sort A→Z / Z→A, or o
 
 Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim**. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
 
+Settings has a nested left menu: Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency, and Admin vs Agent prefs. The catalog lists Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Google Meet, DocuSign, and Dropbox Sign. Each card is bring-your-own (agency pays) with a **Connect stub** and **Not connected** / **Connected (stub)** badges. No live OAuth. No Zoho.
+
 Settings → Lines: hide Life or Health for agencies that do not write those books (pipeline switcher and filters follow). One Pipeline nav row — Life and Health stay as tabs on `/pipeline`. Life chips default to Term / Whole / IUL / Final Expense. Health chips default to Marketplace / Medicare Advantage / Medicare A&B / Supplemental. Selling Agency picklists stay off unless you turn them on in Settings.
 
 Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). On the Contact record the tag form is **hidden for agents**. That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
@@ -113,6 +115,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 - **Phone call log** (`/phone`) — duration + outcome, attached like platform auto-activity. Admin **Phone line** settings are a Twilio/BYO stub. No PSTN.
 - **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
+- **Integrations catalog** (`/settings/integrations`) — BYO providers (Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Meet, DocuSign, Dropbox Sign). Connect stub only. Agency pays. No Zoho. No live OAuth.
 - **Alerts** stay in-desk (asks + work-queue pings).
 
 ## Tests

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { disconnectTelephonyStub, saveTelephonyStub } from "@/app/actions/telephony";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +24,7 @@ export default async function PhoneSettingsPage({
   const notice = typeof query.notice === "string" ? query.notice : undefined;
 
   return (
-    <AppShell title="Phone line">
-      <SettingsSubnav current="phone" />
+    <SettingsShell title="Phone line" current="phone">
       {!session.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Connecting Twilio or a BYO trunk is Admin-only. Agents still log calls on{" "}
@@ -115,6 +113,6 @@ export default async function PhoneSettingsPage({
           </Button>
         </form>
       ) : null}
-    </AppShell>
+    </SettingsShell>
   );
 }

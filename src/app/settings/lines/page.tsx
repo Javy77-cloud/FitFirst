@@ -3,8 +3,7 @@ import {
   deleteLineSubfilter,
   saveWrittenLines,
 } from "@/app/actions/line-settings";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -79,8 +78,7 @@ export default async function LinesSettingsPage() {
   const [session, settings] = await Promise.all([currentDeskSession(), loadDeskLineSettings()]);
 
   return (
-    <AppShell title="Lines of business">
-      <SettingsSubnav current="lines" />
+    <SettingsShell title="Lines of business" current="lines">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Hide Life or Health when this agency does not write those lines. Navigation, pipeline
         boards, and book filters follow these toggles. Selling Agency stays off the day-to-day
@@ -160,6 +158,6 @@ export default async function LinesSettingsPage() {
           canEdit={session.isAdmin}
         />
       </div>
-    </AppShell>
+    </SettingsShell>
   );
 }

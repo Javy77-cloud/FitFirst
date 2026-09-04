@@ -1,6 +1,5 @@
 import { saveEmailSignature } from "@/app/actions/brand";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +13,7 @@ export default async function EmailSignaturesPage() {
   const current = signatures[0];
 
   return (
-    <AppShell title="Email signatures">
-      <SettingsSubnav current="signatures" />
+    <SettingsShell title="Email signatures" current="signatures">
       {!desk.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Signatures are Admin-only. Agents keep their own desk colors and columns.
@@ -63,6 +61,6 @@ export default async function EmailSignaturesPage() {
           ) : null}
         </fieldset>
       </form>
-    </AppShell>
+    </SettingsShell>
   );
 }

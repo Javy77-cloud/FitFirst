@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { saveAgencyBrand, saveEmailTemplate, uploadAgencyLogo } from "@/app/actions/agency";
 import { saveCommissionRate } from "@/app/actions/pipeline-admin";
-import { AppShell } from "@/components/app-shell";
+import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SettingsSection } from "@/components/settings/settings-section";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,27 +12,41 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
 import { getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
+import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { TELEPHONY_PROVIDER_LABEL, type TelephonyProvider } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await currentDeskSession();
-  const [brand, templates, triggers, telephony] = await Promise.all([
+  const [brand, templates, triggers, telephony, catalog] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),
     listEmailTriggers(),
     getTelephonySettings(),
+    listCatalogItems(),
   ]);
+  const catalogConnected = catalog.some((item) => item.connected);
   const provider = (telephony?.provider ?? "none") as TelephonyProvider;
 
   return (
-    <AppShell title="Settings">
-      <SettingsSubnav current="hub" />
+    <SettingsShell title="Settings" current="overview">
       <p className="mb-4 text-sm text-muted-foreground">
-        Admin settings change the agency. Agent settings change only this desk. Sections collapse so
-        the page uses the full width instead of a single stacked column.
+        Admin settings change the agency. Agent settings change only this desk. Use the left
+        menu: Communications, Integrations, Lines / lists, Brand, then Admin vs Agent prefs.
       </p>
+      <Link
+        href="/settings/integrations"
+        className="mb-4 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+      >
+        <div>
+          <div className="text-sm font-semibold text-navy">Integrations catalog</div>
+          <p className="text-xs text-muted-foreground">
+            Gmail, Outlook, Mailchimp, Twilio, Zoom, DocuSign — Connect stub, agency pays. No Zoho.
+          </p>
+        </div>
+        <ConnectionBadge connected={catalogConnected} />
+      </Link>
 
       <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
         <div className="space-y-3">
@@ -262,6 +276,6 @@ export default async function SettingsPage() {
           </SettingsSection>
         </div>
       </div>
-    </AppShell>
+    </SettingsShell>
   );
 }

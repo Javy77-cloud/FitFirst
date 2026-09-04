@@ -1499,6 +1499,24 @@ export const telephonySettings = pgTable(
   (t) => [uniqueIndex("telephony_settings_tenant_idx").on(t.tenantId)],
 );
 
+/** BYO connector catalog. Stub only — no OAuth, no vendor keys. */
+export const integrationConnections = pgTable(
+  "integration_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    category: text("category").notNull(),
+    provider: text("provider").notNull(),
+    connected: boolean("connected").notNull().default(false),
+    accountLabel: text("account_label"),
+    notes: text("notes"),
+    lastConnectStatus: text("last_connect_status"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("integration_connections_tenant_provider_idx").on(t.tenantId, t.provider)],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -1577,6 +1595,7 @@ export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
 export type SmsSettings = typeof smsSettings.$inferSelect;
 export type TelephonySettings = typeof telephonySettings.$inferSelect;
+export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
