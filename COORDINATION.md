@@ -293,6 +293,8 @@ Mac-ready umbrella for localhost:43147. Starts from `cursor/desk-unblock-compile
 
 Conflicts favored compile + working Col-based list pages. Ana fixture untouched (unbound, Cov A $321,000). Quotes still do not create a policy. No live Zoho. Navy sidebar tokens (`--ff-sidebar` / `--ff-bg`) restored so the desk does not wash to a white rail. `getReviewTask` 404s on non-UUID ids.
 
+Also merged `cursor/restore-brand-domain-exports-a266`. It only re-added `AGENCY_BRAND`, color/font/density presets, `LIST_COLUMN_CATALOG`, and brand fixture IDs — already present from desk-unblock/crm-core. Duplicate block stripped so `domain.ts` stays one file. Agency / My desk presets unchanged (`agency`, `terracotta`, `forest`, `slate`).
+
 HTTP smoke on this branch (dev + seeded Postgres): every app-shell NAV route returned 200. Ana deal `Dib · Palm Bay HO3` stays **Shopping**, Cov A **$321,000**. `/quotes` is quote tracking (no `HO3-ELENA` policy number). `/tasks/foo` 404s. `/documents` still 500s (`Object.entries` on null) — not a NAV item.
 
 `next build` Turbopack **compiles**; `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names, commission extras).
