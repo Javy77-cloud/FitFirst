@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
+import { notFound, redirect } from "next/navigation";
+import { requireSignedIn } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
 
@@ -8,17 +8,9 @@ export default async function AgentCommissionsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await requireSignedIn();
   const { id } = await params;
   if (!id) notFound();
-  return (
-    <AppShell title="Agent earnings">
-      <p className="text-sm text-muted-foreground">
-        Per-agent rollup is on the commissions slice. Open{" "}
-        <a href="/commissions" className="text-primary hover:underline">
-          Commissions
-        </a>{" "}
-        for pending and paid.
-      </p>
-    </AppShell>
-  );
+  if (!session.isAdmin && session.userId !== id) notFound();
+  redirect("/commissions");
 }

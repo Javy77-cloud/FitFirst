@@ -20,6 +20,8 @@ describe("moduleTitleFromPath", () => {
     expect(moduleTitleFromPath("/settings/my-desk")).toBe("Settings");
     expect(moduleTitleFromPath("/quotes")).toBe("Quotes");
     expect(moduleTitleFromPath("/meetings/new")).toBe("Calendar");
+    expect(moduleTitleFromPath("/commissions")).toBe("Commissions");
+    expect(moduleTitleFromPath("/commissions/agents/maya")).toBe("Commissions");
   });
 
   it("keeps a record name as subtitle when it differs from the module", () => {

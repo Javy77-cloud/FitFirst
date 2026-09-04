@@ -503,4 +503,6 @@ export async function seed() {
   const { seedFillFeedback } = await import("./seed-fill-feedback");
   await seedFillFeedback();
   await seedFillLearning();
+  const { seedCommissionReconciliations } = await import("./seed-commission-recon");
+  await seedCommissionReconciliations();
 }

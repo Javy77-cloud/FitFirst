@@ -1503,6 +1503,33 @@ export const commissionEvents = pgTable("commission_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** Manual expected-vs-received catch. Not a carrier download. */
+export const commissionReconciliations = pgTable(
+  "commission_reconciliations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    agentId: uuid("agent_id"),
+    expectedAmount: numeric("expected_amount", { precision: 12, scale: 2 }).notNull(),
+    receivedAmount: numeric("received_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+    variance: numeric("variance", { precision: 12, scale: 2 }).notNull().default("0"),
+    status: text("status").notNull().default("pending"),
+    note: text("note"),
+    markedBy: uuid("marked_by"),
+    markedAt: timestamp("marked_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("commission_recon_commission_uidx").on(t.tenantId, t.commissionId),
+    index("commission_recon_tenant_idx").on(t.tenantId, t.status),
+    index("commission_recon_agent_idx").on(t.tenantId, t.agentId),
+  ],
+);
+
 export const deskColumnPrefs = pgTable(
   "desk_column_prefs",
   {
@@ -2140,6 +2167,7 @@ export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
 export type Business = Account;
 export type Claim = typeof claims.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
+export type CommissionReconciliation = typeof commissionReconciliations.$inferSelect;
 export type RecordAsk = typeof recordAsks.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;
 export type Vehicle = typeof vehicles.$inferSelect;

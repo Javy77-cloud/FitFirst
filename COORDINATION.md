@@ -595,4 +595,14 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list after Fill Learning. Commission recon used **0036**. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+
+## DIFF J — Commission reconciliation (`cursor/commission-recon-diffj-1757`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0036_commission_reconciliations`. Ana fixture untouched (unbound, Cov A **$321,000**, $0 commission). One Pipeline. Sidebar hex unchanged.
+
+**Admin** `/commissions`: expected vs received board. Expected is the policy-rule TAC already on `commissions.amount`. Received is typed by hand. Mark short / disputed / match. No carrier download.
+
+**Agent** `/commissions`: own earned / pending / disputed only. Short shows as pending (still owed). Other producers stay off the sheet.
+
+**Seed shortfalls:** Shah HO (Maya) $180 / $215.60 short; Hale HO (Javy) $198 / $262.08 short; Harbor GL (Javy) $250 / $318.12 short; Elena Ruiz HO (Maya) disputed — missing AFA statement. Paid rows seed as earned. Ana is not in this set.
