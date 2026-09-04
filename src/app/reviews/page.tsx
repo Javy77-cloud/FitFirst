@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
+import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
 import { ColumnPicker } from "@/components/crm/column-picker";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
