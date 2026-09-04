@@ -17,11 +17,12 @@
   --ff-navy: #0c2340;
   --ff-navy-mid: #163456;
   --ff-navy-deep: #08182d;
-  --ff-sidebar: #0c2340;
-  --ff-sidebar-wash: #163456;
-  --ff-sidebar-line: #1c3b5c;
-  --ff-sidebar-text: #d5e2f0;
-  --ff-sidebar-muted: #93a7be;
+  /* Mac Chrome: forced light-blue rail + near-black type. Not navy, not washed white. */
+  --ff-sidebar: #c5ddf4;
+  --ff-sidebar-wash: #9ec4e6;
+  --ff-sidebar-line: #7eaccf;
+  --ff-sidebar-text: #102033;
+  --ff-sidebar-muted: #24364d;
   --ff-accent: #1d6fb8;
   --ff-accent-hover: #185c99;
   --ff-paper: #f7f3ec;

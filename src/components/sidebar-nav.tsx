@@ -90,8 +90,8 @@ export function SidebarNav({
             className={cn(
               "flex items-center gap-2 rounded-md px-2.5 py-2 text-[15px]",
               active
-                ? "bg-sidebar-accent font-semibold text-white"
-                : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
+                ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-accent",
             )}
           >
             <Icon className="size-3.5 opacity-80" />

@@ -46,7 +46,7 @@ export async function AppShell({
               </span>
             )}
             <span className="min-w-0">
-              <span className="block truncate text-base font-semibold tracking-tight text-white">
+              <span className="block truncate text-base font-semibold tracking-tight text-sidebar-foreground">
                 {brand.name}
               </span>
               <span className="block text-xs text-sidebar-foreground/70">
@@ -59,7 +59,7 @@ export async function AppShell({
           <DeskNav unread={unread} variant="sidebar" />
         </nav>
         <div className="border-t border-sidebar-border px-4 py-3 text-xs text-sidebar-foreground/70">
-          <div className="font-medium text-white">{session.name || "Not signed in"}</div>
+          <div className="font-medium text-sidebar-foreground">{session.name || "Not signed in"}</div>
           <div>
             {session.isAgent
               ? "Agent · own book"
@@ -68,12 +68,12 @@ export async function AppShell({
                 : "Sign in required"}
           </div>
           <div className="mt-2 flex gap-2">
-            <Link href="/login" className="text-sidebar-foreground/90 hover:text-white">
+            <Link href="/login" className="text-sidebar-foreground hover:underline">
               {session.signedIn ? "Switch user" : "Sign in"}
             </Link>
             {session.user ? (
               <form action={logoutDesk}>
-                <button type="submit" className="text-sidebar-foreground/90 hover:text-white">
+                <button type="submit" className="text-sidebar-foreground hover:underline">
                   Sign out
                 </button>
               </form>
