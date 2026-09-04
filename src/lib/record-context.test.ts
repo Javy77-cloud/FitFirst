@@ -15,7 +15,17 @@ describe("record context helpers", () => {
       { id: "3", kind: "meeting", title: "Review", href: "/meetings/3", when: null },
     ]);
     expect(grouped.map((g) => g.kind)).toEqual(["task", "meeting", "call"]);
-    expect(grouped[0]?.items).toHaveLength(1);
+    expect(grouped.find((g) => g.kind === "task")?.items).toHaveLength(1);
+    expect(grouped.find((g) => g.kind === "call")?.items).toHaveLength(1);
+  });
+
+  it("keeps task/meeting/call rows when the record has none open", () => {
+    const grouped = groupOpenActivities([]);
+    expect(grouped.map((g) => [g.kind, g.items.length])).toEqual([
+      ["task", 0],
+      ["meeting", 0],
+      ["call", 0],
+    ]);
   });
 
   it("keys people by record type", () => {

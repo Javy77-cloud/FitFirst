@@ -62,9 +62,12 @@ export function personKey(kind: "contact" | "lead" | "account", id: string): str
   return `${kind}:${id}`;
 }
 
+export const RAIL_ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+
 export function groupOpenActivities(items: RailOpenActivity[]): { kind: string; items: RailOpenActivity[] }[] {
-  const order = ["task", "meeting", "call", "email", "sms"];
+  const order = [...RAIL_ACTIVITY_KINDS, "email", "sms"];
   const buckets = new Map<string, RailOpenActivity[]>();
+  for (const kind of RAIL_ACTIVITY_KINDS) buckets.set(kind, []);
   for (const item of items) {
     const list = buckets.get(item.kind) ?? [];
     list.push(item);

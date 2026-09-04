@@ -142,28 +142,28 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
                 + New
               </Link>
             </div>
-            {groups.length === 0 ? (
-              <p className="text-base text-muted-foreground">Nothing open on this record.</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {groups.map((group) => {
-                  const open = expanded === group.kind;
-                  return (
-                    <li key={group.kind} className="overflow-hidden rounded-md bg-muted">
-                      <button
-                        type="button"
-                        onClick={() => setOpenKind(open ? "" : group.kind)}
-                        className="flex w-full items-center justify-between px-2.5 py-2 text-left text-sm"
-                      >
-                        <span className="font-medium text-navy">{kindLabel(group.kind)}</span>
-                        <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          {group.items.length}
-                          <ChevronDown className={cn("size-3.5 transition", open && "rotate-180")} />
-                        </span>
-                      </button>
-                      {open ? (
-                        <ul className="border-t border-border/70 px-2.5 py-1.5">
-                          {group.items.map((item) => (
+            <ul className="space-y-1.5">
+              {groups.map((group) => {
+                const open = expanded === group.kind;
+                return (
+                  <li key={group.kind} className="overflow-hidden rounded-md bg-muted">
+                    <button
+                      type="button"
+                      onClick={() => setOpenKind(open ? "" : group.kind)}
+                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-sm"
+                    >
+                      <span className="font-medium text-navy">{kindLabel(group.kind)}</span>
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <span className="rounded-sm bg-card px-1.5 text-[11px] font-semibold">{group.items.length}</span>
+                        <ChevronDown className={cn("size-3.5 transition", open && "rotate-180")} />
+                      </span>
+                    </button>
+                    {open ? (
+                      <ul className="border-t border-border/70 px-2.5 py-1.5">
+                        {group.items.length === 0 ? (
+                          <li className="py-1 text-base text-muted-foreground">None open</li>
+                        ) : (
+                          group.items.map((item) => (
                             <li key={item.id} className="py-1">
                               <Link href={item.href} className="text-sm text-primary hover:underline">
                                 {item.title}
@@ -172,14 +172,14 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
                                 <div className="text-[11px] text-muted-foreground">{item.when}</div>
                               ) : null}
                             </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                          ))
+                        )}
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         </div>
       )}
@@ -211,16 +211,32 @@ function PersonCard({ person }: { person: RailPerson | null }) {
           </Link>
         </div>
       </div>
-      {person.email ? (
-        <a
-          href={`mailto:${person.email}`}
-          className="mt-3 inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"
-        >
-          Send Email
-        </a>
-      ) : (
-        <p className="mt-3 text-base text-muted-foreground">No email on file.</p>
-      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {person.email ? (
+          <a
+            href={`mailto:${person.email}`}
+            className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"
+          >
+            Send Email
+          </a>
+        ) : (
+          <span className="inline-flex h-8 items-center rounded-md border border-border px-3 text-sm text-muted-foreground">
+            No email
+          </span>
+        )}
+        {person.phone ? (
+          <a
+            href={`tel:${person.phone}`}
+            className="inline-flex h-8 items-center rounded-md border border-input bg-card px-3 text-sm font-medium text-navy"
+          >
+            Call
+          </a>
+        ) : (
+          <span className="inline-flex h-8 items-center rounded-md border border-border px-3 text-sm text-muted-foreground">
+            No phone
+          </span>
+        )}
+      </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex items-center gap-2">
           <Phone className="size-3.5 text-muted-foreground" />
