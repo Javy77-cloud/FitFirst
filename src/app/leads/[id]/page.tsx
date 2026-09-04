@@ -71,6 +71,10 @@ export default async function LeadDetailPage({
             <Button type="submit" size="sm" variant="outline">
               Convert to deal
             </Button>
+            <p className="w-full text-[11px] text-muted-foreground">
+              Convert when ready to shop. Source docs and the master-sheet approve gate live on
+              the Deal — not here.
+            </p>
           </form>
         ) : null}
         <RecordAskPanel

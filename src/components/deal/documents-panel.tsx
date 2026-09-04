@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DOC_TYPE_LABELS, DOC_TYPES } from "@/lib/domain";
+import { QuotingLinePicker } from "./quoting-line-picker";
 
 export function DocumentsPanel({
   dealId,
@@ -18,12 +19,14 @@ export function DocumentsPanel({
   contactId,
   docs,
   fields,
+  quotingForm,
 }: {
   dealId: string;
   riskId: string;
   contactId?: string | null;
   docs: Document[];
   fields: ExtractedFieldRow[];
+  quotingForm?: string | null;
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
   const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
@@ -35,8 +38,9 @@ export function DocumentsPanel({
         <section className="ff-card p-4">
           <h3 className="mb-1 text-sm font-semibold text-navy">Source documents</h3>
           <p className="mb-3 text-xs text-muted-foreground">
-            Dec pages, wind mit, 4-point, and inspections stay on the deal. They feed the Quote
-            Sheet. They are not issued policies.
+            Dec pages, wind mit, 4-point, and inspections stay on the deal. After a drop, pick
+            the line / policy type. HO3 fills the homeowners master sheet and prepares Auto +
+            commercial forms. They are not issued policies.
           </p>
 
           <form action={uploadDocument} className="mb-3 space-y-2 rounded-md border border-border p-3">
@@ -92,6 +96,15 @@ export function DocumentsPanel({
             </form>
           </div>
           <DocTable docs={sourceDocs} dealId={dealId} empty="No source documents yet." />
+          {sourceDocs.length > 0 ? (
+            <div className="mt-3">
+              <QuotingLinePicker
+                dealId={dealId}
+                currentForm={quotingForm}
+                sourceDocCount={sourceDocs.length}
+              />
+            </div>
+          ) : null}
         </section>
 
         <section className="ff-card p-4">

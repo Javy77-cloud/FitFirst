@@ -17,6 +17,12 @@ export const dynamic = "force-dynamic";
 
 const STEPS = [
   {
+    title: "BATCH3 ASAP — Lead → Deal → approve → paste",
+    body: "Convert a lead when ready. On the Deal, drop a dec / 4-point / wind mit, pick HO3 (Auto + commercial sheets are prepared). Glance the master sheet, check visual review, then confirm “are you sure?” Chrome Fill / Copy sheet / Open Fill window unlock after that. Log quoted / declined / maybe. Ana Cov A $321,000 stays shopping — do not bind.",
+    href: `/deals/${DEAL_ID}?tab=quote-sheet`,
+    cta: "Open Ana shop (approve, do not bind)",
+  },
+  {
     title: "1. Open this checklist",
     body: "You are here. This is the TEST-DESK path. Settings / desk identity lives on the QA slice if that branch is merged.",
     href: "/get-started",

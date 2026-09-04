@@ -3,6 +3,7 @@ import { DeskDetails } from "@/components/desk-details";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
+import { AppetiteCapture } from "./appetite-capture";
 
 export function QuotesPanel({
   dealId,
@@ -10,15 +11,27 @@ export function QuotesPanel({
   logs,
   quoteResultsNote,
   quoteDocs = [],
+  unlocked = false,
+  carriers = [],
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
   quoteResultsNote?: string | null;
   quoteDocs?: Document[];
+  unlocked?: boolean;
+  carriers?: { id: string; name: string }[];
 }) {
   return (
     <div className="space-y-4">
+      <DeskDetails
+        title="Appetite capture"
+        summary="Quoted / declined / maybe after carrier paste. Maybe does not change matching."
+        open
+      >
+        <AppetiteCapture dealId={dealId} unlocked={unlocked} carriers={carriers} />
+      </DeskDetails>
+
       <DeskDetails
         title="Ranked quote results"
         summary="Cheapest first. This note stays on the deal. Quotes never become policies."

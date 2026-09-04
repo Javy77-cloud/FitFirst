@@ -4,6 +4,7 @@ import { archiveDeal, bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { EmailActivityList, HistoryList } from "@/components/templates/email-activity";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
+import { QuotingLinePicker } from "@/components/deal/quoting-line-picker";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
@@ -16,9 +17,11 @@ import { SectionTabs } from "@/components/section-tabs";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatPersonName } from "@/lib/crm/display";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
+import { getDealWorkspace, listCarriers, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
+import { currentDeskSession } from "@/lib/auth/session";
 import { RecordAskPanel } from "@/components/record-ask";
+import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { toNumber } from "@/lib/commissions/math";
 import { formatDay, formatMoney } from "@/lib/domain";
@@ -37,16 +40,18 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string; line?: string }>;
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const { tab, riskTab } = await searchParams;
-  const [workspace, templates, asks, users] = await Promise.all([
+  const { tab, riskTab, line: lineParam } = await searchParams;
+  const [workspace, templates, asks, users, session, carrierRows] = await Promise.all([
     getDealWorkspace(id),
     listEmailTemplates(),
     listRecordAsks("deal", id),
     listDeskUsers(),
+    currentDeskSession(),
+    listCarriers(),
   ]);
   if (!workspace) notFound();
   const {
@@ -60,15 +65,26 @@ export default async function DealPage({
     contact,
     account,
     quoteSheet,
+    sheets,
     boundPolicies,
     timeline,
   } = workspace;
-  const matches = risk ? await evaluateDealMarkets(risk) : [];
+  const matches = session.isAdmin && risk ? await evaluateDealMarkets(risk) : [];
   const isAna = deal.id === DEAL_ID;
-  const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
-  const health = quoteSheet
-    ? reportFromSheet(sheetLine, quoteSheet.values)
+  const quotingLine = (deal.quotingLine as ShopLine | undefined) ?? null;
+  const sheetLine = (lineParam as ShopLine | undefined)
+    ?? quotingLine
+    ?? (quoteSheet?.line as ShopLine | undefined)
+    ?? "home";
+  const activeSheet = sheets.find((sheet) => sheet.line === sheetLine) ?? quoteSheet ?? null;
+  const health = activeSheet
+    ? reportFromSheet(sheetLine, activeSheet.values)
     : null;
+  const unlocked = quotingUnlockedForDeal(deal);
+  const formLabel = quotingFormById(deal.quotingForm ?? "")?.label;
+  const appetiteCarriers = Array.from(
+    new Map(carrierRows.map((row) => [row.carrier.id, { id: row.carrier.id, name: row.carrier.name }])).values(),
+  );
   const premium = boundPolicies.reduce((sum, policy) => sum + toNumber(policy.premium), 0);
   const commission = await sumCommissionsForPolicies(boundPolicies.map((p) => p.id));
 
@@ -118,6 +134,10 @@ export default async function DealPage({
             Policy {policy.policyNumber}
           </RecordLink>
         ))}
+        {formLabel ? <span className="text-muted-foreground">Quoting {formLabel}</span> : null}
+        <span className="text-muted-foreground">
+          {unlocked ? "Quoting unlocked" : "Quoting locked — approve master sheet"}
+        </span>
         {risk?.city ? (
           <span className="text-muted-foreground">
             {risk.city}, {risk.county} · Cov A {risk.coverageA ?? "—"}
@@ -135,8 +155,9 @@ export default async function DealPage({
 
       {isAna ? (
         <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-xs text-fit-yellow">
-          Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-          bind this shop. Quotes are not coverage.
+          Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Approve
+          the master sheet to unlock Chrome Fill / copy. Do not bind this shop. Quotes are not
+          coverage.
         </div>
       ) : null}
 
@@ -149,37 +170,68 @@ export default async function DealPage({
           />
         ) : null}
 
+        {!deal.quotingForm ? (
+          <div className="mb-4">
+            <QuotingLinePicker
+              dealId={deal.id}
+              currentForm={deal.quotingForm}
+              sourceDocCount={docs.filter((doc) => doc.slot !== "quote_pdf" && doc.slot !== "policy_file").length}
+            />
+          </div>
+        ) : null}
+
         {!risk ? (
           <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
         ) : (
           <SectionTabs
             defaultValue="documents"
             active={tab}
+            extraQuery={sheetLine ? { line: sheetLine } : undefined}
             tabs={[
               {
                 id: "documents",
                 label: "Documents",
                 content: (
-                  <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                  <DocumentsPanel
+                    dealId={deal.id}
+                    riskId={risk.id}
+                    docs={docs}
+                    fields={fields}
+                    quotingForm={deal.quotingForm}
+                  />
                 ),
               },
               {
                 id: "quote-sheet",
                 label: "Quote Sheet",
                 content: (
-                  <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
+                  <QuoteSheetPanel
+                    dealId={deal.id}
+                    values={activeSheet?.values ?? null}
+                    line={sheetLine}
+                    quotingForm={deal.quotingForm}
+                    unlocked={unlocked}
+                    approvedBy={deal.sheetApprovedBy}
+                    sheetLines={sheets.map((sheet) => sheet.line)}
+                  />
                 ),
               },
-              {
-                id: "risk",
-                label: "Master risk",
-                content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
-              },
-              {
-                id: "markets",
-                label: "Markets",
-                content: <MarketsPanel dealId={deal.id} matches={matches} />,
-              },
+              ...(session.isAdmin
+                ? [
+                    {
+                      id: "risk",
+                      label: "Master risk",
+                      content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
+                    },
+                    {
+                      id: "markets",
+                      label: "Markets",
+                      content: (
+                        <MarketsPanel dealId={deal.id} matches={matches} unlocked={unlocked} />
+                      ),
+                    },
+                  ]
+                : []),
               {
                 id: "quotes",
                 label: "Quotes",
@@ -189,6 +241,8 @@ export default async function DealPage({
                     quotes={quotes}
                     logs={logs}
                     quoteResultsNote={deal.quoteResultsNote}
+                    unlocked={unlocked}
+                    carriers={appetiteCarriers}
                   />
                 ),
               },
@@ -205,6 +259,7 @@ export default async function DealPage({
           accountId={account?.id}
           policyId={boundPolicies[0]?.id}
           leadId={lead?.id}
+          hideWhenNotAdmin
         />
         <div className="mt-6">
           <ActivityTimeline

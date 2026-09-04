@@ -187,10 +187,20 @@ export async function fillQuoteSheetBlanks(formData: FormData) {
   const fields = risk
     ? await db.select().from(extractedFields).where(eq(extractedFields.riskId, risk.id))
     : [];
-  const [sheet] = await db
-    .select()
-    .from(quoteSheets)
-    .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
+  const line = str(formData, "line") || "home";
+  const [sheet] =
+    (
+      await db
+        .select()
+        .from(quoteSheets)
+        .where(
+          and(
+            eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
+            eq(quoteSheets.dealId, dealId),
+            eq(quoteSheets.line, line),
+          ),
+        )
+    ) ?? [];
   const current = sheet?.values ?? emptySheetValues();
   const filled = fillSheetBlanks(
     current,
@@ -210,7 +220,7 @@ export async function fillQuoteSheetBlanks(formData: FormData) {
     await db.insert(quoteSheets).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
-      line: "home",
+      line,
       values: filled.values,
     });
   }

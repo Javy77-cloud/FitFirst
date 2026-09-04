@@ -84,10 +84,11 @@ export function HistoryList({
 export function SettingsSubnav({
   current,
 }: {
-  current: "hub" | "agency" | "lines" | "templates" | "signatures" | "triggers" | "my-desk" | "phone";
+  current: "hub" | "agency" | "lines" | "templates" | "signatures" | "triggers" | "my-desk" | "phone" | "integrations";
 }) {
   const items = [
     { href: "/settings", id: "hub" as const, label: "Overview" },
+    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · integrations" },
     { href: "/settings/agency", id: "agency" as const, label: "Admin · agency" },
     { href: "/settings/lines", id: "lines" as const, label: "Admin · lines" },
     { href: "/settings/phone", id: "phone" as const, label: "Admin · phone" },

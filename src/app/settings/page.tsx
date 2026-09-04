@@ -59,11 +59,27 @@ export default async function SettingsPage() {
           </SettingsSection>
 
           <SettingsSection
+            id="integrations"
+            title="Integrations"
+            badge="Admin"
+            summary="Email, calendar, phone/SMS, video, e-sign. BYO stubs. Do not buy Twilio."
+            defaultOpen
+          >
+            <p className="text-sm text-muted-foreground">
+              Google / Outlook / Yahoo email, Google / Outlook calendar, Twilio plus popular
+              phone and SMS alternatives, Zoom / Meet, and DocuSign / Dropbox Sign. Agency
+              connects later. No credentials stored.
+            </p>
+            <Link href="/settings/integrations" className="mt-3 inline-block text-sm text-primary hover:underline">
+              Open integrations hub
+            </Link>
+          </SettingsSection>
+
+          <SettingsSection
             id="phone"
             title="Phone line"
             badge="Admin"
             summary="Twilio or BYO trunk. Agency pays. Stub only."
-            defaultOpen
           >
             <p className="text-sm text-muted-foreground">
               Status:{" "}

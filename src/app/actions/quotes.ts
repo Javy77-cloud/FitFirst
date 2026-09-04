@@ -17,6 +17,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
+import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 
 export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
@@ -26,6 +27,9 @@ export async function shopInAppetite(dealId: string) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
+  if (!quotingUnlockedForDeal(deal)) {
+    throw new Error("Approve the master sheet before shopping markets.");
+  }
 
   const rules = await db
     .select({ rule: appetiteRules, carrier: carriers })
@@ -40,19 +44,21 @@ export async function shopInAppetite(dealId: string) {
 
   const snapshot = riskFromRecord(risk);
   const appointedMap = await appointedByCarrierLine();
-  const prior: PriorAttempt[] = logs.map((log) => ({
-    carrierId: log.carrierId,
-    result: log.result as PriorAttempt["result"],
-    why: log.why,
-    bindable: log.bindable,
-    snapYearBuilt: log.snapYearBuilt,
-    snapRoofYear: log.snapRoofYear,
-    snapRoofCovering: log.snapRoofCovering,
-    snapConstruction: log.snapConstruction,
-    snapCounty: log.snapCounty,
-    snapMilesToCoast: log.snapMilesToCoast,
-    snapCoverageA: log.snapCoverageA,
-  }));
+  const prior: PriorAttempt[] = logs
+    .filter((log) => isMatchPriorResult(log.result))
+    .map((log) => ({
+      carrierId: log.carrierId,
+      result: log.result as PriorAttempt["result"],
+      why: log.why,
+      bindable: log.bindable,
+      snapYearBuilt: log.snapYearBuilt,
+      snapRoofYear: log.snapRoofYear,
+      snapRoofCovering: log.snapRoofCovering,
+      snapConstruction: log.snapConstruction,
+      snapCounty: log.snapCounty,
+      snapMilesToCoast: log.snapMilesToCoast,
+      snapCoverageA: log.snapCoverageA,
+    }));
 
   const matches = rankFits(
     rules.map(({ rule, carrier }) => {

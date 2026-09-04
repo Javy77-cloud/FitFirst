@@ -48,6 +48,16 @@ export const QUOTE_RESULTS = [
 ] as const;
 export type QuoteAttemptResult = (typeof QUOTE_RESULTS)[number];
 
+/** Internal appetite capture after carrier paste. `maybe` does not feed match priors. */
+export const APPETITE_CAPTURE_RESULTS = ["quoted", "declined", "maybe"] as const;
+export type AppetiteCaptureResult = (typeof APPETITE_CAPTURE_RESULTS)[number];
+
+export const APPETITE_CAPTURE_LABELS: Record<AppetiteCaptureResult, string> = {
+  quoted: "Quoted",
+  declined: "Declined",
+  maybe: "Maybe",
+};
+
 export const FIT_BANDS = ["green", "yellow", "red"] as const;
 export type FitBand = (typeof FIT_BANDS)[number];
 
@@ -214,6 +224,48 @@ export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
   workers_comp: "Workers Comp",
   general_liability: "General Liability",
 };
+
+/** Policy form the agent picks after dropping dec / 4-point / wind mit on the Deal. */
+export const QUOTING_FORMS = [
+  { id: "HO3", label: "HO3 homeowners", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "HO6", label: "HO6 condo", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "DP3", label: "DP3 dwelling", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "PA", label: "Personal auto", shopLine: "auto" as ShopLine, lob: "AUTO" },
+  { id: "GL", label: "General liability", shopLine: "general_liability" as ShopLine, lob: "GL" },
+  { id: "WC", label: "Workers comp", shopLine: "workers_comp" as ShopLine, lob: "WC" },
+  { id: "BOP", label: "BOP", shopLine: "general_liability" as ShopLine, lob: "BOP" },
+  { id: "FLOOD", label: "Flood", shopLine: "flood" as ShopLine, lob: "FLOOD" },
+] as const;
+export type QuotingFormId = (typeof QUOTING_FORMS)[number]["id"];
+
+export const INTEGRATION_CATEGORIES = [
+  "email",
+  "calendar",
+  "phone",
+  "sms",
+  "video",
+  "esign",
+] as const;
+export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
+
+export const INTEGRATION_CATALOG = [
+  { category: "email" as const, provider: "google", label: "Google" },
+  { category: "email" as const, provider: "outlook", label: "Outlook" },
+  { category: "email" as const, provider: "yahoo", label: "Yahoo" },
+  { category: "calendar" as const, provider: "google", label: "Google Calendar" },
+  { category: "calendar" as const, provider: "outlook", label: "Outlook Calendar" },
+  { category: "phone" as const, provider: "twilio", label: "Twilio" },
+  { category: "phone" as const, provider: "vonage", label: "Vonage" },
+  { category: "phone" as const, provider: "telnyx", label: "Telnyx" },
+  { category: "phone" as const, provider: "bandwidth", label: "Bandwidth" },
+  { category: "sms" as const, provider: "twilio", label: "Twilio SMS" },
+  { category: "sms" as const, provider: "messagebird", label: "MessageBird" },
+  { category: "sms" as const, provider: "telnyx", label: "Telnyx SMS" },
+  { category: "video" as const, provider: "zoom", label: "Zoom" },
+  { category: "video" as const, provider: "meet", label: "Google Meet" },
+  { category: "esign" as const, provider: "docusign", label: "DocuSign" },
+  { category: "esign" as const, provider: "dropbox_sign", label: "Dropbox Sign" },
+] as const;
 
 export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "flood", "won-lost", "archive"] as const;
 
