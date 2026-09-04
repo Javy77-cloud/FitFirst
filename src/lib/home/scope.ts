@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { parseBookScope, type BookScope } from "./presets";
+import type { BookScopeKind } from "@/lib/org/book-scope";
 
 export type DeskRole = "owner" | "admin" | "agent";
 
@@ -12,12 +13,16 @@ export type OwnerHomeScope = {
   label: string;
   bookScope: BookScope;
   canToggleBook: boolean;
+  /** Admin office / territory lens. Null agent list = company-wide. */
+  bookKind?: BookScopeKind;
+  bookAgentIds?: string[] | null;
 };
 
 const OWNER_ROLES = new Set<DeskRole>(["owner", "admin"]);
 
 export function isAgencyWide(scope: OwnerHomeScope): boolean {
-  return scope.agentUserId == null && OWNER_ROLES.has(scope.role);
+  const company = (scope.bookKind ?? "company") === "company";
+  return scope.agentUserId == null && OWNER_ROLES.has(scope.role) && company;
 }
 
 /**

@@ -8,7 +8,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 top chrome:** InsuredMine-style top-right utilities on the desk header (Refresh, alerts, What’s New, profile, recently accessed, quick add, Support stub). Same chrome for Admin and Agent. Sidebar stays light-blue `#c5ddf4` with near-black ink. Alerts is not a left-nav row — the header bell owns alerts.
 
-**Batch 4 home:** denser agent-scoped Home (KPI cards, charts, leaderboard, contest, birthdays / turning 65, dashboard presets). Same blue/orange desk. Ana stays unbound at Cov A **$321,000**.
+**Batch 4 home:** denser agent-scoped Home (KPI cards, charts, leaderboard, contest, birthdays / turning 65, dashboard presets). Admin office / territory book filter. Same blue/orange desk. Ana stays unbound at Cov A **$321,000**.
 
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
@@ -81,7 +81,9 @@ List sheets share one header control: click a column to sort A→Z / Z→A, or o
 
 Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim**. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
 
-Settings has a nested left menu: Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency, and Admin vs Agent prefs. The catalog lists Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Google Meet, DocuSign, and Dropbox Sign. Each card is bring-your-own (agency pays) with a **Connect stub** and **Not connected** / **Connected (stub)** badges. No live OAuth. No Zoho.
+Settings has a nested left menu: Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency (chrome, **Offices**, **Territories**), and Admin vs Agent prefs.
+
+**Offices + Territories (Admin).** Settings → Agency → Offices / Territories. An office has a name, state(s), address, and optional timezone. Agents can sit in more than one office, including desks in different states. A territory has a name, states/counties or a freeform geo label, and optional linked offices. Admin assigns people on those pages. Home (Admin) can filter Company-wide, per office, or per territory — helpers live in `src/lib/org` for other bots. Seed: Palm Bay FL (Javy primary + Maya) and Savannah GA (Javy); Space Coast territory linked to Palm Bay. Agents still cannot open Admin Settings. The catalog lists Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Google Meet, DocuSign, and Dropbox Sign. Each card is bring-your-own (agency pays) with a **Connect stub** and **Not connected** / **Connected (stub)** badges. No live OAuth. No Zoho.
 
 Settings → Lines: hide Life or Health for agencies that do not write those books (pipeline switcher and filters follow). One Pipeline nav row — Life and Health stay as tabs on `/pipeline`. Life chips default to Term / Whole / IUL / Final Expense. Health chips default to Marketplace / Medicare Advantage / Medicare A&B / Supplemental. Selling Agency picklists stay off unless you turn them on in Settings.
 

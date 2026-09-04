@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
@@ -32,6 +32,8 @@ import {
 } from "@/lib/home/presets";
 import { parseLeadOfferStatus, type LeadOfferStatus } from "@/lib/home/lead-offers";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
+import { filterByBookScope, type BookScopeOption } from "@/lib/org/book-scope";
+import { resolveBookScope } from "@/lib/org/queries";
 import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
 import {
   fallbackPipelineSlug,
@@ -1317,7 +1319,26 @@ function contactName(contact: { firstName: string; lastName: string } | null): s
 async function loadCommissionTotals(scope: OwnerHomeScope): Promise<CommissionTotals> {
   const tables = await detectOwnerHomeTables();
   if (!tables.commissions) return null;
+  if (scope.bookAgentIds && scope.bookAgentIds.length === 0) {
+    return { pending: 0, paid: 0 };
+  }
   try {
+    if (scope.bookAgentIds) {
+      const rows = await db
+        .select({ amount: commissions.amount, status: commissions.status })
+        .from(commissions)
+        .where(
+          and(eq(commissions.tenantId, scope.tenantId), inArray(commissions.agentId, scope.bookAgentIds)),
+        );
+      return {
+        pending: rows
+          .filter((row) => row.status === "pending")
+          .reduce((sum, row) => sum + Number(row.amount ?? 0), 0),
+        paid: rows
+          .filter((row) => row.status === "paid")
+          .reduce((sum, row) => sum + Number(row.amount ?? 0), 0),
+      };
+    }
     const rows = await rawSql<{ pending: string; paid: string }[]>`
       select
         coalesce(sum(amount) filter (where status = 'pending'), 0)::text as pending,
@@ -1408,11 +1429,21 @@ export async function loadHomeDashboardPrefs(userId: string | null): Promise<Hom
   };
 }
 
-export async function ownerHomeDashboard() {
+export async function ownerHomeDashboard(bookRaw?: string | null) {
   const session = await currentDeskSession();
   const prefs = await loadHomeDashboardPrefs(session.userId);
-  const scope = await currentOwnerHomeScope(prefs.bookScope);
+  const baseScope = await currentOwnerHomeScope(prefs.bookScope);
   const tables = await detectOwnerHomeTables();
+  const applyOfficeLens = baseScope.role !== "agent" && baseScope.bookScope !== "my_book";
+  const book = applyOfficeLens
+    ? await resolveBookScope(bookRaw)
+    : { scope: { kind: "company" as const }, agentIds: null, label: baseScope.label, options: [] as BookScopeOption[] };
+  const scope: OwnerHomeScope = {
+    ...baseScope,
+    label: applyOfficeLens ? book.label : baseScope.label,
+    bookKind: book.scope.kind,
+    bookAgentIds: applyOfficeLens ? book.agentIds : null,
+  };
 
   const [
     policyRows,
@@ -1536,15 +1567,13 @@ export async function ownerHomeDashboard() {
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
   }));
 
-  const scopedPolicies = filterByAssignee(
-    homePolicies,
-    scope.agentUserId,
-    Boolean(tables.assigneeColumn),
+  const scopedPolicies = filterByBookScope(
+    filterByAssignee(homePolicies, scope.agentUserId, Boolean(tables.assigneeColumn)),
+    scope.bookAgentIds ?? null,
   );
-  const scopedDeals = filterByAssignee(
-    homeDeals,
-    scope.agentUserId,
-    Boolean(tables.dealAssigneeColumn),
+  const scopedDeals = filterByBookScope(
+    filterByAssignee(homeDeals, scope.agentUserId, Boolean(tables.dealAssigneeColumn)),
+    scope.bookAgentIds ?? null,
   );
   const scopedLeads = filterByAssignee(homeLeads, scope.agentUserId, Boolean(tables.assigneeColumn));
   const scopedContacts = filterByAssignee(homeContacts, scope.agentUserId, Boolean(tables.assigneeColumn));
@@ -1610,6 +1639,7 @@ export async function ownerHomeDashboard() {
     agencyHighlight,
     isAdmin: Boolean(session.isAdmin),
     isAgent: Boolean(session.isAgent),
+    bookOptions: book.options,
   };
 }
 

@@ -45,6 +45,8 @@ describe("Admin vs Agent capabilities", () => {
 
   it("marks Admin settings and integration routes as Admin-only", () => {
     expect(isAdminOnlyPath("/settings/agency")).toBe(true);
+    expect(isAdminOnlyPath("/settings/offices")).toBe(true);
+    expect(isAdminOnlyPath("/settings/territories")).toBe(true);
     expect(isAdminOnlyPath("/settings/email-templates/new")).toBe(true);
     expect(isAdminOnlyPath("/settings/sms")).toBe(true);
     expect(isAdminOnlyPath("/settings/phone")).toBe(true);

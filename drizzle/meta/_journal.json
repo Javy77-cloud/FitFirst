@@ -162,6 +162,13 @@
       "when": 1788530000000,
       "tag": "0022_lead_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788531000000,
+      "tag": "0023_offices_territories",
+      "breakpoints": true
     }
   ]
 }

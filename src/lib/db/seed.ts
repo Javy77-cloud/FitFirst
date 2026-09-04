@@ -27,6 +27,7 @@ import {
   CONTACT_ID,
   DEAL_ID,
   LEAD_ID,
+  PIPELINE_PC_ID,
   RISK_ID,
   TENANT_ID,
 } from "../fixtures/ids";
@@ -39,6 +40,7 @@ import { seedMergeDuplicates } from "./seed-merge";
 import { seedAppointmentsAndSheets, seedOrtegaFitDeal } from "./seed-shop-fits";
 import { seedCompleteness } from "./seed-completeness";
 import { seedUsersAndBook } from "./seed-book";
+import { seedOfficesAndTerritories } from "./seed-offices";
 import { seedClaimsBook } from "./seed-claims";
 import { seedAutoBook } from "./seed-auto";
 import { seedBookRenewals } from "./seed-book-renewals";
@@ -165,6 +167,7 @@ export async function seed() {
       propertyOneliner: anaPropertyOneliner(fixture.risk),
       currentCarrier: null,
       accountKind: "personal",
+      pipelineId: PIPELINE_PC_ID,
       notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -175,6 +178,7 @@ export async function seed() {
         title: "Dib · Palm Bay HO3",
         pipelineStage: "shopping",
         lineOfBusiness: "HO",
+        pipelineId: PIPELINE_PC_ID,
         primaryNamedInsured: fixture.insured.primary,
         secondaryNamedInsured: fixture.insured.namedInsured,
         shopLines: ["home"],
@@ -468,6 +472,7 @@ export async function seed() {
   await seedMergeDuplicates();
   await seedWave1ZohoBook();
   await seedUsersAndBook();
+  await seedOfficesAndTerritories();
   await seedClaimsBook();
   await seedAutoBook();
   await seedBookRenewals();

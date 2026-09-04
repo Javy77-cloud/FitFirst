@@ -12,11 +12,11 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ attention?: string }>;
+  searchParams: Promise<{ attention?: string; book?: string }>;
 }) {
   const params = await searchParams;
   const [home, { recentDeals, unread }, lineSettings] = await Promise.all([
-    ownerHomeDashboard(),
+    ownerHomeDashboard(params.book),
     dashboardStats(),
     loadDeskLineSettings(),
   ]);
@@ -48,6 +48,9 @@ export default async function HomePage({
         isAgent={home.isAgent}
         unread={unread}
         recentDeals={recentDeals}
+        bookOptions={home.bookOptions}
+        bookValue={params.book ?? "company"}
+        attentionValue={params.attention}
       />
     </AppShell>
   );

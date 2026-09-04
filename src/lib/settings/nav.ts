@@ -11,6 +11,8 @@ export const SETTINGS_NAV_IDS = [
   "templates",
   "triggers",
   "agency",
+  "offices",
+  "territories",
   "signatures",
   "prefs",
   "my-desk",
@@ -85,6 +87,8 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     hint: "Chrome every agent inherits",
     children: [
       { id: "agency", href: "/settings/agency", label: "Agency chrome", hint: "Name + logo" },
+      { id: "offices", href: "/settings/offices", label: "Offices", hint: "Desks + states" },
+      { id: "territories", href: "/settings/territories", label: "Territories", hint: "Geo books" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },
     ],
   },

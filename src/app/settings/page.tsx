@@ -58,6 +58,26 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsSection
+            id="offices"
+            title="Offices and territories"
+            badge="Admin"
+            summary="Desks, geo books, and who sits where."
+          >
+            <p className="text-sm text-muted-foreground">
+              Palm Bay and Savannah desks, Space Coast territory, and agent assignments. Home can
+              filter Company-wide, per office, or per territory.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+              <Link href="/settings/offices" className="text-primary hover:underline">
+                Offices
+              </Link>
+              <Link href="/settings/territories" className="text-primary hover:underline">
+                Territories
+              </Link>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
             id="lines"
             title="Lines of business"
             badge="Admin"

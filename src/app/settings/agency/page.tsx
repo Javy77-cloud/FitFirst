@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
 import { saveShowCompanyWidgets } from "@/app/actions/home-dashboard";
 import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
@@ -46,6 +47,29 @@ export default async function AgencySettingsPage() {
           FitFirst is not the corner brand. This is not billing or a second settings app.
         </p>
       )}
+
+      {desk.isAdmin ? (
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/settings/offices"
+            className="ff-card block p-4 hover:border-primary/40"
+          >
+            <div className="text-sm font-semibold text-navy">Offices</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Name, state(s), address, optional timezone. Agents can sit in more than one desk.
+            </p>
+          </Link>
+          <Link
+            href="/settings/territories"
+            className="ff-card block p-4 hover:border-primary/40"
+          >
+            <div className="text-sm font-semibold text-navy">Territories</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              States, counties, or a freeform geo label. Link offices. Filter Home by book.
+            </p>
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <form action={saveAgencyBrand} className="ff-card space-y-4 p-4">

@@ -41,6 +41,8 @@ import { isWidgetVisible } from "@/lib/home/presets";
 import { entityHref } from "@/lib/crm/display";
 import { Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
+import type { BookScopeOption } from "@/lib/org/book-scope";
+import { BookScopeFilter } from "./book-scope-filter";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -63,6 +65,9 @@ export function OwnerDesk({
   isAgent,
   unread,
   recentDeals,
+  bookOptions = [],
+  bookValue = "company",
+  attentionValue,
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
@@ -80,6 +85,9 @@ export function OwnerDesk({
   isAgent: boolean;
   unread: { id: string; title: string; body: string; entityType: string | null; entityId: string | null }[];
   recentDeals: { id: string; title: string; pipelineStage: string; lineOfBusiness: string }[];
+  bookOptions?: BookScopeOption[];
+  bookValue?: string;
+  attentionValue?: string;
 }) {
   void tables;
   const asOf = snapshot.asOf.toLocaleString("en-US", {
@@ -109,10 +117,19 @@ export function OwnerDesk({
               Figures are from the seed, as of {asOf}.
             </p>
           </div>
-          <div className="shrink-0 rounded-md border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
-            <div className="font-medium text-navy">{scope.label}</div>
-            <div>
-              {scope.canToggleBook ? "Admin toggle" : "Agent book"} · desk clock {asOf}
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            {scope.role !== "agent" && bookOptions.length > 0 ? (
+              <BookScopeFilter
+                options={bookOptions}
+                current={bookValue}
+                attention={attentionValue}
+              />
+            ) : null}
+            <div className="rounded-md border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
+              <div className="font-medium text-navy">{scope.label}</div>
+              <div>
+                {scope.canToggleBook ? "Admin toggle" : "Agent book"} · desk clock {asOf}
+              </div>
             </div>
           </div>
         </div>
