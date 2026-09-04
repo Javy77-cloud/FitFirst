@@ -36,13 +36,13 @@ async function replaceUserOffices(officeId: string, userIds: string[], primaryUs
     .delete(userOffices)
     .where(and(eq(userOffices.tenantId, DEFAULT_TENANT_ID), eq(userOffices.officeId, officeId)));
   if (userIds.length === 0) return;
-  const primary = primaryUserId && userIds.includes(primaryUserId) ? primaryUserId : userIds[0];
+  const primary = primaryUserId && userIds.includes(primaryUserId) ? primaryUserId : null;
   await db.insert(userOffices).values(
     userIds.map((userId) => ({
       tenantId: DEFAULT_TENANT_ID,
       userId,
       officeId,
-      isPrimary: userId === primary,
+      isPrimary: primary != null && userId === primary,
     })),
   );
   if (primary) {
