@@ -1,3 +1,4 @@
+import { requireSignedIn } from "@/lib/auth/guards";
 import { AppShell } from "@/components/app-shell";
 import { DeskCalendar } from "@/components/calendar/desk-calendar";
 import { listRelatedOptions } from "@/lib/db/activity-queries";
@@ -18,6 +19,7 @@ export default async function CalendarPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await requireSignedIn();
   const query = await searchParams;
   const view = parseCalendarView(typeof query.view === "string" ? query.view : undefined);
   const fallback = DESK_AS_OF;
@@ -33,9 +35,9 @@ export default async function CalendarPage({
   return (
     <AppShell title="Calendar">
       <p className="mb-3 text-sm text-muted-foreground">
-        Desk month, week, and day — hourly slots on week and day. Filter by type. Drag to
-        reschedule. Edit writes the same durable log as Contact and Policy records. Google Calendar
-        stays a stub.
+        {session.isAgent
+          ? "Your tasks, calls, and meetings only. Drag to reschedule. Google Calendar connect is Admin."
+          : "Desk month, week, and day — hourly slots on week and day. Filter by type. Drag to reschedule. Google Calendar stays a stub."}
       </p>
       <DeskCalendar
         events={events}

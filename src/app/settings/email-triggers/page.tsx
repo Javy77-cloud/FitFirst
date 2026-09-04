@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listEmailJobs, listEmailTemplates, listEmailTriggers } from "@/lib/db/template-queries";
 import { listSendAccounts } from "@/lib/templates/connectors";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { EMAIL_DELAY_UNITS, SEND_FROM_LABELS, SEND_FROM_PROVIDERS } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailTriggersPage() {
+  const session = await requireAdminPage();
   const [triggers, templates, accounts, jobs] = await Promise.all([
     listEmailTriggers(),
     listEmailTemplates(),

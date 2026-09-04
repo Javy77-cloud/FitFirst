@@ -1,20 +1,14 @@
 import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { isAdmin, type Actor } from "@/lib/auth/rbac";
+import { capabilitiesFor, type DeskCapabilities } from "@/lib/auth/access";
+import { ACTOR_COOKIE, SESSION_COOKIE_OPTS, SESSION_COOKIES } from "@/lib/auth/cookies";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
-import { ADMIN_USER_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
 import { normalizeRole, type DeskRole } from "@/lib/home/scope";
 
-export const SESSION_COOKIES = {
-  role: "ff_role",
-  actor: "ff_actor",
-  actorId: "ff_actor_id",
-  name: "ff_actor_name",
-} as const;
-
-export const ACTOR_COOKIE = SESSION_COOKIES.actorId;
+export { ACTOR_COOKIE, SESSION_COOKIE_OPTS, SESSION_COOKIES };
 
 export async function findUser(id: string): Promise<User | null> {
   const [user] = await db
@@ -29,14 +23,36 @@ export type DeskSession = {
   role: DeskRole;
   userId: string | null;
   name: string;
+  email: string | null;
   isAdmin: boolean;
   isAgent: boolean;
+  signedIn: boolean;
+  capabilities: DeskCapabilities;
 };
 
 const DEMO_PASSWORDS: Record<string, string> = {
   "javy@fitfirst.local": "javy",
   "maya@fitfirst.local": "maya",
 };
+
+export const DEMO_USERS = {
+  admin: {
+    email: "javy@fitfirst.local",
+    password: "javy",
+    name: "Javy Rivera",
+    role: "admin" as const,
+    label: "Admin",
+    summary: "Whole book. Settings, integrations, global lists, Ask a teammate.",
+  },
+  agent: {
+    email: "maya@fitfirst.local",
+    password: "maya",
+    name: "Maya Chen",
+    role: "agent" as const,
+    label: "Agent",
+    summary: "Own book. CRM, pipeline, calendar, and client email/SMS when connected.",
+  },
+} as const;
 
 export function demoPasswordFor(email: string): string | null {
   return DEMO_PASSWORDS[email.trim().toLowerCase()] ?? null;
@@ -48,51 +64,54 @@ export function checkDemoPassword(email: string, password: string): boolean {
   return password === expected;
 }
 
+function guestSession(): DeskSession {
+  return {
+    user: null,
+    role: "agent",
+    userId: null,
+    name: "",
+    email: null,
+    isAdmin: false,
+    isAgent: false,
+    signedIn: false,
+    capabilities: capabilitiesFor("guest"),
+  };
+}
+
+function sessionFromUser(user: User): DeskSession {
+  const role = normalizeRole(user.role);
+  const isAdminRole = role === "admin" || role === "owner";
+  return {
+    user,
+    role,
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    isAdmin: isAdminRole,
+    isAgent: role === "agent",
+    signedIn: true,
+    capabilities: capabilitiesFor(isAdminRole ? "admin" : "agent"),
+  };
+}
+
 export async function currentDeskSession(): Promise<DeskSession> {
   try {
     const jar = await cookies();
     const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? null;
-    const roleCookie = jar.get(SESSION_COOKIES.role)?.value ?? jar.get(SESSION_COOKIES.actor)?.value;
-    if (userId) {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
-      if (user) {
-        const role = normalizeRole(user.role);
-        return {
-          user,
-          role,
-          userId: user.id,
-          name: user.name,
-          isAdmin: role === "admin" || role === "owner",
-          isAgent: role === "agent",
-        };
-      }
-    }
-    const role = normalizeRole(roleCookie ?? "owner");
-    return {
-      user: null,
-      role,
-      userId: role === "agent" ? AGENT_USER_ID : role === "admin" ? ADMIN_USER_ID : null,
-      name: role === "agent" ? "Maya Chen" : "Javy Rivera",
-      isAdmin: role !== "agent",
-      isAgent: role === "agent",
-    };
+    if (!userId) return guestSession();
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
+    if (!user) return guestSession();
+    return sessionFromUser(user);
   } catch {
-    return {
-      user: null,
-      role: "owner",
-      userId: null,
-      name: "Javy Rivera",
-      isAdmin: true,
-      isAgent: false,
-    };
+    return guestSession();
   }
 }
 
 export function scopeOwnerId(session: DeskSession): string | null {
-  return session.isAgent ? session.userId : null;
+  return session.isAdmin ? null : session.userId;
 }
 
 export async function getActor(): Promise<Actor> {
@@ -106,10 +125,10 @@ export async function getActor(): Promise<Actor> {
     };
   }
   return {
-    id: session.userId ?? ADMIN_USER_ID,
-    name: session.name,
-    email: session.isAgent ? "maya@fitfirst.local" : "javy@fitfirst.local",
-    role: session.isAgent ? "agent" : "admin",
+    id: "",
+    name: "",
+    email: "",
+    role: "agent",
   };
 }
 

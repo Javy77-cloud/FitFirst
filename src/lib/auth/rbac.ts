@@ -32,7 +32,7 @@ export function canResolveAsk(actor: Actor): boolean {
 }
 
 export function canPostAsk(actor: Actor): boolean {
-  return actor.role === "admin" || actor.role === "agent";
+  return isAdmin(actor);
 }
 
 export function visibleOwnerId(actor: Actor): string | null {

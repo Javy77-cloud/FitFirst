@@ -33,6 +33,7 @@ describe("RBAC", () => {
     expect(canSeeOwned(admin, null)).toBe(true);
     expect(canAssignOwner(admin)).toBe(true);
     expect(canResolveAsk(admin)).toBe(true);
+    expect(canPostAsk(admin)).toBe(true);
     expect(visibleOwnerId(admin)).toBeNull();
   });
 
@@ -43,7 +44,7 @@ describe("RBAC", () => {
     expect(canSeeOwned(agent, null)).toBe(false);
     expect(canAssignOwner(agent)).toBe(false);
     expect(canResolveAsk(agent)).toBe(false);
-    expect(canPostAsk(agent)).toBe(true);
+    expect(canPostAsk(agent)).toBe(false);
     expect(visibleOwnerId(agent)).toBe(agent.id);
   });
 

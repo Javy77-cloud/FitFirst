@@ -30,6 +30,8 @@ async function assertAdmin() {
 }
 
 export async function createPipelineDeal(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn) throw new Error("Sign in to create a deal.");
   const title = str(formData, "title");
   const pipelineSlug = str(formData, "pipelineSlug") || "p-c";
   const stageSlug = str(formData, "stageSlug") || "gather";
@@ -52,12 +54,14 @@ export async function createPipelineDeal(formData: FormData) {
     pipelineId: pipeline?.id,
     archivedAt: archived ? new Date() : null,
     state: "FL",
+    ownerId: session.userId,
   });
   revalidatePath("/pipeline");
   redirect(`/pipeline?pipeline=${encodeURIComponent(pipelineSlug)}`);
 }
 
 export async function addPipelineStage(formData: FormData) {
+  await assertAdmin();
   const pipelineId = str(formData, "pipelineId");
   const name = str(formData, "name");
   if (!pipelineId || !name) return;
@@ -90,6 +94,7 @@ export async function addPipelineStage(formData: FormData) {
 }
 
 export async function relabelPipelineStage(formData: FormData) {
+  await assertAdmin();
   const id = str(formData, "stageId");
   const name = str(formData, "name");
   if (!id || !name) return;
@@ -101,6 +106,7 @@ export async function relabelPipelineStage(formData: FormData) {
 }
 
 export async function deletePipelineStage(formData: FormData) {
+  await assertAdmin();
   const id = str(formData, "stageId");
   if (!id) return;
   const [stage] = await db
@@ -139,6 +145,7 @@ export async function deletePipelineStage(formData: FormData) {
 }
 
 export async function reorderPipelineStage(formData: FormData) {
+  await assertAdmin();
   const id = str(formData, "stageId");
   const direction = Number(str(formData, "direction") || "0");
   if (!id || (direction !== -1 && direction !== 1)) return;

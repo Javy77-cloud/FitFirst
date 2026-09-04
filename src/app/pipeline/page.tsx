@@ -5,6 +5,7 @@ import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { requireSignedIn } from "@/lib/auth/guards";
 import { getPipelineBoard } from "@/lib/db/queries";
 import { lineForPipelineSlug } from "@/lib/desk/line-settings";
 import {
@@ -21,6 +22,7 @@ export default async function PipelinePage({
 }: {
   searchParams: Promise<{ pipeline?: string; view?: string; lifeSub?: string; healthSub?: string }>;
 }) {
+  const session = await requireSignedIn();
   const { pipeline: slug, view, lifeSub, healthSub } = await searchParams;
   const data = await getPipelineBoard(slug || "p-c", { lifeSub, healthSub });
   if (!data) {
@@ -124,6 +126,7 @@ export default async function PipelinePage({
       </form>
 
       <PipelineWorkspace
+        canEditStages={session.isAdmin}
         board={{
           id: board.id,
           slug: board.slug,

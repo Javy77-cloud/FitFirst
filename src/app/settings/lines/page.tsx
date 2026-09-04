@@ -6,7 +6,7 @@ import {
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { currentDeskSession } from "@/lib/auth/session";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import type { LineSubfilterOption } from "@/lib/desk/line-settings";
 
@@ -75,7 +75,7 @@ function OptionList({
 }
 
 export default async function LinesSettingsPage() {
-  const [session, settings] = await Promise.all([currentDeskSession(), loadDeskLineSettings()]);
+  const [session, settings] = await Promise.all([requireAdminPage(), loadDeskLineSettings()]);
 
   return (
     <SettingsShell title="Lines of business" current="lines">

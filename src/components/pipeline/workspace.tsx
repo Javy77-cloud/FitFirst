@@ -10,10 +10,12 @@ export function PipelineWorkspace({
   board,
   cards,
   tableView,
+  canEditStages = false,
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   tableView: boolean;
+  canEditStages?: boolean;
 }) {
   const hint =
     board.slug === "won-lost"
@@ -30,7 +32,7 @@ export function PipelineWorkspace({
         <p className="max-w-3xl text-sm text-muted-foreground">{hint}</p>
         <PipelineFieldPicker />
       </div>
-      <PipelineStageEditor pipelineId={board.id} stages={board.stages} />
+      {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
       {tableView ? (
         <PipelineTableView board={board} cards={cards} />
       ) : (

@@ -5,6 +5,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, activityLogs } from "@/lib/db/schema";
 import { activityLogBody, assertRelatedRecord, hasCommsRecord } from "@/lib/lifecycle/activity";
+import { currentDeskSession } from "@/lib/auth/session";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { and, eq } from "drizzle-orm";
 
@@ -73,6 +74,7 @@ export async function logDeskActivity(formData: FormData) {
     throw new Error("Call log needs a duration and an outcome.");
   }
 
+  const session = await currentDeskSession();
   await writeDeskComms({
     kind,
     title,
@@ -90,7 +92,7 @@ export async function logDeskActivity(formData: FormData) {
     durationSeconds,
     outcome,
     phoneNumber: str(formData, "phoneNumber") || null,
-    assignee: str(formData, "assignee") || null,
+    assignee: str(formData, "assignee") || session.name || null,
     ...related,
   });
 

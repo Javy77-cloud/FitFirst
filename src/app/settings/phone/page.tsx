@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { currentDeskSession } from "@/lib/auth/session";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getTelephonySettings } from "@/lib/db/queries";
 import { TELEPHONY_PROVIDER_LABEL, TELEPHONY_PROVIDERS } from "@/lib/domain";
 
@@ -17,7 +17,7 @@ export default async function PhoneSettingsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [session, settings, query] = await Promise.all([
-    currentDeskSession(),
+    requireAdminPage(),
     getTelephonySettings(),
     searchParams,
   ]);

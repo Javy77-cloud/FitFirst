@@ -43,6 +43,20 @@ export function isAdminAgent(agent: Pick<DeskAgent, "role"> | null | undefined):
 
 export async function getCurrentAgent(): Promise<DeskAgent> {
   const agents = await ensureDeskAgents();
+  try {
+    const { currentDeskSession } = await import("@/lib/auth/session");
+    const session = await currentDeskSession();
+    if (session.userId) {
+      const fromSession = agents.find((agent) => agent.id === session.userId);
+      if (fromSession) return fromSession;
+      if (session.isAdmin) {
+        const admin = agents.find((agent) => agent.role === "admin");
+        if (admin) return admin;
+      }
+    }
+  } catch {
+    // fall through to cookie
+  }
   const jar = await cookies();
   const id = jar.get(DESK_AGENT_COOKIE)?.value;
   return (

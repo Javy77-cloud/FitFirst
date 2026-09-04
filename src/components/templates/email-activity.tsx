@@ -83,6 +83,7 @@ export function HistoryList({
 
 export function SettingsSubnav({
   current,
+  isAdmin = true,
 }: {
   current:
     | "hub"
@@ -98,22 +99,23 @@ export function SettingsSubnav({
     | "esign"
     | "master-risk"
     | "integrations";
+  isAdmin?: boolean;
 }) {
   const items = [
-    { href: "/settings", id: "hub" as const, label: "Overview" },
-    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · communications" },
-    { href: "/settings/agency", id: "agency" as const, label: "Admin · agency" },
-    { href: "/settings/lines", id: "lines" as const, label: "Admin · lines" },
-    { href: "/settings/lists", id: "lists" as const, label: "Admin · lists" },
-    { href: "/settings/phone", id: "phone" as const, label: "Admin · phone" },
-    { href: "/settings/communications", id: "communications" as const, label: "Communications" },
-    { href: "/settings/esign", id: "esign" as const, label: "Admin · e-sign" },
-    { href: "/settings/master-risk", id: "master-risk" as const, label: "Admin · master risk" },
-    { href: "/settings/email-templates", id: "templates" as const, label: "Admin · templates" },
-    { href: "/settings/email-signatures", id: "signatures" as const, label: "Admin · signatures" },
-    { href: "/settings/email-triggers", id: "triggers" as const, label: "Admin · triggers" },
-    { href: "/settings/my-desk", id: "my-desk" as const, label: "Agent · my desk" },
-  ];
+    { href: "/settings", id: "hub" as const, label: "Overview", adminOnly: false },
+    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · communications", adminOnly: true },
+    { href: "/settings/agency", id: "agency" as const, label: "Admin · agency", adminOnly: true },
+    { href: "/settings/lines", id: "lines" as const, label: "Admin · lines", adminOnly: true },
+    { href: "/settings/lists", id: "lists" as const, label: "Admin · lists", adminOnly: true },
+    { href: "/settings/phone", id: "phone" as const, label: "Admin · phone", adminOnly: true },
+    { href: "/settings/communications", id: "communications" as const, label: "Communications", adminOnly: false },
+    { href: "/settings/esign", id: "esign" as const, label: "Admin · e-sign", adminOnly: true },
+    { href: "/settings/master-risk", id: "master-risk" as const, label: "Admin · master risk", adminOnly: true },
+    { href: "/settings/email-templates", id: "templates" as const, label: "Admin · templates", adminOnly: true },
+    { href: "/settings/email-signatures", id: "signatures" as const, label: "Admin · signatures", adminOnly: true },
+    { href: "/settings/email-triggers", id: "triggers" as const, label: "Admin · triggers", adminOnly: true },
+    { href: "/settings/my-desk", id: "my-desk" as const, label: "Agent · my desk", adminOnly: false },
+  ].filter((item) => isAdmin || !item.adminOnly);
   return (
     <div className="mb-4 flex flex-wrap gap-2">
       {items.map((item) => (

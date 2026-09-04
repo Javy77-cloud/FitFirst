@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { splitCommission } from "../commissions/math";
 import {
   ADMIN_USER_ID,
@@ -29,6 +29,7 @@ import {
   LEAD_ID,
   OPP_CONTACT_IDS,
   OPP_POLICY_IDS,
+  PIPELINE_PC_ID,
   TENANT_ID,
 } from "../fixtures/ids";
 import { db } from "./index";
@@ -37,6 +38,7 @@ import {
   carrierGoals,
   commissionEvents,
   commissions,
+  activities,
   contacts,
   deals,
   leads,
@@ -723,4 +725,69 @@ export async function seedUsersAndBook() {
         },
       });
   }
+
+  const mayaContacts = [DEMO_CONTACT_SHAH, DEMO_CONTACT_REED, OPP_CONTACT_IDS.ruiz];
+  await db
+    .update(deals)
+    .set({ ownerId: AGENT_USER_ID, updatedAt: new Date() })
+    .where(inArray(deals.contactId, mayaContacts));
+  await db
+    .update(leads)
+    .set({ ownerId: AGENT_USER_ID, updatedAt: new Date() })
+    .where(inArray(leads.email, ["priya.shah@example.com", "tomas.reed@example.com"]));
+
+  const mayaDealId = "d0d00000-0000-4000-8000-0000000000a1";
+  await db
+    .insert(deals)
+    .values({
+      id: mayaDealId,
+      tenantId: TENANT_ID,
+      contactId: DEMO_CONTACT_SHAH,
+      title: "Shah · Orlando HO (Maya book)",
+      lineOfBusiness: "HO",
+      pipelineStage: "shopping",
+      pipelineStageSlug: "gather",
+      pipelineId: PIPELINE_PC_ID,
+      state: "FL",
+      ownerId: AGENT_USER_ID,
+      notes: "Maya Chen producer shop. Not Ana. Do not bind Ana from this row.",
+    })
+    .onConflictDoUpdate({
+      target: deals.id,
+      set: {
+        contactId: DEMO_CONTACT_SHAH,
+        title: "Shah · Orlando HO (Maya book)",
+        pipelineId: PIPELINE_PC_ID,
+        ownerId: AGENT_USER_ID,
+        notes: "Maya Chen producer shop. Not Ana. Do not bind Ana from this row.",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(activities)
+    .values({
+      id: "d0d00000-0000-4000-8000-0000000000a2",
+      tenantId: TENANT_ID,
+      kind: "meeting",
+      title: "Shah renewal check-in",
+      notes: "Maya book. Confirm HO docs before the next shop.",
+      status: "open",
+      startAt: new Date("2026-09-04T15:00:00.000Z"),
+      endAt: new Date("2026-09-04T15:30:00.000Z"),
+      dueAt: new Date("2026-09-04T15:00:00.000Z"),
+      contactId: DEMO_CONTACT_SHAH,
+      dealId: mayaDealId,
+      assignee: "Maya Chen",
+    })
+    .onConflictDoUpdate({
+      target: activities.id,
+      set: {
+        title: "Shah renewal check-in",
+        assignee: "Maya Chen",
+        contactId: DEMO_CONTACT_SHAH,
+        dealId: mayaDealId,
+        updatedAt: new Date(),
+      },
+    });
 }

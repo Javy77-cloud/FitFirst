@@ -257,14 +257,26 @@ export async function getCarrier(id: string) {
 }
 
 export async function listCalendarActivities(_from: Date, _to: Date) {
+  const session = await currentDeskSession();
+  const scope = session.isAdmin
+    ? undefined
+    : session.name
+      ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""))
+      : sql`false`;
   return db
     .select()
     .from(activities)
-    .where(eq(activities.tenantId, tenant()))
+    .where(and(eq(activities.tenantId, tenant()), scope))
     .orderBy(asc(activities.startAt), asc(activities.dueAt));
 }
 
 export async function listCallLog() {
+  const session = await currentDeskSession();
+  const scope = session.isAdmin
+    ? undefined
+    : session.name
+      ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""))
+      : sql`false`;
   return db
     .select({
       activity: activities,
@@ -280,7 +292,7 @@ export async function listCallLog() {
     .leftJoin(deals, eq(activities.dealId, deals.id))
     .leftJoin(leads, eq(activities.leadId, leads.id))
     .leftJoin(accounts, eq(activities.accountId, accounts.id))
-    .where(and(eq(activities.tenantId, tenant()), eq(activities.kind, "call")))
+    .where(and(eq(activities.tenantId, tenant()), eq(activities.kind, "call"), scope))
     .orderBy(desc(activities.startAt), desc(activities.updatedAt));
 }
 
@@ -303,8 +315,15 @@ export async function getEsignSettings() {
 const tenant = () => DEFAULT_TENANT_ID;
 
 function ownerWhere(session: DeskSession, column: AnyPgColumn): SQL | undefined {
-  if (session.isAdmin || !session.userId) return undefined;
-  return eq(column, session.userId);
+  if (session.isAdmin) return undefined;
+  if (session.userId) return eq(column, session.userId);
+  return sql`false`;
+}
+
+function canViewOwned(session: DeskSession, ownerId: string | null | undefined): boolean {
+  if (session.isAdmin) return true;
+  if (!session.signedIn || !session.userId) return false;
+  return ownerId === session.userId;
 }
 
 export async function listUsers() {
@@ -377,7 +396,9 @@ export async function listDeals(filter: DealListFilter = {}) {
     .leftJoin(accounts, eq(deals.accountId, accounts.id))
     .where(eq(deals.tenantId, tenant()))
     .orderBy(desc(deals.updatedAt));
+  const session = await currentDeskSession();
   return rows.filter(({ deal }) => {
+    if (!canViewOwned(session, deal.ownerId)) return false;
     const family = bookFamily(deal.lineOfBusiness);
     if (family === "life" && !lineOptions.writeLife) return false;
     if (family === "health" && !lineOptions.writeHealth) return false;
@@ -454,6 +475,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
 }
 
 export async function listAccounts(filter: { status?: string; city?: string } = {}) {
+  const session = await currentDeskSession();
   const rows = await db
     .select()
     .from(accounts)
@@ -463,6 +485,13 @@ export async function listAccounts(filter: { status?: string; city?: string } = 
     .select()
     .from(policies)
     .where(eq(policies.tenantId, tenant()));
+  const linkedContacts = session.isAdmin
+    ? []
+    : await db
+        .select({ accountId: contactAccounts.accountId, ownerId: contacts.ownerId })
+        .from(contactAccounts)
+        .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
+        .where(eq(contactAccounts.tenantId, tenant()));
   return rows.map((account) => {
     const related = allPolicies.filter((p) => p.accountId === account.id);
     const counts = {
@@ -476,6 +505,11 @@ export async function listAccounts(filter: { status?: string; city?: string } = 
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {
+    if (!session.isAdmin) {
+      const policyHit = allPolicies.some((p) => p.accountId === row.id && p.ownerId === session.userId);
+      const contactHit = linkedContacts.some((link) => link.accountId === row.id && link.ownerId === session.userId);
+      if (!policyHit && !contactHit) return false;
+    }
     if (filter.status && row.clientStatus !== filter.status) return false;
     if (filter.city && (row.city ?? "").toLowerCase() !== filter.city.toLowerCase()) return false;
     return true;
@@ -583,6 +617,8 @@ export async function getLead(id: string) {
     .from(leads)
     .where(and(eq(leads.tenantId, tenant()), eq(leads.id, id)));
   if (!lead) return null;
+  const session = await currentDeskSession();
+  if (!canViewOwned(session, lead.ownerId)) return null;
   const [converted] = lead.convertedDealId
     ? await db.select().from(deals).where(eq(deals.id, lead.convertedDealId))
     : [];
@@ -610,6 +646,8 @@ export async function getContactWorkspace(id: string) {
     .from(contacts)
     .where(and(eq(contacts.tenantId, tenant()), eq(contacts.id, id)));
   if (!contact) return null;
+  const session = await currentDeskSession();
+  if (!canViewOwned(session, contact.ownerId)) return null;
   const relatedPolicies = await db
     .select({ policy: policies, carrier: carriers, deal: deals })
     .from(policies)
@@ -725,6 +763,14 @@ export async function getAccountWorkspace(id: string) {
     : [];
   const lifetime = relatedPolicies.length;
   const inForce = relatedPolicies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
+  const session = await currentDeskSession();
+  if (!session.isAdmin) {
+    const ownsRelated =
+      relatedPolicies.some((row) => row.policy.ownerId === session.userId) ||
+      relatedDeals.some((deal) => deal.ownerId === session.userId) ||
+      linked.some((row) => row.contact.ownerId === session.userId);
+    if (!ownsRelated) return null;
+  }
   return {
     account,
     policies: relatedPolicies,
@@ -825,6 +871,8 @@ export async function getPolicyWorkspace(id: string) {
     .leftJoin(deals, eq(policies.dealId, deals.id))
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, id)));
   if (!row) return null;
+  const session = await currentDeskSession();
+  if (!canViewOwned(session, row.policy.ownerId)) return null;
   const files = await db
     .select()
     .from(documents)
@@ -1151,10 +1199,12 @@ export async function getPipelineBoard(slug: string, sub?: { lifeSub?: string; h
     .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
     .orderBy(desc(deals.updatedAt));
+  const session = await currentDeskSession();
   const seen = new Set<string>();
   const cards = [];
   for (const row of rows) {
     if (seen.has(row.deal.id)) continue;
+    if (!canViewOwned(session, row.deal.ownerId)) continue;
     if (!dealMatchesBoard(row.deal, board)) continue;
     seen.add(row.deal.id);
     cards.push(row);
@@ -1204,6 +1254,7 @@ export async function listEmailJobsForDeal(dealId: string) {
 export async function smartSearch(query: string): Promise<SearchHit[]> {
   const q = query.trim();
   if (!q) return [];
+  const session = await currentDeskSession();
   const [leadRows, dealRows, contactRows, accountRows, policyRows] = await Promise.all([
     db.select().from(leads).where(eq(leads.tenantId, tenant())),
     db.select().from(deals).where(eq(deals.tenantId, tenant())),
@@ -1213,22 +1264,30 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
   ]);
   const hits: SearchHit[] = [];
   for (const row of leadRows) {
+    if (!canViewOwned(session, row.ownerId)) continue;
     if (matchesQuery(q, row.firstName, row.middleName, row.lastName, row.email, row.phone)) hits.push(hitFromLead(row));
   }
   for (const row of dealRows) {
+    if (!canViewOwned(session, row.ownerId)) continue;
     if (matchesQuery(q, row.title, row.primaryNamedInsured, row.notes)) hits.push(hitFromDeal(row));
   }
   for (const row of contactRows) {
+    if (!canViewOwned(session, row.ownerId)) continue;
     if (matchesQuery(q, row.firstName, row.lastName, row.email, row.phone, row.mailingAddress)) {
       hits.push(hitFromContact(row));
     }
   }
   for (const row of accountRows) {
+    if (!session.isAdmin) {
+      const owns = policyRows.some((policy) => policy.accountId === row.id && policy.ownerId === session.userId);
+      if (!owns) continue;
+    }
     if (matchesQuery(q, row.name, row.legalName, row.dba, row.ein, row.city)) {
       hits.push(hitFromBusiness(row));
     }
   }
   for (const row of policyRows) {
+    if (!canViewOwned(session, row.ownerId)) continue;
     if (matchesQuery(q, row.policyNumber, row.lineOfBusiness)) hits.push(hitFromPolicy(row));
   }
   return rankHits(hits, q).slice(0, 24);

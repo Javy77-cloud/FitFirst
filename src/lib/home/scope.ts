@@ -25,22 +25,31 @@ export function isAgencyWide(scope: OwnerHomeScope): boolean {
 export async function currentOwnerHomeScope(): Promise<OwnerHomeScope> {
   const tenantId = DEFAULT_TENANT_ID;
   try {
+    const { currentDeskSession } = await import("@/lib/auth/session");
+    const session = await currentDeskSession();
+    if (session.signedIn) {
+      return {
+        tenantId,
+        role: session.role,
+        agentUserId: session.isAdmin ? null : session.userId,
+        label: session.isAdmin ? "Agency totals" : "Your book",
+      };
+    }
     const jar = await cookies();
-    const raw = jar.get("ff_actor")?.value ?? jar.get("ff_role")?.value ?? "owner";
-    const role = normalizeRole(raw);
-    const agentUserId = role === "agent" ? jar.get("ff_actor_id")?.value ?? null : null;
+    const raw = jar.get("ff_actor")?.value ?? jar.get("ff_role")?.value ?? "";
+    const role = normalizeRole(raw || "agent");
     return {
       tenantId,
       role,
-      agentUserId,
+      agentUserId: role === "agent" ? jar.get("ff_actor_id")?.value ?? null : null,
       label: role === "agent" ? "Your book" : "Agency totals",
     };
   } catch {
     return {
       tenantId,
-      role: "owner",
+      role: "agent",
       agentUserId: null,
-      label: "Agency totals",
+      label: "Sign in",
     };
   }
 }

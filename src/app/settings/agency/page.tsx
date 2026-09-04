@@ -4,6 +4,7 @@ import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getAgencyBrand, getResolvedDesk } from "@/lib/db/brand-queries";
 import {
   COLOR_PRESET_LABELS,
@@ -18,6 +19,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AgencySettingsPage() {
+  const session = await requireAdminPage();
   const [desk, brand] = await Promise.all([getResolvedDesk(), getAgencyBrand()]);
 
   return (

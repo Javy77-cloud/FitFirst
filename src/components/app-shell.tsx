@@ -49,7 +49,9 @@ export async function AppShell({
               <span className="block truncate text-base font-semibold tracking-tight text-white">
                 {brand.name}
               </span>
-              <span className="block text-xs text-sidebar-foreground/70">Owner desk</span>
+              <span className="block text-xs text-sidebar-foreground/70">
+                {session.isAgent ? "Agent desk" : "Admin desk"}
+              </span>
             </span>
           </Link>
         </div>
@@ -57,11 +59,17 @@ export async function AppShell({
           <DeskNav unread={unread} variant="sidebar" />
         </nav>
         <div className="border-t border-sidebar-border px-4 py-3 text-xs text-sidebar-foreground/70">
-          <div className="font-medium text-white">{session.name}</div>
-          <div className="capitalize">{session.role === "agent" ? "Agent · own book" : "Admin · all book"}</div>
+          <div className="font-medium text-white">{session.name || "Not signed in"}</div>
+          <div>
+            {session.isAgent
+              ? "Agent · own book"
+              : session.isAdmin
+                ? "Admin · all book"
+                : "Sign in required"}
+          </div>
           <div className="mt-2 flex gap-2">
             <Link href="/login" className="text-sidebar-foreground/90 hover:text-white">
-              {session.user ? "Switch" : "Sign in"}
+              {session.signedIn ? "Switch user" : "Sign in"}
             </Link>
             {session.user ? (
               <form action={logoutDesk}>

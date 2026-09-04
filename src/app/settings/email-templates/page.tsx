@@ -3,6 +3,7 @@ import { duplicateEmailTemplate } from "@/app/actions/templates";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listEmailTemplates } from "@/lib/db/template-queries";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function EmailTemplatesPage() {
+  const session = await requireAdminPage();
   const [templates, desk] = await Promise.all([listEmailTemplates(), getResolvedDesk()]);
 
   return (

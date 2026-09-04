@@ -199,7 +199,7 @@ export default async function CarrierRecordPage({
         </RecordSection>
       </form>
 
-      <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} />
+      {admin ? <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} /> : null}
 
       <RecordSection id="related" title="Related" summary="Appetite rule and decline log">
         <p className="mb-3 text-sm">

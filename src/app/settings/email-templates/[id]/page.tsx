@@ -3,6 +3,7 @@ import { duplicateEmailTemplate } from "@/app/actions/templates";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { TemplateForm } from "@/components/templates/template-form";
 import { Button } from "@/components/ui/button";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { getEmailTemplate } from "@/lib/db/template-queries";
 
@@ -14,6 +15,7 @@ export default async function EditEmailTemplatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await requireAdminPage();
   const [template, desk] = await Promise.all([getEmailTemplate(id), getResolvedDesk()]);
   if (!template) notFound();
 

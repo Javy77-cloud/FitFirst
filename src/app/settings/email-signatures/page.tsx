@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getResolvedDesk, listEmailSignatures } from "@/lib/db/brand-queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailSignaturesPage() {
+  const session = await requireAdminPage();
   const [desk, signatures] = await Promise.all([getResolvedDesk(), listEmailSignatures()]);
   const current = signatures[0];
 

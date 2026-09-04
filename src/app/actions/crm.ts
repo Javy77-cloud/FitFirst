@@ -99,10 +99,12 @@ export async function findOrCreateLead(
 ) {
   const existing = await findMatchingLead(input);
   if (existing) return { lead: existing, created: false };
+  const actor = await getActor();
   const [lead] = await db
     .insert(leads)
     .values({
       tenantId: DEFAULT_TENANT_ID,
+      ownerId: actor.id || null,
       firstName: input.firstName || "Unknown",
       middleName: input.middleName || null,
       lastName: input.lastName || "Lead",
@@ -131,6 +133,7 @@ export async function createLead(formData: FormData) {
 }
 
 export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL") {
+  const actor = await getActor();
   const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   if (!lead) throw new Error("Lead not found");
   if (lead.convertedDealId) return lead.convertedDealId;
@@ -155,6 +158,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId,
+      ownerId: lead.ownerId ?? actor.id ?? null,
       title: `${lead.lastName} · ${dealLine} shop`,
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
@@ -307,6 +311,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       source: "dec_drop",
       status: "converted",
       notes: str(formData, "notes") || `Dec drop: ${file.name}`,
+      ownerId: (await getActor()).id || null,
     })
     .returning();
 
@@ -315,6 +320,7 @@ export async function createDealFromDecDrop(formData: FormData) {
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
+      ownerId: lead.ownerId,
       title: `${lastName} · ${line} shop`,
       pipelineStage: "shopping",
       lineOfBusiness: line,
