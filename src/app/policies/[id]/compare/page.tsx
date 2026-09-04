@@ -31,14 +31,14 @@ export default async function PolicyComparePage({
         </Link>
       }
     >
-      <p className="mb-4 text-sm text-muted-foreground">
+      <p className="mb-4 text-base text-muted-foreground">
         Current term vs the carrier&apos;s proposed term — premium, deductibles, and key
         coverages. {contact ? `${contact.firstName} ${contact.lastName}` : "Client"} ·{" "}
         {carrier?.name ?? "carrier"} · {policy.lineOfBusiness}. Not a rater. No emails.
       </p>
 
       {policy.status.toLowerCase() !== "active" && policy.status.toLowerCase() !== "bound" ? (
-        <section className="ff-card mb-4 p-4 text-sm text-muted-foreground">
+        <section className="ff-card mb-4 p-4 text-base text-muted-foreground">
           Compare renewal is meant for in-force policies. This policy is {policy.status}.
         </section>
       ) : null}
@@ -49,11 +49,11 @@ export default async function PolicyComparePage({
       </div>
 
       <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Compare log
         </div>
         {compareLogs.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No renewal compare has been recorded on this policy. Terms are not seeded on the
             overnight book — this page reads `policy_terms` and `renewal_compare_logs` only.
           </p>
@@ -62,7 +62,7 @@ export default async function PolicyComparePage({
             {compareLogs.map((log) => (
               <li key={log.id} className="px-4 py-2 text-sm">
                 <span className="font-medium">{log.eventType}</span>
-                <span className="ml-2 text-xs text-muted-foreground">{log.summary ?? "—"}</span>
+                <span className="ml-2 text-base text-muted-foreground">{log.summary ?? "—"}</span>
               </li>
             ))}
           </ul>
@@ -90,9 +90,9 @@ function TermCard({
 }) {
   return (
     <section className="ff-card p-4 text-sm">
-      <h2 className="text-sm font-semibold text-navy">{title}</h2>
+      <h2 className="text-base font-semibold text-navy">{title}</h2>
       {!term ? (
-        <p className="mt-2 text-sm text-muted-foreground">No {title.toLowerCase()} on file.</p>
+        <p className="mt-2 text-base text-muted-foreground">No {title.toLowerCase()} on file.</p>
       ) : (
         <dl className="mt-3 grid gap-2 text-xs">
           <div>

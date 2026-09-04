@@ -42,7 +42,7 @@ export function ComparePanel({
   return (
     <div className="space-y-4">
       {change ? <PremiumChangeSummary change={change} /> : (
-        <section className="ff-card p-4 text-sm text-muted-foreground">
+        <section className="ff-card p-4 text-base text-muted-foreground">
           Record the carrier&apos;s proposed term to see the premium-change summary. FitFirst
           does not rate this policy.
         </section>
@@ -102,8 +102,8 @@ export function ComparePanel({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <form action={saveProposedTerm} className="ff-card space-y-3 p-4">
           <div>
-            <h2 className="text-sm font-semibold text-navy">Record proposed term</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <h2 className="text-base font-semibold text-navy">Record proposed term</h2>
+            <p className="mt-1 text-base text-muted-foreground">
               Enter what the carrier sent. This is not a rater and does not invent a risk score.
             </p>
           </div>
@@ -176,7 +176,7 @@ export function ComparePanel({
 
         <section className="ff-card overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-            <h2 className="text-sm font-semibold text-navy">Durable compare log</h2>
+            <h2 className="text-base font-semibold text-navy">Durable compare log</h2>
             {current && proposed ? (
               <form action={recordRenewalCompare}>
                 <input type="hidden" name="policyId" value={policy.id} />
@@ -187,7 +187,7 @@ export function ComparePanel({
             ) : null}
           </div>
           {logs.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
+            <p className="px-4 py-6 text-base text-muted-foreground">
               No compares logged yet. Save a proposed term to write the first row.
             </p>
           ) : (

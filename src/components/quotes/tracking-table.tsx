@@ -12,7 +12,7 @@ export function TrackingTable({
 }) {
   if (shop.rows.length === 0) {
     return (
-      <p className="px-4 py-6 text-sm text-muted-foreground">
+      <p className="px-4 py-6 text-base text-muted-foreground">
         No shops recorded on this deal. Filter markets first, then log the attempt. This board
         does not call a rater.
       </p>
@@ -50,7 +50,7 @@ export function TrackingTable({
               <td className="font-medium">
                 {row.carrierName}
                 {row.bindable ? null : row.status === "quoted" ? (
-                  <div className="text-[11px] text-fit-flag">Quoted · not bindable</div>
+                  <div className="text-base text-fit-flag">Quoted · not bindable</div>
                 ) : null}
               </td>
               <td>{row.line}</td>
@@ -94,7 +94,7 @@ export function TrackingTable({
 
 export function ShopSummary({ shop }: { shop: TrackingShop }) {
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-base text-muted-foreground">
       {shop.quotedCount} quoted · {shop.declinedCount} declined · {shop.skipCount} skip ·{" "}
       {shop.boundCount} bound. Cheapest quoted: {cheapestQuotedSummary(shop)}.
     </p>

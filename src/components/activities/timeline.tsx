@@ -11,7 +11,7 @@ export function ActivityTimeline({
   empty?: string;
 }) {
   if (rows.length === 0) {
-    return <p className="px-4 py-6 text-sm text-muted-foreground">{empty}</p>;
+    return <p className="px-4 py-6 text-base text-muted-foreground">{empty}</p>;
   }
   return (
     <ol className="divide-y divide-border">
@@ -35,7 +35,7 @@ export function ActivityTimeline({
             ) : null}
           </div>
           <p className="mt-1 text-sm text-foreground/90">{history.body}</p>
-          <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+          <div className="mt-1 flex flex-wrap gap-3 text-base text-muted-foreground">
             <span>{formatWhen(history.occurredAt)}</span>
             {policy ? (
               <Link href={`/policies/${policy.id}`} className="hover:underline">

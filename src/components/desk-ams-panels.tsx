@@ -4,11 +4,11 @@ import type { IssuedCertificate, Location, Vehicle } from "@/lib/db/schema";
 export function LocationsList({ locations }: { locations: Location[] }) {
   return (
     <section className="ff-card mb-4 overflow-hidden">
-      <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+      <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
         Insured locations
       </div>
       {locations.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">
+        <p className="px-4 py-6 text-base text-muted-foreground">
           No premises on this 360 yet. Home, landlord, flood, and commercial hang off a street
           address — not a Zillow value.
         </p>
@@ -19,7 +19,7 @@ export function LocationsList({ locations }: { locations: Location[] }) {
               <div className="font-medium text-navy">
                 {location.label || location.address1 || location.street || "Location"}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-base text-muted-foreground">
                 {[location.address1 || location.street, location.city, location.state, location.zip]
                   .filter(Boolean)
                   .join(", ") || "No street on file"}
@@ -35,11 +35,11 @@ export function LocationsList({ locations }: { locations: Location[] }) {
 export function VehiclesList({ vehicles }: { vehicles: Vehicle[] }) {
   return (
     <section className="ff-card mb-4 overflow-hidden">
-      <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+      <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
         Vehicles on this Auto
       </div>
       {vehicles.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">
+        <p className="px-4 py-6 text-base text-muted-foreground">
           No vehicles on this policy yet. The Auto schedule is empty — quotes are not coverage.
         </p>
       ) : (
@@ -77,11 +77,11 @@ export function CertificatesList({
 }) {
   return (
     <section className="ff-card mb-4 overflow-hidden">
-      <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+      <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
         Certificates of Insurance
       </div>
       {certificates.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">
+        <p className="px-4 py-6 text-base text-muted-foreground">
           No COI stub on this Business. The certificate preview is not issued until a stub row
           exists — this is not an ACORD form and nothing is emailed.
         </p>
@@ -95,7 +95,7 @@ export function CertificatesList({
               >
                 {cert.certificateNumber}
               </Link>
-              <span className="ml-2 text-xs text-muted-foreground">
+              <span className="ml-2 text-base text-muted-foreground">
                 {cert.holderName} · {cert.status}
               </span>
             </li>

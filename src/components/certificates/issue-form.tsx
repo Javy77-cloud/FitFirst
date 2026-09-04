@@ -62,7 +62,7 @@ export function IssueCertificateForm({
       <Button type="submit" size="sm" disabled={!canIssue}>
         Generate certificate stub
       </Button>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Prints from in-force GL and WC only. Not a licensed ACORD form. No e-sign. No email.
       </p>
     </form>

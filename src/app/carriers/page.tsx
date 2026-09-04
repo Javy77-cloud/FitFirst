@@ -8,7 +8,7 @@ export default async function CarriersPage() {
   const rows = await listCarriers();
   return (
     <AppShell title="Carriers & appetite">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Structured appetite only. The 2026-09-02 Palm Bay shop is a fixture, not production
         underwriting.
       </p>
@@ -28,7 +28,7 @@ export default async function CarriersPage() {
               <tr key={`${carrier.id}-${rule?.id ?? "none"}`}>
                 <td className="font-medium">
                   {carrier.name}
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-base text-muted-foreground">
                     {(carrier.writtenLines ?? []).join(", ")}
                   </div>
                 </td>

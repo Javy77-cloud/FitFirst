@@ -25,7 +25,7 @@ export default async function QuotesBoardPage({
         </Link>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
+      <p className="mb-3 max-w-3xl text-base text-muted-foreground">
         Every shop already run — appetite logs and quote comparison rows — in one place. Status
         is quoted, declined, skip, or bound. Cheapest quoted is ranked per deal. This board does
         not call a carrier or rater.
@@ -41,7 +41,7 @@ export default async function QuotesBoardPage({
       ) : null}
 
       {shops.length === 0 ? (
-        <section className="ff-card px-4 py-8 text-sm text-muted-foreground">
+        <section className="ff-card px-4 py-8 text-base text-muted-foreground">
           No quote attempts on the book yet. Open a deal, filter markets, then log the shop.
         </section>
       ) : (
@@ -53,7 +53,7 @@ export default async function QuotesBoardPage({
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/deals/${shop.dealId}?tab=quotes`}
-                      className="text-sm font-semibold text-navy hover:underline"
+                      className="text-base font-semibold text-navy hover:underline"
                     >
                       {shop.dealTitle}
                     </Link>

@@ -18,8 +18,8 @@ export function MarketsPanel({
     <div className="space-y-4">
       <div className="ff-card flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
-          <h3 className="text-sm font-semibold text-navy">Filter first, then rank</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="text-base font-semibold text-navy">Filter first, then rank</h3>
+          <p className="text-base text-muted-foreground">
             {greens.length} green · {yellows.length} yellow · {reds.length} red. Red markets are
             not submitted. Yellow needs an override. Portal adapters are empty — no carrier
             logins.
@@ -50,9 +50,9 @@ function MarketTable({
 }) {
   return (
     <section className="ff-card overflow-hidden">
-      <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">{title}</div>
+      <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">{title}</div>
       {rows.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">{empty}</p>
+        <p className="px-4 py-6 text-base text-muted-foreground">{empty}</p>
       ) : (
         <table className="ff-table">
           <thead>

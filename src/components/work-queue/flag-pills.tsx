@@ -9,7 +9,7 @@ export function WorkFlagPills({
   empty?: string;
 }) {
   if (flags.length === 0) {
-    return <span className="text-xs text-muted-foreground">{empty}</span>;
+    return <span className="text-base text-muted-foreground">{empty}</span>;
   }
   return (
     <span className="flex flex-wrap gap-1">
@@ -32,7 +32,7 @@ export function WorkFlagPills({
 
 export function WorkStatusPill({ status }: { status: string | null | undefined }) {
   if (!status) {
-    return <span className="text-xs text-muted-foreground">Unassigned</span>;
+    return <span className="text-base text-muted-foreground">Unassigned</span>;
   }
   return (
     <span className="inline-flex rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] font-semibold text-navy">

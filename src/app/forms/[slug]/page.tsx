@@ -33,7 +33,7 @@ export default async function FormFillPage({
 
   return (
     <AppShell title={template.name}>
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Filled from Quote Sheet on{" "}
         {workspace ? (
           <Link href={`/deals/${workspace.deal.id}?tab=quote-sheet`} className="text-primary hover:underline">

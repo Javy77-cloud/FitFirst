@@ -17,7 +17,7 @@ export default async function PipelinePage({
   if (!data) {
     return (
       <AppShell title="Pipeline">
-        <p className="text-sm text-muted-foreground">No pipelines seeded yet. Run db:seed.</p>
+        <p className="text-base text-muted-foreground">No pipelines seeded yet. Run db:seed.</p>
       </AppShell>
     );
   }
@@ -42,7 +42,7 @@ export default async function PipelinePage({
           </Link>
         ))}
       </div>
-      <p className="mb-4 text-xs text-muted-foreground">
+      <p className="mb-4 text-base text-muted-foreground">
         Real links — P-C, Health, Life, Won-Lost/ARCHIVE, plus Flood (admin-added). Closed Won
         writes a Policy. Moving a won deal to ARCHIVE later does not cancel emails hung on won
         date.
@@ -55,11 +55,11 @@ export default async function PipelinePage({
             || (stage.slug === "archive" && Boolean(deal.archivedAt)));
           return (
             <section key={stage.id} className="ff-card overflow-hidden">
-              <div className="border-b border-border px-3 py-2 text-sm font-semibold text-navy">
+              <div className="border-b border-border px-3 py-2 text-base font-semibold text-navy">
                 {stage.name}
               </div>
               {column.length === 0 ? (
-                <p className="px-3 py-4 text-xs text-muted-foreground">Empty.</p>
+                <p className="px-3 py-4 text-base text-muted-foreground">Empty.</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {column.map((deal) => (

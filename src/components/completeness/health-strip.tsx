@@ -48,12 +48,12 @@ export function HealthStrip({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           {heading}
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="mt-0.5 text-base text-muted-foreground">
             {report.confirmed} of {report.total} confirmed · yellow missing · blue CHECK. Not a
             bind probability.
           </p>
         </div>
-        <div className="flex flex-wrap gap-1.5 text-[11px]">
+        <div className="flex flex-wrap gap-1.5 text-sm">
           <span className="rounded-sm bg-fit-green-bg px-2 py-0.5 text-fit-green">
             {report.confirmed} confirmed
           </span>
@@ -76,7 +76,7 @@ export function HealthStrip({
         <span className="ff-completeness-missing" style={{ width: `${missingW}%` }} />
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         {shopText}
         {" · "}
         {bindText}
@@ -97,7 +97,7 @@ function BlockerList({ report }: { report: CompletenessReport }) {
       : report.shopBlockers;
   if (rows.length === 0) {
     return (
-      <p className="text-xs text-[var(--ff-green)]">Nothing on this sheet is blocking shop or bind.</p>
+      <p className="text-base text-[var(--ff-green)]">Nothing on this sheet is blocking shop or bind.</p>
     );
   }
   return (

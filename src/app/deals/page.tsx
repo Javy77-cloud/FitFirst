@@ -45,9 +45,9 @@ export default async function DealsPage({
         </Link>
       }
     >
-      <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
+      <p className="mb-3 text-base text-muted-foreground">{hint}</p>
       {filter.stage || filter.attention ? (
-        <p className="mb-3 text-[12px]">
+        <p className="mb-3 text-sm">
           <Link href="/deals" className="text-primary hover:underline">
             Clear filter
           </Link>

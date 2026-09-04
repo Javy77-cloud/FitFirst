@@ -42,7 +42,7 @@ export function SheetHandoffButtons({ dealId, line }: { dealId: string; line: st
       <a href="/fill-demo" className="text-xs text-primary hover:underline">
         Open Fill demo
       </a>
-      {note ? <span className="text-xs text-muted-foreground">{note}</span> : null}
+      {note ? <span className="text-base text-muted-foreground">{note}</span> : null}
     </div>
   );
 }

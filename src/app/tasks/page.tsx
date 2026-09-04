@@ -7,13 +7,13 @@ export default async function TasksPage() {
   const tasks = await listReviewTasks();
   return (
     <AppShell title="Tasks">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Desk 30/60/90 and review tasks. Activity timeline on Contact and Policy still owns
         task/call logs assigned to those records.
       </p>
       <section className="ff-card overflow-hidden">
         {tasks.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">No open review tasks.</p>
+          <p className="px-4 py-6 text-base text-muted-foreground">No open review tasks.</p>
         ) : (
           <table className="ff-table">
             <thead>

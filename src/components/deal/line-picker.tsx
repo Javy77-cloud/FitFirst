@@ -61,7 +61,7 @@ export function LinePicker({
         />
         <ul className="mt-1 max-h-40 overflow-auto rounded-md border border-border bg-card">
           {options.length === 0 ? (
-            <li className="px-2 py-1.5 text-xs text-muted-foreground">No matching line.</li>
+            <li className="px-2 py-1.5 text-base text-muted-foreground">No matching line.</li>
           ) : (
             options.map((line) => (
               <li key={line.code}>
@@ -83,7 +83,7 @@ export function LinePicker({
             ))
           )}
         </ul>
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 text-base text-muted-foreground">
           Most-used first. Selected: <span className="font-medium text-navy">{code}</span>
         </p>
       </div>

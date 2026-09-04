@@ -37,7 +37,7 @@ export function TaskBoard({
             </div>
             <ul className="space-y-2 p-2">
               {col.length === 0 ? (
-                <li className="px-2 py-6 text-xs text-muted-foreground">Empty.</li>
+                <li className="px-2 py-6 text-base text-muted-foreground">Empty.</li>
               ) : (
                 col.map(({ activity, contact }) => (
                   <li key={activity.id} className="rounded-md border border-border bg-background p-2">
@@ -50,7 +50,7 @@ export function TaskBoard({
                       </span>
                       <span className="text-muted-foreground">{formatWhen(activity.dueAt)}</span>
                     </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
+                    <div className="mt-1 text-base text-muted-foreground">
                       {contact ? `${contact.lastName}, ${contact.firstName}` : "Policy-only"}
                     </div>
                     <div className="mt-2 flex gap-1">

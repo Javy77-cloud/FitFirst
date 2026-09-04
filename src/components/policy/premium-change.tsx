@@ -31,11 +31,11 @@ export function PremiumChangeSummary({
           {formatSignedMoney(change.delta)}
           <span className="ml-2 text-base font-medium">{formatDeltaPct(change.pct)}</span>
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-base text-muted-foreground">
           {formatMoney(change.current)} → {formatMoney(change.proposed)}
         </div>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">{compareSummary(change)}</p>
+      <p className="mt-2 text-base text-muted-foreground">{compareSummary(change)}</p>
     </section>
   );
 }

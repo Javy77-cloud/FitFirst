@@ -12,7 +12,7 @@ export default async function AgentCommissionsPage({
   if (!id) notFound();
   return (
     <AppShell title="Agent earnings">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Per-agent rollup is on the commissions slice. Open{" "}
         <a href="/commissions" className="text-primary hover:underline">
           Commissions

@@ -23,8 +23,8 @@ export function ShareDonut({
   if (slices.length === 0 || total <= 0) {
     return (
       <div className="ff-card p-4">
-        <h3 className="text-sm font-semibold text-navy">{title}</h3>
-        <p className="mt-3 text-sm text-muted-foreground">No commission mix to chart yet.</p>
+        <h3 className="text-base font-semibold text-navy">{title}</h3>
+        <p className="mt-3 text-base text-muted-foreground">No commission mix to chart yet.</p>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function ShareDonut({
 
   return (
     <div className="ff-card p-4">
-      <h3 className="text-sm font-semibold text-navy">{title}</h3>
+      <h3 className="text-base font-semibold text-navy">{title}</h3>
       <div className="mt-3 flex items-center gap-4">
         <svg viewBox="0 0 120 120" className="size-28 shrink-0" aria-hidden>
           <circle
@@ -95,9 +95,9 @@ export function MixBars({
   const max = Math.max(...bars.map((b) => b.commission), 0);
   return (
     <div className="ff-card p-4">
-      <h3 className="text-sm font-semibold text-navy">{title}</h3>
+      <h3 className="text-base font-semibold text-navy">{title}</h3>
       {bars.length === 0 || max <= 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No line mix yet.</p>
+        <p className="mt-3 text-base text-muted-foreground">No line mix yet.</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {bars.map((bar, i) => (

@@ -47,9 +47,9 @@ export default async function PoliciesPage({
 
   return (
     <AppShell title="Policies">
-      <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
+      <p className="mb-3 text-base text-muted-foreground">{hint}</p>
       {key ? (
-        <p className="mb-3 text-[12px]">
+        <p className="mb-3 text-sm">
           <Link href="/policies" className="text-primary hover:underline">
             Clear filter
           </Link>
@@ -61,7 +61,7 @@ export default async function PoliciesPage({
       ) : null}
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No policies match. Bind a shopping deal when a market is actually written.
           </p>
         ) : (

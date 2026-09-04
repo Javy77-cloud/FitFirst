@@ -17,12 +17,12 @@ export default async function ClaimsPage() {
 
   return (
     <AppShell title="Claims log">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Desk log only — not a carrier claims system. Inquiry, referred to carrier, or closed.
       </p>
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No claims on the book yet. Log one from a policy record when the slice seed is wired.
           </p>
         ) : (

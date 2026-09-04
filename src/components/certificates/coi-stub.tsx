@@ -28,7 +28,7 @@ export function CertificateStub({
             <div className="text-muted-foreground">Issued {formatDay(certificate.issuedAt)}</div>
           </div>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-base text-muted-foreground">
           Not a licensed ACORD product. This stub does not amend, extend, or alter the policies
           listed. It is a desk preview for holder name, address, optional job/location, and
           in-force GL / WC lines.
@@ -124,7 +124,7 @@ export function CertificateStub({
         </section>
       </div>
 
-      <footer className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+      <footer className="mt-4 border-t border-border pt-3 text-base text-muted-foreground">
         <p>
           If any of the described policies are cancelled before the expiration date, notice may be
           delivered in accordance with the policy terms. This desk stub is not evidence that notice

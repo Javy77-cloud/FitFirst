@@ -41,7 +41,7 @@ export default async function AccountDetailPage({
         </span>
       </div>
       <section className="ff-card mb-4 p-4 text-sm">
-        <h2 className="text-sm font-semibold text-navy">Account 360 · commercial profile</h2>
+        <h2 className="text-base font-semibold text-navy">Account 360 · commercial profile</h2>
         <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
           <div>
             <dt className="text-muted-foreground">EIN / FEIN</dt>
@@ -69,13 +69,13 @@ export default async function AccountDetailPage({
           </div>
         </dl>
         {account.operations ? (
-          <p className="mt-3 text-xs text-muted-foreground">{account.operations}</p>
+          <p className="mt-3 text-base text-muted-foreground">{account.operations}</p>
         ) : null}
       </section>
       <section className="ff-card mb-4 p-4 text-sm">
-        <h2 className="text-sm font-semibold text-navy">Linked people</h2>
+        <h2 className="text-base font-semibold text-navy">Linked people</h2>
         {contacts.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No contacts linked.</p>
+          <p className="mt-2 text-base text-muted-foreground">No contacts linked.</p>
         ) : (
           <ul className="mt-2 space-y-1">
             {contacts.map((contact) => (
@@ -83,7 +83,7 @@ export default async function AccountDetailPage({
                 <RecordLink href={`/contacts/${contact.id}`}>
                   {contact.lastName}, {contact.firstName}
                 </RecordLink>
-                <span className="ml-2 text-xs text-muted-foreground">
+                <span className="ml-2 text-base text-muted-foreground">
                   personal policies stay on the contact
                 </span>
               </li>
@@ -95,11 +95,11 @@ export default async function AccountDetailPage({
       <CertificatesList accountId={account.id} certificates={certificates} />
 
       <section className="ff-card mb-4 overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Commercial policies
         </div>
         {policies.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No commercial policies. This account is not a client until a bound/pending/active
             policy is attached here.
           </p>
@@ -139,7 +139,7 @@ export default async function AccountDetailPage({
       </div>
       {deals.length > 0 ? (
         <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
             Deals
           </div>
           <ul className="divide-y divide-border">

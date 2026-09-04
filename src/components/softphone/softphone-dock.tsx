@@ -28,18 +28,18 @@ export function SoftphoneDock({
         </div>
       </div>
       <div className="space-y-3 p-3">
-        <p className="rounded-md bg-fit-flag-bg px-2 py-1.5 text-[11px] text-fit-flag">
+        <p className="rounded-md bg-fit-flag-bg px-2 py-1.5 text-base text-fit-flag">
           Connect your phone line in Settings later. This panel uses the computer microphone
           (optional webcam). No Twilio or Vonage key in this desk.
         </p>
         <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
           <div>
-            <div className="text-[11px] text-muted-foreground">On-screen timer</div>
+            <div className="text-base text-muted-foreground">On-screen timer</div>
             <div className="font-mono text-2xl text-navy" data-sp-timer>
               0:00
             </div>
           </div>
-          <div className="text-right text-xs text-muted-foreground">
+          <div className="text-right text-base text-muted-foreground">
             <div data-sp-phone>{target.phone || "No number on file"}</div>
             {target.phone ? (
               <a
@@ -57,7 +57,7 @@ export function SoftphoneDock({
           </div>
         </div>
         <video data-sp-video muted playsInline hidden className="h-36 w-full rounded-md bg-navy-deep object-cover" />
-        <p className="text-[11px] text-muted-foreground" data-sp-media />
+        <p className="text-base text-muted-foreground" data-sp-media />
         <p className="text-[11px] text-fit-red" data-sp-error />
         <div data-sp-live className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1.5 text-xs">

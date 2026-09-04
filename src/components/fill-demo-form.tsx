@@ -29,12 +29,12 @@ export function FillDemoForm() {
 
   return (
     <section className="ff-card p-4">
-      <p className="mb-3 text-xs text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Payload source: <strong>{source}</strong>
       </p>
       {fields.map(([key, label]) => (
         <label key={key} className="mb-2 block text-sm">
-          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className="text-base text-muted-foreground">{label}</span>
           <input
             readOnly
             value={sheet[key] ?? ""}

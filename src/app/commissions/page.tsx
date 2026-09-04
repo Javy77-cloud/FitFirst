@@ -22,7 +22,7 @@ export default async function CommissionsPage() {
 
   return (
     <AppShell title="Commissions">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Per-policy agency earnings. Pending vs paid. No live carrier payouts.
       </p>
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
@@ -37,7 +37,7 @@ export default async function CommissionsPage() {
       </div>
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No commission rows yet. Owner-book policies still show on Home written premium.
           </p>
         ) : (

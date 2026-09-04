@@ -108,7 +108,7 @@ export default async function DealPage({
       </div>
 
       {isAna ? (
-        <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-xs text-fit-yellow">
+        <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
           Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
           bind this shop. Quotes are not coverage.
         </div>
@@ -123,7 +123,7 @@ export default async function DealPage({
       ) : null}
 
       {!risk ? (
-        <p className="text-sm text-muted-foreground">This deal is missing a master risk.</p>
+        <p className="text-base text-muted-foreground">This deal is missing a master risk.</p>
       ) : (
         <SectionTabs
           defaultValue="documents"
@@ -173,7 +173,7 @@ export default async function DealPage({
         <QuickCommsBoard items={comms} dealId={deal.id} />
       </div>
 
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-4 text-base text-muted-foreground">
         Shopping lives here.{" "}
         <Link href="/get-started" className="text-primary hover:underline">
           Run the test path

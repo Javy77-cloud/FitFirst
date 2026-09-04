@@ -12,7 +12,7 @@ export default async function SettingsPage({
   return (
     <AppShell title="Settings" eyebrow="Desk">
       <div className="max-w-xl">
-        <p className="mb-3 text-sm text-muted-foreground">
+        <p className="mb-3 text-base text-muted-foreground">
           One section open at a time. Phone, agency profile, and notifications stay on this desk.
         </p>
         <SettingsAccordion initial={section ?? "phone"} />

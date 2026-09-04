@@ -22,7 +22,7 @@ function RelatedList({
     <div>
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
       {items.length === 0 ? (
-        <p className="mt-1 text-xs text-muted-foreground">None</p>
+        <p className="mt-1 text-base text-muted-foreground">None</p>
       ) : (
         <ul className="mt-1 space-y-1 text-sm">
           {items.map((item) => (
@@ -102,7 +102,7 @@ export default async function MergeReviewPage({ params }: { params: Promise<{ id
           Deals, policies, locations, and activities now follow {keeperId === left.person.id ? `${left.person.firstName} ${left.person.lastName}` : `${right.person.firstName} ${right.person.lastName}`}.
         </div>
       ) : (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+        <p className="mb-4 max-w-3xl text-base text-muted-foreground">
           Pick the surviving record. Blank fields on that record take values from the other.
           Filled fields stay put. Notes append so nothing is lost. The duplicate is archived.
         </p>
@@ -119,7 +119,7 @@ export default async function MergeReviewPage({ params }: { params: Promise<{ id
                 <h2 className="text-base font-semibold text-navy">
                   {bundle.person.firstName} {bundle.person.lastName}
                 </h2>
-                <p className="text-xs text-muted-foreground capitalize">
+                <p className="text-base text-muted-foreground capitalize">
                   {entityType}
                   {retired ? " · archived" : ""}
                   {keeperId === bundle.person.id ? " · keeper" : ""}
@@ -160,7 +160,7 @@ export default async function MergeReviewPage({ params }: { params: Promise<{ id
       </div>
 
       <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Field plan if the left record is keeper
         </div>
         <table className="ff-table">
@@ -194,7 +194,7 @@ export default async function MergeReviewPage({ params }: { params: Promise<{ id
           <input type="hidden" name="leftId" value={left.person.id} />
           <input type="hidden" name="rightId" value={right.person.id} />
           <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold text-navy">Surviving record</legend>
+            <legend className="text-base font-semibold text-navy">Surviving record</legend>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="radio"

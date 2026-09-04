@@ -31,8 +31,8 @@ export function QuickCommsBoard({
 
   return (
     <section className="ff-card p-4">
-      <h2 className="text-sm font-semibold text-navy">Quick Communications</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <h2 className="text-base font-semibold text-navy">Quick Communications</h2>
+      <p className="mt-1 text-base text-muted-foreground">
         Task, meeting, call, email, and SMS on this {dealId ? "deal" : "lead"}. Not a carrier
         portal and not a live mail trunk.
       </p>
@@ -80,7 +80,7 @@ export function QuickCommsBoard({
       </form>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           No {ACTIVITY_KIND_LABEL[kind].toLowerCase()}s on this record yet.
         </p>
       ) : (
@@ -93,11 +93,11 @@ export function QuickCommsBoard({
                 </span>
                 <span className="text-[11px] uppercase text-muted-foreground">{item.status}</span>
                 {item.dueAt ? (
-                  <span className="text-[11px] text-muted-foreground">{formatDay(item.dueAt)}</span>
+                  <span className="text-base text-muted-foreground">{formatDay(item.dueAt)}</span>
                 ) : null}
               </div>
               <p className="mt-1 font-medium">{item.title}</p>
-              {item.notes ? <p className="text-xs text-muted-foreground">{item.notes}</p> : null}
+              {item.notes ? <p className="text-base text-muted-foreground">{item.notes}</p> : null}
               {item.status === "open" ? (
                 <form action={completeDeskActivity} className="mt-1">
                   <input type="hidden" name="activityId" value={item.id} />

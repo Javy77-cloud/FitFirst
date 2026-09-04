@@ -12,7 +12,7 @@ export default async function CalendarPage() {
 
   return (
     <AppShell title="Calendar" eyebrow="Desk">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         In-desk calendar. Month, week, and day on the first row; task through SMS on the second.
         Drag an event onto another day. Nothing syncs off this computer.
       </p>

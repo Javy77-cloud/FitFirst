@@ -30,8 +30,8 @@ export function DocumentsPanel({
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
       <div className="space-y-4">
         <section className="ff-card p-4">
-          <h3 className="mb-1 text-sm font-semibold text-navy">Source documents</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
+          <h3 className="mb-1 text-base font-semibold text-navy">Source documents</h3>
+          <p className="mb-3 text-base text-muted-foreground">
             Dec pages, wind mit, 4-point, and inspections stay on the deal. They feed the Quote
             Sheet. They are not issued policies.
           </p>
@@ -92,8 +92,8 @@ export function DocumentsPanel({
         </section>
 
         <section className="ff-card p-4">
-          <h3 className="mb-1 text-sm font-semibold text-navy">Issued quote PDFs</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
+          <h3 className="mb-1 text-base font-semibold text-navy">Issued quote PDFs</h3>
+          <p className="mb-3 text-base text-muted-foreground">
             Ranked quote results live as a note on this deal. These slots are for the PDFs you
             issued while shopping. A quote never becomes a policy.
           </p>
@@ -113,21 +113,21 @@ export function DocumentsPanel({
       </div>
 
       <section className="ff-card p-4">
-        <h3 className="mb-1 text-sm font-semibold text-navy">Extracted fields</h3>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <h3 className="mb-1 text-base font-semibold text-navy">Extracted fields</h3>
+        <p className="mb-3 text-base text-muted-foreground">
           High-confidence values apply to the worksheet automatically. Flagged rows wait for a
           human glance. Use <span className="font-medium">Fill blanks from source docs</span> on
           the Quote Sheet to copy these into missing cells (yellow / blue CHECK).
         </p>
         {flagged.length > 0 ? (
-          <div className="mb-3 rounded-md bg-fit-flag-bg px-3 py-2 text-xs text-fit-flag">
+          <div className="mb-3 rounded-md bg-fit-flag-bg px-3 py-2 text-base text-fit-flag">
             {flagged.length} field{flagged.length === 1 ? "" : "s"} below{" "}
             {Math.round(CONFIDENCE_THRESHOLD * 100)}% — glance and accept before they hit the
             master record.
           </div>
         ) : null}
         {fields.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing extracted yet.</p>
+          <p className="text-base text-muted-foreground">Nothing extracted yet.</p>
         ) : (
           <table className="ff-table">
             <thead>
@@ -192,7 +192,7 @@ function DocTable({
   empty: string;
 }) {
   if (docs.length === 0) {
-    return <p className="text-sm text-muted-foreground">{empty}</p>;
+    return <p className="text-base text-muted-foreground">{empty}</p>;
   }
   return (
     <table className="ff-table">

@@ -12,13 +12,13 @@ export default async function ContactsPage() {
   const rows = await listContacts();
   return (
     <AppShell title="Contacts">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
         policy is Active, Bound, or Pending. Ana is on the book for the shop only — not a client.
       </p>
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <form action={createContact} className="ff-card space-y-3 p-4">
-          <h2 className="text-sm font-semibold text-navy">Add contact</h2>
+          <h2 className="text-base font-semibold text-navy">Add contact</h2>
           <div>
             <Label className="text-xs">First name</Label>
             <Input name="firstName" required className="mt-1 h-8" />

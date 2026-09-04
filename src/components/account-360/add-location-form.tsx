@@ -17,7 +17,7 @@ export function AddLocationForm({
 }) {
   return (
     <form action={createLocation} autoComplete="off" className="ff-card space-y-3 p-4">
-      <h3 className="text-sm font-semibold text-navy">Add location</h3>
+      <h3 className="text-base font-semibold text-navy">Add location</h3>
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       {businessId ? <input type="hidden" name="businessId" value={businessId} /> : null}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -78,7 +78,7 @@ export function AddLocationForm({
           </select>
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Public Zillow / FEMA flood tabs appear after save. They are lookups only — not Cov A.
       </p>
       <Button type="submit" size="sm">

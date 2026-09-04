@@ -27,18 +27,18 @@ export default async function HomePage() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
             In-app alerts
           </div>
           {unread.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No unread alerts.</p>
+            <p className="px-4 py-6 text-base text-muted-foreground">No unread alerts.</p>
           ) : (
             <ul className="divide-y divide-border">
               {unread.map((alert) => (
                 <li key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <div className="text-sm font-medium">{alert.title}</div>
-                    <p className="text-xs text-muted-foreground">{alert.body}</p>
+                    <p className="text-base text-muted-foreground">{alert.body}</p>
                   </div>
                   <form action={markAlertRead}>
                     <input type="hidden" name="alertId" value={alert.id} />
@@ -53,7 +53,7 @@ export default async function HomePage() {
         </section>
 
         <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
             Recent deals
           </div>
           <table className="ff-table">

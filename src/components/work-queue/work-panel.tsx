@@ -48,8 +48,8 @@ export function PolicyWorkPanel({
     <section className="ff-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-navy">Work on this file</h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          <h2 className="text-base font-semibold text-navy">Work on this file</h2>
+          <p className="mt-1 max-w-2xl text-base text-muted-foreground">
             Assignee and work status are separate from Bound / Active / Lapse.
             Flag the file, note it, and ping in-desk. After issue, use the same
             tools for “carrier needs docs” or “add endorsement,” then file the
@@ -145,12 +145,12 @@ export function PolicyWorkPanel({
             </Button>
           </form>
           {notes.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No notes yet.</p>
+            <p className="mt-3 text-base text-muted-foreground">No notes yet.</p>
           ) : (
             <ul className="mt-3 divide-y divide-border rounded-md border border-border">
               {notes.map(({ note, author }) => (
                 <li key={note.id} className="px-3 py-2">
-                  <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between gap-2 text-base text-muted-foreground">
                     <span>{author?.name ?? "Desk"} · {author?.role ?? "admin"}</span>
                     <span>{note.createdAt.toISOString().slice(0, 16).replace("T", " ")}</span>
                   </div>
@@ -165,7 +165,7 @@ export function PolicyWorkPanel({
             Open Tasks
           </div>
           {reminders.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-base text-muted-foreground">
               No in-app Task on this file. Pings stay here — they never email.
             </p>
           ) : (
@@ -173,7 +173,7 @@ export function PolicyWorkPanel({
               {reminders.map((task) => (
                 <li key={task.id} className="rounded-md border border-border px-3 py-2">
                   <div className="text-sm font-medium">{task.title}</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-base text-muted-foreground">
                     Due {task.dueDate.toISOString().slice(0, 10)} · {task.kind.replaceAll("_", " ")}
                   </div>
                 </li>

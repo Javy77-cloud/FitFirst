@@ -22,7 +22,7 @@ function todayIso() {
 
 function DeskCopyField() {
   return (
-    <label className="flex items-start gap-2 text-xs text-muted-foreground">
+    <label className="flex items-start gap-2 text-base text-muted-foreground">
       <input
         type="checkbox"
         name="attachDeskCopy"
@@ -55,7 +55,7 @@ export function EndorsementForm({
   return (
     <form action={fileEndorsement} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Change in force on this Policy record. Does not open a deal and does not
         create a new policy.
       </p>
@@ -116,7 +116,7 @@ export function CancellationForm({ policyId }: { policyId: string }) {
   return (
     <form action={fileCancellation} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Ends this Policy. Reason and date stay on the record. Documents attach
         here — not to a replacement quote.
       </p>
@@ -157,7 +157,7 @@ export function NonRenewalForm({ policyId }: { policyId: string }) {
   return (
     <form action={fileNonRenewal} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Same end as a cancellation — policy is over — with a non-renewal reason.
         Docs stay on this Policy.
       </p>
@@ -198,7 +198,7 @@ export function PolicyAttachForm({ policyId }: { policyId: string }) {
   return (
     <form action={uploadPolicyAttachment} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Notices and endorsement forms live on the Policy. Shopping decs stay on
         the deal.
       </p>

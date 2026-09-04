@@ -24,9 +24,9 @@ export function DueCallPopups({ calls }: { calls: DueCallCard[] }) {
           <div className="text-[11px] font-semibold uppercase tracking-wide text-fit-flag">
             {call.overdue ? "Overdue call" : "Due call"}
           </div>
-          <p className="mt-1 text-sm font-semibold text-navy">Hey, make this call</p>
+          <p className="mt-1 text-base font-semibold text-navy">Hey, make this call</p>
           <p className="text-sm">{call.title}</p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             {call.contactName ?? "Unnamed"}
             {call.policyNumber ? ` · ${call.policyNumber}` : ""} · {call.whenLabel}
           </p>
@@ -34,7 +34,7 @@ export function DueCallPopups({ calls }: { calls: DueCallCard[] }) {
             <CallButton target={call} label="Phone" size="xs" />
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:underline"
+              className="text-base text-muted-foreground hover:underline"
               onClick={() => setDismissed((ids) => [...ids, call.activityId])}
             >
               Later

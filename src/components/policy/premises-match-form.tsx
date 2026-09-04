@@ -17,7 +17,7 @@ export function PremisesMatchForm({
 }) {
   return (
     <form action={action} method="get" className="space-y-3">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Replacement notice? Match the insured premises. A cancelled policy
         number is not a key — that number should not exist on the rewrite.
       </p>

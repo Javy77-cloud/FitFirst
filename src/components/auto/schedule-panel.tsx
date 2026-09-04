@@ -101,8 +101,8 @@ export function AutoSchedulePanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-navy">Auto schedule</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="text-base font-semibold text-navy">Auto schedule</h3>
+          <p className="text-base text-muted-foreground">
             Essential AMS risk objects. {formatScheduleCounts(counts)}. Year / make / model / VIN
             and license are optional. Copy pack is our data for the Quote Sheet — not a carrier
             prefill API.
@@ -116,7 +116,7 @@ export function AutoSchedulePanel({
           Vehicles · {counts.vehicleCount}
         </div>
         {vehicles.length === 0 ? (
-          <p className="px-3 py-4 text-sm text-muted-foreground">
+          <p className="px-3 py-4 text-base text-muted-foreground">
             No vehicles yet. Add a unit even if VIN is still coming from the dec.
           </p>
         ) : (
@@ -163,7 +163,7 @@ export function AutoSchedulePanel({
           Drivers · {counts.driverCount}
         </div>
         {drivers.length === 0 ? (
-          <p className="px-3 py-4 text-sm text-muted-foreground">
+          <p className="px-3 py-4 text-base text-muted-foreground">
             No drivers yet. Link a household Contact when that person already exists; otherwise
             leave contact blank.
           </p>
@@ -222,7 +222,7 @@ export function AutoSchedulePanel({
         <div className="grid gap-4 lg:grid-cols-2">
           <form action={addVehicle} className="space-y-3 rounded-md border border-border p-3">
             {hidden}
-            <h4 className="text-sm font-semibold text-navy">Add vehicle</h4>
+            <h4 className="text-base font-semibold text-navy">Add vehicle</h4>
             <div className="grid gap-2 sm:grid-cols-3">
               <Field label="Year" name="year" type="number" />
               <Field label="Make" name="make" />
@@ -256,7 +256,7 @@ export function AutoSchedulePanel({
 
           <form action={addDriver} className="space-y-3 rounded-md border border-border p-3">
             {hidden}
-            <h4 className="text-sm font-semibold text-navy">Add driver</h4>
+            <h4 className="text-base font-semibold text-navy">Add driver</h4>
             <div className="grid gap-2 sm:grid-cols-2">
               <Field label="First name" name="firstName" required />
               <Field label="Last name" name="lastName" required />

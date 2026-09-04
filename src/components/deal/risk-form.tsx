@@ -122,7 +122,7 @@ export function RiskForm({
             id: "life",
             label: "Life / Health",
             content: (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Life and health are CRM notes only on the contact. There is no rating for those
                 lines in this product.
               </p>

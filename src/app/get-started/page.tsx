@@ -76,8 +76,8 @@ export default function GetStartedPage() {
   return (
     <AppShell title="Get Started">
       <div className="mb-4 ff-card p-4">
-        <h2 className="text-sm font-semibold text-navy">Run this path</h2>
-        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+        <h2 className="text-base font-semibold text-navy">Run this path</h2>
+        <p className="mt-1 max-w-3xl text-base text-muted-foreground">
           FitFirst is Javy&apos;s desk: every module talks. A quote never becomes a policy.
           Bind is Closed Won. Seeded click-through: Elena Ruiz (bound HO3) plus Ana Dib
           (shop only, Cov A $321,000).
@@ -133,8 +133,8 @@ export default function GetStartedPage() {
       <ol className="space-y-3">
         {STEPS.map((step) => (
           <li key={step.title} className="ff-card p-4">
-            <h3 className="text-sm font-semibold text-navy">{step.title}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
+            <h3 className="text-base font-semibold text-navy">{step.title}</h3>
+            <p className="mt-1 text-base text-muted-foreground">{step.body}</p>
             <Link href={step.href} className={cn(buttonVariants({ size: "sm", variant: "outline" }), "mt-3")}>
               {step.cta}
             </Link>

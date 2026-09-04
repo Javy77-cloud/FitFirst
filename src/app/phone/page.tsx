@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default function PhonePage() {
   return (
     <AppShell title="Phone">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         No in-desk softphone on this overnight boot. Agency-ops owns dialing. Calls on Contact
         and Policy are logged notes, not a live trunk.
       </p>

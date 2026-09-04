@@ -16,7 +16,7 @@ export default async function LeadsPage() {
   const rows = await listLeads();
   return (
     <AppShell title="Leads">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Create or match by name + phone or email. Never duplicate. A dropped dec becomes a lead
         first; the deal is the shop. Quotes still do not create a policy.
       </p>
@@ -40,7 +40,7 @@ export default async function LeadsPage() {
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-4">
           <form action={createLead} className="ff-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold text-navy">New lead</h2>
+            <h2 className="text-base font-semibold text-navy">New lead</h2>
             <div>
               <Label htmlFor="firstName" className="text-xs">
                 First name
@@ -70,8 +70,8 @@ export default async function LeadsPage() {
             </Button>
           </form>
           <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold text-navy">Drop a dec packet</h2>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="text-base font-semibold text-navy">Drop a dec packet</h2>
+            <p className="text-base text-muted-foreground">
               PDF or text. Named insured + phone or email matches an existing lead. Empty file
               uses the Melbourne sample.
             </p>
@@ -106,7 +106,7 @@ export default async function LeadsPage() {
                       <RecordLink href={`/leads/${lead.id}`}>
                         {lead.lastName}, {lead.firstName}
                       </RecordLink>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className="text-base text-muted-foreground">
                         {lead.phone ?? lead.email}
                       </div>
                     </td>

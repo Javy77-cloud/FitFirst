@@ -24,7 +24,7 @@ const SECTIONS = [
           <button
             type="button"
             disabled
-            className="mt-3 h-8 rounded-md border border-input bg-muted px-3 text-xs text-muted-foreground"
+            className="mt-3 h-8 rounded-md border border-input bg-muted px-3 text-base text-muted-foreground"
           >
             Connect phone line (not configured)
           </button>
@@ -90,11 +90,11 @@ export function SettingsAccordion({ initial = "phone" }: { initial?: string }) {
               onClick={() => setOpenId(section.id)}
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
-              <span className="text-sm font-semibold text-navy">{section.title}</span>
+              <span className="text-base font-semibold text-navy">{section.title}</span>
               <ChevronDown className={cn("size-4 text-muted-foreground transition", open && "rotate-180")} />
             </button>
             {open ? (
-              <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
+              <div className="border-t border-border px-4 py-3 text-base text-muted-foreground">
                 {section.body}
               </div>
             ) : null}

@@ -19,13 +19,13 @@ export default async function FormsPage({
 
   return (
     <AppShell title="Forms">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+      <p className="mb-4 max-w-3xl text-base text-muted-foreground">
         Style-label catalog only — not a licensed ACORD product. Fill from Quote Sheet copies
         matching keys from the open Deal&apos;s <code>quote_sheets</code> row (or the last sheet
         updated). Deal-level Forms Fill still passes the current deal.
       </p>
       {templates.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No form templates. Run db:seed.</p>
+        <p className="text-base text-muted-foreground">No form templates. Run db:seed.</p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {templates.map((template) => (
@@ -33,8 +33,8 @@ export default async function FormsPage({
               <div className="text-[11px] uppercase text-muted-foreground">
                 {template.family} · {template.line}
               </div>
-              <h2 className="text-sm font-semibold text-navy">{template.name}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">{template.summary}</p>
+              <h2 className="text-base font-semibold text-navy">{template.name}</h2>
+              <p className="mt-1 text-base text-muted-foreground">{template.summary}</p>
               <Link
                 href={`/forms/${template.slug}?dealId=${dealId}`}
                 className="mt-3 inline-block text-sm text-primary hover:underline"

@@ -9,7 +9,7 @@ export default function NewDealPage() {
   return (
     <AppShell title="Create deal">
       <form action={createDeal} className="ff-card max-w-xl space-y-3 p-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Creates a lead and a shopping deal with an empty master risk. Contact and policy wait
           until bind. Pick personal or commercial, then the most-used line.
         </p>

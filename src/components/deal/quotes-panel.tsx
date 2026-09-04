@@ -19,8 +19,8 @@ export function QuotesPanel({
       <section className="ff-card p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-navy">Ranked quote results</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <h3 className="text-base font-semibold text-navy">Ranked quote results</h3>
+            <p className="mt-1 text-base text-muted-foreground">
               Cheapest first. This note stays on the deal. Quotes never become policies — bind is
               the only path that writes a policy.
             </p>
@@ -33,22 +33,22 @@ export function QuotesPanel({
           </form>
         </div>
         {quoteResultsNote ? (
-          <pre className="mt-3 whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-xs">
+          <pre className="mt-3 whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-sm">
             {quoteResultsNote}
           </pre>
         ) : (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-base text-muted-foreground">
             No ranked note yet. Build stub quotes, then finalize.
           </p>
         )}
       </section>
 
       <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Quote comparison
         </div>
         {quotes.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No quotes on this deal. Filter markets first, then build stub quotes for green fits.
             A quote never creates a policy.
           </p>
@@ -71,7 +71,7 @@ export function QuotesPanel({
                   <td className="font-medium">
                     {carrier.name}
                     {quote.stub ? (
-                      <div className="text-[11px] text-muted-foreground">Stub · no portal</div>
+                      <div className="text-base text-muted-foreground">Stub · no portal</div>
                     ) : null}
                   </td>
                   <td>{formatMoney(quote.premium)}</td>
@@ -90,11 +90,11 @@ export function QuotesPanel({
       </section>
 
       <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Attempt log on this deal
         </div>
         {logs.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">No attempts recorded.</p>
+          <p className="px-4 py-6 text-base text-muted-foreground">No attempts recorded.</p>
         ) : (
           <table className="ff-table">
             <thead>

@@ -17,14 +17,14 @@ export default async function SearchPage({
     <AppShell title="Smart Search">
       <div className="mb-4 ff-card p-4">
         <SmartSearch defaultQuery={q} />
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-base text-muted-foreground">
           Finds Lead, Deal, Contact, Business, and Policy by name. Quotes are not coverage.
         </p>
       </div>
       {!q.trim() ? (
-        <p className="text-sm text-muted-foreground">Type Elena, Harbor, HO3-ELENA, or Ana.</p>
+        <p className="text-base text-muted-foreground">Type Elena, Harbor, HO3-ELENA, or Ana.</p>
       ) : hits.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No records for “{q}”.</p>
+        <p className="text-base text-muted-foreground">No records for “{q}”.</p>
       ) : (
         <ul className="ff-card divide-y divide-border">
           {hits.map((hit) => (
@@ -33,7 +33,7 @@ export default async function SearchPage({
               <Link href={hit.href} className="font-medium text-primary hover:underline">
                 {hit.title}
               </Link>
-              <div className="text-xs text-muted-foreground">{hit.subtitle}</div>
+              <div className="text-base text-muted-foreground">{hit.subtitle}</div>
             </li>
           ))}
         </ul>

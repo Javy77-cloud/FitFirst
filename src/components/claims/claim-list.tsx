@@ -26,7 +26,7 @@ export function ClaimList({
   showPolicy?: boolean;
 }) {
   if (rows.length === 0) {
-    return <p className="px-4 py-6 text-sm text-muted-foreground">{empty}</p>;
+    return <p className="px-4 py-6 text-base text-muted-foreground">{empty}</p>;
   }
 
   return (
@@ -48,7 +48,7 @@ export function ClaimList({
               <Link href={`/claims/${row.id}`} className="font-medium text-primary hover:underline">
                 {formatDate(row.dateReported)}
               </Link>
-              <div className="text-[11px] text-muted-foreground">
+              <div className="text-base text-muted-foreground">
                 Loss {formatDate(row.dateOfLoss)}
               </div>
             </td>
@@ -61,7 +61,7 @@ export function ClaimList({
             ) : null}
             <td>
               <div className="font-medium">{claimCauseLabel(row.causeType)}</div>
-              <div className="text-[11px] text-muted-foreground">
+              <div className="text-base text-muted-foreground">
                 {row.description || "No short text"}
               </div>
             </td>

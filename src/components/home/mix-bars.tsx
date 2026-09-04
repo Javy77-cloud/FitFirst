@@ -19,7 +19,7 @@ export function MixBars({
 }) {
   const max = Math.max(...slices.map((s) => s.premium), 0);
   if (!max) {
-    return <p className="px-1 py-6 text-sm text-muted-foreground">{empty}</p>;
+    return <p className="px-1 py-6 text-base text-muted-foreground">{empty}</p>;
   }
 
   return (

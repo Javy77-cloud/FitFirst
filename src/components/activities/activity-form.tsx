@@ -187,7 +187,7 @@ export function ActivityForm({
           </select>
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         Assign to a contact, a policy, or both. The same item lands on both timelines when both
         are linked.
       </p>

@@ -47,8 +47,8 @@ export default async function ContactDetailPage({
 
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card p-4 text-sm">
-          <h2 className="text-sm font-semibold text-navy">Copied at bind</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <h2 className="text-base font-semibold text-navy">Copied at bind</h2>
+          <p className="mt-1 text-base text-muted-foreground">
             Personal-lines fields come from the lead and risk so the agent does not retype.
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -73,12 +73,12 @@ export default async function ContactDetailPage({
           </dl>
         </section>
         <section className="ff-card p-4 text-sm">
-          <h2 className="text-sm font-semibold text-navy">Linked businesses</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <h2 className="text-base font-semibold text-navy">Linked businesses</h2>
+          <p className="mt-1 text-base text-muted-foreground">
             The same person can hold personal policies here and be linked to a commercial account.
           </p>
           {businesses.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No business link.</p>
+            <p className="mt-3 text-base text-muted-foreground">No business link.</p>
           ) : (
             <ul className="mt-3 space-y-1">
               {businesses.map((account) => (
@@ -94,11 +94,11 @@ export default async function ContactDetailPage({
       <LocationsList locations={locations} />
 
       <section className="ff-card mb-4 overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Policies
         </div>
         {policies.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="px-4 py-6 text-base text-muted-foreground">
             No policies. Quotes on a deal do not create a policy.
           </p>
         ) : (
@@ -142,9 +142,9 @@ export default async function ContactDetailPage({
       </div>
 
       <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">Deals</div>
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">Deals</div>
         {deals.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">No deals linked.</p>
+          <p className="px-4 py-6 text-base text-muted-foreground">No deals linked.</p>
         ) : (
           <ul className="divide-y divide-border">
             {deals.map((deal) => (

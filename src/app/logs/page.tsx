@@ -8,7 +8,7 @@ export default async function LogsPage() {
   const rows = await listQuoteLogs();
   return (
     <AppShell title="Appetite / decline log">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         Separate from quotes. Each row stores the result and a house snapshot so the next shop
         can skip a lookalike decline.
       </p>
@@ -40,7 +40,7 @@ export default async function LogsPage() {
                 <td>{formatMoney(log.premium)}</td>
                 <td>{formatMoney(log.covATried)}</td>
                 <td className="text-xs">{log.why}</td>
-                <td className="text-[11px] text-muted-foreground">
+                <td className="text-base text-muted-foreground">
                   {[
                     log.snapYearBuilt,
                     log.snapConstruction,

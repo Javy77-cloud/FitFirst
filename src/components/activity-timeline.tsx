@@ -23,8 +23,8 @@ export function ActivityTimeline({
 }) {
   return (
     <section className="ff-card p-4">
-      <h2 className="text-sm font-semibold text-navy">{heading}</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <h2 className="text-base font-semibold text-navy">{heading}</h2>
+      <p className="mt-1 text-base text-muted-foreground">
         Tasks, meetings, and calls assign to a Contact, Policy, and/or Business. Every one writes
         a log. Call logging is a note — the softphone belongs to the sibling ops agent.
       </p>
@@ -60,7 +60,7 @@ export function ActivityTimeline({
       </form>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No activity yet on this record.</p>
+        <p className="text-base text-muted-foreground">No activity yet on this record.</p>
       ) : (
         <ol className="space-y-2">
           {items.map((item) => (
@@ -70,7 +70,7 @@ export function ActivityTimeline({
                   {item.kind}
                 </span>
                 <span className="text-[11px] uppercase text-muted-foreground">{item.eventType}</span>
-                <span className="text-[11px] text-muted-foreground">{formatDay(item.occurredAt)}</span>
+                <span className="text-base text-muted-foreground">{formatDay(item.occurredAt)}</span>
               </div>
               <p className="mt-1">{item.body}</p>
               <div className="mt-1 flex flex-wrap gap-2 text-[11px]">

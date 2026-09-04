@@ -12,17 +12,17 @@ export default async function WorkQueuePage() {
 
   return (
     <AppShell title="Work queue">
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 text-base text-muted-foreground">
         One queue: owner attention (review tasks, lapses, bound waiting on issue) plus policies
         still in Bound / Pending / Lapse. Nothing emails anyone.
       </p>
 
       <section className="ff-card mb-4 overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Needs attention
         </div>
         {snapshot.attention.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">Queue is clear.</p>
+          <p className="px-4 py-6 text-base text-muted-foreground">Queue is clear.</p>
         ) : (
           <table className="ff-table">
             <thead>
@@ -41,7 +41,7 @@ export default async function WorkQueuePage() {
                       {item.title}
                     </Link>
                   </td>
-                  <td className="text-xs text-muted-foreground">{item.detail}</td>
+                  <td className="text-base text-muted-foreground">{item.detail}</td>
                 </tr>
               ))}
             </tbody>
@@ -50,11 +50,11 @@ export default async function WorkQueuePage() {
       </section>
 
       <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Bound / pending / lapse
         </div>
         {open.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">Nothing waiting on the book.</p>
+          <p className="px-4 py-6 text-base text-muted-foreground">Nothing waiting on the book.</p>
         ) : (
           <table className="ff-table">
             <thead>
