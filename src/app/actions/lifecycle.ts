@@ -126,8 +126,10 @@ export async function uploadDealSlot(formData: FormData) {
   const dealId = str(formData, "dealId");
   const riskId = str(formData, "riskId") || null;
   const policyId = str(formData, "policyId") || null;
-  const slot = str(formData, "slot") || "source_doc";
-  const docType = str(formData, "docType") || (slot === "quote_pdf" ? "quote_pdf" : "other");
+  const docType = str(formData, "docType") || (str(formData, "slot") === "quote_pdf" ? "quote_pdf" : "other");
+  const slot =
+    str(formData, "slot") ||
+    (docType === "signed_app" ? "signed_app" : docType === "quote_pdf" || docType === "quote" ? "quote_pdf" : "source_doc");
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
   const id = randomUUID();

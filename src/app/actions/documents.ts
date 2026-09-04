@@ -5,8 +5,11 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID } from "@/lib/domain";
+import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
 import { db } from "@/lib/db";
+import { listDealLookup } from "@/lib/db/queries";
 import { alerts, documentFolders, documents, extractedFields, policies, risks } from "@/lib/db/schema";
 import {
   coerceRiskValue,
@@ -136,7 +139,8 @@ export async function uploadDocument(formData: FormData) {
       contactId = contactId ?? policy.contactId ?? null;
     }
   }
-  const docType = String(formData.get("docType") ?? "other");
+  const docType = coerceDealUploadDocType(String(formData.get("docType") ?? "other"));
+  const slot = String(formData.get("slot") ?? "") || slotForDocType(docType);
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("Choose a file to upload.");
@@ -155,12 +159,73 @@ export async function uploadDocument(formData: FormData) {
     mimeType: file.type || "application/octet-stream",
     buffer,
     docType,
+    slot,
     tags: parseTags(formData.get("tags")),
   });
   if (doc.riskId) {
     await runExtraction(doc.id, doc.dealId ?? "");
   }
   revalidateDocumentPaths(doc);
+}
+
+/** List-page upload: require an existing Deal, then attach one or more typed files. */
+export async function uploadDealDocuments(formData: FormData) {
+  const dealName = String(formData.get("dealName") ?? "").trim();
+  const requestedId = optionalId(formData, "dealId");
+  if (!dealName && !requestedId) {
+    redirect("/deals?notice=need-deal");
+  }
+  const lookup = await listDealLookup();
+  const match = matchDealLookup(lookup, dealName, requestedId);
+  if (!match) {
+    redirect("/deals?notice=need-deal");
+  }
+
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, match.id));
+  const folderId = await resolveFolderId({ folderId: null, dealId: match.id, contactId: null });
+
+  const rowCount = Math.max(
+    Number(formData.get("rowCount") ?? 0),
+    formData.getAll("docType").length,
+  );
+  let stored = 0;
+
+  for (let i = 0; i < Math.max(rowCount, 1); i += 1) {
+    const docType = coerceDealUploadDocType(
+      String(formData.get(`docType_${i}`) ?? formData.getAll("docType")[i] ?? "other"),
+    );
+    const slot = slotForDocType(docType);
+    const files = formData
+      .getAll(`files_${i}`)
+      .concat(i === 0 ? formData.getAll("files") : [])
+      .filter((item): item is File => item instanceof File && item.size > 0);
+    for (const file of files) {
+      const doc = await persistFile({
+        dealId: match.id,
+        riskId: risk?.id ?? null,
+        contactId: risk?.contactId ?? null,
+        policyId: null,
+        folderId,
+        filename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        buffer: Buffer.from(await file.arrayBuffer()),
+        docType,
+        slot,
+      });
+      if (doc.riskId && slot === "source_doc") {
+        await runExtraction(doc.id, match.id);
+      }
+      stored += 1;
+    }
+  }
+
+  if (stored === 0) {
+    redirect("/deals?notice=no-files");
+  }
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${match.id}`);
+  revalidatePath("/documents");
+  redirect(`/deals/${match.id}?tab=documents&notice=uploaded`);
 }
 
 export async function uploadSampleDocument(formData: FormData) {
