@@ -41,4 +41,9 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/settings", "/settings")).toBe(true);
     expect(navItemIsActive("/settings/phone", "/settings")).toBe(true);
   });
+
+  it("highlights Support on the stub page", () => {
+    expect(navItemIsActive("/support", "/support")).toBe(true);
+    expect(navItemIsActive("/support", "/settings")).toBe(false);
+  });
 });

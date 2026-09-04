@@ -1556,3 +1556,81 @@ export async function historyForContact(contactId: string) {
     .where(and(eq(clientHistory.tenantId, tenant()), eq(clientHistory.contactId, contactId)))
     .orderBy(desc(clientHistory.occurredAt));
 }
+
+export type RecentRecordStub = {
+  kind: "contact" | "deal" | "policy";
+  id: string;
+  title: string;
+  href: string;
+  at: number;
+};
+
+/** Last-touched contacts, deals, and policies — header Recently accessed fallback. */
+export async function listRecentRecordStub(limit = 8): Promise<RecentRecordStub[]> {
+  const session = await currentDeskSession();
+  const contactScope = ownerWhere(session, contacts.ownerId);
+  const policyScope = ownerWhere(session, policies.ownerId);
+  const [contactRows, dealRows, policyRows] = await Promise.all([
+    db
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        updatedAt: contacts.updatedAt,
+      })
+      .from(contacts)
+      .where(and(eq(contacts.tenantId, tenant()), contactScope))
+      .orderBy(desc(contacts.updatedAt))
+      .limit(limit),
+    db
+      .select({
+        id: deals.id,
+        title: deals.title,
+        ownerId: deals.ownerId,
+        updatedAt: deals.updatedAt,
+      })
+      .from(deals)
+      .where(eq(deals.tenantId, tenant()))
+      .orderBy(desc(deals.updatedAt))
+      .limit(limit * 2),
+    db
+      .select({
+        id: policies.id,
+        policyNumber: policies.policyNumber,
+        updatedAt: policies.updatedAt,
+      })
+      .from(policies)
+      .where(and(eq(policies.tenantId, tenant()), policyScope))
+      .orderBy(desc(policies.updatedAt))
+      .limit(limit),
+  ]);
+
+  const items: RecentRecordStub[] = [
+    ...contactRows.map((row) => ({
+      kind: "contact" as const,
+      id: row.id,
+      title: `${row.lastName}, ${row.firstName}`,
+      href: `/contacts/${row.id}`,
+      at: row.updatedAt.getTime(),
+    })),
+    ...dealRows
+      .filter((row) => canViewOwned(session, row.ownerId))
+      .slice(0, limit)
+      .map((row) => ({
+        kind: "deal" as const,
+        id: row.id,
+        title: row.title,
+        href: `/deals/${row.id}`,
+        at: row.updatedAt.getTime(),
+      })),
+    ...policyRows.map((row) => ({
+      kind: "policy" as const,
+      id: row.id,
+      title: row.policyNumber,
+      href: `/policies/${row.id}`,
+      at: row.updatedAt.getTime(),
+    })),
+  ];
+
+  return items.sort((a, b) => b.at - a.at).slice(0, limit);
+}

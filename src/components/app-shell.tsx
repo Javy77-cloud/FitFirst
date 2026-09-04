@@ -1,14 +1,13 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { isNull, eq, and, sql } from "drizzle-orm";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { db } from "@/lib/db";
-import { alerts } from "@/lib/db/schema";
 import { DeskNav } from "@/components/desk-nav";
+import { HeaderUtilities } from "@/components/desk/header-utilities";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
 import { logoutDesk } from "@/app/actions/auth";
 import { loadAgencyBrand } from "@/lib/desk/brand";
+import { toHeaderAlert } from "@/lib/desk/header-alerts";
+import { listAlerts, listRecentRecordStub } from "@/lib/db/queries";
 
 export async function AppShell({
   children,
@@ -24,13 +23,14 @@ export async function AppShell({
   /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
   columns?: ReactNode;
 }) {
-  const [count] = await db
-    .select({ n: sql<number>`count(*)` })
-    .from(alerts)
-    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), isNull(alerts.readAt)));
-  const unread = Number(count?.n ?? 0);
-  const session = await currentDeskSession();
-  const brand = await loadAgencyBrand();
+  const [session, brand, alertRows, recentStub] = await Promise.all([
+    currentDeskSession(),
+    loadAgencyBrand(),
+    listAlerts(),
+    listRecentRecordStub(8),
+  ]);
+  const headerAlerts = alertRows.slice(0, 8).map(toHeaderAlert);
+  const unread = alertRows.filter((row) => !row.readAt).length;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -94,6 +94,18 @@ export async function AppShell({
           </div>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-visible">
             <SmartSearch />
+            <HeaderUtilities
+              pageTitle={title}
+              session={{
+                name: session.name,
+                isAdmin: session.isAdmin,
+                isAgent: session.isAgent,
+                signedIn: session.signedIn,
+              }}
+              unread={unread}
+              alerts={headerAlerts}
+              recentStub={recentStub}
+            />
             {actions}
             {columns ? <div className="relative z-50 ml-1 shrink-0">{columns}</div> : null}
           </div>

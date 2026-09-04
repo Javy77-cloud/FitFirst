@@ -6,6 +6,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch3-7pm` (batch-3 consolidate on `cursor/mac-ready-overnight-3bad`)
 
+**Batch 4 side branch:** `cursor/top-chrome-batch4-1031` — InsuredMine-style top-right utilities on the desk header (Refresh, alerts, What’s New, profile, recently accessed, quick add, Support stub). Same chrome for Admin and Agent. Sidebar stays light-blue `#c5ddf4` with near-black ink.
+
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
 Contact record: Ask a teammate is Admin-only on every record. Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
@@ -102,6 +104,20 @@ Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). 
 - In-Office uses the agency office plus the agent’s meeting address from Settings → Communications. In-Home pulls the Deal / Lead street. Video opens the Zoom / Meet / BYO stub saved there.
 - **Ask a teammate** does not appear on pipeline cards (Admin-only on records).
 - **Columns** picker chooses which deal details show on cards and the table. Title stays on.
+
+## Top chrome (Batch 4)
+
+Right of Smart Search on every AppShell page:
+
+- **Refresh** reloads the current desk view.
+- **Notifications** lists in-app alerts plus links to Alerts, Work queue, Tasks, and Calendar.
+- **What’s New** is a short changelog of desk features (stub entries).
+- **Recently accessed** shows the last contacts, deals, and policies (local visits, with a book stub fallback).
+- **Quick actions** open Add Lead, Add Deal, Add Policy (bind stub), Add Task, and Add Meeting.
+- **Support** opens the same “Coming soon — we'll wire this later.” stub as the left-nav Support row. Visible to Admin and Agent.
+- **Profile** shows the Admin / Agent badge and a link to Profile settings (`/settings/my-desk`).
+
+Do not restyle the blue/orange tokens. Sidebar stays forced light-blue `#c5ddf4` with near-black ink.
 
 ## Columns picker
 
