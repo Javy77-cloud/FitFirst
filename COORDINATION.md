@@ -690,6 +690,16 @@ Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_lead_routing_renewal_r
 
 **Renewal-risk.** Pure score 0–100 from days-to-renewal (flag before the 45–75 day rate-increase window), proposed premium change if known, monoline, lapse history, and no contact 60 days. Home widget **Renewal-risk flags** (My production + Retention). Account 360 Overview on Contact and Business. Hale HO (`HP-FL-88421`, +16.6%, 28 days) is Critical. Nair Auto is Elevated. Ana has 0 policies — no score, still shopping.
 
+## DIFF J — Commission reconciliation (`cursor/commission-recon-diffj-1757`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_commission_reconciliations` remapped to `0044_commission_reconciliations`. Ana fixture untouched (unbound, Cov A **$321,000**, $0 commission). One Pipeline. Sidebar hex unchanged.
+
+**Admin** `/commissions`: expected vs received board. Expected is the policy-rule TAC already on `commissions.amount`. Received is typed by hand. Mark short / disputed / match. No carrier download.
+
+**Agent** `/commissions`: own earned / pending / disputed only. Short shows as pending (still owed). Other producers stay off the sheet.
+
+**Seed shortfalls:** Shah HO (Maya) $180 / $215.60 short; Hale HO (Javy) $198 / $262.08 short; Harbor GL (Javy) $250 / $318.12 short; Elena Ruiz HO (Maya) disputed — missing AFA statement. Paid rows seed as earned. Ana is not in this set.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0043**. Diff H added no migration. Next free additive migration is **0044**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running bots (commission, portal). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0044**. Diff H added no migration. Next free additive migration is **0045**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running client portal (`cursor/client-portal-stubs-3bd3` exists but the bot is still running). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

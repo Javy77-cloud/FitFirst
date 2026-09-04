@@ -4,17 +4,19 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator + Diff H/G + Pack C routing)
+**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator + Diff H/G + Pack C + Diff J recon)
 
-**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration), Diff G policy + document version timelines (`0042_policy_doc_versions`), and Pack C lead routing + renewal-risk (`cursor/lead-routing-renewal-risk-5b51`, incoming `0036` remapped to `0043_lead_routing_renewal_risk`). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
+**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration), Diff G policy + document version timelines (`0042_policy_doc_versions`), Pack C lead routing + renewal-risk (`0043_lead_routing_renewal_risk`), and Diff J commission recon (`cursor/commission-recon-diffj-1757`, incoming `0036` remapped to `0044_commission_reconciliations`). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0044**. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0045**. See `COORDINATION.md`.
 
 **DIFF H:** Rule-based coverage-gap English on Contact / Business / Deal (auto-no-home, flood, umbrella, GL-no-WC — in-force only). Deal quote compare explains cheapest / deductibles / bindable in English. Closed Won is one-click **Contact + Policy** or **Business + Policy**. Documents stepper labels the master sheet → Fill path (zero rekey). Ana stays unbound at Cov A **$321,000**; `bindDeal` refuses that shop.
 
 **Policy change history + document versions (DIFF G):** Policy records keep a field-level timeline (who / when / before / after) on bind, Save policy, and endorsement / cancel. Deal and Policy attachments keep prior copies when you replace a file. Seeded on Elena `HO3-ELENA-2026` (wind mit + issued dec have a prior version). Ana stays unbound. Incoming `0036_policy_doc_versions` remapped to `0042_policy_doc_versions`.
 
 **Pack C — lead routing + renewal-risk:** Admin Settings → Brand / Agency → Lead routing (territory + line + capacity). Home **Renewal-risk flags** plus Contact / Business Overview cards. Hale HO is Critical; Ana has 0 policies so no score. Incoming `0036_lead_routing_renewal_risk` remapped to `0043_lead_routing_renewal_risk`.
+
+**DIFF J — commission recon:** Admin `/commissions` is expected vs received (mark short / disputed / match by hand; no carrier download). Agent sees own earned / pending / disputed only. Seeded shortfalls: Shah HO, Hale HO, Harbor GL; Elena Ruiz HO disputed. Ana stays $0 / unbound. Incoming `0036_commission_reconciliations` remapped to `0044_commission_reconciliations`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -126,7 +128,7 @@ Communications (email, SMS, calls, meetings, tasks) write a durable log on the C
 
 List sheets share one header control: click a column to sort A→Z / Z→A, or open the header menu to pin it. The Columns picker stays on the title row.
 
-Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log is a broker FNOL desk: intake form, inquiry → referred to carrier → closed pipeline, carrier claim #, Policy + Contact links, and an in-app producer ping. FitFirst does not file FNOL, set reserves, or assign adjusters. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
+Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log is a broker FNOL desk: intake form, inquiry → referred to carrier → closed pipeline, carrier claim #, Policy + Contact links, and an in-app producer ping. FitFirst does not file FNOL, set reserves, or assign adjusters. **Commissions** is the recon workspace: Admin sees expected vs received and marks short / disputed by hand (no carrier download). Agent sees own earned / pending / disputed only. Filter Life / Health / P&C plus line subfilters and last/next windows. Seeded shortfalls: Shah HO, Hale HO, Harbor GL; Elena Ruiz HO disputed. Ana stays shopping / $0 commission / unbound.
 
 Settings has a nested left menu: **People / Agents**, Communications (email, SMS, phone, video), **Integrations** catalog, Lines / Global lists, Brand / Agency (chrome, **Offices**, **Territories**), and Admin vs Agent prefs.
 

@@ -9,6 +9,12 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+    id: "commission-recon",
+    title: "Commission reconciliation",
+    body: "Admin marks expected vs received as short, disputed, or match. Agents see only their own earned / pending / disputed. Ana stays $0 and unbound.",
+    date: "2026-09-04",
+  },
+  {
     id: "lead-routing",
     title: "Lead routing + renewal-risk",
     body: "Admin routing rules assign inbound leads by territory, line, and open-deal capacity. Home and Account 360 flag renewals that look shaky — Ana has no score because she is still shopping.",

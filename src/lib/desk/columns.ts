@@ -159,7 +159,11 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
   ],
   commissions: [
     { key: "policy", label: "Policy", defaultOn: true },
+    { key: "producer", label: "Producer", defaultOn: true },
     { key: "book", label: "Book", defaultOn: true },
+    { key: "expected", label: "Expected", defaultOn: true },
+    { key: "received", label: "Received", defaultOn: true },
+    { key: "variance", label: "Variance", defaultOn: true },
     { key: "status", label: "Status", defaultOn: true },
     { key: "amount", label: "Amount", defaultOn: true },
   ],

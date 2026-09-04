@@ -5,6 +5,10 @@ const styles: Record<string, string> = {
   payable: "bg-fit-flag-bg text-fit-flag",
   paid: "bg-fit-green-bg text-fit-green",
   held: "bg-fit-red-bg text-fit-red",
+  short: "bg-fit-red-bg text-fit-red",
+  disputed: "bg-fit-flag-bg text-fit-flag",
+  matched: "bg-fit-green-bg text-fit-green",
+  earned: "bg-fit-green-bg text-fit-green",
 };
 
 export function CommissionStatusPill({ status }: { status: string }) {

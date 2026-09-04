@@ -24,6 +24,8 @@ describe("moduleTitleFromPath", () => {
     expect(moduleTitleFromPath("/glance?tab=claims")).toBe("Glance");
     expect(moduleTitleFromPath("/meetings/new")).toBe("Calendar");
     expect(moduleTitleFromPath("/compliance")).toBe("Compliance");
+    expect(moduleTitleFromPath("/commissions")).toBe("Commissions");
+    expect(moduleTitleFromPath("/commissions/agents/maya")).toBe("Commissions");
   });
 
   it("keeps a record name as subtitle when it differs from the module", () => {

@@ -530,4 +530,6 @@ export async function seed() {
   await seedPolicyDocVersions();
   const { seedLeadRoutingAndRenewalRisk } = await import("./seed-routing");
   await seedLeadRoutingAndRenewalRisk();
+  const { seedCommissionReconciliations } = await import("./seed-commission-recon");
+  await seedCommissionReconciliations();
 }
