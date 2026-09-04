@@ -22,7 +22,7 @@ export function PipelineWorkspace({
         ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
         : board.slug === "flood"
           ? "Flood shopping board. Same columns as the other lines — add, remove, or reorder stages here."
-          : "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card — Ask a teammate stays off the board.";
+          : "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card.";
 
   return (
     <div className="space-y-3" data-ff-pipe>
