@@ -278,6 +278,11 @@ export const deals = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     archiveScheduledAt: timestamp("archive_scheduled_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
+    quotingLine: text("quoting_line"),
+    quotingForm: text("quoting_form"),
+    sheetApprovedAt: timestamp("sheet_approved_at", { withTimezone: true }),
+    sheetApprovedBy: text("sheet_approved_by"),
+    quotingUnlocked: boolean("quoting_unlocked").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -628,6 +633,9 @@ export const quoteSheets = pgTable(
       .references(() => deals.id),
     line: text("line").notNull(),
     values: jsonb("values").$type<Record<string, QuoteSheetFieldValue>>().notNull().default({}),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedBy: text("approved_by"),
+    quotingUnlocked: boolean("quoting_unlocked").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -1555,6 +1563,27 @@ export const esignSettings = pgTable(
   (t) => [uniqueIndex("esign_settings_tenant_idx").on(t.tenantId)],
 );
 
+/** Agency BYO connectors. Stub only — no OAuth, no vendor keys, no Twilio purchase. */
+export const integrationConnections = pgTable(
+  "integration_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    category: text("category").notNull(),
+    provider: text("provider").notNull(),
+    connected: boolean("connected").notNull().default(false),
+    displayLabel: text("display_label"),
+    notes: text("notes"),
+    lastStatus: text("last_status"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("integration_connections_tenant_idx").on(t.tenantId, t.category),
+    uniqueIndex("integration_connections_pair_uidx").on(t.tenantId, t.category, t.provider),
+  ],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -1635,6 +1664,7 @@ export type SmsSettings = typeof smsSettings.$inferSelect;
 export type TelephonySettings = typeof telephonySettings.$inferSelect;
 export type EsignSettings = typeof esignSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
+export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;

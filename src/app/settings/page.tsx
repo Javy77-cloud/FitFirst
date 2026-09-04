@@ -82,18 +82,31 @@ export default async function SettingsPage() {
 
           <SettingsSection
             id="communications"
-            title="Communications"
+            title="Communications / Integrations"
             badge="Admin"
-            summary="Video rooms plus agency and agent meeting addresses."
+            summary="BYO stubs. Agency pays. FitFirst does not subscribe to Twilio."
             defaultOpen
           >
             <p className="text-sm text-muted-foreground">
-              Zoom, Google Meet, or a BYO link (stubs). In-Office meetings use the agency office plus
-              each agent&apos;s meeting address. In-Home pulls the Deal / Lead street.
+              Email (Gmail / Workspace, Outlook / 365, Yahoo), campaigns (Mailchimp, Constant
+              Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice,
+              Bandwidth optional), Zoom / Meet, and DocuSign / Dropbox Sign. Plug-only — no
+              vendor keys stored. Meeting rooms and In-Office addresses stay on Communications.
             </p>
-            <Link href="/settings/communications" className="mt-3 inline-block text-sm text-primary hover:underline">
-              Open communications
-            </Link>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+              <Link href="/settings/integrations" className="text-sm text-primary hover:underline">
+                Open communications hub
+              </Link>
+              <Link href="/settings/communications" className="text-sm text-primary hover:underline">
+                Meeting rooms
+              </Link>
+              <Link href="/settings/phone" className="text-sm text-primary hover:underline">
+                Phone line stub
+              </Link>
+              <Link href="/settings/email-templates" className="text-sm text-primary hover:underline">
+                Email templates
+              </Link>
+            </div>
           </SettingsSection>
 
           <SettingsSection

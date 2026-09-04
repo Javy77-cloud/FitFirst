@@ -96,10 +96,12 @@ export function SettingsSubnav({
     | "phone"
     | "communications"
     | "esign"
-    | "master-risk";
+    | "master-risk"
+    | "integrations";
 }) {
   const items = [
     { href: "/settings", id: "hub" as const, label: "Overview" },
+    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · communications" },
     { href: "/settings/agency", id: "agency" as const, label: "Admin · agency" },
     { href: "/settings/lines", id: "lines" as const, label: "Admin · lines" },
     { href: "/settings/lists", id: "lists" as const, label: "Admin · lists" },

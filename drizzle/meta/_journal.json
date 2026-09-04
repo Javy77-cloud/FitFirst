@@ -134,6 +134,13 @@
       "when": 1788527100000,
       "tag": "0018_policy_global_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788527200000,
+      "tag": "0019_batch3_quoting",
+      "breakpoints": true
     }
   ]
 }

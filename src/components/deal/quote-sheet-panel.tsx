@@ -3,58 +3,101 @@ import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
 import { DeskDetails } from "@/components/desk-details";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { QuoteSheetFieldValue } from "@/lib/domain";
-import { groupHomeFields } from "@/lib/lifecycle/quote-sheet";
+import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
+import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
+import { quotingFormById } from "@/lib/quoting/forms";
 import { cn } from "@/lib/utils";
-import { SheetHandoffButtons } from "./sheet-handoff";
+import { QuoteHandoff } from "./quote-handoff";
+import { SheetApproveGate } from "./sheet-approve-gate";
 
 export function QuoteSheetPanel({
   dealId,
   values,
   line = "home",
+  quotingForm,
+  unlocked,
+  approvedBy,
+  sheetLines = [],
 }: {
   dealId: string;
   values: Record<string, QuoteSheetFieldValue> | null;
   line?: string;
+  quotingForm?: string | null;
+  unlocked: boolean;
+  approvedBy?: string | null;
+  sheetLines?: string[];
 }) {
   const sheet = values ?? {};
-  const groups = groupHomeFields();
+  const shopLine = (line as ShopLine) ?? "home";
+  const groups = groupFields(shopLine);
+  const form = quotingFormById(quotingForm ?? "");
+  const formLabel = form?.label ?? SHOP_LINE_LABELS[shopLine] ?? "Master sheet";
+  const lines = sheetLines.length > 0 ? sheetLines : [shopLine];
 
   return (
     <div className="space-y-4">
-      <section className="ff-card p-4">
+      <section className="ff-card space-y-3 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-navy">Quote Sheet</h3>
+            <h3 className="text-sm font-semibold text-navy">{formLabel} master sheet</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Master shopping worksheet. Yellow is missing. Blue is CHECK. Super-Copy, Send to
-              Fill, and Forms Fill all read this same <code>quote_sheets</code> record — never the
-              raw PDFs.
+              Visual approval unlocks quoting. Super-Copy, Send to Fill, and Forms Fill all read
+              this same <code>quote_sheets</code> record — never the raw PDFs.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <form action={fillQuoteSheetBlanks}>
               <input type="hidden" name="dealId" value={dealId} />
+              <input type="hidden" name="line" value={shopLine} />
               <Button type="submit" size="sm">
                 Fill blanks from source docs
               </Button>
             </form>
             <Link
-              href={`/api/deals/${dealId}/quote-sheets/${line}/super-copy`}
+              href={`/api/deals/${dealId}/quote-sheets/${shopLine}/super-copy`}
               className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
             >
               Super-Copy JSON
             </Link>
-            <Link
-              href={`/forms/fl-ho3?dealId=${dealId}`}
-              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-            >
-              Forms Fill
-            </Link>
+            {shopLine === "home" ? (
+              <Link
+                href={`/forms/fl-ho3?dealId=${dealId}`}
+                className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+              >
+                Forms Fill
+              </Link>
+            ) : null}
           </div>
         </div>
-        <SheetHandoffButtons dealId={dealId} line={line} />
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+
+        {lines.length > 1 ? (
+          <div className="flex flex-wrap gap-1">
+            {lines.map((item) => (
+              <Link
+                key={item}
+                href={`/deals/${dealId}?tab=quote-sheet&line=${item}`}
+                className={cn(
+                  "rounded-sm px-2 py-1 text-xs font-medium",
+                  item === shopLine ? "bg-primary text-primary-foreground" : "bg-secondary text-navy",
+                )}
+              >
+                {SHOP_LINE_LABELS[item as ShopLine] ?? item}
+                {item !== shopLine && (quotingForm === "HO3" || !quotingForm) ? " · prepared" : ""}
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
+        <SheetApproveGate
+          dealId={dealId}
+          line={shopLine}
+          formLabel={formLabel}
+          unlocked={unlocked}
+          approvedBy={approvedBy}
+        />
+        <QuoteHandoff dealId={dealId} line={shopLine} formLabel={formLabel} unlocked={unlocked} />
+        <div className="flex flex-wrap gap-2 text-[11px]">
           <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 text-fit-yellow">Missing</span>
           <span className="rounded-sm bg-fit-check-bg px-1.5 py-0.5 text-fit-check">CHECK</span>
           <span className="rounded-sm bg-fit-green-bg px-1.5 py-0.5 text-fit-green">Confirmed</span>

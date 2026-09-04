@@ -115,6 +115,17 @@ Street / mailing / premises / location fields use `AddressAutofill`. With `GOOGL
 
 Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Communications write a durable log on the record. No Twilio, SendGrid, or live Zoho.
 
+## BATCH3 quoting (ASAP test)
+
+1. **Lead → Deal.** Open a Lead. Convert when ready. Source docs stay off the Lead.
+2. **Deal drop.** On the Deal, upload a dec / 4-point / wind mit (or sample clean dec). Pick **HO3 homeowners**. That fills the HO3 master sheet and prepares empty Auto + GL + WC worksheets.
+3. **Visual approve.** Quote Sheet tab: glance yellow/blue cells. Check **I visually reviewed this master sheet**, click **Approve and unlock quoting**, then confirm **Are you sure?**
+4. **Handoff.** After unlock: **Copy sheet**, **Send to Fill**, or **Open Fill window**. Prefer the Chrome Fill add-on (`extensions/fill`). No per-agent bot. If the add-on is missing, copy/paste in the new window.
+5. **Appetite log.** Quotes tab → quoted / declined / maybe. `maybe` does not change filter-first matching.
+6. **Ana lock.** `Dib · Palm Bay HO3` Cov A **$321,000**. Stay shopping. Do not bind.
+7. **Admin-only.** Master risk + Markets/appetite stay Admin. Ask a teammate on Deal is hidden for agents.
+8. **Communications / Integrations.** Settings → Communications: email (Gmail/Workspace, Outlook/365, Yahoo), campaigns (Mailchimp, Constant Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice, Bandwidth optional), Zoom/Meet, DocuSign + Dropbox Sign. Plug-only. Agency pays. FitFirst does not subscribe to Twilio.
+
 ## Communication (this desk)
 
 - **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. On Contact and Business the whole Ask block is Admin-only (hidden for agents). It never appears on pipeline cards. Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.

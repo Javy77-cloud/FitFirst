@@ -48,6 +48,16 @@ export const QUOTE_RESULTS = [
 ] as const;
 export type QuoteAttemptResult = (typeof QUOTE_RESULTS)[number];
 
+/** Internal appetite capture after carrier paste. `maybe` does not feed match priors. */
+export const APPETITE_CAPTURE_RESULTS = ["quoted", "declined", "maybe"] as const;
+export type AppetiteCaptureResult = (typeof APPETITE_CAPTURE_RESULTS)[number];
+
+export const APPETITE_CAPTURE_LABELS: Record<AppetiteCaptureResult, string> = {
+  quoted: "Quoted",
+  declined: "Declined",
+  maybe: "Maybe",
+};
+
 export const FIT_BANDS = ["green", "yellow", "red"] as const;
 export type FitBand = (typeof FIT_BANDS)[number];
 
@@ -247,6 +257,56 @@ export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
   workers_comp: "Workers Comp",
   general_liability: "General Liability",
 };
+
+/** Policy form the agent picks after dropping dec / 4-point / wind mit on the Deal. */
+export const QUOTING_FORMS = [
+  { id: "HO3", label: "HO3 homeowners", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "HO6", label: "HO6 condo", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "DP3", label: "DP3 dwelling", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "PA", label: "Personal auto", shopLine: "auto" as ShopLine, lob: "AUTO" },
+  { id: "GL", label: "General liability", shopLine: "general_liability" as ShopLine, lob: "GL" },
+  { id: "WC", label: "Workers comp", shopLine: "workers_comp" as ShopLine, lob: "WC" },
+  { id: "BOP", label: "BOP", shopLine: "general_liability" as ShopLine, lob: "BOP" },
+  { id: "FLOOD", label: "Flood", shopLine: "flood" as ShopLine, lob: "FLOOD" },
+] as const;
+export type QuotingFormId = (typeof QUOTING_FORMS)[number]["id"];
+
+export const INTEGRATION_CATEGORIES = [
+  "email",
+  "email_campaigns",
+  "calendar",
+  "phone_sms",
+  "video",
+  "esign",
+] as const;
+export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
+
+export type IntegrationCatalogItem = {
+  category: IntegrationCategory;
+  provider: string;
+  label: string;
+  optional?: boolean;
+};
+
+/** Agency BYO catalog. FitFirst is plug-only — the agency pays. No FitFirst Twilio subscribe. */
+export const INTEGRATION_CATALOG: readonly IntegrationCatalogItem[] = [
+  { category: "email", provider: "google", label: "Gmail / Google Workspace" },
+  { category: "email", provider: "outlook", label: "Microsoft Outlook / 365" },
+  { category: "email", provider: "yahoo", label: "Yahoo" },
+  { category: "email_campaigns", provider: "mailchimp", label: "Mailchimp" },
+  { category: "email_campaigns", provider: "constant_contact", label: "Constant Contact" },
+  { category: "email_campaigns", provider: "sendgrid", label: "SendGrid (transactional)" },
+  { category: "calendar", provider: "google", label: "Google Calendar" },
+  { category: "calendar", provider: "outlook", label: "Outlook Calendar" },
+  { category: "phone_sms", provider: "twilio", label: "Twilio" },
+  { category: "phone_sms", provider: "ringcentral", label: "RingCentral" },
+  { category: "phone_sms", provider: "lightspeed_voice", label: "Lightspeed Voice" },
+  { category: "phone_sms", provider: "bandwidth", label: "Bandwidth", optional: true },
+  { category: "video", provider: "zoom", label: "Zoom" },
+  { category: "video", provider: "meet", label: "Google Meet" },
+  { category: "esign", provider: "docusign", label: "DocuSign" },
+  { category: "esign", provider: "dropbox_sign", label: "Dropbox Sign" },
+];
 
 export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "flood", "won-lost", "archive"] as const;
 

@@ -414,6 +414,18 @@ Fix:
 
 Mac pull: fetch `cursor/pipeline-meetings-11f3`, `git reset --hard FETCH_HEAD`, `npm run db:migrate`, restart `npm run dev -- --port 43147`. Ana stays unbound / $321k.
 
+## BATCH3 quoting + integrations (`cursor/batch3-quoting-handoff-cca5`)
+
+Owner: this branch. Additive `0015_batch3_quoting`. Did not edit the Ana fixture. Did not bind Ana. Did not change `src/lib/appetite/match.ts`.
+
+- Lead convert stays the shop start. After a Deal source-doc drop, pick line / policy form. HO3 fills the home master sheet and prepares Auto + GL + WC worksheets.
+- Master sheet requires visual review + “are you sure?” before quoting unlocks. Chrome Fill / Copy sheet / Open Fill window stay locked until then. No per-agent bot.
+- Quotes tab logs quoted / declined / maybe. `maybe` is filtered out of match priors.
+- Master risk + Markets are Admin-only. Ask a teammate on Deal is `hideWhenNotAdmin`.
+- Settings → Communications / Integrations: email (Gmail/Workspace, Outlook/365, Yahoo), campaigns (Mailchimp, Constant Contact, SendGrid), calendar, phone/SMS (Twilio, RingCentral, Lightspeed Voice, Bandwidth optional), Zoom/Meet, DocuSign + Dropbox Sign. Plug-only. Agency pays. No FitFirst Twilio subscribe.
+
+ASAP click path: Ana deal → pick HO3 if needed → Quote Sheet → approve + confirm → Copy sheet / Open Fill window → Quotes tab log maybe. Cov A **$321,000**. Do not bind.
+
 ## Quotes collapse + Claims add + Commissions filters (`cursor/quotes-claims-commissions-4af1`)
 
 Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not write Zoho.
