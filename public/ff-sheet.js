@@ -260,20 +260,28 @@
     }
   }, true);
 
+  var applied = typeof WeakSet !== "undefined" ? new WeakSet() : null;
+
   function boot() {
     document.querySelectorAll("th[data-sheet-table]").forEach(function (th) {
       var table = th.getAttribute("data-sheet-table");
       var tableEl = closestTable(th);
-      if (!table || !tableEl || tableEl.dataset.ffSheetApplied === table) return;
-      tableEl.dataset.ffSheetApplied = table;
+      if (!table || !tableEl) return;
+      if (applied) {
+        if (applied.has(tableEl)) return;
+        applied.add(tableEl);
+      }
       applyTable(tableEl, table, read(table));
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
+  function bootAfterHydrate() {
+    setTimeout(boot, 1);
   }
-  window.addEventListener("pageshow", boot);
+
+  if (document.readyState === "complete") bootAfterHydrate();
+  else window.addEventListener("load", bootAfterHydrate);
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) bootAfterHydrate();
+  });
 })();
