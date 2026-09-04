@@ -17,6 +17,7 @@ import { DEAL_ID } from "@/lib/fixtures/ids";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MixBars } from "./mix-bars";
+import { MixDonut } from "./mix-donut";
 import { CrossSellPanel } from "./cross-sell";
 
 function fmt(n: number): string {
@@ -172,12 +173,12 @@ export function OwnerDesk({
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <section className="ff-card p-3">
-          <Header title="Line mix" href="/policies?status=in_force" action="Policies" />
+        <section className="ff-card p-3" aria-label="Policy type">
+          <Header title="Policy type" href="/policies?status=in_force" action="Policies" />
           <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
-            Compact in-force premium by line. Quotes are not written.
+            In-force premium by policy type. Quotes are not written.
           </p>
-          <MixBars compact slices={snapshot.lineMix} empty="No in-force lines yet." />
+          <MixDonut slices={snapshot.lineMix} empty="No in-force policy types yet." />
         </section>
         <section className="ff-card p-3">
           <Header title="Carrier mix" href="/policies?status=in_force" action="Policies" />
