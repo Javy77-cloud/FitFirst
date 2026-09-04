@@ -54,6 +54,10 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 Leads are the person record (name, DOB, contact, address, insurance wanted). Dec / 4-point / wind mit drop lives on **Deals**. Click path and leftover bugs live in `COORDINATION.md`.
 
+**Contact record** is Zoho-style: a left jump menu lists Overview, Contact information, Address, Policies, Deals, Businesses, Locations, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Click jumps to that section. There is no typed activity log — work done from the desk (email, SMS, task, meeting, click-to-call) saves onto that contact’s Timeline. Ana stays **Not a client** with **0 policies**. No live Zoho.
+
+Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). On the Contact record the tag form is **hidden for agents**. That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
+
 ## Pipeline
 
 - Personal-lines tab is **P&C pipeline** (slug stays `p-c`).
@@ -82,6 +86,14 @@ Street / mailing / premises / location fields use `AddressAutofill`. With `GOOGL
 - Wave-1 book names when seeded: Mario Cromartie, Virginia Palacios, Fritzs Seraphin, VP Painting & Construction.
 
 Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Communications write a durable log on the record. No Twilio, SendGrid, or live Zoho.
+
+## Communication (this desk)
+
+- **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. On Contact the whole Ask block is Admin-only (hidden for agents). Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
+- **Contact Timeline** auto-saves email, SMS, tasks, meetings, and calls done from the desk. No manual “log activity” form on Contact.
+- **Click-to-call** writes an in-app Alerts ping and a call row on the record (`/phone` is a stub). No email.
+- **Email templates + triggers** live under Settings as stubs. Nothing sends.
+- **Alerts** stay in-desk (asks + work-queue pings).
 
 ## Tests
 
