@@ -1166,6 +1166,18 @@ export async function getDealWorkspace(dealId: string) {
     .from(policies)
     .where(and(eq(policies.tenantId, tenant()), eq(policies.dealId, dealId)));
 
+  const partyFilters = [
+    contact?.id ? eq(policies.contactId, contact.id) : undefined,
+    account?.id ? eq(policies.accountId, account.id) : undefined,
+  ].filter((clause): clause is SQL => Boolean(clause));
+  const partyPolicies =
+    partyFilters.length > 0
+      ? await db
+          .select()
+          .from(policies)
+          .where(and(eq(policies.tenantId, tenant()), or(...partyFilters)))
+      : [];
+
   return {
     deal,
     risk,
@@ -1181,6 +1193,7 @@ export async function getDealWorkspace(dealId: string) {
     jobs,
     fillFeedback,
     boundPolicies,
+    partyPolicies,
     timeline: await listActivityTimeline({ dealId }),
     comms: await listCommsForRecord({ dealId }),
   };

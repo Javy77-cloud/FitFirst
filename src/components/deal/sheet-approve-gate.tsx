@@ -24,8 +24,8 @@ export function SheetApproveGate({
   if (unlocked) {
     return (
       <div className="rounded-md bg-fit-green-bg px-3 py-2 text-xs text-fit-green">
-        Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Quoting is unlocked. Quotes
-        still do not bind.
+        Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Send to Fill is unlocked.
+        Quotes still do not bind.
       </div>
     );
   }
@@ -63,7 +63,7 @@ export function SheetApproveGate({
       <p className="text-sm font-semibold text-navy">Visual approval required</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Glance the {formLabel} master sheet. Yellow is missing. Blue is CHECK. Confirm, then
-        answer “are you sure?” Quoting stays locked until both steps.
+        answer “are you sure?” Send to Fill stays locked until both steps.
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input

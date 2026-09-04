@@ -596,3 +596,12 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 ## WAVE3 leftover
 
 Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+
+## DIFF H — coverage gaps + bind path + Fill labels (`cursor/diff-h-coverage-bind-fill-9bd3`)
+
+Off `cursor/mac-ready-batch4-7pm`. No new migration. Ana fixture untouched (unbound, Cov A **$321,000**). `bindDeal` now throws `Ana stays shopping. Do not bind this shop.` One Pipeline. Alerts off the sidebar.
+
+- **Coverage gaps (in-force only):** Contact / Business / Deal show a plain-English panel. Rules: auto-no-home, home-no-auto, home-no-flood, no-umbrella, flood-no-home, GL/BOP-no-WC, GL-no-umbrella. Quotes, quoted status, and cancelled rows never count. Ana (0 policies) stays empty with the $321k lock sentence.
+- **Quote compare:** Deal Quotes tab adds a Why-this-quote column (cheapest vs others, deductible / Cov A English, bindable vs not). Ana rows stay “Do not bind Ana.”
+- **Closed Won one-click bind:** Deal header form replaced with Personal · Contact + Policy vs Commercial · Business + Policy. After bind, the path sentence names the Contact/Business and Policy. Quotes stay quotes.
+- **Master sheet → Fill labels:** Documents stepper is Drop source docs → Choose quoting line → Fill master sheet → Glance yellow / CHECK → Approve, then Send to Fill. Handoff buttons: Copy master sheet / Send master sheet to Fill / Open Fill window. Zero rekey — Fill reads the approved sheet, never the PDF.

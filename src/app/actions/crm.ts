@@ -18,6 +18,7 @@ import {
 } from "@/lib/domain";
 import { persistFile } from "@/app/actions/documents";
 import { BindBlockedError } from "@/lib/crm/bind";
+import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { db } from "@/lib/db";
 import { ensurePipelineStages, refreshPartyCounts } from "@/lib/db/queries";
@@ -597,6 +598,7 @@ async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteS
 export async function bindDeal(formData: FormData) {
   const actor = await getActor();
   const dealId = str(formData, "dealId");
+  assertAnaUnbound(dealId);
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));

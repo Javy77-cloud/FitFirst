@@ -50,8 +50,9 @@ export function QuoteSheetPanel({
           <div>
             <h3 className="text-sm font-semibold text-navy">{formLabel} master sheet</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Visual approval unlocks quoting. Super-Copy, Send to Fill, and Forms Fill all read
-              this same <code>quote_sheets</code> record — never the raw PDFs.
+              Glance yellow missing / blue CHECK, approve, then Send to Fill. Super-Copy, Send
+              master sheet to Fill, and Forms Fill all read this same <code>quote_sheets</code>{" "}
+              record — zero rekey, never the raw PDFs.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

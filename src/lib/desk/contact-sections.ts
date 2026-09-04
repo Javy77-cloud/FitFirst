@@ -2,6 +2,7 @@ import { canAskTeammate } from "@/lib/desk/record-asks";
 
 export type ContactSectionId =
   | "overview"
+  | "gaps"
   | "information"
   | "address"
   | "policies"
@@ -21,6 +22,7 @@ export type ContactSectionDef = {
 /** Contact jump list. Ask a teammate is not on Contact — Admin uses it on other records. */
 export const CONTACT_SECTIONS: ContactSectionDef[] = [
   { id: "overview", label: "Overview" },
+  { id: "gaps", label: "Coverage gaps" },
   { id: "information", label: "Contact information" },
   { id: "address", label: "Address" },
   { id: "policies", label: "Policies" },

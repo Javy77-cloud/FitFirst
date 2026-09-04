@@ -14,12 +14,11 @@ export function QuotingLinePicker({
   const picked = QUOTING_FORMS.find((form) => form.id === currentForm);
   return (
     <section className="rounded-md border border-primary/30 bg-card p-3">
-      <h3 className="text-sm font-semibold text-navy">What are we quoting?</h3>
+      <h3 className="text-sm font-semibold text-navy">Choose the quoting line</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         {sourceDocCount > 0
-          ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Pick the line and policy form before the master sheet can be approved.`
-          : "Drop a dec, 4-point, or wind mit, then pick the line. HO3 fills the homeowners master sheet and prepares Auto + commercial worksheets."}
-      </p>
+          ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Choose the line before Fill master sheet can run.`
+          : "Drop a dec, 4-point, or wind mit, then choose the quoting line. HO3 fills the homeowners master sheet and prepares Auto + commercial worksheets."}
       {picked ? (
         <p className="mt-2 text-xs text-navy">
           Quoting <span className="font-semibold">{picked.label}</span>. Change it if this drop is
@@ -46,7 +45,7 @@ export function QuotingLinePicker({
           </select>
         </label>
         <Button type="submit" size="sm">
-          {picked ? "Update line and open sheet" : "Fill master sheet"}
+          {picked ? "Update line and fill master sheet" : "Fill master sheet from those docs"}
         </Button>
       </form>
     </section>

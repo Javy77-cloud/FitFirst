@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS, type ShopLine } from "@/lib/domain";
 import { filePreviewHref, isQuoteAttachment } from "@/lib/files/urls";
 import { quotingFormById } from "@/lib/quoting/forms";
+import { MASTER_TO_FILL_STEPS, fillPathStepIndex } from "@/lib/quoting/fill-path";
 import { DocFileActions } from "./doc-file-actions";
 import { QuotingLinePicker } from "./quoting-line-picker";
 import { FillSubmitButton } from "./fill-progress";
@@ -81,27 +82,17 @@ export function DocumentsPanel({
   const form = quotingFormById(quotingForm ?? "");
   const lastJob = jobs[0];
   const failedJobs = jobs.filter((job) => job.status === "failed");
-  const step =
-    sourceDocs.length === 0
-      ? 1
-      : !quotingForm
-        ? 2
-        : !lastJob || lastJob.status === "failed"
-          ? 3
-          : unlocked
-            ? 5
-            : 4;
+  const step = fillPathStepIndex({
+    sourceDocCount: sourceDocs.length,
+    hasQuotingForm: Boolean(quotingForm),
+    fillFinished: Boolean(lastJob && lastJob.status !== "failed"),
+    unlocked: Boolean(unlocked),
+  });
 
   return (
     <div className="space-y-4">
       <ol className="grid gap-2 sm:grid-cols-5">
-        {[
-          { n: 1, label: "Upload" },
-          { n: 2, label: "Pick line" },
-          { n: 3, label: "Fill master sheet" },
-          { n: 4, label: "Review yellow / CHECK" },
-          { n: 5, label: "Approve" },
-        ].map((item) => (
+        {MASTER_TO_FILL_STEPS.map((item) => (
           <li
             key={item.n}
             className={
@@ -138,10 +129,9 @@ export function DocumentsPanel({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         <div className="space-y-4">
           <section className="ff-card p-4">
-            <h3 className="mb-1 text-sm font-semibold text-navy">1 · Upload source documents</h3>
+            <h3 className="mb-1 text-sm font-semibold text-navy">1 · Drop source docs</h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              Dec pages, wind mit, 4-point, and inspections stay on Deal Attachments. Detect type
-              from the filename, or pick it. They never become the paste source.
+              {MASTER_TO_FILL_STEPS[0]?.hint} Detect type from the filename, or pick it.
             </p>
 
             <form action={uploadDocument} className="mb-3 space-y-2 rounded-md border border-border p-3">
@@ -211,7 +201,7 @@ export function DocumentsPanel({
           </section>
 
           <section className="ff-card p-4">
-            <h3 className="mb-1 text-sm font-semibold text-navy">2 · Pick the line</h3>
+            <h3 className="mb-1 text-sm font-semibold text-navy">2 · Choose quoting line</h3>
             <QuotingLinePicker
               dealId={dealId}
               currentForm={quotingForm}
@@ -223,9 +213,8 @@ export function DocumentsPanel({
             <section className="ff-card p-4">
               <h3 className="mb-1 text-sm font-semibold text-navy">3 · Fill master sheet</h3>
               <p className="mb-3 text-xs text-muted-foreground">
-                Parses every source doc on this deal into the {form?.label ?? "HO3"} Quote Sheet.
-                Blanks only. Yellow missing / blue CHECK. Does not invent Coverage A from public
-                listings.
+                {MASTER_TO_FILL_STEPS[2]?.hint} Writes the {form?.label ?? "HO3"} Quote Sheet.
+                Does not invent Coverage A from public listings.
               </p>
               <form action={fillQuoteSheetBlanks}>
                 <input type="hidden" name="dealId" value={dealId} />
@@ -288,7 +277,8 @@ export function DocumentsPanel({
 
         <div className="space-y-4">
           <section className="ff-card space-y-3 p-4">
-            <h3 className="text-sm font-semibold text-navy">4 · Review source vs sheet</h3>
+            <h3 className="text-sm font-semibold text-navy">4 · Glance yellow / CHECK</h3>
+            <p className="text-xs text-muted-foreground">{MASTER_TO_FILL_STEPS[3]?.hint}</p>
             <SourceVsSheet
               line={sheetLine}
               docs={sourceDocs}

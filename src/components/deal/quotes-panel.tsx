@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/domain";
 import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 import { matchQuotePdf } from "@/lib/files/quote-match";
 import { filePreviewHref } from "@/lib/files/urls";
+import { explainQuoteCompare } from "@/lib/quotes/explain";
 import { AppetiteCapture } from "./appetite-capture";
 import { DocFileActions } from "./doc-file-actions";
 
@@ -20,6 +21,7 @@ export function QuotesPanel({
   accountId,
   email,
   phone,
+  isAna = false,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -32,7 +34,22 @@ export function QuotesPanel({
   accountId?: string | null;
   email?: string | null;
   phone?: string | null;
+  isAna?: boolean;
 }) {
+  const explained = explainQuoteCompare(
+    quotes.map(({ quote, carrier }) => ({
+      id: quote.id,
+      carrierName: carrier.name,
+      premium: quote.premium,
+      aopDeductible: quote.aopDeductible,
+      hurricaneDeductible: quote.hurricaneDeductible,
+      coverageA: quote.coverageA,
+      bindable: quote.bindable,
+      coverageGaps: quote.coverageGaps,
+      stub: quote.stub,
+    })),
+    { isAna },
+  );
   return (
     <div className="space-y-4">
       <DeskDetails
@@ -72,78 +89,78 @@ export function QuotesPanel({
 
       <DeskDetails
         title="Quote comparison"
-        summary={
-          quotes.length
-            ? `${quotes.length} quote${quotes.length === 1 ? "" : "s"} on this deal`
-            : "Empty until you log stub quotes"
-        }
+        summary={explained.summary}
         open={quotes.length > 0}
         padded={false}
       >
         {quotes.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No quotes on this deal. Filter markets first, then build stub quotes for green fits.
-            A quote never creates a policy.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">{explained.summary}</p>
         ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Carrier</th>
-                <th>Premium</th>
-                <th>AOP ded</th>
-                <th>Hurricane</th>
-                <th>Cov A</th>
-                <th>Bindable</th>
-                <th>Gaps</th>
-                <th>PDF</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotes.map(({ quote, carrier }) => {
-                const pdf = matchQuotePdf(quote, carrier, quoteDocs);
-                return (
-                <tr key={quote.id}>
-                  <td className="font-medium">
-                    {carrier.name}
-                    {quote.stub ? (
-                      <div className="text-[11px] text-muted-foreground">Stub · no portal</div>
-                    ) : null}
-                  </td>
-                  <td>{formatMoney(quote.premium)}</td>
-                  <td>{quote.aopDeductible ?? "—"}</td>
-                  <td>{quote.hurricaneDeductible ?? "—"}</td>
-                  <td>{formatMoney(quote.coverageA)}</td>
-                  <td>{quote.bindable ? "Yes" : "No"}</td>
-                  <td className="text-xs">
-                    {quote.coverageGaps.length ? quote.coverageGaps.join("; ") : "None noted"}
-                  </td>
-                  <td>
-                    {pdf ? (
-                      <div className="space-y-1">
-                        <a href={filePreviewHref(pdf.id)} className="text-xs text-primary hover:underline">
-                          Open PDF
-                        </a>
-                        <DocFileActions
-                          documentId={pdf.id}
-                          filename={pdf.filename}
-                          dealId={dealId}
-                          contactId={contactId}
-                          accountId={accountId}
-                          email={email}
-                          phone={phone}
-                          compact
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground">Pending finalize</span>
-                    )}
-                  </td>
+          <div>
+            <p className="border-b border-border px-4 py-3 text-sm text-navy/90">{explained.summary}</p>
+            <table className="ff-table">
+              <thead>
+                <tr>
+                  <th>Carrier</th>
+                  <th>Premium</th>
+                  <th>AOP ded</th>
+                  <th>Hurricane</th>
+                  <th>Cov A</th>
+                  <th>Bindable</th>
+                  <th>Why this quote</th>
+                  <th>PDF</th>
                 </tr>
-                );
-              })}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {quotes.map(({ quote, carrier }) => {
+                  const pdf = matchQuotePdf(quote, carrier, quoteDocs);
+                  const row = explained.rows.find((item) => item.id === quote.id);
+                  return (
+                  <tr key={quote.id}>
+                    <td className="font-medium">
+                      {carrier.name}
+                      {row?.headline ? (
+                        <div className="text-[11px] text-muted-foreground">{row.headline}</div>
+                      ) : null}
+                      {quote.stub ? (
+                        <div className="text-[11px] text-muted-foreground">Stub · no portal</div>
+                      ) : null}
+                    </td>
+                    <td>{formatMoney(quote.premium)}</td>
+                    <td>{quote.aopDeductible ?? "—"}</td>
+                    <td>{quote.hurricaneDeductible ?? "—"}</td>
+                    <td>{formatMoney(quote.coverageA)}</td>
+                    <td>{quote.bindable ? "Yes" : "No"}</td>
+                    <td className="max-w-sm text-xs text-navy/90">
+                      {row?.why ?? (quote.coverageGaps.length ? quote.coverageGaps.join("; ") : "None noted")}
+                    </td>
+                    <td>
+                      {pdf ? (
+                        <div className="space-y-1">
+                          <a href={filePreviewHref(pdf.id)} className="text-xs text-primary hover:underline">
+                            Open PDF
+                          </a>
+                          <DocFileActions
+                            documentId={pdf.id}
+                            filename={pdf.filename}
+                            dealId={dealId}
+                            contactId={contactId}
+                            accountId={accountId}
+                            email={email}
+                            phone={phone}
+                            compact
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">Pending finalize</span>
+                      )}
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </DeskDetails>
 

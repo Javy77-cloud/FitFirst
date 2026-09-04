@@ -8,6 +8,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). WAVE-3 leftover: none from this list. Next free migration is **0036**. See `COORDINATION.md`.
 
+**DIFF H:** Rule-based coverage-gap English on Contact / Business / Deal (auto-no-home, flood, umbrella, GL-no-WC — in-force only). Deal quote compare explains cheapest / deductibles / bindable in English. Closed Won is one-click **Contact + Policy** or **Business + Policy**. Documents stepper labels the master sheet → Fill path (zero rekey). Ana stays unbound at Cov A **$321,000**; `bindDeal` refuses that shop.
+
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
 **Batch 4 top chrome:** InsuredMine-style top-right utilities on the desk header (Refresh, alerts, What’s New, profile, recently accessed, quick add, Support stub). Same chrome for Admin and Agent. Sidebar stays light-blue `#c5ddf4` with near-black ink. Alerts is not a left-nav row — the header bell owns alerts.
@@ -215,7 +217,7 @@ npm test
 - Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.
 - Search is substring, so `Ana` also lists Camila.
 - Camila Auto `QBE-PA-66103` still has an empty vehicle schedule (Soto `FF-PA-4401` is the 2/2 seed).
-- Policy compare stays the thin reader (ComparePanel not reattached).
+- Policy renewal compare stays the thin reader (ComparePanel not reattached). Deal Quotes comparison now has English “why this quote” copy.
 
 ## Out of scope
 
