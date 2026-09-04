@@ -57,7 +57,11 @@ export default async function AccountsPage({
                 <Col table="accounts" col="status" as="th">Status</Col>
                 <Col table="accounts" col="ein" as="th">EIN</Col>
                 <Col table="accounts" col="phone" as="th">Phone</Col>
+                <Col table="accounts" col="email" as="th">Email</Col>
+                <Col table="accounts" col="mailingAddress" as="th">Mailing address</Col>
                 <Col table="accounts" col="city" as="th">City</Col>
+                <Col table="accounts" col="state" as="th">State</Col>
+                <Col table="accounts" col="zip" as="th">ZIP</Col>
                 <Col table="accounts" col="employees" as="th">Employees</Col>
                 <Col table="accounts" col="lifetime" as="th">Lifetime</Col>
                 <Col table="accounts" col="inForce" as="th">In-force</Col>
@@ -74,7 +78,11 @@ export default async function AccountsPage({
                   </Col>
                   <Col table="accounts" col="ein">{account.ein ?? "—"}</Col>
                   <Col table="accounts" col="phone">{account.phone ?? "—"}</Col>
+                  <Col table="accounts" col="email">{account.email ?? "—"}</Col>
+                  <Col table="accounts" col="mailingAddress">{account.mailingAddress ?? "—"}</Col>
                   <Col table="accounts" col="city">{account.city ?? "—"}</Col>
+                  <Col table="accounts" col="state">{account.state ?? "—"}</Col>
+                  <Col table="accounts" col="zip">{account.zip ?? "—"}</Col>
                   <Col table="accounts" col="employees">{account.employeeCount ?? "—"}</Col>
                   <Col table="accounts" col="lifetime">{account.policyCount}</Col>
                   <Col table="accounts" col="inForce">{account.activePolicyCount}</Col>

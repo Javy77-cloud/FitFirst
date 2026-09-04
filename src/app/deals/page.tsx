@@ -123,7 +123,12 @@ export default async function DealsPage({
                 <Col table="deals" col="title" as="th">Deal</Col>
                 <Col table="deals" col="stage" as="th">Stage</Col>
                 <Col table="deals" col="line" as="th">Line</Col>
+                <Col table="deals" col="subType" as="th">Life / Health type</Col>
                 <Col table="deals" col="state" as="th">State</Col>
+                <Col table="deals" col="city" as="th">City</Col>
+                <Col table="deals" col="zip" as="th">ZIP</Col>
+                <Col table="deals" col="address" as="th">Property address</Col>
+                <Col table="deals" col="shopLines" as="th">Shop lines</Col>
                 <Col table="deals" col="contact" as="th">Contact</Col>
                 <Col table="deals" col="phone" as="th">Phone</Col>
                 <Col table="deals" col="email" as="th">Email</Col>
@@ -145,7 +150,16 @@ export default async function DealsPage({
                     <StagePill stage={deal.pipelineStage} />
                   </Col>
                   <Col table="deals" col="line">{deal.lineOfBusiness}</Col>
+                  <Col table="deals" col="subType">{deal.policySubType ?? "—"}</Col>
                   <Col table="deals" col="state">{deal.state}</Col>
+                  <Col table="deals" col="city">{contact?.city ?? account?.city ?? "—"}</Col>
+                  <Col table="deals" col="zip">{contact?.zip ?? account?.zip ?? "—"}</Col>
+                  <Col table="deals" col="address">
+                    {deal.propertyOneliner ?? contact?.mailingAddress ?? account?.mailingAddress ?? "—"}
+                  </Col>
+                  <Col table="deals" col="shopLines">
+                    {(deal.shopLines ?? []).join(", ") || "—"}
+                  </Col>
                   <Col table="deals" col="contact">
                     {contact ? (
                       <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">

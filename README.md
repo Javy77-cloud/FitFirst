@@ -4,28 +4,28 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/pipeline-meetings-11f3` (pipeline collapse + meetings on top of `cursor/list-hydrate-fix-46dc`)
+**Mac desk-test branch:** `cursor/mac-ready-batch3-7pm` (batch-3 consolidate on `cursor/mac-ready-overnight-3bad`)
 
-Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. This branch stops the Next.js hydration overlay on list sheets (Tasks / Leads / Deals / Contacts / etc.). Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
+Contact record: no Ask a teammate (still Admin-only on other records). Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
+
+Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-git fetch origin cursor/pipeline-meetings-11f3
-git checkout cursor/pipeline-meetings-11f3
-git reset --hard FETCH_HEAD
+git fetch origin cursor/mac-ready-batch3-7pm
+git checkout -B cursor/mac-ready-batch3-7pm origin/cursor/mac-ready-batch3-7pm
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
 npm install
-# migrate + seed only if this checkout is a first boot; skip if the overnight DB is already up
 npm run db:migrate
 npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Hard-refresh Chrome on `/tasks`, `/leads`, `/deals`, and `/contacts`. The red Next.js hydration overlay should be gone. Sort / pin still work after the first paint.
+Hard-refresh Chrome. Open a Contact (no Ask panel; opt-outs + Email/Call/SMS). Open Leads and confirm deal stage. Column picker on Leads includes every New Lead field.
 
 If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.
 

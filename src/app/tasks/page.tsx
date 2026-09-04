@@ -38,6 +38,8 @@ export default async function TasksPage() {
                 <Col table="tasks" col="due" as="th">Due</Col>
                 <Col table="tasks" col="status" as="th">Status</Col>
                 <Col table="tasks" col="kind" as="th">Kind</Col>
+                <Col table="tasks" col="contact" as="th">Contact</Col>
+                <Col table="tasks" col="policy" as="th">Policy</Col>
                 <Col table="tasks" col="related" as="th">Related</Col>
               </tr>
             </thead>
@@ -50,6 +52,20 @@ export default async function TasksPage() {
                   <Col table="tasks" col="due">{formatDay(task.dueDate)}</Col>
                   <Col table="tasks" col="status">{task.status}</Col>
                   <Col table="tasks" col="kind">{task.kind}</Col>
+                  <Col table="tasks" col="contact">
+                    {task.contactId ? (
+                      <RecordLink href={`/contacts/${task.contactId}`}>Contact</RecordLink>
+                    ) : (
+                      "—"
+                    )}
+                  </Col>
+                  <Col table="tasks" col="policy">
+                    {task.policyId ? (
+                      <RecordLink href={`/policies/${task.policyId}`}>Policy</RecordLink>
+                    ) : (
+                      "—"
+                    )}
+                  </Col>
                   <Col table="tasks" col="related">
                     {task.contactId ? (
                       <RecordLink href={`/contacts/${task.contactId}`}>Contact</RecordLink>

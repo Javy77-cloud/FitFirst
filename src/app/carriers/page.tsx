@@ -38,13 +38,22 @@ export default async function CarriersPage() {
               <Col table="carriers" col="name" as="th">Carrier</Col>
               <Col table="carriers" col="naic" as="th">NAIC</Col>
               <Col table="carriers" col="amBest" as="th">AM Best</Col>
+              <Col table="carriers" col="territory" as="th">Territory</Col>
               <Col table="carriers" col="portalLogin" as="th">Portal login</Col>
               <Col table="carriers" col="csPhone" as="th">Customer service</Col>
               <Col table="carriers" col="uw" as="th">Underwriter</Col>
+              <Col table="carriers" col="uwEmail" as="th">UW email</Col>
+              <Col table="carriers" col="uwPhone" as="th">UW phone</Col>
+              <Col table="carriers" col="amName" as="th">Account manager</Col>
+              <Col table="carriers" col="claimsPhone" as="th">Claims phone</Col>
+              <Col table="carriers" col="billingPhone" as="th">Billing phone</Col>
               <Col table="carriers" col="comm" as="th">NB / renewal %</Col>
+              <Col table="carriers" col="submission" as="th">Preferred submission</Col>
+              <Col table="carriers" col="binding" as="th">Binding authority</Col>
               <Col table="carriers" col="agentPhone" as="th">Agent phone</Col>
               <Col table="carriers" col="website" as="th">Website / portal</Col>
               <Col table="carriers" col="info" as="th">Carrier info</Col>
+              <Col table="carriers" col="appetite" as="th">Appetite notes</Col>
               <Col table="carriers" col="lines" as="th">Lines</Col>
             </tr>
           </thead>
@@ -56,14 +65,22 @@ export default async function CarriersPage() {
                 </Col>
                 <Col table="carriers" col="naic">{carrier.naic ?? "—"}</Col>
                 <Col table="carriers" col="amBest">{carrier.amBestRating ?? "—"}</Col>
+                <Col table="carriers" col="territory">{carrier.territory ?? "—"}</Col>
                 <Col table="carriers" col="portalLogin" className="uppercase">
                   {carrier.portalStatus.replaceAll("_", " ")}
                 </Col>
                 <Col table="carriers" col="csPhone">{carrier.customerServicePhone ?? "—"}</Col>
                 <Col table="carriers" col="uw">{carrier.underwriterName ?? "—"}</Col>
+                <Col table="carriers" col="uwEmail">{carrier.underwriterEmail ?? "—"}</Col>
+                <Col table="carriers" col="uwPhone">{carrier.underwriterPhone ?? "—"}</Col>
+                <Col table="carriers" col="amName">{carrier.accountManagerName ?? "—"}</Col>
+                <Col table="carriers" col="claimsPhone">{carrier.claimsPhone ?? "—"}</Col>
+                <Col table="carriers" col="billingPhone">{carrier.billingPhone ?? "—"}</Col>
                 <Col table="carriers" col="comm">
                   {[carrier.newBusinessCommPct, carrier.renewalCommPct].filter(Boolean).join(" / ") || "—"}
                 </Col>
+                <Col table="carriers" col="submission">{carrier.preferredSubmission ?? "—"}</Col>
+                <Col table="carriers" col="binding">{carrier.bindingAuthority ?? "—"}</Col>
                 <Col table="carriers" col="agentPhone">{carrier.agentPhone ?? "—"}</Col>
                 <Col table="carriers" col="website">
                   {carrier.website || carrier.portalUrl ? (
@@ -80,6 +97,7 @@ export default async function CarriersPage() {
                   )}
                 </Col>
                 <Col table="carriers" col="info">{carrier.carrierInfo ?? carrier.dontWriteNotes ?? "—"}</Col>
+                <Col table="carriers" col="appetite">{carrier.appetiteNotes ?? "—"}</Col>
                 <Col table="carriers" col="lines">{(carrier.writtenLines ?? []).join(", ") || "—"}</Col>
               </tr>
             ))}

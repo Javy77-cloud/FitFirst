@@ -93,8 +93,13 @@ export default async function PoliciesPage({
                 <Col table="policies" col="status" as="th">Status</Col>
                 <Col table="policies" col="insured" as="th">Insured</Col>
                 <Col table="policies" col="line" as="th">Line</Col>
+                <Col table="policies" col="subType" as="th">Sub-type</Col>
                 <Col table="policies" col="carrier" as="th">Carrier</Col>
                 <Col table="policies" col="premium" as="th">Premium</Col>
+                <Col table="policies" col="coverageA" as="th">Cov A</Col>
+                <Col table="policies" col="billingFrequency" as="th">Premium frequency</Col>
+                <Col table="policies" col="premises" as="th">Premises</Col>
+                <Col table="policies" col="premisesCity" as="th">Premises city</Col>
                 <Col table="policies" col="effective" as="th">Effective</Col>
                 <Col table="policies" col="expires" as="th">X-Date</Col>
                 <Col table="policies" col="assigned" as="th">Assigned</Col>
@@ -132,10 +137,17 @@ export default async function PoliciesPage({
                     )}
                   </Col>
                   <Col table="policies" col="line">{policy.lineOfBusiness}</Col>
+                  <Col table="policies" col="subType">{policy.policySubType ?? "—"}</Col>
                   <Col table="policies" col="carrier">{carrier?.name ?? "—"}</Col>
                   <Col table="policies" col="premium" sortValue={policy.premium}>
                     {formatMoney(policy.premium)}
                   </Col>
+                  <Col table="policies" col="coverageA" sortValue={policy.coverageA}>
+                    {policy.coverageA != null ? formatMoney(policy.coverageA) : "—"}
+                  </Col>
+                  <Col table="policies" col="billingFrequency">{policy.billingFrequency ?? "—"}</Col>
+                  <Col table="policies" col="premises">{policy.premisesAddress ?? "—"}</Col>
+                  <Col table="policies" col="premisesCity">{policy.premisesCity ?? "—"}</Col>
                   <Col table="policies" col="effective">{formatDay(policy.effectiveDate)}</Col>
                   <Col table="policies" col="expires">{formatDay(policy.expirationDate)}</Col>
                   <Col table="policies" col="assigned">{policy.ownerId ? users.get(policy.ownerId) ?? "—" : "—"}</Col>

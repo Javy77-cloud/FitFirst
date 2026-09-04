@@ -322,11 +322,27 @@ export async function getAgencySettings() {
 export async function listLeads() {
   const session = await currentDeskSession();
   const scope = ownerWhere(session, leads.ownerId);
-  return db
+  const rows = await db
     .select()
     .from(leads)
     .where(and(eq(leads.tenantId, tenant()), scope))
     .orderBy(desc(leads.createdAt));
+  const relatedDeals = await db
+    .select()
+    .from(deals)
+    .where(eq(deals.tenantId, tenant()))
+    .orderBy(desc(deals.updatedAt));
+  return rows.map((lead) => {
+    const deal =
+      relatedDeals.find((row) => row.id === lead.convertedDealId) ??
+      relatedDeals.find((row) => row.leadId === lead.id) ??
+      null;
+    return {
+      ...lead,
+      dealStage: deal?.pipelineStage ?? null,
+      relatedDealId: deal?.id ?? lead.convertedDealId ?? null,
+    };
+  });
 }
 
 export type DealListFilter = {
@@ -547,12 +563,21 @@ export async function getLead(id: string) {
     .from(leads)
     .where(and(eq(leads.tenantId, tenant()), eq(leads.id, id)));
   if (!lead) return null;
-  const [deal] = lead.convertedDealId
+  const [converted] = lead.convertedDealId
     ? await db.select().from(deals).where(eq(deals.id, lead.convertedDealId))
     : [];
+  const [byLead] = converted
+    ? []
+    : await db
+        .select()
+        .from(deals)
+        .where(and(eq(deals.tenantId, tenant()), eq(deals.leadId, id)))
+        .orderBy(desc(deals.updatedAt))
+        .limit(1);
+  const deal = converted ?? byLead ?? null;
   return {
     lead,
-    deal: deal ?? null,
+    deal,
     timeline: await listActivityTimeline({ leadId: id }),
     comms: await listCommsForRecord({ leadId: id }),
   };

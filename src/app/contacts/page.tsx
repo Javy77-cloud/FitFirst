@@ -84,10 +84,21 @@ export default async function ContactsPage({
             <thead>
               <tr>
                 <Col table="contacts" col="name" as="th">Name</Col>
+                <Col table="contacts" col="firstName" as="th">First name</Col>
+                <Col table="contacts" col="lastName" as="th">Last name</Col>
                 <Col table="contacts" col="status" as="th">Status</Col>
                 <Col table="contacts" col="phone" as="th">Phone</Col>
                 <Col table="contacts" col="email" as="th">Email</Col>
+                <Col table="contacts" col="mailingAddress" as="th">Mailing address</Col>
                 <Col table="contacts" col="city" as="th">City</Col>
+                <Col table="contacts" col="state" as="th">State</Col>
+                <Col table="contacts" col="zip" as="th">ZIP</Col>
+                <Col table="contacts" col="dateOfBirth" as="th">Date of birth</Col>
+                <Col table="contacts" col="language" as="th">Language</Col>
+                <Col table="contacts" col="maritalStatus" as="th">Marital status</Col>
+                <Col table="contacts" col="notes" as="th">Notes</Col>
+                <Col table="contacts" col="emailOptOut" as="th">Email opt-out</Col>
+                <Col table="contacts" col="smsOptOut" as="th">SMS opt-out</Col>
                 <Col table="contacts" col="assigned" as="th">Assigned</Col>
                 <Col table="contacts" col="lifetime" as="th">Lifetime</Col>
                 <Col table="contacts" col="inForce" as="th">In-force</Col>
@@ -96,7 +107,7 @@ export default async function ContactsPage({
             <SheetTbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-muted-foreground">
+                  <td colSpan={19} className="text-muted-foreground">
                     Empty book. Bind a deal or add an existing client.
                   </td>
                 </tr>
@@ -108,12 +119,23 @@ export default async function ContactsPage({
                         {c.lastName}, {c.firstName}
                       </RecordLink>
                     </Col>
+                    <Col table="contacts" col="firstName">{c.firstName}</Col>
+                    <Col table="contacts" col="lastName">{c.lastName}</Col>
                     <Col table="contacts" col="status">
                       <ClientStatusPill status={c.clientStatus} />
                     </Col>
                     <Col table="contacts" col="phone">{c.phone ?? "—"}</Col>
                     <Col table="contacts" col="email">{c.email ?? "—"}</Col>
+                    <Col table="contacts" col="mailingAddress">{c.mailingAddress ?? "—"}</Col>
                     <Col table="contacts" col="city">{c.city ?? "—"}</Col>
+                    <Col table="contacts" col="state">{c.state ?? "—"}</Col>
+                    <Col table="contacts" col="zip">{c.zip ?? "—"}</Col>
+                    <Col table="contacts" col="dateOfBirth">{c.dateOfBirth || "—"}</Col>
+                    <Col table="contacts" col="language">{c.language ?? "—"}</Col>
+                    <Col table="contacts" col="maritalStatus">{c.maritalStatus ?? "—"}</Col>
+                    <Col table="contacts" col="notes">{c.notes ?? "—"}</Col>
+                    <Col table="contacts" col="emailOptOut">{c.emailOptOut ? "Opted out" : "—"}</Col>
+                    <Col table="contacts" col="smsOptOut">{c.smsOptOut ? "Opted out" : "—"}</Col>
                     <Col table="contacts" col="assigned">{c.ownerId ? users.get(c.ownerId) ?? "—" : "—"}</Col>
                     <Col table="contacts" col="lifetime">{c.policyCount}</Col>
                     <Col table="contacts" col="inForce">{c.activePolicyCount}</Col>

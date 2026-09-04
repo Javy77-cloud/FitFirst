@@ -32,10 +32,23 @@ export async function updateContactRecord(formData: FormData) {
       state: str(formData, "state") || existing.state,
       zip: str(formData, "zip") || existing.zip,
       dateOfBirth: str(formData, "dateOfBirth") || existing.dateOfBirth,
+      ...(str(formData, "saveOptOuts") === "1"
+        ? {
+            emailOptOut: formData.get("emailOptOut") === "on",
+            smsOptOut: formData.get("smsOptOut") === "on",
+            emailOptedOutAt:
+              formData.get("emailOptOut") === "on"
+                ? (existing.emailOptedOutAt ?? new Date())
+                : null,
+            smsOptedOutAt:
+              formData.get("smsOptOut") === "on" ? (existing.smsOptedOutAt ?? new Date()) : null,
+          }
+        : {}),
       updatedAt: new Date(),
     })
     .where(eq(contacts.id, id));
   revalidatePath(`/contacts/${id}`);
+  revalidatePath("/contacts");
 }
 
 export async function updateAccountRecord(formData: FormData) {
