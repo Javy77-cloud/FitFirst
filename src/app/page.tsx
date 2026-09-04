@@ -16,14 +16,15 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ attention?: string }>;
+  searchParams: Promise<{ attention?: string; book?: string }>;
 }) {
   const params = await searchParams;
-  const [{ snapshot, scope, tables }, { recentDeals, unread }, lineSettings] = await Promise.all([
-    ownerHomeDashboard(),
-    dashboardStats(),
-    loadDeskLineSettings(),
-  ]);
+  const [{ snapshot, scope, tables, bookOptions }, { recentDeals, unread }, lineSettings] =
+    await Promise.all([
+      ownerHomeDashboard(params.book),
+      dashboardStats(),
+      loadDeskLineSettings(),
+    ]);
   const attentionWindow = parseAttentionWindow(params.attention);
 
   return (
@@ -41,6 +42,9 @@ export default async function HomePage({
         tables={tables}
         lineSettings={lineSettings}
         attentionWindow={attentionWindow}
+        bookOptions={bookOptions}
+        bookValue={params.book ?? "company"}
+        attentionValue={params.attention}
       />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">

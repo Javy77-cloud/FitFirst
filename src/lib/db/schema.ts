@@ -133,6 +133,100 @@ export const agencySettings = pgTable(
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
 );
 
+/** Physical desks. An agent can sit in more than one office (different states ok). */
+export const offices = pgTable(
+  "offices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    states: jsonb("states").$type<string[]>().notNull().default([]),
+    address: text("address"),
+    timezone: text("timezone"),
+    ...timestamps,
+  },
+  (t) => [
+    index("offices_tenant_idx").on(t.tenantId),
+    uniqueIndex("offices_tenant_name_uidx").on(t.tenantId, t.name),
+  ],
+);
+
+/** Geo books. Optional office links. Agents resolve through membership + linked offices. */
+export const territories = pgTable(
+  "territories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    states: jsonb("states").$type<string[]>().notNull().default([]),
+    counties: jsonb("counties").$type<string[]>().notNull().default([]),
+    geoLabel: text("geo_label"),
+    ...timestamps,
+  },
+  (t) => [
+    index("territories_tenant_idx").on(t.tenantId),
+    uniqueIndex("territories_tenant_name_uidx").on(t.tenantId, t.name),
+  ],
+);
+
+export const territoryOffices = pgTable(
+  "territory_offices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    territoryId: uuid("territory_id")
+      .notNull()
+      .references(() => territories.id, { onDelete: "cascade" }),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("territory_offices_uidx").on(t.tenantId, t.territoryId, t.officeId),
+    index("territory_offices_office_idx").on(t.tenantId, t.officeId),
+  ],
+);
+
+export const userOffices = pgTable(
+  "user_offices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id, { onDelete: "cascade" }),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("user_offices_uidx").on(t.tenantId, t.userId, t.officeId),
+    index("user_offices_office_idx").on(t.tenantId, t.officeId),
+  ],
+);
+
+export const userTerritories = pgTable(
+  "user_territories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    territoryId: uuid("territory_id")
+      .notNull()
+      .references(() => territories.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("user_territories_uidx").on(t.tenantId, t.userId, t.territoryId),
+    index("user_territories_territory_idx").on(t.tenantId, t.territoryId),
+  ],
+);
+
 /** Zoho-style global picklists: policy types, sub-types, terms, statuses, file categories. */
 export const globalLists = pgTable(
   "global_lists",
@@ -1670,3 +1764,8 @@ export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;
+export type Office = typeof offices.$inferSelect;
+export type Territory = typeof territories.$inferSelect;
+export type TerritoryOffice = typeof territoryOffices.$inferSelect;
+export type UserOffice = typeof userOffices.$inferSelect;
+export type UserTerritory = typeof userTerritories.$inferSelect;

@@ -22,6 +22,8 @@ import { CrossSellPanel } from "./cross-sell";
 import { AttentionFilters } from "./attention-filters";
 import { filterLineMix, type DeskLineSettings } from "@/lib/desk/line-settings";
 import { filterAttentionItems, type AttentionWindow } from "@/lib/home/attention-window";
+import type { BookScopeOption } from "@/lib/org/book-scope";
+import { BookScopeFilter } from "./book-scope-filter";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -42,12 +44,18 @@ export function OwnerDesk({
   tables,
   lineSettings,
   attentionWindow = null,
+  bookOptions = [],
+  bookValue = "company",
+  attentionValue,
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
   tables: OwnerHomeTables;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   attentionWindow?: AttentionWindow | null;
+  bookOptions?: BookScopeOption[];
+  bookValue?: string;
+  attentionValue?: string;
 }) {
   const asOf = snapshot.asOf.toLocaleString("en-US", {
     dateStyle: "medium",
@@ -76,10 +84,19 @@ export function OwnerDesk({
               Figures are from the seed, as of {asOf}.
             </p>
           </div>
-          <div className="shrink-0 rounded-md border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
-            <div className="font-medium text-navy">{scope.label}</div>
-            <div>
-              {scope.role === "agent" ? "Agent book" : "Admin / owner"} · desk clock {asOf}
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            {scope.role !== "agent" && bookOptions.length > 0 ? (
+              <BookScopeFilter
+                options={bookOptions}
+                current={bookValue}
+                attention={attentionValue}
+              />
+            ) : null}
+            <div className="rounded-md border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
+              <div className="font-medium text-navy">{scope.label}</div>
+              <div>
+                {scope.role === "agent" ? "Agent book" : "Admin / owner"} · desk clock {asOf}
+              </div>
             </div>
           </div>
         </div>

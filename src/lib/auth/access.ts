@@ -2,6 +2,8 @@
 
 export const ADMIN_ONLY_PATHS = [
   "/settings/agency",
+  "/settings/offices",
+  "/settings/territories",
   "/settings/lines",
   "/settings/phone",
   "/settings/sms",

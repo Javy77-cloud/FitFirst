@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
@@ -21,6 +21,8 @@ import {
 } from "@/lib/home/aggregate";
 import { detectOwnerHomeTables } from "@/lib/home/optional-tables";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
+import { filterByBookScope, type BookScopeOption } from "@/lib/org/book-scope";
+import { resolveBookScope } from "@/lib/org/queries";
 import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
 import {
   fallbackPipelineSlug,
@@ -1302,7 +1304,26 @@ function contactName(contact: { firstName: string; lastName: string } | null): s
 async function loadCommissionTotals(scope: OwnerHomeScope): Promise<CommissionTotals> {
   const tables = await detectOwnerHomeTables();
   if (!tables.commissions) return null;
+  if (scope.bookAgentIds && scope.bookAgentIds.length === 0) {
+    return { pending: 0, paid: 0 };
+  }
   try {
+    if (scope.bookAgentIds) {
+      const rows = await db
+        .select({ amount: commissions.amount, status: commissions.status })
+        .from(commissions)
+        .where(
+          and(eq(commissions.tenantId, scope.tenantId), inArray(commissions.agentId, scope.bookAgentIds)),
+        );
+      return {
+        pending: rows
+          .filter((row) => row.status === "pending")
+          .reduce((sum, row) => sum + Number(row.amount ?? 0), 0),
+        paid: rows
+          .filter((row) => row.status === "paid")
+          .reduce((sum, row) => sum + Number(row.amount ?? 0), 0),
+      };
+    }
     const rows = await rawSql<{ pending: string; paid: string }[]>`
       select
         coalesce(sum(amount) filter (where status = 'pending'), 0)::text as pending,
@@ -1337,9 +1358,24 @@ async function loadOpportunityGapCount(scope: OwnerHomeScope): Promise<number | 
   }
 }
 
-export async function ownerHomeDashboard() {
-  const scope = await currentOwnerHomeScope();
+export async function ownerHomeDashboard(bookRaw?: string | null): Promise<{
+  snapshot: ReturnType<typeof buildOwnerHome>;
+  scope: OwnerHomeScope;
+  tables: Awaited<ReturnType<typeof detectOwnerHomeTables>>;
+  bookOptions: BookScopeOption[];
+}> {
+  const baseScope = await currentOwnerHomeScope();
   const tables = await detectOwnerHomeTables();
+  const book =
+    baseScope.role === "agent"
+      ? { scope: { kind: "company" as const }, agentIds: null, label: baseScope.label, options: [] }
+      : await resolveBookScope(bookRaw);
+  const scope: OwnerHomeScope = {
+    ...baseScope,
+    label: baseScope.role === "agent" ? baseScope.label : book.label,
+    bookKind: book.scope.kind,
+    bookAgentIds: baseScope.role === "agent" ? null : book.agentIds,
+  };
 
   const policyRows = await db
     .select({
@@ -1396,15 +1432,13 @@ export async function ownerHomeDashboard() {
     contactId: task.contactId,
   }));
 
-  const scopedPolicies = filterByAssignee(
-    homePolicies,
-    scope.agentUserId,
-    Boolean(tables.assigneeColumn),
+  const scopedPolicies = filterByBookScope(
+    filterByAssignee(homePolicies, scope.agentUserId, Boolean(tables.assigneeColumn)),
+    scope.bookAgentIds ?? null,
   );
-  const scopedDeals = filterByAssignee(
-    homeDeals,
-    scope.agentUserId,
-    Boolean(tables.dealAssigneeColumn),
+  const scopedDeals = filterByBookScope(
+    filterByAssignee(homeDeals, scope.agentUserId, Boolean(tables.dealAssigneeColumn)),
+    scope.bookAgentIds ?? null,
   );
 
   const [commissions, opportunityCount] = await Promise.all([
@@ -1421,7 +1455,7 @@ export async function ownerHomeDashboard() {
   });
   if (opportunityCount != null) snapshot.gapCount = opportunityCount;
 
-  return { snapshot, scope, tables };
+  return { snapshot, scope, tables, bookOptions: book.options };
 }
 
 export async function listBoundPendingDeals() {
