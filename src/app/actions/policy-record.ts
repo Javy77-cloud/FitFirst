@@ -17,6 +17,8 @@ import {
 import { loadCommissionRates } from "@/lib/desk/load-rates";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { toNumber } from "@/lib/commissions/math";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
+import { currentDeskSession } from "@/lib/auth/session";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -90,6 +92,24 @@ export async function updatePolicyRecord(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(policies.id, id));
+
+  const session = await currentDeskSession();
+  await writeEoAuditSafe({
+    action: "policy_change",
+    summary: `Updated ${str(formData, "policyNumber") || existing.policyNumber} on the desk`,
+    actorId: session.userId,
+    actorName: session.name,
+    entityType: "policy",
+    entityId: id,
+    contactId: existing.contactId,
+    accountId: existing.accountId,
+    policyId: id,
+    dealId: existing.dealId,
+    meta: {
+      status: { from: existing.status, to: str(formData, "status") || existing.status },
+      policyNumber: str(formData, "policyNumber") || existing.policyNumber,
+    },
+  });
 
   await syncPolicyDateAutomations(id);
   await upsertPolicyCommission(id, family, toNumber(premium || existing.premium), formData);

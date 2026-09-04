@@ -253,6 +253,7 @@ export const FROZEN_AGENT_ALERT_ID = "88888888-8888-4888-8888-888888888808";
 export const PENDING_MFA_USER_ID = "44444444-4444-4444-8444-4444444444f2";
 export const PENDING_MFA_INVITE = "invite-nora-pending-mfa-desk";
 export const ADMIN_NAME = "Javy Rivera";
+export const AGENT_NAME = "Maya Chen";
 /** Extra producers for the home leaderboard — not clients. Off 401–403 owner block. */
 export const HOME_AGENT_IDS = {
   luis: "b0b00000-0000-4000-8000-0000000000d1",
@@ -460,4 +461,22 @@ export const GUIDED_AUTOMATION_IDS = {
   quoteSentNotify: "a0701111-a070-4111-8111-a07011111103",
 } as const;
 export const MAYA_SIGNATURE_DRAFT_ID = "a0701111-a070-4111-8111-a07011111111";
+
+/** E&O audit seed rows. Off Ana / Elena owner blocks. */
+export const EO_AUDIT_IDS = {
+  elenaEmailOut: "e0360000-0000-4036-8036-000000000001",
+  elenaEmailIn: "e0360000-0000-4036-8036-000000000002",
+  harborSmsOut: "e0360000-0000-4036-8036-000000000003",
+  elenaCall: "e0360000-0000-4036-8036-000000000004",
+  elenaMeeting: "e0360000-0000-4036-8036-000000000005",
+  elenaDocView: "e0360000-0000-4036-8036-000000000006",
+  elenaPiiReveal: "e0360000-0000-4036-8036-000000000007",
+  elenaPolicyChange: "e0360000-0000-4036-8036-000000000008",
+} as const;
+
+export const EO_ALERT_IDS = {
+  renewalSilent: "e0360000-0000-4036-8036-000000000011",
+  boundSignedApp: "e0360000-0000-4036-8036-000000000012",
+  quoteFollowup: "e0360000-0000-4036-8036-000000000013",
+} as const;
 

@@ -35,6 +35,7 @@ const MODULE_PREFIXES: readonly [string, string][] = [
   ["/campaigns", "Campaigns"],
   ["/fill-demo", "Fill demo"],
   ["/logs", "Logs"],
+  ["/compliance", "Compliance"],
 ];
 
 export function moduleTitleFromPath(pathname: string): string {

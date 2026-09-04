@@ -23,6 +23,7 @@ describe("moduleTitleFromPath", () => {
     expect(moduleTitleFromPath("/scorecards/abc")).toBe("Scorecards");
     expect(moduleTitleFromPath("/glance?tab=claims")).toBe("Glance");
     expect(moduleTitleFromPath("/meetings/new")).toBe("Calendar");
+    expect(moduleTitleFromPath("/compliance")).toBe("Compliance");
   });
 
   it("keeps a record name as subtitle when it differs from the module", () => {

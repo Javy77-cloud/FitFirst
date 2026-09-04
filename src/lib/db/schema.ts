@@ -2079,6 +2079,41 @@ export const piiRevealLogs = pgTable(
   (t) => [index("pii_reveal_logs_entity_idx").on(t.tenantId, t.entityType, t.entityId)],
 );
 
+/**
+ * Immutable E&O audit trail. Append-only in app + Postgres trigger.
+ * Never store decrypted PII here — record ids and a short summary only.
+ */
+export const eoAuditLogs = pgTable(
+  "eo_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name").notNull().default("Desk"),
+    action: text("action").notNull(),
+    summary: text("summary").notNull(),
+    entityType: text("entity_type"),
+    entityId: uuid("entity_id"),
+    contactId: uuid("contact_id"),
+    accountId: uuid("account_id"),
+    policyId: uuid("policy_id"),
+    dealId: uuid("deal_id"),
+    leadId: uuid("lead_id"),
+    documentId: uuid("document_id"),
+    activityId: uuid("activity_id"),
+    meta: jsonb("meta").$type<Record<string, unknown> | null>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("eo_audit_logs_when_idx").on(t.tenantId, t.occurredAt),
+    index("eo_audit_logs_action_idx").on(t.tenantId, t.action),
+    index("eo_audit_logs_contact_idx").on(t.tenantId, t.contactId),
+    index("eo_audit_logs_policy_idx").on(t.tenantId, t.policyId),
+    index("eo_audit_logs_deal_idx").on(t.tenantId, t.dealId),
+  ],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -2172,6 +2207,7 @@ export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type LeadOfferRow = typeof leadOffers.$inferSelect;
 export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
 export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;
+export type EoAuditLog = typeof eoAuditLogs.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type FillFeedbackLog = typeof fillFeedbackLogs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;

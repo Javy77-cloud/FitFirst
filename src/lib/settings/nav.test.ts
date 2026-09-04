@@ -16,5 +16,6 @@ describe("settings nav", () => {
     expect(settingsGroupFor("profile")).toBe("account");
     expect(settingsGroupFor("security")).toBe("account");
     expect(settingsGroupFor("recovery")).toBe("account");
+    expect(settingsGroupFor("compliance")).toBe("compliance");
   });
 });

@@ -13,5 +13,9 @@ export async function GET(
   }
   const { id } = await params;
   const download = new URL(request.url).searchParams.get("download") === "1";
-  return serveDeskDocument(id, { download });
+  return serveDeskDocument(id, {
+    download,
+    actorId: session.userId,
+    actorName: session.name,
+  });
 }

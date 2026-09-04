@@ -85,6 +85,23 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsSection
+            id="compliance"
+            title="Compliance / E&O"
+            badge="Admin"
+            summary="Append-only trail and gap flags. In-app only."
+            defaultOpen
+          >
+            <p className="text-sm text-muted-foreground">
+              Recent email, SMS, call, meeting, document view, PII reveal, and policy-change rows.
+              Flags call out silent renewals, Bound files missing a signed app, and Quote Sent with
+              no follow-up task. Nothing emails Javy.
+            </p>
+            <Link href="/compliance" className="mt-3 inline-block text-sm text-primary hover:underline">
+              Open Compliance
+            </Link>
+          </SettingsSection>
+
+          <SettingsSection
             id="people"
             title="People / Agents"
             badge="Admin"

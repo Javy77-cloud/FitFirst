@@ -595,7 +595,7 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## DIFF A — Producer scorecards + lifecycle glance (`cursor/producer-scorecards-glance-4f97`)
 
-Side branch off `cursor/mac-ready-batch4-7pm`. Additive only. No new migration (computed from existing Leads / Deals / Policies / Claims / tasks). Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged (`#c5ddf4`).
+Merged onto `cursor/mac-ready-batch4-7pm`. Additive only. No new migration (computed from existing Leads / Deals / Policies / Claims / tasks). Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged (`#c5ddf4`).
 
 - **Scorecards** (`/scorecards`): Admin ranks every producer on conversion, retention, in-force premium, and binds. Sort tabs reuse those four metrics. Agents see **own** card + rank number — not other producers. Drill-in `/scorecards/[id]` is Admin-any / Agent-self.
 - Conversion = binds / (binds + open shops + lost). Quote Sent is a shop. Bound / Closed Won is a bind. A quoted policy is not a bind and not premium.
@@ -603,8 +603,15 @@ Side branch off `cursor/mac-ready-batch4-7pm`. Additive only. No new migration (
 - People / Agents **Open producer scorecard** points at the same math. Legacy `/settings/agents/[id]/performance` stub now renders the scorecard strip.
 - **Glance** (`/glance?tab=`): unified Sales | Service | Claims | Renewals. URL tabs filter existing records (open deals, review tasks / endorsements / policy work, claims log, in-force renewals in 60 days). Agent-scoped. No second pipeline.
 
-Next free additive migration is still **0036**. Do not bind Ana.
+## DIFFERENTIATOR pack B — E&O audit + Compliance (`cursor/eo-audit-compliance-314d`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Additive `0036_eo_audit_logs`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Nothing emails Javy.
+
+- Table `eo_audit_logs`: append-only (app insert + Postgres trigger). Who / when / what / record ids for email, SMS, call, meeting, doc view, reveal PII, policy change. No decrypted PII.
+- Writers: `writeDeskComms`, `/api/files/[id]`, `revealPiiField`, `updatePolicyRecord`, `filePolicyChange`.
+- Admin page `/compliance` (Settings + Logs tab). Live E&O flags: no client activity 90 days before renewal, Bound/Pending missing signed app, Quote Sent with no desk follow-up task.
+- Seed writes a short Elena/Harbor trail and in-app `eo_gap` alerts to Javy only. Ana stays Quote Sent / unbound.
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

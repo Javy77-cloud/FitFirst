@@ -11,6 +11,7 @@ import {
   shouldWrapAsPdf,
 } from "./urls";
 import { wrapTextAsPdf } from "./wrap-text-pdf";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -77,10 +78,28 @@ function docWithBytes(doc: Document, bytes: Buffer) {
 
 export async function serveDeskDocument(
   id: string,
-  opts: { download?: boolean } = {},
+  opts: {
+    download?: boolean;
+    actorId?: string | null;
+    actorName?: string | null;
+  } = {},
 ): Promise<Response> {
   const doc = await getDeskDocument(id);
   if (!doc) return new Response("Not found", { status: 404 });
+  await writeEoAuditSafe({
+    action: "doc_view",
+    summary: `${opts.download ? "Downloaded" : "Viewed"} ${doc.filename}`,
+    actorId: opts.actorId,
+    actorName: opts.actorName,
+    entityType: "document",
+    entityId: doc.id,
+    contactId: doc.contactId,
+    accountId: doc.accountId,
+    policyId: doc.policyId,
+    dealId: doc.dealId,
+    documentId: doc.id,
+    meta: { filename: doc.filename, download: Boolean(opts.download), docType: doc.docType, slot: doc.slot },
+  });
   const file = await loadDocumentBytes(doc);
   return new Response(file.bytes, {
     headers: {
