@@ -70,7 +70,14 @@ Consume their types. Leave extension points. Do **not** restyle `src/lib/quote-s
 | QA + Settings Get Started (`cursor/qa-settings-get-started-12e1`) | They own `desk_settings` / `onboarding_items`. This slice’s `/get-started` is the **lifecycle click path**. On merge, keep both checklists or nest theirs under Settings. |
 | Account 360 | Reuse `documents` + `review_tasks`. `documents.contact_id` is additive. Do not fork a files table. |
 | CRM UI bind/history | Bind remains the **only** path that inserts a policy from a deal. |
-| Agency operating tools (`cursor/agency-operating-tools-e272`) | Owns `/calendar`, `/tasks`, Google Calendar stub, **softphone / dialer**. Consume `activities` `{ kind: task\|meeting\|call, contact_id, deal_id, policy_id }`. TEST-DESK adds `account_id` + `activity_logs` (required). Do not restyle their calendar or build a phone. On merge, keep one `activities` table and add `account_id` if missing. |
+| Agency operating tools (`cursor/agency-operating-tools-e272`) | Owns `/calendar`, `/tasks`, Google Calendar stub. Consume `activities` `{ kind: task\|meeting\|call, contact_id, deal_id, policy_id }`. TEST-DESK adds `account_id` + `activity_logs` (required). Calendar is now a real month/week/day board (same `activities` table). `/phone` is a call log, not a softphone. Telephony connect is an Admin stub. |
+
+## Calendar + phone + carrier + settings (`cursor/calendar-phone-carriers-0cc7`)
+
+- `/calendar` — month / week / day, hourly slots 7a–7p, type filters, edit dialog, drag-drop reschedule. Writes `activities` + `activity_logs`.
+- `/phone` — call log with related-record FKs. `/settings/phone` Admin stub for Twilio / Vonage / BYO. No purchase, no keys stored.
+- Carrier record expands Zoho-like fields (NAIC, AM Best, UW/AM, claims/billing, NB/renewal %, appetite / don't-write). **Ask a teammate** stays Admin-only on Carrier.
+- Settings hub is two columns: Admin vs Agent, collapsible sections.
 
 Ana Home Coverage A **$321,000** (`source: javy`) is confirmed. Never flag it CHECK. Never overwrite it. Do not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Do not change `src/lib/appetite/match.ts`.
 

@@ -15,6 +15,17 @@ describe("parseRecordAsk", () => {
     if (!res.ok) expect(res.reason).toMatch(/dropdown/i);
   });
 
+  it("accepts a carrier ask", () => {
+    const res = parseRecordAsk({
+      entityType: "carrier",
+      entityId: ELENA_POLICY_ID,
+      assigneeId: AGENT_USER_ID,
+      body: "Confirm AIC UW phone before we shop.",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value.entityType).toBe("carrier");
+  });
+
   it("accepts a tagged teammate + ask text", () => {
     const res = parseRecordAsk({
       entityType: "policy",
@@ -30,5 +41,6 @@ describe("parseRecordAsk", () => {
 describe("recordHref", () => {
   it("routes policy asks to the policy page", () => {
     expect(recordHref("policy", ELENA_POLICY_ID)).toBe(`/policies/${ELENA_POLICY_ID}`);
+    expect(recordHref("carrier", ELENA_POLICY_ID)).toBe(`/carriers/${ELENA_POLICY_ID}`);
   });
 });

@@ -8,6 +8,7 @@ import {
   syncGoogleCalendarOut,
 } from "./google-calendar";
 import { connectSmsProvider, sendSms } from "./sms";
+import { connectTelephonyProvider, placeDeskCall } from "./telephony";
 
 describe("agency connector stubs", () => {
   it("Google Calendar OAuth and sync return not_implemented", () => {
@@ -43,5 +44,7 @@ describe("agency connector stubs", () => {
     expect(sendEnvelope("zoho_sign", { documentId: "doc-1" }).status).toBe(
       "not_implemented",
     );
+    expect(connectTelephonyProvider("twilio").status).toBe("not_implemented");
+    expect(placeDeskCall().status).toBe("not_implemented");
   });
 });

@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   activitiesOnDay,
   activityOnDay,
+  filterCalendarActivities,
   formatWhen,
   isActivityKind,
   kindClass,
   monthCells,
   parseDateParam,
-  parseTags,
+  parseKindsParam,
+  rangeForView,
+  rescheduleWindow,
   startOfWeek,
   toDateParam,
   weekDays,
@@ -74,6 +77,27 @@ describe("calendar helpers", () => {
     const email = { ...task, id: "e1", kind: "email", title: "Email Ana" };
     expect(formatWhen(sms)).toMatch(/^Due /);
     expect(formatWhen(email)).toMatch(/^Due /);
+  });
+
+  it("filters by kind and assignee", () => {
+    const rows = filterCalendarActivities([task, meeting], { kinds: ["meeting"] });
+    expect(rows.map((r) => r.id)).toEqual(["m1"]);
+    expect(parseKindsParam("task,call,quote")).toEqual(["task", "call"]);
+  });
+
+  it("preserves duration when dropped on a new slot", () => {
+    const next = rescheduleWindow(meeting, new Date(2026, 8, 4, 9, 0));
+    expect(next.startAt.getHours()).toBe(9);
+    expect(next.endAt.getHours()).toBe(10);
+    expect(toDateParam(next.startAt)).toBe("2026-09-04");
+  });
+
+  it("builds month and week ranges from the Sunday grid", () => {
+    const week = rangeForView("week", new Date(2026, 8, 3));
+    expect(week.from.getDay()).toBe(0);
+    expect(week.to.getDay()).toBe(6);
+    const month = rangeForView("month", new Date(2026, 8, 3));
+    expect(month.from.getDay()).toBe(0);
   });
 
   it("parses date params and week days", () => {

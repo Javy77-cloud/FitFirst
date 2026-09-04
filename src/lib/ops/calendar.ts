@@ -10,10 +10,113 @@ export type CalendarActivity = {
   endAt: Date | string | null;
   assignee: string | null;
   contactId: string | null;
+  accountId?: string | null;
   dealId: string | null;
   policyId: string | null;
+  leadId?: string | null;
   notes: string | null;
+  durationSeconds?: number | null;
+  outcome?: string | null;
+  phoneNumber?: string | null;
+  direction?: string | null;
 };
+
+export const CALENDAR_VIEWS = ["month", "week", "day"] as const;
+export type CalendarView = (typeof CALENDAR_VIEWS)[number];
+
+export function isCalendarView(value: string | null | undefined): value is CalendarView {
+  return value === "month" || value === "week" || value === "day";
+}
+
+export function parseKindsParam(raw: string | string[] | undefined | null): string[] {
+  const value = Array.isArray(raw) ? raw.join(",") : raw ?? "";
+  const kinds = value
+    .split(",")
+    .map((k) => k.trim().toLowerCase())
+    .filter((k) => isActivityKind(k));
+  return kinds;
+}
+
+export function filterCalendarActivities(
+  activities: CalendarActivity[],
+  filters: { kinds?: string[]; assignee?: string | null },
+): CalendarActivity[] {
+  return activities.filter((row) => {
+    if (filters.kinds && filters.kinds.length > 0 && !filters.kinds.includes(row.kind)) {
+      return false;
+    }
+    if (filters.assignee && row.assignee !== filters.assignee) return false;
+    return true;
+  });
+}
+
+export function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+export function endOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+export function addMonths(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth() + n, d.getDate());
+}
+
+export function rangeForView(view: CalendarView, anchor: Date): { from: Date; to: Date } {
+  if (view === "day") return { from: startOfDay(anchor), to: endOfDay(anchor) };
+  if (view === "week") {
+    const start = startOfWeek(anchor);
+    return { from: start, to: endOfDay(addDays(start, 6)) };
+  }
+  const cells = monthCells(anchor);
+  return { from: startOfDay(cells[0].date), to: endOfDay(cells[cells.length - 1].date) };
+}
+
+/** Preserve duration when an event is dropped on a new day or hour. */
+export function rescheduleWindow(
+  activity: CalendarActivity,
+  nextStart: Date,
+): { startAt: Date; endAt: Date; dueAt: Date } {
+  const prevStart = activityAnchor(activity) ?? nextStart;
+  const prevEnd = toDate(activity.endAt);
+  const durationMs = prevEnd
+    ? Math.max(15 * 60 * 1000, prevEnd.getTime() - prevStart.getTime())
+    : activity.kind === "meeting"
+      ? 30 * 60 * 1000
+      : 15 * 60 * 1000;
+  return {
+    startAt: nextStart,
+    endAt: new Date(nextStart.getTime() + durationMs),
+    dueAt: nextStart,
+  };
+}
+
+export function slotStart(day: Date, hour: number, minute = 0): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0);
+}
+
+export function minutesFromHour(activity: CalendarActivity, hour: number): number {
+  const start = activityAnchor(activity);
+  if (!start) return 0;
+  return Math.max(0, start.getMinutes() + (start.getHours() - hour) * 60);
+}
+
+export function eventHeightPx(activity: CalendarActivity, hourHeight = 48): number {
+  const start = activityAnchor(activity);
+  const end = activityEnd(activity);
+  if (!start || !end) return Math.round(hourHeight * 0.7);
+  const hours = Math.max(0.35, (end.getTime() - start.getTime()) / (60 * 60 * 1000));
+  return Math.round(hours * hourHeight);
+}
+
+export function serializeCalendarActivity(row: CalendarActivity) {
+  return {
+    ...row,
+    dueAt: row.dueAt ? new Date(row.dueAt).toISOString() : null,
+    startAt: row.startAt ? new Date(row.startAt).toISOString() : null,
+    endAt: row.endAt ? new Date(row.endAt).toISOString() : null,
+  };
+}
 
 export function toDate(value: Date | string | null | undefined): Date | null {
   if (!value) return null;

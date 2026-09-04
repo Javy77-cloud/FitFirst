@@ -50,6 +50,7 @@ function revalidateRelated(related: {
   if (related.leadId) revalidatePath(`/leads/${related.leadId}`);
   revalidatePath("/calendar");
   revalidatePath("/tasks");
+  revalidatePath("/phone");
 }
 
 function durationSecondsFromForm(form: FormData) {
@@ -88,6 +89,7 @@ export async function logDeskActivity(formData: FormData) {
     endAt: when(formData, "endAt"),
     durationSeconds,
     outcome,
+    phoneNumber: str(formData, "phoneNumber") || null,
     assignee: str(formData, "assignee") || null,
     ...related,
   });
@@ -123,6 +125,126 @@ export async function completeDeskActivity(formData: FormData) {
   });
 
   revalidateRelated(activity);
+}
+
+export async function updateDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId") || str(formData, "id");
+  if (!id) {
+    await logDeskActivity(formData);
+    return;
+  }
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) {
+    await logDeskActivity(formData);
+    return;
+  }
+
+  const kind = str(formData, "kind") || activity.kind;
+  const title = str(formData, "title") || activity.title;
+  const related = relatedFromForm(formData, kind);
+  const durationSeconds = durationSecondsFromForm(formData) ?? activity.durationSeconds;
+  const outcome = str(formData, "outcome") || activity.outcome;
+  if (kind === "call" && (!durationSeconds || !outcome)) {
+    throw new Error("Call log needs a duration and an outcome.");
+  }
+
+  await db
+    .update(activities)
+    .set({
+      kind,
+      title,
+      notes: str(formData, "notes") || str(formData, "body") || activity.notes,
+      status: str(formData, "status") || activity.status,
+      dueAt: when(formData, "dueAt") ?? activity.dueAt,
+      startAt: when(formData, "startAt") ?? activity.startAt,
+      endAt: when(formData, "endAt") ?? activity.endAt,
+      durationSeconds,
+      outcome,
+      assignee: str(formData, "assignee") || activity.assignee,
+      phoneNumber: str(formData, "phoneNumber") || activity.phoneNumber,
+      direction: str(formData, "direction") || activity.direction,
+      contactId: related.contactId,
+      accountId: related.accountId,
+      policyId: related.policyId,
+      dealId: related.dealId,
+      leadId: related.leadId,
+      updatedAt: new Date(),
+    })
+    .where(eq(activities.id, id));
+
+  await db.insert(activityLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    activityId: id,
+    kind,
+    eventType: "updated",
+    body: activityLogBody(kind, "updated", title, { durationSeconds, outcome }),
+    contactId: related.contactId,
+    accountId: related.accountId,
+    policyId: related.policyId,
+    dealId: related.dealId,
+    leadId: related.leadId,
+    direction: str(formData, "direction") || "internal",
+  });
+
+  revalidateRelated(related);
+  revalidateRelated(activity);
+  revalidatePath("/phone");
+}
+
+export async function rescheduleDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId") || str(formData, "id");
+  const startAt = when(formData, "startAt");
+  if (!id || !startAt) return { error: "Missing activity or time." };
+
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) return { error: "Activity not found." };
+
+  const prevStart = activity.startAt ?? activity.dueAt ?? startAt;
+  const prevEnd = activity.endAt;
+  const durationMs = prevEnd
+    ? Math.max(15 * 60 * 1000, prevEnd.getTime() - prevStart.getTime())
+    : activity.kind === "meeting"
+      ? 30 * 60 * 1000
+      : 15 * 60 * 1000;
+  const endAt = when(formData, "endAt") ?? new Date(startAt.getTime() + durationMs);
+  const dueAt =
+    activity.kind === "task" || activity.kind === "sms" || activity.kind === "email"
+      ? startAt
+      : activity.dueAt ?? startAt;
+
+  await db
+    .update(activities)
+    .set({
+      startAt,
+      endAt,
+      dueAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(activities.id, id));
+
+  await db.insert(activityLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    activityId: id,
+    kind: activity.kind,
+    eventType: "rescheduled",
+    body: `${activityLogBody(activity.kind, "updated", activity.title)} · moved on calendar`,
+    contactId: activity.contactId,
+    accountId: activity.accountId,
+    policyId: activity.policyId,
+    dealId: activity.dealId,
+    leadId: activity.leadId,
+    direction: "internal",
+  });
+
+  revalidateRelated(activity);
+  revalidatePath("/phone");
+  return { ok: true };
 }
 
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */

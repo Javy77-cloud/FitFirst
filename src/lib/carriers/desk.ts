@@ -9,7 +9,62 @@ export type CarrierDeskContact = {
   website: string;
   agentPortalUrl: string;
   carrierInfo: string;
+  naic?: string;
+  amBestRating?: string;
+  underwriterName?: string;
+  underwriterEmail?: string;
+  underwriterPhone?: string;
+  accountManagerName?: string;
+  accountManagerEmail?: string;
+  accountManagerPhone?: string;
+  claimsPhone?: string;
+  billingPhone?: string;
+  newBusinessCommPct?: string;
+  renewalCommPct?: string;
+  territory?: string;
+  preferredSubmission?: string;
+  bindingAuthority?: string;
+  appetiteNotes?: string;
 };
+
+function deskExtras(partial: Partial<CarrierDeskContact> = {}): Pick<
+  CarrierDeskContact,
+  | "naic"
+  | "amBestRating"
+  | "underwriterName"
+  | "underwriterEmail"
+  | "underwriterPhone"
+  | "accountManagerName"
+  | "accountManagerEmail"
+  | "accountManagerPhone"
+  | "claimsPhone"
+  | "billingPhone"
+  | "newBusinessCommPct"
+  | "renewalCommPct"
+  | "territory"
+  | "preferredSubmission"
+  | "bindingAuthority"
+  | "appetiteNotes"
+> {
+  return {
+    naic: partial.naic ?? "—",
+    amBestRating: partial.amBestRating ?? "A-",
+    underwriterName: partial.underwriterName ?? "Desk UW",
+    underwriterEmail: partial.underwriterEmail ?? "uw@carrier.example",
+    underwriterPhone: partial.underwriterPhone ?? "800-555-0100",
+    accountManagerName: partial.accountManagerName ?? "Desk AM",
+    accountManagerEmail: partial.accountManagerEmail ?? "am@carrier.example",
+    accountManagerPhone: partial.accountManagerPhone ?? "800-555-0101",
+    claimsPhone: partial.claimsPhone ?? "800-555-0199",
+    billingPhone: partial.billingPhone ?? "800-555-0188",
+    newBusinessCommPct: partial.newBusinessCommPct ?? "12",
+    renewalCommPct: partial.renewalCommPct ?? "10",
+    territory: partial.territory ?? "Florida",
+    preferredSubmission: partial.preferredSubmission ?? "portal",
+    bindingAuthority: partial.bindingAuthority ?? "limited",
+    appetiteNotes: partial.appetiteNotes ?? "Appointed HO on this desk. Filter-first — do not shop off-appetite.",
+  };
+}
 
 /** Desk book for the seeded shop carriers. Ana fixture is not the source — do not edit that JSON. */
 export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
@@ -20,6 +75,17 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.tailrow.com",
     agentPortalUrl: "https://harmony.tailrow.com",
     carrierInfo: "HO on Harmony. TypTap is the same login — not a second carrier.",
+    ...deskExtras({
+      naic: "12833",
+      amBestRating: "A-",
+      underwriterName: "Harmony UW desk",
+      underwriterEmail: "uw@harmony.example",
+      underwriterPhone: "888-373-3111",
+      accountManagerName: "First Connect AM",
+      newBusinessCommPct: "12",
+      renewalCommPct: "10",
+      appetiteNotes: "HO on Harmony. Coast and RCE floors apply. TypTap is the same login.",
+    }),
   },
   hoc: {
     portalLogin: "Harmony (service / takeout)",
@@ -28,6 +94,13 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.hci-group.com",
     agentPortalUrl: "https://harmony.hci-group.com",
     carrierInfo: "Homeowners Choice. Voluntary NB closed; Harmony service account only.",
+    ...deskExtras({
+      naic: "12944",
+      bindingAuthority: "none",
+      newBusinessCommPct: "0",
+      renewalCommPct: "10",
+      appetiteNotes: "Voluntary NB closed. Harmony service / takeout only.",
+    }),
   },
   vyrd: {
     portalLogin: "VYRD takeout",
@@ -36,6 +109,13 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.vyrdins.com",
     agentPortalUrl: "https://agents.vyrdins.com",
     carrierInfo: "Citizens takeout only. No voluntary new business.",
+    ...deskExtras({
+      naic: "16820",
+      bindingAuthority: "none",
+      newBusinessCommPct: "0",
+      renewalCommPct: "10",
+      appetiteNotes: "Citizens takeout only. No voluntary new business.",
+    }),
   },
   qbe: {
     portalLogin: "Swyfft",
@@ -44,6 +124,12 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.qbe.com/us",
     agentPortalUrl: "https://www.swyfft.com",
     carrierInfo: "QBE homeowners via Swyfft. AFA paper.",
+    ...deskExtras({
+      naic: "39217",
+      amBestRating: "A",
+      preferredSubmission: "portal",
+      appetiteNotes: "QBE HO via Swyfft. Coast construction rules skip many Brevard frames.",
+    }),
   },
   vave: {
     portalLogin: "Swyfft",
@@ -52,6 +138,13 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.lloyds.com",
     agentPortalUrl: "https://www.swyfft.com",
     carrierInfo: "VAVE / Lloyd's surplus via Swyfft. Agentero paper.",
+    ...deskExtras({
+      naic: "15792",
+      amBestRating: "A",
+      newBusinessCommPct: "15",
+      renewalCommPct: "12",
+      appetiteNotes: "Surplus HO via Swyfft. RCE floors apply. Agentero paper.",
+    }),
   },
   benchmark: {
     portalLogin: "Swyfft",
@@ -60,6 +153,10 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.benchmarkinsurancesolutions.com",
     agentPortalUrl: "https://www.swyfft.com",
     carrierInfo: "Benchmark HO via Swyfft. Same shop as Hadron.",
+    ...deskExtras({
+      naic: "16187",
+      appetiteNotes: "Benchmark HO via Swyfft. Roof-age skips on older clay.",
+    }),
   },
   hadron: {
     portalLogin: "Swyfft",
@@ -68,6 +165,10 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.hadroninsurance.com",
     agentPortalUrl: "https://www.swyfft.com",
     carrierInfo: "Hadron HO via Swyfft. First Connect paper.",
+    ...deskExtras({
+      naic: "16705",
+      appetiteNotes: "Hadron HO via Swyfft. Same roof-age skip as Benchmark on older clay.",
+    }),
   },
   geovera: {
     portalLogin: "GeoVera agent",
@@ -76,6 +177,12 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.geovera.com",
     agentPortalUrl: "https://agents.geovera.com",
     carrierInfo: "GeoVera specialty HO. Will not drop Cov A below that house's RCE.",
+    ...deskExtras({
+      naic: "10799",
+      amBestRating: "A-",
+      underwriterName: "GeoVera specialty UW",
+      appetiteNotes: "Specialty HO. Will not drop Cov A below that house's RCE.",
+    }),
   },
   sagesure: {
     portalLogin: "SageSure",
@@ -84,6 +191,11 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.sagesure.com",
     agentPortalUrl: "https://agents.sagesure.com",
     carrierInfo: "SageSure (Markel). Published min Cov A $100k in named counties.",
+    ...deskExtras({
+      naic: "38970",
+      amBestRating: "A",
+      appetiteNotes: "SageSure (Markel). Published min Cov A $100k in named counties.",
+    }),
   },
   americanIntegrity: {
     portalLogin: "AIC agent",
@@ -92,6 +204,15 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
     website: "https://www.aiicfl.com",
     agentPortalUrl: "https://agents.aiicfl.com",
     carrierInfo: "American Integrity. Quote at requested Cov A is not automatically bindable.",
+    ...deskExtras({
+      naic: "12841",
+      underwriterName: "AIC HO desk",
+      underwriterEmail: "uw@aiicfl.example",
+      accountManagerName: "AFA AM",
+      newBusinessCommPct: "11",
+      renewalCommPct: "9",
+      appetiteNotes: "Quote at requested Cov A is not automatically bindable. Roof + RCS can block.",
+    }),
   },
 };
 

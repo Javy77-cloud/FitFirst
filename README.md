@@ -50,7 +50,11 @@ npm run dev
 
 Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (paper + terracotta). Demo login: `javy@fitfirst.local` / `javy` (Admin, all book) or `maya@fitfirst.local` / `maya` (Agent, own book).
 
-Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No Twilio or SendGrid.
+Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No live Twilio or SendGrid.
+
+**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, and drag-drop reschedule. Google Calendar stays a stub.
+
+**Phone** is a call log (duration + outcome, attached to Contact / Policy / Deal / Lead / Business). Admin Settings can mark a Twilio / Vonage / BYO trunk as connected — stub only; the agency pays later. Nothing dials.
 
 Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
 
@@ -73,7 +77,8 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row.
 
 - **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
 - **Activities** on Account 360: task / meeting / call. Calls need duration + outcome.
-- **Click-to-call** writes an in-app Alerts ping only (`/phone` is a stub). No email.
+- **Phone call log** (`/phone`) — duration + outcome, attached like platform auto-activity. Admin **Phone line** settings are a Twilio/BYO stub. No PSTN.
+- **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Alerts** stay in-desk (asks + work-queue pings).
 

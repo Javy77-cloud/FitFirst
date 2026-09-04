@@ -60,6 +60,7 @@ import {
   reviewTasks,
   risks,
   tenants,
+  telephonySettings,
   users,
   vehicles,
 } from "./schema";
@@ -254,6 +255,34 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
     .from(activities)
     .where(eq(activities.tenantId, tenant()))
     .orderBy(asc(activities.startAt), asc(activities.dueAt));
+}
+
+export async function listCallLog() {
+  return db
+    .select({
+      activity: activities,
+      contact: contacts,
+      policy: policies,
+      deal: deals,
+      lead: leads,
+      business: accounts,
+    })
+    .from(activities)
+    .leftJoin(contacts, eq(activities.contactId, contacts.id))
+    .leftJoin(policies, eq(activities.policyId, policies.id))
+    .leftJoin(deals, eq(activities.dealId, deals.id))
+    .leftJoin(leads, eq(activities.leadId, leads.id))
+    .leftJoin(accounts, eq(activities.accountId, accounts.id))
+    .where(and(eq(activities.tenantId, tenant()), eq(activities.kind, "call")))
+    .orderBy(desc(activities.startAt), desc(activities.updatedAt));
+}
+
+export async function getTelephonySettings() {
+  const [row] = await db
+    .select()
+    .from(telephonySettings)
+    .where(eq(telephonySettings.tenantId, tenant()));
+  return row ?? null;
 }
 
 const tenant = () => DEFAULT_TENANT_ID;

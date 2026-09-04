@@ -247,6 +247,21 @@ export const carriers = pgTable(
     website: text("website"),
     agentPortalUrl: text("agent_portal_url"),
     carrierInfo: text("carrier_info"),
+    amBestRating: text("am_best_rating"),
+    underwriterName: text("underwriter_name"),
+    underwriterEmail: text("underwriter_email"),
+    underwriterPhone: text("underwriter_phone"),
+    accountManagerName: text("account_manager_name"),
+    accountManagerEmail: text("account_manager_email"),
+    accountManagerPhone: text("account_manager_phone"),
+    claimsPhone: text("claims_phone"),
+    billingPhone: text("billing_phone"),
+    newBusinessCommPct: text("new_business_comm_pct"),
+    renewalCommPct: text("renewal_comm_pct"),
+    territory: text("territory"),
+    preferredSubmission: text("preferred_submission"),
+    bindingAuthority: text("binding_authority"),
+    appetiteNotes: text("appetite_notes"),
     active: boolean("active").notNull().default(true),
     fixtureTag: text("fixture_tag"),
     ...timestamps,
@@ -764,6 +779,8 @@ export const activities = pgTable(
     dealId: uuid("deal_id").references(() => deals.id),
     policyId: uuid("policy_id").references(() => policies.id),
     leadId: uuid("lead_id").references(() => leads.id),
+    phoneNumber: text("phone_number"),
+    direction: text("direction"),
     ...timestamps,
   },
   (t) => [
@@ -1440,6 +1457,19 @@ export const smsSettings = pgTable("sms_settings", {
   ...timestamps,
 });
 
+/** Agency-paid BYO trunk. Stub only — no Twilio purchase, no credentials stored. */
+export const telephonySettings = pgTable("telephony_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: tenantCol(),
+  provider: text("provider").notNull().default("none"),
+  connected: boolean("connected").notNull().default(false),
+  displayFrom: text("display_from"),
+  accountLabel: text("account_label"),
+  notes: text("notes"),
+  lastConnectStatus: text("last_connect_status"),
+  ...timestamps,
+});
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -1517,5 +1547,6 @@ export type CalendarConnection = typeof calendarConnections.$inferSelect;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
 export type SmsSettings = typeof smsSettings.$inferSelect;
+export type TelephonySettings = typeof telephonySettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;

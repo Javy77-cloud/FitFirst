@@ -506,6 +506,28 @@ export type EsignStatus = (typeof ESIGN_STATUSES)[number];
 export const SMS_PROVIDERS = ["none", "twilio"] as const;
 export type SmsProvider = (typeof SMS_PROVIDERS)[number];
 
+export const TELEPHONY_PROVIDERS = ["none", "twilio", "vonage", "byo"] as const;
+export type TelephonyProvider = (typeof TELEPHONY_PROVIDERS)[number];
+
+export const TELEPHONY_PROVIDER_LABEL: Record<TelephonyProvider, string> = {
+  none: "Not connected",
+  twilio: "Twilio (agency-paid)",
+  vonage: "Vonage (agency-paid)",
+  byo: "Bring-your-own SIP / trunk",
+};
+
+export const CARRIER_SUBMISSION_METHODS = ["portal", "email", "download", "phone"] as const;
+export type CarrierSubmissionMethod = (typeof CARRIER_SUBMISSION_METHODS)[number];
+
+export const CARRIER_BINDING = ["none", "limited", "full"] as const;
+export type CarrierBinding = (typeof CARRIER_BINDING)[number];
+
+export const CARRIER_BINDING_LABEL: Record<CarrierBinding, string> = {
+  none: "No binding authority",
+  limited: "Limited (quoted only)",
+  full: "Full bind",
+};
+
 export function formatDay(value: Date | string | null | undefined): string {
   if (!value) return "—";
   const d = value instanceof Date ? value : new Date(value);
