@@ -29,6 +29,8 @@ import { businessSectionsForRole, canAskTeammateOnBusiness } from "@/lib/desk/bu
 import { isUuid } from "@/lib/ids";
 import { einMaskFromRow } from "@/lib/pii/vault";
 import { MaskedPiiField } from "@/components/pii/masked-field";
+import { PortalLinkCard } from "@/components/desk/portal-link-card";
+import { findPortalTokenFor } from "@/lib/portal/session";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +73,7 @@ export default async function AccountDetailPage({
   const state = firstFilled(account.state, originRisk?.state);
   const zip = firstFilled(account.zip, originRisk?.zip);
   const latestPolicyId = policies[0]?.policy.id ?? null;
+  const portalToken = await findPortalTokenFor({ accountId: account.id });
 
   return (
     <AppShell title={account.name} eyebrow="Business record">
@@ -306,6 +309,11 @@ export default async function AccountDetailPage({
             collapsible={false}
           >
             <CertificatesList accountId={account.id} certificates={certificates} framed={false} />
+            {portalToken ? (
+              <div className="mt-4">
+                <PortalLinkCard token={portalToken.token} label={portalToken.label} />
+              </div>
+            ) : null}
           </RecordSection>
 
           {showAsk ? (

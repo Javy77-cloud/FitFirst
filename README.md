@@ -40,6 +40,8 @@ Policies are Life / Health / P&C with family fields, Zoho-style auto name, statu
 
 Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
+**Client portal (DIFF F):** Public token pages at `/portal` (no desk password). Elena `elena-ruiz-2026` views/downloads the HO3 ID card stub and submits a policy change. Harbor `harbor-key-2026` reuses `COI-20260820-0001` or requests a new holder. Requests write the full payload onto the work queue so the desk does not rekey. Agency name from Settings → Brand. Ana has no token. Additive `0036_client_portal`.
+
 ## Run locally (Mac)
 
 Stop the current `next dev` on **43147**, then:
@@ -99,6 +101,8 @@ Open [http://localhost:43147](http://localhost:43147). `/login` requires a **pas
 Leads are the person record (name, DOB, contact, address, insurance wanted). Deal-level document upload still requires an existing Deal name. The left-nav **Forms** row is now **Documents** (`/documents`). Inside: **Forms** (ACORD, cancellation, AOR, fillable + Scan & suggest) and **Library** (marketing, carrier flyers, appetite guides, misc). Folders nest; create, rename, and move stay inside one area. `/forms` redirects to Documents → Forms. Quote Sheet fill stays at `/forms/[slug]`. Ana stays untouched.
 
 Click path and leftover bugs live in `COORDINATION.md`.
+
+**Client portal stubs:** `/portal` (or login → Client portal). Elena ID card + change request. Harbor COI reuse / new request. Work queue shows the payload. Ana is not linked.
 
 **Settings → E-sign** is Admin BYO for DocuSign or Dropbox Sign (stub only). **Settings → Master risk** is the Admin appetite worksheet — not a Deal tab.
 

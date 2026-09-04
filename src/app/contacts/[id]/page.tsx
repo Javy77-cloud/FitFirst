@@ -26,6 +26,8 @@ import { isUuid } from "@/lib/ids";
 import { currentDeskSession } from "@/lib/auth/session";
 import { ssnMaskFromRow } from "@/lib/pii/vault";
 import { MaskedPiiField } from "@/components/pii/masked-field";
+import { PortalLinkCard } from "@/components/desk/portal-link-card";
+import { findPortalTokenFor } from "@/lib/portal/session";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,7 @@ export default async function ContactDetailPage({
     listEmailTemplates(),
     currentDeskSession(),
   ]);
+  const portalToken = await findPortalTokenFor({ contactId: id });
   if (!workspace) notFound();
   const {
     contact,
@@ -253,6 +256,11 @@ export default async function ContactDetailPage({
           >
             <RelatedRollups premium={premium} commission={commission} />
             <RelatedPolicies rows={policies} />
+            {portalToken ? (
+              <div className="mt-4">
+                <PortalLinkCard token={portalToken.token} label={portalToken.label} />
+              </div>
+            ) : null}
           </RecordSection>
 
           <RecordSection

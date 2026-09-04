@@ -595,4 +595,16 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list besides DIFF F (client portal). Next free additive migration after this slice is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+
+## DIFF F — Client portal stubs (`cursor/client-portal-stubs-3bd3`)
+
+Public / token self-serve pages. Stub auth is the token in the URL — no desk password.
+
+- `/portal` landing (agency brand) plus `/portal/[token]` home, ID cards, COI, policy change.
+- Seeded tokens: Elena `elena-ruiz-2026` (ID card + change), Harbor `harbor-key-2026` (reuse `COI-20260820-0001` or request a new holder). **No Ana token.**
+- Reuses the existing `CertificateStub` + `issued_certificates` row. Matching holder name reuses the stub and does not queue a duplicate.
+- New COI / policy-change submissions write `portal_requests` and enqueue the existing policy work item + note + in-app task. The note has every field so the desk does not rekey. Does **not** call `filePolicyChange` (policy stays as-is until the desk files it).
+- ID card: branded stub from the in-force policy; download uses the issued `policy_file` / `policy_id` document via `/api/portal/[token]/files/[id]`.
+- Desk: stub link on Elena Contact, Harbor Business, and those Policies. Work queue has a Client portal requests section.
+- Additive `0036_client_portal`. Ana fixture untouched. One Pipeline. Sidebar hex unchanged.

@@ -849,6 +849,8 @@ export {
   WORK_FLAGS,
   WORK_REMINDER_KIND,
   WORK_PING_KIND,
+  PORTAL_REQUEST_KIND,
+  PORTAL_PING_KIND,
   workStatusLabel,
   workFlagLabel,
 } from "./work-queue/types";

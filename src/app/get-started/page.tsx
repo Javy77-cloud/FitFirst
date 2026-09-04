@@ -8,8 +8,10 @@ import {
   ELENA_DEAL_ID,
   ELENA_LEAD_ID,
   ELENA_POLICY_ID,
+  ELENA_PORTAL_TOKEN,
   HARBOR_ACCOUNT_ID,
   HARBOR_DEAL_ID,
+  HARBOR_PORTAL_TOKEN,
 } from "@/lib/fixtures/ids";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +84,12 @@ const STEPS = [
     href: "/leads",
     cta: "Start from Leads",
   },
+  {
+    title: "11. Client portal stubs (no Ana)",
+    body: "Public token pages at /portal. Elena: view/download HO3 ID card and submit a policy change that lands on the work queue without rekey. Harbor: reuse COI-20260820-0001 or request a new holder. Ana stays unbound / no portal token.",
+    href: "/portal",
+    cta: "Open client portal",
+  },
 ];
 
 export default function GetStartedPage() {
@@ -139,6 +147,18 @@ export default function GetStartedPage() {
           </Link>
           <Link href="/pipeline?pipeline=p-c" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
             P&C pipeline
+          </Link>
+          <Link
+            href={`/portal/${ELENA_PORTAL_TOKEN}`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Elena portal
+          </Link>
+          <Link
+            href={`/portal/${HARBOR_PORTAL_TOKEN}`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Harbor portal
           </Link>
         </div>
       </div>

@@ -148,6 +148,12 @@ export default async function LoginPage({
           </Button>
         </form>
       </div>
+      <p className="text-center text-sm text-muted-foreground">
+        Client self-serve (stub link, no desk password):{" "}
+        <a href="/portal" className="text-primary hover:underline">
+          Open client portal
+        </a>
+      </p>
     </div>
   );
 }

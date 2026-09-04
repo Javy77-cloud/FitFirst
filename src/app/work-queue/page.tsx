@@ -6,6 +6,7 @@ import { AttentionFilters } from "@/components/home/attention-filters";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
 import { filterAttentionItems, parseAttentionWindow } from "@/lib/home/attention-window";
+import { listOpenPortalRequests } from "@/lib/portal/requests";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,11 @@ export default async function WorkQueuePage({
 }) {
   const params = await searchParams;
   const window = parseAttentionWindow(params.attention);
-  const [{ snapshot }, rows] = await Promise.all([ownerHomeDashboard(), listPolicies()]);
+  const [{ snapshot }, rows, portalRows] = await Promise.all([
+    ownerHomeDashboard(),
+    listPolicies(),
+    listOpenPortalRequests(),
+  ]);
   const attention = filterAttentionItems(snapshot.attention, snapshot.asOf, window);
   const open = rows.filter(({ policy }) =>
     ["bound", "pending", "lapse", "lapsed"].includes(policy.status.toLowerCase()),
@@ -25,8 +30,9 @@ export default async function WorkQueuePage({
   return (
     <AppShell title="Work queue">
       <p className="mb-3 text-sm text-muted-foreground">
-        Owner attention plus Bound / Pending / Lapse. Due date, priority, and status follow the
-        same Zoho-style labels as Home. Nothing emails anyone.
+        Owner attention plus Bound / Pending / Lapse. Client portal COI and policy-change
+        requests land here with the holder or change fields already filled — do not rekey.
+        Nothing emails anyone.
       </p>
 
       <section className="ff-card mb-4 overflow-hidden">
@@ -79,6 +85,70 @@ export default async function WorkQueuePage({
                   </Col>
                 </tr>
               ))}
+            </SheetTbody>
+          </table>
+        )}
+      </section>
+
+      <section className="ff-card mb-4 overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+          Client portal requests
+        </div>
+        {portalRows.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">
+            No self-serve COI or policy-change requests yet. Stub links live on Elena and
+            Harbor Key.
+          </p>
+        ) : (
+          <table className="ff-table">
+            <thead>
+              <tr>
+                <Col table="queue-portal" col="kind" as="th">Kind</Col>
+                <Col table="queue-portal" col="item" as="th">Request</Col>
+                <Col table="queue-portal" col="policy" as="th">Policy</Col>
+                <Col table="queue-portal" col="status" as="th">Status</Col>
+                <Col table="queue-portal" col="submitted" as="th">Submitted</Col>
+                <Col table="queue-portal" col="detail" as="th">Payload</Col>
+              </tr>
+            </thead>
+            <SheetTbody>
+              {portalRows.map(({ request, policy, certificate }) => {
+                const href = policy
+                  ? `/policies/${policy.id}`
+                  : request.accountId
+                    ? `/accounts/${request.accountId}`
+                    : request.contactId
+                      ? `/contacts/${request.contactId}`
+                      : "/work-queue";
+                return (
+                  <tr key={request.id}>
+                    <Col table="queue-portal" col="kind" className="uppercase">
+                      {request.kind === "coi" ? "COI" : "Policy change"}
+                    </Col>
+                    <Col table="queue-portal" col="item">
+                      <Link href={href} className="font-medium text-primary hover:underline">
+                        {request.summary}
+                      </Link>
+                    </Col>
+                    <Col table="queue-portal" col="policy">
+                      {policy?.policyNumber ?? certificate?.certificateNumber ?? "—"}
+                    </Col>
+                    <Col table="queue-portal" col="status">{request.status}</Col>
+                    <Col
+                      table="queue-portal"
+                      col="submitted"
+                      sortValue={request.createdAt.toISOString()}
+                    >
+                      {request.createdAt.toISOString().slice(0, 10)}
+                    </Col>
+                    <Col table="queue-portal" col="detail" className="text-xs text-muted-foreground">
+                      {request.kind === "coi"
+                        ? `${String((request.payload as { holderName?: string }).holderName ?? "")} · do not rekey`
+                        : `${String((request.payload as { reasonLabel?: string }).reasonLabel ?? "")} · ${String((request.payload as { effectiveDate?: string }).effectiveDate ?? "")} · do not rekey`}
+                    </Col>
+                  </tr>
+                );
+              })}
             </SheetTbody>
           </table>
         )}
