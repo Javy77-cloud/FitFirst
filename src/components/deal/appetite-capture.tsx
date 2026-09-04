@@ -2,6 +2,7 @@ import { logAppetiteResult } from "@/app/actions/quoting";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LostReasonSelect } from "@/components/quotes/lost-reason-select";
 import { APPETITE_CAPTURE_LABELS, APPETITE_CAPTURE_RESULTS } from "@/lib/domain";
 
 export function AppetiteCapture({
@@ -69,6 +70,9 @@ export function AppetiteCapture({
       <div className="sm:col-span-2">
         <Label className="text-xs">Why / notes</Label>
         <Input name="why" className="mt-1 h-8" placeholder="Portal declined roof age · maybe after 4-point" />
+      </div>
+      <div className="sm:col-span-2">
+        <LostReasonSelect label="Lost / declined reason (required when declined)" />
       </div>
       <div>
         <Button type="submit" size="sm">

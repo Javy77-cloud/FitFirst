@@ -274,6 +274,13 @@
       "when": 1788546000000,
       "tag": "0038_quote_compare_video",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1788547000000,
+      "tag": "0039_diff_pack_e",
+      "breakpoints": true
     }
   ]
 }

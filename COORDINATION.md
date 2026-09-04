@@ -633,6 +633,16 @@ No branded proposal existed on the batch-4 base, so this slice ships a PDF propo
 
 Click path: Elena Deal → Quotes → Open interactive compare → tick American Integrity + Tailrow → Generate branded proposal → preview PDF. Paste/clear the video URL. Ana Deal → Compare shows her priced attempts (AI quoted $5,607.53 not bindable). Do not bind Ana.
 
+## DIFFERENTIATOR pack E — branded proposals + hit/lost + quote compare (`cursor/diff-proposals-hit-ratio-4024`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_diff_pack_e` renumbered to `0039_diff_pack_e`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+- **Branded proposal PDF** from any Deal quote set: agency name / logo / color preset, side-by-side premiums, coverage summary, rule-based gap notes. Stored on Deal Attachments (`documents.slot=proposal`). Generate from Quotes, Documents, or `/deals/[id]/compare`. Elena seeds one proposal PDF plus a GeoVera compare quote (higher AOP / hurricane, no flood, Cov A $365k).
+- **Hit / lost reporting:** `quotes.lost_reason` + `quote_attempt_logs.lost_reason` picklist. Admin Home widget **Hit ratio / lost business** — quote hit %, shop hit %, carrier performance, lost-reason counts. Ana declined rows seed roof / construction reasons. Ana stays a miss (quoted, not bound).
+- **Quote compare screen** `/deals/[id]/compare`: interactive select + video URL stub (DIFF L) plus plain-English gap notes from rule text (deductible higher, no flood, lower Cov A, not bindable). Not an LLM. Ana compare falls back to her quoted attempt at $321,000.
+
+Do not bind Ana.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036** (E&O), **0037** (campaigns), and **0038** (quote compare / video). Next free additive migration is **0039**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+DIFF WAVE-1 took **0036** (E&O), **0037** (campaigns), **0038** (quote compare / video), and **0039** (hit/lost + proposals). Next free additive migration is **0040**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

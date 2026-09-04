@@ -175,6 +175,7 @@ export async function logAppetiteResult(formData: FormData) {
     premium: str(formData, "premium") || null,
     covATried: risk.coverageA,
     why: str(formData, "why") || null,
+    lostReason: result === "declined" ? str(formData, "lostReason") || null : null,
     snapYearBuilt: risk.yearBuilt,
     snapRoofYear: risk.roofYear,
     snapRoofCovering: risk.roofCovering,

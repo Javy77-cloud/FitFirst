@@ -124,6 +124,10 @@ export async function recordManualAttempt(formData: FormData) {
     premium: String(formData.get("premium") ?? "") || null,
     covATried: risk.coverageA,
     why: String(formData.get("why") ?? "") || null,
+    lostReason:
+      String(formData.get("result") ?? "declined") === "declined"
+        ? String(formData.get("lostReason") ?? "").trim() || null
+        : null,
     snapYearBuilt: risk.yearBuilt,
     snapRoofYear: risk.roofYear,
     snapRoofCovering: risk.roofCovering,

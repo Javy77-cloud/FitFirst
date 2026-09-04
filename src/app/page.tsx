@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { OwnerDesk } from "@/components/home/owner-desk";
 import { buttonVariants } from "@/components/ui/button";
 import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
+import { loadHitLostReport } from "@/lib/db/hit-lost-queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
 import { parseAttentionWindow } from "@/lib/home/attention-window";
@@ -20,11 +21,12 @@ export default async function HomePage({
   const params = await searchParams;
   const session = await currentDeskSession();
   const role = session.isAdmin ? "admin" : "agent";
-  const [home, { recentDeals, unread }, lineSettings, socialPulse] = await Promise.all([
+  const [home, { recentDeals, unread }, lineSettings, socialPulse, hitLost] = await Promise.all([
     ownerHomeDashboard(params.book),
     dashboardStats(),
     loadDeskLineSettings(),
     loadSocialPulse(role),
+    session.isAdmin ? loadHitLostReport() : Promise.resolve(null),
   ]);
   const attentionWindow = parseAttentionWindow(params.attention);
 
@@ -64,6 +66,7 @@ export default async function HomePage({
         bookOptions={home.bookOptions}
         bookValue={params.book ?? "company"}
         attentionValue={params.attention}
+        hitLost={hitLost}
       />
       <div className="mt-4">
         <HomeSocialPulse pulse={socialPulse} />

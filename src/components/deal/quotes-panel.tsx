@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { finalizeQuoteResults } from "@/app/actions/lifecycle";
+import { generateDealProposal } from "@/app/actions/proposals";
+import { setLostReason } from "@/app/actions/lost-reason";
 import { DeskDetails } from "@/components/desk-details";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { formatMoney } from "@/lib/domain";
+import { LostReasonSelect } from "@/components/quotes/lost-reason-select";
+import { formatMoney, LOST_BUSINESS_REASON_LABELS, isLostBusinessReason } from "@/lib/domain";
 import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 import { matchQuotePdf } from "@/lib/files/quote-match";
 import { filePreviewHref, isProposalAttachment } from "@/lib/files/urls";
+import { isProposalDoc } from "@/lib/proposals/store";
 import { cn } from "@/lib/utils";
 import { AppetiteCapture } from "./appetite-capture";
 import { DocFileActions } from "./doc-file-actions";
@@ -35,8 +39,24 @@ export function QuotesPanel({
   email?: string | null;
   phone?: string | null;
 }) {
+  const proposals = quoteDocs.filter(isProposalDoc);
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/deals/${dealId}/compare`}
+          className={cn(buttonVariants({ size: "sm" }))}
+        >
+          Compare quotes
+        </Link>
+        <form action={generateDealProposal}>
+          <input type="hidden" name="dealId" value={dealId} />
+          <Button type="submit" size="sm" variant="outline">
+            Generate branded proposal
+          </Button>
+        </form>
+      </div>
+
       <DeskDetails
         title="Appetite capture"
         summary="Quoted / declined / maybe after carrier paste. Maybe does not change matching."
@@ -110,6 +130,7 @@ export function QuotesPanel({
                 <th>Cov A</th>
                 <th>Bindable</th>
                 <th>Gaps</th>
+                <th>Lost reason</th>
                 <th>PDF</th>
               </tr>
             </thead>
@@ -131,6 +152,13 @@ export function QuotesPanel({
                   <td>{quote.bindable ? "Yes" : "No"}</td>
                   <td className="text-xs">
                     {quote.coverageGaps.length ? quote.coverageGaps.join("; ") : "None noted"}
+                  </td>
+                  <td>
+                    <LostReasonInline
+                      dealId={dealId}
+                      quoteId={quote.id}
+                      value={quote.lostReason}
+                    />
                   </td>
                   <td>
                     {pdf ? (
@@ -161,19 +189,20 @@ export function QuotesPanel({
         )}
       </DeskDetails>
 
-      {quoteDocs.filter((doc) => isProposalAttachment(doc)).length > 0 ? (
+      {quoteDocs.filter((d) => !isProposalDoc(d) && !isProposalAttachment(d)).length > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {quoteDocs.filter((doc) => isProposalAttachment(doc)).length} branded proposal
-          {quoteDocs.filter((doc) => isProposalAttachment(doc)).length === 1 ? "" : "s"} on this
-          deal. Open them from Compare or Documents.
+          {quoteDocs.filter((d) => !isProposalDoc(d) && !isProposalAttachment(d)).length} quote PDF
+          {quoteDocs.filter((d) => !isProposalDoc(d) && !isProposalAttachment(d)).length === 1 ? "" : "s"}{" "}
+          attached on this deal. These files are not policies.
         </p>
       ) : null}
 
-      {quoteDocs.length > 0 ? (
+      {proposals.length > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {quoteDocs.filter((doc) => !isProposalAttachment(doc)).length} quote PDF
-          {quoteDocs.filter((doc) => !isProposalAttachment(doc)).length === 1 ? "" : "s"} attached
-          on this deal. These files are not policies.
+          {proposals.length} branded proposal{proposals.length === 1 ? "" : "s"} on Deal Attachments.{" "}
+          <a href={filePreviewHref(proposals[0].id)} className="text-primary hover:underline">
+            Open latest
+          </a>
         </p>
       ) : null}
 
@@ -194,6 +223,7 @@ export function QuotesPanel({
                 <th>Result</th>
                 <th>Bindable</th>
                 <th>Why</th>
+                <th>Lost reason</th>
               </tr>
             </thead>
             <tbody>
@@ -206,6 +236,17 @@ export function QuotesPanel({
                   <td className="uppercase">{log.result.replaceAll("_", " ")}</td>
                   <td>{log.bindable ? "Y" : "N"}</td>
                   <td className="text-xs">{log.why}</td>
+                  <td>
+                    {log.result === "declined" ? (
+                      <LostReasonInline dealId={dealId} logId={log.id} value={log.lostReason} />
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        {log.lostReason && isLostBusinessReason(log.lostReason)
+                          ? LOST_BUSINESS_REASON_LABELS[log.lostReason]
+                          : "—"}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -213,5 +254,29 @@ export function QuotesPanel({
         )}
       </DeskDetails>
     </div>
+  );
+}
+
+function LostReasonInline({
+  dealId,
+  quoteId,
+  logId,
+  value,
+}: {
+  dealId: string;
+  quoteId?: string;
+  logId?: string;
+  value?: string | null;
+}) {
+  return (
+    <form action={setLostReason} className="flex min-w-[10rem] flex-col gap-1">
+      <input type="hidden" name="dealId" value={dealId} />
+      {quoteId ? <input type="hidden" name="quoteId" value={quoteId} /> : null}
+      {logId ? <input type="hidden" name="logId" value={logId} /> : null}
+      <LostReasonSelect defaultValue={value} label="" />
+      <Button type="submit" size="xs" variant="outline">
+        Save
+      </Button>
+    </form>
   );
 }

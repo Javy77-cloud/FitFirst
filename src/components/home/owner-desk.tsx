@@ -14,6 +14,8 @@ import {
 import { markAlertRead } from "@/app/actions/alerts";
 import { formatMoney } from "@/lib/domain";
 import type { OwnerHomeSnapshot } from "@/lib/home/aggregate";
+import type { HitLostReport } from "@/lib/reporting/hit-lost";
+import { HitLostCards } from "./hit-lost-cards";
 import type { OwnerHomeScope } from "@/lib/home/scope";
 import type { OwnerHomeTables } from "@/lib/home/optional-tables";
 import type {
@@ -68,6 +70,7 @@ export function OwnerDesk({
   bookOptions = [],
   bookValue = "company",
   attentionValue,
+  hitLost,
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
@@ -88,6 +91,7 @@ export function OwnerDesk({
   bookOptions?: BookScopeOption[];
   bookValue?: string;
   attentionValue?: string;
+  hitLost?: HitLostReport | null;
 }) {
   void tables;
   const asOf = snapshot.asOf.toLocaleString("en-US", {
@@ -95,7 +99,7 @@ export function OwnerDesk({
     timeZone: "UTC",
   });
   const show = (id: Parameters<typeof isWidgetVisible>[0]) =>
-    isWidgetVisible(id, prefs.preset, prefs.hiddenWidgets, { showCompanyWidgets, isAgent });
+    isWidgetVisible(id, prefs.preset, prefs.hiddenWidgets, { showCompanyWidgets, isAgent, isAdmin });
 
   return (
     <div className="space-y-4">
@@ -295,6 +299,8 @@ export function OwnerDesk({
           />
         </div>
       ) : null}
+
+      {isAdmin && show("hit_lost") && hitLost ? <HitLostCards report={hitLost} /> : null}
 
       {show("company") ? (
         <section className="ff-card p-4">

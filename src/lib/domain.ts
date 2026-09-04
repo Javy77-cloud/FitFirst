@@ -58,6 +58,42 @@ export const APPETITE_CAPTURE_LABELS: Record<AppetiteCaptureResult, string> = {
   maybe: "Maybe",
 };
 
+/** Picklist on lost / declined quotes. Rule-based reporting — not free text. */
+export const LOST_BUSINESS_REASONS = [
+  "price",
+  "deductible",
+  "coverage_gap",
+  "carrier_declined",
+  "uw_roof",
+  "uw_construction",
+  "incumbent_stayed",
+  "bound_elsewhere",
+  "no_response",
+  "timing",
+  "credit_uw",
+  "other",
+] as const;
+export type LostBusinessReason = (typeof LOST_BUSINESS_REASONS)[number];
+
+export const LOST_BUSINESS_REASON_LABELS: Record<LostBusinessReason, string> = {
+  price: "Premium too high",
+  deductible: "Deductible too high",
+  coverage_gap: "Coverage gap (flood, wind, etc.)",
+  carrier_declined: "Carrier declined",
+  uw_roof: "Underwriting — roof",
+  uw_construction: "Underwriting — construction",
+  incumbent_stayed: "Stayed with incumbent",
+  bound_elsewhere: "Bound with competitor",
+  no_response: "No response",
+  timing: "Timing / not ready",
+  credit_uw: "Credit / underwriting",
+  other: "Other",
+};
+
+export function isLostBusinessReason(value: string | null | undefined): value is LostBusinessReason {
+  return Boolean(value && (LOST_BUSINESS_REASONS as readonly string[]).includes(value));
+}
+
 export const FIT_BANDS = ["green", "yellow", "red"] as const;
 export type FitBand = (typeof FIT_BANDS)[number];
 
@@ -84,6 +120,7 @@ export const DOC_TYPES = [
   "cancellation",
   "aor",
   "agency_form",
+  "proposal",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
@@ -111,6 +148,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   cancellation: "Cancellation",
   aor: "Agent of record",
   agency_form: "Agency form",
+  proposal: "Branded proposal",
   other: "Other",
 };
 
@@ -147,7 +185,14 @@ export const DEAL_UPLOAD_DOC_TYPES = [
 ] as const;
 export type DealUploadDocType = (typeof DEAL_UPLOAD_DOC_TYPES)[number];
 
-export const DOC_SLOTS = ["source_doc", "quote_pdf", "signed_app", "policy_file", "library_file", "proposal"] as const;
+export const DOC_SLOTS = [
+  "source_doc",
+  "quote_pdf",
+  "signed_app",
+  "policy_file",
+  "library_file",
+  "proposal",
+] as const;
 export type DocSlot = (typeof DOC_SLOTS)[number];
 
 export const SOURCE_DOC_TYPES = [
@@ -513,6 +558,14 @@ export const COLOR_PRESET_LABELS: Record<ColorPreset, string> = {
   terracotta: "Terracotta",
   forest: "Forest",
   slate: "Slate",
+};
+
+/** Ink + accent hex for branded proposal PDFs. Matches desk tokens. */
+export const COLOR_PRESET_INK: Record<ColorPreset, { primary: string; accent: string; wash: string }> = {
+  agency: { primary: "#0c2340", accent: "#1d6fb8", wash: "#c5ddf4" },
+  terracotta: { primary: "#7c2d12", accent: "#b4532a", wash: "#ffedd5" },
+  forest: { primary: "#14532d", accent: "#1f7a4d", wash: "#e4f5ec" },
+  slate: { primary: "#1c2430", accent: "#5c6b7a", wash: "#e8eef4" },
 };
 
 export const FONT_PRESET_LABELS: Record<FontPreset, string> = {

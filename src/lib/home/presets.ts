@@ -28,6 +28,7 @@ export const HOME_WIDGET_IDS = [
   "alerts",
   "recent_deals",
   "company",
+  "hit_lost",
 ] as const;
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number];
 
@@ -49,6 +50,7 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   alerts: "In-app alerts",
   recent_deals: "Recent deals",
   company: "Agency widgets",
+  hit_lost: "Hit ratio / lost business",
 };
 
 const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
@@ -62,6 +64,7 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "contest",
     "lead_offers",
     "company",
+    "hit_lost",
     "attention",
     "ana",
   ],
@@ -74,6 +77,7 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "lead_offers",
     "cross_sell",
     "charts",
+    "hit_lost",
     "ana",
   ],
   retention: [
@@ -123,10 +127,11 @@ export function isWidgetVisible(
   id: HomeWidgetId,
   preset: DashboardPreset,
   hidden: readonly string[],
-  opts?: { showCompanyWidgets?: boolean; isAgent?: boolean },
+  opts?: { showCompanyWidgets?: boolean; isAgent?: boolean; isAdmin?: boolean },
 ): boolean {
   void preset;
   if (hidden.includes(id)) return false;
   if (id === "company" && opts?.isAgent && !opts.showCompanyWidgets) return false;
+  if (id === "hit_lost" && opts && opts.isAdmin === false) return false;
   return true;
 }

@@ -47,6 +47,7 @@ export default async function FilePreviewPage({
     doc.docType === "quote_pdf" ||
     doc.slot === "quote_pdf" ||
     doc.docType === "proposal_pdf" ||
+    doc.docType === "proposal" ||
     doc.slot === "proposal";
   const isImage = mime.startsWith("image/");
   const backHref = doc.dealId ? `/deals/${doc.dealId}?tab=documents` : "/documents";

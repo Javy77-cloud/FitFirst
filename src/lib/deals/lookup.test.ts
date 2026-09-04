@@ -45,6 +45,7 @@ describe("deal upload slots", () => {
   it("routes signed apps and quotes to their own slots", () => {
     expect(slotForDocType("signed_app")).toBe("signed_app");
     expect(slotForDocType("quote")).toBe("quote_pdf");
+    expect(slotForDocType("proposal")).toBe("proposal");
     expect(slotForDocType("four_point")).toBe("source_doc");
     expect(slotForDocType("current_policy")).toBe("source_doc");
   });

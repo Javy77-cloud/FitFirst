@@ -26,5 +26,8 @@ describe("dashboard presets", () => {
     expect(
       isWidgetVisible("company", "my_production", [], { isAgent: true, showCompanyWidgets: true }),
     ).toBe(true);
+    expect(widgetsForPreset("my_production")).toContain("hit_lost");
+    expect(isWidgetVisible("hit_lost", "my_production", [], { isAdmin: false })).toBe(false);
+    expect(isWidgetVisible("hit_lost", "my_production", [], { isAdmin: true })).toBe(true);
   });
 });

@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { generateDealProposal } from "@/app/actions/proposals";
 import { AppShell } from "@/components/app-shell";
 import { QuoteCompareBoard } from "@/components/deal/quote-compare-board";
 import { StagePill } from "@/components/fit-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { CompareTable } from "@/components/quotes/compare-table";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { getDealWorkspace } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { filePreviewHref, isProposalAttachment } from "@/lib/files/urls";
 import { isUuid } from "@/lib/ids";
+import { isProposalDoc, quotesFromDealRows } from "@/lib/proposals/store";
 import { collectCompareQuotes, parseSelectedIds } from "@/lib/quotes/compare";
+import { compareQuotes } from "@/lib/quotes/gap-notes";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -29,8 +33,17 @@ export default async function DealQuoteComparePage({
 
   const quotes = collectCompareQuotes({ quotes: workspace.quotes, logs: workspace.logs });
   const selected = parseSelectedIds(q, quotes.map((row) => row.id));
+  const compared = compareQuotes(
+    quotesFromDealRows({ quotes: workspace.quotes, logs: workspace.logs }),
+    {
+      coverageA: workspace.risk?.coverageA ?? workspace.deal.coverageAmount ?? null,
+      state: workspace.deal.state ?? workspace.risk?.state ?? "FL",
+      line: workspace.deal.lineOfBusiness,
+      wantsFlood: true,
+    },
+  );
   const proposals = workspace.docs
-    .filter((doc) => isProposalAttachment(doc))
+    .filter((doc) => isProposalAttachment(doc) || isProposalDoc(doc))
     .map((doc) => ({
       id: doc.id,
       filename: doc.filename,
@@ -46,12 +59,20 @@ export default async function DealQuoteComparePage({
     <AppShell
       title={`${workspace.deal.title} · Compare`}
       actions={
-        <Link
-          href={`/deals/${workspace.deal.id}?tab=quotes`}
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-        >
-          Back to Quotes
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/deals/${workspace.deal.id}?tab=quotes`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            Back to Quotes
+          </Link>
+          <form action={generateDealProposal}>
+            <input type="hidden" name="dealId" value={workspace.deal.id} />
+            <Button type="submit" size="sm">
+              Generate branded proposal
+            </Button>
+          </form>
+        </div>
       }
     >
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
@@ -91,9 +112,14 @@ export default async function DealQuoteComparePage({
       ) : null}
 
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Interactive compare for this shop. Tick quotes, read the diffs, then generate a branded
-        PDF or paste a video walkthrough URL onto the deal. No rater. No Loom API.
+        Interactive compare for this shop. Tick quotes, read the rule-based gap notes (higher
+        deductible, no flood, lower Coverage A), then generate a branded PDF or paste a video
+        walkthrough URL onto the deal. No rater. No Loom API. Gap notes are not an LLM.
       </p>
+
+      <div className="mb-6">
+        <CompareTable quotes={compared} />
+      </div>
 
       <QuoteCompareBoard
         dealId={workspace.deal.id}

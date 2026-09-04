@@ -34,6 +34,7 @@ export function inferDocType(filename: string, declared?: string | null): DocTyp
     declaredType &&
     ((SOURCE_DOC_TYPES as string[]).includes(declaredType) ||
       declaredType === "quote" ||
+      declaredType === "proposal" ||
       declaredType === "signed_app" ||
       declaredType === "other")
   ) {
@@ -44,6 +45,7 @@ export function inferDocType(filename: string, declared?: string | null): DocTyp
   if (/permit/.test(name)) return "permits";
   if (/hand[-_ ]?notes?/.test(name)) return "hand_notes";
   if (/current[-_ ]?policy|expiring/.test(name)) return "current_policy";
+  if (/proposal/.test(name)) return "proposal";
   if (/quote/.test(name)) return "quote_pdf";
   if (/wind/.test(name)) return "wind_mit";
   if (/4[-_ ]?point|four[-_ ]?point/.test(name)) return "four_point";

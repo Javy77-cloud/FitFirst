@@ -41,11 +41,20 @@ describe("file URLs", () => {
       }),
     ).toBe(true);
     expect(isProposalAttachment({ docType: "proposal_pdf", slot: "proposal" })).toBe(true);
+    expect(isProposalAttachment({ docType: "proposal", slot: "proposal" })).toBe(true);
     expect(
       resolveFileMime({
         filename: "proposal-Ruiz_Melbourne_HO3.pdf",
         storedMime: "application/pdf",
         docType: "proposal_pdf",
+        slot: "proposal",
+      }),
+    ).toBe("application/pdf");
+    expect(
+      resolveFileMime({
+        filename: "proposal-Ruiz_Melbourne_HO3.pdf",
+        storedMime: "application/octet-stream",
+        docType: "proposal",
         slot: "proposal",
       }),
     ).toBe("application/pdf");
