@@ -4,7 +4,7 @@ import { isNull, eq, and, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
-import { SidebarNav } from "@/components/sidebar-nav";
+import { DeskNav } from "@/components/desk-nav";
 import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
 import { logoutDesk } from "@/app/actions/auth";
@@ -54,7 +54,7 @@ export async function AppShell({
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
-          <SidebarNav unread={unread} variant="side" />
+          <DeskNav unread={unread} variant="sidebar" />
         </nav>
         <div className="border-t border-sidebar-border px-4 py-3 text-xs text-sidebar-foreground/70">
           <div className="font-medium text-white">{session.name}</div>
@@ -75,7 +75,7 @@ export async function AppShell({
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-          <SidebarNav unread={unread} variant="mobile" />
+          <DeskNav unread={unread} variant="mobile" />
         </nav>
         <header className="relative z-40 flex flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border bg-card px-5 py-3">
           <div className="min-w-0">

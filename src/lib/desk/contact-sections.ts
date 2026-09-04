@@ -1,3 +1,5 @@
+import { canAskTeammate } from "@/lib/desk/record-asks";
+
 export type ContactSectionId =
   | "overview"
   | "information"
@@ -34,8 +36,8 @@ export function contactSectionsForRole(_isAdmin: boolean): ContactSectionDef[] {
   return CONTACT_SECTIONS.filter((section) => !section.adminOnly);
 }
 
-export function canAskTeammateOnContact(_isAdmin: boolean): boolean {
-  return false;
+export function canAskTeammateOnContact(isAdmin: boolean): boolean {
+  return canAskTeammate(isAdmin);
 }
 
 export function relatedIdsFromEntity(entityType: string, entityId: string) {

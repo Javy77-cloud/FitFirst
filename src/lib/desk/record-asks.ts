@@ -1,5 +1,10 @@
 import { ASK_ENTITY_TYPES, type AskEntityType } from "@/lib/domain";
 
+/** Ask a teammate is Admin-only on every record. Hidden for agents. */
+export function canAskTeammate(isAdmin: boolean): boolean {
+  return isAdmin;
+}
+
 export type RecordAskDraft = {
   entityType: AskEntityType;
   entityId: string;

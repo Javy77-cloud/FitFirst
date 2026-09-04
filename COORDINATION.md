@@ -352,7 +352,7 @@ Owner: this slice. Additive only. Mirrors Contact UX from `cursor/contact-record
 
 - Left jump menu on `/accounts/[id]` (alias `/businesses/[id]`): Overview, Business information, Address, Policies, Deals, People, Locations, Certificates, Ask a teammate (Admin only), Email/SMS/calls, Timeline.
 - Timeline is auto-saved desk work. No typed “log activity” form on Business.
-- Ask a teammate is hidden for agents on Business. Other records keep the existing framed panel.
+- Ask a teammate is hidden for agents on every record (Contact, Deal, Policy, Lead, Business, Carrier). The framed panel is Admin-only.
 - Shared `RecordSection` / `LocationsList` / `CertificatesList` / `RecordAskPanel` / `RecordComms` stay backward compatible (`collapsible`, `framed`, `hideWhenNotAdmin` default to the old Contact/Policy behavior).
 - Contact 360 is unchanged. Ana fixture untouched. Harbor Key Marine LLC stays **Client** (lifetime 1 / in-force 1, `GL-HARBOR-2026`, COI stub). Ruiz Tile stays Elena’s linked business with **0** commercial policies. No live Zoho.
 
