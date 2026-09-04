@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { OwnerDesk } from "@/components/home/owner-desk";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { markAlertRead } from "@/app/actions/alerts";
+import { buttonVariants } from "@/components/ui/button";
 import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
@@ -23,63 +22,18 @@ export default async function HomePage() {
         </Link>
       }
     >
-      <OwnerDesk snapshot={snapshot} scope={scope} tables={tables} />
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-            In-app alerts
-          </div>
-          {unread.length === 0 ? (
-            <p className="px-4 py-6 text-base text-muted-foreground">No unread alerts.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {unread.map((alert) => (
-                <li key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium">{alert.title}</div>
-                    <p className="text-base text-muted-foreground">{alert.body}</p>
-                  </div>
-                  <form action={markAlertRead}>
-                    <input type="hidden" name="alertId" value={alert.id} />
-                    <Button type="submit" variant="ghost" size="xs">
-                      Dismiss
-                    </Button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-            Recent deals
-          </div>
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Deal</th>
-                <th>Stage</th>
-                <th>Line</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentDeals.map((deal) => (
-                <tr key={deal.id}>
-                  <td>
-                    <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                      {deal.title}
-                    </Link>
-                  </td>
-                  <td className="uppercase">{deal.pipelineStage.replaceAll("_", " ")}</td>
-                  <td>{deal.lineOfBusiness}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      </div>
+      <OwnerDesk
+        snapshot={snapshot}
+        scope={scope}
+        tables={tables}
+        alerts={unread.map((alert) => ({ id: alert.id, title: alert.title, body: alert.body }))}
+        recentDeals={recentDeals.map((deal) => ({
+          id: deal.id,
+          title: deal.title,
+          pipelineStage: deal.pipelineStage,
+          lineOfBusiness: deal.lineOfBusiness,
+        }))}
+      />
     </AppShell>
   );
 }
