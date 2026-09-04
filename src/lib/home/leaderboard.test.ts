@@ -20,7 +20,7 @@ function policy(partial: Partial<HomePolicy> & Pick<HomePolicy, "id" | "status" 
 const agents = [
   { id: "javy", name: "Javy Rivera" },
   { id: "maya", name: "Maya Chen" },
-  { id: "luis", name: "Luis Vega" },
+  { id: "luis", name: "Luis Mena" },
 ];
 
 describe("production leaderboard", () => {

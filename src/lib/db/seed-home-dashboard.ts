@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "./index";
 import { agencySettings, contests, contacts, policies, users } from "./schema";
 import {
@@ -31,7 +31,7 @@ export async function seedHomeDashboard() {
       {
         id: HOME_AGENT_IDS.luis,
         tenantId: TENANT_ID,
-        name: "Luis Vega",
+        name: "Luis Mena",
         email: "luis@fitfirst.local",
         role: "agent",
         active: true,
@@ -49,7 +49,13 @@ export async function seedHomeDashboard() {
     ])
     .onConflictDoUpdate({
       target: users.id,
-      set: { active: true, updatedAt: new Date() },
+      set: {
+        name: sql`excluded.name`,
+        email: sql`excluded.email`,
+        role: "agent",
+        active: true,
+        updatedAt: new Date(),
+      },
     });
 
   await db
