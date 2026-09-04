@@ -4,9 +4,9 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/list-hydrate-fix-46dc` (hydration fix on top of `cursor/mac-ready-overnight-3bad`)
+**Access branch:** `cursor/admin-agent-access-74e5` (from `cursor/list-hydrate-fix-46dc`)
 
-Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. This branch stops the Next.js hydration overlay on list sheets (Tasks / Leads / Deals / Contacts / etc.). Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
+Login is required. Middleware plus session guards enforce Admin vs Agent — not CSS. Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
 
@@ -55,7 +55,10 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (paper + terracotta). Demo login: `javy@fitfirst.local` / `javy` (Admin, all book) or `maya@fitfirst.local` / `maya` (Agent, own book).
+Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
+
+- **Admin** — Javy Rivera (`javy@fitfirst.local` / `javy`). Whole book. Settings, integration connect, global lists, Ask a teammate, appetite/carrier edit.
+- **Agent** — Maya Chen (`maya@fitfirst.local` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.
 
 Leads are the person record (name, DOB, contact, address, insurance wanted). Dec / 4-point / wind mit drop lives on **Deals**. Click path and leftover bugs live in `COORDINATION.md`.
 

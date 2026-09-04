@@ -33,11 +33,11 @@ export async function RecordAskPanel({
   policyId,
   dealId,
   leadId,
-  hideWhenNotAdmin = false,
+  hideWhenNotAdmin = true,
   framed = true,
 }: AskProps) {
   const session = await currentDeskSession();
-  if (hideWhenNotAdmin && !session.isAdmin) return null;
+  if (!session.isAdmin && hideWhenNotAdmin) return null;
   const [asks, users] = await Promise.all([
     asksProp ? Promise.resolve(asksProp) : listRecordAsks(entityType, entityId),
     usersProp ? Promise.resolve(usersProp) : listDeskUsers(),

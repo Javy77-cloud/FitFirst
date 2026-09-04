@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { currentDeskSession } from "@/lib/auth/session";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getTelephonySettings } from "@/lib/db/queries";
 import { TELEPHONY_PROVIDER_LABEL, TELEPHONY_PROVIDERS } from "@/lib/domain";
 
@@ -18,7 +18,7 @@ export default async function PhoneSettingsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [session, settings, query] = await Promise.all([
-    currentDeskSession(),
+    requireAdminPage(),
     getTelephonySettings(),
     searchParams,
   ]);
@@ -26,7 +26,7 @@ export default async function PhoneSettingsPage({
 
   return (
     <AppShell title="Phone line">
-      <SettingsSubnav current="phone" />
+      <SettingsSubnav current="phone" isAdmin={session.isAdmin} />
       {!session.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Connecting Twilio or a BYO trunk is Admin-only. Agents still log calls on{" "}

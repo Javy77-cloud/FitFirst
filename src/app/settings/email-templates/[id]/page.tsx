@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { SettingsSubnav } from "@/components/templates/email-activity";
 import { TemplateForm } from "@/components/templates/template-form";
 import { Button } from "@/components/ui/button";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { getEmailTemplate } from "@/lib/db/template-queries";
 
@@ -15,6 +16,7 @@ export default async function EditEmailTemplatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await requireAdminPage();
   const [template, desk] = await Promise.all([getEmailTemplate(id), getResolvedDesk()]);
   if (!template) notFound();
 
@@ -32,7 +34,7 @@ export default async function EditEmailTemplatePage({
         ) : null
       }
     >
-      <SettingsSubnav current="templates" />
+      <SettingsSubnav current="templates" isAdmin={session.isAdmin} />
       {desk.isAdmin ? null : (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Templates are Admin-only. Agents can read the library; use My desk for colors and

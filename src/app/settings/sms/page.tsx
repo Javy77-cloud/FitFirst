@@ -3,6 +3,7 @@ import { connectSmsStub, disconnectSmsStub } from "@/app/actions/sms";
 import { AppShell } from "@/components/app-shell";
 import { Notice, StubBanner } from "@/components/ops/stub-banner";
 import { Button } from "@/components/ui/button";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getSmsSettings } from "@/lib/db/ops-queries";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export default async function SmsSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireAdminPage();
   const query = await searchParams;
   const settings = await getSmsSettings();
   const notice = typeof query.notice === "string" ? query.notice : undefined;

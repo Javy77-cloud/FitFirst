@@ -6,9 +6,11 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { smsSettings } from "@/lib/db/schema";
+import { requireAdminAction } from "@/lib/auth/guards";
 import { connectSmsProvider } from "@/lib/integrations/sms";
 
 export async function connectSmsStub() {
+  await requireAdminAction("Only an admin can connect the agency SMS line.");
   const result = connectSmsProvider("twilio");
   const [existing] = await db
     .select()
@@ -41,6 +43,7 @@ export async function connectSmsStub() {
 }
 
 export async function disconnectSmsStub() {
+  await requireAdminAction("Only an admin can disconnect the agency SMS line.");
   const [existing] = await db
     .select()
     .from(smsSettings)

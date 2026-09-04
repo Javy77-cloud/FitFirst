@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { SettingsSubnav } from "@/components/templates/email-activity";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getResolvedDesk } from "@/lib/db/brand-queries";
 import { listEmailTemplates } from "@/lib/db/template-queries";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function EmailTemplatesPage() {
+  const session = await requireAdminPage();
   const [templates, desk] = await Promise.all([listEmailTemplates(), getResolvedDesk()]);
 
   return (
@@ -24,7 +26,7 @@ export default async function EmailTemplatesPage() {
         ) : null
       }
     >
-      <SettingsSubnav current="templates" />
+      <SettingsSubnav current="templates" isAdmin={session.isAdmin} />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Client-facing mail only. Every template ships English and Spanish. If a contact prefers
         Spanish we send ES; English, Creole, or blank uses EN. Seeded copy is marked so you can

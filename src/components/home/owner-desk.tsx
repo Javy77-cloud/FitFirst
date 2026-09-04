@@ -60,12 +60,16 @@ export function OwnerDesk({
         <div className="flex flex-col gap-3 border-b border-border bg-[color:var(--ff-wash)] px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              Owner home
+              {scope.role === "agent" ? "Agent home" : "Owner home"}
             </div>
-            <h2 className="text-xl font-semibold tracking-tight text-navy">How the book is doing</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-navy">
+              {scope.role === "agent" ? "How your book is doing" : "How the book is doing"}
+            </h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              In-force is Active or Bound only. Quotes — including Ana Dib&apos;s $321,000 HO3 shop —
-              are pipeline, not written premium. Figures are from the seed, as of {asOf}.
+              {scope.role === "agent"
+                ? "Your in-force and open shops only. Quotes — including Ana Dib&apos;s $321,000 HO3 — stay on the Admin book and stay unbound."
+                : "In-force is Active or Bound only. Quotes — including Ana Dib&apos;s $321,000 HO3 shop — are pipeline, not written premium."}{" "}
+              Figures are from the seed, as of {asOf}.
             </p>
           </div>
           <div className="shrink-0 rounded-md border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">

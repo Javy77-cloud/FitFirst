@@ -55,6 +55,11 @@ async function redirectBack() {
 }
 
 export async function switchDeskAgent(formData: FormData) {
+  const { currentDeskSession } = await import("@/lib/auth/session");
+  const session = await currentDeskSession();
+  if (!session.isAdmin) {
+    throw new Error("Only an admin can switch the desk agent cookie.");
+  }
   const agentId = str(formData, "agentId");
   const agents = await ensureDeskAgents();
   if (!agents.some((agent) => agent.id === agentId)) {

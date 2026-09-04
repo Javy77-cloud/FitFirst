@@ -4,6 +4,7 @@ import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
 import { SettingsSubnav } from "@/components/templates/email-activity";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { requireSignedIn } from "@/lib/auth/guards";
 import { getAgentPrefs, getResolvedDesk } from "@/lib/db/brand-queries";
 import {
   COLOR_PRESET_LABELS,
@@ -17,13 +18,14 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function MyDeskPage() {
+  const session = await requireSignedIn();
   const desk = await getResolvedDesk();
   const stored = await getAgentPrefs(desk.actor.key);
   const inheriting = !stored?.colorPreset && !stored?.fontPreset && !stored?.density;
 
   return (
     <AppShell title="My desk">
-      <SettingsSubnav current="my-desk" />
+      <SettingsSubnav current="my-desk" isAdmin={session.isAdmin} />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Your interface only. Does not change agency logo, templates, signatures, or another
         agent&apos;s desk. Column order is stored here; the CRM list picker writes the same

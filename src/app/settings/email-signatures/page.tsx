@@ -5,17 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { getResolvedDesk, listEmailSignatures } from "@/lib/db/brand-queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailSignaturesPage() {
+  const session = await requireAdminPage();
   const [desk, signatures] = await Promise.all([getResolvedDesk(), listEmailSignatures()]);
   const current = signatures[0];
 
   return (
     <AppShell title="Email signatures">
-      <SettingsSubnav current="signatures" />
+      <SettingsSubnav current="signatures" isAdmin={session.isAdmin} />
       {!desk.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Signatures are Admin-only. Agents keep their own desk colors and columns.

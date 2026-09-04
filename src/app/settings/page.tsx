@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { currentDeskSession } from "@/lib/auth/session";
+import { requireSignedIn } from "@/lib/auth/guards";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
 import { getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
@@ -17,7 +17,7 @@ import { TELEPHONY_PROVIDER_LABEL, type TelephonyProvider } from "@/lib/domain";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const session = await currentDeskSession();
+  const session = await requireSignedIn();
   const [brand, templates, triggers, telephony] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),
@@ -28,19 +28,19 @@ export default async function SettingsPage() {
 
   return (
     <AppShell title="Settings">
-      <SettingsSubnav current="hub" />
+      <SettingsSubnav current="hub" isAdmin={session.isAdmin} />
       <p className="mb-4 text-sm text-muted-foreground">
-        Admin settings change the agency. Agent settings change only this desk. Sections collapse so
-        the page uses the full width instead of a single stacked column.
+        {session.isAdmin
+          ? "Admin settings change the agency. Agent settings on the right change only this desk."
+          : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
 
-      <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
+      <div className={session.isAdmin ? "grid gap-4 xl:grid-cols-2 xl:items-start" : "space-y-3"}>
+        {session.isAdmin ? (
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-2 px-1">
             <h2 className="text-base font-semibold text-navy">Admin settings</h2>
-            <span className="text-xs text-muted-foreground">
-              {session.isAdmin ? "You can edit these" : "View only — ask Javy"}
-            </span>
+            <span className="text-xs text-muted-foreground">You can edit these</span>
           </div>
 
           <SettingsSection
@@ -208,6 +208,7 @@ export default async function SettingsPage() {
             </Link>
           </SettingsSection>
         </div>
+        ) : null}
 
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-2 px-1">

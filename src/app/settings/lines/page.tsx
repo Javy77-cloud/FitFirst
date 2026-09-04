@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { SettingsSubnav } from "@/components/templates/email-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { currentDeskSession } from "@/lib/auth/session";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import type { LineSubfilterOption } from "@/lib/desk/line-settings";
 
@@ -76,11 +76,11 @@ function OptionList({
 }
 
 export default async function LinesSettingsPage() {
-  const [session, settings] = await Promise.all([currentDeskSession(), loadDeskLineSettings()]);
+  const [session, settings] = await Promise.all([requireAdminPage(), loadDeskLineSettings()]);
 
   return (
     <AppShell title="Lines of business">
-      <SettingsSubnav current="lines" />
+      <SettingsSubnav current="lines" isAdmin={session.isAdmin} />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Hide Life or Health when this agency does not write those lines. Navigation, pipeline
         boards, and book filters follow these toggles. Selling Agency stays off the day-to-day
