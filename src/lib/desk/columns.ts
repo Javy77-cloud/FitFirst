@@ -162,6 +162,13 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "status", label: "Status", defaultOn: true },
     { key: "amount", label: "Amount", defaultOn: true },
   ],
+  "queue-priority": [
+    { key: "due", label: "Due", defaultOn: true },
+    { key: "priority", label: "Priority", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "dollars", label: "$", defaultOn: true },
+    { key: "account", label: "Account", defaultOn: true },
+  ],
   "queue-attention": [
     { key: "kind", label: "Kind", defaultOn: true },
     { key: "item", label: "Item", defaultOn: true },

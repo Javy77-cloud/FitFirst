@@ -16,6 +16,7 @@ import {
   listMySignatures,
 } from "@/lib/db/automation-queries";
 import { getSmsSettings } from "@/lib/db/ops-queries";
+import { listCampaignSequences } from "@/lib/db/sequence-queries";
 import { listEmailTemplates } from "@/lib/db/queries";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 
@@ -23,13 +24,14 @@ export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
-  const [catalog, sms, templates, automations, pending, mine] = await Promise.all([
+  const [catalog, sms, templates, automations, pending, mine, sequences] = await Promise.all([
     listCatalogItems(),
     getSmsSettings(),
     listEmailTemplates(),
     listGuidedAutomations(),
     listPendingSignatureApprovals(),
     session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
+    listCampaignSequences(),
   ]);
   const campaignOk = campaignsReady(catalog);
   const smsOk = smsReady(catalog, Boolean(sms?.connected));
@@ -38,7 +40,9 @@ export default async function AutomationsHubPage() {
   const myLive = mine.filter((row) => row.approvalStatus === "live").length;
   const myPending = mine.filter((row) => row.approvalStatus === "pending").length;
 
+  const sequencesOn = sequences.filter((row) => row.enabled).length;
   const status: Record<string, string> = {
+    sequences: `${sequencesOn} of ${sequences.length} sequences on · Task + email stubs`,
     campaigns: campaignOk
       ? `${campaignConnected.map((item) => item.name).join(", ")} ready`
       : "Connect Mailchimp, Constant Contact, or SendGrid",
@@ -62,9 +66,9 @@ export default async function AutomationsHubPage() {
     <AppShell title="Automations">
       <AutomationsModuleNav />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Guided campaigns, bulk SMS, work-email templates, and a simple Trigger → Condition →
-        Action builder. Agent alerts stay in Alerts — Javy does not want a second email ping.
-        Signatures need Admin before they go live.
+        Insurance campaign sequences, guided campaigns, bulk SMS, work-email templates, and a
+        simple Trigger → Condition → Action builder. Agent alerts stay in Alerts — Javy does
+        not want a second email ping. Signatures need Admin before they go live.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {AUTOMATION_HUB_SECTIONS.map((section) => (

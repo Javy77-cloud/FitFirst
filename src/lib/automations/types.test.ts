@@ -3,6 +3,7 @@ import {
   preferredActionFor,
   validateGuidedAutomation,
   AUTOMATION_ACTION_LABEL,
+  AUTOMATION_HUB_SECTIONS,
   AUTOMATION_TRIGGER_LABEL,
 } from "./types";
 
@@ -75,5 +76,10 @@ describe("labels", () => {
   it("keeps Javy-facing copy on the notify action", () => {
     expect(AUTOMATION_ACTION_LABEL.in_app_notify).toBe("In-app notify");
     expect(AUTOMATION_TRIGGER_LABEL.closed_won).toBe("Closed Won");
+  });
+
+  it("lists campaign sequences on the automations hub", () => {
+    expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("sequences");
+    expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/sequences");
   });
 });

@@ -10,6 +10,9 @@ const COPY: Record<string, string> = {
   "signature-submitted": "Signature is in the Admin approval queue. It is not live yet.",
   "signature-approved": "Signature is live. Agents can use this close on client mail.",
   "signature-rejected": "Signature sent back. The agent can edit and resubmit.",
+  "sequence-on":
+    "Sequence is on. Tasks and email templates stay stubs — nothing emails the client.",
+  "sequence-off": "Sequence is off. The catalog stays; no new Task or email stub will queue.",
 };
 
 export function AutomationsNotice({
