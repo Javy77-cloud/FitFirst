@@ -82,7 +82,10 @@ describe("meeting place", () => {
 describe("pipeline card actions", () => {
   it("keeps Call and Meeting, never Ask a teammate", () => {
     expect(PIPELINE_CARD_ACTIONS).toEqual(["Call", "SMS", "Task", "Meeting"]);
-    expect(PIPELINE_CARD_ACTIONS.join(" ")).not.toMatch(/Ask|Dial|Mail|Email/i);
+    expect(PIPELINE_CARD_ACTIONS).not.toContain("Dial");
+    expect(PIPELINE_CARD_ACTIONS).not.toContain("Mail");
+    expect(PIPELINE_CARD_ACTIONS).not.toContain("Email");
+    expect(PIPELINE_CARD_ACTIONS.some((label) => /teammate/i.test(label))).toBe(false);
     expect(pipelineCardShowsAsk()).toBe(false);
   });
 });
