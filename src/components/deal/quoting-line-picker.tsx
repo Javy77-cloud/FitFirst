@@ -19,6 +19,7 @@ export function QuotingLinePicker({
         {sourceDocCount > 0
           ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Choose the line before Fill master sheet can run.`
           : "Drop a dec, 4-point, or wind mit, then choose the quoting line. HO3 fills the homeowners master sheet and prepares Auto + commercial worksheets."}
+      </p>
       {picked ? (
         <p className="mt-2 text-xs text-navy">
           Quoting <span className="font-semibold">{picked.label}</span>. Change it if this drop is
