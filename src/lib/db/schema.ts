@@ -2054,7 +2054,6 @@ export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type AuthRecoveryToken = typeof authRecoveryTokens.$inferSelect;
-export type MfaChallenge = typeof mfaChallenges.$inferSelect;
 export type Location = typeof locations.$inferSelect;
 export type MergeCandidate = typeof mergeCandidates.$inferSelect;
 export type IssuedCertificate = typeof issuedCertificates.$inferSelect;
