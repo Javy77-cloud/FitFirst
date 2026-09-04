@@ -1,4 +1,5 @@
 import { addUtcDays, sameUtcMonth } from "./as-of";
+import { attentionPriority, attentionStatus } from "./attention-window";
 import { HOME_LINE_KEYS, HOME_LINE_LABEL, homeLineKey, type HomeLineKey } from "./lines";
 
 export const IN_FORCE_STATUSES = new Set(["active", "bound"]);
@@ -76,6 +77,9 @@ export type AttentionItem = {
   title: string;
   detail: string;
   href: string;
+  dueAt: Date;
+  priority: "Highest" | "High" | "Normal" | "Low";
+  status: string;
 };
 
 export type CrossSellGap = {
@@ -223,7 +227,9 @@ export function attentionItems(input: {
   tasks: HomeTask[];
   policies: HomePolicy[];
   deals: HomeDeal[];
+  asOf?: Date;
 }): AttentionItem[] {
+  const asOf = input.asOf ?? new Date();
   const items: AttentionItem[] = [];
 
   for (const task of input.tasks) {
@@ -232,7 +238,10 @@ export function attentionItems(input: {
       kind: "task",
       title: task.title,
       detail: `Due ${task.dueDate.toISOString().slice(0, 10)} · ${task.kind.replaceAll("_", " ")}`,
-      href: task.dealId ? `/deals/${task.dealId}` : task.policyId ? `/policies?attention=lapse` : "/work-queue",
+      href: task.dealId ? `/deals/${task.dealId}` : task.policyId ? `/policies/${task.policyId}` : "/work-queue",
+      dueAt: task.dueDate,
+      priority: attentionPriority({ kind: "task", dueAt: task.dueDate, asOf }),
+      status: attentionStatus("task"),
     });
   }
 
@@ -242,17 +251,24 @@ export function attentionItems(input: {
       kind: "lapse",
       title: `${policy.contactName} · ${policy.policyNumber} lapsed`,
       detail: `${policy.lineOfBusiness} · ${policy.expirationDate.toISOString().slice(0, 10)}`,
-      href: "/policies?attention=lapse",
+      href: `/policies/${policy.id}`,
+      dueAt: policy.expirationDate,
+      priority: attentionPriority({ kind: "lapse", dueAt: policy.expirationDate, asOf }),
+      status: attentionStatus("lapse"),
     });
   }
 
   for (const deal of boundWaitingOnIssue(input.deals, input.policies)) {
+    const dueAt = deal.updatedAt ?? asOf;
     items.push({
       id: `bound-${deal.id}`,
       kind: "bound_pending",
       title: `${deal.title} is bound, waiting on issue`,
       detail: "No in-force policy on the file yet",
-      href: `/deals?attention=bound_pending`,
+      href: `/deals/${deal.id}`,
+      dueAt,
+      priority: attentionPriority({ kind: "bound_pending", dueAt, asOf }),
+      status: attentionStatus("bound_pending"),
     });
   }
 
@@ -351,6 +367,7 @@ export function buildOwnerHome(input: {
       tasks: input.tasks,
       policies: input.policies,
       deals: input.deals,
+      asOf: input.asOf,
     }),
     gaps: crossSellGaps(input.policies),
     gapCount: crossSellGaps(input.policies).length,

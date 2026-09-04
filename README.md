@@ -10,6 +10,8 @@ Contact record: no Ask a teammate (still Admin-only on other records). Email / C
 
 Deals list has one upload: pick an existing Deal by person or business name, then add typed file lines (4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, signed app). Inside the Deal: Source documents, Issued quote PDFs, and Signed app. Ask a teammate and email/SMS logs are off Quote Sheet, Markets, and Quotes. Master risk is Admin-only at Settings. E-sign stubs are DocuSign / Dropbox Sign BYO.
 
+Policies are Life / Health / P&C with family fields, Zoho-style auto name, status colors (Active green · Lapse/Bound yellow · else red), term by family, multi-file attach, and a commission block. Cov A stays on quoting only. Policy records show auto activity — no Ask a teammate, no typed SMS/call/email log. Settings → Global lists holds policy types, sub-types, terms, statuses, and file categories (carriers stay linked). Home Needs attention filters Overdue / This week / This month / Next month. Calendar buttons are Previous month / Next month; you can delete an event and + Add any type. Quote sections say Expand / Collapse.
+
 Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
@@ -65,7 +67,7 @@ Leads are the person record (name, DOB, contact, address, insurance wanted). Doc
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No live Twilio or SendGrid.
 
-**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, and drag-drop reschedule. Google Calendar stays a stub.
+**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, drag-drop reschedule, delete, and **+ Add event** for any type. Previous month / Next month (and week/day) are labeled. Google Calendar stays a stub.
 
 **Phone** is a call log (duration + outcome, attached to Contact / Policy / Deal / Lead / Business). Admin Settings can mark a Twilio / Vonage / BYO trunk as connected — stub only; the agency pays later. Nothing dials.
 

@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation";
-import { uploadDealSlot } from "@/app/actions/lifecycle";
-import { updatePolicyRecord } from "@/app/actions/policy-record";
 import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
@@ -10,22 +8,27 @@ import { RecordSection } from "@/components/record-section";
 import { dayInput } from "@/components/related-tables";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AddressAutofill } from "@/components/address-autofill";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { formatMoney, SELLING_AGENCIES } from "@/lib/domain";
-import { getPolicyWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
+import { DEFAULT_TENANT_ID, formatMoney } from "@/lib/domain";
+import { getPolicyWorkspace, listEmailTemplates, sumCommissionsForPolicies } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { listDeskUsers } from "@/lib/db/activity-queries";
+import { loadGlobalLists, labelsFor } from "@/lib/db/global-lists";
+import { db } from "@/lib/db";
+import { commissions } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { ClickToCall } from "@/components/click-to-call";
-import { RecordAskPanel } from "@/components/record-ask";
 import { RelatedRollups } from "@/components/related-tables";
-import { inferLineFamily, LINE_FAMILIES, LINE_FAMILY_LABEL, previewCommission } from "@/lib/desk/commission-line";
+import { PolicyCommissionBlock } from "@/components/commissions/policy-commission-block";
+import { PolicyFileAttach } from "@/components/policy/policy-file-attach";
+import { PolicyRecordForm } from "@/components/policy/policy-record-form";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { partyLabel, policyRecordName } from "@/lib/desk/policy-name";
-import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
 import { isUuid } from "@/lib/ids";
+import {
+  INSURANCE_FAMILIES,
+  insuranceFamilyFromPolicy,
+  type InsuranceFamily,
+} from "@/lib/desk/policy-family";
 
 export const dynamic = "force-dynamic";
 
@@ -36,41 +39,64 @@ export default async function PolicyDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, asks, users, lineSettings] = await Promise.all([
+  const [workspace, templates, lineSettings, lists] = await Promise.all([
     getPolicyWorkspace(id),
     listEmailTemplates(),
-    listRecordAsks("policy", id),
-    listDeskUsers(),
     loadDeskLineSettings(),
+    loadGlobalLists(),
   ]);
   if (!workspace) notFound();
-  const { policy, contact, account, carrier, deal, risk, files, timeline, vehicles } = workspace;
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
+  const family = insuranceFamilyFromPolicy(policy);
+  const party = partyLabel(contact, account);
   const displayName = policyRecordName({
-    contactName: partyLabel(contact, null) || null,
+    contactName: party || null,
     businessName: account?.name,
     subType: policy.policySubType,
     lineOfBusiness: policy.lineOfBusiness,
-    formType: policy.formType,
+    formType: policy.policyType ?? policy.formType,
     carrierName: carrier?.name,
     effectiveDate: policy.effectiveDate,
   });
-  const family = inferLineFamily(policy.lineOfBusiness, policy.commissionFamily, policy.policySubType);
-  const preview = previewCommission({
-    family,
-    gwp: toNumber(policy.premium),
-    commission4: policy.commission4Pct ? toNumber(policy.commission4Pct) : null,
-    frequency: policy.billingFrequency,
-    insuredCount: policy.insuredCount ?? 1,
-  });
   const thisCommission = await sumCommissionsForPolicies([policy.id]);
+  const [commission] = await db
+    .select()
+    .from(commissions)
+    .where(and(eq(commissions.tenantId, DEFAULT_TENANT_ID), eq(commissions.policyId, policy.id)));
+
+  const mailing = {
+    address: firstFilled(contact?.mailingAddress, account?.mailingAddress),
+    city: firstFilled(contact?.city, account?.city),
+    state: firstFilled(contact?.state, account?.state),
+    zip: firstFilled(contact?.zip, account?.zip),
+  };
+  const premises = {
+    address: firstFilled(policy.premisesAddress, mailing.address),
+    city: firstFilled(policy.premisesCity, mailing.city),
+    state: firstFilled(policy.premisesState, mailing.state),
+    zip: firstFilled(policy.premisesZip, mailing.zip),
+  };
+
+  const formLists = {
+    types: Object.fromEntries(
+      INSURANCE_FAMILIES.map((key) => [key, labelsFor(lists, "policy_type", key)]),
+    ) as Record<InsuranceFamily, string[]>,
+    subTypes: Object.fromEntries(
+      INSURANCE_FAMILIES.map((key) => [key, labelsFor(lists, "policy_sub_type", key)]),
+    ) as Record<InsuranceFamily, string[]>,
+    terms: Object.fromEntries(
+      INSURANCE_FAMILIES.map((key) => [key, labelsFor(lists, "policy_term", key)]),
+    ) as Record<InsuranceFamily, string[]>,
+  };
 
   return (
     <AppShell title={displayName}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <span className="uppercase">{policy.status}</span>
+        <PolicyStatusBadge status={policy.status} />
         <span>{policy.policyNumber}</span>
         <span>{formatMoney(policy.premium)}</span>
+        <span className="text-xs uppercase text-muted-foreground">{family}</span>
         <ClickToCall
           entityType="policy"
           entityId={policy.id}
@@ -79,233 +105,36 @@ export default async function PolicyDetailPage({
         />
       </div>
 
-      <RecordSection id="record" title="This policy" summary="Effective, X-Date, commission, files, comms">
-        <form action={updatePolicyRecord} className="mb-6 grid gap-3 sm:grid-cols-2">
-          <input type="hidden" name="policyId" value={policy.id} />
-          <div>
-            <Label className="text-xs">Policy #</Label>
-            <Input name="policyNumber" defaultValue={policy.policyNumber} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Status</Label>
-            <select name="status" defaultValue={policy.status} className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm">
-              <option value="active">Active</option>
-              <option value="bound">Bound</option>
-              <option value="pending">Pending</option>
-              <option value="expired">Expired</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div>
-            <Label className="text-xs">Effective date</Label>
-            <Input name="effectiveDate" type="date" defaultValue={dayInput(policy.effectiveDate)} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">X-Date (expiration / renewal driver)</Label>
-            <Input name="expirationDate" type="date" defaultValue={dayInput(policy.expirationDate)} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Gross written premium</Label>
-            <Input name="premium" defaultValue={policy.premium ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Cov A (copied at bind — do not retype)</Label>
-            <Input
-              name="coverageA"
-              defaultValue={firstFilled(policy.coverageA, risk?.coverageA)}
-              className="mt-1 h-8"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">Premises (copied from the deal — do not retype)</Label>
-            <AddressAutofill
-              name="premisesAddress"
-              defaultValue={firstFilled(policy.premisesAddress, risk?.address1, contact?.mailingAddress, account?.mailingAddress)}
-              fill={{ city: "premisesCity", state: "premisesState", zip: "premisesZip" }}
-              className="mt-1 h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Premises city</Label>
-            <Input
-              name="premisesCity"
-              defaultValue={firstFilled(policy.premisesCity, risk?.city, contact?.city, account?.city)}
-              className="mt-1 h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">State / ZIP</Label>
-            <div className="mt-1 flex gap-2">
-              <Input
-                name="premisesState"
-                defaultValue={firstFilled(policy.premisesState, risk?.state, contact?.state, account?.state)}
-                className="h-8 w-20"
-              />
-              <Input
-                name="premisesZip"
-                defaultValue={firstFilled(policy.premisesZip, risk?.zip, contact?.zip, account?.zip)}
-                className="h-8"
-              />
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">Premium frequency</Label>
-            <select
-              name="billingFrequency"
-              defaultValue={policy.billingFrequency ?? "annual"}
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            >
-              <option value="annual">Annual</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-            </select>
-          </div>
-          <div>
-            <Label className="text-xs">Sub-type</Label>
-            {policy.lineOfBusiness === "LIFE" && lineSettings.writeLife ? (
-              <select
-                name="policySubType"
-                defaultValue={policy.policySubType ?? ""}
-                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                <option value="">—</option>
-                {lineSettings.lifeOptions.map((option) => (
-                  <option key={option.slug} value={option.label}>
-                    {option.label}
-                  </option>
-                ))}
-                {policy.policySubType &&
-                !lineSettings.lifeOptions.some((option) => option.label === policy.policySubType) ? (
-                  <option value={policy.policySubType}>{policy.policySubType}</option>
-                ) : null}
-              </select>
-            ) : policy.lineOfBusiness === "HEALTH" && lineSettings.writeHealth ? (
-              <select
-                name="policySubType"
-                defaultValue={policy.policySubType ?? ""}
-                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                <option value="">—</option>
-                {lineSettings.healthOptions.map((option) => (
-                  <option key={option.slug} value={option.label}>
-                    {option.label}
-                  </option>
-                ))}
-                {policy.policySubType &&
-                !lineSettings.healthOptions.some((option) => option.label === policy.policySubType) ? (
-                  <option value={policy.policySubType}>{policy.policySubType}</option>
-                ) : null}
-              </select>
-            ) : (
-              <Input name="policySubType" defaultValue={policy.policySubType ?? policy.formType ?? ""} className="mt-1 h-8" />
-            )}
-          </div>
-          {lineSettings.showSellingAgency ? (
-            <div>
-              <Label className="text-xs">Selling agency</Label>
-              <select
-                name="sellingAgency"
-                defaultValue={policy.sellingAgency ?? ""}
-                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                <option value="">—</option>
-                {SELLING_AGENCIES.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <input type="hidden" name="sellingAgency" value={policy.sellingAgency ?? ""} />
-          )}
-          <div>
-            <Label className="text-xs">Insurance family</Label>
-            <select
-              name="commissionFamily"
-              defaultValue={family}
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            >
-              {LINE_FAMILIES.map((key) => (
-                <option key={key} value={key}>
-                  {LINE_FAMILY_LABEL[key]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label className="text-xs">Commission4 %</Label>
-            <Input name="commission4Pct" defaultValue={policy.commission4Pct ?? ""} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Number of insured</Label>
-            <Input name="insuredCount" defaultValue={String(policy.insuredCount ?? 1)} className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">OEP start (health stay-put only)</Label>
-            <Input name="oepStart" type="date" defaultValue={dayInput(policy.oepStart)} className="mt-1 h-8" />
-          </div>
-          <div className="sm:col-span-2 rounded-md bg-secondary/50 px-3 py-2 text-xs">
-            <p className="font-medium text-navy">Commission on this policy (Zoho math — no New vs Renewal field)</p>
-            <p className="mt-1">{preview.detail}</p>
-            <p className="mt-1">
-              TAC {preview.totalAnnualCommission} · Monthly {preview.monthlyCommission} · Initial{" "}
-              {preview.initialCommission} · Deferred {preview.deferredCommission}
-            </p>
-          </div>
-          <Button type="submit" size="sm">
-            Save policy
-          </Button>
-        </form>
+      <RecordSection id="record" title="This policy" summary="Family fields, term, files, auto timeline">
+        <PolicyRecordForm
+          policyId={policy.id}
+          family={family}
+          policyNumber={policy.policyNumber}
+          status={policy.status}
+          effectiveDate={dayInput(policy.effectiveDate)}
+          expirationDate={dayInput(policy.expirationDate)}
+          premium={policy.premium ?? ""}
+          billingFrequency={policy.billingFrequency ?? "annual"}
+          policySubType={policy.policySubType ?? ""}
+          policyType={policy.policyType ?? policy.formType ?? ""}
+          policyTerm={policy.policyTerm ?? ""}
+          faceAmount={policy.faceAmount ?? ""}
+          insuredCount={String(policy.insuredCount ?? 1)}
+          oepStart={dayInput(policy.oepStart)}
+          sellingAgency={policy.sellingAgency ?? ""}
+          showSellingAgency={lineSettings.showSellingAgency}
+          insuredSameAsMailing={policy.insuredSameAsMailing}
+          premises={premises}
+          mailing={mailing}
+          partyName={party}
+          carrierName={carrier?.name ?? ""}
+          lists={formLists}
+        />
 
         {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
-        <form action={uploadDealSlot} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3">
-          <input type="hidden" name="policyId" value={policy.id} />
-          <input type="hidden" name="dealId" value={policy.dealId ?? ""} />
-          <input type="hidden" name="slot" value="policy_file" />
-          <div>
-            <Label className="text-xs">Issued file</Label>
-            <select
-              name="docType"
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              defaultValue="policy_dec"
-            >
-              <option value="policy_dec">Issued dec</option>
-              <option value="policy_complete">Complete policy</option>
-              <option value="policy_id">ID card</option>
-            </select>
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">File</Label>
-            <input name="file" type="file" required className="mt-1 block w-full text-xs" />
-          </div>
-          <Button type="submit" size="sm">
-            Attach issued file
-          </Button>
-        </form>
-        {files.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No issued policy files yet.</p>
-        ) : (
-          <ul className="text-sm">
-            {files.map((file) => (
-              <li key={file.id}>
-                {file.filename} · {file.docType.replaceAll("_", " ")}
-              </li>
-            ))}
-          </ul>
-        )}
+        <PolicyFileAttach policyId={policy.id} dealId={policy.dealId} files={files} />
 
-        <RecordAskPanel
-          entityType="policy"
-          entityId={policy.id}
-          asks={asks}
-          users={users}
-          policyId={policy.id}
-          contactId={contact?.id}
-          accountId={account?.id}
-          dealId={deal?.id}
-        />
         <div className="mt-6">
           <ActivityTimeline
             items={timeline}
@@ -316,12 +145,38 @@ export default async function PolicyDetailPage({
             phone={contact?.phone ?? account?.phone}
             email={contact?.email ?? account?.email}
             templates={templates}
+            autoOnly
+            heading="Auto activity"
           />
         </div>
       </RecordSection>
 
+      <RecordSection id="commission" title="Commission" summary="Zoho math by Life / Health / P&C">
+        <PolicyCommissionBlock
+          values={{
+            policyId: policy.id,
+            commissionId: commission?.id ?? null,
+            producerStatus: commission?.status ?? null,
+            insuranceType: family,
+            policyType: policy.policyType ?? policy.formType ?? "",
+            policySubType: policy.policySubType ?? "",
+            sellingAgency: policy.sellingAgency ?? "",
+            gwp: policy.premium ?? "",
+            commission4: policy.commission4Pct ?? "",
+            premiumFrequency: policy.billingFrequency ?? "Annual",
+            numberOfInsured: String(policy.insuredCount ?? 1),
+            paymentStatus: commission?.status === "paid" ? "Paid" : "Outstanding",
+            paymentReferenceBatch: "",
+            dueDate: commission?.dueDate ? dayInput(commission.dueDate) : "",
+            paidDate: commission?.paidDate ? dayInput(commission.paidDate) : "",
+            bookPremium: policy.premium ?? "",
+          }}
+          showSellingAgency={lineSettings.showSellingAgency}
+        />
+      </RecordSection>
+
       <RecordSection id="related" title="Related" summary="Insured, deal, carrier, this policy rollup">
-        <RelatedRollups premium={toNumber(policy.premium)} commission={thisCommission} />
+        <RelatedRollups premium={Number(policy.premium ?? 0)} commission={thisCommission} />
         <div className="flex flex-wrap gap-3 text-sm">
           {contact ? (
             <RecordLink href={`/contacts/${contact.id}`}>

@@ -7,6 +7,13 @@ import { db } from "@/lib/db";
 import { accounts, commissions, contacts, policies, policyAutomations, reviewTasks } from "@/lib/db/schema";
 import { addUtcDays, DESK_AS_OF } from "@/lib/home/as-of";
 import { inferLineFamily, isOepLine, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
+import {
+  commissionFamilyFromInsurance,
+  expirationFromTerm,
+  insuranceFamilyFromPolicy,
+  lineOfBusinessForFamily,
+  type InsuranceFamily,
+} from "@/lib/desk/policy-family";
 import { loadCommissionRates } from "@/lib/desk/load-rates";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { toNumber } from "@/lib/commissions/math";
@@ -31,21 +38,32 @@ export async function updatePolicyRecord(formData: FormData) {
   if (!existing) return;
 
   const effectiveDate = dateOrNull(str(formData, "effectiveDate")) ?? existing.effectiveDate;
-  const expirationDate = dateOrNull(str(formData, "expirationDate")) ?? existing.expirationDate;
+  const insuranceType = (str(formData, "insuranceType") ||
+    insuranceFamilyFromPolicy(existing)) as InsuranceFamily;
+  const subType = str(formData, "policySubType") || existing.policySubType;
+  const policyType = str(formData, "policyType") || existing.policyType;
+  const policyTerm = str(formData, "policyTerm") || existing.policyTerm;
+  const fromTerm = expirationFromTerm(effectiveDate, policyTerm, existing.expirationDate);
+  const expirationDate = dateOrNull(str(formData, "expirationDate")) ?? fromTerm ?? existing.expirationDate;
   const renewalDate = dateOrNull(str(formData, "renewalDate"));
   const oepStart = dateOrNull(str(formData, "oepStart"));
   const premium = str(formData, "premium");
-  const subType = str(formData, "policySubType") || existing.policySubType;
   const family = (str(formData, "commissionFamily") ||
+    commissionFamilyFromInsurance(insuranceType, subType) ||
     inferLineFamily(existing.lineOfBusiness, existing.commissionFamily, subType)) as LineFamily;
   const insuredCount = Math.max(1, Number(str(formData, "insuredCount") || existing.insuredCount || "1") || 1);
   const commission4 = str(formData, "commission4Pct") || str(formData, "ratePct") || existing.commission4Pct;
+  const faceAmount = str(formData, "faceAmount");
+  const sameAsMailing = str(formData, "insuredSameAsMailing") === "on" || str(formData, "insuredSameAsMailing") === "true";
 
   await db
     .update(policies)
     .set({
       status: str(formData, "status") || existing.status,
-      lineOfBusiness: str(formData, "lineOfBusiness") || existing.lineOfBusiness,
+      lineOfBusiness:
+        str(formData, "lineOfBusiness") ||
+        lineOfBusinessForFamily(insuranceType, policyType, subType) ||
+        existing.lineOfBusiness,
       policyNumber: str(formData, "policyNumber") || existing.policyNumber,
       premium: premium === "" ? existing.premium : premium,
       billingFrequency: str(formData, "billingFrequency") || existing.billingFrequency,
@@ -56,13 +74,15 @@ export async function updatePolicyRecord(formData: FormData) {
       commissionFamily: family,
       sellingAgency: str(formData, "sellingAgency") || existing.sellingAgency,
       policySubType: subType,
+      insuranceType,
+      policyType,
+      policyTerm,
+      faceAmount: faceAmount === "" ? existing.faceAmount : faceAmount,
+      insuredSameAsMailing: sameAsMailing,
       insuredCount,
       commission4Pct: commission4 || null,
       producer: str(formData, "producer") || null,
-      formType: str(formData, "formType") || existing.formType,
-      coverageA: str(formData, "coverageA")
-        ? Number(str(formData, "coverageA")) || existing.coverageA
-        : existing.coverageA,
+      formType: str(formData, "formType") || policyType || existing.formType,
       premisesAddress: str(formData, "premisesAddress") || existing.premisesAddress,
       premisesCity: str(formData, "premisesCity") || existing.premisesCity,
       premisesState: str(formData, "premisesState") || existing.premisesState,

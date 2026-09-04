@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { logDeskActivity, rescheduleDeskActivity, updateDeskActivity } from "@/app/actions/activities-desk";
+import {
+  deleteDeskActivity,
+  logDeskActivity,
+  rescheduleDeskActivity,
+  updateDeskActivity,
+} from "@/app/actions/activities-desk";
 import { RelatedRecordFields, type RelatedOptions } from "@/components/desk/related-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +72,7 @@ export function DeskCalendar({
   });
   const [kinds, setKinds] = useState<string[]>(initialKinds.length ? initialKinds : [...KINDS]);
   const [editing, setEditing] = useState<CalendarEvent | "new" | null>(null);
+  const [draftKind, setDraftKind] = useState<(typeof KINDS)[number]>("task");
   const [draftStart, setDraftStart] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -133,8 +139,9 @@ export function DeskCalendar({
     openNew(next);
   }
 
-  function openNew(start?: Date) {
+  function openNew(start?: Date, kind: (typeof KINDS)[number] = "task") {
     setDraftStart(start ? toDateTimeLocal(start) : "");
+    setDraftKind(kind);
     setEditing("new");
   }
 
@@ -158,7 +165,7 @@ export function DeskCalendar({
               go(view, view === "month" ? addMonths(anchor, -1) : addDays(anchor, view === "day" ? -1 : -7))
             }
           >
-            Prev
+            {view === "month" ? "Previous month" : view === "week" ? "Previous week" : "Previous day"}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => go(view, new Date())}>
             Today
@@ -171,7 +178,7 @@ export function DeskCalendar({
               go(view, view === "month" ? addMonths(anchor, 1) : addDays(anchor, view === "day" ? 1 : 7))
             }
           >
-            Next
+            {view === "month" ? "Next month" : view === "week" ? "Next week" : "Next day"}
           </Button>
           <h2 className="ml-2 text-sm font-semibold text-navy">{title}</h2>
         </div>
@@ -188,8 +195,19 @@ export function DeskCalendar({
             </Button>
           ))}
           <Button type="button" size="sm" onClick={() => openNew()}>
-            New
+            + Add event
           </Button>
+          {KINDS.map((kind) => (
+            <Button
+              key={kind}
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => openNew(undefined, kind)}
+            >
+              + {kind[0].toUpperCase() + kind.slice(1)}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -296,7 +314,11 @@ export function DeskCalendar({
           event={editing === "new" ? null : editing}
           options={options}
           defaultStart={draftStart}
-          onClose={() => setEditing(null)}
+          defaultKind={draftKind}
+          onClose={() => {
+            setEditing(null);
+            router.refresh();
+          }}
         />
       ) : null}
     </div>
@@ -539,11 +561,13 @@ function CalendarEditor({
   event,
   options,
   defaultStart,
+  defaultKind = "task",
   onClose,
 }: {
   event: CalendarEvent | null;
   options: RelatedOptions;
   defaultStart: string;
+  defaultKind?: (typeof KINDS)[number];
   onClose: () => void;
 }) {
   const isNew = !event;
@@ -569,7 +593,7 @@ function CalendarEditor({
             <Label className="text-xs">Type</Label>
             <select
               name="kind"
-              defaultValue={event?.kind ?? "task"}
+              defaultValue={event?.kind ?? defaultKind}
               className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
             >
               {KINDS.map((k) => (
@@ -648,7 +672,23 @@ function CalendarEditor({
             <Label className="text-xs">Notes</Label>
             <Textarea name="notes" defaultValue={event?.notes ?? ""} className="mt-1 min-h-16" />
           </div>
-          <div className="sm:col-span-2 flex justify-end gap-2">
+          <div className="sm:col-span-2 flex flex-wrap justify-end gap-2">
+            {!isNew ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mr-auto text-destructive"
+                onClick={async () => {
+                  const form = new FormData();
+                  form.set("activityId", event.id);
+                  await deleteDeskActivity(form);
+                  onClose();
+                }}
+              >
+                Delete event
+              </Button>
+            ) : null}
             <Button type="button" size="sm" variant="outline" onClick={onClose}>
               Cancel
             </Button>

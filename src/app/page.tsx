@@ -9,15 +9,22 @@ import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { entityHref } from "@/lib/crm/display";
 import { cn } from "@/lib/utils";
+import { parseAttentionWindow } from "@/lib/home/attention-window";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ attention?: string }>;
+}) {
+  const params = await searchParams;
   const [{ snapshot, scope, tables }, { recentDeals, unread }, lineSettings] = await Promise.all([
     ownerHomeDashboard(),
     dashboardStats(),
     loadDeskLineSettings(),
   ]);
+  const attentionWindow = parseAttentionWindow(params.attention);
 
   return (
     <AppShell
@@ -28,7 +35,13 @@ export default async function HomePage() {
         </Link>
       }
     >
-      <OwnerDesk snapshot={snapshot} scope={scope} tables={tables} lineSettings={lineSettings} />
+      <OwnerDesk
+        snapshot={snapshot}
+        scope={scope}
+        tables={tables}
+        lineSettings={lineSettings}
+        attentionWindow={attentionWindow}
+      />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden">

@@ -32,7 +32,7 @@ export function RecordSection({
             <h2 className="text-base font-semibold text-navy">{title}</h2>
             {summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
           </div>
-          <span className="text-sm text-muted-foreground">{open ? "Minimize" : "Expand"}</span>
+          <span className="text-sm text-muted-foreground">{open ? "Collapse" : "Expand"}</span>
         </button>
       ) : (
         <div className="px-4 py-3">

@@ -133,6 +133,28 @@ export const agencySettings = pgTable(
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
 );
 
+/** Zoho-style global picklists: policy types, sub-types, terms, statuses, file categories. */
+export const globalLists = pgTable(
+  "global_lists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    listKey: text("list_key").notNull(),
+    family: text("family"),
+    parentSlug: text("parent_slug"),
+    slug: text("slug").notNull(),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    color: text("color"),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    index("global_lists_tenant_idx").on(t.tenantId, t.listKey),
+    uniqueIndex("global_lists_key_slug_uidx").on(t.tenantId, t.listKey, t.slug),
+  ],
+);
+
 /** Configurable Life / Health book chips. Defaults seed Term/Whole/IUL/Final Expense and Marketplace/MA/A&B/Supplemental. */
 export const lineSubfilterOptions = pgTable(
   "line_subfilter_options",
@@ -400,6 +422,11 @@ export const policies = pgTable(
     oepStart: timestamp("oep_start", { withTimezone: true }),
     termMonths: integer("term_months"),
     producer: text("producer"),
+    insuranceType: text("insurance_type"),
+    policyType: text("policy_type"),
+    policyTerm: text("policy_term"),
+    faceAmount: numeric("face_amount", { precision: 14, scale: 2 }),
+    insuredSameAsMailing: boolean("insured_same_as_mailing").notNull().default(false),
     premisesAddress: text("premises_address"),
     premisesCity: text("premises_city"),
     premisesState: text("premises_state"),
@@ -1610,3 +1637,4 @@ export type EsignSettings = typeof esignSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
+export type GlobalListRow = typeof globalLists.$inferSelect;

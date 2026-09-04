@@ -127,6 +127,13 @@
       "when": 1788527000000,
       "tag": "0017_esign_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788527100000,
+      "tag": "0018_policy_global_lists",
+      "breakpoints": true
     }
   ]
 }

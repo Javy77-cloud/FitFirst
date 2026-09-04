@@ -51,6 +51,21 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsSection
+            id="lists"
+            title="Global lists"
+            badge="Admin"
+            summary="Policy types, sub-types, terms, statuses, file categories. Carriers linked."
+          >
+            <p className="text-sm text-muted-foreground">
+              Zoho-style picklists the Policy form reads. Carriers stay on /carriers — this hub
+              lists them next to the other globals.
+            </p>
+            <Link href="/settings/lists" className="mt-3 inline-block text-sm text-primary hover:underline">
+              Open global lists
+            </Link>
+          </SettingsSection>
+
+          <SettingsSection
             id="lines"
             title="Lines of business"
             badge="Admin"
