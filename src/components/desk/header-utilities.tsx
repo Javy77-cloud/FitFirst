@@ -26,6 +26,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -76,6 +77,12 @@ function roleLabel(session: HeaderSession) {
   if (session.isAdmin) return "Admin";
   if (session.isAgent) return "Agent";
   return "Guest";
+}
+
+async function dismissAlert(alertId: string) {
+  const form = new FormData();
+  form.set("alertId", alertId);
+  await markAlertRead(form);
 }
 
 export function HeaderUtilities({
@@ -154,46 +161,48 @@ export function HeaderUtilities({
           ) : null}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80 min-w-72">
-          <DropdownMenuLabel>Alerts</DropdownMenuLabel>
-          {alerts.length === 0 ? (
-            <p className="px-1.5 py-3 text-xs text-muted-foreground">
-              No in-app alerts. Nothing emails the agent.
-            </p>
-          ) : (
-            <div className="max-h-80 overflow-y-auto">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="flex items-start gap-1 px-0.5 py-1">
-                  <DropdownMenuItem
-                    className="min-w-0 flex-1 items-start"
-                    render={<Link href={alert.href ?? "/work-queue"} />}
-                  >
-                    <span className="min-w-0">
-                      <span className={cn("block truncate", !alert.read && "font-semibold")}>{alert.title}</span>
-                      <span className="block truncate text-[11px] text-muted-foreground">{alert.body}</span>
-                    </span>
-                  </DropdownMenuItem>
-                  {!alert.read ? (
-                    <form action={markAlertRead} onClick={(event) => event.stopPropagation()}>
-                      <input type="hidden" name="alertId" value={alert.id} />
-                      <button
-                        type="submit"
-                        className="rounded px-1 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-navy"
-                      >
-                        Dismiss
-                      </button>
-                    </form>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          )}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Alerts</DropdownMenuLabel>
+            {alerts.length === 0 ? (
+              <DropdownMenuItem disabled>No in-app alerts. Nothing emails the agent.</DropdownMenuItem>
+            ) : (
+              alerts.map((alert) => (
+                <DropdownMenuItem
+                  key={alert.id}
+                  className="items-start"
+                  render={<Link href={alert.href ?? "/work-queue"} />}
+                >
+                  <span className="min-w-0">
+                    <span className={cn("block truncate", !alert.read && "font-semibold")}>{alert.title}</span>
+                    <span className="block truncate text-[11px] text-muted-foreground">{alert.body}</span>
+                  </span>
+                </DropdownMenuItem>
+              ))
+            )}
+            {alerts.some((alert) => !alert.read)
+              ? alerts
+                  .filter((alert) => !alert.read)
+                  .map((alert) => (
+                    <DropdownMenuItem
+                      key={`dismiss-${alert.id}`}
+                      onClick={() => {
+                        void dismissAlert(alert.id);
+                      }}
+                    >
+                      Dismiss · {alert.title}
+                    </DropdownMenuItem>
+                  ))
+              : null}
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Quick links</DropdownMenuLabel>
-          {NOTIFICATION_LINKS.map((link) => (
-            <DropdownMenuItem key={link.href} render={<Link href={link.href} />}>
-              {link.label}
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Quick links</DropdownMenuLabel>
+            {NOTIFICATION_LINKS.map((link) => (
+              <DropdownMenuItem key={link.href} render={<Link href={link.href} />}>
+                {link.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -213,14 +222,20 @@ export function HeaderUtilities({
           <Sparkles className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80 min-w-72">
-          <DropdownMenuLabel>What’s New</DropdownMenuLabel>
-          {whatsNew.map((entry) => (
-            <div key={entry.id} className="px-1.5 py-1.5">
-              <div className="text-sm font-medium text-navy">{entry.title}</div>
-              <p className="text-xs text-muted-foreground">{entry.body}</p>
-              <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">{entry.date}</div>
-            </div>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>What’s New</DropdownMenuLabel>
+            {whatsNew.map((entry) => (
+              <DropdownMenuItem key={entry.id} className="items-start" disabled>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-navy">{entry.title}</span>
+                  <span className="block text-xs text-muted-foreground">{entry.body}</span>
+                  <span className="mt-0.5 block text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {entry.date}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -240,21 +255,23 @@ export function HeaderUtilities({
           <Clock className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80 min-w-72">
-          <DropdownMenuLabel>Recently accessed</DropdownMenuLabel>
-          {recent.length === 0 ? (
-            <p className="px-1.5 py-3 text-xs text-muted-foreground">
-              Open a contact, deal, or policy. Last records also fill from the book.
-            </p>
-          ) : (
-            recent.map((row) => (
-              <DropdownMenuItem key={`${row.kind}-${row.id}`} render={<Link href={row.href} />}>
-                <span className="min-w-0">
-                  <span className="block truncate">{row.title}</span>
-                  <span className="block text-[11px] text-muted-foreground">{recentKindLabel(row.kind)}</span>
-                </span>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Recently accessed</DropdownMenuLabel>
+            {recent.length === 0 ? (
+              <DropdownMenuItem disabled>
+                Open a contact, deal, or policy. Last records also fill from the book.
               </DropdownMenuItem>
-            ))
-          )}
+            ) : (
+              recent.map((row) => (
+                <DropdownMenuItem key={`${row.kind}-${row.id}`} render={<Link href={row.href} />}>
+                  <span className="min-w-0">
+                    <span className="block truncate">{row.title}</span>
+                    <span className="block text-[11px] text-muted-foreground">{recentKindLabel(row.kind)}</span>
+                  </span>
+                </DropdownMenuItem>
+              ))
+            )}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -274,12 +291,14 @@ export function HeaderUtilities({
           <Plus className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-48">
-          <DropdownMenuLabel>Quick actions</DropdownMenuLabel>
-          {QUICK_ACTIONS.map((action) => (
-            <DropdownMenuItem key={action.id} render={<Link href={action.href} />}>
-              {action.label}
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Quick actions</DropdownMenuLabel>
+            {QUICK_ACTIONS.map((action) => (
+              <DropdownMenuItem key={action.id} render={<Link href={action.href} />}>
+                {action.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -334,26 +353,30 @@ export function HeaderUtilities({
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-56">
-          <DropdownMenuLabel>
-            <span className="block truncate text-sm font-medium text-navy">{session.name || "Not signed in"}</span>
-            <span className="mt-1 inline-flex rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-navy">
-              {roleLabel(session)}
-            </span>
-          </DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <span className="block truncate text-sm font-medium text-navy">{session.name || "Not signed in"}</span>
+              <span className="mt-1 inline-flex rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-navy">
+                {roleLabel(session)}
+              </span>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href={PROFILE_SETTINGS_HREF} />}>Profile settings</DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/login" />}>
-            {session.signedIn ? "Switch user" : "Sign in"}
-          </DropdownMenuItem>
-          {session.signedIn ? (
-            <DropdownMenuItem
-              onClick={() => {
-                void logoutDesk();
-              }}
-            >
-              Sign out
+          <DropdownMenuGroup>
+            <DropdownMenuItem render={<Link href={PROFILE_SETTINGS_HREF} />}>Profile settings</DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/login" />}>
+              {session.signedIn ? "Switch user" : "Sign in"}
             </DropdownMenuItem>
-          ) : null}
+            {session.signedIn ? (
+              <DropdownMenuItem
+                onClick={() => {
+                  void logoutDesk();
+                }}
+              >
+                Sign out
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
