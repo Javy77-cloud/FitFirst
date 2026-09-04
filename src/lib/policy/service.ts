@@ -17,6 +17,7 @@ import { normalizePremises, type PremisesParts } from "./premises";
 import { reasonLabel } from "./reasons";
 import { isInForceStatus } from "./status";
 import { applyPolicyChange, parseIsoDate, type PolicyChangeInput } from "./workflow";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -156,6 +157,22 @@ export async function filePolicyChange(input: FilePolicyChangeInput) {
       }),
     );
   }
+
+  await writeEoAuditSafe({
+    action: "policy_change",
+    summary: drafted.event.summary,
+    entityType: "policy",
+    entityId: policy.id,
+    contactId: policy.contactId,
+    accountId: policy.accountId,
+    policyId: policy.id,
+    dealId: policy.dealId,
+    meta: {
+      kind: drafted.event.kind,
+      reason: drafted.event.reason,
+      eventId: event.id,
+    },
+  });
 
   return {
     ok: true as const,

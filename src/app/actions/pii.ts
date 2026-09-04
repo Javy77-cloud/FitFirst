@@ -6,6 +6,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, contacts, drivers, piiRevealLogs, policies } from "@/lib/db/schema";
 import { decryptPii } from "@/lib/pii/vault";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 
 export type PiiEntityType = "contact" | "account" | "driver";
 export type PiiFieldKey = "ssn" | "ein" | "license_number";
@@ -115,6 +116,18 @@ export async function revealPiiField(input: {
     entityType: input.entityType,
     entityId: input.entityId,
     fieldKey: input.field,
+  });
+
+  await writeEoAuditSafe({
+    action: "reveal_pii",
+    summary: `Revealed ${input.field.replaceAll("_", " ")} on ${input.entityType}`,
+    actorId: session.userId,
+    actorName: session.name,
+    entityType: input.entityType,
+    entityId: input.entityId,
+    contactId: input.entityType === "contact" ? input.entityId : null,
+    accountId: input.entityType === "account" ? input.entityId : null,
+    meta: { fieldKey: input.field },
   });
 
   return { ok: true, value: plaintext };

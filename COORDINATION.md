@@ -593,6 +593,15 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 - Admin browse `/logs/fill-learning` (tab next to Appetite / decline log). Agents can still mark a mapping wrong on the sheet.
 - Seeded Elena HO corrections: wind mit roof year 2014→2019, dec CBS→masonry, 4-point comp shingle→architectural shingle. No Ana rows.
 
+## DIFFERENTIATOR pack B — E&O audit + Compliance (`cursor/eo-audit-compliance-314d`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0036_eo_audit_logs`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Nothing emails Javy.
+
+- Table `eo_audit_logs`: append-only (app insert + Postgres trigger). Who / when / what / record ids for email, SMS, call, meeting, doc view, reveal PII, policy change. No decrypted PII.
+- Writers: `writeDeskComms`, `/api/files/[id]`, `revealPiiField`, `updatePolicyRecord`, `filePolicyChange`.
+- Admin page `/compliance` (Settings + Logs tab). Live E&O flags: no client activity 90 days before renewal, Bound/Pending missing signed app, Quote Sent with no desk follow-up task.
+- Seed writes a short Elena/Harbor trail and in-app `eo_gap` alerts to Javy only. Ana stays Quote Sent / unbound.
+
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

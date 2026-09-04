@@ -54,6 +54,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/agents")).toBe(true);
     expect(isAdminOnlyPath("/settings/agents/abc/performance")).toBe(true);
     expect(isAdminOnlyPath("/logs/fill-learning")).toBe(true);
+    expect(isAdminOnlyPath("/compliance")).toBe(true);
     expect(isAdminOnlyPath("/carriers/logs")).toBe(false);
     expect(isAdminOnlyPath("/settings")).toBe(false);
     expect(isAdminOnlyPath("/settings/my-desk")).toBe(false);

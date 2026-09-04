@@ -205,6 +205,20 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "why", label: "Why", defaultOn: true },
     { key: "snapshot", label: "Snapshot", defaultOn: false },
   ],
+  "eo-gaps": [
+    { key: "severity", label: "Severity", defaultOn: true },
+    { key: "flag", label: "Flag", defaultOn: true },
+    { key: "record", label: "Record", defaultOn: true },
+    { key: "detail", label: "Detail", defaultOn: true },
+  ],
+  "eo-trail": [
+    { key: "when", label: "When", defaultOn: true },
+    { key: "who", label: "Who", defaultOn: true },
+    { key: "what", label: "What", defaultOn: true },
+    { key: "record", label: "Record", defaultOn: true },
+    { key: "ids", label: "Record ids", defaultOn: true },
+    { key: "summary", label: "Summary", defaultOn: true },
+  ],
   "fill-learning": [
     { key: "date", label: "Date", defaultOn: true },
     { key: "deal", label: "Deal", defaultOn: true },

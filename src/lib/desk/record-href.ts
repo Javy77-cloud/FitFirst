@@ -8,5 +8,6 @@ export function recordHref(entityType?: string | null, entityId?: string | null)
   if (entityType === "policy") return `/policies/${entityId}`;
   if (entityType === "carrier") return `/carriers/${entityId}`;
   if (entityType === "activity") return `/calendar?event=${entityId}`;
+  if (entityType === "document") return `/files/${entityId}`;
   return null;
 }

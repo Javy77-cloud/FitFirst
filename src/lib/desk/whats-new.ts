@@ -9,6 +9,12 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+    id: "eo-compliance",
+    title: "E&O Compliance desk",
+    body: "Admin Compliance holds an append-only client-interaction trail and simple gap flags. Alerts stay in-app — nothing emails Javy.",
+    date: "2026-09-04",
+  },
+  {
     id: "top-chrome",
     title: "Top chrome utilities",
     body: "The header holds Smart Search, Alerts (the bell is the alerts module), What’s New, profile, recently accessed, and quick add. Alerts and Search are off the left nav.",

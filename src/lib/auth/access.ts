@@ -12,6 +12,7 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/email-triggers",
   "/settings/agents",
   "/logs/fill-learning",
+  "/compliance",
 ] as const;
 
 export type AccessRole = "admin" | "agent" | "guest";

@@ -1,6 +1,8 @@
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, activityLogs, emailSendJobs } from "@/lib/db/schema";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
+import { eoActionFromCommsKind } from "@/lib/eo-audit/types";
 import { activityLogBody, hasCommsRecord, type RelatedRecordIds } from "@/lib/lifecycle/activity";
 import {
   commsThreadKey,
@@ -34,6 +36,8 @@ export type WriteCommsInput = RelatedRecordIds & {
   videoProvider?: string | null;
   id?: string;
   logEmailJob?: boolean;
+  actorId?: string | null;
+  actorName?: string | null;
 };
 
 export async function writeDeskComms(input: WriteCommsInput) {
@@ -122,6 +126,43 @@ export async function writeDeskComms(input: WriteCommsInput) {
       anchorAt: input.occurredAt ?? new Date(),
       scheduledFor: input.occurredAt ?? new Date(),
       status: direction === "inbound" ? "received" : "logged",
+    });
+  }
+
+  const eoAction = eoActionFromCommsKind(kind);
+  if (eoAction) {
+    const entityType = related.policyId
+      ? "policy"
+      : related.dealId
+        ? "deal"
+        : related.contactId
+          ? "contact"
+          : related.accountId
+            ? "account"
+            : related.leadId
+              ? "lead"
+              : null;
+    const entityId =
+      related.policyId || related.dealId || related.contactId || related.accountId || related.leadId || null;
+    await writeEoAuditSafe({
+      action: eoAction,
+      summary: input.title || `${eoAction} logged`,
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+      actorName: input.actorName,
+      entityType,
+      entityId,
+      contactId: related.contactId,
+      accountId: related.accountId,
+      policyId: related.policyId,
+      dealId: related.dealId,
+      leadId: related.leadId,
+      activityId: activity.id,
+      meta: {
+        direction,
+        eventType,
+        subject: subject ?? undefined,
+      },
     });
   }
 

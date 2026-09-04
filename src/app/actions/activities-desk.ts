@@ -93,6 +93,8 @@ export async function logDeskActivity(formData: FormData) {
     outcome,
     phoneNumber: str(formData, "phoneNumber") || null,
     assignee: str(formData, "assignee") || session.name || null,
+    actorId: session.userId,
+    actorName: session.name,
     ...related,
   });
 
