@@ -29,6 +29,8 @@ import { businessSectionsForRole, canAskTeammateOnBusiness } from "@/lib/desk/bu
 import { isUuid } from "@/lib/ids";
 import { einMaskFromRow } from "@/lib/pii/vault";
 import { MaskedPiiField } from "@/components/pii/masked-field";
+import { RenewalRiskCard } from "@/components/renewal-risk/risk-card";
+import { loadRenewalRiskForAccount } from "@/lib/renewal-risk/load";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +41,13 @@ export default async function AccountDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, asks, users, session] = await Promise.all([
+  const [workspace, templates, asks, users, session, renewalRisk] = await Promise.all([
     getAccountWorkspace(id),
     listEmailTemplates(),
     listRecordAsks("account", id),
     listDeskUsers(),
     currentDeskSession(),
+    loadRenewalRiskForAccount(id),
   ]);
   if (!workspace) notFound();
   const {
@@ -170,6 +173,15 @@ export default async function AccountDetailPage({
             ) : null}
             {account.notes ? (
               <p className="mt-2 text-sm text-muted-foreground">{account.notes}</p>
+            ) : null}
+            {renewalRisk ? (
+              <div className="mt-4">
+                <RenewalRiskCard row={renewalRisk} />
+              </div>
+            ) : policyCount === 0 ? (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                No in-force policies — no renewal-risk score.
+              </p>
             ) : null}
           </RecordSection>
 

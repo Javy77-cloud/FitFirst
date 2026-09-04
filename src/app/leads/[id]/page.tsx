@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
+import { routeLeadNow } from "@/app/actions/lead-routing";
+import { latestRoutingLog } from "@/lib/leads/apply-routing";
 import { currentDeskSession } from "@/lib/auth/session";
 import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
@@ -30,13 +32,14 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, templates, asks, users, session, agents] = await Promise.all([
+  const [row, templates, asks, users, session, agents, routingLog] = await Promise.all([
     getLead(id),
     listEmailTemplates(),
     listRecordAsks("lead", id),
     listDeskUsers(),
     currentDeskSession(),
     listAwardableAgents(),
+    latestRoutingLog(id),
   ]);
   if (!row) notFound();
   const { lead, deal, timeline } = row;
@@ -65,6 +68,21 @@ export default async function LeadDetailPage({
           phone={lead.phone}
         />
       </div>
+
+      {routingLog ? (
+        <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+          {routingLog.outcome === "assigned" ? "Routed" : "Unassigned"} · {routingLog.reason}
+        </p>
+      ) : null}
+
+      {session.isAdmin && !lead.ownerId ? (
+        <form action={routeLeadNow} className="mb-4">
+          <input type="hidden" name="leadId" value={lead.id} />
+          <Button type="submit" size="sm" variant="outline">
+            Run routing rules
+          </Button>
+        </form>
+      ) : null}
 
       {session.isAdmin && !lead.ownerId && isInboundSocialSource(lead.source) ? (
         <div className="mb-4 ff-card p-4">

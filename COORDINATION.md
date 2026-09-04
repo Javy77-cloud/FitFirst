@@ -595,4 +595,12 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list. Pack C used **0036**. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+
+## DIFFERENTIATOR pack C — Smart lead routing + renewal-risk (`cursor/lead-routing-renewal-risk-5b51`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0036_lead_routing_renewal_risk`. Ana fixture untouched (unbound, Cov A **$321,000**). No ML.
+
+**Lead routing.** Admin Settings → Brand / Agency → **Lead routing**. Rules match territory + written line (Home/Auto/…) + producer capacity (`#` open deals under the cap). First enabled rule by priority wins. Least-loaded producer in that territory, or a pinned producer if they still have room. Unassigned inbound / social with no connection owner runs the same engine. No match posts a `lead_offers.kind = unassigned` row on the Home lead-offer board (take ownership). Seed: Space Coast HO/Auto prefer Maya if she is under the open-deal cap; FL GL prefers Javy. Tessa Voss (Melbourne HO) routes to Maya; Grant Hobbs (Billings MT Auto) stays on the board.
+
+**Renewal-risk.** Pure score 0–100 from days-to-renewal (flag before the 45–75 day rate-increase window), proposed premium change if known, monoline, lapse history, and no contact 60 days. Home widget **Renewal-risk flags** (My production + Retention). Account 360 Overview on Contact and Business. Hale HO (`HP-FL-88421`, +16.6%, 28 days) is Critical. Nair Auto is Elevated. Ana has 0 policies — no score, still shopping.

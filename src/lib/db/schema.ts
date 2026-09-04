@@ -2064,6 +2064,42 @@ export const socialLeadOffers = pgTable(
   ],
 );
 
+/** Admin-editable auto-route rules. Territory + written line + producer capacity. */
+export const leadRoutingRules = pgTable(
+  "lead_routing_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(10),
+    territoryId: uuid("territory_id"),
+    writtenLine: text("written_line"),
+    maxOpenDeals: integer("max_open_deals").notNull().default(12),
+    producerId: uuid("producer_id"),
+    ...timestamps,
+  },
+  (t) => [index("lead_routing_rules_tenant_idx").on(t.tenantId, t.sortOrder)],
+);
+
+/** Why a lead was assigned or posted to the offer board. */
+export const leadRoutingLogs = pgTable(
+  "lead_routing_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id),
+    ruleId: uuid("rule_id"),
+    producerId: uuid("producer_id"),
+    outcome: text("outcome").notNull(),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("lead_routing_logs_lead_idx").on(t.tenantId, t.leadId)],
+);
+
 export const piiRevealLogs = pgTable(
   "pii_reveal_logs",
   {
@@ -2185,3 +2221,5 @@ export type Territory = typeof territories.$inferSelect;
 export type TerritoryOffice = typeof territoryOffices.$inferSelect;
 export type UserOffice = typeof userOffices.$inferSelect;
 export type UserTerritory = typeof userTerritories.$inferSelect;
+export type LeadRoutingRule = typeof leadRoutingRules.$inferSelect;
+export type LeadRoutingLog = typeof leadRoutingLogs.$inferSelect;

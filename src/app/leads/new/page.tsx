@@ -14,6 +14,13 @@ export default function NewLeadPage() {
           belong on the Deal.
         </p>
         <LeadFormFields />
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="autoRoute" value="1" defaultChecked className="mt-1" />
+          <span>
+            Auto-route by territory, written line, and producer capacity. No match goes to the
+            Home lead-offer board.
+          </span>
+        </label>
         <Button type="submit" size="sm">
           Save lead
         </Button>

@@ -148,7 +148,9 @@ export async function ingestSocialLead(input: SocialLeadIdentity & {
   notifiedUserId: string | null;
   offerId: string | null;
 }> {
-  const { assignment, ownerUserId } = inboundAssignment(input.connectionOwnerUserId);
+  const inbound = inboundAssignment(input.connectionOwnerUserId);
+  let assignment = inbound.assignment;
+  let ownerUserId = inbound.ownerUserId;
   const platform = input.platform && isSocialPlatformId(input.platform) ? input.platform : null;
   const source = input.source || (platform as string) || "social";
   const { lead, created } = await findOrCreateLead({
@@ -166,10 +168,17 @@ export async function ingestSocialLead(input: SocialLeadIdentity & {
     preferredLanguage: input.preferredLanguage,
     notes: input.notes,
     source,
+    ownerId: ownerUserId,
+    autoRoute: !ownerUserId,
   });
 
+  if (created && !ownerUserId && lead.ownerId) {
+    assignment = "agent";
+    ownerUserId = lead.ownerId;
+  }
+
   const shouldOwn = created || !lead.ownerId;
-  if (shouldOwn && lead.ownerId !== ownerUserId) {
+  if (shouldOwn && ownerUserId && lead.ownerId !== ownerUserId) {
     await db
       .update(leads)
       .set({ ownerId: ownerUserId, source, updatedAt: new Date() })

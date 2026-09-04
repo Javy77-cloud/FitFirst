@@ -26,6 +26,8 @@ import { isUuid } from "@/lib/ids";
 import { currentDeskSession } from "@/lib/auth/session";
 import { ssnMaskFromRow } from "@/lib/pii/vault";
 import { MaskedPiiField } from "@/components/pii/masked-field";
+import { RenewalRiskCard } from "@/components/renewal-risk/risk-card";
+import { loadRenewalRiskForContact } from "@/lib/renewal-risk/load";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +38,11 @@ export default async function ContactDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates, session] = await Promise.all([
+  const [workspace, templates, session, renewalRisk] = await Promise.all([
     getContactWorkspace(id),
     listEmailTemplates(),
     currentDeskSession(),
+    loadRenewalRiskForContact(id),
   ]);
   if (!workspace) notFound();
   const {
@@ -161,6 +164,15 @@ export default async function ContactDetailPage({
             </dl>
             {contact.notes ? (
               <p className="mt-3 text-sm text-muted-foreground">{contact.notes}</p>
+            ) : null}
+            {renewalRisk ? (
+              <div className="mt-4">
+                <RenewalRiskCard row={renewalRisk} />
+              </div>
+            ) : policyCount === 0 ? (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                No in-force policies — no renewal-risk score. Shopping stays unbound.
+              </p>
             ) : null}
           </RecordSection>
 

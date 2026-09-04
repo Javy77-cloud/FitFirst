@@ -16,5 +16,10 @@ describe("settings nav", () => {
     expect(settingsGroupFor("profile")).toBe("account");
     expect(settingsGroupFor("security")).toBe("account");
     expect(settingsGroupFor("recovery")).toBe("account");
+    expect(settingsGroupFor("routing")).toBe("agency");
+    const agency = SETTINGS_NAV.find((group) => group.id === "agency");
+    expect(agency?.children.map((child) => child.id)).toEqual(
+      expect.arrayContaining(["offices", "territories", "routing"]),
+    );
   });
 });

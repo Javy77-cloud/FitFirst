@@ -117,6 +117,9 @@ export default async function SettingsPage() {
               <Link href="/settings/territories" className="text-primary hover:underline">
                 Territories
               </Link>
+              <Link href="/settings/routing" className="text-primary hover:underline">
+                Lead routing
+              </Link>
             </div>
           </SettingsSection>
 

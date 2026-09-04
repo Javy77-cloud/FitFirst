@@ -3,7 +3,7 @@ import { splitNamedInsured } from "@/lib/lifecycle/lead-match";
 export const LEAD_OFFER_STATUSES = ["open", "claimed", "awarded", "withdrawn"] as const;
 export type LeadOfferStatus = (typeof LEAD_OFFER_STATUSES)[number];
 
-export const LEAD_OFFER_KINDS = ["referral", "inbound_email"] as const;
+export const LEAD_OFFER_KINDS = ["referral", "inbound_email", "unassigned"] as const;
 export type LeadOfferKind = (typeof LEAD_OFFER_KINDS)[number];
 
 export const LEAD_OFFER_RELATIONS = ["know_client", "new_lead"] as const;
@@ -30,17 +30,22 @@ export function parseLeadOfferRelation(raw: string | null | undefined): LeadOffe
   return null;
 }
 
+function isBoardPickup(kind?: string | null): boolean {
+  const value = parseLeadOfferKind(kind);
+  return value === "inbound_email" || value === "unassigned";
+}
+
 export function canClaimOffer(status: string, alreadyClaimed: boolean, kind?: string | null): boolean {
-  if (parseLeadOfferKind(kind) === "inbound_email") return false;
+  if (isBoardPickup(kind)) return false;
   return parseLeadOfferStatus(status) === "open" && !alreadyClaimed;
 }
 
 export function canTakeOwnership(status: string, kind?: string | null): boolean {
-  return parseLeadOfferKind(kind) === "inbound_email" && parseLeadOfferStatus(status) === "open";
+  return isBoardPickup(kind) && parseLeadOfferStatus(status) === "open";
 }
 
 export function canAwardOffer(status: string, kind?: string | null): boolean {
-  if (parseLeadOfferKind(kind) === "inbound_email") return false;
+  if (isBoardPickup(kind)) return false;
   return parseLeadOfferStatus(status) === "open";
 }
 

@@ -9,6 +9,7 @@ import { parseAttentionWindow } from "@/lib/home/attention-window";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadSocialPulse } from "@/lib/social/store";
 import { HomeSocialPulse } from "@/components/social/home-pulse";
+import { loadRenewalRiskAccounts } from "@/lib/renewal-risk/load";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +21,15 @@ export default async function HomePage({
   const params = await searchParams;
   const session = await currentDeskSession();
   const role = session.isAdmin ? "admin" : "agent";
-  const [home, { recentDeals, unread }, lineSettings, socialPulse] = await Promise.all([
+  const [home, { recentDeals, unread }, lineSettings, socialPulse, renewalRisk] = await Promise.all([
     ownerHomeDashboard(params.book),
     dashboardStats(),
     loadDeskLineSettings(),
     loadSocialPulse(role),
+    loadRenewalRiskAccounts({
+      flaggedOnly: true,
+      ownerId: session.isAdmin ? null : session.userId,
+    }),
   ]);
   const attentionWindow = parseAttentionWindow(params.attention);
 
@@ -64,6 +69,7 @@ export default async function HomePage({
         bookOptions={home.bookOptions}
         bookValue={params.book ?? "company"}
         attentionValue={params.attention}
+        renewalRisk={renewalRisk}
       />
       <div className="mt-4">
         <HomeSocialPulse pulse={socialPulse} />

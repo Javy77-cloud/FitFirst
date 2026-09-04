@@ -33,8 +33,9 @@ export function LeadOfferBoard({
           Management lead offers
         </h3>
         <p className="text-[11px] text-muted-foreground">
-          Desk-wide. Referral: agents raise a hand, Admin awards. Inbound email: share an unassigned
-          inquiry; the agent who knows the relationship takes ownership and the Lead.
+          Desk-wide. Referral: agents raise a hand, Admin awards. Inbound email or a routing miss:
+          take ownership and the Lead. Unassigned routing posts here when no territory / line /
+          capacity match.
         </p>
       </div>
       {offers.length === 0 ? (
@@ -63,7 +64,12 @@ export function LeadOfferBoard({
                       </div>
                     ) : null}
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {inbound ? "Inbound email" : "Referral"} · Posted by {offer.postedByName}
+                      {offer.kind === "inbound_email"
+                        ? "Inbound email"
+                        : offer.kind === "unassigned"
+                          ? "Routing miss"
+                          : "Referral"}{" "}
+                      · Posted by {offer.postedByName}
                       {offer.language ? ` · ${offer.language}` : ""}
                       {offer.state ? ` · ${offer.state}` : ""}
                       {" · "}
