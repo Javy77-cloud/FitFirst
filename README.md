@@ -6,7 +6,9 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-2: Deal quote PDFs + DOC → master sheet fill + Fill Learning)
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). WAVE-3 leftover: none from this list. Next free migration is **0036**. See `COORDINATION.md`.
+**DIFF L quote compare + video stub:** `/deals/[id]/compare` — select quotes, highlight diffs, plain-English note, branded PDF proposal on the Deal, and a paste-only video walkthrough URL (`deals.video_proposal_url`). No Loom API. Elena seeds `https://fitfirst.example/video/ruiz-melbourne-ho3`. Ana stays unbound at Cov A **$321,000**. Additive `0036_quote_compare_video`.
+
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). WAVE-3 leftover: none from this list. Next free migration is **0037**. See `COORDINATION.md`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -183,6 +185,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 3. **Visual approve.** Quote Sheet tab: glance yellow/blue cells. Check **I visually reviewed this master sheet**, click **Approve and unlock quoting**, then confirm **Are you sure?**
 4. **Handoff.** After unlock: **Copy sheet**, **Send to Fill**, or **Open Fill window**. Prefer the Chrome Fill add-on (`extensions/fill`). No per-agent bot. If the add-on is missing, copy/paste in the new window.
 5. **Appetite log.** Quotes tab → quoted / declined / maybe. `maybe` does not change filter-first matching.
+5b. **Compare.** Quotes tab → **Open interactive compare**. Tick quotes, read the yellow diffs and the plain-English note, generate a branded PDF proposal, or paste a record/upload video link onto the deal. No Loom. Elena already has a stub video URL. Ana stays unbound.
 6. **Fill Learning.** On the Quote Sheet, **Mark mapping wrong** writes a correction (doc type + field + extracted → corrected). The next extract for that `doc_type` + `field_key` uses the latest safe agency-wide remap when the extracted string matches. Admin browse: `/logs/fill-learning` (sibling of Appetite / decline log). Seeded Elena HO rows: roof year, construction, roof covering. Ana Cov A stays **$321,000**.
 7. **Ana lock.** `Dib · Palm Bay HO3` Cov A **$321,000**. Stay shopping. Do not bind.
 8. **Admin-only.** Master risk + Markets/appetite stay Admin. Fill Learning browse is Admin. Ask a teammate on Deal is hidden for agents.

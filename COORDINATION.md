@@ -595,4 +595,17 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list. Next free additive migration after this slice is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+
+## DIFF L — Interactive quote compare + video proposal stub (`cursor/quote-compare-video-11d6`)
+
+Owner: this slice. Starts from `cursor/mac-ready-batch4-7pm`. Additive `0036_quote_compare_video` (`deals.video_proposal_url`). Ana fixture untouched (unbound, Cov A **$321,000**). No Loom API. No live Zoho. One Pipeline. Sidebar hex unchanged.
+
+No branded proposal existed on the batch-4 base, so this slice ships a PDF proposal (agency letterhead + selected quotes + diffs + plain English). Stored on the Deal as `documents.slot = proposal` / `docType = proposal_pdf`.
+
+- Interactive page `/deals/[id]/compare`: select quotes (and priced attempt-log rows), highlight field diffs, write a plain-English note.
+- Quotes tab + `/quotes` board link into Compare. Documents lists branded proposals separately from issued quote PDFs.
+- Video proposal is paste-only: **Record / upload link** saved on `deals.video_proposal_url`. Host it yourself (Drive, Vimeo, YouTube). FitFirst does not record and does not call Loom.
+- Elena seed: `https://fitfirst.example/video/ruiz-melbourne-ho3`. Ana has no video URL and stays shopping / 0 policies.
+
+Click path: Elena Deal → Quotes → Open interactive compare → tick American Integrity + Tailrow → Generate branded proposal → preview PDF. Paste/clear the video URL. Ana Deal → Compare shows her priced attempts (AI quoted $5,607.53 not bindable). Do not bind Ana.

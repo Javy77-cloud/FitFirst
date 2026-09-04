@@ -75,6 +75,9 @@ export default async function QuotesBoardPage({
                 <Link href={`/deals/${shop.dealId}?tab=quotes`} className="text-primary hover:underline">
                   Open deal
                 </Link>
+                <Link href={`/deals/${shop.dealId}/compare`} className="text-primary hover:underline">
+                  Compare quotes
+                </Link>
                 <Link href={`/quotes?deal=${shop.dealId}`} className="text-primary hover:underline">
                   This shop only
                 </Link>

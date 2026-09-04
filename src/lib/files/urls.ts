@@ -58,7 +58,12 @@ export function resolveFileMime(input: {
   slot?: string | null;
 }): string {
   if (input.bytes && looksLikePdf(input.bytes)) return "application/pdf";
-  if (input.docType === "quote_pdf" || input.slot === "quote_pdf") {
+  if (
+    input.docType === "quote_pdf" ||
+    input.slot === "quote_pdf" ||
+    input.docType === "proposal_pdf" ||
+    input.slot === "proposal"
+  ) {
     if (extensionOf(input.filename) === "pdf" || !input.storedMime) return "application/pdf";
   }
   return inferMimeFromName(input.filename, input.storedMime);
@@ -72,7 +77,14 @@ export function shouldWrapAsPdf(input: {
   bytes: Uint8Array | Buffer;
 }): boolean {
   if (looksLikePdf(input.bytes)) return false;
-  if (input.docType === "quote_pdf" || input.slot === "quote_pdf") return true;
+  if (
+    input.docType === "quote_pdf" ||
+    input.slot === "quote_pdf" ||
+    input.docType === "proposal_pdf" ||
+    input.slot === "proposal"
+  ) {
+    return true;
+  }
   if (extensionOf(input.filename) === "pdf") return true;
   return false;
 }
@@ -90,4 +102,8 @@ export function contentDisposition(filename: string, download: boolean): string 
 
 export function isQuoteAttachment(doc: { docType?: string | null; slot?: string | null }): boolean {
   return doc.slot === "quote_pdf" || doc.docType === "quote_pdf" || doc.docType === "quote";
+}
+
+export function isProposalAttachment(doc: { docType?: string | null; slot?: string | null }): boolean {
+  return doc.slot === "proposal" || doc.docType === "proposal_pdf";
 }

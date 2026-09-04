@@ -74,6 +74,7 @@ export function isDealUploadDocType(value: string): value is (typeof DEAL_UPLOAD
 export function slotForDocType(docType: string): DocSlot {
   if (docType === "signed_app") return "signed_app";
   if (docType === "quote" || docType === "quote_pdf") return "quote_pdf";
+  if (docType === "proposal_pdf") return "proposal";
   if (docType === "policy_dec" || docType === "policy_complete" || docType === "policy_id") {
     return "policy_file";
   }
