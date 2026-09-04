@@ -1,0 +1,93 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { and, eq } from "drizzle-orm";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
+import { db } from "@/lib/db";
+import { documents, type Document } from "@/lib/db/schema";
+import {
+  contentDisposition,
+  resolveFileMime,
+  shouldWrapAsPdf,
+} from "./urls";
+import { wrapTextAsPdf } from "./wrap-text-pdf";
+
+const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+
+export async function getDeskDocument(id: string): Promise<Document | null> {
+  if (!isUuid(id)) return null;
+  const [doc] = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, id)));
+  return doc ?? null;
+}
+
+function resolveStoredPath(storagePath: string): string | null {
+  const abs = path.resolve(/*turbopackIgnore: true*/ uploadRoot, storagePath);
+  const root = path.resolve(/*turbopackIgnore: true*/ uploadRoot);
+  if (abs !== root && !abs.startsWith(root + path.sep)) return null;
+  return abs;
+}
+
+export async function loadDocumentBytes(doc: Document): Promise<{
+  bytes: Uint8Array;
+  mimeType: string;
+  filename: string;
+}> {
+  const abs = resolveStoredPath(doc.storagePath);
+  let buffer: Buffer | null = null;
+  if (abs) {
+    try {
+      buffer = await readFile(/*turbopackIgnore: true*/ abs);
+    } catch {
+      buffer = null;
+    }
+  }
+
+  if (!buffer) {
+    if (shouldWrapAsPdf(docWithBytes(doc, Buffer.alloc(0)))) {
+      buffer = await wrapTextAsPdf(doc.filename, `${doc.filename}\n${doc.docType}\nFile missing on disk.`);
+    } else {
+      buffer = Buffer.from(`${doc.filename}\n${doc.docType}\nDemo desk file.`, "utf8");
+    }
+  } else if (shouldWrapAsPdf(docWithBytes(doc, buffer))) {
+    buffer = await wrapTextAsPdf(doc.filename, buffer.toString("utf8"));
+  }
+
+  const mimeType = resolveFileMime({
+    filename: doc.filename,
+    storedMime: doc.mimeType,
+    bytes: buffer,
+    docType: doc.docType,
+    slot: doc.slot,
+  });
+  return { bytes: new Uint8Array(buffer), mimeType, filename: doc.filename };
+}
+
+function docWithBytes(doc: Document, bytes: Buffer) {
+  return {
+    filename: doc.filename,
+    storedMime: doc.mimeType,
+    docType: doc.docType,
+    slot: doc.slot,
+    bytes,
+  };
+}
+
+export async function serveDeskDocument(
+  id: string,
+  opts: { download?: boolean } = {},
+): Promise<Response> {
+  const doc = await getDeskDocument(id);
+  if (!doc) return new Response("Not found", { status: 404 });
+  const file = await loadDocumentBytes(doc);
+  return new Response(file.bytes, {
+    headers: {
+      "Content-Type": file.mimeType,
+      "Content-Disposition": contentDisposition(file.filename, Boolean(opts.download)),
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}

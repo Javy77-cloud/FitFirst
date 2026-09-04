@@ -69,7 +69,7 @@ export function FileList({
                       <span className={`ff-doc-icon ff-doc-${glyph.tone} !size-7`}>
                         <Icon className="size-3.5" />
                       </span>
-                      <a href={`/api/documents/${doc.id}`} className="font-medium text-navy hover:underline">
+                      <a href={`/files/${doc.id}`} className="font-medium text-navy hover:underline">
                         {doc.filename}
                       </a>
                     </span>

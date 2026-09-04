@@ -17,6 +17,7 @@ import {
   extractFieldsFromText,
   fieldKeyToRiskColumn,
 } from "@/lib/extraction/extract";
+import { inferMimeFromName } from "@/lib/files/urls";
 import { textFromUpload } from "@/lib/extraction/pdf";
 import {
   CLEAN_DEC_FILENAME,
@@ -89,7 +90,7 @@ export async function persistFile(input: {
       contactId: input.contactId || null,
       policyId: input.policyId || null,
       filename: input.filename,
-      mimeType: input.mimeType,
+      mimeType: inferMimeFromName(input.filename, input.mimeType),
       storagePath,
       docType: input.docType,
       slot: input.slot ?? "source_doc",

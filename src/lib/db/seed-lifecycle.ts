@@ -31,12 +31,15 @@ import {
   ELENA_MEETING_ID,
   ELENA_POLICY_ID,
   ELENA_QUOTE_AI_ID,
+  ELENA_QUOTE_PDF_AI_ID,
+  ELENA_QUOTE_PDF_TR_ID,
   ELENA_QUOTE_TAILROW_ID,
   ELENA_RISK_ID,
   ELENA_SHEET_ID,
   ELENA_TASK_ID,
   TENANT_ID,
 } from "../fixtures/ids";
+import { buildStubQuotePdf } from "../crm/quote-pdf";
 import { activityLogBody } from "../lifecycle/activity";
 import {
   MELBOURNE_HO_DEC_FILENAME,
@@ -68,6 +71,19 @@ async function writeAttachment(
   const abs = path.join(uploadRoot, storagePath);
   await mkdir(path.dirname(abs), { recursive: true });
   await writeFile(abs, body, "utf8");
+  return storagePath;
+}
+
+async function writePdfAttachment(
+  id: string,
+  filename: string,
+  buffer: Buffer,
+  dealId: string,
+): Promise<string> {
+  const storagePath = path.join(TENANT_ID, dealId, `${id}-${filename}`);
+  const abs = path.join(uploadRoot, storagePath);
+  await mkdir(path.dirname(abs), { recursive: true });
+  await writeFile(abs, buffer);
   return storagePath;
 }
 
@@ -437,16 +453,34 @@ export async function seedLifecycleDemo() {
     MELBOURNE_WIND_MIT_TEXT,
     ELENA_DEAL_ID,
   );
-  const quoteAiPath = await writeAttachment(
-    "q-ai",
-    "american-integrity-quote-2840.txt",
-    "ISSUED QUOTE PDF (stub)\nAmerican Integrity HO3\nElena Ruiz · 412 Harbor Isle Dr, Melbourne FL\nPremium $2,840 · Cov A $385,000\nThis is a shopping quote. It is not a policy.\n",
+  const quoteAiPath = await writePdfAttachment(
+    ELENA_QUOTE_PDF_AI_ID,
+    "american-integrity-quote-2840.pdf",
+    await buildStubQuotePdf({
+      dealTitle: "Ruiz · Melbourne HO3",
+      carrierName: "American Integrity",
+      quoteNumber: "Q-AI-MEL-2840",
+      premium: "2840.00",
+      coverageA: 385000,
+      hurricaneDeductible: "2%",
+      aopDeductible: "$2,500",
+      bindable: true,
+    }),
     ELENA_DEAL_ID,
   );
-  const quoteTrPath = await writeAttachment(
-    "q-tr",
-    "tailrow-quote-3120.txt",
-    "ISSUED QUOTE PDF (stub)\nTailrow HO3\nElena Ruiz · 412 Harbor Isle Dr, Melbourne FL\nPremium $3,120 · Cov A $385,000\nThis is a shopping quote. It is not a policy.\n",
+  const quoteTrPath = await writePdfAttachment(
+    ELENA_QUOTE_PDF_TR_ID,
+    "tailrow-quote-3120.pdf",
+    await buildStubQuotePdf({
+      dealTitle: "Ruiz · Melbourne HO3",
+      carrierName: "Tailrow",
+      quoteNumber: "Q-TR-MEL-3120",
+      premium: "3120.00",
+      coverageA: 385000,
+      hurricaneDeductible: "2%",
+      aopDeductible: "$2,500",
+      bindable: true,
+    }),
     ELENA_DEAL_ID,
   );
   const polDecPath = await writeAttachment(
@@ -489,22 +523,26 @@ export async function seedLifecycleDemo() {
       status: "extracted",
     },
     {
+      id: ELENA_QUOTE_PDF_AI_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
-      filename: "american-integrity-quote-2840.txt",
-      mimeType: "text/plain",
+      contactId: ELENA_CONTACT_ID,
+      filename: "american-integrity-quote-2840.pdf",
+      mimeType: "application/pdf",
       storagePath: quoteAiPath,
       docType: "quote_pdf",
       slot: "quote_pdf",
       status: "uploaded",
     },
     {
+      id: ELENA_QUOTE_PDF_TR_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
-      filename: "tailrow-quote-3120.txt",
-      mimeType: "text/plain",
+      contactId: ELENA_CONTACT_ID,
+      filename: "tailrow-quote-3120.pdf",
+      mimeType: "application/pdf",
       storagePath: quoteTrPath,
       docType: "quote_pdf",
       slot: "quote_pdf",

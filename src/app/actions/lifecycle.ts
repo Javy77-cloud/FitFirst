@@ -24,6 +24,7 @@ import { parseLeadFromPacket } from "@/lib/lifecycle/lead-match";
 import { buildQuoteResultsNote } from "@/lib/lifecycle/quote-results";
 import { emptySheetValues, fillSheetBlanks } from "@/lib/lifecycle/quote-sheet";
 import { MELBOURNE_HO_DEC_TEXT } from "@/lib/fixtures/sample-docs";
+import { inferMimeFromName } from "@/lib/files/urls";
 import { textFromUpload } from "@/lib/extraction/pdf";
 import { extractFieldsFromText } from "@/lib/extraction/extract";
 
@@ -165,7 +166,7 @@ export async function uploadDealSlot(formData: FormData) {
     dealId: dealId || null,
     policyId,
     filename: file.name,
-    mimeType: file.type || "application/octet-stream",
+    mimeType: inferMimeFromName(file.name, file.type),
     storagePath,
     docType,
     slot,

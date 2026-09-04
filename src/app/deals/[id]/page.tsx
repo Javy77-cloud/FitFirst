@@ -202,6 +202,10 @@ export default async function DealPage({
                   <DocumentsPanel
                     dealId={deal.id}
                     riskId={risk.id}
+                    contactId={contact?.id}
+                    accountId={account?.id}
+                    email={contact?.email ?? account?.email}
+                    phone={contact?.phone ?? account?.phone}
                     docs={docs}
                     fields={fields}
                     quotingForm={deal.quotingForm}
@@ -248,8 +252,13 @@ export default async function DealPage({
                     quotes={quotes}
                     logs={logs}
                     quoteResultsNote={deal.quoteResultsNote}
+                    quoteDocs={docs}
                     unlocked={unlocked}
                     carriers={appetiteCarriers}
+                    contactId={contact?.id}
+                    accountId={account?.id}
+                    email={contact?.email ?? account?.email}
+                    phone={contact?.phone ?? account?.phone}
                   />
                 ),
               },

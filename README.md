@@ -14,7 +14,9 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 home:** denser agent-scoped Home (KPI cards, charts, leaderboard, contest, birthdays / turning 65, dashboard presets). Admin office / territory book filter. Admin can share an **inbound email** onto the lead-offer board; the agent Claims it and gets a Lead + in-app notify. Same blue/orange desk. Ana stays unbound at Cov A **$321,000**.
 
-**Batch 4 documents:** Forms nav is now **Documents** (Forms + Library areas inside).
+**Batch 4 documents:** Forms nav is now **Documents** (Forms + Library areas inside). Deal Documents and issued quote PDFs open in-browser (`/files/[id]` + `/api/files/[id]`), download, and offer Email / SMS / Print stubs. Elena’s Melbourne HO3 deal seeds two real quote PDFs.
+
+**Deal PDF view (7pm feel-pass):** Click a quote PDF on Deal → Documents to preview it. `/api/files/[id]` serves the bytes with the right Content-Type (`application/pdf` when the file is a PDF, including leftover text stubs wrapped for preview). Download uses `?download=1`. Email and SMS open the existing desk compose stubs; Print opens the preview and the browser print dialog. Unified Deals-list multi-doc upload is unchanged. Ana stays unbound.
 
 **Batch 4 automations:** `/automations` hub — campaigns, bulk SMS stub, work-email templates, guided builder, signature approval.
 

@@ -3,7 +3,6 @@ import { serveDeskDocument } from "@/lib/files/serve-document";
 
 export const dynamic = "force-dynamic";
 
-/** Legacy alias — same bytes as /api/files/[id]. */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
