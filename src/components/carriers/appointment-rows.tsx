@@ -10,8 +10,10 @@ export type AppointmentRowInput = {
 
 export function AppointmentRows({
   appointments,
+  showSellingAgency = false,
 }: {
   appointments: AppointmentRowInput[];
+  showSellingAgency?: boolean;
 }) {
   if (appointments.length === 0) {
     return (
@@ -51,18 +53,22 @@ export function AppointmentRows({
               <option value="true">Appointed</option>
               <option value="false">Not appointed</option>
             </select>
-            <select
-              name="sellingAgency"
-              defaultValue={appt.sellingAgency}
-              className="h-6 rounded-sm border border-input bg-background px-1 text-xs"
-              aria-label={`${writtenLineLabel(appt.writtenLine)} selling agency`}
-            >
-              {SELLING_AGENCIES.map((agency) => (
-                <option key={agency} value={agency}>
-                  {agency}
-                </option>
-              ))}
-            </select>
+            {showSellingAgency ? (
+              <select
+                name="sellingAgency"
+                defaultValue={appt.sellingAgency}
+                className="h-6 rounded-sm border border-input bg-background px-1 text-xs"
+                aria-label={`${writtenLineLabel(appt.writtenLine)} selling agency`}
+              >
+                {SELLING_AGENCIES.map((agency) => (
+                  <option key={agency} value={agency}>
+                    {agency}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="hidden" name="sellingAgency" value={appt.sellingAgency} />
+            )}
             <Button type="submit" size="xs" variant="ghost">
               Save
             </Button>

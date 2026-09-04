@@ -227,6 +227,14 @@ export async function createDeal(formData: FormData) {
     ? str(formData, "line")
     : "HO";
   const shopLines = shopLinesFromForm(formData, line);
+  const policySubType =
+    line === "LIFE"
+      ? str(formData, "lifeSubType") || str(formData, "policySubType") || null
+      : line === "HEALTH"
+        ? str(formData, "healthSubType") || str(formData, "policySubType") || null
+        : str(formData, "policySubType") || null;
+  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
+  const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const [deal] = await db
     .insert(deals)
     .values({
@@ -234,7 +242,10 @@ export async function createDeal(formData: FormData) {
       leadId: lead.id,
       title: `${lastName} · ${line} shop`,
       pipelineStage: "shopping",
+      pipelineId: pipeline?.id ?? null,
+      pipelineStageSlug: "gather",
       lineOfBusiness: line,
+      policySubType,
       state: str(formData, "state") || "FL",
       ownerId: actor.id,
     })

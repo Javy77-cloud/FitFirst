@@ -24,6 +24,8 @@ import { SmartSearch } from "@/components/smart-search";
 import { currentDeskSession } from "@/lib/auth/session";
 import { logoutDesk } from "@/app/actions/auth";
 import { loadAgencyBrand } from "@/lib/desk/brand";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
+import { deskNavExtras } from "@/lib/desk/line-settings";
 
 const NAV = [
   { href: "/get-started", label: "Get Started", icon: ListChecks },
@@ -67,6 +69,13 @@ export async function AppShell({
   const unread = Number(count?.n ?? 0);
   const session = await currentDeskSession();
   const brand = await loadAgencyBrand();
+  const lineSettings = await loadDeskLineSettings();
+  const extras = deskNavExtras(lineSettings);
+  const nav = [
+    ...NAV.slice(0, 3),
+    ...extras.map((item) => ({ href: item.href, label: item.label, icon: Shield })),
+    ...NAV.slice(3),
+  ];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -90,7 +99,7 @@ export async function AppShell({
           </Link>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const Icon = item.icon;
             return (
               <Link
@@ -128,7 +137,7 @@ export async function AppShell({
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link key={`${item.href}-${item.label}`} href={item.href} className="whitespace-nowrap text-primary">
               {item.label}
             </Link>

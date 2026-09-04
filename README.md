@@ -54,6 +54,8 @@ Communications (email, SMS, calls, meetings, tasks) write a durable log on the C
 
 Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
 
+Settings → Lines: hide Life or Health for agencies that do not write those books (nav, pipelines, and filters follow). Life chips default to Term / Whole / IUL / Final Expense. Health chips default to Marketplace / Medicare Advantage / Medicare A&B / Supplemental. Add or delete options there. Selling Agency picklists stay off the day-to-day desk unless you turn them on in the same Settings page.
+
 Click path and leftover bugs live in `COORDINATION.md`.
 
 Docker: `docker compose up --build` (same port).

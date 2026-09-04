@@ -329,6 +329,17 @@ Owner: comms QA. Additive only. Did not edit the Ana fixture. Did not write live
 
 Invalid record UUIDs return 404 instead of a Postgres 22P02 500. `isUuid` guards live in loaders.
 
+## Life / Health subfilters + LOB toggles (`cursor/life-health-lob-agency-8c04`)
+
+Owner: this slice. Additive only. Did not edit the Ana fixture. Did not bind Ana. No Zoho.
+
+- Configurable Life chips: Term Life, Whole Life, IUL, Final Expense (`line_subfilter_options`).
+- Configurable Health chips: Marketplace, Medicare Advantage, Medicare A&B, Supplemental.
+- Settings → Lines: add/delete those options. Admin only.
+- Settings toggles hide Life, Health, or both. Nav (Life/Health pipeline links), pipeline switcher, and book filters on Policies / Deals follow the toggles. Hidden board URLs fall back to P-C.
+- Selling Agency picklists are off by default. Settings can turn them back on for multi selling-agency desks. Stored `selling_agency` values are kept as hidden fields when the picklists are off.
+- Additive schema: `agency_settings.write_life` / `write_health` / `show_selling_agency`, `deals.policy_sub_type`, table `line_subfilter_options`. Migration `0012_line_settings`.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

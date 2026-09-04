@@ -4,7 +4,9 @@ import { ColumnPicker, Col } from "@/components/column-picker";
 import { RecordLink } from "@/components/record-links";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { listPolicies, listUsersById, type PolicyListFilter } from "@/lib/db/queries";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { partyLabel, policyRecordName } from "@/lib/desk/policy-name";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +39,14 @@ export default async function PoliciesPage({
     attention: first(params.attention),
     family: first(params.family),
     pcSub: first(params.pcSub),
+    lifeSub: first(params.lifeSub),
+    healthSub: first(params.healthSub),
   };
-  const rows = await listPolicies(filter);
-  const users = await listUsersById();
+  const [rows, users, lineSettings] = await Promise.all([
+    listPolicies(filter),
+    listUsersById(),
+    loadDeskLineSettings(),
+  ]);
   const key = Object.entries(filter)
     .filter(([, value]) => value)
     .map(([name, value]) => `${name}:${value}`)
@@ -57,24 +64,14 @@ export default async function PoliciesPage({
       actions={<ColumnPicker tableKey="policies" initial={defaultColumns("policies")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
-      <form className="mb-3 flex flex-wrap gap-2 text-sm">
-        <select name="family" defaultValue={filter.family ?? ""} className="h-8 rounded-md border border-input bg-card px-2">
-          <option value="">All families</option>
-          <option value="pc">P&amp;C</option>
-          <option value="life">Life</option>
-          <option value="health">Health</option>
-        </select>
-        <select name="pcSub" defaultValue={filter.pcSub ?? ""} className="h-8 rounded-md border border-input bg-card px-2">
-          <option value="">P&amp;C subfilter</option>
-          <option value="home">Home</option>
-          <option value="auto">Auto</option>
-          <option value="flood">Flood</option>
-          <option value="commercial">Commercial</option>
-        </select>
-        <button type="submit" className="h-8 rounded-md border border-input px-3 text-xs">
-          Apply
-        </button>
-      </form>
+      <BookFilterBar
+        action="/policies"
+        settings={lineSettings}
+        family={filter.family}
+        pcSub={filter.pcSub}
+        lifeSub={filter.lifeSub}
+        healthSub={filter.healthSub}
+      />
       {key ? (
         <p className="mb-3 text-[12px]">
           <Link href="/policies" className="text-primary hover:underline">

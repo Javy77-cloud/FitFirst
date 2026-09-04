@@ -35,10 +35,14 @@ export async function createPipelineDeal(formData: FormData) {
     .select()
     .from(pipelines)
     .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.slug, pipelineSlug)));
+  const lineOfBusiness =
+    str(formData, "lineOfBusiness") ||
+    (pipelineSlug === "life" ? "LIFE" : pipelineSlug === "health" ? "HEALTH" : "HO");
   await db.insert(deals).values({
     tenantId: DEFAULT_TENANT_ID,
     title,
-    lineOfBusiness: str(formData, "lineOfBusiness") || "HO",
+    lineOfBusiness,
+    policySubType: str(formData, "policySubType") || null,
     pipelineStage: stageSlug === "closed_won" ? "bound" : stageSlug === "quote_sent" ? "quote_sent" : "shopping",
     pipelineStageSlug: stageSlug,
     pipelineId: pipeline?.id,
