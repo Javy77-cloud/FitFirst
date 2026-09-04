@@ -69,27 +69,32 @@ export default async function PhonePage() {
           <form action={logDeskActivity} className="mt-3 grid gap-2">
             <input type="hidden" name="kind" value="call" />
             <div>
-              <Label className="text-xs">Title</Label>
-              <Input name="title" required className="mt-1 h-8" placeholder="Bind confirmation · Elena" />
+              <Label className="text-xs" htmlFor="call-title">
+                Title
+              </Label>
+              <Input id="call-title" name="title" required className="mt-1 h-8" placeholder="Harbor follow-up" />
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">When</Label>
-                <Input name="startAt" type="datetime-local" className="mt-1 h-8" />
+                <Label className="text-xs" htmlFor="call-duration">
+                  Duration (minutes)
+                </Label>
+                <Input
+                  id="call-duration"
+                  name="durationMinutes"
+                  type="number"
+                  min="1"
+                  required
+                  className="mt-1 h-8"
+                  placeholder="8"
+                />
               </div>
               <div>
-                <Label className="text-xs">Number</Label>
-                <Input name="phoneNumber" className="mt-1 h-8" placeholder="(321) 555-0188" />
-              </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <Label className="text-xs">Duration (minutes)</Label>
-                <Input name="durationMinutes" type="number" min="1" required className="mt-1 h-8" />
-              </div>
-              <div>
-                <Label className="text-xs">Outcome</Label>
+                <Label className="text-xs" htmlFor="call-outcome">
+                  Outcome
+                </Label>
                 <select
+                  id="call-outcome"
                   name="outcome"
                   required
                   className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
@@ -101,6 +106,16 @@ export default async function PhonePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">When</Label>
+                <Input name="startAt" type="datetime-local" className="mt-1 h-8" />
+              </div>
+              <div>
+                <Label className="text-xs">Number</Label>
+                <Input name="phoneNumber" className="mt-1 h-8" placeholder="(321) 555-0188" />
               </div>
             </div>
             <div>

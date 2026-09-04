@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { logDeskActivity, rescheduleDeskActivity, updateDeskActivity } from "@/app/actions/activities-desk";
 import { RelatedRecordFields, type RelatedOptions } from "@/components/desk/related-fields";
@@ -60,7 +60,6 @@ export function DeskCalendar({
   initialKinds: string[];
 }) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [view, setView] = useState<CalendarView>(initialView);
   const [anchor, setAnchor] = useState(() => {
     const d = initialDate ? new Date(`${initialDate}T12:00:00`) : new Date();
@@ -71,6 +70,7 @@ export function DeskCalendar({
   const [draftStart, setDraftStart] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const rows = useMemo(
     () => filterCalendarActivities(events, { kinds }),
@@ -99,11 +99,38 @@ export function DeskCalendar({
     form.set("startAt", toDateTimeLocal(window.startAt));
     form.set("endAt", toDateTimeLocal(window.endAt));
     setError(null);
-    startTransition(async () => {
+    try {
       const result = await rescheduleDeskActivity(form);
-      if (result && "error" in result && result.error) setError(result.error);
-      else router.refresh();
-    });
+      if (result && "error" in result && result.error) {
+        setError(result.error);
+        return;
+      }
+      setSelectedId(null);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not reschedule.");
+    }
+  }
+
+  function openEvent(event: CalendarEvent) {
+    setSelectedId(event.id);
+    setEditing(event);
+  }
+
+  async function placeOn(day: Date, hour?: number) {
+    const next =
+      hour == null
+        ? (() => {
+            const event = events.find((row) => row.id === selectedId);
+            const prev = event ? toDate(event.startAt) ?? toDate(event.dueAt) : null;
+            return new Date(day.getFullYear(), day.getMonth(), day.getDate(), prev?.getHours() ?? 9, prev?.getMinutes() ?? 0);
+          })()
+        : slotStart(day, hour);
+    if (selectedId) {
+      await dropOn(selectedId, next);
+      return;
+    }
+    openNew(next);
   }
 
   function openNew(start?: Date) {
@@ -185,9 +212,18 @@ export function DeskCalendar({
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <p className="text-xs text-muted-foreground">
-        Drag a chip onto a day or hour to reschedule. Click to edit. Color is by type — same log as
-        Contact and Policy 360.
+        Click a chip to edit. Drag it, or select it and click an empty day/hour to reschedule. Color
+        is by type — same log as Contact and Policy 360.
       </p>
+      {selectedId ? (
+        <p className="text-xs text-navy">
+          Selected — click an empty slot to move it, or{" "}
+          <button type="button" className="underline" onClick={() => setSelectedId(null)}>
+            clear
+          </button>
+          .
+        </p>
+      ) : null}
 
       {view === "month" ? (
         <MonthGrid
@@ -208,23 +244,52 @@ export function DeskCalendar({
             void dropOn(id, next);
             setDragging(null);
           }}
-          onSelect={setEditing}
-          onEmpty={(day) => openNew(slotStart(day, 9))}
+          selectedId={selectedId}
+          onSelect={openEvent}
+          onEmpty={(day) => void placeOn(day)}
         />
       ) : (
         <TimeGrid
           days={view === "day" ? [anchor] : week}
           rows={rows}
           dragging={dragging}
+          selectedId={selectedId}
           onDragStart={setDragging}
           onDropSlot={(id, day, hour) => {
             void dropOn(id, slotStart(day, hour));
             setDragging(null);
           }}
-          onSelect={setEditing}
-          onEmpty={(day, hour) => openNew(slotStart(day, hour))}
+          onSelect={openEvent}
+          onEmpty={(day, hour) => void placeOn(day, hour)}
         />
       )}
+
+      <section className="ff-card overflow-x-auto">
+        <div className="border-b border-border px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+          On this view
+        </div>
+        {rows.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-muted-foreground">Nothing in this filter.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {rows.slice(0, 12).map((row) => (
+              <li key={row.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+                <span
+                  className="rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"
+                  style={{ background: ACTIVITY_COLORS[row.kind] ?? "#5c6b7a" }}
+                >
+                  {row.kind}
+                </span>
+                <span className="font-medium text-navy">{row.title}</span>
+                <span className="text-xs text-muted-foreground">{formatTime(row.startAt ?? row.dueAt)}</span>
+                <Button type="button" size="xs" variant="outline" onClick={() => openEvent(serializeCalendarActivity(row))}>
+                  Edit
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {editing ? (
         <CalendarEditor
@@ -242,6 +307,7 @@ function MonthGrid({
   anchor,
   rows,
   dragging,
+  selectedId,
   onDragStart,
   onDropDay,
   onSelect,
@@ -250,6 +316,7 @@ function MonthGrid({
   anchor: Date;
   rows: CalendarActivity[];
   dragging: string | null;
+  selectedId: string | null;
   onDragStart: (id: string) => void;
   onDropDay: (id: string, day: Date) => void;
   onSelect: (event: CalendarEvent) => void;
@@ -288,6 +355,7 @@ function MonthGrid({
                   <EventChip
                     key={item.id}
                     event={item}
+                    selected={selectedId === item.id}
                     onDragStart={onDragStart}
                     onSelect={onSelect}
                   />
@@ -308,6 +376,7 @@ function TimeGrid({
   days,
   rows,
   dragging,
+  selectedId,
   onDragStart,
   onDropSlot,
   onSelect,
@@ -316,6 +385,7 @@ function TimeGrid({
   days: Date[];
   rows: CalendarActivity[];
   dragging: string | null;
+  selectedId: string | null;
   onDragStart: (id: string) => void;
   onDropSlot: (id: string, day: Date, hour: number) => void;
   onSelect: (event: CalendarEvent) => void;
@@ -343,6 +413,7 @@ function TimeGrid({
             days={days}
             rows={rows}
             dragging={dragging}
+            selectedId={selectedId}
             onDragStart={onDragStart}
             onDropSlot={onDropSlot}
             onSelect={onSelect}
@@ -359,6 +430,7 @@ function HourRow({
   days,
   rows,
   dragging,
+  selectedId,
   onDragStart,
   onDropSlot,
   onSelect,
@@ -368,6 +440,7 @@ function HourRow({
   days: Date[];
   rows: CalendarActivity[];
   dragging: string | null;
+  selectedId: string | null;
   onDragStart: (id: string) => void;
   onDropSlot: (id: string, day: Date, hour: number) => void;
   onSelect: (event: CalendarEvent) => void;
@@ -413,7 +486,7 @@ function HourRow({
                   e.stopPropagation();
                   onSelect(serializeCalendarActivity(item));
                 }}
-                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white ${kindClass(item.kind)}`}
+                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white ${kindClass(item.kind)} ${selectedId === item.id ? "ring-2 ring-white" : ""}`}
                 style={{
                   height: Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4),
                   background: ACTIVITY_COLORS[item.kind] ?? "#5c6b7a",
@@ -432,10 +505,12 @@ function HourRow({
 
 function EventChip({
   event,
+  selected,
   onDragStart,
   onSelect,
 }: {
   event: CalendarActivity;
+  selected?: boolean;
   onDragStart: (id: string) => void;
   onSelect: (event: CalendarEvent) => void;
 }) {
@@ -452,7 +527,7 @@ function EventChip({
         e.stopPropagation();
         onSelect(serializeCalendarActivity(event));
       }}
-      className="block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-medium text-white"
+      className={`block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-medium text-white ${selected ? "ring-2 ring-navy" : ""}`}
       style={{ background: ACTIVITY_COLORS[event.kind] ?? "#5c6b7a" }}
     >
       {formatTime(event.startAt ?? event.dueAt)} {event.title}
