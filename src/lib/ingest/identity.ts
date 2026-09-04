@@ -36,10 +36,10 @@ export function inferDocType(filename: string, declared?: string | null): DocTyp
       declaredType === "quote" ||
       declaredType === "other")
   ) {
-    return declaredType as DocType;
+    return (declaredType === "quote" ? "quote_pdf" : declaredType) as DocType;
   }
   const name = filename.toLowerCase();
-  if (/quote/.test(name)) return "quote";
+  if (/quote/.test(name)) return "quote_pdf";
   if (/wind/.test(name)) return "wind_mit";
   if (/4[-_ ]?point|four[-_ ]?point/.test(name)) return "four_point";
   if (/inspect/.test(name)) return "inspection";

@@ -67,7 +67,7 @@ export function AccountListTable({
                   <tr key={c.id}>
                     <td data-col="legal" className="font-medium">
                       <Link href={`/contacts/${c.id}`} className="text-primary hover:underline">
-                        {c.legalName?.trim() || accountDisplayName(c)}
+                        {accountDisplayName(c)}
                       </Link>
                     </td>
                     <td data-col="contact">
@@ -167,7 +167,7 @@ export function filterAccounts(rows: Contact[], q: string, state: string) {
   return rows.filter((row) => {
     if (st && (row.state ?? "").toUpperCase() !== st) return false;
     if (!query) return true;
-    const hay = [row.firstName, row.lastName, row.legalName, row.email, row.phone, row.city]
+    const hay = [row.firstName, row.lastName, row.email, row.phone, row.city]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();

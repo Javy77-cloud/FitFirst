@@ -93,6 +93,10 @@ export async function persistFile(input: {
   return doc;
 }
 
+export async function extractDocument(documentId: string, dealId: string) {
+  await runExtraction(documentId, dealId);
+}
+
 function revalidateDocumentPaths(doc: {
   dealId: string | null;
   contactId: string | null;

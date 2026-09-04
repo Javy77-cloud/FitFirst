@@ -70,7 +70,7 @@ export function QuotesPanel({
             </thead>
             <tbody>
               {quotes.map(({ quote, carrier }) => {
-                const pdf = quoteDocs.find((doc) => doc.quoteId === quote.id);
+                const pdf = quoteDocs.find((doc) => doc.dealId === quote.dealId && doc.docType === "quote_pdf");
                 return (
                 <tr key={quote.id}>
                   <td className="font-medium">

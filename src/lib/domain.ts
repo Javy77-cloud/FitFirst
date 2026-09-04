@@ -171,9 +171,10 @@ export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
   HEALTH: "health",
   WC: "workers_comp",
   GL: "general_liability",
+  BOP: "general_liability",
 };
 
-export const SHOP_LINE_TO_LOB: Record<ShopLine, string> = {
+export const SHOP_LINE_TO_LOB: Record<ShopLine, LineOfBusiness> = {
   home: "HO",
   auto: "AUTO",
   rec_rv: "RV",

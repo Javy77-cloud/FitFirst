@@ -14,7 +14,7 @@ export function AutoSaveForm({
       action={action}
       className={className}
       onChange={(event) => {
-        const target = event.target as HTMLInputElement;
+        const target = event.target as EventTarget & { name?: string };
         if (target.name === "columnIds") event.currentTarget.requestSubmit();
       }}
     >

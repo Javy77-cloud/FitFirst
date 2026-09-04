@@ -59,13 +59,22 @@ function str(form: FormData, key: string) {
 }
 
 function revalidateCrm(extra: string[] = []) {
-  revalidatePath("/");
-  revalidatePath("/leads");
-  revalidatePath("/deals");
-  revalidatePath("/pipeline");
-  revalidatePath("/contacts");
-  revalidatePath("/policies");
-  for (const path of extra) revalidatePath(path);
+  for (const path of [
+    "/",
+    "/leads",
+    "/deals",
+    "/contacts",
+    "/accounts",
+    "/businesses",
+    "/policies",
+    "/reviews",
+    "/tasks",
+    "/pipeline",
+    "/alerts",
+    ...extra,
+  ]) {
+    revalidatePath(path);
+  }
 }
 
 export async function findMatchingLead(input: LeadIdentity) {
@@ -214,7 +223,9 @@ export async function createDeal(formData: FormData) {
     redirect(`/deals/${lead.convertedDealId}`);
   }
 
-  const line = str(formData, "line") || "HO";
+  const line = LINES.includes(str(formData, "line") as (typeof LINES)[number])
+    ? str(formData, "line")
+    : "HO";
   const shopLines = shopLinesFromForm(formData, line);
   const [deal] = await db
     .insert(deals)
@@ -330,7 +341,9 @@ export async function updateDealStage(formData: FormData) {
   const dealId = str(formData, "dealId");
   const stage = str(formData, "stage");
   const stages = await ensurePipelineStages();
-  if (!stages.some((row) => row.slug === stage)) throw new Error("Unknown pipeline stage");
+  if (stages.length > 0 && !stages.some((row) => row.slug === stage || row.name === stage)) {
+    throw new Error("Unknown pipeline stage");
+  }
   if (stage === "bound") {
     throw new BindBlockedError("Use Bind to move a deal to bound. That is the only path that creates a policy.");
   }
@@ -349,29 +362,33 @@ export async function updateDealStage(formData: FormData) {
 }
 
 export async function createPipelineStage(formData: FormData) {
-  const label = str(formData, "label");
+  const label = str(formData, "label") || str(formData, "name");
   if (!label) throw new Error("Stage label is required");
   const slug = slugifyStage(label);
   const stages = await ensurePipelineStages();
   if (slug === "bound" || stages.some((row) => row.slug === slug)) {
     throw new Error("That stage already exists");
   }
+  const [pipeline] = await db
+    .select()
+    .from(pipelines)
+    .where(eq(pipelines.tenantId, DEFAULT_TENANT_ID));
+  if (!pipeline) throw new Error("No pipeline seeded yet.");
   const sortOrder = stages.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1;
-  const pipelineId = stages[0]?.pipelineId;
-  if (!pipelineId) throw new Error("No pipeline seeded");
   await db.insert(pipelineStages).values({
     tenantId: DEFAULT_TENANT_ID,
-    pipelineId,
+    pipelineId: pipeline.id,
     slug,
     name: label,
     sortOrder,
+    seeded: false,
   });
   revalidateCrm();
 }
 
 export async function relabelPipelineStage(formData: FormData) {
   const stageId = str(formData, "stageId");
-  const label = str(formData, "label");
+  const label = str(formData, "label") || str(formData, "name");
   if (!label) throw new Error("Stage label is required");
   await db.update(pipelineStages).set({ name: label }).where(eq(pipelineStages.id, stageId));
   revalidateCrm();
@@ -381,7 +398,7 @@ export async function deletePipelineStage(formData: FormData) {
   const stageId = str(formData, "stageId");
   const [stage] = await db.select().from(pipelineStages).where(eq(pipelineStages.id, stageId));
   if (!stage) throw new Error("Stage not found");
-  if (stage.slug === "bound" || stage.slug === "closed_won") {
+  if (stage.seeded || stage.slug === "bound" || stage.slug === "closed_won") {
     throw new Error("Bound is reserved for bind and cannot be deleted");
   }
   await db

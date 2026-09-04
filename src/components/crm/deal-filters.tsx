@@ -36,7 +36,7 @@ export function DealFilters({
           <option value="all">All stages</option>
           {stages.map((stage) => (
             <option key={stage.id} value={stage.slug}>
-              {stage.label}
+              {stage.name}
             </option>
           ))}
         </select>

@@ -15,13 +15,13 @@ export function StageEditor({ stages }: { stages: PipelineStageRow[] }) {
           <li key={stage.id} className="flex flex-wrap items-center gap-2">
             <form action={relabelPipelineStage} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               <input type="hidden" name="stageId" value={stage.id} />
-              <Input name="label" defaultValue={stage.label} className="h-8 max-w-xs" />
+              <Input name="label" defaultValue={stage.name} className="h-8 max-w-xs" />
               <span className="text-[11px] text-muted-foreground">{stage.slug}</span>
               <Button type="submit" size="xs" variant="outline">
                 Relabel
               </Button>
             </form>
-            {stage.locked ? (
+            {stage.seeded ? (
               <span className="text-[11px] text-muted-foreground">Locked</span>
             ) : (
               <form action={deletePipelineStage}>
