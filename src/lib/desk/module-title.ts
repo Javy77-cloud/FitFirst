@@ -9,7 +9,7 @@ const MODULE_PREFIXES: readonly [string, string][] = [
   ["/accounts", "Businesses"],
   ["/businesses", "Businesses"],
   ["/policies", "Policies"],
-  ["/forms", "Forms"],
+  ["/forms", "Documents"],
   ["/quotes", "Quotes"],
   ["/merge", "Merge"],
   ["/work-queue", "Work queue"],

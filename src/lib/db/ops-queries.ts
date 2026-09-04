@@ -118,17 +118,38 @@ export async function getFolder(id: string) {
   return row ?? null;
 }
 
-export async function listFolderChildren(parentId: string | null, kind?: string) {
+export async function listFolderChildren(parentId: string | null, kind?: string, library?: string) {
   const filters = [
     eq(documentFolders.tenantId, tenant()),
     parentId ? eq(documentFolders.parentId, parentId) : isNull(documentFolders.parentId),
     kind ? eq(documentFolders.kind, kind) : undefined,
+    library ? eq(documentFolders.library, library) : undefined,
   ];
   return db
     .select()
     .from(documentFolders)
     .where(and(...filters))
     .orderBy(asc(documentFolders.sortOrder), asc(documentFolders.name));
+}
+
+export async function listLibraryFolders(library: string) {
+  return db
+    .select()
+    .from(documentFolders)
+    .where(and(eq(documentFolders.tenantId, tenant()), eq(documentFolders.library, library)))
+    .orderBy(asc(documentFolders.sortOrder), asc(documentFolders.name));
+}
+
+export async function listLibraryDocuments(library: string, folderId: string | null) {
+  const filters = [
+    eq(documents.tenantId, tenant()),
+    eq(documents.library, library),
+    folderId ? eq(documents.folderId, folderId) : isNull(documents.folderId),
+    folderId ? undefined : isNull(documents.dealId),
+    folderId ? undefined : isNull(documents.contactId),
+    folderId ? undefined : isNull(documents.policyId),
+  ];
+  return db.select().from(documents).where(and(...filters)).orderBy(desc(documents.createdAt));
 }
 
 export async function listDocumentsInFolder(folderId: string | null) {

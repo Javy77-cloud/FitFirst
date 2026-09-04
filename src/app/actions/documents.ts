@@ -11,6 +11,7 @@ import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/
 import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
 import { alerts, documentFolders, documents, extractedFields, policies, risks } from "@/lib/db/schema";
+import { libraryHref } from "@/lib/documents/library";
 import {
   coerceRiskValue,
   extractFieldsFromText,
@@ -61,6 +62,9 @@ export async function persistFile(input: {
   contactId?: string | null;
   policyId?: string | null;
   folderId?: string | null;
+  library?: string | null;
+  fillable?: boolean;
+  formTemplateId?: string | null;
   filename: string;
   mimeType: string;
   buffer: Buffer;
@@ -91,6 +95,10 @@ export async function persistFile(input: {
       slot: input.slot ?? "source_doc",
       status: "uploaded",
       tags: input.tags ?? [],
+      folderId: input.folderId || null,
+      library: input.library === "forms" ? "forms" : "shared",
+      fillable: Boolean(input.fillable),
+      formTemplateId: input.formTemplateId || null,
     })
     .returning();
   return doc;
@@ -139,33 +147,61 @@ export async function uploadDocument(formData: FormData) {
       contactId = contactId ?? policy.contactId ?? null;
     }
   }
-  const docType = coerceDealUploadDocType(String(formData.get("docType") ?? "other"));
-  const slot = String(formData.get("slot") ?? "") || slotForDocType(docType);
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
+  const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
+  const fillable = String(formData.get("fillable") ?? "") === "on" || String(formData.get("fillable") ?? "") === "true";
+  const files = formData
+    .getAll("files")
+    .concat(formData.getAll("file"))
+    .filter((item): item is File => item instanceof File && item.size > 0);
+  if (files.length === 0) {
     throw new Error("Choose a file to upload.");
   }
-  if (!dealId && !contactId && !policyId && !folderId) {
+  if (!dealId && !contactId && !policyId && !folderId && !formData.get("library")) {
     throw new Error("Choose a folder or attach the file to a contact, deal, or policy.");
   }
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const doc = await persistFile({
-    dealId,
-    riskId,
-    contactId,
-    policyId,
-    folderId: await resolveFolderId({ folderId, dealId, contactId }),
-    filename: file.name,
-    mimeType: file.type || "application/octet-stream",
-    buffer,
-    docType,
-    slot,
-    tags: parseTags(formData.get("tags")),
-  });
-  if (doc.riskId) {
-    await runExtraction(doc.id, doc.dealId ?? "");
+  const resolvedFolder = await resolveFolderId({ folderId, dealId, contactId });
+  let last = null as Awaited<ReturnType<typeof persistFile>> | null;
+  for (const file of files) {
+    const rawType = String(formData.get("docType") ?? "").trim();
+    const docType = rawType && rawType !== "auto"
+      ? coerceDealUploadDocType(rawType)
+      : coerceDealUploadDocType(inferFromName(file.name, library));
+    const slot = String(formData.get("slot") ?? "") || (resolvedFolder ? "library_file" : slotForDocType(docType));
+    const doc = await persistFile({
+      dealId,
+      riskId,
+      contactId,
+      policyId,
+      folderId: resolvedFolder,
+      library,
+      fillable: fillable || library === "forms",
+      filename: file.name,
+      mimeType: file.type || "application/octet-stream",
+      buffer: Buffer.from(await file.arrayBuffer()),
+      docType,
+      slot,
+      tags: parseTags(formData.get("tags")),
+    });
+    if (doc.riskId) {
+      await runExtraction(doc.id, doc.dealId ?? "");
+    }
+    last = doc;
   }
-  revalidateDocumentPaths(doc);
+  if (last) revalidateDocumentPaths(last);
+  if (formData.get("library")) {
+    redirect(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }));
+  }
+}
+
+function inferFromName(filename: string, library: string): string {
+  const name = filename.toLowerCase();
+  if (name.includes("aor")) return "aor";
+  if (name.includes("cancel")) return "cancellation";
+  if (name.includes("acord")) return "acord";
+  if (name.includes("appetite")) return "appetite_guide";
+  if (name.includes("flyer")) return "flyer";
+  if (name.includes("market")) return "marketing";
+  return library === "forms" ? "agency_form" : "other";
 }
 
 /** List-page upload: require an existing Deal, then attach one or more typed files. */

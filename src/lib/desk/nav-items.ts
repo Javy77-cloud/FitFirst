@@ -10,7 +10,7 @@ export const DESK_NAV_ITEMS = [
   { href: "/contacts", label: "Contacts" },
   { href: "/accounts", label: "Businesses" },
   { href: "/policies", label: "Policies" },
-  { href: "/forms", label: "Forms" },
+  { href: "/documents", label: "Documents" },
   { href: "/quotes", label: "Quotes" },
   { href: "/merge", label: "Merge" },
   { href: "/work-queue", label: "Work queue" },

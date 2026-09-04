@@ -31,7 +31,7 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Contacts: Contact,
   Businesses: Briefcase,
   Policies: Shield,
-  Forms: FileStack,
+  Documents: FileStack,
   Quotes: ClipboardList,
   Merge: Users,
   "Work queue": ListChecks,

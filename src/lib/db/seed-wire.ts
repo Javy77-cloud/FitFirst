@@ -31,6 +31,8 @@ import {
   ELENA_POLICY_ID,
   EMAIL_REVIEW_ID,
   EMAIL_THANK_YOU_ID,
+  FORM_AOR_ID,
+  FORM_CANCEL_ID,
   FORM_HO3_ID,
   FORM_PACKET_ID,
   HARBOR_ACCOUNT_ID,
@@ -243,8 +245,17 @@ export async function seedWireDesk() {
   await db
     .insert(formTemplates)
     .values(
-      FORM_TEMPLATE_SEEDS.map((seed, index) => ({
-        id: index === 0 ? FORM_HO3_ID : FORM_PACKET_ID,
+      FORM_TEMPLATE_SEEDS.map((seed) => ({
+        id:
+          seed.slug === "fl-ho3"
+            ? FORM_HO3_ID
+            : seed.slug === "fl-home-packet"
+              ? FORM_PACKET_ID
+              : seed.slug === "agency-cancellation"
+                ? FORM_CANCEL_ID
+                : seed.slug === "agency-aor"
+                  ? FORM_AOR_ID
+                  : undefined,
         tenantId: TENANT_ID,
         slug: seed.slug,
         name: seed.name,
@@ -253,6 +264,7 @@ export async function seedWireDesk() {
         family: seed.family,
         summary: seed.summary,
         fields: seed.fields,
+        fillable: true,
       })),
     )
     .onConflictDoNothing();

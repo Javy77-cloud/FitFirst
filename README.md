@@ -10,6 +10,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 home:** denser agent-scoped Home (KPI cards, charts, leaderboard, contest, birthdays / turning 65, dashboard presets). Admin office / territory book filter. Same blue/orange desk. Ana stays unbound at Cov A **$321,000**.
 
+**Batch 4 documents:** Forms nav is now **Documents** (Forms + Library areas inside).
+
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
 Contact record: Ask a teammate is Admin-only on every record. Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
@@ -63,7 +65,9 @@ Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
 - **Admin** — Javy Rivera (`javy@fitfirst.local` / `javy`). Whole book. Settings, integration connect, global lists, Ask a teammate, appetite/carrier edit.
 - **Agent** — Maya Chen (`maya@fitfirst.local` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.
 
-Leads are the person record (name, DOB, contact, address, insurance wanted). Document upload lives on **Deals** and requires an existing Deal name before files store. Click path and leftover bugs live in `COORDINATION.md`.
+Leads are the person record (name, DOB, contact, address, insurance wanted). Deal-level document upload still requires an existing Deal name. The left-nav **Forms** row is now **Documents** (`/documents`). Inside: **Forms** (ACORD, cancellation, AOR, fillable + Scan & suggest) and **Library** (marketing, carrier flyers, appetite guides, misc). Folders nest; create, rename, and move stay inside one area. `/forms` redirects to Documents → Forms. Quote Sheet fill stays at `/forms/[slug]`. Ana stays untouched.
+
+Click path and leftover bugs live in `COORDINATION.md`.
 
 **Settings → E-sign** is Admin BYO for DocuSign or Dropbox Sign (stub only). **Settings → Master risk** is the Admin appetite worksheet — not a Deal tab.
 
@@ -167,7 +171,7 @@ npm test
 
 ## Known leftovers
 
-- `/documents` still 500 (`Object.entries` on null). Not a NAV item.
+- Left nav **Documents** (was Forms). Page title Documents. Two areas: Forms + Library. Nested folders, multi-file upload, fillable Scan & suggest stub. `/forms` redirects into Documents → Forms.
 - `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names). `npm run build` is green because Next skips that leftover (`typescript.ignoreBuildErrors`). Desk routes compile under Turbopack.
 - `/phone` is a call log + trunk stub. No PSTN. Google Calendar stays a stub.
 - Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.

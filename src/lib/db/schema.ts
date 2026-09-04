@@ -607,11 +607,13 @@ export const documentFolders = pgTable(
     dealId: uuid("deal_id").references(() => deals.id),
     policyId: uuid("policy_id").references(() => policies.id),
     sortOrder: integer("sort_order").notNull().default(0),
+    library: text("library").notNull().default("shared"),
     ...timestamps,
   },
   (t) => [
     index("document_folders_tenant_idx").on(t.tenantId, t.kind),
     index("document_folders_parent_idx").on(t.tenantId, t.parentId),
+    index("document_folders_library_idx").on(t.tenantId, t.library),
   ],
 );
 
@@ -632,6 +634,10 @@ export const documents = pgTable(
     slot: text("slot").notNull().default("source_doc"),
     status: text("status").notNull().default("uploaded"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    folderId: uuid("folder_id"),
+    library: text("library").notNull().default("shared"),
+    fillable: boolean("fillable").notNull().default(false),
+    formTemplateId: uuid("form_template_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -640,6 +646,8 @@ export const documents = pgTable(
     index("documents_tenant_risk_idx").on(t.tenantId, t.riskId),
     index("documents_tenant_deal_slot_idx").on(t.tenantId, t.dealId, t.slot),
     index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
+    index("documents_tenant_folder_idx").on(t.tenantId, t.folderId),
+    index("documents_tenant_library_idx").on(t.tenantId, t.library),
   ],
 );
 
@@ -1056,9 +1064,29 @@ export const formTemplates = pgTable(
     family: text("family"),
     summary: text("summary"),
     fields: jsonb("fields").$type<FormFieldDef[]>().notNull().default([]),
+    fillable: boolean("fillable").notNull().default(true),
+    folderId: uuid("folder_id"),
     ...timestamps,
   },
   (t) => [uniqueIndex("form_templates_slug_uidx").on(t.tenantId, t.slug)],
+);
+
+export const formFills = pgTable(
+  "form_fills",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    formTemplateId: uuid("form_template_id")
+      .notNull()
+      .references(() => formTemplates.id),
+    sourceDocumentId: uuid("source_document_id").references(() => documents.id),
+    folderId: uuid("folder_id"),
+    values: jsonb("values").$type<Record<string, string>>().notNull().default({}),
+    sourceText: text("source_text"),
+    status: text("status").notNull().default("draft"),
+    ...timestamps,
+  },
+  (t) => [index("form_fills_tenant_template_idx").on(t.tenantId, t.formTemplateId)],
 );
 
 export const emailTemplates = pgTable(
@@ -1793,6 +1821,7 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type PipelineStage = typeof pipelineStages.$inferSelect;
 export type FormTemplate = typeof formTemplates.$inferSelect;
+export type FormFill = typeof formFills.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;

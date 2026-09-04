@@ -1,6 +1,7 @@
 /** Prefixes that should light the same left-nav row. */
 const PREFIX_ALIASES: Record<string, string[]> = {
   "/accounts": ["/businesses"],
+  "/documents": ["/forms"],
 };
 
 export function navHrefPath(href: string): string {

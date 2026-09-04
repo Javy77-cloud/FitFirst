@@ -31,7 +31,7 @@ const NAV = [
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/accounts", label: "Businesses", icon: Briefcase },
   { href: "/policies", label: "Policies", icon: Shield },
-  { href: "/forms", label: "Forms", icon: FileStack },
+  { href: "/documents", label: "Documents", icon: FileStack },
   { href: "/quotes", label: "Quotes", icon: ClipboardList },
   { href: "/merge", label: "Merge", icon: Users },
   { href: "/work-queue", label: "Work queue", icon: ListChecks },

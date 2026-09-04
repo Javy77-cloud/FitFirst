@@ -169,6 +169,13 @@
       "when": 1788531000000,
       "tag": "0023_offices_territories",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788532000000,
+      "tag": "0024_documents_library",
+      "breakpoints": true
     }
   ]
 }

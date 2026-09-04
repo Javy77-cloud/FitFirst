@@ -19,4 +19,13 @@ describe("desk nav chrome", () => {
     expect(labels).not.toContain("Alerts");
     expect(labels).not.toContain("Search");
   });
+
+  it("uses Documents instead of Forms on the left nav", () => {
+    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    expect(labels).toContain("Documents");
+    expect(labels).not.toContain("Forms");
+    expect(hrefs).toContain("/documents");
+    expect(hrefs).not.toContain("/forms");
+  });
 });

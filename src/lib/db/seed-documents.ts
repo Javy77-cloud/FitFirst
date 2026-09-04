@@ -1,0 +1,265 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { eq } from "drizzle-orm";
+import { db } from "./index";
+import { documentFolders, documents, formTemplates } from "./schema";
+import {
+  DOC_ACORD_80_ID,
+  DOC_AOR_ID,
+  DOC_APPETITE_ID,
+  DOC_CANCEL_ID,
+  DOC_FLYER_ID,
+  DOC_HURRICANE_ID,
+  FOLDER_ACORD_ID,
+  FOLDER_AGENCY_FORMS_ID,
+  FOLDER_AOR_ID,
+  FOLDER_APPETITE_ID,
+  FOLDER_CANCEL_ID,
+  FOLDER_FLYERS_ID,
+  FOLDER_MARKETING_ID,
+  FOLDER_MISC_ID,
+  FORM_AOR_ID,
+  FORM_CANCEL_ID,
+  FORM_HO3_ID,
+  TENANT_ID,
+} from "../fixtures/ids";
+
+type FolderSeed = {
+  id: string;
+  name: string;
+  library: "shared" | "forms";
+  kind: string;
+  parentId: string | null;
+  description: string;
+  sortOrder: number;
+};
+
+const FOLDERS: FolderSeed[] = [
+  {
+    id: FOLDER_MARKETING_ID,
+    name: "Marketing",
+    library: "shared",
+    kind: "shared_library",
+    parentId: null,
+    description: "Anyone can drop flyers and campaign one-pagers here.",
+    sortOrder: 10,
+  },
+  {
+    id: FOLDER_APPETITE_ID,
+    name: "Appetite guides",
+    library: "shared",
+    kind: "shared_library",
+    parentId: null,
+    description: "Carrier appetite one-pagers for the desk.",
+    sortOrder: 20,
+  },
+  {
+    id: FOLDER_MISC_ID,
+    name: "Quick access",
+    library: "shared",
+    kind: "shared_library",
+    parentId: null,
+    description: "Misc files the whole desk reaches for.",
+    sortOrder: 30,
+  },
+  {
+    id: FOLDER_FLYERS_ID,
+    name: "Carrier flyers",
+    library: "shared",
+    kind: "custom",
+    parentId: FOLDER_MISC_ID,
+    description: "Nested under Quick access.",
+    sortOrder: 10,
+  },
+  {
+    id: FOLDER_ACORD_ID,
+    name: "ACORD",
+    library: "forms",
+    kind: "forms_library",
+    parentId: null,
+    description: "Style-label ACORD stubs. Not a licensed ACORD product.",
+    sortOrder: 10,
+  },
+  {
+    id: FOLDER_AGENCY_FORMS_ID,
+    name: "Agency forms",
+    library: "forms",
+    kind: "forms_library",
+    parentId: null,
+    description: "Cancellation, AOR, and other agency paperwork.",
+    sortOrder: 20,
+  },
+  {
+    id: FOLDER_CANCEL_ID,
+    name: "Cancellation",
+    library: "forms",
+    kind: "custom",
+    parentId: FOLDER_AGENCY_FORMS_ID,
+    description: "Cancellation requests.",
+    sortOrder: 10,
+  },
+  {
+    id: FOLDER_AOR_ID,
+    name: "AOR",
+    library: "forms",
+    kind: "custom",
+    parentId: FOLDER_AGENCY_FORMS_ID,
+    description: "Agent of record letters.",
+    sortOrder: 20,
+  },
+];
+
+type FileSeed = {
+  id: string;
+  folderId: string;
+  library: "shared" | "forms";
+  filename: string;
+  docType: string;
+  fillable: boolean;
+  formTemplateId?: string;
+  body: string;
+};
+
+const FILES: FileSeed[] = [
+  {
+    id: DOC_HURRICANE_ID,
+    folderId: FOLDER_MARKETING_ID,
+    library: "shared",
+    filename: "Hurricane-season-checklist.pdf",
+    docType: "marketing",
+    fillable: false,
+    body: "FitFirst hurricane season checklist. Demo marketing file. No InsuredMine copy.",
+  },
+  {
+    id: DOC_APPETITE_ID,
+    folderId: FOLDER_APPETITE_ID,
+    library: "shared",
+    filename: "Citizens-HO3-appetite.txt",
+    docType: "appetite_guide",
+    fillable: false,
+    body: "Citizens HO3 appetite (demo). Coastal masonry preferred. Not a live carrier feed.",
+  },
+  {
+    id: DOC_FLYER_ID,
+    folderId: FOLDER_FLYERS_ID,
+    library: "shared",
+    filename: "Tailrow-homeowners-flyer.pdf",
+    docType: "flyer",
+    fillable: false,
+    body: "Tailrow homeowners flyer (demo). Shared library quick-access file.",
+  },
+  {
+    id: DOC_ACORD_80_ID,
+    folderId: FOLDER_ACORD_ID,
+    library: "forms",
+    filename: "FL-HO3-ACORD-style.pdf",
+    docType: "acord",
+    fillable: true,
+    formTemplateId: FORM_HO3_ID,
+    body: "Florida HO3 application style label. Folded from the Forms catalog. Not licensed ACORD.",
+  },
+  {
+    id: DOC_CANCEL_ID,
+    folderId: FOLDER_CANCEL_ID,
+    library: "forms",
+    filename: "Cancellation-request.pdf",
+    docType: "cancellation",
+    fillable: true,
+    formTemplateId: FORM_CANCEL_ID,
+    body: "Agency cancellation request. Fillable stub.",
+  },
+  {
+    id: DOC_AOR_ID,
+    folderId: FOLDER_AOR_ID,
+    library: "forms",
+    filename: "Agent-of-record.pdf",
+    docType: "aor",
+    fillable: true,
+    formTemplateId: FORM_AOR_ID,
+    body: "Agent of record letter. Fillable stub.",
+  },
+];
+
+/** Shared + Forms libraries. Does not touch Ana folders or the Ana fixture. */
+export async function seedDocumentLibraries() {
+  for (const folder of FOLDERS) {
+    await db
+      .insert(documentFolders)
+      .values({
+        id: folder.id,
+        tenantId: TENANT_ID,
+        name: folder.name,
+        kind: folder.kind,
+        library: folder.library,
+        parentId: folder.parentId,
+        description: folder.description,
+        sortOrder: folder.sortOrder,
+      })
+      .onConflictDoUpdate({
+        target: documentFolders.id,
+        set: {
+          name: folder.name,
+          kind: folder.kind,
+          library: folder.library,
+          parentId: folder.parentId,
+          description: folder.description,
+          sortOrder: folder.sortOrder,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  const folderBySlug: Record<string, string> = {
+    "fl-ho3": FOLDER_ACORD_ID,
+    "fl-home-packet": FOLDER_ACORD_ID,
+    "agency-cancellation": FOLDER_CANCEL_ID,
+    "agency-aor": FOLDER_AOR_ID,
+  };
+
+  for (const [slug, folderId] of Object.entries(folderBySlug)) {
+    await db
+      .update(formTemplates)
+      .set({ folderId, fillable: true, updatedAt: new Date() })
+      .where(eq(formTemplates.slug, slug));
+  }
+
+  const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+  for (const file of FILES) {
+    const storagePath = path.join(TENANT_ID, "library", file.library, `${file.id}-${file.filename}`);
+    const abs = path.join(uploadRoot, storagePath);
+    await mkdir(path.dirname(abs), { recursive: true });
+    await writeFile(abs, file.body, "utf8");
+    await db
+      .insert(documents)
+      .values({
+        id: file.id,
+        tenantId: TENANT_ID,
+        filename: file.filename,
+        mimeType: file.filename.endsWith(".txt") ? "text/plain" : "application/pdf",
+        storagePath,
+        docType: file.docType,
+        slot: "library_file",
+        status: "uploaded",
+        tags: file.fillable ? ["fillable"] : [],
+        folderId: file.folderId,
+        library: file.library,
+        fillable: file.fillable,
+        formTemplateId: file.formTemplateId ?? null,
+      })
+      .onConflictDoUpdate({
+        target: documents.id,
+        set: {
+          filename: file.filename,
+          docType: file.docType,
+          folderId: file.folderId,
+          library: file.library,
+          fillable: file.fillable,
+          formTemplateId: file.formTemplateId ?? null,
+          slot: "library_file",
+          tags: file.fillable ? ["fillable"] : [],
+          storagePath,
+        },
+      });
+  }
+}
+
