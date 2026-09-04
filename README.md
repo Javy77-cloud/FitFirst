@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-2: Deal quote PDFs + DOC → master sheet fill + Fill Learning)
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). WAVE-3 leftover: none from this list. Next free migration is **0036**. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Open API + CSV export is additive **0036**. Next free migration is **0037**. See `COORDINATION.md`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -200,6 +200,49 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 - **Social / GBP** (`/settings/social`, `/social`) — connect stubs + pulse. Admin gate on GBP before agents monitor. Inquiries → Lead. No vendor spend. Additive `0026_social_gbp`.
 - **Alerts** stay in-desk (asks + work-queue pings). The header bell owns alerts — Alerts is not a left-nav row.
 - **Meetings** from a pipeline card: Video-call, In-Home, or In-Office. Settings → Communications stores Zoom / Meet / BYO stubs plus the agency office and each agent’s meeting address.
+
+## Open API (`/api/v1`)
+
+JSON list/get for contacts, policies, deals, and activities. CSV for contacts, policies, and commissions. Bearer tokens are hashed in `api_tokens` (`0036_api_tokens`). The desk session cookie also works. Agents only see their own book; Admin sees the tenant.
+
+Seeded demo Admin token: `ff_demo_admin` (override with `DEMO_API_TOKEN`). Encrypted SSN / EIN / DL stay off the payload. Ana Dib stays shopping — contact with zero policies, no commission row.
+
+Admin UI: **Settings → Brand / Agency → Export** (`/settings/export`).
+
+```bash
+# who am I
+curl -s http://127.0.0.1:43147/api/v1/me \
+  -H "Authorization: Bearer ff_demo_admin"
+
+# lists (optional ?q= ?status= ?stage= ?kind= &limit= &offset=)
+curl -s http://127.0.0.1:43147/api/v1/contacts?q=Elena \
+  -H "Authorization: Bearer ff_demo_admin"
+curl -s http://127.0.0.1:43147/api/v1/policies \
+  -H "Authorization: Bearer ff_demo_admin"
+curl -s http://127.0.0.1:43147/api/v1/deals?stage=quote_sent \
+  -H "Authorization: Bearer ff_demo_admin"
+curl -s http://127.0.0.1:43147/api/v1/activities?kind=task \
+  -H "Authorization: Bearer ff_demo_admin"
+
+# one record
+curl -s http://127.0.0.1:43147/api/v1/contacts/<id> \
+  -H "Authorization: Bearer ff_demo_admin"
+
+# CSV
+curl -s http://127.0.0.1:43147/api/v1/export/contacts.csv \
+  -H "Authorization: Bearer ff_demo_admin" -o contacts.csv
+curl -s http://127.0.0.1:43147/api/v1/export/policies.csv \
+  -H "Authorization: Bearer ff_demo_admin" -o policies.csv
+curl -s http://127.0.0.1:43147/api/v1/export/commissions.csv \
+  -H "Authorization: Bearer ff_demo_admin" -o commissions.csv
+
+# issue another Admin bearer (local desk)
+curl -s -X POST http://127.0.0.1:43147/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"email":"javy@fitfirst.local"}'
+```
+
+`GET /api/v1` returns the catalog. 401 is `{ "error": "unauthorized" }`. Missing id is `{ "error": "not_found" }`.
 
 ## Tests
 

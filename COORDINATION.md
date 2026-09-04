@@ -595,4 +595,16 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list.
+
+## Open API + clean export (`cursor/open-api-export-be9f`)
+
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0036_api_tokens`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. No lock-in copy.
+
+- Bearer tokens hashed in `api_tokens`. Seeded `ff_demo_admin` for Admin (Javy). Session cookie `ff_actor_id` also authenticates `/api/v1`.
+- List/get: `/api/v1/contacts`, `/policies`, `/deals`, `/activities` plus `/:id`. Pagination `limit`/`offset`.
+- CSV: `/api/v1/export/contacts.csv`, `/policies.csv`, `/commissions.csv`. Admin page `/settings/export`.
+- Encrypted SSN / EIN / DL stay off JSON and CSV. Agents see own book only.
+- `POST /api/v1/auth/token` issues another hashed Admin bearer. `/api/v1` is public at the proxy; the route still requires a token or session.
+
+Next free additive migration is **0037**. Do not bind Ana. Build green.

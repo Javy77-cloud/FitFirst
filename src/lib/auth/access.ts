@@ -11,6 +11,7 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/email-signatures",
   "/settings/email-triggers",
   "/settings/agents",
+  "/settings/export",
   "/logs/fill-learning",
 ] as const;
 
@@ -94,6 +95,7 @@ export function isPublicPath(pathname: string): boolean {
   if (path === "/recover" || path.startsWith("/recover/")) return true;
   if (path === "/fill-demo" || path.startsWith("/fill-demo/")) return true;
   if (path.startsWith("/api/session")) return true;
+  if (path === "/api/v1" || path.startsWith("/api/v1/")) return true;
   return false;
 }
 

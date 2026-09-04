@@ -17,4 +17,12 @@ describe("settings nav", () => {
     expect(settingsGroupFor("security")).toBe("account");
     expect(settingsGroupFor("recovery")).toBe("account");
   });
+
+  it("nests Export under Brand / Agency", () => {
+    expect(settingsGroupFor("export")).toBe("agency");
+    const agency = SETTINGS_NAV.find((group) => group.id === "agency");
+    expect(agency?.children.map((child) => child.id)).toEqual(
+      expect.arrayContaining(["agency", "offices", "territories", "export"]),
+    );
+  });
 });
