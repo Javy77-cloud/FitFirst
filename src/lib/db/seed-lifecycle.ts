@@ -289,6 +289,7 @@ export async function seedLifecycleDemo() {
       quoteResultsNote,
       notes:
         "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
+      videoProposalUrl: "https://fitfirst.example/video/ruiz-melbourne-ho3",
       boundAt: new Date("2026-09-01T15:00:00.000Z"),
     })
     .onConflictDoUpdate({
@@ -304,6 +305,7 @@ export async function seedLifecycleDemo() {
         quoteResultsNote,
         notes:
           "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
+        videoProposalUrl: "https://fitfirst.example/video/ruiz-melbourne-ho3",
         boundAt: new Date("2026-09-01T15:00:00.000Z"),
         updatedAt: new Date(),
       },

@@ -451,6 +451,8 @@ export const deals = pgTable(
     sheetApprovedAt: timestamp("sheet_approved_at", { withTimezone: true }),
     sheetApprovedBy: text("sheet_approved_by"),
     quotingUnlocked: boolean("quoting_unlocked").notNull().default(false),
+    /** Pasted record/upload link for a video proposal. No Loom API. */
+    videoProposalUrl: text("video_proposal_url"),
     ...timestamps,
   },
   (t) => [

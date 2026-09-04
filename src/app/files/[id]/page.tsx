@@ -42,7 +42,12 @@ export default async function FilePreviewPage({
     slot: doc.slot,
   });
   const href = fileViewHref(doc.id);
-  const isPdf = mime.includes("pdf") || doc.docType === "quote_pdf" || doc.slot === "quote_pdf";
+  const isPdf =
+    mime.includes("pdf") ||
+    doc.docType === "quote_pdf" ||
+    doc.slot === "quote_pdf" ||
+    doc.docType === "proposal_pdf" ||
+    doc.slot === "proposal";
   const isImage = mime.startsWith("image/");
   const backHref = doc.dealId ? `/deals/${doc.dealId}?tab=documents` : "/documents";
 

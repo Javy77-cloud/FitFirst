@@ -73,6 +73,7 @@ export const DOC_TYPES = [
   "signed_app",
   "quote",
   "quote_pdf",
+  "proposal_pdf",
   "policy_dec",
   "policy_complete",
   "policy_id",
@@ -99,6 +100,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   signed_app: "Signed app",
   quote: "Quotes",
   quote_pdf: "Quote PDF",
+  proposal_pdf: "Branded proposal",
   policy_dec: "Policy dec",
   policy_complete: "Complete policy",
   policy_id: "ID card",
@@ -145,7 +147,7 @@ export const DEAL_UPLOAD_DOC_TYPES = [
 ] as const;
 export type DealUploadDocType = (typeof DEAL_UPLOAD_DOC_TYPES)[number];
 
-export const DOC_SLOTS = ["source_doc", "quote_pdf", "signed_app", "policy_file", "library_file"] as const;
+export const DOC_SLOTS = ["source_doc", "quote_pdf", "signed_app", "policy_file", "library_file", "proposal"] as const;
 export type DocSlot = (typeof DOC_SLOTS)[number];
 
 export const SOURCE_DOC_TYPES = [

@@ -267,6 +267,13 @@
       "when": 1788545000000,
       "tag": "0037_campaign_sequences",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788546000000,
+      "tag": "0038_quote_compare_video",
+      "breakpoints": true
     }
   ]
 }

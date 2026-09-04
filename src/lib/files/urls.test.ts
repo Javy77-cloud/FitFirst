@@ -5,6 +5,7 @@ import {
   filePreviewHref,
   fileViewHref,
   inferMimeFromName,
+  isProposalAttachment,
   looksLikePdf,
   resolveFileMime,
   shouldWrapAsPdf,
@@ -39,6 +40,15 @@ describe("file URLs", () => {
         bytes: Buffer.from("ISSUED QUOTE PDF (stub)\n"),
       }),
     ).toBe(true);
+    expect(isProposalAttachment({ docType: "proposal_pdf", slot: "proposal" })).toBe(true);
+    expect(
+      resolveFileMime({
+        filename: "proposal-Ruiz_Melbourne_HO3.pdf",
+        storedMime: "application/pdf",
+        docType: "proposal_pdf",
+        slot: "proposal",
+      }),
+    ).toBe("application/pdf");
   });
 
   it("builds inline and attachment Content-Disposition", () => {

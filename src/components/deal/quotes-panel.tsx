@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { finalizeQuoteResults } from "@/app/actions/lifecycle";
 import { DeskDetails } from "@/components/desk-details";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Document, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 import { matchQuotePdf } from "@/lib/files/quote-match";
-import { filePreviewHref } from "@/lib/files/urls";
+import { filePreviewHref, isProposalAttachment } from "@/lib/files/urls";
+import { cn } from "@/lib/utils";
 import { AppetiteCapture } from "./appetite-capture";
 import { DocFileActions } from "./doc-file-actions";
 
@@ -80,6 +82,18 @@ export function QuotesPanel({
         open={quotes.length > 0}
         padded={false}
       >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <p className="text-xs text-muted-foreground">
+            Select quotes, read the diffs in plain English, then print a branded proposal or paste a
+            video walkthrough URL.
+          </p>
+          <Link
+            href={`/deals/${dealId}/compare`}
+            className={cn(buttonVariants({ size: "sm" }))}
+          >
+            Open interactive compare
+          </Link>
+        </div>
         {quotes.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
             No quotes on this deal. Filter markets first, then build stub quotes for green fits.
@@ -147,10 +161,19 @@ export function QuotesPanel({
         )}
       </DeskDetails>
 
+      {quoteDocs.filter((doc) => isProposalAttachment(doc)).length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {quoteDocs.filter((doc) => isProposalAttachment(doc)).length} branded proposal
+          {quoteDocs.filter((doc) => isProposalAttachment(doc)).length === 1 ? "" : "s"} on this
+          deal. Open them from Compare or Documents.
+        </p>
+      ) : null}
+
       {quoteDocs.length > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {quoteDocs.length} quote PDF{quoteDocs.length === 1 ? "" : "s"} attached on this deal.
-          These files are not policies.
+          {quoteDocs.filter((doc) => !isProposalAttachment(doc)).length} quote PDF
+          {quoteDocs.filter((doc) => !isProposalAttachment(doc)).length === 1 ? "" : "s"} attached
+          on this deal. These files are not policies.
         </p>
       ) : null}
 

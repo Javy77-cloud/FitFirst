@@ -620,6 +620,19 @@ Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_campaign_sequences` re
 
 **Campaign sequences.** `/automations/sequences` — five insurance catalogs: lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask. Each step is a desk Task stub or a work-email template stub (`seq-*` slugs in `email_templates`). On/Off only. Nothing sends. Seed + `ensureCampaignSequences()` keep the five rows. Review ask hangs on bind / Closed Won, not pipeline stage.
 
+## DIFF L — Interactive quote compare + video proposal stub (`cursor/quote-compare-video-11d6`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_quote_compare_video` (`deals.video_proposal_url`) renumbered to `0038_quote_compare_video`. Ana fixture untouched (unbound, Cov A **$321,000**). No Loom API. No live Zoho. One Pipeline. Sidebar hex unchanged.
+
+No branded proposal existed on the batch-4 base, so this slice ships a PDF proposal (agency letterhead + selected quotes + diffs + plain English). Stored on the Deal as `documents.slot = proposal` / `docType = proposal_pdf`.
+
+- Interactive page `/deals/[id]/compare`: select quotes (and priced attempt-log rows), highlight field diffs, write a plain-English note.
+- Quotes tab + `/quotes` board link into Compare. Documents lists branded proposals separately from issued quote PDFs.
+- Video proposal is paste-only: **Record / upload link** saved on `deals.video_proposal_url`. Host it yourself (Drive, Vimeo, YouTube). FitFirst does not record and does not call Loom.
+- Elena seed: `https://fitfirst.example/video/ruiz-melbourne-ho3`. Ana has no video URL and stays shopping / 0 policies.
+
+Click path: Elena Deal → Quotes → Open interactive compare → tick American Integrity + Tailrow → Generate branded proposal → preview PDF. Paste/clear the video URL. Ana Deal → Compare shows her priced attempts (AI quoted $5,607.53 not bindable). Do not bind Ana.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036** (E&O) and **0037** (campaigns). Next free additive migration is **0038**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+DIFF WAVE-1 took **0036** (E&O), **0037** (campaigns), and **0038** (quote compare / video). Next free additive migration is **0039**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

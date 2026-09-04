@@ -18,7 +18,7 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS, type ShopLine } from "@/lib/domain";
-import { filePreviewHref, isQuoteAttachment } from "@/lib/files/urls";
+import { filePreviewHref, isProposalAttachment, isQuoteAttachment } from "@/lib/files/urls";
 import { quotingFormById } from "@/lib/quoting/forms";
 import { DocFileActions } from "./doc-file-actions";
 import { QuotingLinePicker } from "./quoting-line-picker";
@@ -69,10 +69,12 @@ export function DocumentsPanel({
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
   const quotePdfs = docs.filter((d) => isQuoteAttachment(d));
+  const proposals = docs.filter((d) => isProposalAttachment(d));
   const signedApps = docs.filter((d) => d.slot === "signed_app" || d.docType === "signed_app");
   const sourceDocs = docs.filter(
     (d) =>
       !isQuoteAttachment(d) &&
+      !isProposalAttachment(d) &&
       d.slot !== "policy_file" &&
       d.slot !== "signed_app" &&
       d.docType !== "signed_app",
@@ -263,6 +265,20 @@ export function DocumentsPanel({
               </Button>
             </form>
             <DocTable docs={quotePdfs} dealId={dealId} comms={comms} empty="No issued quote PDFs yet." />
+          </section>
+
+          <section className="ff-card p-4">
+            <h3 className="mb-1 text-sm font-semibold text-navy">Branded proposals</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Agency-letterhead PDFs from interactive quote compare. Select quotes, generate the
+              packet, then email or print from the preview. A proposal is not a policy.
+            </p>
+            <p className="mb-3 text-xs">
+              <Link href={`/deals/${dealId}/compare`} className="text-primary hover:underline">
+                Open interactive compare
+              </Link>
+            </p>
+            <DocTable docs={proposals} dealId={dealId} comms={comms} empty="No branded proposal PDFs yet." />
           </section>
 
           <section className="ff-card p-4">
