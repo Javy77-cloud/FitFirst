@@ -113,6 +113,13 @@ export const users = pgTable(
     inviteExpiresAt: timestamp("invite_expires_at", { withTimezone: true }),
     resetToken: text("reset_token"),
     resetExpiresAt: timestamp("reset_expires_at", { withTimezone: true }),
+    mfaEnrolled: boolean("mfa_enrolled").notNull().default(false),
+    mustEnrollMfa: boolean("must_enroll_mfa").notNull().default(true),
+    mfaMethod: text("mfa_method"),
+    totpSecret: text("totp_secret"),
+    mfaPhone: text("mfa_phone"),
+    recoveryToken: text("recovery_token"),
+    recoveryExpiresAt: timestamp("recovery_expires_at", { withTimezone: true }),
     frozenAt: timestamp("frozen_at", { withTimezone: true }),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     meetingAddress: text("meeting_address"),
@@ -856,6 +863,23 @@ export const deskMessages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("desk_messages_to_idx").on(t.tenantId, t.toUserId, t.createdAt)],
+);
+
+/** SMS / email MFA stub codes. Authenticator uses users.totp_secret. */
+export const mfaChallenges = pgTable(
+  "mfa_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id").notNull(),
+    channel: text("channel").notNull(),
+    destination: text("destination").notNull(),
+    code: text("code").notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("mfa_challenges_user_idx").on(t.tenantId, t.userId, t.createdAt)],
 );
 
 /** Consumed from agency-ops: task / meeting / call. TEST-DESK adds account_id. */
@@ -1655,6 +1679,7 @@ export type Quote = typeof quotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type DeskMessage = typeof deskMessages.$inferSelect;
+export type MfaChallenge = typeof mfaChallenges.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;

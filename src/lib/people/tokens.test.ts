@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { emailFromUsername, invitePath, isTokenLive, normalizeLogin, resetPath, usernameFromEmail } from "./tokens";
+import { emailFromUsername, invitePath, isTokenLive, normalizeLogin, recoveryPath, resetPath, usernameFromEmail } from "./tokens";
 
 describe("invite and reset stubs", () => {
   it("builds invite and reset paths without colliding IDs", () => {
     expect(invitePath("abc123")).toBe("/login/invite?token=abc123");
     expect(resetPath("xyz")).toBe("/login/reset?token=xyz");
+    expect(recoveryPath("rec")).toBe("/login/recover?token=rec");
   });
 
   it("treats expired or empty tokens as dead", () => {

@@ -2,24 +2,18 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { SESSION_COOKIE_OPTS, SESSION_COOKIES, DEMO_USERS, passwordMatchesUser, findUserByLogin } from "@/lib/auth/session";
+import {
+  SESSION_COOKIE_OPTS,
+  SESSION_COOKIES,
+  DEMO_USERS,
+  passwordMatchesUser,
+  findUserByLogin,
+} from "@/lib/auth/session";
 import { DESK_ROLE_COOKIE } from "@/lib/brand/desk-role";
 import { DESK_AGENT_COOKIE } from "@/lib/crm/desk-agent";
-import { normalizeRole } from "@/lib/home/scope";
+import { needsMfaEnroll } from "@/lib/auth/mfa";
 import { isDeskLoginAllowed } from "@/lib/people/status";
-import { users } from "@/lib/db/schema";
-
-async function establishSession(user: typeof users.$inferSelect) {
-  const role = normalizeRole(user.role);
-  const jar = await cookies();
-  jar.set(SESSION_COOKIES.role, role, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.actor, role, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.actorId, user.id, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.name, user.name, SESSION_COOKIE_OPTS);
-  jar.set(DESK_ROLE_COOKIE, role === "agent" ? "agent" : "admin", SESSION_COOKIE_OPTS);
-  jar.set(DESK_AGENT_COOKIE, user.id, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.modules, user.canAccessModules === false ? "0" : "1", SESSION_COOKIE_OPTS);
-}
+import { startMfaPending } from "@/app/actions/mfa";
 
 async function signInByLogin(login: string, password: string) {
   const user = await findUserByLogin(login);
@@ -33,8 +27,8 @@ async function signInByLogin(login: string, password: string) {
   if (!passwordMatchesUser(user, password)) {
     redirect("/login?error=1");
   }
-  await establishSession(user);
-  redirect("/");
+  await startMfaPending(user);
+  redirect(needsMfaEnroll(user) ? "/login/mfa?enroll=1" : "/login/mfa");
 }
 
 export async function loginDesk(formData: FormData) {

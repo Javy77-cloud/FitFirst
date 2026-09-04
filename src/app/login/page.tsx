@@ -20,8 +20,8 @@ export default async function LoginPage({
           <div className="text-xs uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
           <h1 className="text-2xl font-semibold text-navy">Sign in as Admin or Agent</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Local demo only. Role is stored on the session and enforced in middleware — not CSS.
-            No SaaS billing and no live Zoho.
+            Password, then 2-step (authenticator, email stub, or SMS stub). Role is stored on
+            the session and enforced in middleware — not CSS. No SaaS billing and no live Zoho.
           </p>
         </div>
 
@@ -40,6 +40,10 @@ export default async function LoginPage({
                   ? "This agent still needs the invite link to choose a password."
                   : error === "reset"
                     ? "That reset link is missing or expired."
+                    : error === "mfa"
+                      ? "Sign in again, then complete 2-step."
+                      : error === "recover"
+                        ? "That recovery link is missing or expired."
                     : "Email, username, or password did not match an active desk user."}
           </p>
         ) : null}

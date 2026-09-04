@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireAdminPage } from "@/lib/auth/guards";
+import { mfaStatusLabel } from "@/lib/auth/mfa";
 import { ACCESS_STATUS_LABEL, type AccessStatus } from "@/lib/people/status";
 import { listPeople } from "@/lib/people/store";
 
@@ -38,8 +39,9 @@ export default async function PeopleAgentsPage({
     <SettingsShell title="People / Agents" current="agents">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Admin manages every desk login. You set the username or email. The agent chooses a
-        password on the invite link. Freeze locks the desk. Remove is soft — the row stays.
-        Javy Rivera (Admin) and Maya Chen (Agent) are the seeded book.
+        password on the invite link, then enroll 2-step before the desk opens. Freeze locks
+        the desk. Remove is soft — the row stays. Javy and Maya are MFA enrolled. Nora Frost
+        is pending enrollment.
       </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
@@ -77,6 +79,7 @@ export default async function PeopleAgentsPage({
                   <th className="px-4 py-2 font-medium">Login</th>
                   <th className="px-4 py-2 font-medium">Role</th>
                   <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium">2-step</th>
                   <th className="px-4 py-2 font-medium">Office / territory</th>
                   <th className="px-4 py-2 font-medium">Privileges</th>
                   <th className="px-4 py-2 font-medium" />
@@ -102,6 +105,9 @@ export default async function PeopleAgentsPage({
                       >
                         {ACCESS_STATUS_LABEL[person.status]}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {mfaStatusLabel(person)}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {person.officeLabel || "—"}

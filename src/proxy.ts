@@ -11,11 +11,18 @@ export function proxy(request: NextRequest) {
 
   const userId = request.cookies.get(SESSION_COOKIES.actorId)?.value;
   const role = request.cookies.get(SESSION_COOKIES.role)?.value ?? request.cookies.get(SESSION_COOKIES.actor)?.value;
-  if (!userId) {
-    const login = request.nextUrl.clone();
-    login.pathname = "/login";
-    login.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
-    return NextResponse.redirect(login);
+  const mfaOk = request.cookies.get(SESSION_COOKIES.mfa)?.value === "1";
+  const pending = request.cookies.get(SESSION_COOKIES.mfaPending)?.value;
+  if (!userId || !mfaOk) {
+    const dest = request.nextUrl.clone();
+    if (pending) {
+      dest.pathname = "/login/mfa";
+      dest.search = "";
+      return NextResponse.redirect(dest);
+    }
+    dest.pathname = "/login";
+    dest.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
+    return NextResponse.redirect(dest);
   }
 
   const isAdmin = role === "admin" || role === "owner";

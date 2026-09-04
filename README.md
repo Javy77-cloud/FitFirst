@@ -67,7 +67,7 @@ Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
 - **Agent** — Maya Chen (`maya@fitfirst.local` or username `maya` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.
 - **Frozen demo** — Luis Vega (`luis@fitfirst.local` / username `luis`). Frozen. Cannot sign in until Admin unfreezes.
 
-**Settings → People / Agents** (`/settings/agents`) is Admin-only. Create an agent (username or email; they set the password on the invite stub). List shows Active / Frozen / Removed. Actions: Freeze, Unfreeze, Remove (soft), Notify (in-app + Alerts), Reset password stub, Open performance report. Privilege toggles: can access modules, can see agency widgets, office / territory hooks.
+**Settings → People / Agents** (`/settings/agents`) is Admin-only. Create an agent (username or email; they set the password on the invite stub, then enroll MFA). List shows Active / Frozen / Removed and 2-step Enrolled / Pending. Actions: Freeze, Unfreeze, Remove (soft), Notify, Reset password stub, MFA recovery stub, Force re-enroll MFA, Open performance report. Javy is enrolled TOTP; Maya enrolled email; Nora Frost is pending invite + MFA. Privilege toggles: can access modules, can see agency widgets, office / territory hooks.
 
 Leads are the person record (name, DOB, contact, address, insurance wanted). Document upload lives on **Deals** and requires an existing Deal name before files store. Click path and leftover bugs live in `COORDINATION.md`.
 

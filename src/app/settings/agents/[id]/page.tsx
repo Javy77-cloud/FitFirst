@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  forceReenrollMfa,
   issueInviteLink,
+  issueMfaRecovery,
   issuePasswordReset,
   notifyAgent,
   saveAgentPrivileges,
   setAgentStatus,
 } from "@/app/actions/people";
+import { mfaStatusLabel } from "@/lib/auth/mfa";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +31,7 @@ const FLASH: Record<string, string> = {
   self: "You cannot freeze or remove your own login.",
   javy: "Javy Rivera stays on the desk. Freeze is allowed; remove is not.",
   message: "Write a short note before Notify.",
+  reenroll: "MFA cleared. They must enroll again on next login.",
 };
 
 export default async function AgentDetailPage({
@@ -43,6 +47,8 @@ export default async function AgentDetailPage({
     error?: string;
     invite?: string;
     reset?: string;
+    recover?: string;
+    reenroll?: string;
   }>;
 }) {
   await requireAdminPage();
@@ -51,9 +57,13 @@ export default async function AgentDetailPage({
   const person = await getPerson(id);
   if (!person) notFound();
   const messages = await listMessagesFor(person.id);
-  const flashKey = q.error ?? q.status ?? (q.created ? "created" : q.saved ? "saved" : q.notified ? "notified" : "");
+  const flashKey =
+    q.error ??
+    q.status ??
+    (q.created ? "created" : q.saved ? "saved" : q.notified ? "notified" : q.reenroll ? "reenroll" : "");
   const invite = q.invite ? decodeURIComponent(q.invite) : null;
   const reset = q.reset ? decodeURIComponent(q.reset) : null;
+  const recover = q.recover ? decodeURIComponent(q.recover) : null;
 
   return (
     <SettingsShell title={person.name} current="agents">
@@ -85,6 +95,14 @@ export default async function AgentDetailPage({
           </Link>
         </p>
       ) : null}
+      {recover ? (
+        <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
+          MFA / account recovery stub:{" "}
+          <Link href={recover} className="font-medium text-primary hover:underline">
+            {recover}
+          </Link>
+        </p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="space-y-4">
@@ -112,6 +130,13 @@ export default async function AgentDetailPage({
               <div>
                 <dt className="text-xs text-muted-foreground">Status</dt>
                 <dd>{ACCESS_STATUS_LABEL[person.status]}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">2-step</dt>
+                <dd>
+                  {mfaStatusLabel(person)}
+                  {person.mfaMethod ? ` · ${person.mfaMethod}` : ""}
+                </dd>
               </div>
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -151,6 +176,18 @@ export default async function AgentDetailPage({
                 <input type="hidden" name="userId" value={person.id} />
                 <Button type="submit" size="sm" variant="outline">
                   Reset password stub
+                </Button>
+              </form>
+              <form action={issueMfaRecovery}>
+                <input type="hidden" name="userId" value={person.id} />
+                <Button type="submit" size="sm" variant="outline">
+                  MFA recovery stub
+                </Button>
+              </form>
+              <form action={forceReenrollMfa}>
+                <input type="hidden" name="userId" value={person.id} />
+                <Button type="submit" size="sm" variant="outline">
+                  Force re-enroll MFA
                 </Button>
               </form>
             </div>

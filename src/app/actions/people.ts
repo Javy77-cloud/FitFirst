@@ -13,12 +13,14 @@ import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { flagsForStatus, normalizeAccessStatus } from "@/lib/people/status";
 import { parsePrivilegeForm } from "@/lib/people/privileges";
 import { ensureDeskAgentRow, findPersonByLogin, getPerson } from "@/lib/people/store";
+import { startMfaPending } from "@/app/actions/mfa";
 import {
   emailFromUsername,
   invitePath,
   isTokenLive,
   newDeskToken,
   normalizeLogin,
+  recoveryPath,
   resetPath,
   tokenExpiresAt,
   usernameFromEmail,
@@ -75,6 +77,8 @@ export async function createAgent(formData: FormData) {
       officeLabel: str(formData, "officeLabel") || null,
       territoryLabel: str(formData, "territoryLabel") || null,
       mustSetPassword: true,
+      mustEnrollMfa: true,
+      mfaEnrolled: false,
       inviteToken: token,
       inviteExpiresAt: tokenExpiresAt(),
       meetingAddress: str(formData, "officeLabel") || null,
@@ -226,12 +230,14 @@ export async function completeInvitePassword(formData: FormData) {
     .set({
       passwordHash: hashPassword(password),
       mustSetPassword: false,
+      mustEnrollMfa: true,
       inviteToken: null,
       inviteExpiresAt: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, person.id));
-  redirect("/login?set=1");
+  await startMfaPending({ ...person, mustSetPassword: false, mustEnrollMfa: true, passwordHash: "set" });
+  redirect("/login/mfa?enroll=1");
 }
 
 export async function completeResetPassword(formData: FormData) {
@@ -260,5 +266,77 @@ export async function completeResetPassword(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(users.id, person.id));
-  redirect("/login?set=1");
+  await startMfaPending({ ...person, mustSetPassword: false, passwordHash: "set" });
+  redirect(person.mfaEnrolled && !person.mustEnrollMfa ? "/login/mfa" : "/login/mfa?enroll=1");
+}
+
+export async function issueMfaRecovery(formData: FormData) {
+  await requireAdminAction();
+  const id = str(formData, "userId");
+  await loadTarget(id);
+  const token = newDeskToken();
+  await db
+    .update(users)
+    .set({
+      recoveryToken: token,
+      recoveryExpiresAt: tokenExpiresAt(),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, id)));
+  revalidatePeople(id);
+  redirect(`/settings/agents/${id}?recover=${encodeURIComponent(recoveryPath(token))}`);
+}
+
+export async function forceReenrollMfa(formData: FormData) {
+  await requireAdminAction();
+  const id = str(formData, "userId");
+  await loadTarget(id);
+  await db
+    .update(users)
+    .set({
+      mfaEnrolled: false,
+      mustEnrollMfa: true,
+      totpSecret: null,
+      mfaMethod: null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, id)));
+  revalidatePeople(id);
+  redirect(`/settings/agents/${id}?reenroll=1`);
+}
+
+export async function completeRecovery(formData: FormData) {
+  const token = str(formData, "token");
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (!token) redirect("/login?error=recover");
+  const [person] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.recoveryToken, token)));
+  if (!person || !isTokenLive(person.recoveryToken, person.recoveryExpiresAt)) {
+    redirect("/login?error=recover");
+  }
+  if (normalizeAccessStatus(person.accessStatus) !== "active") {
+    redirect("/login?error=frozen");
+  }
+  if (password && (password.length < 4 || password !== confirm)) {
+    redirect(`/login/recover?token=${encodeURIComponent(token)}&error=password`);
+  }
+  await db
+    .update(users)
+    .set({
+      passwordHash: password ? hashPassword(password) : person.passwordHash,
+      mustSetPassword: false,
+      mfaEnrolled: false,
+      mustEnrollMfa: true,
+      totpSecret: null,
+      mfaMethod: null,
+      recoveryToken: null,
+      recoveryExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, person.id));
+  await startMfaPending({ ...person, mustEnrollMfa: true, mfaEnrolled: false });
+  redirect("/login/mfa?enroll=1");
 }

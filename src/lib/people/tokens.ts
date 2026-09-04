@@ -24,6 +24,10 @@ export function resetPath(token: string): string {
   return `/login/reset?token=${encodeURIComponent(token)}`;
 }
 
+export function recoveryPath(token: string): string {
+  return `/login/recover?token=${encodeURIComponent(token)}`;
+}
+
 export function normalizeLogin(raw: string): string {
   return raw.trim().toLowerCase();
 }

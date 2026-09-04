@@ -29,20 +29,17 @@ export async function getPerson(id: string): Promise<PeopleRow | null> {
 }
 
 export async function findPersonByToken(
-  kind: "invite" | "reset",
+  kind: "invite" | "reset" | "recovery",
   token: string,
 ): Promise<User | null> {
   const value = token.trim();
   if (!value) return null;
+  const column =
+    kind === "invite" ? users.inviteToken : kind === "reset" ? users.resetToken : users.recoveryToken;
   const [row] = await db
     .select()
     .from(users)
-    .where(
-      and(
-        eq(users.tenantId, tenant()),
-        kind === "invite" ? eq(users.inviteToken, value) : eq(users.resetToken, value),
-      ),
-    );
+    .where(and(eq(users.tenantId, tenant()), eq(column, value)));
   return row ?? null;
 }
 

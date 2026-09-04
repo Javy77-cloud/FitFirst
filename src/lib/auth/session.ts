@@ -122,15 +122,28 @@ export async function currentDeskSession(): Promise<DeskSession> {
     const jar = await cookies();
     const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? null;
     if (!userId) return guestSession();
+    if (jar.get(SESSION_COOKIES.mfa)?.value !== "1") return guestSession();
     const [user] = await db
       .select()
       .from(users)
       .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
     if (!user) return guestSession();
     if (!isDeskLoginAllowed(user.accessStatus ?? "active")) return guestSession();
+    if (!user.mfaEnrolled || user.mustEnrollMfa) return guestSession();
     return sessionFromUser(user);
   } catch {
     return guestSession();
+  }
+}
+
+export async function pendingMfaUser(): Promise<User | null> {
+  try {
+    const jar = await cookies();
+    const userId = jar.get(SESSION_COOKIES.mfaPending)?.value ?? null;
+    if (!userId) return null;
+    return findUser(userId);
+  } catch {
+    return null;
   }
 }
 

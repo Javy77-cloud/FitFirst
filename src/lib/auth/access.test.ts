@@ -61,6 +61,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/login/invite")).toBe(true);
     expect(isPublicPath("/login/reset")).toBe(true);
+    expect(isPublicPath("/login/mfa")).toBe(true);
+    expect(isPublicPath("/login/recover")).toBe(true);
     expect(isPublicPath("/login?error=1")).toBe(true);
     expect(isPublicPath("/fill-demo")).toBe(true);
     expect(isPublicPath("/")).toBe(false);
