@@ -13,9 +13,13 @@
   Not InsuredMine #ff6a00. CHECK blue and Quote Sheet yellow stay status-only.
 */
 :root {
+  --ff-bg: #f7f3ec;
   --ff-navy: #0c2340;
   --ff-navy-mid: #163456;
   --ff-navy-deep: #08182d;
+  --ff-sidebar: #0c2340;
+  --ff-sidebar-wash: #163456;
+  --ff-sidebar-line: #1c3b5c;
   --ff-sidebar-text: #d5e2f0;
   --ff-sidebar-muted: #93a7be;
   --ff-accent: #1d6fb8;

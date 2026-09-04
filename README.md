@@ -4,15 +4,20 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Run locally
+**Mac desk-test branch:** `cursor/desk-merge-unblock-f2e7` (compile umbrella + CRM + AMS/OPS + list JSX + comms UUID guard).
+
+## Run locally (Mac)
 
 ```bash
+git fetch origin cursor/desk-merge-unblock-f2e7
+git checkout cursor/desk-merge-unblock-f2e7
+git pull origin cursor/desk-merge-unblock-f2e7
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
 npm install
 npm run db:migrate
 npm run db:seed
-npm run dev
+npm run dev -- --port 43147
 ```
 
 If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.

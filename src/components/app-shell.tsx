@@ -5,9 +5,7 @@ import {
   Bell,
   Briefcase,
   Building2,
-  CalendarDays,
   ClipboardList,
-  Columns3,
   Contact,
   FileStack,
   Calendar,
@@ -32,7 +30,6 @@ const NAV = [
   { href: "/", label: "Home", icon: Home },
   { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
   { href: "/leads", label: "Leads", icon: Users },
-  { href: "/pipeline", label: "Pipeline", icon: Columns3 },
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/accounts", label: "Businesses", icon: Briefcase },
@@ -47,10 +44,9 @@ const NAV = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
-  { href: "/settings", label: "Settings", icon: ClipboardList },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/phone", label: "Phone", icon: ListChecks },
-  { href: "/settings", label: "Settings", icon: Building2 },
+  { href: "/settings", label: "Settings", icon: ClipboardList },
 ];
 
 export async function AppShell({
@@ -98,7 +94,7 @@ export async function AppShell({
             const Icon = item.icon;
             return (
               <Link
-                key={item.href}
+                key={`${item.href}-${item.label}`}
                 href={item.href}
                 className="flex items-center gap-2 rounded-md px-2.5 py-2 text-[15px] text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white"
               >

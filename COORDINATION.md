@@ -282,6 +282,19 @@ Shipped on `cursor/live-desk-walkthrough-531d`:
 
 Seeded proof: Elena Contact/Policy show outbound + inbound “HO3 bind confirmation”. Harbor Business/Policy show outbound + inbound SMS about the COI. Alerts list the Elena status ask with Open record.
 
+## Desk merge unblock (`cursor/desk-merge-unblock-f2e7`)
+
+Mac-ready umbrella for localhost:43147. Starts from `cursor/desk-unblock-compile-eeac` and merges:
+
+- `cursor/crm-core-routes-9f03`
+- `cursor/ams-ops-routes-compile-2e23`
+- `cursor/list-pages-jsx-43c4`
+- `cursor/comms-nav-smoke-9493`
+
+Conflicts favored compile + working Col-based list pages. Ana fixture untouched (unbound, Cov A $321,000). Quotes still do not create a policy. No live Zoho. Navy sidebar tokens (`--ff-sidebar` / `--ff-bg`) restored so the desk does not wash to a white rail. `getReviewTask` 404s on non-UUID ids.
+
+Full desk QA (every NAV route + CRM + comms) should run next on this branch.
+
 ## Desk unblock (`cursor/desk-unblock-compile-eeac`)
 
 Off `cursor/feel-pass-consolidate-5e5c`. Shared leftover that blocked Mac Chrome feel-pass:
