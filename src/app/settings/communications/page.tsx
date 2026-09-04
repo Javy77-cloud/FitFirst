@@ -6,14 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { currentDeskSession } from "@/lib/auth/session";
+import { db } from "@/lib/db";
 import { getAgencySettings } from "@/lib/db/queries";
-import { VIDEO_PROVIDER_LABEL, VIDEO_PROVIDERS } from "@/lib/meetings/types";
+import { users } from "@/lib/db/schema";
+import { ADMIN_USER_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
+import { eq } from "drizzle-orm";
+import { meetingActorId, VIDEO_PROVIDER_LABEL, VIDEO_PROVIDERS } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function CommunicationsSettingsPage() {
   const session = await currentDeskSession();
-  const agency = await getAgencySettings();
+  const actorId = meetingActorId({
+    userId: session.userId,
+    isAdmin: session.isAdmin,
+    adminUserId: ADMIN_USER_ID,
+    agentUserId: AGENT_USER_ID,
+  });
+  const [actor, agency] = await Promise.all([
+    db.select().from(users).where(eq(users.id, actorId)).then((rows) => rows[0] ?? null),
+    getAgencySettings(),
+  ]);
   const videoProvider =
     "videoProvider" in agency && typeof agency.videoProvider === "string" ? agency.videoProvider : "none";
 
@@ -99,7 +112,7 @@ export default async function CommunicationsSettingsPage() {
             <Label className="text-xs">Your meeting address</Label>
             <Input
               name="meetingAddress"
-              defaultValue={session.user?.meetingAddress ?? ""}
+              defaultValue={actor?.meetingAddress ?? session.user?.meetingAddress ?? ""}
               className="mt-1 h-8"
               placeholder="Suite 112 · same building"
             />

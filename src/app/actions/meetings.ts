@@ -7,12 +7,13 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { agencySettings, contacts, deals, leads, risks, users } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
-import { AGENCY_SETTINGS_ID } from "@/lib/fixtures/ids";
+import { ADMIN_USER_ID, AGENCY_SETTINGS_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
 import {
   defaultVideoProvider,
   homeAddressFromRecords,
   isMeetingType,
   isVideoProvider,
+  meetingActorId,
   MEETING_TYPE_LABEL,
   meetingNotes,
   officeMeetingAddress,
@@ -39,14 +40,18 @@ export type MeetingDefaults = {
 
 export async function loadMeetingDefaults(dealId: string): Promise<MeetingDefaults> {
   const session = await currentDeskSession();
+  const actorId = meetingActorId({
+    userId: session.userId,
+    isAdmin: session.isAdmin,
+    adminUserId: ADMIN_USER_ID,
+    agentUserId: AGENT_USER_ID,
+  });
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   const [agency] = await db
     .select()
     .from(agencySettings)
     .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID));
-  const [agent] = session.userId
-    ? await db.select().from(users).where(eq(users.id, session.userId))
-    : [];
+  const [agent] = await db.select().from(users).where(eq(users.id, actorId));
 
   let homeAddress: string | null = null;
   if (deal) {
@@ -74,7 +79,7 @@ export async function loadMeetingDefaults(dealId: string): Promise<MeetingDefaul
   const officeAddress = officeMeetingAddress({
     agencyName: agency?.agencyName,
     officeAddress: agency?.officeAddress,
-    agentName: session.name,
+    agentName: agent?.name ?? session.name,
     agentAddress: agent?.meetingAddress ?? session.user?.meetingAddress,
   });
 
@@ -180,12 +185,16 @@ export async function saveCommunicationsSettings(formData: FormData) {
   }
 
   const meetingAddress = str(formData, "meetingAddress") || null;
-  if (session.userId) {
-    await db
-      .update(users)
-      .set({ meetingAddress, updatedAt: new Date() })
-      .where(eq(users.id, session.userId));
-  }
+  const actorId = meetingActorId({
+    userId: session.userId,
+    isAdmin: session.isAdmin,
+    adminUserId: ADMIN_USER_ID,
+    agentUserId: AGENT_USER_ID,
+  });
+  await db
+    .update(users)
+    .set({ meetingAddress, updatedAt: new Date() })
+    .where(eq(users.id, actorId));
 
   revalidatePath("/settings");
   revalidatePath("/settings/communications");

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultVideoProvider,
   homeAddressFromRecords,
+  meetingActorId,
   meetingNotes,
   officeMeetingAddress,
   pipelineCardShowsAsk,
@@ -87,5 +88,16 @@ describe("pipeline card actions", () => {
     expect(PIPELINE_CARD_ACTIONS).not.toContain("Email");
     expect(PIPELINE_CARD_ACTIONS.some((label) => /teammate/i.test(label))).toBe(false);
     expect(pipelineCardShowsAsk()).toBe(false);
+  });
+
+  it("uses Javy when the desk is Admin without a login cookie", () => {
+    expect(
+      meetingActorId({
+        userId: null,
+        isAdmin: true,
+        adminUserId: "admin",
+        agentUserId: "agent",
+      }),
+    ).toBe("admin");
   });
 });

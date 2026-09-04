@@ -144,3 +144,14 @@ export const PIPELINE_CARD_ACTIONS = ["Call", "SMS", "Task", "Meeting"] as const
 export function pipelineCardShowsAsk(): boolean {
   return false;
 }
+
+/** Unauthenticated desk still acts as Admin (Javy). Owner cookies have no userId. */
+export function meetingActorId(input: {
+  userId?: string | null;
+  isAdmin?: boolean;
+  adminUserId: string;
+  agentUserId: string;
+}): string {
+  if (input.userId) return input.userId;
+  return input.isAdmin === false ? input.agentUserId : input.adminUserId;
+}
