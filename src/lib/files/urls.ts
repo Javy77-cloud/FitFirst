@@ -58,7 +58,7 @@ export function resolveFileMime(input: {
   slot?: string | null;
 }): string {
   if (input.bytes && looksLikePdf(input.bytes)) return "application/pdf";
-  if (input.docType === "quote_pdf" || input.slot === "quote_pdf") {
+  if (input.docType === "quote_pdf" || input.slot === "quote_pdf" || input.docType === "proposal" || input.slot === "proposal") {
     if (extensionOf(input.filename) === "pdf" || !input.storedMime) return "application/pdf";
   }
   return inferMimeFromName(input.filename, input.storedMime);
@@ -73,6 +73,7 @@ export function shouldWrapAsPdf(input: {
 }): boolean {
   if (looksLikePdf(input.bytes)) return false;
   if (input.docType === "quote_pdf" || input.slot === "quote_pdf") return true;
+  if (input.docType === "proposal" || input.slot === "proposal") return true;
   if (extensionOf(input.filename) === "pdf") return true;
   return false;
 }

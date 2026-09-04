@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS, type ShopLine } from "@/lib/domain";
 import { filePreviewHref, isQuoteAttachment } from "@/lib/files/urls";
+import { isProposalDoc } from "@/lib/proposals/store";
+import { generateDealProposal } from "@/app/actions/proposals";
 import { quotingFormById } from "@/lib/quoting/forms";
 import { DocFileActions } from "./doc-file-actions";
 import { QuotingLinePicker } from "./quoting-line-picker";
@@ -68,11 +70,13 @@ export function DocumentsPanel({
   fillFeedback?: FillFeedbackLog[];
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
-  const quotePdfs = docs.filter((d) => isQuoteAttachment(d));
+  const quotePdfs = docs.filter((d) => isQuoteAttachment(d) && !isProposalDoc(d));
+  const proposals = docs.filter((d) => isProposalDoc(d));
   const signedApps = docs.filter((d) => d.slot === "signed_app" || d.docType === "signed_app");
   const sourceDocs = docs.filter(
     (d) =>
       !isQuoteAttachment(d) &&
+      !isProposalDoc(d) &&
       d.slot !== "policy_file" &&
       d.slot !== "signed_app" &&
       d.docType !== "signed_app",
@@ -263,6 +267,21 @@ export function DocumentsPanel({
               </Button>
             </form>
             <DocTable docs={quotePdfs} dealId={dealId} comms={comms} empty="No issued quote PDFs yet." />
+          </section>
+
+          <section className="ff-card p-4">
+            <h3 className="mb-1 text-sm font-semibold text-navy">Proposals / Attachments</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Branded agency proposal PDF from this deal&apos;s quote set — logo, colors, side-by-side
+              premiums, and rule-based gap notes. Stored on this deal. Not a policy.
+            </p>
+            <form action={generateDealProposal} className="mb-3">
+              <input type="hidden" name="dealId" value={dealId} />
+              <Button type="submit" size="sm">
+                Generate branded proposal
+              </Button>
+            </form>
+            <DocTable docs={proposals} dealId={dealId} comms={comms} empty="No branded proposals yet." />
           </section>
 
           <section className="ff-card p-4">

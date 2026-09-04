@@ -936,6 +936,7 @@ export const quoteAttemptLogs = pgTable(
     covATried: integer("cov_a_tried"),
     covAForced: integer("cov_a_forced"),
     why: text("why"),
+    lostReason: text("lost_reason"),
     snapYearBuilt: integer("snap_year_built"),
     snapRoofYear: integer("snap_roof_year"),
     snapRoofCovering: text("snap_roof_covering"),
@@ -984,6 +985,7 @@ export const quotes = pgTable(
     bindable: boolean("bindable").notNull().default(false),
     coverageGaps: jsonb("coverage_gaps").$type<string[]>().notNull().default([]),
     notes: text("notes"),
+    lostReason: text("lost_reason"),
     stub: boolean("stub").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

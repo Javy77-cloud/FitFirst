@@ -4,9 +4,11 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-2: Deal quote PDFs + DOC → master sheet fill + Fill Learning)
+**Mac desk-test branch:** `cursor/diff-proposals-hit-ratio-4024` (pack E: branded proposals + hit/lost reporting + quote compare). Base: `cursor/mac-ready-batch4-7pm`.
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). WAVE-3 leftover: none from this list. Next free migration is **0036**. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`).
+
+**Pack E (this branch):** branded proposal PDF from any Deal quote set (agency logo/colors, side-by-side premiums, coverage summary) stored on Deal Attachments; Admin Home hit-ratio / carrier / lost-reason cards; `/deals/[id]/compare` plain-English gap notes from rule text (not LLM). Additive `0036_diff_pack_e`. Next free migration is **0037**. See `COORDINATION.md`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 
@@ -45,7 +47,7 @@ Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not 
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-cd ~/FitFirst && git fetch origin && git checkout -B cursor/mac-ready-batch4-7pm origin/cursor/mac-ready-batch4-7pm && cp -n .env.example .env && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
+cd ~/FitFirst && git fetch origin && git checkout -B cursor/diff-proposals-hit-ratio-4024 origin/cursor/diff-proposals-hit-ratio-4024 && cp -n .env.example .env && npm install && npm run db:migrate && npm run db:seed && npm run dev -- --port 43147
 ```
 
 Keep `PII_ENCRYPTION_KEY` from `.env.example` (64 hex chars — local Mac demo key, not production). Changing it makes existing ciphertext unreadable; re-run `db:seed`. Postgres stays on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`).
@@ -215,7 +217,7 @@ npm test
 - Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.
 - Search is substring, so `Ana` also lists Camila.
 - Camila Auto `QBE-PA-66103` still has an empty vehicle schedule (Soto `FF-PA-4401` is the 2/2 seed).
-- Policy compare stays the thin reader (ComparePanel not reattached).
+- Policy compare stays the thin reader (ComparePanel not reattached). Deal quote compare is live at `/deals/[id]/compare` (rule-text gaps, not LLM).
 
 ## Out of scope
 

@@ -31,8 +31,11 @@ import {
   ELENA_MEETING_ID,
   ELENA_POLICY_ID,
   ELENA_QUOTE_AI_ID,
+  ELENA_QUOTE_GEO_ID,
   ELENA_QUOTE_PDF_AI_ID,
+  ELENA_QUOTE_PDF_GEO_ID,
   ELENA_QUOTE_PDF_TR_ID,
+  ELENA_PROPOSAL_ID,
   ELENA_QUOTE_TAILROW_ID,
   ELENA_RISK_ID,
   ELENA_SHEET_ID,
@@ -40,6 +43,8 @@ import {
   TENANT_ID,
 } from "../fixtures/ids";
 import { buildStubQuotePdf } from "../crm/quote-pdf";
+import { buildBrandedProposalPdf } from "../proposals/branded-pdf";
+import { compareQuotes, quoteToCompareInput } from "../quotes/gap-notes";
 import { activityLogBody } from "../lifecycle/activity";
 import {
   MELBOURNE_HO_DEC_FILENAME,
@@ -270,6 +275,7 @@ export async function seedLifecycleDemo() {
   const quoteResultsNote = buildQuoteResultsNote([
     { carrierName: "American Integrity", premium: "2840", bindable: true },
     { carrierName: "Tailrow", premium: "3120", bindable: true },
+    { carrierName: "GeoVera", premium: "3640", bindable: true },
   ]);
 
   await db
@@ -398,8 +404,24 @@ export async function seedLifecycleDemo() {
       aopDeductible: "$2,500",
       coverageA: 385000,
       bindable: true,
-      coverageGaps: [],
-      notes: "Stub quote. Second cheapest. Did not create a policy.",
+      coverageGaps: ["No flood"],
+      notes: "Stub quote. Second cheapest. Florida HO3 — flood not included.",
+      stub: true,
+    },
+    {
+      id: ELENA_QUOTE_GEO_ID,
+      tenantId: TENANT_ID,
+      dealId: ELENA_DEAL_ID,
+      riskId: ELENA_RISK_ID,
+      carrierId: CARRIER_IDS.geovera,
+      quoteNumber: "Q-GV-MEL-3640",
+      premium: "3640.00",
+      hurricaneDeductible: "5%",
+      aopDeductible: "$5,000",
+      coverageA: 365000,
+      bindable: true,
+      coverageGaps: ["No flood"],
+      notes: "Higher deductibles. Coverage A $20,000 short of the $385,000 need. No flood.",
       stub: true,
     },
   ]);
@@ -483,6 +505,74 @@ export async function seedLifecycleDemo() {
     }),
     ELENA_DEAL_ID,
   );
+  const quoteGvPath = await writePdfAttachment(
+    ELENA_QUOTE_PDF_GEO_ID,
+    "geovera-quote-3640.pdf",
+    await buildStubQuotePdf({
+      dealTitle: "Ruiz · Melbourne HO3",
+      carrierName: "GeoVera",
+      quoteNumber: "Q-GV-MEL-3640",
+      premium: "3640.00",
+      coverageA: 365000,
+      hurricaneDeductible: "5%",
+      aopDeductible: "$5,000",
+      bindable: true,
+    }),
+    ELENA_DEAL_ID,
+  );
+  const proposalPath = await writePdfAttachment(
+    ELENA_PROPOSAL_ID,
+    "proposal-Ruiz_Melbourne_HO3.pdf",
+    await buildBrandedProposalPdf({
+      brand: { agencyName: "Javier Garcia Insurance", colorPreset: "agency", phone: "321-429-1182" },
+      deal: {
+        title: "Ruiz · Melbourne HO3",
+        insuredName: "Elena Ruiz",
+        line: "HO",
+        state: "FL",
+        coverageA: 385000,
+      },
+      quotes: compareQuotes(
+        [
+          quoteToCompareInput({
+            id: ELENA_QUOTE_AI_ID,
+            carrierName: "American Integrity",
+            premium: "2840.00",
+            aopDeductible: "$2,500",
+            hurricaneDeductible: "2%",
+            coverageA: 385000,
+            bindable: true,
+            coverageGaps: [],
+            notes: "Cheapest.",
+          }),
+          quoteToCompareInput({
+            id: ELENA_QUOTE_TAILROW_ID,
+            carrierName: "Tailrow",
+            premium: "3120.00",
+            aopDeductible: "$2,500",
+            hurricaneDeductible: "2%",
+            coverageA: 385000,
+            bindable: true,
+            coverageGaps: ["No flood"],
+            notes: "No flood.",
+          }),
+          quoteToCompareInput({
+            id: ELENA_QUOTE_GEO_ID,
+            carrierName: "GeoVera",
+            premium: "3640.00",
+            aopDeductible: "$5,000",
+            hurricaneDeductible: "5%",
+            coverageA: 365000,
+            bindable: true,
+            coverageGaps: ["No flood"],
+            notes: "Higher deductibles. No flood.",
+          }),
+        ],
+        { coverageA: 385000, state: "FL", line: "HO", wantsFlood: true },
+      ),
+    }),
+    ELENA_DEAL_ID,
+  );
   const polDecPath = await writeAttachment(
     "pol-dec",
     "ho3-elena-2026-dec.txt",
@@ -547,6 +637,32 @@ export async function seedLifecycleDemo() {
       docType: "quote_pdf",
       slot: "quote_pdf",
       status: "uploaded",
+    },
+    {
+      id: ELENA_QUOTE_PDF_GEO_ID,
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: "geovera-quote-3640.pdf",
+      mimeType: "application/pdf",
+      storagePath: quoteGvPath,
+      docType: "quote_pdf",
+      slot: "quote_pdf",
+      status: "uploaded",
+    },
+    {
+      id: ELENA_PROPOSAL_ID,
+      tenantId: TENANT_ID,
+      riskId: ELENA_RISK_ID,
+      dealId: ELENA_DEAL_ID,
+      contactId: ELENA_CONTACT_ID,
+      filename: "proposal-Ruiz_Melbourne_HO3.pdf",
+      mimeType: "application/pdf",
+      storagePath: proposalPath,
+      docType: "proposal",
+      slot: "proposal",
+      status: "attached",
     },
     {
       tenantId: TENANT_ID,

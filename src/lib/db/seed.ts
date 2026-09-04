@@ -440,6 +440,23 @@ export async function seed() {
     })),
   );
 
+  const anaLostReasons: Partial<Record<CarrierKey, string>> = {
+    qbe: "uw_construction",
+    benchmark: "uw_roof",
+    hadron: "uw_roof",
+  };
+  for (const [key, reason] of Object.entries(anaLostReasons)) {
+    await db
+      .update(quoteAttemptLogs)
+      .set({ lostReason: reason })
+      .where(
+        and(
+          eq(quoteAttemptLogs.dealId, DEAL_ID),
+          eq(quoteAttemptLogs.carrierId, CARRIER_IDS[key as CarrierKey]),
+        ),
+      );
+  }
+
   await db.delete(alerts).where(eq(alerts.tenantId, TENANT_ID));
   await db.insert(alerts).values([
     {

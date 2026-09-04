@@ -593,6 +593,12 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 - Admin browse `/logs/fill-learning` (tab next to Appetite / decline log). Agents can still mark a mapping wrong on the sheet.
 - Seeded Elena HO corrections: wind mit roof year 2014→2019, dec CBS→masonry, 4-point comp shingle→architectural shingle. No Ana rows.
 
-## WAVE3 leftover
+## DIFFERENTIATOR pack E — branded proposals + hit/lost + quote compare (`cursor/diff-proposals-hit-ratio-4024`)
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Starts from `cursor/mac-ready-batch4-7pm`. Additive `0036_diff_pack_e`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+- **Branded proposal PDF** from any Deal quote set: agency name / logo / color preset, side-by-side premiums, coverage summary, rule-based gap notes. Stored on Deal Attachments (`documents.slot=proposal`). Generate from Quotes, Documents, or `/deals/[id]/compare`. Elena seeds one proposal PDF plus a GeoVera compare quote (higher AOP / hurricane, no flood, Cov A $365k).
+- **Hit / lost reporting:** `quotes.lost_reason` + `quote_attempt_logs.lost_reason` picklist. Admin Home widget **Hit ratio / lost business** — quote hit %, shop hit %, carrier performance, lost-reason counts. Ana declined rows seed roof / construction reasons. Ana stays a miss (quoted, not bound).
+- **Quote compare screen** `/deals/[id]/compare`: plain-English gap notes from rule text (deductible higher, no flood, lower Cov A, not bindable). Not an LLM. Ana compare falls back to her quoted attempt at $321,000.
+
+Do not bind Ana. Next free additive migration is **0037**.

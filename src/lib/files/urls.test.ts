@@ -39,6 +39,14 @@ describe("file URLs", () => {
         bytes: Buffer.from("ISSUED QUOTE PDF (stub)\n"),
       }),
     ).toBe(true);
+    expect(
+      resolveFileMime({
+        filename: "proposal-Ruiz_Melbourne_HO3.pdf",
+        storedMime: "application/octet-stream",
+        docType: "proposal",
+        slot: "proposal",
+      }),
+    ).toBe("application/pdf");
   });
 
   it("builds inline and attachment Content-Disposition", () => {
