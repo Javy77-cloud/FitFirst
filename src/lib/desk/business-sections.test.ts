@@ -18,6 +18,7 @@ describe("business record sections", () => {
     expect(admin.some((s) => s.id === "certificates")).toBe(true);
     expect(agent.map((s) => s.label).join(" ")).not.toMatch(/activity log/i);
     expect(agent.map((s) => s.label).join(" ")).not.toMatch(/quick log/i);
+    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/log on this record/i);
   });
 
   it("keeps Ask a teammate Admin-only", () => {
