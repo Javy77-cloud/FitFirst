@@ -480,3 +480,23 @@ export const EO_ALERT_IDS = {
   quoteFollowup: "e0360000-0000-4036-8036-000000000013",
 } as const;
 
+/** DIFF D campaign sequences. Do not reuse Ana IDs. */
+export const CAMPAIGN_SEQUENCE_IDS = {
+  leadNurture: "a0801111-a080-4111-8111-a08011111101",
+  quoteFollowUp: "a0801111-a080-4111-8111-a08011111102",
+  renewal6030: "a0801111-a080-4111-8111-a08011111103",
+  crossSell: "a0801111-a080-4111-8111-a08011111104",
+  reviewAsk: "a0801111-a080-4111-8111-a08011111105",
+} as const;
+
+export const SEQUENCE_TEMPLATE_IDS = {
+  leadNurtureWelcome: "a0801111-a080-4111-8111-a08011111111",
+  leadNurtureFollowup: "a0801111-a080-4111-8111-a08011111112",
+  quoteReady: "a0801111-a080-4111-8111-a08011111113",
+  quoteNudge: "a0801111-a080-4111-8111-a08011111114",
+  renewal60: "a0801111-a080-4111-8111-a08011111115",
+  renewal30: "a0801111-a080-4111-8111-a08011111116",
+  crossSell: "a0801111-a080-4111-8111-a08011111117",
+  reviewAsk: "a0801111-a080-4111-8111-a08011111118",
+} as const;
+

@@ -68,6 +68,12 @@ export const SIGNATURE_STATUS_LABEL: Record<SignatureApprovalStatus, string> = {
 
 export const AUTOMATION_HUB_SECTIONS = [
   {
+    id: "sequences",
+    href: "/automations/sequences",
+    label: "Campaign sequences",
+    summary: "Lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask — Task + email stubs.",
+  },
+  {
     id: "campaigns",
     href: "/automations/campaigns",
     label: "Email campaigns",

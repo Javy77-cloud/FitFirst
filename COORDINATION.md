@@ -612,6 +612,14 @@ Merged onto `cursor/mac-ready-batch4-7pm`. Additive `0036_eo_audit_logs`. Ana fi
 - Admin page `/compliance` (Settings + Logs tab). Live E&O flags: no client activity 90 days before renewal, Bound/Pending missing signed app, Quote Sent with no desk follow-up task.
 - Seed writes a short Elena/Harbor trail and in-app `eo_gap` alerts to Javy only. Ana stays Quote Sent / unbound.
 
+## DIFF D — Priority queue + campaign sequences (`cursor/priority-queue-campaigns-1a0d`)
+
+Merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_campaign_sequences` renumbered to `0037_campaign_sequences`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Alerts stay in the header bell.
+
+**Work queue.** `/work-queue` leads with a **Priority queue** sorted by renewal date (soonest first), then revenue at risk (premium desc). Columns: Due / Priority / Status / $ / Account. Eligible book: Active / Bound / Pending / Lapse. Quotes are not written premium — shopping-only Ana is not a row. Priority bands: lapse/overdue Highest; ≤30 days High (Highest if $≥2,500); ≤60 days Normal (High if $≥5,000). Needs attention + Bound/pending/lapse tables stay below.
+
+**Campaign sequences.** `/automations/sequences` — five insurance catalogs: lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask. Each step is a desk Task stub or a work-email template stub (`seq-*` slugs in `email_templates`). On/Off only. Nothing sends. Seed + `ensureCampaignSequences()` keep the five rows. Review ask hangs on bind / Closed Won, not pipeline stage.
+
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+DIFF WAVE-1 took **0036** (E&O) and **0037** (campaigns). Next free additive migration is **0038**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

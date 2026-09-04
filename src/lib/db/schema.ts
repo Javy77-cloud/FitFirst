@@ -1889,6 +1889,27 @@ export const campaignSendLogs = pgTable(
   (t) => [index("campaign_send_logs_campaign_idx").on(t.tenantId, t.campaignId)],
 );
 
+/** Enable/disable catalog for the five insurance sequences (Task + email stubs). */
+export const campaignSequences = pgTable(
+  "campaign_sequences",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    summary: text("summary").notNull(),
+    audience: text("audience").notNull(),
+    anchor: text("anchor").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    steps: jsonb("steps").$type<import("@/lib/campaign-sequences/types").SequenceStep[]>().notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("campaign_sequences_slug_uidx").on(t.tenantId, t.slug),
+    index("campaign_sequences_tenant_idx").on(t.tenantId),
+  ],
+);
+
 export const smsSettings = pgTable("sms_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenantId: tenantCol(),
@@ -2199,6 +2220,7 @@ export type AgentUiPref = typeof agentUiPrefs.$inferSelect;
 export type CalendarConnection = typeof calendarConnections.$inferSelect;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
+export type CampaignSequence = typeof campaignSequences.$inferSelect;
 export type SmsSettings = typeof smsSettings.$inferSelect;
 export type TelephonySettings = typeof telephonySettings.$inferSelect;
 export type EsignSettings = typeof esignSettings.$inferSelect;

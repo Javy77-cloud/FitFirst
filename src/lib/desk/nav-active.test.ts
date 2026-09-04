@@ -71,6 +71,7 @@ describe("navItemIsActive", () => {
   it("highlights Automations on hub and section pages", () => {
     expect(navItemIsActive("/automations", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/sequences", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/signatures", "/automations")).toBe(true);
     expect(navItemIsActive("/settings/email-templates", "/automations")).toBe(false);
   });

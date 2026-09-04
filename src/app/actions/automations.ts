@@ -21,6 +21,7 @@ function refreshAutomations() {
   revalidatePath("/automations/sms");
   revalidatePath("/automations/templates");
   revalidatePath("/automations/signatures");
+  revalidatePath("/automations/sequences");
   revalidatePath("/alerts");
 }
 
