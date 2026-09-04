@@ -162,6 +162,8 @@ export async function listLeads() {
 export type DealListFilter = {
   stage?: string;
   attention?: string;
+  line?: string;
+  state?: string;
 };
 
 export async function listDeals(filter: DealListFilter = {}) {
@@ -172,11 +174,21 @@ export async function listDeals(filter: DealListFilter = {}) {
     .orderBy(desc(deals.updatedAt));
   return rows.filter((deal) => {
     const stage = deal.pipelineStage.toLowerCase();
-    if (filter.attention === "bound_pending") return WON_STAGES.has(stage);
-    if (filter.stage === "open") return OPEN_QUOTE_STAGES.has(stage);
-    if (filter.stage === "quote_sent") return QUOTE_SENT_STAGES.has(stage);
-    if (filter.stage === "won") return WON_STAGES.has(stage);
-    if (filter.stage) return stage === filter.stage.toLowerCase();
+    if (filter.attention === "bound_pending" && !WON_STAGES.has(stage)) return false;
+    if (filter.stage === "open" && !OPEN_QUOTE_STAGES.has(stage)) return false;
+    else if (filter.stage === "quote_sent" && !QUOTE_SENT_STAGES.has(stage)) return false;
+    else if (filter.stage === "won" && !WON_STAGES.has(stage)) return false;
+    else if (
+      filter.stage &&
+      filter.stage !== "open" &&
+      filter.stage !== "quote_sent" &&
+      filter.stage !== "won" &&
+      stage !== filter.stage.toLowerCase()
+    ) {
+      return false;
+    }
+    if (filter.line && deal.lineOfBusiness.toUpperCase() !== filter.line.toUpperCase()) return false;
+    if (filter.state && deal.state.toUpperCase() !== filter.state.toUpperCase()) return false;
     return true;
   });
 }
@@ -283,8 +295,11 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
         policy.expirationDate <= addUtcDays(asOf, days)
       );
     }
-    if (filter.line) return policy.lineOfBusiness.toUpperCase() === filter.line.toUpperCase();
-    if (filter.carrier) return policy.carrierId === filter.carrier;
+    if (filter.status && filter.status !== "in_force" && status !== filter.status.toLowerCase()) {
+      return false;
+    }
+    if (filter.line && policy.lineOfBusiness.toUpperCase() !== filter.line.toUpperCase()) return false;
+    if (filter.carrier && policy.carrierId !== filter.carrier) return false;
     return true;
   });
 }
@@ -505,12 +520,18 @@ export async function listAlerts(unreadOnly = false) {
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 }
 
-export async function listReviewTasks() {
-  return db
+export async function listReviewTasks(filter: { status?: string; kind?: string } = {}) {
+  const rows = await db
     .select()
     .from(reviewTasks)
-    .where(and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.status, "open")))
+    .where(eq(reviewTasks.tenantId, tenant()))
     .orderBy(asc(reviewTasks.dueDate));
+  return rows.filter((task) => {
+    if (filter.status) return task.status === filter.status && (!filter.kind || task.kind === filter.kind);
+    if (task.status !== "open") return false;
+    if (filter.kind && task.kind !== filter.kind) return false;
+    return true;
+  });
 }
 
 export async function getDealWorkspace(dealId: string) {

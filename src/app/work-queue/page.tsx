@@ -1,14 +1,24 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
+import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
 
-export default async function WorkQueuePage() {
+export default async function WorkQueuePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const filter = pickFilterParams(await searchParams, ["kind", "status"]);
   const [{ snapshot }, rows] = await Promise.all([ownerHomeDashboard(), listPolicies()]);
-  const open = rows.filter(({ policy }) =>
-    ["bound", "pending", "lapse", "lapsed"].includes(policy.status.toLowerCase()),
-  );
+  const attention = snapshot.attention.filter((item) => matchesField(item.kind, filter.kind));
+  const open = rows.filter(({ policy }) => {
+    const status = policy.status.toLowerCase();
+    if (!["bound", "pending", "lapse", "lapsed"].includes(status)) return false;
+    return matchesField(status, filter.status);
+  });
 
   return (
     <AppShell title="Work queue">
@@ -16,12 +26,32 @@ export default async function WorkQueuePage() {
         One queue: owner attention (review tasks, lapses, bound waiting on issue) plus policies
         still in Bound / Pending / Lapse. Nothing emails anyone.
       </p>
+      <SavedFiltersBar
+        moduleId="work-queue"
+        fields={[
+          {
+            key: "kind",
+            label: "Kind",
+            options: uniqueOptions(snapshot.attention.map((item) => item.kind)),
+          },
+          {
+            key: "status",
+            label: "Policy status",
+            options: [
+              { value: "bound", label: "bound" },
+              { value: "pending", label: "pending" },
+              { value: "lapse", label: "lapse" },
+              { value: "lapsed", label: "lapsed" },
+            ],
+          },
+        ]}
+      />
 
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Needs attention
         </div>
-        {snapshot.attention.length === 0 ? (
+        {attention.length === 0 ? (
           <p className="px-4 py-6 text-base text-muted-foreground">Queue is clear.</p>
         ) : (
           <table className="ff-table">
@@ -33,7 +63,7 @@ export default async function WorkQueuePage() {
               </tr>
             </thead>
             <tbody>
-              {snapshot.attention.map((item) => (
+              {attention.map((item) => (
                 <tr key={item.id}>
                   <td className="uppercase">{item.kind.replaceAll("_", " ")}</td>
                   <td>

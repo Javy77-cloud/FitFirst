@@ -1,17 +1,46 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listReviewTasks } from "@/lib/db/queries";
+import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
 
-export default async function TasksPage() {
-  const tasks = await listReviewTasks();
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const filter = pickFilterParams(await searchParams, ["status", "kind"]);
+  const tasks = await listReviewTasks(filter);
   return (
     <AppShell title="Tasks">
       <p className="mb-3 text-base text-muted-foreground">
         Desk 30/60/90 and review tasks. Activity timeline on Contact and Policy still owns
         task/call logs assigned to those records.
       </p>
+      <SavedFiltersBar
+        moduleId="tasks"
+        fields={[
+          {
+            key: "status",
+            label: "Status",
+            options: uniqueOptions(
+              tasks.map((task) => task.status),
+              [
+                { value: "open", label: "open" },
+                { value: "done", label: "done" },
+                { value: "completed", label: "completed" },
+              ],
+            ),
+          },
+          {
+            key: "kind",
+            label: "Kind",
+            options: uniqueOptions(tasks.map((task) => task.kind)),
+          },
+        ]}
+      />
       <section className="ff-card overflow-hidden">
         {tasks.length === 0 ? (
           <p className="px-4 py-6 text-base text-muted-foreground">No open review tasks.</p>

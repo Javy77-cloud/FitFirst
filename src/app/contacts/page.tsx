@@ -5,17 +5,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
+import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { CLIENT_STATUSES } from "@/lib/domain";
+import { matchesField, pickFilterParams } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContactsPage() {
-  const rows = await listContacts();
+export default async function ContactsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const filter = pickFilterParams(await searchParams, ["status"]);
+  const all = await listContacts();
+  const rows = all.filter((contact) => matchesField(contact.clientStatus, filter.status));
   return (
     <AppShell title="Contacts">
       <p className="mb-3 text-base text-muted-foreground">
         Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
         policy is Active, Bound, or Pending. Ana is on the book for the shop only — not a client.
       </p>
+      <SavedFiltersBar
+        moduleId="contacts"
+        fields={[
+          {
+            key: "status",
+            label: "Status",
+            options: CLIENT_STATUSES.map((value) => ({
+              value,
+              label: value.replaceAll("_", " "),
+            })),
+          },
+        ]}
+      />
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <form action={createContact} className="ff-card space-y-3 p-4">
           <h2 className="text-base font-semibold text-navy">Add contact</h2>

@@ -3,13 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
 import { listBoundPendingDeals, listDeals, type DealListFilter } from "@/lib/db/queries";
+import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { DEAL_STAGES, LINES } from "@/lib/domain";
+import { firstParam } from "@/lib/saved-filters";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 const STAGE_HINT: Record<string, string> = {
   open: "Open quotes — shopping, quoting, comparing. Ana's HO3 lives here.",
@@ -24,8 +23,10 @@ export default async function DealsPage({
 }) {
   const params = await searchParams;
   const filter: DealListFilter = {
-    stage: first(params.stage),
-    attention: first(params.attention),
+    stage: firstParam(params.stage),
+    attention: firstParam(params.attention),
+    line: firstParam(params.line),
+    state: firstParam(params.state),
   };
   const rows =
     filter.attention === "bound_pending" ? await listBoundPendingDeals() : await listDeals(filter);
@@ -46,6 +47,36 @@ export default async function DealsPage({
       }
     >
       <p className="mb-3 text-base text-muted-foreground">{hint}</p>
+      <SavedFiltersBar
+        moduleId="deals"
+        fields={[
+          {
+            key: "stage",
+            label: "Stage",
+            options: [
+              { value: "open", label: "open" },
+              { value: "quote_sent", label: "quote sent" },
+              { value: "won", label: "closed won" },
+              ...DEAL_STAGES.map((value) => ({ value, label: value.replaceAll("_", " ") })),
+            ],
+          },
+          {
+            key: "line",
+            label: "Line",
+            options: LINES.map((value) => ({ value, label: value })),
+          },
+          {
+            key: "state",
+            label: "State",
+            options: [{ value: "FL", label: "FL" }],
+          },
+          {
+            key: "attention",
+            label: "Attention",
+            options: [{ value: "bound_pending", label: "bound pending" }],
+          },
+        ]}
+      />
       {filter.stage || filter.attention ? (
         <p className="mb-3 text-sm">
           <Link href="/deals" className="text-primary hover:underline">

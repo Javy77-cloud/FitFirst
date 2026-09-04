@@ -9,17 +9,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
+import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { LEAD_STATUSES } from "@/lib/domain";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeadsPage() {
-  const rows = await listLeads();
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["status", "source"]);
+  const all = await listLeads();
+  const rows = all.filter(
+    (lead) => matchesField(lead.status, filter.status) && matchesField(lead.source, filter.source),
+  );
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-base text-muted-foreground">
         Create or match by name + phone or email. Never duplicate. A dropped dec becomes a lead
         first; the deal is the shop. Quotes still do not create a policy.
       </p>
+      <SavedFiltersBar
+        moduleId="leads"
+        fields={[
+          {
+            key: "status",
+            label: "Status",
+            options: uniqueOptions(
+              all.map((lead) => lead.status),
+              LEAD_STATUSES.map((value) => ({ value, label: value })),
+            ),
+          },
+          {
+            key: "source",
+            label: "Source",
+            options: uniqueOptions(all.map((lead) => lead.source)),
+          },
+        ]}
+      />
       <div className="mb-4 flex flex-wrap gap-2">
         <form action={dropSampleDecPacket}>
           <Button type="submit" size="sm" variant="outline">
@@ -96,7 +126,9 @@ export default async function LeadsPage() {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="text-muted-foreground">
-                    No leads yet.
+                    {firstParam(params.status) || firstParam(params.source)
+                      ? "No leads match this filter."
+                      : "No leads yet."}
                   </td>
                 </tr>
               ) : (

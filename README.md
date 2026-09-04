@@ -21,6 +21,8 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 **Detail context rail:** task, meeting, lead, claim, deal, contact, policy, and business pages use a sticky right rail (~300px) with Info / Conversations, Send Email, deal summary, and open activities. Open a task from `/tasks` or a calendar event. Ana stays unbound.
 
+**Named list filters:** a slim bar under each list title (status/stage/line chips, Save as…). Saved in `localStorage` per module (`ff-saved-filters:v1:<module>`). On Leads, Deals, Policies, Contacts, Carriers, Businesses, plus Quotes, Claims, Tasks, and Work queue.
+
 Desk chrome: grouped sidebar (one section open), blue rail with an off-white active row, colored top-bar icons, search left of those icons, in-desk calendar, and **Choose files** on uploads. Start shop from a lead opens a shopping deal. Deal and lead pages use Quick Communications instead of the old quick log. **Support** is a floating Help center (not a sidebar module). Helper / process / cross-sell copy reads at ~15px (`text-base`). Ana Dib stays shopping / unbound / Cov A $321,000.
 
 Docker: `docker compose up --build` (same port).

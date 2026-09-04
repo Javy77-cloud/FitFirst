@@ -4,6 +4,9 @@ import { ShopSummary, TrackingTable } from "@/components/quotes/tracking-table";
 import { StagePill } from "@/components/fit-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { listQuoteTrackingShops } from "@/lib/db/queries";
+import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { DEAL_STAGES, LINES } from "@/lib/domain";
+import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +14,15 @@ export const dynamic = "force-dynamic";
 export default async function QuotesBoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ deal?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { deal } = await searchParams;
-  const shops = await listQuoteTrackingShops(deal || undefined);
+  const params = await searchParams;
+  const deal = Array.isArray(params.deal) ? params.deal[0] : params.deal;
+  const filter = pickFilterParams(params, ["stage", "line"]);
+  const all = await listQuoteTrackingShops(deal || undefined);
+  const shops = all.filter(
+    (shop) => matchesField(shop.dealStage, filter.stage) && matchesField(shop.line, filter.line),
+  );
 
   return (
     <AppShell
@@ -30,6 +38,28 @@ export default async function QuotesBoardPage({
         is quoted, declined, skip, or bound. Cheapest quoted is ranked per deal. This board does
         not call a carrier or rater.
       </p>
+
+      <SavedFiltersBar
+        moduleId="quotes"
+        fields={[
+          {
+            key: "stage",
+            label: "Stage",
+            options: uniqueOptions(
+              all.map((shop) => shop.dealStage),
+              DEAL_STAGES.map((value) => ({ value, label: value.replaceAll("_", " ") })),
+            ),
+          },
+          {
+            key: "line",
+            label: "Line",
+            options: uniqueOptions(
+              all.map((shop) => shop.line),
+              LINES.map((value) => ({ value, label: value })),
+            ),
+          },
+        ]}
+      />
 
       {deal ? (
         <p className="mb-3 text-xs">
