@@ -10,6 +10,7 @@ import { RecordSection } from "@/components/record-section";
 import { dayInput } from "@/components/related-tables";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,9 +116,10 @@ export default async function PolicyDetailPage({
           </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Premises (copied from the deal — do not retype)</Label>
-            <Input
+            <AddressAutofill
               name="premisesAddress"
               defaultValue={firstFilled(policy.premisesAddress, risk?.address1, contact?.mailingAddress, account?.mailingAddress)}
+              fill={{ city: "premisesCity", state: "premisesState", zip: "premisesZip" }}
               className="mt-1 h-8"
             />
           </div>

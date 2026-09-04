@@ -12,7 +12,6 @@ export function ColumnPicker({
   initial: string[];
 }) {
   const defs = TABLE_COLUMNS[tableKey] ?? [];
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(initial);
 
   useEffect(() => {
@@ -42,29 +41,23 @@ export function ColumnPicker({
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="rounded-md border border-border bg-card px-2.5 py-1 text-sm text-navy hover:border-primary"
-      >
+    <details className="relative">
+      <summary className="inline-flex cursor-pointer list-none items-center rounded-md border border-border bg-card px-2.5 py-1 text-sm text-navy hover:border-primary [&::-webkit-details-marker]:hidden">
         Columns · {label}
-      </button>
-      {open ? (
-        <div className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-border bg-card p-2 shadow">
-          {defs.map((col) => (
-            <label key={col.key} className="flex items-center gap-2 px-1 py-1 text-sm">
-              <input
-                type="checkbox"
-                checked={selected.includes(col.key)}
-                onChange={() => toggle(col.key)}
-              />
-              {col.label}
-            </label>
-          ))}
-        </div>
-      ) : null}
-    </div>
+      </summary>
+      <div className="absolute right-0 z-50 mt-1 max-h-80 w-56 overflow-auto rounded-md border border-border bg-card p-2 shadow-lg">
+        {defs.map((col) => (
+          <label key={col.key} className="flex items-center gap-2 px-1 py-1 text-sm">
+            <input
+              type="checkbox"
+              checked={selected.includes(col.key)}
+              onChange={() => toggle(col.key)}
+            />
+            {col.label}
+          </label>
+        ))}
+      </div>
+    </details>
   );
 }
 

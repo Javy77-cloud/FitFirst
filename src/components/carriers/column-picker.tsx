@@ -22,7 +22,7 @@ export function ColumnPicker({
       <form
         method="get"
         action="/carriers"
-        className="absolute right-0 z-20 mt-1 w-64 rounded-md border border-border bg-card p-3 shadow-md"
+        className="absolute right-0 z-50 mt-1 w-64 rounded-md border border-border bg-card p-3 shadow-lg"
       >
         {notesId ? <input type="hidden" name="notes" value={notesId} /> : null}
         <p className="mb-2 text-xs font-medium text-muted-foreground">Show on the table</p>

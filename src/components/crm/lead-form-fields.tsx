@@ -1,3 +1,4 @@
+import { AddressAutofill } from "@/components/address-autofill";
 import { LineSelect } from "@/components/crm/line-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,7 +94,7 @@ export function LeadFormFields({
         <Label htmlFor="mailingAddress" className="text-xs">
           Address
         </Label>
-        <Input
+        <AddressAutofill
           id="mailingAddress"
           name="mailingAddress"
           defaultValue={lead?.mailingAddress ?? ""}

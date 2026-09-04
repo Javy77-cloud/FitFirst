@@ -8,6 +8,7 @@ import { RecordAskPanel } from "@/components/record-ask";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { RelatedDeals, RelatedPolicies, RelatedRollups } from "@/components/related-tables";
+import { AddressAutofill } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,7 +95,7 @@ export default async function AccountDetailPage({
           </div>
           <div className="sm:col-span-3">
             <Label className="text-xs">Mailing (copied from the deal — do not retype)</Label>
-            <Input
+            <AddressAutofill
               name="mailingAddress"
               defaultValue={firstFilled(account.mailingAddress, originRisk?.address1)}
               className="mt-1 h-8"

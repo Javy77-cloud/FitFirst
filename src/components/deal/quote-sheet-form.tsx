@@ -11,6 +11,7 @@ import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema"
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
+import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { SheetDrop } from "@/components/deal/sheet-drop";
@@ -222,6 +223,15 @@ function SheetField({
           rows={3}
           className={cn("mt-0 text-sm", toneClass(tone))}
         />
+      ) : sheetAddressFill(fieldKey) ? (
+        <AddressAutofill
+          id={fieldKey}
+          name={fieldKey}
+          defaultValue={cell.value}
+          readOnly={readOnly}
+          fill={sheetAddressFill(fieldKey)}
+          className={cn("h-8", toneClass(tone))}
+        />
       ) : (
         <Input
           id={fieldKey}
@@ -235,6 +245,19 @@ function SheetField({
       {tag ? <p className="mt-0.5 text-[10px] text-muted-foreground">{tag}</p> : null}
     </div>
   );
+}
+
+function sheetAddressFill(fieldKey: string): AddressFillMap | null {
+  if (fieldKey === "address1") {
+    return { city: "city", state: "state", zip: "zip", county: "county" };
+  }
+  if (fieldKey === "mailing_address") {
+    return { city: "city", state: "state", zip: "zip" };
+  }
+  if (fieldKey === "garaging_address") {
+    return { zip: "garaging_zip" };
+  }
+  return null;
 }
 
 function toneClass(tone: "missing" | "check" | "ok") {

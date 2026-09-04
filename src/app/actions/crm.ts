@@ -215,6 +215,10 @@ export async function createDeal(formData: FormData) {
     lastName,
     email: str(formData, "email") || null,
     phone: str(formData, "phone") || null,
+    mailingAddress: str(formData, "address1") || str(formData, "mailingAddress") || null,
+    city: str(formData, "city") || null,
+    state: str(formData, "state") || null,
+    zip: str(formData, "zip") || null,
     source: "manual",
   });
   if (lead.convertedDealId) {
@@ -249,11 +253,11 @@ export async function createDeal(formData: FormData) {
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
-    address1: fromLead.address1,
+    address1: str(formData, "address1") || fromLead.address1,
     city: str(formData, "city") || fromLead.city,
     county: str(formData, "county") || null,
-    state: fromLead.state,
-    zip: fromLead.zip,
+    state: str(formData, "state") || fromLead.state,
+    zip: str(formData, "zip") || fromLead.zip,
   });
 
   await db.insert(quoteSheets).values({

@@ -20,7 +20,7 @@ export default async function LeadsPage() {
   return (
     <AppShell
       title="Leads"
-      actions={<ColumnPicker tableKey="leads" initial={defaultColumns("leads")} />}
+      columns={<ColumnPicker tableKey="leads" initial={defaultColumns("leads")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">
         Capture the person first: name, date of birth, contact, address, and the insurance they
