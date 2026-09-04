@@ -17,7 +17,7 @@ type AskProps = {
   policyId?: string | null;
   dealId?: string | null;
   leadId?: string | null;
-  /** Contact record: hide the whole panel for agents. */
+  /** Contact / Business record: hide the whole panel for agents. */
   hideWhenNotAdmin?: boolean;
   framed?: boolean;
 };

@@ -50,7 +50,7 @@ export function RecordComms({
     <div className="space-y-4">
       {autoSaveHint ? (
         <p className="text-xs text-muted-foreground">
-          Send or file from this contact. Each email, text, call, meeting, or task saves onto the
+          Send or file from this record. Each email, text, call, meeting, or task saves onto the
           Timeline. There is no typed activity log.
         </p>
       ) : null}
@@ -146,28 +146,30 @@ export function RecordComms({
         </Button>
       </form>
 
-      <form action={logDeskActivity} className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
-        <HiddenRelated {...related} />
-        <div>
-          <Label className="text-xs">Call / meeting / task</Label>
-          <select name="kind" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm" defaultValue="call">
-            <option value="call">Call</option>
-            <option value="meeting">Meeting</option>
-            <option value="task">Task</option>
-          </select>
-        </div>
-        <div>
-          <Label className="text-xs">Title</Label>
-          <Input name="title" required className="mt-1 h-8" placeholder="Follow-up" />
-        </div>
-        <div className="sm:col-span-2">
-          <Label className="text-xs">Notes</Label>
-          <Input name="notes" className="mt-1 h-8" />
-        </div>
-        <Button type="submit" size="sm">
-          Log on this record
-        </Button>
-      </form>
+      {autoSaveHint ? null : (
+        <form action={logDeskActivity} className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
+          <HiddenRelated {...related} />
+          <div>
+            <Label className="text-xs">Call / meeting / task</Label>
+            <select name="kind" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm" defaultValue="call">
+              <option value="call">Call</option>
+              <option value="meeting">Meeting</option>
+              <option value="task">Task</option>
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs">Title</Label>
+            <Input name="title" required className="mt-1 h-8" placeholder="Follow-up" />
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Notes</Label>
+            <Input name="notes" className="mt-1 h-8" />
+          </div>
+          <Button type="submit" size="sm">
+            Log on this record
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

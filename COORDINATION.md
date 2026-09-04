@@ -339,6 +339,16 @@ Owner: this branch. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`.
 - Drag deals between columns. Closed Won still has **Move to Archive**. Archive does not cancel won-date emails.
 - **Columns** picker show/hides the same deal details on cards and the table view.
 
+## Business record UX (`cursor/business-record-ux-132e`)
+
+Owner: this slice. Additive only. Mirrors Contact UX from `cursor/contact-record-ux-5288` on **Business / Accounts** only.
+
+- Left jump menu on `/accounts/[id]` (alias `/businesses/[id]`): Overview, Business information, Address, Policies, Deals, People, Locations, Certificates, Ask a teammate (Admin only), Email/SMS/calls, Timeline.
+- Timeline is auto-saved desk work. No typed “log activity” form on Business.
+- Ask a teammate is hidden for agents on Business. Other records keep the existing framed panel.
+- Shared `RecordSection` / `LocationsList` / `CertificatesList` / `RecordAskPanel` / `RecordComms` stay backward compatible (`collapsible`, `framed`, `hideWhenNotAdmin` default to the old Contact/Policy behavior).
+- Contact 360 is unchanged. Ana fixture untouched. Harbor Key Marine LLC stays **Client** (lifetime 1 / in-force 1, `GL-HARBOR-2026`, COI stub). Ruiz Tile stays Elena’s linked business with **0** commercial policies. No live Zoho.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

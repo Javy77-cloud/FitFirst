@@ -56,6 +56,8 @@ Leads are the person record (name, DOB, contact, address, insurance wanted). Dec
 
 **Contact record** is Zoho-style: a left jump menu lists Overview, Contact information, Address, Policies, Deals, Businesses, Locations, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Click jumps to that section. There is no typed activity log — work done from the desk (email, SMS, task, meeting, click-to-call) saves onto that contact’s Timeline. Ana stays **Not a client** with **0 policies**. No live Zoho.
 
+**Business record** mirrors that jump layout: Overview, Business information, Address, Policies, Deals, People, Locations, Certificates, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Harbor Key Marine LLC stays **Client** with **GL-HARBOR-2026**.
+
 Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). On the Contact record the tag form is **hidden for agents**. That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
 
 ## Pipeline
@@ -89,8 +91,8 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 
 ## Communication (this desk)
 
-- **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. On Contact the whole Ask block is Admin-only (hidden for agents). Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
-- **Contact Timeline** auto-saves email, SMS, tasks, meetings, and calls done from the desk. No manual “log activity” form on Contact.
+- **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. On Contact and Business the whole Ask block is Admin-only (hidden for agents). Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
+- **Contact / Business Timeline** auto-saves email, SMS, tasks, meetings, and calls done from the desk. No manual “log activity” form on those records.
 - **Click-to-call** writes an in-app Alerts ping and a call row on the record (`/phone` is a stub). No email.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Alerts** stay in-desk (asks + work-queue pings).
