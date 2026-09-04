@@ -29,6 +29,9 @@ export type WriteCommsInput = RelatedRecordIds & {
   durationSeconds?: number | null;
   outcome?: string | null;
   phoneNumber?: string | null;
+  meetingType?: string | null;
+  meetingLocation?: string | null;
+  videoProvider?: string | null;
   id?: string;
   logEmailJob?: boolean;
 };
@@ -77,6 +80,9 @@ export async function writeDeskComms(input: WriteCommsInput) {
       outcome: input.outcome ?? null,
       phoneNumber: input.phoneNumber ?? null,
       direction,
+      meetingType: input.meetingType ?? null,
+      meetingLocation: input.meetingLocation ?? null,
+      videoProvider: input.videoProvider ?? null,
       assignee: input.assignee ?? null,
       contactId: related.contactId,
       accountId: related.accountId,

@@ -59,11 +59,26 @@ export default async function SettingsPage() {
           </SettingsSection>
 
           <SettingsSection
+            id="communications"
+            title="Communications"
+            badge="Admin"
+            summary="Video rooms plus agency and agent meeting addresses."
+            defaultOpen
+          >
+            <p className="text-sm text-muted-foreground">
+              Zoom, Google Meet, or a BYO link (stubs). In-Office meetings use the agency office plus
+              each agent&apos;s meeting address. In-Home pulls the Deal / Lead street.
+            </p>
+            <Link href="/settings/communications" className="mt-3 inline-block text-sm text-primary hover:underline">
+              Open communications
+            </Link>
+          </SettingsSection>
+
+          <SettingsSection
             id="phone"
             title="Phone line"
             badge="Admin"
             summary="Twilio or BYO trunk. Agency pays. Stub only."
-            defaultOpen
           >
             <p className="text-sm text-muted-foreground">
               Status:{" "}

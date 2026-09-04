@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { PipelineDealCard } from "@/components/pipeline/deal-card";
 import { cn } from "@/lib/utils";
@@ -38,8 +39,10 @@ export function PipelineKanban({
     window.localStorage.setItem(collapsedStorageKey(board.slug), JSON.stringify(next));
   }
 
-  function toggle(slug: string, folded: boolean) {
-    persistCollapsed(folded ? [...new Set([...collapsed, slug])] : collapsed.filter((item) => item !== slug));
+  function toggle(slug: string) {
+    persistCollapsed(
+      collapsed.includes(slug) ? collapsed.filter((item) => item !== slug) : [...new Set([...collapsed, slug])],
+    );
   }
 
   function dropOn(stageSlug: string, event: DragEvent) {
@@ -65,54 +68,40 @@ export function PipelineKanban({
               )
             : cards.filter((deal) => dealMatchesStage(deal, stage.slug));
         const folded = collapsed.includes(stage.slug);
-        const foldId = `fold-${board.slug}-${stage.slug}`;
         return (
-          <div key={stage.id} className="relative shrink-0">
-            <input
-              key={`${foldId}-${folded}`}
-              id={foldId}
-              type="checkbox"
-              className="peer sr-only"
-              defaultChecked={folded}
-              onChange={(event) => toggle(stage.slug, event.target.checked)}
-            />
-            <section
-              onDragOver={(event) => {
-                event.preventDefault();
-                setOverSlug(stage.slug);
-              }}
-              onDragLeave={() => setOverSlug((current) => (current === stage.slug ? null : current))}
-              onDrop={(event) => dropOn(stage.slug, event)}
-              className={cn(
-                "ff-card flex w-72 flex-col overflow-hidden transition-[width]",
-                "peer-checked:w-12",
-                "peer-checked:[&_[data-pipe-cards]]:hidden",
-                "peer-checked:[&_[data-pipe-collapse]]:hidden",
-                "peer-checked:[&_[data-pipe-expand]]:inline",
-                "peer-checked:[&_[data-pipe-head]]:min-h-44",
-                "peer-checked:[&_[data-pipe-head]]:flex-col",
-                "peer-checked:[&_[data-pipe-title]]:[writing-mode:vertical-rl]",
-                "peer-checked:[&_[data-pipe-title]]:rotate-180",
-                overSlug === stage.slug && "ring-2 ring-primary",
-              )}
+          <section
+            key={stage.id}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setOverSlug(stage.slug);
+            }}
+            onDragLeave={() => setOverSlug((current) => (current === stage.slug ? null : current))}
+            onDrop={(event) => dropOn(stage.slug, event)}
+            className={cn(
+              "ff-card flex w-72 shrink-0 flex-col overflow-hidden",
+              overSlug === stage.slug && "ring-2 ring-primary",
+            )}
+          >
+            <div
+              data-pipe-head
+              className="flex items-center gap-2 border-b border-border bg-muted px-2 py-2"
             >
-              <label
-                htmlFor={foldId}
+              <span data-pipe-title className="min-w-0 flex-1 text-sm font-semibold text-navy">
+                {stage.name}
+              </span>
+              <span className="text-[11px] text-muted-foreground">{column.length}</span>
+              <button
+                type="button"
                 data-testid={`collapse-${stage.slug}`}
-                data-pipe-head
-                className="flex cursor-pointer items-center gap-2 border-b border-border bg-muted px-2 py-2 text-left hover:bg-card"
+                aria-expanded={!folded}
+                aria-label={folded ? `Expand ${stage.name}` : `Collapse ${stage.name}`}
+                onClick={() => toggle(stage.slug)}
+                className="inline-flex size-6 items-center justify-center rounded border border-border bg-card text-navy hover:bg-background"
               >
-                <span data-pipe-collapse className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-semibold text-navy">
-                  Collapse
-                </span>
-                <span data-pipe-expand className="hidden rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-semibold text-navy">
-                  Expand
-                </span>
-                <span data-pipe-title className="min-w-0 flex-1 text-sm font-semibold text-navy">
-                  {stage.name}
-                </span>
-                <span className="text-[11px] text-muted-foreground">{column.length}</span>
-              </label>
+                {folded ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
+              </button>
+            </div>
+            {folded ? null : (
               <div data-pipe-cards className="min-h-40 space-y-2 p-2">
                 {column.length === 0 ? (
                   <p className="px-1 py-8 text-center text-xs text-muted-foreground">
@@ -129,8 +118,8 @@ export function PipelineKanban({
                   ))
                 )}
               </div>
-            </section>
-          </div>
+            )}
+          </section>
         );
       })}
     </div>

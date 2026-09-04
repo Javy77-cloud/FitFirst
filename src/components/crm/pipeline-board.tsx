@@ -7,6 +7,7 @@ import { StagePill } from "@/components/fit-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { insuredContactName, insuredHref, matchesDealFilters, type DealListFilter } from "@/lib/crm/lists";
+import { homeAddressFromRecords } from "@/lib/meetings/types";
 import { formatMoney } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import type { DealListRow } from "@/lib/db/queries";
@@ -66,8 +67,8 @@ export function PipelineBoard({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Dial, mail, or log from the card. Phone and email are already on the shop — do not open
-          the deal just to copy them. Bound stays locked.
+          Call or schedule a meeting from the card. Phone and email are already on the shop — do
+          not open the deal just to copy them. Bound stays locked.
         </p>
         <Link href="/deals/new" className={cn(buttonVariants({ size: "sm" }))}>
           Create deal
@@ -124,7 +125,18 @@ export function PipelineBoard({
                           </div>
                         </div>
                         <div className="mt-2">
-                          <DealRowActions dealId={deal.id} phone={phone} email={email} />
+                          <DealRowActions
+                            dealId={deal.id}
+                            phone={phone}
+                            email={email}
+                            homeAddress={homeAddressFromRecords({
+                              risk: row?.risk,
+                              lead: row?.lead,
+                              contact: row?.contact,
+                            })}
+                            contactId={deal.contactId}
+                            leadId={deal.leadId}
+                          />
                         </div>
                         {deal.pipelineStage !== "bound" && movable.length > 0 ? (
                           <form action={updateDealStage} className="mt-2 flex items-center gap-1">

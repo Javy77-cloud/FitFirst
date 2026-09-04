@@ -1,5 +1,6 @@
-import { insuredContactName, insuredHref, riskAddress } from "@/lib/crm/lists";
+import { insuredContactName, insuredHref } from "@/lib/crm/lists";
 import type { PipelineCardRow } from "@/lib/db/queries";
+import { homeAddressFromRecords } from "@/lib/meetings/types";
 
 export type PipelineCardView = {
   id: string;
@@ -16,6 +17,9 @@ export type PipelineCardView = {
   city: string | null;
   coverageA: number | null;
   carrier: string | null;
+  contactId: string | null;
+  leadId: string | null;
+  accountId: string | null;
   updatedAt: string | null;
   boundAt: string | null;
   archivedAt: string | null;
@@ -45,10 +49,13 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
     insuredHref: insuredHref({ contactId: deal.contactId, leadId: deal.leadId }),
     phone: contact?.phone ?? lead?.phone ?? null,
     email: contact?.email ?? lead?.email ?? null,
-    address: riskAddress(risk),
-    city: risk?.city ?? contact?.city ?? null,
+    address: homeAddressFromRecords({ risk, lead, contact }),
+    city: risk?.city ?? contact?.city ?? lead?.city ?? null,
     coverageA: risk?.coverageA ?? deal.coverageAmount ?? null,
     carrier: deal.currentCarrier,
+    contactId: deal.contactId,
+    leadId: deal.leadId,
+    accountId: deal.accountId,
     updatedAt: iso(deal.updatedAt),
     boundAt: iso(deal.boundAt),
     archivedAt: iso(deal.archivedAt),

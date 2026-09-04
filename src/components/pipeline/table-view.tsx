@@ -35,7 +35,7 @@ export function PipelineTableView({
                   {field.label}
                 </th>
               ))}
-              <th>Call / SMS / Email / Task</th>
+              <th>Call / SMS / Task / Meeting</th>
             </tr>
           </thead>
           <tbody>
@@ -79,7 +79,14 @@ export function PipelineTableView({
                   {deal.boundAt ? formatIsoDate(new Date(deal.boundAt)) : "Unbound"}
                 </td>
                 <td>
-                  <DealRowActions dealId={deal.id} phone={deal.phone} email={deal.email} />
+                  <DealRowActions
+                    dealId={deal.id}
+                    phone={deal.phone}
+                    email={deal.email}
+                    homeAddress={deal.address}
+                    contactId={deal.contactId}
+                    leadId={deal.leadId}
+                  />
                 </td>
               </tr>
             ))}
