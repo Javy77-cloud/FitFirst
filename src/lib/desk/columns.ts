@@ -162,6 +162,15 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "status", label: "Status", defaultOn: true },
     { key: "amount", label: "Amount", defaultOn: true },
   ],
+  glance: [
+    { key: "record", label: "Record", defaultOn: true },
+    { key: "kind", label: "Kind", defaultOn: true },
+    { key: "status", label: "Status", defaultOn: true },
+    { key: "party", label: "Party", defaultOn: true },
+    { key: "owner", label: "Assigned", defaultOn: true },
+    { key: "when", label: "Date", defaultOn: true },
+    { key: "detail", label: "Detail", defaultOn: true },
+  ],
   "queue-attention": [
     { key: "kind", label: "Kind", defaultOn: true },
     { key: "item", label: "Item", defaultOn: true },

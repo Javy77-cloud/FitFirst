@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   Briefcase,
   Building2,
   ClipboardList,
@@ -10,6 +11,7 @@ import {
   FileStack,
   Calendar,
   Home,
+  Layers,
   LifeBuoy,
   Phone,
   Kanban,
@@ -40,6 +42,8 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   "Work queue": ListChecks,
   "Claims log": FileStack,
   Commissions: Briefcase,
+  Scorecards: BarChart3,
+  Glance: Layers,
   Tasks: ListChecks,
   Automations: Workflow,
   Calendar,

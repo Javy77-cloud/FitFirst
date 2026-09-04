@@ -6,6 +6,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (batch-4 WAVE-2: Deal quote PDFs + DOC → master sheet fill + Fill Learning)
 
+**DIFF A (side branch):** `cursor/producer-scorecards-glance-4f97` — Admin producer scorecards (conversion, retention, premium, binds, ranked) plus unified Glance tabs Sales | Service | Claims | Renewals. Agents see their own scorecard. No new migration. Ana stays unbound at Cov A **$321,000**. Sidebar `#c5ddf4`. One Pipeline.
+
 **Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). WAVE-3 leftover: none from this list. Next free migration is **0036**. See `COORDINATION.md`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
@@ -140,6 +142,11 @@ Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). 
 - In-Office uses the agency office plus the agent’s meeting address from Settings → Communications. In-Home pulls the Deal / Lead street. Video opens the Zoom / Meet / BYO stub saved there.
 - **Ask a teammate** does not appear on pipeline cards (Admin-only on records).
 - **Columns** picker chooses which deal details show on cards and the table. Title stays on.
+
+## Scorecards + Glance
+
+- **Scorecards** (`/scorecards`) — Admin ranks producers on conversion, retention, in-force premium, and binds. Agents see their own card and rank only. People / Agents opens the same scorecard. Quotes (Ana $321,000 HO3) are not binds and not premium.
+- **Glance** (`/glance`) — Sales | Service | Claims | Renewals tabs filter existing Deals, service work, claims, and in-force renewals. One Pipeline stays on `/pipeline`.
 
 ## Top chrome (Batch 4)
 

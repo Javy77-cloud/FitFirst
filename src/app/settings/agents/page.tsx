@@ -95,7 +95,7 @@ export default async function PeopleAgentsPage({
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-navy">Everyone</h2>
-          <p className="text-xs text-muted-foreground">Status, privileges, and a performance stub per person.</p>
+          <p className="text-xs text-muted-foreground">Status, privileges, and a producer scorecard per person.</p>
         </div>
         {people.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No desk users yet. Create an agent below.</p>

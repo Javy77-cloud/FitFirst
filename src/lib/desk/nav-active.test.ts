@@ -60,6 +60,14 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/quotes", "/documents")).toBe(false);
   });
 
+  it("highlights Scorecards and Glance on those modules", () => {
+    expect(navItemIsActive("/scorecards", "/scorecards")).toBe(true);
+    expect(navItemIsActive("/scorecards/abc", "/scorecards")).toBe(true);
+    expect(navItemIsActive("/glance", "/glance")).toBe(true);
+    expect(navItemIsActive("/policies", "/glance")).toBe(false);
+    expect(navItemIsActive("/scorecards", "/glance")).toBe(false);
+  });
+
   it("highlights Automations on hub and section pages", () => {
     expect(navItemIsActive("/automations", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);

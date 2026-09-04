@@ -283,11 +283,19 @@ export default async function AgentDetailPage({
               is merged.
             </p>
             <Link
-              href={`/settings/agents/${person.id}/performance`}
+              href={`/scorecards/${person.id}`}
               className="mt-3 inline-block text-sm text-primary hover:underline"
             >
-              Open performance report
+              Open producer scorecard
             </Link>
+            <div>
+              <Link
+                href={`/settings/agents/${person.id}/performance`}
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                Legacy production stub
+              </Link>
+            </div>
           </section>
         </aside>
       </div>
