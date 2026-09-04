@@ -63,6 +63,7 @@ import {
   emailTemplates,
   emailTriggers,
   extractedFields,
+  fillLearningLogs,
   formFills,
   formTemplates,
   claimAttachments,
@@ -1017,6 +1018,35 @@ export async function listFillFeedbackLogs() {
     .leftJoin(carriers, eq(fillFeedbackLogs.carrierId, carriers.id))
     .where(eq(fillFeedbackLogs.tenantId, tenant()))
     .orderBy(desc(fillFeedbackLogs.createdAt));
+}
+
+export async function listFillLearningLogs() {
+  return db
+    .select({
+      log: fillLearningLogs,
+      deal: deals,
+      carrier: carriers,
+    })
+    .from(fillLearningLogs)
+    .leftJoin(deals, eq(fillLearningLogs.dealId, deals.id))
+    .leftJoin(carriers, eq(fillLearningLogs.carrierId, carriers.id))
+    .where(eq(fillLearningLogs.tenantId, tenant()))
+    .orderBy(desc(fillLearningLogs.loggedAt));
+}
+
+export async function listFillLearningForLookup() {
+  return db
+    .select({
+      docType: fillLearningLogs.docType,
+      fieldKey: fillLearningLogs.fieldKey,
+      extractedValue: fillLearningLogs.extractedValue,
+      correctedValue: fillLearningLogs.correctedValue,
+      dealId: fillLearningLogs.dealId,
+      loggedAt: fillLearningLogs.loggedAt,
+    })
+    .from(fillLearningLogs)
+    .where(eq(fillLearningLogs.tenantId, tenant()))
+    .orderBy(desc(fillLearningLogs.loggedAt));
 }
 
 export async function listAlerts(unreadOnly = false) {

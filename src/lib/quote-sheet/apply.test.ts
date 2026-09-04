@@ -15,6 +15,8 @@ import {
 } from "./apply";
 import { GARCIA_DEC_TEXT } from "@/lib/fixtures/sample-garcia-dec";
 import { emptySheetValues } from "./catalog";
+import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
+import { DEAL_ID } from "@/lib/fixtures/ids";
 
 describe("quote sheet fill — blanks only", () => {
   it("seeds Ana Home with a Javy-tested Cov A that is confirmed, never CHECK", () => {
@@ -41,6 +43,26 @@ describe("quote sheet fill — blanks only", () => {
     expect(result.values.year_built.value).toBe("1989");
     expect(result.skippedKeys).toContain("coverage_a");
     expect(result.skippedKeys).toContain("address1");
+  });
+
+  it("does not let fill-learning remap Ana Coverage A before apply", () => {
+    const existing = anaHomeSheetValues(fixture.risk);
+    const learned = applyLearningToExtracted(
+      [{ fieldKey: "coverage_a", normalizedValue: "999000" }],
+      [
+        {
+          docType: "dec",
+          fieldKey: "coverage_a",
+          extractedValue: "999000",
+          correctedValue: "400000",
+        },
+      ],
+      { docType: "dec", dealId: DEAL_ID },
+    );
+    expect(learned[0]?.normalizedValue).toBe("999000");
+    const result = applyExtractedToSheet("home", existing, learned);
+    expect(result.values.coverage_a.value).toBe("321000");
+    expect(result.values.coverage_a.source).toBe("javy");
   });
 
   it("fills year, address, and Cov A on a blank Home sheet from a sample text dec", () => {

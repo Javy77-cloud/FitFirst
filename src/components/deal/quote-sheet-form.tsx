@@ -13,6 +13,7 @@ import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
+import { MarkMappingWrong } from "@/components/deal/mark-mapping-wrong";
 import { DeskDetails } from "@/components/desk-details";
 import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
@@ -27,6 +28,7 @@ export function QuoteSheetForm({
   contact,
   riskId,
   printable = false,
+  carriers = [],
 }: {
   dealId: string;
   dealTitle: string;
@@ -35,6 +37,7 @@ export function QuoteSheetForm({
   contact?: Contact | null;
   riskId?: string;
   printable?: boolean;
+  carriers?: { id: string; name: string }[];
 }) {
   const [showMore, setShowMore] = useState(false);
   const groups = groupFields(line);
@@ -115,6 +118,7 @@ export function QuoteSheetForm({
                     cell={cell}
                     input={field.input}
                     readOnly={printable}
+                    carriers={carriers}
                   />
                 </div>
               );
@@ -183,6 +187,7 @@ function SheetField({
   cell,
   input = "text",
   readOnly,
+  carriers = [],
 }: {
   dealId: string;
   line: ShopLine;
@@ -191,6 +196,7 @@ function SheetField({
   cell: QuoteSheetFieldValue;
   input?: "text" | "number" | "textarea";
   readOnly?: boolean;
+  carriers?: { id: string; name: string }[];
 }) {
   const tone =
     cell.status === "check"
@@ -211,7 +217,7 @@ function SheetField({
             <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
           ) : null}
         </Label>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap items-center justify-end gap-1">
           {cell.status === "check" && !readOnly ? (
             <Button
               type="submit"
@@ -236,6 +242,16 @@ function SheetField({
               Mark paste wrong
             </Button>
           ) : null}
+          {readOnly ? null : (
+            <MarkMappingWrong
+              dealId={dealId}
+              line={line}
+              fieldKey={fieldKey}
+              fieldLabel={label}
+              extractedValue={cell.value}
+              carriers={carriers}
+            />
+          )}
         </div>
       </div>
       {input === "textarea" ? (

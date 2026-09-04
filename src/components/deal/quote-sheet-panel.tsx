@@ -22,6 +22,7 @@ export function QuoteSheetPanel({
   sheet,
   contact,
   riskId,
+  carriers = [],
 }: {
   dealId: string;
   dealTitle?: string;
@@ -34,6 +35,7 @@ export function QuoteSheetPanel({
   sheet?: QuoteSheet | null;
   contact?: Contact | null;
   riskId?: string;
+  carriers?: { id: string; name: string }[];
 }) {
   const cells = values ?? {};
   const shopLine = (line as ShopLine) ?? "home";
@@ -122,6 +124,7 @@ export function QuoteSheetPanel({
           sheet={sheet}
           contact={contact}
           riskId={riskId}
+          carriers={carriers}
         />
       ) : (
         <p className="text-sm text-muted-foreground">

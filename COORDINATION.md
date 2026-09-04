@@ -571,10 +571,6 @@ Admin-only encrypted quoting-portal username + password on the carrier record. A
 
 Merged onto `cursor/mac-ready-batch4-7pm`. Deal Issued quote PDFs open in-browser (`/files/[id]` + `/api/files/[id]`), download, and Email / SMS / Print stubs. Elena seeds two real quote PDFs. Ana unbound (Cov A **$321,000**). No new migration. One Pipeline. Alerts off the sidebar.
 
-## WAVE3 leftover
-
-Fill Learning (`cursor/fill-learning-log-efeb`) is the next merge on this branch — `fill_learning_logs` as **0035** (incoming `0021` must be renumbered). Do not bind Ana (Cov A **$321,000**). Additive migrations only — after 0035 the next free number is **0036**. One Pipeline. Alerts off the sidebar. Build green.
-
 ## DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`)
 
 Starts from `cursor/mac-ready-batch4-7pm`. Additive `0034_fill_feedback`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
@@ -585,3 +581,18 @@ Starts from `cursor/mac-ready-batch4-7pm`. Additive `0034_fill_feedback`. Ana fi
 
 **Fill Feedback log** (`fill_feedback_logs`, `/quotes/fill-feedback`): when an agent/Admin corrects a mapped field after ingest, or marks a paste field wrong, store doc type / field / wrong / corrected / optional carrier. Later fill prefers that correction when the same extract repeats. Rule/log based — not ML. Seeded two Elena demo rows (roof covering; hurricane deductible).
 
+## BATCH4 Fill Learning (`cursor/fill-learning-log-efeb`)
+
+Merged onto `cursor/mac-ready-batch4-7pm` in WAVE-2. Additive `0035_fill_learning_logs` (incoming `0021` renumbered). Ana fixture untouched (unbound, Cov A **$321,000**). Does not change `src/lib/appetite/match.ts`. One Pipeline. Sidebar hex unchanged.
+
+Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec / wind mit / 4-point / other source docs.
+
+- Table `fill_learning_logs`: date, deal_id, doc_type, field_key, extracted_value, corrected_value, corrected_by, note, optional carrier_id (paste failed).
+- Master sheet UI: **Mark mapping wrong** → save correction writes the log and updates the sheet cell. Ana Coverage A is locked.
+- Ingest hook: `runFillDealSheets` remaps extracted values via `applyLearningToExtracted` after Fill Feedback (`applyLoggedCorrections`). Extracted string must match — that is the agency-wide safety check.
+- Admin browse `/logs/fill-learning` (tab next to Appetite / decline log). Agents can still mark a mapping wrong on the sheet.
+- Seeded Elena HO corrections: wind mit roof year 2014→2019, dec CBS→masonry, 4-point comp shingle→architectural shingle. No Ana rows.
+
+## WAVE3 leftover
+
+Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

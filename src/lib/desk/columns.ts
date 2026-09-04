@@ -205,6 +205,17 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "why", label: "Why", defaultOn: true },
     { key: "snapshot", label: "Snapshot", defaultOn: false },
   ],
+  "fill-learning": [
+    { key: "date", label: "Date", defaultOn: true },
+    { key: "deal", label: "Deal", defaultOn: true },
+    { key: "docType", label: "Doc type", defaultOn: true },
+    { key: "field", label: "Field", defaultOn: true },
+    { key: "extracted", label: "Extracted", defaultOn: true },
+    { key: "corrected", label: "Corrected", defaultOn: true },
+    { key: "by", label: "Corrected by", defaultOn: true },
+    { key: "carrier", label: "Carrier", defaultOn: false },
+    { key: "note", label: "Note", defaultOn: true },
+  ],
 };
 
 /** New Lead form fields that must appear in the Leads column picker. */

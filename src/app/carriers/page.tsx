@@ -31,6 +31,10 @@ export default async function CarriersPage() {
         <Link href="/logs" className="text-primary hover:underline">
           Open decline log
         </Link>
+        {" · "}
+        <Link href="/logs/fill-learning" className="text-primary hover:underline">
+          Fill Learning
+        </Link>
       </p>
       <section className="ff-card overflow-x-auto">
         <table className="ff-table">

@@ -56,6 +56,7 @@ import { seedSocialConnectors } from "./seed-social";
 import { seedPiiVault } from "./seed-pii";
 import { seedMfaDemo } from "./seed-mfa";
 import { seedCarrierPortals } from "./seed-carrier-portals";
+import { seedFillLearning } from "./seed-fill-learning";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -501,4 +502,5 @@ export async function seed() {
   await seedCarrierPortals();
   const { seedFillFeedback } = await import("./seed-fill-feedback");
   await seedFillFeedback();
+  await seedFillLearning();
 }

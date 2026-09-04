@@ -50,6 +50,8 @@ import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalo
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
+import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
+import { listFillLearningForLookup } from "@/lib/db/queries";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -291,6 +293,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
   const corrections = await loadFillCorrections();
+  const learningLogs = await listFillLearningForLookup();
 
   let values: Record<string, QuoteSheetFieldValue> = { ...sheet.values };
   if (Object.keys(values).length === 0) values = emptySheetValues(line);
@@ -347,16 +350,17 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         continue;
       }
       const extracted = extractFieldsFromText(text);
-      const learned = applyLoggedCorrections(extracted.fields, doc.docType, corrections);
-      const applied = applyExtractedToSheet(
-        line,
-        values,
-        learned.fields.map((field) => ({
+      const feedback = applyLoggedCorrections(extracted.fields, doc.docType, corrections);
+      const learned = applyLearningToExtracted(
+        feedback.fields.map((field) => ({
           fieldKey: field.fieldKey,
           normalizedValue: field.normalizedValue,
           sourceLabel: sourceLabelForDoc(doc.docType, doc.filename),
         })),
+        learningLogs,
+        { docType: doc.docType || "dec", dealId },
       );
+      const applied = applyExtractedToSheet(line, values, learned);
       values = applied.values;
       await syncNamedInsuredFromExtract(dealId, extracted.fields);
 
@@ -467,19 +471,19 @@ async function fillSheetFromPhoto(input: {
 }): Promise<Record<string, QuoteSheetFieldValue>> {
   const ocr = await extractFromImage(input.buffer, input.doc.filename, input.doc.mimeType);
   const corrections = await loadFillCorrections();
-  const learned = applyLoggedCorrections(ocr.fields, input.doc.docType, corrections);
-  const applied = applyExtractedToSheet(
-    input.line,
-    input.values,
-    learned.fields.map((field) => ({
+  const feedback = applyLoggedCorrections(ocr.fields, input.doc.docType, corrections);
+  const learned = applyLearningToExtracted(
+    feedback.fields.map((field) => ({
       fieldKey: field.fieldKey,
       normalizedValue: field.normalizedValue,
       sourceLabel: sourceLabelForDoc(input.doc.docType, input.doc.filename),
     })),
-    {
-      source: "photo-ocr",
-    },
+    await listFillLearningForLookup(),
+    { docType: input.doc.docType || "photo", dealId: input.dealId },
   );
+  const applied = applyExtractedToSheet(input.line, input.values, learned, {
+    source: "photo-ocr",
+  });
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, input.doc.id));
   for (const field of ocr.fields) {

@@ -242,6 +242,7 @@ export default async function DealPage({
                     sheet={activeSheet}
                     contact={contact}
                     riskId={risk.id}
+                    carriers={appetiteCarriers}
                   />
                 ),
               },

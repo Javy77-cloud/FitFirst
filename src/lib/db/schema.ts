@@ -1041,6 +1041,33 @@ export const fillFeedbackLogs = pgTable(
   ],
 );
 
+/** Agency memory for dec / wind mit / 4-point → master-sheet field mapping. */
+export const fillLearningLogs = pgTable(
+  "fill_learning_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    loggedAt: timestamp("logged_at", { withTimezone: true }).defaultNow().notNull(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    docType: text("doc_type").notNull(),
+    fieldKey: text("field_key").notNull(),
+    extractedValue: text("extracted_value").notNull().default(""),
+    correctedValue: text("corrected_value").notNull(),
+    correctedBy: text("corrected_by").notNull(),
+    correctedByUserId: uuid("corrected_by_user_id").references(() => users.id),
+    note: text("note"),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    shopLine: text("shop_line").notNull().default("home"),
+    ...timestamps,
+  },
+  (t) => [
+    index("fill_learning_tenant_idx").on(t.tenantId),
+    index("fill_learning_lookup_idx").on(t.tenantId, t.docType, t.fieldKey),
+    index("fill_learning_deal_idx").on(t.tenantId, t.dealId),
+  ],
+);
+
 export const alerts = pgTable(
   "alerts",
   {
@@ -2088,6 +2115,7 @@ export type CarrierSecretRevealLog = typeof carrierSecretRevealLogs.$inferSelect
 export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
+export type FillLearningLog = typeof fillLearningLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
