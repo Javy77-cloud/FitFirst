@@ -4,8 +4,10 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const PERIOD_SEC = 30;
 const DIGITS = 6;
 
-/** Seeded Javy authenticator. Local desk only — not a production secret. */
-export const DEMO_JAVY_TOTP_SECRET = "JAVYFITFIRSTDESKAA";
+/** Classic RFC 6238 demo secret. Local desk only — not a production secret. */
+export const SEED_TOTP_SECRET = "JBSWY3DPEHPK3PXP";
+/** Alias used by People/Agents seed (same local demo secret). */
+export const DEMO_JAVY_TOTP_SECRET = SEED_TOTP_SECRET;
 
 export function generateTotpSecret(bytes = 20): string {
   return toBase32(randomBytes(bytes));
@@ -69,10 +71,17 @@ export function verifyTotp(secret: string, code: string, at = new Date(), window
   return false;
 }
 
-export function otpauthUri(input: { secret: string; account: string; issuer?: string }): string {
+export function otpauthUri(
+  secretOrInput: string | { secret: string; account: string; issuer?: string },
+  account?: string,
+): string {
+  const input =
+    typeof secretOrInput === "string"
+      ? { secret: secretOrInput, account: account ?? "" }
+      : secretOrInput;
   const issuer = encodeURIComponent(input.issuer ?? "FitFirst");
-  const account = encodeURIComponent(input.account);
-  return `otpauth://totp/${issuer}:${account}?secret=${input.secret}&issuer=${issuer}&algorithm=SHA1&digits=${DIGITS}&period=${PERIOD_SEC}`;
+  const encodedAccount = encodeURIComponent(input.account);
+  return `otpauth://totp/${issuer}:${encodedAccount}?secret=${input.secret}&issuer=${issuer}&algorithm=SHA1&digits=${DIGITS}&period=${PERIOD_SEC}`;
 }
 
 export function newStubCode(): string {

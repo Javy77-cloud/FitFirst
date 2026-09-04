@@ -54,6 +54,7 @@ import { seedDocumentLibraries } from "./seed-documents";
 import { seedAutomationsHub } from "./seed-automations";
 import { seedSocialConnectors } from "./seed-social";
 import { seedPiiVault } from "./seed-pii";
+import { seedMfaDemo } from "./seed-mfa";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -491,4 +492,5 @@ export async function seed() {
   await seedAutomationsHub();
   await seedSocialConnectors();
   await seedPiiVault();
+  await seedMfaDemo();
 }

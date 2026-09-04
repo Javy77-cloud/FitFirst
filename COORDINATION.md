@@ -534,3 +534,27 @@ Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouc
 - Invited agents get `calendar_invites` + an in-app alert (`alerts.user_id`) and the event on their calendar (`listCalendarActivities` includes invitees).
 - Event detail **Open video**. Agents cannot create company events.
 - Migration `0027_company_meetings`. Do not bind Ana.
+
+## BATCH4 People / Agents (`cursor/admin-people-agents-8ef4`)
+
+Full roster on Settings → People / Agents. Keep this — do not replace with recovery-only Agents.
+
+- Create agent (username or email). Invite stub at `/login/invite`. They set the password, then enroll MFA.
+- Freeze / Unfreeze / Remove (soft). Frozen **Luis Vega** (`luis@fitfirst.local`) cannot sign in.
+- Notify writes an in-app desk note + Alerts ping.
+- Privileges: can access modules, can see agency widgets, office / territory hooks.
+- Password reset stub `/login/reset`. MFA recovery stub `/login/recover`. Force re-enroll.
+- Seed: Javy enrolled TOTP; Maya enrolled email; **Nora Frost** pending invite + MFA.
+- Migrations `0028_agent_admin` + `0029_mfa_recovery`. Ana unbound. One Pipeline. Alerts off the sidebar.
+
+## BATCH4 MFA + recovery (`cursor/mfa-recovery-batch4-a61a`)
+
+Parallel auth-security track. Keep **with** People / Agents — enroll, challenge, and hashed recovery tokens.
+
+- Password required on login. Hashed on `users.password_hash`; demo javy/maya still match.
+- 2FA enroll: SMS stub, email stub, or TOTP at `/enroll-mfa` and Settings → Security. Desk gated until `mfa_enrolled`.
+- Seed Javy (TOTP) + Maya (email) already enrolled with `mfa_demo_bypass`. `FF_MFA_DEMO_BYPASS=1` (default) skips the 2FA prompt so 7pm desk-test opens. Set `0` to type TOTP (`JBSWY3DPEHPK3PXP`).
+- Admin recovery: `/recover/password` and `/recover/mfa` stub links (hashed in `auth_recovery_tokens`) plus People `/login/*` stubs. Nothing emails.
+- UI: Settings → Profile, Settings → Security, Settings → People / Agents (roster + recovery).
+- Additive migration `0032_auth_mfa_recovery` (incoming `0021` renumbered). Alters `mfa_challenges` from `0029`; does not drop it. Ana fixture untouched. One Pipeline nav row. Sidebar hex unchanged.
+

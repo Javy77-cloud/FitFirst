@@ -251,6 +251,8 @@ export async function seedUsersAndBook() {
       mustEnrollMfa: false,
       mfaMethod: "totp",
       totpSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaDemoBypass: true,
       meetingAddress: "Suite 110 · owner desk",
     })
     .onConflictDoUpdate({
@@ -270,6 +272,8 @@ export async function seedUsersAndBook() {
         mustEnrollMfa: false,
         mfaMethod: "totp",
         totpSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaDemoBypass: true,
         meetingAddress: "Suite 110 · owner desk",
         updatedAt: new Date(),
       },
@@ -295,6 +299,10 @@ export async function seedUsersAndBook() {
       mfaEnrolled: true,
       mustEnrollMfa: false,
       mfaMethod: "email",
+      mfaEmail: "maya@fitfirst.local",
+      mfaSecret: DEMO_JAVY_TOTP_SECRET,
+      totpSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaDemoBypass: true,
       meetingAddress: "Suite 112 · producer desk",
     })
     .onConflictDoUpdate({
@@ -313,6 +321,10 @@ export async function seedUsersAndBook() {
         mfaEnrolled: true,
         mustEnrollMfa: false,
         mfaMethod: "email",
+        mfaEmail: "maya@fitfirst.local",
+        mfaSecret: DEMO_JAVY_TOTP_SECRET,
+        totpSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaDemoBypass: true,
         meetingAddress: "Suite 112 · producer desk",
         updatedAt: new Date(),
       },

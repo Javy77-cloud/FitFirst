@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { DeskNav } from "@/components/desk-nav";
 import { HeaderUtilities } from "@/components/desk/header-utilities";
 import { ModuleHeading } from "@/components/desk/module-heading";
@@ -16,6 +17,7 @@ export async function AppShell({
   title,
   actions,
   columns,
+  allowMfaPending = false,
 }: {
   children: ReactNode;
   title: string;
@@ -24,6 +26,8 @@ export async function AppShell({
   actions?: ReactNode;
   /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
   columns?: ReactNode;
+  /** Settings → Security / Profile while 2FA is still being enrolled. */
+  allowMfaPending?: boolean;
 }) {
   const [session, brand, alertRows, recentStub] = await Promise.all([
     currentDeskSession(),
@@ -31,6 +35,10 @@ export async function AppShell({
     listAlerts(),
     listRecentRecordStub(8),
   ]);
+  if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
+  if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {
+    redirect("/enroll-mfa");
+  }
   const headerAlerts = alertRows.map(toHeaderAlert);
   const unread = alertRows.filter((row) => !row.readAt).length;
 

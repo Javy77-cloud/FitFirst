@@ -237,7 +237,7 @@ export async function completeInvitePassword(formData: FormData) {
     })
     .where(eq(users.id, person.id));
   await startMfaPending({ ...person, mustSetPassword: false, mustEnrollMfa: true, passwordHash: "set" });
-  redirect("/login/mfa?enroll=1");
+  redirect("/enroll-mfa");
 }
 
 export async function completeResetPassword(formData: FormData) {
@@ -267,7 +267,7 @@ export async function completeResetPassword(formData: FormData) {
     })
     .where(eq(users.id, person.id));
   await startMfaPending({ ...person, mustSetPassword: false, passwordHash: "set" });
-  redirect(person.mfaEnrolled && !person.mustEnrollMfa ? "/login/mfa" : "/login/mfa?enroll=1");
+  redirect(person.mfaEnrolled && !person.mustEnrollMfa ? "/login/mfa" : "/enroll-mfa");
 }
 
 export async function issueMfaRecovery(formData: FormData) {
@@ -297,7 +297,11 @@ export async function forceReenrollMfa(formData: FormData) {
       mfaEnrolled: false,
       mustEnrollMfa: true,
       totpSecret: null,
+      mfaSecret: null,
       mfaMethod: null,
+      mfaPhone: null,
+      mfaEmail: null,
+      mfaDemoBypass: false,
       updatedAt: new Date(),
     })
     .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, id)));
@@ -331,12 +335,16 @@ export async function completeRecovery(formData: FormData) {
       mfaEnrolled: false,
       mustEnrollMfa: true,
       totpSecret: null,
+      mfaSecret: null,
       mfaMethod: null,
+      mfaPhone: null,
+      mfaEmail: null,
+      mfaDemoBypass: false,
       recoveryToken: null,
       recoveryExpiresAt: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, person.id));
   await startMfaPending({ ...person, mustEnrollMfa: true, mfaEnrolled: false });
-  redirect("/login/mfa?enroll=1");
+  redirect("/enroll-mfa");
 }

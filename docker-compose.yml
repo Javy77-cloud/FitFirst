@@ -26,6 +26,7 @@ services:
       PORT: 43147
       HOST: 0.0.0.0
       NODE_ENV: production
+      FF_MFA_DEMO_BYPASS: "1"
     volumes:
       - fitfirst_uploads:/app/uploads
     depends_on:

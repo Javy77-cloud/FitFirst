@@ -19,6 +19,10 @@ export const SETTINGS_NAV_IDS = [
   "signatures",
   "prefs",
   "my-desk",
+  "account",
+  "profile",
+  "security",
+  "recovery",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -118,6 +122,17 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     children: [
       { id: "overview", href: "/settings", label: "Admin settings", hint: "Agency-wide" },
       { id: "my-desk", href: "/settings/my-desk", label: "My desk", hint: "This login only" },
+    ],
+  },
+  {
+    id: "account",
+    href: "/settings/security",
+    label: "Account",
+    hint: "Profile, 2FA, recovery",
+    children: [
+      { id: "profile", href: "/settings/profile", label: "Profile", hint: "Name on this login" },
+      { id: "security", href: "/settings/security", label: "Security", hint: "Password and 2FA" },
+      { id: "recovery", href: "/settings/agents", label: "Recovery", hint: "Admin recovery actions" },
     ],
   },
 ];

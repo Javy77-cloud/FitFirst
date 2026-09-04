@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SETTINGS_NAV, settingsGroupFor } from "./nav";
+import { SETTINGS_NAV, SETTINGS_NAV_IDS, settingsGroupFor } from "./nav";
 
 describe("settings nav", () => {
   it("nests Social under Integrations", () => {
@@ -8,5 +8,13 @@ describe("settings nav", () => {
       expect.arrayContaining(["integrations", "social"]),
     );
     expect(settingsGroupFor("social")).toBe("integrations");
+  });
+
+  it("keeps People/Agents and Account recovery as distinct ids", () => {
+    expect(new Set(SETTINGS_NAV_IDS).size).toBe(SETTINGS_NAV_IDS.length);
+    expect(settingsGroupFor("agents")).toBe("people");
+    expect(settingsGroupFor("profile")).toBe("account");
+    expect(settingsGroupFor("security")).toBe("account");
+    expect(settingsGroupFor("recovery")).toBe("account");
   });
 });

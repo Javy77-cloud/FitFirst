@@ -18,7 +18,7 @@ describe("TOTP", () => {
   it("builds an otpauth URI for the QR stub", () => {
     const uri = otpauthUri({ secret: DEMO_JAVY_TOTP_SECRET, account: "javy@fitfirst.local" });
     expect(uri).toContain("otpauth://totp/");
-    expect(uri).toContain("secret=JAVYFITFIRSTDESKAA");
+    expect(uri).toContain("secret=JBSWY3DPEHPK3PXP");
     expect(uri).toContain("javy");
   });
 });

@@ -1,129 +1,170 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, desc, eq, isNull } from "drizzle-orm";
-import { SESSION_COOKIE_OPTS, SESSION_COOKIES, pendingMfaUser } from "@/lib/auth/session";
-import { DESK_ROLE_COOKIE } from "@/lib/brand/desk-role";
-import { DESK_AGENT_COOKIE } from "@/lib/crm/desk-agent";
-import { normalizeRole } from "@/lib/home/scope";
-import { needsMfaEnroll, normalizeMfaMethod, type MfaMethod } from "@/lib/auth/mfa";
-import { generateTotpSecret, newStubCode, verifyTotp } from "@/lib/auth/totp";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { eq } from "drizzle-orm";
+import { establishSession, setMfaCookie } from "@/app/actions/auth";
+import { isMfaMethod, userSkipsMfaChallenge } from "@/lib/auth/mfa";
+import { hashPassword } from "@/lib/auth/password";
+import { generateTotpSecret, verifyTotp } from "@/lib/auth/totp";
+import { requireSignedInAllowMfaSetup } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { mfaChallenges, users, type User } from "@/lib/db/schema";
-import { isDeskLoginAllowed } from "@/lib/people/status";
-
-async function establishSession(user: User) {
-  const role = normalizeRole(user.role);
-  const jar = await cookies();
-  jar.set(SESSION_COOKIES.role, role, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.actor, role, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.actorId, user.id, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.name, user.name, SESSION_COOKIE_OPTS);
-  jar.set(DESK_ROLE_COOKIE, role === "agent" ? "agent" : "admin", SESSION_COOKIE_OPTS);
-  jar.set(DESK_AGENT_COOKIE, user.id, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.modules, user.canAccessModules === false ? "0" : "1", SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.mfa, "1", SESSION_COOKIE_OPTS);
-  jar.delete(SESSION_COOKIES.mfaPending);
-}
+import { users, type User } from "@/lib/db/schema";
+import { consumeStubChallenge, issueStubChallenge } from "@/lib/auth/store";
 
 export async function startMfaPending(user: User) {
-  const jar = await cookies();
-  jar.set(SESSION_COOKIES.mfaPending, user.id, SESSION_COOKIE_OPTS);
-  jar.delete(SESSION_COOKIES.mfa);
-  jar.delete(SESSION_COOKIES.actorId);
-}
-
-function gate(user: User | null): User {
-  if (!user) redirect("/login?error=mfa");
-  if (!isDeskLoginAllowed(user.accessStatus)) {
-    redirect(user.accessStatus === "removed" ? "/login?error=removed" : "/login?error=frozen");
+  if (userSkipsMfaChallenge(user)) {
+    await establishSession(user, "ok");
+    return;
   }
-  return user;
+  if (user.mfaEnrolled && !user.mustEnrollMfa) {
+    await establishSession(user, "challenge");
+    if (user.mfaMethod === "sms" || user.mfaMethod === "email") {
+      const destination =
+        user.mfaMethod === "sms" ? (user.mfaPhone ?? user.email) : (user.mfaEmail ?? user.email);
+      await issueStubChallenge({
+        userId: user.id,
+        method: user.mfaMethod,
+        destination,
+        purpose: "verify",
+      });
+    }
+    return;
+  }
+  await establishSession(user, "pending");
 }
 
-async function latestOpenChallenge(userId: string, channel: MfaMethod) {
-  const [row] = await db
-    .select()
-    .from(mfaChallenges)
-    .where(
-      and(
-        eq(mfaChallenges.tenantId, DEFAULT_TENANT_ID),
-        eq(mfaChallenges.userId, userId),
-        eq(mfaChallenges.channel, channel),
-        isNull(mfaChallenges.consumedAt),
-      ),
-    )
-    .orderBy(desc(mfaChallenges.createdAt))
-    .limit(1);
-  return row ?? null;
+function backTo(formData: FormData, fallback: string, extra = "") {
+  const raw = String(formData.get("next") ?? "").trim();
+  const base = raw.startsWith("/enroll-mfa") || raw.startsWith("/settings/") ? raw.split("?")[0]! : fallback;
+  return extra ? `${base}?${extra}` : base;
 }
 
-export async function issueStubMfaCode(user: User, method: "email" | "sms") {
-  const destination = method === "sms" ? user.mfaPhone || "321-555-0100" : user.email;
-  const code = newStubCode();
-  await db.insert(mfaChallenges).values({
-    tenantId: DEFAULT_TENANT_ID,
-    userId: user.id,
-    channel: method,
-    destination,
-    code,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-  });
-  return { destination, code };
-}
-
-export async function sendMfaStub(formData: FormData) {
-  const user = gate(await pendingMfaUser());
-  const method = normalizeMfaMethod(String(formData.get("method") ?? "")) ?? "email";
-  if (method === "totp") redirect("/login/mfa?error=method");
-  await issueStubMfaCode(user, method);
-  redirect(`/login/mfa?sent=${method}${needsMfaEnroll(user) ? "&enroll=1" : ""}`);
-}
-
-export async function beginTotpEnroll() {
-  const user = gate(await pendingMfaUser());
-  const secret = user.totpSecret && needsMfaEnroll(user) && user.mfaMethod === "totp" ? user.totpSecret : generateTotpSecret();
+export async function startSmsEnroll(formData: FormData) {
+  const session = await requireSignedInAllowMfaSetup();
+  if (!session.userId) redirect("/login");
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!phone) redirect(backTo(formData, "/enroll-mfa", "error=phone"));
   await db
     .update(users)
-    .set({ totpSecret: secret, mfaMethod: "totp", updatedAt: new Date() })
-    .where(eq(users.id, user.id));
-  redirect("/login/mfa?enroll=1&method=totp");
+    .set({
+      mfaMethod: "sms",
+      mfaPhone: phone,
+      mfaEnrolled: false,
+      mustEnrollMfa: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, session.userId));
+  await issueStubChallenge({
+    userId: session.userId,
+    method: "sms",
+    destination: phone,
+    purpose: "enroll",
+  });
+  redirect(backTo(formData, "/enroll-mfa", "method=sms"));
 }
 
-export async function confirmMfa(formData: FormData) {
-  const user = gate(await pendingMfaUser());
-  const method = normalizeMfaMethod(String(formData.get("method") ?? user.mfaMethod ?? "")) ?? "email";
-  const code = String(formData.get("code") ?? "").replace(/\s/g, "");
-  const enroll = String(formData.get("enroll") ?? "") === "1" || needsMfaEnroll(user);
-  const phone = String(formData.get("mfaPhone") ?? "").trim();
+export async function startEmailEnroll(formData: FormData) {
+  const session = await requireSignedInAllowMfaSetup();
+  if (!session.userId) redirect("/login");
+  const email = String(formData.get("mfaEmail") ?? session.email ?? "").trim().toLowerCase();
+  if (!email) redirect(backTo(formData, "/enroll-mfa", "error=email"));
+  await db
+    .update(users)
+    .set({
+      mfaMethod: "email",
+      mfaEmail: email,
+      mfaEnrolled: false,
+      mustEnrollMfa: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, session.userId));
+  await issueStubChallenge({
+    userId: session.userId,
+    method: "email",
+    destination: email,
+    purpose: "enroll",
+  });
+  redirect(backTo(formData, "/enroll-mfa", "method=email"));
+}
 
+export async function startTotpEnroll(formData: FormData) {
+  const session = await requireSignedInAllowMfaSetup();
+  if (!session.userId) redirect("/login");
+  const secret = generateTotpSecret();
+  await db
+    .update(users)
+    .set({
+      mfaMethod: "totp",
+      mfaSecret: secret,
+      totpSecret: secret,
+      mfaEnrolled: false,
+      mustEnrollMfa: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, session.userId));
+  redirect(backTo(formData, "/enroll-mfa", "method=totp"));
+}
+
+export async function confirmMfaEnroll(formData: FormData) {
+  const session = await requireSignedInAllowMfaSetup();
+  if (!session.userId || !session.user) redirect("/login");
+  const code = String(formData.get("code") ?? "").trim();
+  const [user] = await db.select().from(users).where(eq(users.id, session.userId));
+  if (!user) redirect("/login");
+  const method = isMfaMethod(user.mfaMethod) ? user.mfaMethod : null;
+  const secret = user.mfaSecret ?? user.totpSecret;
   if (method === "totp") {
-    const secret = user.totpSecret;
     if (!secret || !verifyTotp(secret, code)) {
-      redirect(`/login/mfa?error=code${enroll ? "&enroll=1&method=totp" : ""}`);
+      redirect(backTo(formData, "/enroll-mfa", "method=totp&error=code"));
     }
+  } else if (method === "sms" || method === "email") {
+    const ok = await consumeStubChallenge(user.id, code, "enroll");
+    if (!ok) redirect(backTo(formData, "/enroll-mfa", `method=${method}&error=code`));
   } else {
-    const challenge = await latestOpenChallenge(user.id, method);
-    if (!challenge || challenge.code !== code || challenge.expiresAt.getTime() < Date.now()) {
-      redirect(`/login/mfa?error=code${enroll ? "&enroll=1" : ""}&method=${method}`);
-    }
-    await db.update(mfaChallenges).set({ consumedAt: new Date() }).where(eq(mfaChallenges.id, challenge.id));
+    redirect(backTo(formData, "/enroll-mfa", "error=method"));
   }
-
-  const [updated] = await db
+  await db
     .update(users)
     .set({
       mfaEnrolled: true,
       mustEnrollMfa: false,
-      mfaMethod: method,
-      mfaPhone: method === "sms" ? phone || user.mfaPhone : user.mfaPhone,
+      mfaDemoBypass: false,
       updatedAt: new Date(),
     })
-    .where(eq(users.id, user.id))
-    .returning();
-
-  await establishSession(updated ?? user);
+    .where(eq(users.id, user.id));
+  await setMfaCookie("ok");
   redirect("/");
+}
+
+export async function changeOwnPassword(formData: FormData) {
+  const session = await requireSignedInAllowMfaSetup();
+  if (!session.userId || !session.user) redirect("/login");
+  const current = String(formData.get("currentPassword") ?? "");
+  const next = String(formData.get("newPassword") ?? "");
+  const confirm = String(formData.get("confirmPassword") ?? "");
+  if (next.length < 4 || next !== confirm) {
+    redirect("/settings/security?error=password");
+  }
+  const { passwordMatchesUser } = await import("@/lib/auth/session");
+  if (!passwordMatchesUser(session.user, current)) {
+    redirect("/settings/security?error=current");
+  }
+  await db
+    .update(users)
+    .set({ passwordHash: hashPassword(next), mustSetPassword: false, updatedAt: new Date() })
+    .where(eq(users.id, session.userId));
+  redirect("/settings/security?saved=password");
+}
+
+export async function saveOwnProfile(formData: FormData) {
+  const session = await requireSignedInAllowMfaSetup();
+  if (!session.userId) redirect("/login");
+  const name = String(formData.get("name") ?? "").trim();
+  const meetingAddress = String(formData.get("meetingAddress") ?? "").trim();
+  if (!name) redirect("/settings/profile?error=name");
+  await db
+    .update(users)
+    .set({ name, meetingAddress: meetingAddress || null, updatedAt: new Date() })
+    .where(eq(users.id, session.userId));
+  redirect("/settings/profile?saved=1");
 }

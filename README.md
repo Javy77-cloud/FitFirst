@@ -20,6 +20,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 People / Agents:** Admin Settings → People / Agents — create, freeze, notify, password reset, MFA enroll stubs, and recovery links. Javy and Maya stay enrolled so the Mac desk still opens. Ana stays unbound at Cov A **$321,000**.
 
+**Batch 4 MFA / recovery:** Password is required on both login cards, then 2-step (SMS stub, email stub, or TOTP). Settings → Profile and Settings → Security enroll and manage 2FA. Admin recovery stubs live on People / Agents (`/login/recover` plus `/recover/password` and `/recover/mfa`). `FF_MFA_DEMO_BYPASS=1` (default) skips the second prompt so Mac desk-test can open. Set `0` to type a TOTP code (seed secret `JBSWY3DPEHPK3PXP`).
+
 **PII at rest:** SSN, EIN/FEIN, and driver license numbers are AES-256-GCM encrypted with `PII_ENCRYPTION_KEY` before write. Postgres stores ciphertext + IV + last4 only. Lists show `***-**-1234` (or EIN/DL mask). Reveal is Admin or owning Agent and writes `pii_reveal_logs` (no decrypted value). Ana has no SSN. Elena demo SSN is fake encrypted `000-00-4444`. Harbor / Ruiz Tile EINs and Soto DL are sealed at seed.
 
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
@@ -76,7 +78,11 @@ npm run dev -- --port 43147
 
 **PII at rest:** SSN, EIN/FEIN, and driver license numbers are AES-256-GCM encrypted with `PII_ENCRYPTION_KEY` before write. Postgres stores ciphertext + IV + last4 only. Lists show `***-**-1234` (or EIN/DL mask). Reveal is Admin or owning Agent and writes `pii_reveal_logs` (no decrypted value). Ana has no SSN. Elena demo SSN is fake encrypted `000-00-4444`. Harbor / Ruiz Tile EINs and Soto DL are sealed at seed.
 
-Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
+Open [http://localhost:43147](http://localhost:43147). `/login` requires a **password** on both cards, then 2-step unless demo bypass is on:
+
+**2FA / recovery:** Settings → Security enrolls SMS stub, email stub, or TOTP. The desk stays gated until 2FA is enrolled. Seeded Javy and Maya are already enrolled; `FF_MFA_DEMO_BYPASS=1` (default) skips the second prompt so Mac desk-test can open. Set `FF_MFA_DEMO_BYPASS=0` to type a TOTP code (seed secret `JBSWY3DPEHPK3PXP`). Admin → Settings → People / Agents can send a password-reset stub, an MFA-reset stub (`/recover/password`, `/recover/mfa`), or force re-enroll. Invite / reset / recover stubs also live at `/login/invite`, `/login/reset`, and `/login/recover`. Links are shown on the desk — nothing emails.
+
+`/login` cards:
 
 - **Admin** — Javy Rivera (`javy@fitfirst.local` or username `javy` / `javy`). Whole book. Settings, People / Agents, integration connect, global lists, Ask a teammate, appetite/carrier edit.
 - **Agent** — Maya Chen (`maya@fitfirst.local` or username `maya` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.

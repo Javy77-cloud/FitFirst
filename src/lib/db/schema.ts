@@ -117,7 +117,10 @@ export const users = pgTable(
     mustEnrollMfa: boolean("must_enroll_mfa").notNull().default(true),
     mfaMethod: text("mfa_method"),
     totpSecret: text("totp_secret"),
+    mfaSecret: text("mfa_secret"),
     mfaPhone: text("mfa_phone"),
+    mfaEmail: text("mfa_email"),
+    mfaDemoBypass: boolean("mfa_demo_bypass").notNull().default(false),
     recoveryToken: text("recovery_token"),
     recoveryExpiresAt: timestamp("recovery_expires_at", { withTimezone: true }),
     frozenAt: timestamp("frozen_at", { withTimezone: true }),
@@ -130,6 +133,50 @@ export const users = pgTable(
     uniqueIndex("users_tenant_email_idx").on(t.tenantId, t.email),
     uniqueIndex("users_tenant_username_idx").on(t.tenantId, t.username),
   ],
+);
+
+/** Admin-issued password or MFA recovery links. Stub only — nothing emails. */
+export const authRecoveryTokens = pgTable(
+  "auth_recovery_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    stubToken: text("stub_token"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    ...timestamps,
+  },
+  (t) => [
+    index("auth_recovery_tokens_user_idx").on(t.userId),
+    index("auth_recovery_tokens_hash_idx").on(t.tokenHash),
+  ],
+);
+
+/** SMS / email stub codes for enroll or login verify. TOTP does not use this. */
+export const mfaChallenges = pgTable(
+  "mfa_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    method: text("method").notNull(),
+    codeHash: text("code_hash").notNull(),
+    stubCode: text("stub_code"),
+    destination: text("destination"),
+    purpose: text("purpose").notNull().default("verify"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("mfa_challenges_user_idx").on(t.userId)],
 );
 
 export const agencySettings = pgTable(
@@ -978,23 +1025,6 @@ export const deskMessages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("desk_messages_to_idx").on(t.tenantId, t.toUserId, t.createdAt)],
-);
-
-/** SMS / email MFA stub codes. Authenticator uses users.totp_secret. */
-export const mfaChallenges = pgTable(
-  "mfa_challenges",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: tenantCol(),
-    userId: uuid("user_id").notNull(),
-    channel: text("channel").notNull(),
-    destination: text("destination").notNull(),
-    code: text("code").notNull(),
-    consumedAt: timestamp("consumed_at", { withTimezone: true }),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (t) => [index("mfa_challenges_user_idx").on(t.tenantId, t.userId, t.createdAt)],
 );
 
 /** Consumed from agency-ops: task / meeting / call. TEST-DESK adds account_id. */
@@ -2023,6 +2053,8 @@ export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type AuthRecoveryToken = typeof authRecoveryTokens.$inferSelect;
+export type MfaChallenge = typeof mfaChallenges.$inferSelect;
 export type Location = typeof locations.$inferSelect;
 export type MergeCandidate = typeof mergeCandidates.$inferSelect;
 export type IssuedCertificate = typeof issuedCertificates.$inferSelect;

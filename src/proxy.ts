@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { adminRedirectPath, isAdminOnlyPath, isPublicPath } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { isMfaChallengePath, isMfaSetupPath } from "@/lib/auth/mfa";
 import { isModulePath } from "@/lib/people/privileges";
 
 export function proxy(request: NextRequest) {
@@ -11,9 +12,9 @@ export function proxy(request: NextRequest) {
 
   const userId = request.cookies.get(SESSION_COOKIES.actorId)?.value;
   const role = request.cookies.get(SESSION_COOKIES.role)?.value ?? request.cookies.get(SESSION_COOKIES.actor)?.value;
-  const mfaOk = request.cookies.get(SESSION_COOKIES.mfa)?.value === "1";
-  const pending = request.cookies.get(SESSION_COOKIES.mfaPending)?.value;
-  if (!userId || !mfaOk) {
+  const mfa = request.cookies.get(SESSION_COOKIES.mfa)?.value;
+  if (!userId) {
+    const pending = request.cookies.get(SESSION_COOKIES.mfaPending)?.value;
     const dest = request.nextUrl.clone();
     if (pending) {
       dest.pathname = "/login/mfa";
@@ -22,6 +23,20 @@ export function proxy(request: NextRequest) {
     }
     dest.pathname = "/login";
     dest.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
+    return NextResponse.redirect(dest);
+  }
+
+  if (mfa === "challenge" && !isMfaChallengePath(pathname)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/login/mfa";
+    dest.search = "";
+    return NextResponse.redirect(dest);
+  }
+
+  if (mfa === "pending" && !isMfaSetupPath(pathname)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/enroll-mfa";
+    dest.search = "";
     return NextResponse.redirect(dest);
   }
 

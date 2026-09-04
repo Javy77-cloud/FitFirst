@@ -9,6 +9,7 @@ import {
   saveAgentPrivileges,
   setAgentStatus,
 } from "@/app/actions/people";
+import { sendMfaResetLink, sendPasswordResetLink } from "@/app/actions/recovery";
 import { mfaStatusLabel } from "@/lib/auth/mfa";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
@@ -182,6 +183,18 @@ export default async function AgentDetailPage({
                 <input type="hidden" name="userId" value={person.id} />
                 <Button type="submit" size="sm" variant="outline">
                   MFA recovery stub
+                </Button>
+              </form>
+              <form action={sendPasswordResetLink}>
+                <input type="hidden" name="userId" value={person.id} />
+                <Button type="submit" size="sm" variant="outline">
+                  /recover password link
+                </Button>
+              </form>
+              <form action={sendMfaResetLink}>
+                <input type="hidden" name="userId" value={person.id} />
+                <Button type="submit" size="sm" variant="outline">
+                  /recover MFA link
                 </Button>
               </form>
               <form action={forceReenrollMfa}>

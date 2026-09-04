@@ -294,6 +294,32 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsSection
+            id="security"
+            title="Security"
+            badge="Account"
+            summary="Password plus SMS stub, email stub, or TOTP."
+            defaultOpen
+          >
+            <p className="text-sm text-muted-foreground">
+              Signed in as {session.name}. 2FA is{" "}
+              {session.mfaEnrolled ? "enrolled" : "required before the rest of the desk opens"}.
+            </p>
+            <p className="mt-3 flex flex-wrap gap-3">
+              <Link href="/settings/security" className="text-sm text-primary hover:underline">
+                Open security
+              </Link>
+              <Link href="/settings/profile" className="text-sm text-primary hover:underline">
+                Open profile
+              </Link>
+              {session.isAdmin ? (
+                <Link href="/settings/agents" className="text-sm text-primary hover:underline">
+                  Agent recovery
+                </Link>
+              ) : null}
+            </p>
+          </SettingsSection>
+
+          <SettingsSection
             id="my-desk"
             title="My desk"
             badge="Agent"

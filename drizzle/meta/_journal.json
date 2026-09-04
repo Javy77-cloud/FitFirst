@@ -225,6 +225,13 @@
       "when": 1788539000000,
       "tag": "0031_inbound_lead_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788540000000,
+      "tag": "0032_auth_mfa_recovery",
+      "breakpoints": true
     }
   ]
 }
