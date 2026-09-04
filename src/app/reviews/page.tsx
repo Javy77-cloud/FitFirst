@@ -82,7 +82,6 @@ export default async function ReviewsPage() {
               No in-window expirations. Policies appear here after bind.
             </p>
           ) : (
-            <ColumnPicker tableId="reviews-expiring" columns={EXPIRING_COLUMNS}>
             <table className="ff-table">
               <thead>
                 <tr>
@@ -121,7 +120,6 @@ export default async function ReviewsPage() {
                 ))}
               </SheetTbody>
             </table>
-            </ColumnPicker>
           )}
         </section>
       </div>

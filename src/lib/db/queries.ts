@@ -388,16 +388,23 @@ export async function listDeals(filter: DealListFilter = {}) {
   const rows = await db
     .select({
       deal: deals,
+      lead: leads,
       contact: contacts,
       account: accounts,
+      risk: risks,
     })
     .from(deals)
     .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .leftJoin(leads, eq(deals.leadId, leads.id))
     .leftJoin(accounts, eq(deals.accountId, accounts.id))
+    .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
     .orderBy(desc(deals.updatedAt));
   const session = await currentDeskSession();
+  const seen = new Set<string>();
   return rows.filter(({ deal }) => {
+    if (seen.has(deal.id)) return false;
+    seen.add(deal.id);
     if (!canViewOwned(session, deal.ownerId)) return false;
     const family = bookFamily(deal.lineOfBusiness);
     if (family === "life" && !lineOptions.writeLife) return false;
@@ -1142,13 +1149,6 @@ export async function dashboardStats() {
 
   return { stats: row, recentDeals, tasks, unread, expiring };
 }
-
-export type DealListRow = {
-  deal: typeof deals.$inferSelect;
-  lead: typeof leads.$inferSelect | null;
-  contact: typeof contacts.$inferSelect | null;
-  risk: typeof risks.$inferSelect | null;
-};
 
 export async function ensurePipelineStages() {
   return db

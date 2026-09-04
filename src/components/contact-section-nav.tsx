@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { ContactSectionDef } from "@/lib/desk/contact-sections";
+import type { ContactSectionDef, ContactSectionId } from "@/lib/desk/contact-sections";
 
 export function ContactSectionNav({ sections }: { sections: ContactSectionDef[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? "overview");
@@ -19,7 +19,7 @@ export function ContactSectionNav({ sections }: { sections: ContactSectionDef[] 
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         const id = visible[0]?.target.id;
-        if (id) setActive(id);
+        if (id) setActive(id as ContactSectionId);
       },
       { rootMargin: "-20% 0px -60% 0px", threshold: [0.15, 0.4, 0.7] },
     );
@@ -27,7 +27,7 @@ export function ContactSectionNav({ sections }: { sections: ContactSectionDef[] 
     return () => observer.disconnect();
   }, [sections]);
 
-  function jump(id: string) {
+  function jump(id: ContactSectionId) {
     const target = document.getElementById(id);
     if (!target) return;
     setActive(id);

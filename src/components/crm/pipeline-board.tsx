@@ -52,6 +52,7 @@ export function PipelineBoard({
           {
             id: "unstaged",
             tenantId: "",
+            pipelineId: "",
             slug: "_unstaged",
             name: "Unstaged",
             sortOrder: 999,
