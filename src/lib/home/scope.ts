@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { parseBookScope, type BookScope } from "./presets";
 
 export type DeskRole = "owner" | "admin" | "agent";
 
@@ -9,6 +10,8 @@ export type OwnerHomeScope = {
   /** Null = whole book (owner / admin). Set for Agent when assignee columns exist. */
   agentUserId: string | null;
   label: string;
+  bookScope: BookScope;
+  canToggleBook: boolean;
 };
 
 const OWNER_ROLES = new Set<DeskRole>(["owner", "admin"]);
@@ -22,27 +25,34 @@ export function isAgencyWide(scope: OwnerHomeScope): boolean {
  * `policies.owner_id` (or `assigned_to`) exists and a user id is present.
  * Default cookie is owner so Home boots as the agency desk.
  */
-export async function currentOwnerHomeScope(): Promise<OwnerHomeScope> {
+export async function currentOwnerHomeScope(bookScope?: BookScope): Promise<OwnerHomeScope> {
   const tenantId = DEFAULT_TENANT_ID;
+  const scope = bookScope ?? "agency";
   try {
     const { currentDeskSession } = await import("@/lib/auth/session");
     const session = await currentDeskSession();
     if (session.signedIn) {
+      const mine = !session.isAdmin || parseBookScope(scope) === "my_book";
       return {
         tenantId,
         role: session.role,
-        agentUserId: session.isAdmin ? null : session.userId,
-        label: session.isAdmin ? "Agency totals" : "Your book",
+        agentUserId: mine ? session.userId : null,
+        label: mine ? "My book" : "Agency-wide",
+        bookScope: session.isAdmin ? parseBookScope(scope) : "my_book",
+        canToggleBook: session.isAdmin,
       };
     }
     const jar = await cookies();
     const raw = jar.get("ff_actor")?.value ?? jar.get("ff_role")?.value ?? "";
     const role = normalizeRole(raw || "agent");
+    const mine = role === "agent" || parseBookScope(scope) === "my_book";
     return {
       tenantId,
       role,
-      agentUserId: role === "agent" ? jar.get("ff_actor_id")?.value ?? null : null,
-      label: role === "agent" ? "Your book" : "Agency totals",
+      agentUserId: mine ? jar.get("ff_actor_id")?.value ?? null : null,
+      label: mine ? "My book" : "Agency-wide",
+      bookScope: role === "agent" ? "my_book" : parseBookScope(scope),
+      canToggleBook: role !== "agent",
     };
   } catch {
     return {
@@ -50,6 +60,8 @@ export async function currentOwnerHomeScope(): Promise<OwnerHomeScope> {
       role: "agent",
       agentUserId: null,
       label: "Sign in",
+      bookScope: "my_book",
+      canToggleBook: false,
     };
   }
 }

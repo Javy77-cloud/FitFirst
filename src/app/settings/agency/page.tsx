@@ -1,11 +1,16 @@
 import { saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
+import { saveShowCompanyWidgets } from "@/app/actions/home-dashboard";
 import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireAdminPage } from "@/lib/auth/guards";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { db } from "@/lib/db";
+import { agencySettings } from "@/lib/db/schema";
 import { getAgencyBrand, getResolvedDesk } from "@/lib/db/brand-queries";
+import { eq } from "drizzle-orm";
 import {
   COLOR_PRESET_LABELS,
   COLOR_PRESETS,
@@ -20,7 +25,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AgencySettingsPage() {
   const session = await requireAdminPage();
-  const [desk, brand] = await Promise.all([getResolvedDesk(), getAgencyBrand()]);
+  const [desk, brand, settings] = await Promise.all([
+    getResolvedDesk(),
+    getAgencyBrand(),
+    db.select().from(agencySettings).where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID)),
+  ]);
+  void session;
+  const showCompanyWidgets = Boolean(settings[0]?.showCompanyWidgets);
 
   return (
     <SettingsShell title="Agency branding" current="agency">
@@ -108,6 +119,28 @@ export default async function AgencySettingsPage() {
           </fieldset>
         </form>
 
+        <div className="space-y-4">
+        <section className="ff-card space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-navy">Home widgets</h2>
+          <p className="text-xs text-muted-foreground">
+            Optionally pin agency production on every agent dashboard. Does not change the blue/orange desk colors.
+          </p>
+          <form action={saveShowCompanyWidgets} className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="showCompanyWidgets"
+                value="1"
+                defaultChecked={showCompanyWidgets}
+              />
+              Show 1–2 company widgets on agent home
+            </label>
+            <Button type="submit" size="sm" variant="outline">
+              Save home widgets
+            </Button>
+          </form>
+        </section>
+
         <section className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">Logo</h2>
           <div className="flex items-center gap-3">
@@ -134,6 +167,7 @@ export default async function AgencySettingsPage() {
             </form>
           ) : null}
         </section>
+        </div>
       </div>
     </SettingsShell>
   );

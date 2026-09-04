@@ -1,14 +1,6 @@
 import { formatMoney } from "@/lib/domain";
 import type { MixSlice } from "@/lib/home/aggregate";
-
-const COLORS = [
-  "var(--ff-accent)",
-  "var(--ff-navy)",
-  "var(--ff-green)",
-  "var(--ff-navy-mid)",
-  "var(--ff-yellow)",
-  "var(--ff-sidebar-muted)",
-];
+import { chartColor } from "@/lib/home/chart-colors";
 
 /** In-force slices only. Zero-premium types (and quotes) stay off the donut. */
 export function visiblePolicyTypeSlices(slices: MixSlice[]): MixSlice[] {
@@ -37,7 +29,7 @@ export function MixDonut({
     const len = (slice.premium / totalPremium) * circ;
     const arc = {
       slice,
-      color: COLORS[index % COLORS.length],
+      color: chartColor(index),
       dash: `${len} ${circ - len}`,
       offset,
       share: slice.premium / totalPremium,
@@ -60,7 +52,7 @@ export function MixDonut({
           r={radius}
           fill="none"
           stroke="var(--ff-border)"
-          strokeWidth="16"
+          strokeWidth="18"
         />
         {arcs.map((arc) => (
           <circle
@@ -70,7 +62,7 @@ export function MixDonut({
             r={radius}
             fill="none"
             stroke={arc.color}
-            strokeWidth="16"
+            strokeWidth="18"
             strokeDasharray={arc.dash}
             strokeDashoffset={-arc.offset}
             transform="rotate(-90 60 60)"

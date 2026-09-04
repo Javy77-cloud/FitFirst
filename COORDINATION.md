@@ -468,3 +468,17 @@ Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Ana fixture untouched
 - **E-sign stubs:** Settings → E-sign. DocuSign and Dropbox Sign BYO. No vendor keys. Signed apps still attach on the Deal.
 
 Migration `0015_esign_settings`.
+
+## BATCH4 home dashboard (`cursor/home-dashboard-widgets-89ab`)
+
+Side branch. Additive only. Keeps `--ff-sidebar: #c5ddf4` and the blue/orange tokens. Does not copy an InsuredMine dark rail. Ana stays unbound at Cov A **$321,000**. One Pipeline nav row.
+
+- Agent home is own-book KPIs. Admin toggle: **My book** vs **Agency-wide**.
+- Dense InsuredMine-like cards: active accounts, in-force premium, policies, ratios, new business / renewals / cancellations with MoM, carrier count, pipeline strip.
+- Charts keep the policy-type donut and add carrier share bars.
+- Top 10 leaderboard (this month + last month) and a seeded Q3 premium contest board. Admin can post another.
+- Birthdays (today / next week / next month) and Turning 65 (next month / next year) from Contact DOB.
+- Dashboard presets: My production / Pipeline focus / Retention. Widget settings show/hide cards. Settings → Agency can pin company widgets on agent home.
+- Migration `0021_home_dashboard`. Seed does not add people — only extra producer users, DOB updates on existing contacts, and one contest.
+- Home charts use a punchy blue/orange/teal series (not washed navy/gray). Sidebar stays `#c5ddf4`.
+- Management lead-offer board (`0022_lead_offers`): Admin posts language/state offers, agents claim, Admin awards. Seeded French + Montana stubs. No new people.

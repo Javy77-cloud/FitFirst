@@ -46,6 +46,7 @@ import { seedCommsDesk } from "./seed-comms";
 import { ensureDefaultLineSubfilters } from "./line-settings";
 import { seedCalendarDesk } from "./seed-calendar";
 import { seedGlobalLists } from "./seed-global-lists";
+import { seedHomeDashboard } from "./seed-home-dashboard";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -474,4 +475,5 @@ export async function seed() {
   await ensureDefaultLineSubfilters();
   await seedCalendarDesk();
   await seedGlobalLists();
+  await seedHomeDashboard();
 }

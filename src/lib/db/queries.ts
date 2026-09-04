@@ -20,6 +20,17 @@ import {
   type HomeTask,
 } from "@/lib/home/aggregate";
 import { detectOwnerHomeTables } from "@/lib/home/optional-tables";
+import { rankAgents } from "@/lib/home/leaderboard";
+import {
+  hiddenForPreset,
+  parseBookScope,
+  parseDashboardPreset,
+  parseHiddenWidgets,
+  type BookScope,
+  type DashboardPreset,
+  type HomeWidgetId,
+} from "@/lib/home/presets";
+import { parseLeadOfferStatus, type LeadOfferStatus } from "@/lib/home/lead-offers";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
 import {
@@ -70,6 +81,10 @@ import {
   esignSettings,
   users,
   vehicles,
+  contests,
+  leadOfferClaims,
+  leadOffers,
+  userDashboardPrefs,
 } from "./schema";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
 import {
@@ -1337,31 +1352,112 @@ async function loadOpportunityGapCount(scope: OwnerHomeScope): Promise<number | 
   }
 }
 
+export type HomeDashboardPrefs = {
+  preset: DashboardPreset;
+  hiddenWidgets: HomeWidgetId[];
+  bookScope: BookScope;
+};
+
+export type HomeContestView = {
+  id: string;
+  title: string;
+  rules: string;
+  metric: "premium" | "policy_count";
+  startsAt: Date;
+  endsAt: Date;
+  standings: ReturnType<typeof rankAgents>;
+};
+
+export type AgencyHomeHighlight = {
+  writtenThisMonth: number;
+  writtenCount: number;
+  inForcePremium: number;
+  inForceCount: number;
+};
+
+export type HomeLeadOfferView = {
+  id: string;
+  title: string;
+  details: string;
+  language: string | null;
+  state: string | null;
+  leadId: string | null;
+  status: LeadOfferStatus;
+  postedByName: string;
+  awardedToId: string | null;
+  awardedToName: string | null;
+  claims: { agentId: string; name: string; note: string | null; createdAt: Date }[];
+};
+
+export type HomeAgentOption = { id: string; name: string; role: string };
+
+export async function loadHomeDashboardPrefs(userId: string | null): Promise<HomeDashboardPrefs> {
+  const fallbackPreset = parseDashboardPreset("my_production");
+  if (!userId) {
+    return { preset: fallbackPreset, hiddenWidgets: hiddenForPreset(fallbackPreset), bookScope: "agency" };
+  }
+  const [row] = await db
+    .select()
+    .from(userDashboardPrefs)
+    .where(and(eq(userDashboardPrefs.tenantId, tenant()), eq(userDashboardPrefs.userId, userId)));
+  const preset = parseDashboardPreset(row?.preset);
+  return {
+    preset,
+    hiddenWidgets: row ? parseHiddenWidgets(row.hiddenWidgets) : hiddenForPreset(preset),
+    bookScope: parseBookScope(row?.bookScope),
+  };
+}
+
 export async function ownerHomeDashboard() {
-  const scope = await currentOwnerHomeScope();
+  const session = await currentDeskSession();
+  const prefs = await loadHomeDashboardPrefs(session.userId);
+  const scope = await currentOwnerHomeScope(prefs.bookScope);
   const tables = await detectOwnerHomeTables();
 
-  const policyRows = await db
-    .select({
-      policy: policies,
-      contact: contacts,
-      carrier: carriers,
-    })
-    .from(policies)
-    .leftJoin(contacts, eq(policies.contactId, contacts.id))
-    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
-    .where(eq(policies.tenantId, scope.tenantId));
-
-  const dealRows = await db.select().from(deals).where(eq(deals.tenantId, scope.tenantId));
-  const taskRows = await db
-    .select()
-    .from(reviewTasks)
-    .where(and(eq(reviewTasks.tenantId, scope.tenantId), eq(reviewTasks.status, "open")))
-    .orderBy(asc(reviewTasks.dueDate));
+  const [
+    policyRows,
+    dealRows,
+    taskRows,
+    leadRows,
+    contactRows,
+    agentRows,
+    contestRows,
+    settingsRows,
+    offerRows,
+    offerClaimRows,
+  ] = await Promise.all([
+      db
+        .select({
+          policy: policies,
+          contact: contacts,
+          carrier: carriers,
+        })
+        .from(policies)
+        .leftJoin(contacts, eq(policies.contactId, contacts.id))
+        .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+        .where(eq(policies.tenantId, scope.tenantId)),
+      db.select().from(deals).where(eq(deals.tenantId, scope.tenantId)),
+      db
+        .select()
+        .from(reviewTasks)
+        .where(and(eq(reviewTasks.tenantId, scope.tenantId), eq(reviewTasks.status, "open")))
+        .orderBy(asc(reviewTasks.dueDate)),
+      db.select().from(leads).where(eq(leads.tenantId, scope.tenantId)),
+      db.select().from(contacts).where(eq(contacts.tenantId, scope.tenantId)),
+      db
+        .select()
+        .from(users)
+        .where(and(eq(users.tenantId, scope.tenantId), eq(users.active, true))),
+      db.select().from(contests).where(eq(contests.tenantId, scope.tenantId)).orderBy(desc(contests.startsAt)),
+      db.select().from(agencySettings).where(eq(agencySettings.tenantId, scope.tenantId)),
+      db.select().from(leadOffers).where(eq(leadOffers.tenantId, scope.tenantId)).orderBy(desc(leadOffers.createdAt)),
+      db.select().from(leadOfferClaims).where(eq(leadOfferClaims.tenantId, scope.tenantId)),
+    ]);
 
   const homePolicies: HomePolicy[] = policyRows.map(({ policy, contact, carrier }) => ({
     id: policy.id,
     contactId: policy.contactId ?? "",
+    accountId: policy.accountId ?? null,
     dealId: policy.dealId,
     carrierId: policy.carrierId,
     carrierName: carrier?.name ?? null,
@@ -1372,6 +1468,8 @@ export async function ownerHomeDashboard() {
     premium: policy.premium == null ? 0 : Number(policy.premium),
     effectiveDate: policy.effectiveDate,
     expirationDate: policy.expirationDate,
+    originalEffectiveDate: policy.originalEffectiveDate ?? null,
+    endedAt: policy.endedAt ?? null,
     ownerId: policy.ownerId ?? null,
   }));
 
@@ -1396,6 +1494,48 @@ export async function ownerHomeDashboard() {
     contactId: task.contactId,
   }));
 
+  const homeLeads = leadRows.map((lead) => ({
+    id: lead.id,
+    status: lead.status,
+    ownerId: lead.ownerId ?? null,
+  }));
+
+  const homeContacts = contactRows.map((contact) => ({
+    id: contact.id,
+    name: contactName(contact),
+    dateOfBirth: contact.dateOfBirth,
+    href: `/contacts/${contact.id}`,
+    ownerId: contact.ownerId ?? null,
+  }));
+
+  const agents = agentRows.map((user) => ({ id: user.id, name: user.name }));
+  const names = new Map(agents.map((agent) => [agent.id, agent.name]));
+  const agentOptions: HomeAgentOption[] = agentRows
+    .map((user) => ({ id: user.id, name: user.name, role: user.role }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const leadOfferViews: HomeLeadOfferView[] = offerRows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    details: row.details,
+    language: row.language,
+    state: row.state,
+    leadId: row.leadId,
+    status: parseLeadOfferStatus(row.status),
+    postedByName: names.get(row.postedBy) ?? "Management",
+    awardedToId: row.awardedTo,
+    awardedToName: row.awardedTo ? names.get(row.awardedTo) ?? "Agent" : null,
+    claims: offerClaimRows
+      .filter((claim) => claim.offerId === row.id)
+      .map((claim) => ({
+        agentId: claim.agentId,
+        name: names.get(claim.agentId) ?? "Agent",
+        note: claim.note,
+        createdAt: claim.createdAt,
+      }))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+  }));
+
   const scopedPolicies = filterByAssignee(
     homePolicies,
     scope.agentUserId,
@@ -1406,6 +1546,8 @@ export async function ownerHomeDashboard() {
     scope.agentUserId,
     Boolean(tables.dealAssigneeColumn),
   );
+  const scopedLeads = filterByAssignee(homeLeads, scope.agentUserId, Boolean(tables.assigneeColumn));
+  const scopedContacts = filterByAssignee(homeContacts, scope.agentUserId, Boolean(tables.assigneeColumn));
 
   const [commissions, opportunityCount] = await Promise.all([
     loadCommissionTotals(scope),
@@ -1418,10 +1560,57 @@ export async function ownerHomeDashboard() {
     deals: scopedDeals,
     tasks: homeTasks,
     commissions,
+    leads: scopedLeads,
+    contacts: scopedContacts,
+    agents,
   });
   if (opportunityCount != null) snapshot.gapCount = opportunityCount;
 
-  return { snapshot, scope, tables };
+  const showCompanyWidgets = Boolean(settingsRows[0]?.showCompanyWidgets);
+  const agencySnap = buildOwnerHome({
+    asOf: DESK_AS_OF,
+    policies: homePolicies,
+    deals: homeDeals,
+    tasks: [],
+    agents,
+  });
+  const agencyHighlight: AgencyHomeHighlight = {
+    writtenThisMonth: agencySnap.written.thisMonth.premium,
+    writtenCount: agencySnap.written.thisMonth.count,
+    inForcePremium: agencySnap.inForcePremium,
+    inForceCount: agencySnap.inForceCount,
+  };
+
+  const contestViews: HomeContestView[] = contestRows
+    .filter((row) => row.active)
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      rules: row.rules,
+      metric: row.metric === "policy_count" ? "policy_count" : "premium",
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      standings: rankAgents(homePolicies, agents, DESK_AS_OF, "contest", {
+        metric: row.metric === "policy_count" ? "policy_count" : "premium",
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+      }),
+    }));
+
+  return {
+    snapshot,
+    scope,
+    tables,
+    prefs,
+    contests: contestViews,
+    leadOffers: leadOfferViews,
+    agents: agentOptions,
+    currentUserId: session.userId,
+    showCompanyWidgets,
+    agencyHighlight,
+    isAdmin: Boolean(session.isAdmin),
+    isAgent: Boolean(session.isAgent),
+  };
 }
 
 export async function listBoundPendingDeals() {
