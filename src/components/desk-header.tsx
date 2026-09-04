@@ -2,8 +2,9 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Bell, CalendarDays, Inbox, Phone } from "lucide-react";
+import { Bell, CalendarDays, CircleHelp, Inbox, Phone } from "lucide-react";
 import { SmartSearch } from "@/components/smart-search";
+import { useSupport } from "@/components/support/support-context";
 import { cn } from "@/lib/utils";
 
 const ICONS = [
@@ -29,6 +30,7 @@ export function DeskHeader({
   actions?: ReactNode;
   unread: number;
 }) {
+  const { openSupport } = useSupport();
   return (
     <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-5 py-3">
       <div className="min-w-0 shrink-0">
@@ -61,6 +63,15 @@ export function DeskHeader({
             </Link>
           );
         })}
+        <button
+          type="button"
+          title="Support"
+          onClick={() => openSupport()}
+          className="relative inline-flex size-10 items-center justify-center rounded-md text-[#b4532a] hover:bg-[#f3eee6]"
+        >
+          <CircleHelp className="size-6" strokeWidth={2.25} />
+          <span className="sr-only">Support</span>
+        </button>
         {actions}
       </div>
     </header>
