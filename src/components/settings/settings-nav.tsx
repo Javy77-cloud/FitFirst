@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 export function SettingsNav({ current }: { current: SettingsNavId }) {
   const activeGroup = settingsGroupFor(current);
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(SETTINGS_NAV.map((group) => [group.id, group.id === activeGroup])),
+    Object.fromEntries(SETTINGS_NAV.map((group) => [group.id, true])),
   );
 
   return (
