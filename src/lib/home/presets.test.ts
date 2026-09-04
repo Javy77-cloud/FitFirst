@@ -12,6 +12,7 @@ describe("dashboard presets", () => {
     expect(parseDashboardPreset("nope")).toBe("my_production");
     expect(parseBookScope("agency")).toBe("agency");
     expect(widgetsForPreset("my_production")).toContain("leaderboard");
+    expect(widgetsForPreset("my_production")).toContain("lead_offers");
     expect(widgetsForPreset("pipeline_focus")).toContain("recent_deals");
     expect(widgetsForPreset("retention")).toContain("turning65");
   });

@@ -16,7 +16,13 @@ import { formatMoney } from "@/lib/domain";
 import type { OwnerHomeSnapshot } from "@/lib/home/aggregate";
 import type { OwnerHomeScope } from "@/lib/home/scope";
 import type { OwnerHomeTables } from "@/lib/home/optional-tables";
-import type { AgencyHomeHighlight, HomeContestView, HomeDashboardPrefs } from "@/lib/db/queries";
+import type {
+  AgencyHomeHighlight,
+  HomeAgentOption,
+  HomeContestView,
+  HomeDashboardPrefs,
+  HomeLeadOfferView,
+} from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +32,7 @@ import { CrossSellPanel } from "./cross-sell";
 import { AttentionFilters } from "./attention-filters";
 import { DashboardToolbar } from "./dashboard-toolbar";
 import { ContestBoard } from "./contest-board";
+import { LeadOfferBoard } from "./lead-offer-board";
 import { PeopleList } from "./people-list";
 import { momLabel, momTone } from "./mom-label";
 import { filterLineMix, type DeskLineSettings } from "@/lib/desk/line-settings";
@@ -47,6 +54,9 @@ export function OwnerDesk({
   attentionWindow = null,
   prefs,
   contests,
+  leadOffers,
+  agents,
+  currentUserId,
   showCompanyWidgets,
   agencyHighlight,
   isAdmin,
@@ -61,6 +71,9 @@ export function OwnerDesk({
   attentionWindow?: AttentionWindow | null;
   prefs: HomeDashboardPrefs;
   contests: HomeContestView[];
+  leadOffers: HomeLeadOfferView[];
+  agents: HomeAgentOption[];
+  currentUserId: string | null;
   showCompanyWidgets: boolean;
   agencyHighlight: AgencyHomeHighlight;
   isAdmin: boolean;
@@ -327,6 +340,15 @@ export function OwnerDesk({
         ) : null}
         {show("contest") ? <ContestBoard contests={contests} isAdmin={isAdmin} /> : null}
       </div>
+
+      {show("lead_offers") ? (
+        <LeadOfferBoard
+          offers={leadOffers}
+          agents={agents}
+          isAdmin={isAdmin}
+          currentUserId={currentUserId}
+        />
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {show("birthdays") ? (

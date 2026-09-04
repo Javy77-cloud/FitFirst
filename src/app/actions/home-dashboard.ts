@@ -5,7 +5,8 @@ import { and, eq } from "drizzle-orm";
 import { requireAdminAction, requireSignedInAction } from "@/lib/auth/guards";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { agencySettings, contests, userDashboardPrefs } from "@/lib/db/schema";
+import { agencySettings, contests, leadOfferClaims, leadOffers, leads, userDashboardPrefs, users } from "@/lib/db/schema";
+import { canAwardOffer, canClaimOffer } from "@/lib/home/lead-offers";
 import {
   HOME_WIDGET_IDS,
   hiddenForPreset,
@@ -109,6 +110,86 @@ async function upsertPrefs(
     bookScope: patch.bookScope ?? "agency",
     hiddenWidgets: patch.hiddenWidgets ?? hiddenForPreset(preset),
   });
+}
+
+export async function postLeadOffer(formData: FormData) {
+  const session = await requireAdminAction();
+  if (!session.userId) return;
+  const title = String(formData.get("title") ?? "").trim();
+  const details = String(formData.get("details") ?? "").trim();
+  const language = String(formData.get("language") ?? "").trim() || null;
+  const state = String(formData.get("state") ?? "").trim().toUpperCase() || null;
+  if (!title || !details) return;
+  await db.insert(leadOffers).values({
+    tenantId: DEFAULT_TENANT_ID,
+    title,
+    details,
+    language,
+    state,
+    postedBy: session.userId,
+    status: "open",
+  });
+  refreshHome();
+}
+
+export async function claimLeadOffer(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  const offerId = String(formData.get("offerId") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim() || null;
+  if (!offerId) return;
+  const [offer] = await db
+    .select()
+    .from(leadOffers)
+    .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), eq(leadOffers.id, offerId)));
+  if (!offer || !canClaimOffer(offer.status, false)) return;
+  const [existing] = await db
+    .select()
+    .from(leadOfferClaims)
+    .where(
+      and(
+        eq(leadOfferClaims.tenantId, DEFAULT_TENANT_ID),
+        eq(leadOfferClaims.offerId, offerId),
+        eq(leadOfferClaims.agentId, session.userId),
+      ),
+    );
+  if (existing) return;
+  await db.insert(leadOfferClaims).values({
+    tenantId: DEFAULT_TENANT_ID,
+    offerId,
+    agentId: session.userId,
+    note,
+  });
+  refreshHome();
+}
+
+export async function awardLeadOffer(formData: FormData) {
+  const session = await requireAdminAction();
+  const offerId = String(formData.get("offerId") ?? "").trim();
+  const agentId = String(formData.get("agentId") ?? "").trim();
+  if (!offerId || !agentId) return;
+  const [offer] = await db
+    .select()
+    .from(leadOffers)
+    .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), eq(leadOffers.id, offerId)));
+  if (!offer || !canAwardOffer(offer.status)) return;
+  const [agent] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, agentId), eq(users.active, true)));
+  if (!agent) return;
+  const now = new Date();
+  await db
+    .update(leadOffers)
+    .set({ status: "awarded", awardedTo: agent.id, awardedAt: now, updatedAt: now })
+    .where(eq(leadOffers.id, offer.id));
+  if (offer.leadId) {
+    await db
+      .update(leads)
+      .set({ ownerId: agent.id, updatedAt: now })
+      .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, offer.leadId)));
+  }
+  refreshHome();
 }
 
 function parseDay(raw: string, endOfDay = false): Date | null {

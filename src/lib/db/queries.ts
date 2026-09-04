@@ -30,6 +30,7 @@ import {
   type DashboardPreset,
   type HomeWidgetId,
 } from "@/lib/home/presets";
+import { parseLeadOfferStatus, type LeadOfferStatus } from "@/lib/home/lead-offers";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
 import {
@@ -81,6 +82,8 @@ import {
   users,
   vehicles,
   contests,
+  leadOfferClaims,
+  leadOffers,
   userDashboardPrefs,
 } from "./schema";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
@@ -1372,6 +1375,22 @@ export type AgencyHomeHighlight = {
   inForceCount: number;
 };
 
+export type HomeLeadOfferView = {
+  id: string;
+  title: string;
+  details: string;
+  language: string | null;
+  state: string | null;
+  leadId: string | null;
+  status: LeadOfferStatus;
+  postedByName: string;
+  awardedToId: string | null;
+  awardedToName: string | null;
+  claims: { agentId: string; name: string; note: string | null; createdAt: Date }[];
+};
+
+export type HomeAgentOption = { id: string; name: string; role: string };
+
 export async function loadHomeDashboardPrefs(userId: string | null): Promise<HomeDashboardPrefs> {
   const fallbackPreset = parseDashboardPreset("my_production");
   if (!userId) {
@@ -1395,8 +1414,18 @@ export async function ownerHomeDashboard() {
   const scope = await currentOwnerHomeScope(prefs.bookScope);
   const tables = await detectOwnerHomeTables();
 
-  const [policyRows, dealRows, taskRows, leadRows, contactRows, agentRows, contestRows, settingsRows] =
-    await Promise.all([
+  const [
+    policyRows,
+    dealRows,
+    taskRows,
+    leadRows,
+    contactRows,
+    agentRows,
+    contestRows,
+    settingsRows,
+    offerRows,
+    offerClaimRows,
+  ] = await Promise.all([
       db
         .select({
           policy: policies,
@@ -1421,6 +1450,8 @@ export async function ownerHomeDashboard() {
         .where(and(eq(users.tenantId, scope.tenantId), eq(users.active, true))),
       db.select().from(contests).where(eq(contests.tenantId, scope.tenantId)).orderBy(desc(contests.startsAt)),
       db.select().from(agencySettings).where(eq(agencySettings.tenantId, scope.tenantId)),
+      db.select().from(leadOffers).where(eq(leadOffers.tenantId, scope.tenantId)).orderBy(desc(leadOffers.createdAt)),
+      db.select().from(leadOfferClaims).where(eq(leadOfferClaims.tenantId, scope.tenantId)),
     ]);
 
   const homePolicies: HomePolicy[] = policyRows.map(({ policy, contact, carrier }) => ({
@@ -1478,6 +1509,32 @@ export async function ownerHomeDashboard() {
   }));
 
   const agents = agentRows.map((user) => ({ id: user.id, name: user.name }));
+  const names = new Map(agents.map((agent) => [agent.id, agent.name]));
+  const agentOptions: HomeAgentOption[] = agentRows
+    .map((user) => ({ id: user.id, name: user.name, role: user.role }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const leadOfferViews: HomeLeadOfferView[] = offerRows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    details: row.details,
+    language: row.language,
+    state: row.state,
+    leadId: row.leadId,
+    status: parseLeadOfferStatus(row.status),
+    postedByName: names.get(row.postedBy) ?? "Management",
+    awardedToId: row.awardedTo,
+    awardedToName: row.awardedTo ? names.get(row.awardedTo) ?? "Agent" : null,
+    claims: offerClaimRows
+      .filter((claim) => claim.offerId === row.id)
+      .map((claim) => ({
+        agentId: claim.agentId,
+        name: names.get(claim.agentId) ?? "Agent",
+        note: claim.note,
+        createdAt: claim.createdAt,
+      }))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+  }));
 
   const scopedPolicies = filterByAssignee(
     homePolicies,
@@ -1546,6 +1603,9 @@ export async function ownerHomeDashboard() {
     tables,
     prefs,
     contests: contestViews,
+    leadOffers: leadOfferViews,
+    agents: agentOptions,
+    currentUserId: session.userId,
     showCompanyWidgets,
     agencyHighlight,
     isAdmin: Boolean(session.isAdmin),

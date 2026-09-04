@@ -1620,6 +1620,41 @@ export const contests = pgTable(
   (t) => [index("contests_tenant_idx").on(t.tenantId)],
 );
 
+/** Admin posts a lead for agents to claim. Award assigns the book — no new people. */
+export const leadOffers = pgTable(
+  "lead_offers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    title: text("title").notNull(),
+    details: text("details").notNull(),
+    language: text("language"),
+    state: text("state"),
+    leadId: uuid("lead_id"),
+    postedBy: uuid("posted_by").notNull(),
+    status: text("status").notNull().default("open"),
+    awardedTo: uuid("awarded_to"),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("lead_offers_tenant_idx").on(t.tenantId, t.status)],
+);
+
+export const leadOfferClaims = pgTable(
+  "lead_offer_claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    offerId: uuid("offer_id")
+      .notNull()
+      .references(() => leadOffers.id),
+    agentId: uuid("agent_id").notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("lead_offer_claims_agent_uidx").on(t.tenantId, t.offerId, t.agentId)],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -1706,3 +1741,5 @@ export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;
 export type UserDashboardPref = typeof userDashboardPrefs.$inferSelect;
 export type Contest = typeof contests.$inferSelect;
+export type LeadOffer = typeof leadOffers.$inferSelect;
+export type LeadOfferClaim = typeof leadOfferClaims.$inferSelect;

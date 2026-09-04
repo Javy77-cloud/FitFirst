@@ -233,6 +233,14 @@ export const HOME_AGENT_IDS = {
   ken: "b0b00000-0000-4000-8000-0000000000d2",
 } as const;
 export const Q3_PREMIUM_CONTEST_ID = "b0b00000-0000-4000-8000-0000000000c1";
+export const LEAD_OFFER_IDS = {
+  french: "b0b00000-0000-4000-8000-0000000000e1",
+  montana: "b0b00000-0000-4000-8000-0000000000e2",
+} as const;
+export const LEAD_OFFER_CLAIM_IDS = {
+  frenchMaya: "b0b00000-0000-4000-8000-0000000000e3",
+  montanaKen: "b0b00000-0000-4000-8000-0000000000e4",
+} as const;
 
 export const CLAIM_CONTACT_ID = OWNER_CONTACT_IDS.ruiz;
 export const CLAIM_POLICY_ID = OWNER_POLICY_IDS.ruizHo;

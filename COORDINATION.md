@@ -480,3 +480,5 @@ Side branch. Additive only. Keeps `--ff-sidebar: #c5ddf4` and the blue/orange to
 - Birthdays (today / next week / next month) and Turning 65 (next month / next year) from Contact DOB.
 - Dashboard presets: My production / Pipeline focus / Retention. Widget settings show/hide cards. Settings → Agency can pin company widgets on agent home.
 - Migration `0021_home_dashboard`. Seed does not add people — only extra producer users, DOB updates on existing contacts, and one contest.
+- Home charts use a punchy blue/orange/teal series (not washed navy/gray). Sidebar stays `#c5ddf4`.
+- Management lead-offer board (`0022_lead_offers`): Admin posts language/state offers, agents claim, Admin awards. Seeded French + Montana stubs. No new people.

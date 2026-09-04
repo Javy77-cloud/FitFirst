@@ -39,6 +39,9 @@ export default async function HomePage({
         attentionWindow={attentionWindow}
         prefs={home.prefs}
         contests={home.contests}
+        leadOffers={home.leadOffers}
+        agents={home.agents}
+        currentUserId={home.currentUserId}
         showCompanyWidgets={home.showCompanyWidgets}
         agencyHighlight={home.agencyHighlight}
         isAdmin={home.isAdmin}

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "./index";
-import { agencySettings, contests, contacts, policies, users } from "./schema";
+import { agencySettings, contests, contacts, leadOfferClaims, leadOffers, policies, users } from "./schema";
 import {
   ADMIN_USER_ID,
   AGENCY_SETTINGS_ID,
@@ -9,7 +9,10 @@ import {
   DEMO_CONTACT_HALE,
   DEMO_CONTACT_REED,
   DEMO_CONTACT_SHAH,
+  AGENT_USER_ID,
   HOME_AGENT_IDS,
+  LEAD_OFFER_CLAIM_IDS,
+  LEAD_OFFER_IDS,
   NAIR_CONTACT_ID,
   Q3_PREMIUM_CONTEST_ID,
   TENANT_ID,
@@ -134,5 +137,67 @@ export async function seedHomeDashboard() {
         active: true,
         updatedAt: new Date(),
       },
+    });
+
+  await db
+    .insert(leadOffers)
+    .values([
+      {
+        id: LEAD_OFFER_IDS.french,
+        tenantId: TENANT_ID,
+        title: "French-speaking HO shop",
+        details:
+          "I have a lead that speaks French — anyone want it? Palm Bay referral. Do not create a second Ana. Shop only.",
+        language: "French",
+        state: "FL",
+        postedBy: ADMIN_USER_ID,
+        status: "open",
+      },
+      {
+        id: LEAD_OFFER_IDS.montana,
+        tenantId: TENANT_ID,
+        title: "Montana auto — licensed producers only",
+        details: "Lead in Montana — anyone licensed in Montana? Nonresident OK if appointed. First claim is not an award.",
+        language: null,
+        state: "MT",
+        postedBy: ADMIN_USER_ID,
+        status: "open",
+      },
+    ])
+    .onConflictDoUpdate({
+      target: leadOffers.id,
+      set: {
+        title: sql`excluded.title`,
+        details: sql`excluded.details`,
+        language: sql`excluded.language`,
+        state: sql`excluded.state`,
+        status: "open",
+        awardedTo: null,
+        awardedAt: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(leadOfferClaims)
+    .values([
+      {
+        id: LEAD_OFFER_CLAIM_IDS.frenchMaya,
+        tenantId: TENANT_ID,
+        offerId: LEAD_OFFER_IDS.french,
+        agentId: AGENT_USER_ID,
+        note: "I can take the French call this afternoon.",
+      },
+      {
+        id: LEAD_OFFER_CLAIM_IDS.montanaKen,
+        tenantId: TENANT_ID,
+        offerId: LEAD_OFFER_IDS.montana,
+        agentId: HOME_AGENT_IDS.ken,
+        note: "Nonresident MT license is current.",
+      },
+    ])
+    .onConflictDoUpdate({
+      target: leadOfferClaims.id,
+      set: { note: sql`excluded.note` },
     });
 }
