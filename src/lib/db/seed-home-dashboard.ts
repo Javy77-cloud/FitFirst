@@ -148,6 +148,7 @@ export async function seedHomeDashboard() {
         title: "French-speaking HO shop",
         details:
           "I have a lead that speaks French — anyone want it? Palm Bay referral. Do not create a second Ana. Shop only.",
+        kind: "referral",
         language: "French",
         state: "FL",
         postedBy: ADMIN_USER_ID,
@@ -158,10 +159,33 @@ export async function seedHomeDashboard() {
         tenantId: TENANT_ID,
         title: "Montana auto — licensed producers only",
         details: "Lead in Montana — anyone licensed in Montana? Nonresident OK if appointed. First claim is not an award.",
+        kind: "referral",
         language: null,
         state: "MT",
         postedBy: ADMIN_USER_ID,
         status: "open",
+      },
+      {
+        id: LEAD_OFFER_IDS.inbound,
+        tenantId: TENANT_ID,
+        title: "Unassigned HO inquiry — who owns this?",
+        details:
+          "Shared from the agency inbox. Nobody knows which producer owns the relationship. Maya can claim.",
+        kind: "inbound_email",
+        language: "English",
+        state: "FL",
+        emailFrom: "Renee Colbert <renee.colbert@inbox.local>",
+        emailSubject: "HO quote for a Palm Bay rental",
+        emailSnippet:
+          "Hi — I was referred to your agency for homeowners. Can someone call me this week?",
+        emailBody:
+          "Hi — I was referred to your agency for homeowners on a Palm Bay rental. Can someone call me this week? I am not sure who I spoke with last year.",
+        emailStubId: "inbox-stub-renee-2026-09",
+        postedBy: ADMIN_USER_ID,
+        status: "open",
+        leadId: null,
+        claimedBy: null,
+        claimedAt: null,
       },
     ])
     .onConflictDoUpdate({
@@ -169,14 +193,25 @@ export async function seedHomeDashboard() {
       set: {
         title: sql`excluded.title`,
         details: sql`excluded.details`,
+        kind: sql`excluded.kind`,
         language: sql`excluded.language`,
         state: sql`excluded.state`,
+        emailFrom: sql`excluded.email_from`,
+        emailSubject: sql`excluded.email_subject`,
+        emailSnippet: sql`excluded.email_snippet`,
+        emailBody: sql`excluded.email_body`,
+        emailStubId: sql`excluded.email_stub_id`,
         status: "open",
+        leadId: null,
         awardedTo: null,
         awardedAt: null,
+        claimedBy: null,
+        claimedAt: null,
         updatedAt: new Date(),
       },
     });
+
+  await db.delete(leadOfferClaims).where(eq(leadOfferClaims.offerId, LEAD_OFFER_IDS.inbound));
 
   await db
     .insert(leadOfferClaims)

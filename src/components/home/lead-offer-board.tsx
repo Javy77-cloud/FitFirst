@@ -1,11 +1,18 @@
+import Link from "next/link";
 import { Handshake } from "lucide-react";
-import { awardLeadOffer, claimLeadOffer, postLeadOffer } from "@/app/actions/home-dashboard";
+import { awardLeadOffer, claimLeadOffer, postLeadOffer, takeOwnershipLeadOffer } from "@/app/actions/home-dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { HomeAgentOption, HomeLeadOfferView } from "@/lib/db/queries";
-import { canAwardOffer, canClaimOffer, offerStatusLabel } from "@/lib/home/lead-offers";
+import {
+  canAwardOffer,
+  canClaimOffer,
+  canTakeOwnership,
+  claimRelationLabel,
+  offerStatusLabel,
+} from "@/lib/home/lead-offers";
 
 export function LeadOfferBoard({
   offers,
@@ -26,8 +33,8 @@ export function LeadOfferBoard({
           Management lead offers
         </h3>
         <p className="text-[11px] text-muted-foreground">
-          Desk-wide. Admin posts a lead that needs a language or license. Agents claim it. Admin awards it.
-          Does not create a new person.
+          Desk-wide. Referral: agents raise a hand, Admin awards. Inbound email: share an unassigned
+          inquiry; the agent who knows the relationship takes ownership and the Lead.
         </p>
       </div>
       {offers.length === 0 ? (
@@ -36,19 +43,41 @@ export function LeadOfferBoard({
         <ul className="divide-y divide-border">
           {offers.map((offer) => {
             const claimed = offer.claims.some((claim) => claim.agentId === currentUserId);
+            const inbound = offer.kind === "inbound_email";
             return (
               <li key={offer.id} className="px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-navy">{offer.title}</div>
                     <p className="mt-1 text-[13px] text-muted-foreground">{offer.details}</p>
+                    {inbound ? (
+                      <div className="mt-2 space-y-0.5 text-[12px] text-navy">
+                        {offer.emailFrom ? <p>From {offer.emailFrom}</p> : null}
+                        {offer.emailSubject ? <p>Subject: {offer.emailSubject}</p> : null}
+                        {offer.emailSnippet ? (
+                          <p className="text-muted-foreground">{offer.emailSnippet}</p>
+                        ) : null}
+                        {offer.emailStubId ? (
+                          <p className="text-muted-foreground">Stub {offer.emailStubId}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Posted by {offer.postedByName}
+                      {inbound ? "Inbound email" : "Referral"} · Posted by {offer.postedByName}
                       {offer.language ? ` · ${offer.language}` : ""}
                       {offer.state ? ` · ${offer.state}` : ""}
                       {" · "}
                       {offerStatusLabel(offer.status)}
+                      {offer.claimedByName ? ` by ${offer.claimedByName}` : ""}
                       {offer.awardedToName ? ` to ${offer.awardedToName}` : ""}
+                      {offer.leadId ? (
+                        <>
+                          {" · "}
+                          <Link href={`/leads/${offer.leadId}`} className="text-fit-blue underline">
+                            Open lead
+                          </Link>
+                        </>
+                      ) : null}
                     </p>
                   </div>
                 </div>
@@ -59,14 +88,49 @@ export function LeadOfferBoard({
                     {offer.claims.map((claim) => (
                       <li key={claim.agentId} className="text-navy">
                         <span className="font-medium">{claim.name}</span>
-                        <span className="text-muted-foreground"> wants it</span>
+                        <span className="text-muted-foreground">
+                          {inbound ? " claimed it" : " wants it"}
+                          {claimRelationLabel(claim.relation)
+                            ? ` — ${claimRelationLabel(claim.relation)}`
+                            : ""}
+                        </span>
                         {claim.note ? <span className="text-muted-foreground"> — {claim.note}</span> : null}
                       </li>
                     ))}
                   </ul>
                 )}
                 <div className="mt-2 flex flex-wrap items-end gap-2">
-                  {canClaimOffer(offer.status, claimed) && currentUserId ? (
+                  {canTakeOwnership(offer.status, offer.kind) && currentUserId ? (
+                    <form action={takeOwnershipLeadOffer} className="flex flex-wrap items-end gap-3">
+                      <input type="hidden" name="offerId" value={offer.id} />
+                      <fieldset className="space-y-1">
+                        <legend className="text-xs font-medium">Claim as</legend>
+                        <label className="flex items-center gap-1.5 text-[12px]">
+                          <input type="radio" name="relation" value="know_client" />
+                          I know this client
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[12px]">
+                          <input type="radio" name="relation" value="new_lead" defaultChecked />
+                          New lead
+                        </label>
+                      </fieldset>
+                      <div>
+                        <Label htmlFor={`own-note-${offer.id}`} className="text-xs">
+                          Note
+                        </Label>
+                        <Input
+                          id={`own-note-${offer.id}`}
+                          name="note"
+                          className="mt-1 h-8 w-56"
+                          placeholder="Optional"
+                        />
+                      </div>
+                      <Button type="submit" size="sm">
+                        Take ownership
+                      </Button>
+                    </form>
+                  ) : null}
+                  {canClaimOffer(offer.status, claimed, offer.kind) && currentUserId ? (
                     <form action={claimLeadOffer} className="flex flex-wrap items-end gap-2">
                       <input type="hidden" name="offerId" value={offer.id} />
                       <div>
@@ -88,7 +152,12 @@ export function LeadOfferBoard({
                   {claimed && offer.status === "open" ? (
                     <p className="text-[12px] font-medium text-fit-green">You claimed this. Waiting on Admin.</p>
                   ) : null}
-                  {isAdmin && canAwardOffer(offer.status) ? (
+                  {offer.status === "claimed" && offer.claimedByName ? (
+                    <p className="text-[12px] font-medium text-fit-green">
+                      Claimed by {offer.claimedByName}
+                    </p>
+                  ) : null}
+                  {isAdmin && canAwardOffer(offer.status, offer.kind) ? (
                     <form action={awardLeadOffer} className="flex flex-wrap items-end gap-2">
                       <input type="hidden" name="offerId" value={offer.id} />
                       <div>
@@ -121,53 +190,120 @@ export function LeadOfferBoard({
         </ul>
       )}
       {isAdmin ? (
-        <form action={postLeadOffer} className="space-y-2 border-t border-border px-4 py-3">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Post a lead offer
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label htmlFor="offer-title" className="text-xs">
-                Title
-              </Label>
-              <Input
-                id="offer-title"
-                name="title"
-                required
-                className="mt-1 h-8"
-                placeholder="Lead in Montana — anyone licensed?"
-              />
+        <div className="space-y-4 border-t border-border px-4 py-3">
+          <form action={postLeadOffer} className="space-y-2">
+            <input type="hidden" name="kind" value="referral" />
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Post a language / license offer
             </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="offer-details" className="text-xs">
-                Details
-              </Label>
-              <Textarea
-                id="offer-details"
-                name="details"
-                required
-                rows={2}
-                className="mt-1"
-                placeholder="I have a lead that speaks French — anyone want it?"
-              />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label htmlFor="offer-title" className="text-xs">
+                  Title
+                </Label>
+                <Input
+                  id="offer-title"
+                  name="title"
+                  required
+                  className="mt-1 h-8"
+                  placeholder="Lead in Montana — anyone licensed?"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="offer-details" className="text-xs">
+                  Details
+                </Label>
+                <Textarea
+                  id="offer-details"
+                  name="details"
+                  required
+                  rows={2}
+                  className="mt-1"
+                  placeholder="I have a lead that speaks French — anyone want it?"
+                />
+              </div>
+              <div>
+                <Label htmlFor="offer-language" className="text-xs">
+                  Language
+                </Label>
+                <Input id="offer-language" name="language" className="mt-1 h-8" placeholder="French" />
+              </div>
+              <div>
+                <Label htmlFor="offer-state" className="text-xs">
+                  State
+                </Label>
+                <Input id="offer-state" name="state" className="mt-1 h-8" placeholder="MT" />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="offer-language" className="text-xs">
-                Language
-              </Label>
-              <Input id="offer-language" name="language" className="mt-1 h-8" placeholder="French" />
+            <Button type="submit" size="sm">
+              Post offer
+            </Button>
+          </form>
+          <form action={postLeadOffer} className="space-y-2 border-t border-border pt-3">
+            <input type="hidden" name="kind" value="inbound_email" />
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Share inbound email
             </div>
-            <div>
-              <Label htmlFor="offer-state" className="text-xs">
-                State
-              </Label>
-              <Input id="offer-state" name="state" className="mt-1 h-8" placeholder="MT" />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label htmlFor="email-from" className="text-xs">
+                  From
+                </Label>
+                <Input
+                  id="email-from"
+                  name="emailFrom"
+                  className="mt-1 h-8"
+                  placeholder="Renee Colbert <renee.colbert@inbox.local>"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="email-subject" className="text-xs">
+                  Subject
+                </Label>
+                <Input id="email-subject" name="emailSubject" className="mt-1 h-8" placeholder="HO quote" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="email-snippet" className="text-xs">
+                  Snippet
+                </Label>
+                <Textarea
+                  id="email-snippet"
+                  name="emailSnippet"
+                  rows={2}
+                  className="mt-1"
+                  placeholder="First lines of the inquiry"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="email-body" className="text-xs">
+                  Full body (optional)
+                </Label>
+                <Textarea id="email-body" name="emailBody" rows={3} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="email-stub" className="text-xs">
+                  Email stub id
+                </Label>
+                <Input id="email-stub" name="emailStubId" className="mt-1 h-8" placeholder="inbox-stub-…" />
+              </div>
+              <div>
+                <Label htmlFor="email-language" className="text-xs">
+                  Language
+                </Label>
+                <Input id="email-language" name="language" className="mt-1 h-8" placeholder="English" />
+              </div>
+              <div>
+                <Label htmlFor="email-state" className="text-xs">
+                  State / license
+                </Label>
+                <Input id="email-state" name="state" className="mt-1 h-8" placeholder="FL" />
+              </div>
             </div>
-          </div>
-          <Button type="submit" size="sm">
-            Post offer
-          </Button>
-        </form>
+            <Button type="submit" size="sm">
+              Share on board
+            </Button>
+          </form>
+        </div>
       ) : null}
     </section>
   );

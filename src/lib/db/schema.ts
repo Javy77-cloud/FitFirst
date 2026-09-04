@@ -1883,7 +1883,7 @@ export const contests = pgTable(
   (t) => [index("contests_tenant_idx").on(t.tenantId)],
 );
 
-/** Admin posts a lead for agents to claim. Award assigns the book — no new people. */
+/** Admin posts a referral or shares an inbound email for agents to claim. */
 export const leadOffers = pgTable(
   "lead_offers",
   {
@@ -1891,6 +1891,7 @@ export const leadOffers = pgTable(
     tenantId: tenantCol(),
     title: text("title").notNull(),
     details: text("details").notNull(),
+    kind: text("kind").notNull().default("referral"),
     language: text("language"),
     state: text("state"),
     leadId: uuid("lead_id"),
@@ -1898,6 +1899,13 @@ export const leadOffers = pgTable(
     status: text("status").notNull().default("open"),
     awardedTo: uuid("awarded_to"),
     awardedAt: timestamp("awarded_at", { withTimezone: true }),
+    emailFrom: text("email_from"),
+    emailSubject: text("email_subject"),
+    emailSnippet: text("email_snippet"),
+    emailBody: text("email_body"),
+    emailStubId: text("email_stub_id"),
+    claimedBy: uuid("claimed_by"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [index("lead_offers_tenant_idx").on(t.tenantId, t.status)],
@@ -1913,6 +1921,7 @@ export const leadOfferClaims = pgTable(
       .references(() => leadOffers.id),
     agentId: uuid("agent_id").notNull(),
     note: text("note"),
+    relation: text("relation"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [uniqueIndex("lead_offer_claims_agent_uidx").on(t.tenantId, t.offerId, t.agentId)],

@@ -1,12 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { requireAdminAction, requireSignedInAction } from "@/lib/auth/guards";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { agencySettings, contests, leadOfferClaims, leadOffers, leads, userDashboardPrefs, users } from "@/lib/db/schema";
-import { canAwardOffer, canClaimOffer } from "@/lib/home/lead-offers";
+import { findMatchingLead } from "@/app/actions/crm";
+import { agencySettings, alerts, contests, leadOfferClaims, leadOffers, leads, userDashboardPrefs, users } from "@/lib/db/schema";
+import {
+  canAwardOffer,
+  canClaimOffer,
+  canTakeOwnership,
+  parseEmailFrom,
+  parseLeadOfferKind,
+  parseLeadOfferRelation,
+} from "@/lib/home/lead-offers";
 import {
   HOME_WIDGET_IDS,
   hiddenForPreset,
@@ -18,6 +26,8 @@ import {
 function refreshHome() {
   revalidatePath("/");
   revalidatePath("/settings/agency");
+  revalidatePath("/leads");
+  revalidatePath("/alerts");
 }
 
 export async function saveHomePreset(formData: FormData) {
@@ -115,17 +125,36 @@ async function upsertPrefs(
 export async function postLeadOffer(formData: FormData) {
   const session = await requireAdminAction();
   if (!session.userId) return;
-  const title = String(formData.get("title") ?? "").trim();
-  const details = String(formData.get("details") ?? "").trim();
+  const kind = parseLeadOfferKind(String(formData.get("kind") ?? ""));
   const language = String(formData.get("language") ?? "").trim() || null;
   const state = String(formData.get("state") ?? "").trim().toUpperCase() || null;
+  const emailFrom = String(formData.get("emailFrom") ?? "").trim() || null;
+  const emailSubject = String(formData.get("emailSubject") ?? "").trim() || null;
+  const emailSnippet = String(formData.get("emailSnippet") ?? "").trim() || null;
+  const emailBody = String(formData.get("emailBody") ?? "").trim() || null;
+  const emailStubId = String(formData.get("emailStubId") ?? "").trim() || null;
+  const title =
+    String(formData.get("title") ?? "").trim() ||
+    emailSubject ||
+    (kind === "inbound_email" ? "Inbound email — who owns this?" : "");
+  const details =
+    String(formData.get("details") ?? "").trim() ||
+    emailSnippet ||
+    (kind === "inbound_email" ? "Shared from the agency inbox." : "");
   if (!title || !details) return;
+  if (kind === "inbound_email" && !emailFrom && !emailStubId && !emailSubject) return;
   await db.insert(leadOffers).values({
     tenantId: DEFAULT_TENANT_ID,
     title,
     details,
+    kind,
     language,
     state,
+    emailFrom,
+    emailSubject,
+    emailSnippet,
+    emailBody,
+    emailStubId,
     postedBy: session.userId,
     status: "open",
   });
@@ -142,7 +171,7 @@ export async function claimLeadOffer(formData: FormData) {
     .select()
     .from(leadOffers)
     .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), eq(leadOffers.id, offerId)));
-  if (!offer || !canClaimOffer(offer.status, false)) return;
+  if (!offer || !canClaimOffer(offer.status, false, offer.kind)) return;
   const [existing] = await db
     .select()
     .from(leadOfferClaims)
@@ -163,6 +192,93 @@ export async function claimLeadOffer(formData: FormData) {
   refreshHome();
 }
 
+export async function takeOwnershipLeadOffer(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  const offerId = String(formData.get("offerId") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim() || null;
+  const relation = parseLeadOfferRelation(String(formData.get("relation") ?? "")) ?? "new_lead";
+  if (!offerId) return;
+  const [offer] = await db
+    .select()
+    .from(leadOffers)
+    .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), eq(leadOffers.id, offerId)));
+  if (!offer || !canTakeOwnership(offer.status, offer.kind)) return;
+
+  const now = new Date();
+  const parsed = parseEmailFrom(offer.emailFrom);
+  const identity = {
+    firstName: parsed.firstName,
+    lastName: parsed.lastName,
+    email: parsed.email,
+  };
+  let leadId = offer.leadId;
+  if (leadId) {
+    await db
+      .update(leads)
+      .set({ ownerId: session.userId, updatedAt: now })
+      .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
+  } else {
+    const existing = await findMatchingLead(identity);
+    if (existing) {
+      leadId = existing.id;
+      await db
+        .update(leads)
+        .set({ ownerId: session.userId, updatedAt: now })
+        .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, existing.id)));
+    } else {
+      const [lead] = await db
+        .insert(leads)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          ownerId: session.userId,
+          firstName: identity.firstName,
+          lastName: identity.lastName,
+          email: identity.email,
+          source: "inbound_email",
+          notes: [offer.emailSubject, offer.emailSnippet, offer.emailStubId ? `stub ${offer.emailStubId}` : null]
+            .filter(Boolean)
+            .join(" — "),
+          preferredLanguage: offer.language,
+          state: offer.state,
+          status: "new",
+        })
+        .returning();
+      leadId = lead.id;
+    }
+  }
+
+  await db.insert(leadOfferClaims).values({
+    tenantId: DEFAULT_TENANT_ID,
+    offerId,
+    agentId: session.userId,
+    note,
+    relation,
+  });
+  await db
+    .update(leadOffers)
+    .set({
+      status: "claimed",
+      claimedBy: session.userId,
+      claimedAt: now,
+      leadId,
+      updatedAt: now,
+    })
+    .where(and(eq(leadOffers.id, offer.id), eq(leadOffers.status, "open"), isNull(leadOffers.claimedBy)));
+
+  const relationLabel = relation === "know_client" ? "I know this client" : "New lead";
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "lead_offer",
+    title: `${session.name} claimed inbound email`,
+    body: `${parsed.displayName || `${identity.firstName} ${identity.lastName}`} is now on ${session.name}'s book. ${relationLabel}. Follow-up is theirs.`,
+    severity: "info",
+    entityType: "lead",
+    entityId: leadId,
+  });
+  refreshHome();
+}
+
 export async function awardLeadOffer(formData: FormData) {
   const session = await requireAdminAction();
   const offerId = String(formData.get("offerId") ?? "").trim();
@@ -172,7 +288,7 @@ export async function awardLeadOffer(formData: FormData) {
     .select()
     .from(leadOffers)
     .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), eq(leadOffers.id, offerId)));
-  if (!offer || !canAwardOffer(offer.status)) return;
+  if (!offer || !canAwardOffer(offer.status, offer.kind)) return;
   const [agent] = await db
     .select()
     .from(users)

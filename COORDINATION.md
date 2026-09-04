@@ -490,7 +490,7 @@ Side branch. Additive only. Keeps `--ff-sidebar: #c5ddf4` and the blue/orange to
 - Dashboard presets: My production / Pipeline focus / Retention. Widget settings show/hide cards. Settings → Agency can pin company widgets on agent home.
 - Migration `0021_home_dashboard`. Seed does not add people — only extra producer users, DOB updates on existing contacts, and one contest.
 - Home charts use a punchy blue/orange/teal series (not washed navy/gray). Sidebar stays `#c5ddf4`.
-- Management lead-offer board (`0022_lead_offers`): Admin posts language/state offers, agents claim, Admin awards. Seeded French + Montana stubs. No new people.
+- Management lead-offer board (`0022_lead_offers` + `0031_inbound_lead_offers`): Admin posts language/state referrals (French + Montana stay). Admin can also share an inbound email (from/subject/snippet/stub). Agent Take ownership creates or links a Lead, assigns the agent, posts an in-app alert, and marks Claimed by X. Seeded unassigned Renee Colbert inquiry — Maya can claim. No Ana/Elena/Rosa dupes. No new people.
 
 ## BATCH4 Automations hub (`cursor/automations-hub-4d87`)
 

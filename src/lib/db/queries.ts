@@ -31,7 +31,7 @@ import {
   type DashboardPreset,
   type HomeWidgetId,
 } from "@/lib/home/presets";
-import { parseLeadOfferStatus, type LeadOfferStatus } from "@/lib/home/lead-offers";
+import { parseLeadOfferKind, parseLeadOfferStatus, type LeadOfferKind, type LeadOfferStatus } from "@/lib/home/lead-offers";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { filterByBookScope, type BookScopeOption } from "@/lib/org/book-scope";
 import { resolveBookScope } from "@/lib/org/queries";
@@ -1440,6 +1440,7 @@ export type HomeLeadOfferView = {
   id: string;
   title: string;
   details: string;
+  kind: LeadOfferKind;
   language: string | null;
   state: string | null;
   leadId: string | null;
@@ -1447,7 +1448,14 @@ export type HomeLeadOfferView = {
   postedByName: string;
   awardedToId: string | null;
   awardedToName: string | null;
-  claims: { agentId: string; name: string; note: string | null; createdAt: Date }[];
+  claimedById: string | null;
+  claimedByName: string | null;
+  emailFrom: string | null;
+  emailSubject: string | null;
+  emailSnippet: string | null;
+  emailBody: string | null;
+  emailStubId: string | null;
+  claims: { agentId: string; name: string; note: string | null; relation: string | null; createdAt: Date }[];
 };
 
 export type HomeAgentOption = { id: string; name: string; role: string };
@@ -1589,6 +1597,7 @@ export async function ownerHomeDashboard(bookRaw?: string | null) {
     id: row.id,
     title: row.title,
     details: row.details,
+    kind: parseLeadOfferKind(row.kind),
     language: row.language,
     state: row.state,
     leadId: row.leadId,
@@ -1596,12 +1605,20 @@ export async function ownerHomeDashboard(bookRaw?: string | null) {
     postedByName: names.get(row.postedBy) ?? "Management",
     awardedToId: row.awardedTo,
     awardedToName: row.awardedTo ? names.get(row.awardedTo) ?? "Agent" : null,
+    claimedById: row.claimedBy,
+    claimedByName: row.claimedBy ? names.get(row.claimedBy) ?? "Agent" : null,
+    emailFrom: row.emailFrom,
+    emailSubject: row.emailSubject,
+    emailSnippet: row.emailSnippet,
+    emailBody: row.emailBody,
+    emailStubId: row.emailStubId,
     claims: offerClaimRows
       .filter((claim) => claim.offerId === row.id)
       .map((claim) => ({
         agentId: claim.agentId,
         name: names.get(claim.agentId) ?? "Agent",
         note: claim.note,
+        relation: claim.relation,
         createdAt: claim.createdAt,
       }))
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
