@@ -10,6 +10,7 @@ import {
   FileStack,
   Calendar,
   Home,
+  Phone,
   Kanban,
   ListChecks,
   Search,
@@ -45,7 +46,7 @@ const NAV = [
   { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/alerts", label: "Alerts", icon: Bell },
-  { href: "/phone", label: "Phone", icon: ListChecks },
+  { href: "/phone", label: "Phone", icon: Phone },
   { href: "/settings", label: "Settings", icon: ClipboardList },
 ];
 

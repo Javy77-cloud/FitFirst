@@ -44,6 +44,7 @@ import { seedAutoBook } from "./seed-auto";
 import { seedBookRenewals } from "./seed-book-renewals";
 import { seedCommsDesk } from "./seed-comms";
 import { ensureDefaultLineSubfilters } from "./line-settings";
+import { seedCalendarDesk } from "./seed-calendar";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -277,6 +278,22 @@ export async function seed() {
         website: desk.website,
         agentPortalUrl: desk.agentPortalUrl,
         carrierInfo: desk.carrierInfo,
+        naic: desk.naic ?? null,
+        amBestRating: desk.amBestRating ?? null,
+        underwriterName: desk.underwriterName ?? null,
+        underwriterEmail: desk.underwriterEmail ?? null,
+        underwriterPhone: desk.underwriterPhone ?? null,
+        accountManagerName: desk.accountManagerName ?? null,
+        accountManagerEmail: desk.accountManagerEmail ?? null,
+        accountManagerPhone: desk.accountManagerPhone ?? null,
+        claimsPhone: desk.claimsPhone ?? null,
+        billingPhone: desk.billingPhone ?? null,
+        newBusinessCommPct: desk.newBusinessCommPct ?? null,
+        renewalCommPct: desk.renewalCommPct ?? null,
+        territory: desk.territory ?? null,
+        preferredSubmission: desk.preferredSubmission ?? null,
+        bindingAuthority: desk.bindingAuthority ?? null,
+        appetiteNotes: desk.appetiteNotes ?? null,
         fixtureTag: "fl-ho3-2026-09-02",
         active: true,
       })
@@ -293,6 +310,22 @@ export async function seed() {
           website: desk.website,
           agentPortalUrl: desk.agentPortalUrl,
           carrierInfo: desk.carrierInfo,
+          naic: desk.naic ?? null,
+          amBestRating: desk.amBestRating ?? null,
+          underwriterName: desk.underwriterName ?? null,
+          underwriterEmail: desk.underwriterEmail ?? null,
+          underwriterPhone: desk.underwriterPhone ?? null,
+          accountManagerName: desk.accountManagerName ?? null,
+          accountManagerEmail: desk.accountManagerEmail ?? null,
+          accountManagerPhone: desk.accountManagerPhone ?? null,
+          claimsPhone: desk.claimsPhone ?? null,
+          billingPhone: desk.billingPhone ?? null,
+          newBusinessCommPct: desk.newBusinessCommPct ?? null,
+          renewalCommPct: desk.renewalCommPct ?? null,
+          territory: desk.territory ?? null,
+          preferredSubmission: desk.preferredSubmission ?? null,
+          bindingAuthority: desk.bindingAuthority ?? null,
+          appetiteNotes: desk.appetiteNotes ?? null,
           fixtureTag: "fl-ho3-2026-09-02",
           active: true,
           updatedAt: new Date(),
@@ -438,4 +471,5 @@ export async function seed() {
   await seedBookRenewals();
   await seedCommsDesk();
   await ensureDefaultLineSubfilters();
+  await seedCalendarDesk();
 }

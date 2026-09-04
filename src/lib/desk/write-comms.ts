@@ -28,6 +28,7 @@ export type WriteCommsInput = RelatedRecordIds & {
   occurredAt?: Date | null;
   durationSeconds?: number | null;
   outcome?: string | null;
+  phoneNumber?: string | null;
   id?: string;
   logEmailJob?: boolean;
 };
@@ -74,6 +75,8 @@ export async function writeDeskComms(input: WriteCommsInput) {
       endAt: input.endAt ?? null,
       durationSeconds: input.durationSeconds ?? null,
       outcome: input.outcome ?? null,
+      phoneNumber: input.phoneNumber ?? null,
+      direction,
       assignee: input.assignee ?? null,
       contactId: related.contactId,
       accountId: related.accountId,

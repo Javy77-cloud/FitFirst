@@ -35,8 +35,12 @@ export default async function CarriersPage() {
           <thead>
             <tr>
               <Col table="carriers" col="name" as="th">Carrier</Col>
+              <Col table="carriers" col="naic" as="th">NAIC</Col>
+              <Col table="carriers" col="amBest" as="th">AM Best</Col>
               <Col table="carriers" col="portalLogin" as="th">Portal login</Col>
               <Col table="carriers" col="csPhone" as="th">Customer service</Col>
+              <Col table="carriers" col="uw" as="th">Underwriter</Col>
+              <Col table="carriers" col="comm" as="th">NB / renewal %</Col>
               <Col table="carriers" col="agentPhone" as="th">Agent phone</Col>
               <Col table="carriers" col="website" as="th">Website / portal</Col>
               <Col table="carriers" col="info" as="th">Carrier info</Col>
@@ -49,10 +53,16 @@ export default async function CarriersPage() {
                 <Col table="carriers" col="name">
                   <RecordLink href={`/carriers/${carrier.id}`}>{carrier.name}</RecordLink>
                 </Col>
+                <Col table="carriers" col="naic">{carrier.naic ?? "—"}</Col>
+                <Col table="carriers" col="amBest">{carrier.amBestRating ?? "—"}</Col>
                 <Col table="carriers" col="portalLogin" className="uppercase">
                   {carrier.portalStatus.replaceAll("_", " ")}
                 </Col>
                 <Col table="carriers" col="csPhone">{carrier.customerServicePhone ?? "—"}</Col>
+                <Col table="carriers" col="uw">{carrier.underwriterName ?? "—"}</Col>
+                <Col table="carriers" col="comm">
+                  {[carrier.newBusinessCommPct, carrier.renewalCommPct].filter(Boolean).join(" / ") || "—"}
+                </Col>
                 <Col table="carriers" col="agentPhone">{carrier.agentPhone ?? "—"}</Col>
                 <Col table="carriers" col="website">
                   {carrier.website || carrier.portalUrl ? (

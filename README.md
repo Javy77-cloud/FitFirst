@@ -54,6 +54,12 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 Leads are the person record (name, DOB, contact, address, insurance wanted). Dec / 4-point / wind mit drop lives on **Deals**. Click path and leftover bugs live in `COORDINATION.md`.
 
+Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No live Twilio or SendGrid.
+
+**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, and drag-drop reschedule. Google Calendar stays a stub.
+
+**Phone** is a call log (duration + outcome, attached to Contact / Policy / Deal / Lead / Business). Admin Settings can mark a Twilio / Vonage / BYO trunk as connected — stub only; the agency pays later. Nothing dials.
+
 **Contact record** is Zoho-style: a left jump menu lists Overview, Contact information, Address, Policies, Deals, Businesses, Locations, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Click jumps to that section. There is no typed activity log — work done from the desk (email, SMS, task, meeting, click-to-call) saves onto that contact’s Timeline. Ana stays **Not a client** with **0 policies**. No live Zoho.
 
 **Business record** mirrors that jump layout: Overview, Business information, Address, Policies, Deals, People, Locations, Certificates, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Harbor Key Marine LLC stays **Client** with **GL-HARBOR-2026**.
@@ -99,7 +105,8 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 
 - **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. On Contact and Business the whole Ask block is Admin-only (hidden for agents). Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
 - **Contact / Business Timeline** auto-saves email, SMS, tasks, meetings, and calls done from the desk. No manual “log activity” form on those records.
-- **Click-to-call** writes an in-app Alerts ping and a call row on the record (`/phone` is a stub). No email.
+- **Phone call log** (`/phone`) — duration + outcome, attached like platform auto-activity. Admin **Phone line** settings are a Twilio/BYO stub. No PSTN.
+- **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Alerts** stay in-desk (asks + work-queue pings).
 

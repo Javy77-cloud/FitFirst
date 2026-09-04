@@ -205,14 +205,38 @@ export async function updateCarrierContact(formData: FormData) {
   const { carriers } = await import("@/lib/db/schema");
   const id = str(formData, "carrierId");
   if (!id) return;
+  const written = str(formData, "writtenLines")
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   await db
     .update(carriers)
     .set({
+      naic: str(formData, "naic") || null,
       portalUrl: str(formData, "portalUrl") || null,
+      portalLogin: str(formData, "portalLogin") || null,
       customerServicePhone: str(formData, "customerServicePhone") || null,
       agentPhone: str(formData, "agentPhone") || null,
       website: str(formData, "website") || null,
+      agentPortalUrl: str(formData, "agentPortalUrl") || null,
       carrierInfo: str(formData, "carrierInfo") || null,
+      amBestRating: str(formData, "amBestRating") || null,
+      underwriterName: str(formData, "underwriterName") || null,
+      underwriterEmail: str(formData, "underwriterEmail") || null,
+      underwriterPhone: str(formData, "underwriterPhone") || null,
+      accountManagerName: str(formData, "accountManagerName") || null,
+      accountManagerEmail: str(formData, "accountManagerEmail") || null,
+      accountManagerPhone: str(formData, "accountManagerPhone") || null,
+      claimsPhone: str(formData, "claimsPhone") || null,
+      billingPhone: str(formData, "billingPhone") || null,
+      newBusinessCommPct: str(formData, "newBusinessCommPct") || null,
+      renewalCommPct: str(formData, "renewalCommPct") || null,
+      territory: str(formData, "territory") || null,
+      preferredSubmission: str(formData, "preferredSubmission") || null,
+      bindingAuthority: str(formData, "bindingAuthority") || null,
+      appetiteNotes: str(formData, "appetiteNotes") || null,
+      dontWriteNotes: str(formData, "dontWriteNotes") || null,
+      writtenLines: written.length ? written : undefined,
       updatedAt: new Date(),
     })
     .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, id)));

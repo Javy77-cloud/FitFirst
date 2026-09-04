@@ -10,6 +10,7 @@ import {
   clientHistory,
   contacts,
   deals,
+  leads,
   policies,
   users,
 } from "./schema";
@@ -34,9 +35,9 @@ export async function getBusiness(id: string) {
 }
 
 export async function listRelatedOptions() {
-  const [contactRows, dealRows, policyRows, businessRows, userRows] = await Promise.all([
+  const [contactRows, dealRows, policyRows, businessRows, leadRows, userRows] = await Promise.all([
     db
-      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName })
+      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName, phone: contacts.phone })
       .from(contacts)
       .where(eq(contacts.tenantId, tenant()))
       .orderBy(contacts.lastName),
@@ -55,6 +56,11 @@ export async function listRelatedOptions() {
       .from(accounts)
       .where(eq(accounts.tenantId, tenant()))
       .orderBy(accounts.name),
+    db
+      .select({ id: leads.id, firstName: leads.firstName, lastName: leads.lastName })
+      .from(leads)
+      .where(eq(leads.tenantId, tenant()))
+      .orderBy(leads.lastName),
     listDeskUsers(),
   ]);
   return {
@@ -62,6 +68,7 @@ export async function listRelatedOptions() {
     deals: dealRows,
     policies: policyRows,
     businesses: businessRows,
+    leads: leadRows,
     users: userRows,
   };
 }
