@@ -330,6 +330,13 @@
       "when": 1788554000000,
       "tag": "0046_merge_schema_align",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1788555000000,
+      "tag": "0047_commission_split",
+      "breakpoints": true
     }
   ]
 }
