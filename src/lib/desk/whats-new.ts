@@ -9,6 +9,12 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+    id: "policy-versions",
+    title: "Policy change history",
+    body: "Policy records keep who changed which field, when, and the value before / after. Deal and Policy attachments keep prior copies when you replace a file.",
+    date: "2026-09-04",
+  },
+  {
     id: "eo-compliance",
     title: "E&O Compliance desk",
     body: "Admin Compliance holds an append-only client-interaction trail and simple gap flags. Alerts stay in-app — nothing emails Javy.",

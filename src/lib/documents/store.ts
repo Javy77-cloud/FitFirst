@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
+import { recordInitialDocumentVersion } from "./version-store";
 
 export const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -46,5 +47,6 @@ export async function persistDealFile(input: {
       },
     })
     .returning();
+  if (doc) await recordInitialDocumentVersion(doc);
   return doc;
 }

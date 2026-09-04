@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
-import { documents, type Document } from "@/lib/db/schema";
+import { documents, documentVersions, type Document, type DocumentVersion } from "@/lib/db/schema";
 import {
   contentDisposition,
   resolveFileMime,
@@ -22,6 +22,26 @@ export async function getDeskDocument(id: string): Promise<Document | null> {
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, id)));
   return doc ?? null;
+}
+
+export async function getDeskDocumentVersion(
+  documentId: string,
+  versionId: string,
+): Promise<{ doc: Document; version: DocumentVersion } | null> {
+  const doc = await getDeskDocument(documentId);
+  if (!doc || !isUuid(versionId)) return null;
+  const [version] = await db
+    .select()
+    .from(documentVersions)
+    .where(
+      and(
+        eq(documentVersions.tenantId, DEFAULT_TENANT_ID),
+        eq(documentVersions.id, versionId),
+        eq(documentVersions.documentId, documentId),
+      ),
+    );
+  if (!version) return null;
+  return { doc, version };
 }
 
 function resolveStoredPath(storagePath: string): string | null {
@@ -80,12 +100,52 @@ export async function serveDeskDocument(
   id: string,
   opts: {
     download?: boolean;
+    versionId?: string | null;
     actorId?: string | null;
     actorName?: string | null;
   } = {},
 ): Promise<Response> {
   const doc = await getDeskDocument(id);
   if (!doc) return new Response("Not found", { status: 404 });
+  if (opts.versionId) {
+    const hit = await getDeskDocumentVersion(id, opts.versionId);
+    if (!hit) return new Response("Not found", { status: 404 });
+    await writeEoAuditSafe({
+      action: "doc_view",
+      summary: `${opts.download ? "Downloaded" : "Viewed"} ${hit.version.filename} (prior version)`,
+      actorId: opts.actorId,
+      actorName: opts.actorName,
+      entityType: "document",
+      entityId: doc.id,
+      contactId: doc.contactId,
+      accountId: doc.accountId,
+      policyId: doc.policyId,
+      dealId: doc.dealId,
+      documentId: doc.id,
+      meta: {
+        filename: hit.version.filename,
+        download: Boolean(opts.download),
+        docType: hit.version.docType,
+        slot: doc.slot,
+        versionId: hit.version.id,
+      },
+    });
+    const file = await loadDocumentBytes({
+      ...doc,
+      filename: hit.version.filename,
+      mimeType: hit.version.mimeType,
+      storagePath: hit.version.storagePath,
+      docType: hit.version.docType,
+    });
+    return new Response(file.bytes, {
+      headers: {
+        "Content-Type": file.mimeType,
+        "Content-Disposition": contentDisposition(file.filename, Boolean(opts.download)),
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  }
   await writeEoAuditSafe({
     action: "doc_view",
     summary: `${opts.download ? "Downloaded" : "Viewed"} ${doc.filename}`,

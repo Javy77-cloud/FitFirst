@@ -60,6 +60,7 @@ export default async function DealPage({
     deal,
     risk,
     docs,
+    fileVersions,
     fields,
     quotes,
     logs,
@@ -234,6 +235,7 @@ export default async function DealPage({
                     email={contact?.email ?? account?.email}
                     phone={contact?.phone ?? account?.phone}
                     docs={docs}
+                    versions={fileVersions}
                     fields={fields}
                     quotingForm={deal.quotingForm}
                     sheetValues={activeSheet?.values ?? null}

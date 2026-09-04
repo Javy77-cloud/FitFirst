@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
+import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -45,6 +46,13 @@ export async function attachPolicyFiles(formData: FormData) {
       docType: categories[index] || "other",
       slot: "policy_file",
       status: "uploaded",
+    });
+    await recordInitialDocumentVersion({
+      id,
+      filename: file.name,
+      mimeType: file.type || "application/octet-stream",
+      storagePath,
+      docType: categories[index] || "other",
     });
     index += 1;
   }

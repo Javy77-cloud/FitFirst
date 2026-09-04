@@ -672,6 +672,16 @@ Merged onto `cursor/mac-ready-batch4-7pm`. No new migration. Ana fixture untouch
 - **Closed Won one-click bind:** Deal header form replaced with Personal · Contact + Policy vs Commercial · Business + Policy. After bind, the path sentence names the Contact/Business and Policy. Quotes stay quotes.
 - **Master sheet → Fill labels:** Documents stepper is Drop source docs → Choose quoting line → Fill master sheet → Glance yellow / CHECK → Approve, then Send to Fill. Handoff buttons: Copy master sheet / Send master sheet to Fill / Open Fill window. Zero rekey — Fill reads the approved sheet, never the PDF.
 
+## Policy version history + document versions (`cursor/policy-version-history-aa85`)
+
+DIFF G merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_policy_doc_versions` remapped to `0042_policy_doc_versions`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. Elena document IDs remapped off pack E quote/proposal `…4e1`–`…4e3`.
+
+- `policy_change_logs`: who / when / field / before / after on Policy. Sources: bind, record edit, endorsement, cancellation, non-renewal, seed.
+- Save policy (`updatePolicyRecord`), bind, and `filePolicyChange` write field diffs.
+- `document_versions` on Deal and Policy attachments. Replace keeps the prior file. Current `documents` row stays the latest.
+- UI: Policy **Change history** timeline. Deal Documents and Policy Attachments show version + Replace.
+- Seeded on Elena `HO3-ELENA-2026`: bind bound → active, premium 3120 → 2840, billing monthly → annual (Maya). Wind mit and policy dec each keep a prior copy. No Ana rows.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0041**. Diff H added no migration. Next free additive migration is **0042**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running bots (routing, version history, commission, portal). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0042**. Diff H added no migration. Next free additive migration is **0043**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running bots (routing, commission, portal). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

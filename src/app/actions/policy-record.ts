@@ -9,6 +9,7 @@ import { addUtcDays, DESK_AS_OF } from "@/lib/home/as-of";
 import { inferLineFamily, isOepLine, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
 import {
   commissionFamilyFromInsurance,
+  defaultTermForFamily,
   expirationFromTerm,
   insuranceFamilyFromPolicy,
   lineOfBusinessForFamily,
@@ -19,6 +20,8 @@ import { partyLabel } from "@/lib/desk/policy-name";
 import { toNumber } from "@/lib/commissions/math";
 import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { currentDeskSession } from "@/lib/auth/session";
+import { withHistoryDefaults } from "@/lib/policy/change-log";
+import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -58,40 +61,61 @@ export async function updatePolicyRecord(formData: FormData) {
   const faceAmount = str(formData, "faceAmount");
   const sameAsMailing = str(formData, "insuredSameAsMailing") === "on" || str(formData, "insuredSameAsMailing") === "true";
 
+  const next = {
+    status: str(formData, "status") || existing.status,
+    lineOfBusiness:
+      str(formData, "lineOfBusiness") ||
+      lineOfBusinessForFamily(insuranceType, policyType, subType) ||
+      existing.lineOfBusiness,
+    policyNumber: str(formData, "policyNumber") || existing.policyNumber,
+    premium: premium === "" ? existing.premium : premium,
+    billingFrequency: str(formData, "billingFrequency") || existing.billingFrequency,
+    effectiveDate,
+    expirationDate,
+    renewalDate,
+    oepStart,
+    commissionFamily: family,
+    sellingAgency: str(formData, "sellingAgency") || existing.sellingAgency,
+    policySubType: subType,
+    insuranceType,
+    policyType,
+    policyTerm,
+    faceAmount: faceAmount === "" ? existing.faceAmount : faceAmount,
+    insuredSameAsMailing: sameAsMailing,
+    insuredCount,
+    commission4Pct: commission4 || null,
+    producer: str(formData, "producer") || null,
+    formType: str(formData, "formType") || policyType || existing.formType,
+    premisesAddress: str(formData, "premisesAddress") || existing.premisesAddress,
+    premisesCity: str(formData, "premisesCity") || existing.premisesCity,
+    premisesState: str(formData, "premisesState") || existing.premisesState,
+    premisesZip: str(formData, "premisesZip") || existing.premisesZip,
+  };
+
   await db
     .update(policies)
     .set({
-      status: str(formData, "status") || existing.status,
-      lineOfBusiness:
-        str(formData, "lineOfBusiness") ||
-        lineOfBusinessForFamily(insuranceType, policyType, subType) ||
-        existing.lineOfBusiness,
-      policyNumber: str(formData, "policyNumber") || existing.policyNumber,
-      premium: premium === "" ? existing.premium : premium,
-      billingFrequency: str(formData, "billingFrequency") || existing.billingFrequency,
-      effectiveDate,
-      expirationDate,
-      renewalDate,
-      oepStart,
-      commissionFamily: family,
-      sellingAgency: str(formData, "sellingAgency") || existing.sellingAgency,
-      policySubType: subType,
-      insuranceType,
-      policyType,
-      policyTerm,
-      faceAmount: faceAmount === "" ? existing.faceAmount : faceAmount,
-      insuredSameAsMailing: sameAsMailing,
-      insuredCount,
-      commission4Pct: commission4 || null,
-      producer: str(formData, "producer") || null,
-      formType: str(formData, "formType") || policyType || existing.formType,
-      premisesAddress: str(formData, "premisesAddress") || existing.premisesAddress,
-      premisesCity: str(formData, "premisesCity") || existing.premisesCity,
-      premisesState: str(formData, "premisesState") || existing.premisesState,
-      premisesZip: str(formData, "premisesZip") || existing.premisesZip,
+      ...next,
       updatedAt: new Date(),
     })
     .where(eq(policies.id, id));
+
+  const shownFamily = insuranceFamilyFromPolicy(existing);
+  await recordPolicyFieldChanges({
+    policyId: id,
+    before: withHistoryDefaults(existing, {
+      insuranceType: shownFamily,
+      commissionFamily:
+        existing.commissionFamily ||
+        commissionFamilyFromInsurance(shownFamily, existing.policySubType) ||
+        inferLineFamily(existing.lineOfBusiness, existing.commissionFamily, existing.policySubType),
+      insuredCount: existing.insuredCount ?? 1,
+      billingFrequency: existing.billingFrequency || "annual",
+      policyTerm: existing.policyTerm || defaultTermForFamily(shownFamily),
+    }),
+    after: { ...existing, ...next },
+    source: "record_edit",
+  });
 
   const session = await currentDeskSession();
   await writeEoAuditSafe({

@@ -256,6 +256,31 @@ export const PENDING_MFA_USER_ID = "44444444-4444-4444-8444-4444444444f2";
 export const PENDING_MFA_INVITE = "invite-nora-pending-mfa-desk";
 export const ADMIN_NAME = "Javy Rivera";
 export const AGENT_NAME = "Maya Chen";
+
+/** Policy + document versions on Elena. Off pack E quote/proposal …4e1–4e3 and quote PDF …4d1/4d2. */
+export const ELENA_DOC_DEC_ID = "b0421111-b042-4042-8042-b04211111101";
+export const ELENA_DOC_WIND_ID = "b0421111-b042-4042-8042-b04211111102";
+export const ELENA_DOC_POLICY_DEC_ID = "b0421111-b042-4042-8042-b04211111103";
+export const ELENA_DOC_POLICY_ID_CARD_ID = "b0421111-b042-4042-8042-b04211111104";
+
+export const POLICY_CHANGE_LOG_IDS = {
+  bindStatus: "b0361111-b036-4036-8036-b03611111101",
+  activateStatus: "b0361111-b036-4036-8036-b03611111102",
+  policyNumber: "b0361111-b036-4036-8036-b03611111103",
+  premium: "b0361111-b036-4036-8036-b03611111104",
+  billing: "b0361111-b036-4036-8036-b03611111105",
+} as const;
+
+export const DOCUMENT_VERSION_IDS = {
+  decV1: "b0361111-b036-4036-8036-b03622222201",
+  windV1: "b0361111-b036-4036-8036-b03622222202",
+  windV2: "b0361111-b036-4036-8036-b03622222203",
+  quoteAiV1: "b0361111-b036-4036-8036-b03622222204",
+  quoteTrV1: "b0361111-b036-4036-8036-b03622222205",
+  polDecV1: "b0361111-b036-4036-8036-b03622222206",
+  polDecV2: "b0361111-b036-4036-8036-b03622222207",
+  polIdV1: "b0361111-b036-4036-8036-b03622222208",
+} as const;
 /** Extra producers for the home leaderboard — not clients. Off 401–403 owner block. */
 export const HOME_AGENT_IDS = {
   luis: "b0b00000-0000-4000-8000-0000000000d1",

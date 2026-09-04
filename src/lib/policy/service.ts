@@ -18,6 +18,7 @@ import { reasonLabel } from "./reasons";
 import { isInForceStatus } from "./status";
 import { applyPolicyChange, parseIsoDate, type PolicyChangeInput } from "./workflow";
 import { writeEoAuditSafe } from "@/lib/eo-audit/write";
+import { recordPolicyFieldChanges } from "./record-changes";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -114,6 +115,27 @@ export async function filePolicyChange(input: FilePolicyChangeInput) {
     eventType: drafted.event.kind,
     body: drafted.event.summary,
     occurredAt: drafted.event.effectiveDate,
+  });
+
+  await recordPolicyFieldChanges({
+    policyId: policy.id,
+    before: {
+      status: policy.status,
+      coverageA: policy.coverageA,
+      premium: policy.premium,
+      endedAt: policy.endedAt,
+      endReason: policy.endReason,
+    },
+    after: {
+      status: drafted.policy.status,
+      coverageA: drafted.policy.coverageA,
+      premium: drafted.policy.premium,
+      endedAt: drafted.policy.endedAt,
+      endReason: drafted.policy.endReason,
+    },
+    source: drafted.event.kind,
+    eventId: event.id,
+    changedAt: drafted.event.effectiveDate,
   });
 
   if (!isInForceStatus(drafted.policy.status)) {

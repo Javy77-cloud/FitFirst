@@ -4,13 +4,15 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator + Diff H gaps/bind)
+**Mac desk-test branch:** `cursor/mac-ready-batch4-7pm` (DIFF WAVE-1 consolidator + Diff H gaps/bind + Diff G version history)
 
-**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), and Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
+**DIFF WAVE-1 (this branch):** Producer scorecards + Glance, E&O (`0036`), campaigns (`0037`), quote compare + video (`0038`), hit/lost proposals (`0039`), Claims FNOL (`0040`), Open API + CSV export (`0041_api_tokens`), Diff H coverage gaps + Closed Won bind path (`cursor/diff-h-coverage-bind-fill-9bd3`, no migration), and Diff G policy + document version timelines (`cursor/policy-version-history-aa85`, incoming `0036` remapped to `0042_policy_doc_versions`). Ana stays unbound at Cov A **$321,000**. `bindDeal` refuses that shop. Sidebar `#c5ddf4`. One Pipeline. Alerts off the sidebar.
 
-**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0042**. See `COORDINATION.md`.
+**Wave 2 merged:** Deal quote PDF view / email / SMS / print (`cursor/deal-docs-pdf-view-ba1b`), DOC → master sheet fill (`cursor/doc-master-sheet-fill-1202`, `0034_fill_feedback`), and Fill Learning (`cursor/fill-learning-log-efeb`, incoming `0021` renumbered to `0035_fill_learning_logs`). Next free migration is **0043**. See `COORDINATION.md`.
 
 **DIFF H:** Rule-based coverage-gap English on Contact / Business / Deal (auto-no-home, flood, umbrella, GL-no-WC — in-force only). Deal quote compare explains cheapest / deductibles / bindable in English. Closed Won is one-click **Contact + Policy** or **Business + Policy**. Documents stepper labels the master sheet → Fill path (zero rekey). Ana stays unbound at Cov A **$321,000**; `bindDeal` refuses that shop.
+
+**Policy change history + document versions (DIFF G):** Policy records keep a field-level timeline (who / when / before / after) on bind, Save policy, and endorsement / cancel. Deal and Policy attachments keep prior copies when you replace a file. Seeded on Elena `HO3-ELENA-2026` (wind mit + issued dec have a prior version). Ana stays unbound. Incoming `0036_policy_doc_versions` remapped to `0042_policy_doc_versions`.
 
 **Batch 4 carrier portal credentials:** Admin-only quoting-portal username + password, AES-256-GCM at rest (`CARRIER_SECRETS_KEY` or `PII_ENCRYPTION_KEY`). Agency code and portal URL stay visible to Agents for quoting. Seeded demo logins: American Traditions (`FF-AT-1048`) and People's Trust (`FF-PT-2201`). Agents never see, reveal, or edit the password. Quote handoff readiness is an Admin stub — Chrome Fill already exists separately. Ana stays unbound at Cov A **$321,000**.
 

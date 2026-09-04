@@ -59,6 +59,7 @@ import {
   contacts,
   deals,
   documents,
+  documentVersions,
   emailSendJobs,
   emailTemplates,
   emailTriggers,
@@ -75,6 +76,7 @@ import {
   pipelineStages,
   pipelines,
   policies,
+  policyChangeLogs,
   policyTerms,
   extractionJobs,
   fillFeedbackLogs,
@@ -902,6 +904,25 @@ export async function getPolicyRecord(id: string) {
   return { actor, ...row, commissions: commissionRows };
 }
 
+export async function listPolicyChangeLogs(policyId: string) {
+  if (!isUuid(policyId)) return [];
+  return db
+    .select()
+    .from(policyChangeLogs)
+    .where(and(eq(policyChangeLogs.tenantId, tenant()), eq(policyChangeLogs.policyId, policyId)))
+    .orderBy(desc(policyChangeLogs.changedAt), desc(policyChangeLogs.createdAt));
+}
+
+export async function listDocumentVersionsForIds(documentIds: string[]) {
+  const ids = documentIds.filter((id) => isUuid(id));
+  if (ids.length === 0) return [];
+  return db
+    .select()
+    .from(documentVersions)
+    .where(and(eq(documentVersions.tenantId, tenant()), inArray(documentVersions.documentId, ids)))
+    .orderBy(desc(documentVersions.versionNumber));
+}
+
 export async function getPolicyWorkspace(id: string) {
   if (!isUuid(id)) return null;
   const [row] = await db
@@ -926,6 +947,8 @@ export async function getPolicyWorkspace(id: string) {
     .from(documents)
     .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, id)))
     .orderBy(desc(documents.createdAt));
+  const fileVersions = await listDocumentVersionsForIds(files.map((file) => file.id));
+  const changeLogs = await listPolicyChangeLogs(id);
   const [risk] = row.policy.riskId
     ? await db.select().from(risks).where(eq(risks.id, row.policy.riskId))
     : row.policy.dealId
@@ -950,6 +973,8 @@ export async function getPolicyWorkspace(id: string) {
     ...row,
     risk: risk ?? null,
     files,
+    fileVersions,
+    changeLogs,
     timeline: await listActivityTimeline({ policyId: id }),
     comms: await listCommsForRecord({ policyId: id }),
     terms,
@@ -1106,6 +1131,7 @@ export async function getDealWorkspace(dealId: string) {
     .from(documents)
     .where(and(eq(documents.tenantId, tenant()), eq(documents.dealId, dealId)))
     .orderBy(desc(documents.createdAt));
+  const fileVersions = await listDocumentVersionsForIds(docs.map((doc) => doc.id));
 
   const fields = risk
     ? await db
@@ -1182,6 +1208,7 @@ export async function getDealWorkspace(dealId: string) {
     deal,
     risk,
     docs,
+    fileVersions,
     fields,
     quotes: dealQuotes,
     logs,

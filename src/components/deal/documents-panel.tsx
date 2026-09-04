@@ -23,6 +23,8 @@ import { filePreviewHref, isProposalAttachment, isQuoteAttachment } from "@/lib/
 import { isProposalDoc } from "@/lib/proposals/store";
 import { quotingFormById } from "@/lib/quoting/forms";
 import { MASTER_TO_FILL_STEPS, fillPathStepIndex } from "@/lib/quoting/fill-path";
+import { DocumentVersions } from "@/components/documents/document-versions";
+import { groupVersionsByDocument, type DocumentVersionRow } from "@/lib/documents/versions";
 import { DocFileActions } from "./doc-file-actions";
 import { QuotingLinePicker } from "./quoting-line-picker";
 import { FillSubmitButton } from "./fill-progress";
@@ -45,6 +47,7 @@ export function DocumentsPanel({
   email,
   phone,
   docs,
+  versions = [],
   fields,
   quotingForm,
   sheetValues,
@@ -61,6 +64,7 @@ export function DocumentsPanel({
   email?: string | null;
   phone?: string | null;
   docs: Document[];
+  versions?: DocumentVersionRow[];
   fields: ExtractedFieldRow[];
   quotingForm?: string | null;
   sheetValues?: Record<string, QuoteSheetFieldValue> | null;
@@ -84,6 +88,7 @@ export function DocumentsPanel({
       d.docType !== "signed_app",
   );
   const comms: FileComms = { contactId, accountId, email, phone };
+  const versionsByDoc = groupVersionsByDocument(versions);
   const form = quotingFormById(quotingForm ?? "");
   const lastJob = jobs[0];
   const failedJobs = jobs.filter((job) => job.status === "failed");
@@ -202,7 +207,13 @@ export function DocumentsPanel({
                 <FillSubmitButton label="Sample 4-point" pendingLabel="Filling…" variant="outline" />
               </form>
             </div>
-            <DocTable docs={sourceDocs} dealId={dealId} comms={comms} empty="No source documents yet." />
+            <DocTable
+              docs={sourceDocs}
+              dealId={dealId}
+              comms={comms}
+              versionsByDoc={versionsByDoc}
+              empty="No source documents yet."
+            />
           </section>
 
           <section className="ff-card p-4">
@@ -256,7 +267,13 @@ export function DocumentsPanel({
                 Attach quote PDF
               </Button>
             </form>
-            <DocTable docs={quotePdfs} dealId={dealId} comms={comms} empty="No issued quote PDFs yet." />
+            <DocTable
+              docs={quotePdfs}
+              dealId={dealId}
+              comms={comms}
+              versionsByDoc={versionsByDoc}
+              empty="No issued quote PDFs yet."
+            />
           </section>
 
           <section className="ff-card p-4">
@@ -297,7 +314,13 @@ export function DocumentsPanel({
                 Attach signed app
               </Button>
             </form>
-            <DocTable docs={signedApps} dealId={dealId} comms={comms} empty="No signed apps yet." />
+            <DocTable
+              docs={signedApps}
+              dealId={dealId}
+              comms={comms}
+              versionsByDoc={versionsByDoc}
+              empty="No signed apps yet."
+            />
           </section>
         </div>
 
@@ -427,11 +450,13 @@ function DocTable({
   docs,
   dealId,
   comms,
+  versionsByDoc,
   empty,
 }: {
   docs: Document[];
   dealId: string;
   comms: FileComms;
+  versionsByDoc: Map<string, DocumentVersionRow[]>;
   empty: string;
 }) {
   if (docs.length === 0) {
@@ -478,6 +503,12 @@ function DocTable({
                     </Button>
                   </form>
                 ) : null}
+                <DocumentVersions
+                  documentId={doc.id}
+                  versions={versionsByDoc.get(doc.id) ?? []}
+                  dealId={dealId}
+                  policyId={doc.policyId}
+                />
               </div>
             </td>
           </tr>

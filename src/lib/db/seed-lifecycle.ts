@@ -26,6 +26,10 @@ import {
   ELENA_CALL_ID,
   ELENA_CONTACT_ID,
   ELENA_DEAL_ID,
+  ELENA_DOC_DEC_ID,
+  ELENA_DOC_POLICY_DEC_ID,
+  ELENA_DOC_POLICY_ID_CARD_ID,
+  ELENA_DOC_WIND_ID,
   ELENA_LEAD_ID,
   ELENA_LOCATION_ID,
   ELENA_MEETING_ID,
@@ -444,6 +448,7 @@ export async function seedLifecycleDemo() {
       expirationDate: new Date("2027-09-01T05:00:00.000Z"),
       premium: "2840.00",
       coverageA: 385000,
+      billingFrequency: "annual",
       premisesAddress: "412 Harbor Isle Dr",
       premisesCity: "Melbourne",
       premisesState: "FL",
@@ -457,6 +462,7 @@ export async function seedLifecycleDemo() {
         status: "active",
         premium: "2840.00",
         coverageA: 385000,
+        billingFrequency: "annual",
         premisesAddress: "412 Harbor Isle Dr",
         premisesCity: "Melbourne",
         premisesState: "FL",
@@ -591,6 +597,7 @@ export async function seedLifecycleDemo() {
   await db.delete(documents).where(eq(documents.dealId, ELENA_DEAL_ID));
   await db.insert(documents).values([
     {
+      id: ELENA_DOC_DEC_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
@@ -603,6 +610,7 @@ export async function seedLifecycleDemo() {
       status: "extracted",
     },
     {
+      id: ELENA_DOC_WIND_ID,
       tenantId: TENANT_ID,
       riskId: ELENA_RISK_ID,
       dealId: ELENA_DEAL_ID,
@@ -667,6 +675,7 @@ export async function seedLifecycleDemo() {
       status: "attached",
     },
     {
+      id: ELENA_DOC_POLICY_DEC_ID,
       tenantId: TENANT_ID,
       dealId: ELENA_DEAL_ID,
       policyId: ELENA_POLICY_ID,
@@ -679,6 +688,7 @@ export async function seedLifecycleDemo() {
       status: "uploaded",
     },
     {
+      id: ELENA_DOC_POLICY_ID_CARD_ID,
       tenantId: TENANT_ID,
       dealId: ELENA_DEAL_ID,
       policyId: ELENA_POLICY_ID,
