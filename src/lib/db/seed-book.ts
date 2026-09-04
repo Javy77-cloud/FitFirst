@@ -29,6 +29,7 @@ import {
   LEAD_ID,
   OPP_CONTACT_IDS,
   OPP_POLICY_IDS,
+  PIPELINE_PC_ID,
   TENANT_ID,
 } from "../fixtures/ids";
 import { db } from "./index";
@@ -732,6 +733,7 @@ export async function seedUsersAndBook() {
       lineOfBusiness: "HO",
       pipelineStage: "shopping",
       pipelineStageSlug: "gather",
+      pipelineId: PIPELINE_PC_ID,
       state: "FL",
       ownerId: AGENT_USER_ID,
       notes: "Maya Chen producer shop. Not Ana. Do not bind Ana from this row.",
@@ -741,6 +743,7 @@ export async function seedUsersAndBook() {
       set: {
         contactId: DEMO_CONTACT_SHAH,
         title: "Shah · Orlando HO (Maya book)",
+        pipelineId: PIPELINE_PC_ID,
         ownerId: AGENT_USER_ID,
         notes: "Maya Chen producer shop. Not Ana. Do not bind Ana from this row.",
         updatedAt: new Date(),

@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Access branch:** `cursor/admin-agent-access-74e5` (from `cursor/list-hydrate-fix-46dc`)
 
-Login is required. Middleware plus session guards enforce Admin vs Agent — not CSS. Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
+Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS. Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
 
