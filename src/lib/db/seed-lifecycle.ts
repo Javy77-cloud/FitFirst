@@ -1,6 +1,7 @@
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
+import { writeSsn } from "@/lib/pii/write";
 import { db } from "./index";
 import {
   accounts,
@@ -157,6 +158,7 @@ export async function seedLifecycleDemo() {
       tenureStart: new Date("2026-09-01T15:00:00.000Z"),
       policyCount: 1,
       activePolicyCount: 1,
+      ...writeSsn("000-00-4444"),
       notes:
         "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
     })
@@ -174,6 +176,7 @@ export async function seedLifecycleDemo() {
         tenureStart: new Date("2026-09-01T15:00:00.000Z"),
         policyCount: 1,
         activePolicyCount: 1,
+        ...writeSsn("000-00-4444"),
         notes:
           "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
         updatedAt: new Date(),

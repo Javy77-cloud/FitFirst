@@ -51,7 +51,10 @@ import {
   contactFieldsFromSheet,
   isSameAccount,
   isSameContact,
+  normalizeEin,
 } from "@/lib/wire/match-party";
+import { writeEin, writeSsn } from "@/lib/pii/write";
+import { piiLookupHash } from "@/lib/pii/vault";
 import { nextMorning } from "@/lib/wire/pipeline";
 import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
 
@@ -549,7 +552,14 @@ export async function findMatchingContact(input: {
 
 export async function findMatchingAccount(input: { name: string; ein?: string | null }) {
   const rows = await db.select().from(accounts).where(eq(accounts.tenantId, DEFAULT_TENANT_ID));
-  return rows.find((row) => isSameAccount(row, input)) ?? null;
+  const incomingNorm = normalizeEin(input.ein);
+  const incomingHash = incomingNorm ? piiLookupHash(incomingNorm) : null;
+  return (
+    rows.find((row) => {
+      if (incomingHash && row.einLookup && incomingHash === row.einLookup) return true;
+      return isSameAccount({ name: row.name, ein: row.ein }, input);
+    }) ?? null
+  );
 }
 
 export async function createContact(formData: FormData) {
@@ -568,6 +578,7 @@ export async function createContact(formData: FormData) {
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
       notes: str(formData, "notes") || null,
+      ...writeSsn(str(formData, "ssn") || null),
     })
     .returning();
   revalidatePath("/contacts");
@@ -642,7 +653,7 @@ export async function bindDeal(formData: FormData) {
         .values({
           tenantId: DEFAULT_TENANT_ID,
           name: copied.name,
-          ein: copied.ein,
+          ...writeEin(copied.ein),
           email: copied.email,
           phone: copied.phone,
           mailingAddress: copied.mailingAddress,

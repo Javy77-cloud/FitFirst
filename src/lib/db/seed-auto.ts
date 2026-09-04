@@ -1,4 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
+import { writeLicense } from "@/lib/pii/write";
 import { db } from "./index";
 import {
   carriers,
@@ -302,7 +303,7 @@ export async function seedAutoBook() {
       firstName: "Rafael",
       lastName: "Soto",
       dateOfBirth: "1984-06-18",
-      licenseNumber: "S400123846180",
+      ...writeLicense("S400123846180"),
       licenseState: "FL",
       sortOrder: 0,
     },

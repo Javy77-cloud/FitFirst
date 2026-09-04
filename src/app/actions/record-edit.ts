@@ -6,6 +6,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { db } from "@/lib/db";
 import { accounts, contacts, leads } from "@/lib/db/schema";
+import { replaceEin, replaceSsn } from "@/lib/pii/write";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -32,6 +33,11 @@ export async function updateContactRecord(formData: FormData) {
       state: str(formData, "state") || existing.state,
       zip: str(formData, "zip") || existing.zip,
       dateOfBirth: str(formData, "dateOfBirth") || existing.dateOfBirth,
+      ...replaceSsn(str(formData, "ssn"), {
+        ssnEnc: existing.ssnEnc,
+        ssnIv: existing.ssnIv,
+        ssnLast4: existing.ssnLast4,
+      }),
       ...(str(formData, "saveOptOuts") === "1"
         ? {
             emailOptOut: formData.get("emailOptOut") === "on",
@@ -63,7 +69,13 @@ export async function updateAccountRecord(formData: FormData) {
     .update(accounts)
     .set({
       name: str(formData, "name") || existing.name,
-      ein: str(formData, "ein") || existing.ein,
+      ...replaceEin(str(formData, "ein"), {
+        ein: null,
+        einEnc: existing.einEnc,
+        einIv: existing.einIv,
+        einLast4: existing.einLast4,
+        einLookup: existing.einLookup,
+      }),
       phone: str(formData, "phone") || existing.phone,
       email: str(formData, "email") || existing.email,
       mailingAddress: str(formData, "mailingAddress") || existing.mailingAddress,

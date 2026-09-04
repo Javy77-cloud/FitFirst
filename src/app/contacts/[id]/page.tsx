@@ -23,6 +23,9 @@ import { toNumber } from "@/lib/commissions/math";
 import { firstFilled } from "@/lib/desk/copy-once";
 import { contactSectionsForRole } from "@/lib/desk/contact-sections";
 import { isUuid } from "@/lib/ids";
+import { currentDeskSession } from "@/lib/auth/session";
+import { ssnMaskFromRow } from "@/lib/pii/vault";
+import { MaskedPiiField } from "@/components/pii/masked-field";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +36,10 @@ export default async function ContactDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [workspace, templates] = await Promise.all([
+  const [workspace, templates, session] = await Promise.all([
     getContactWorkspace(id),
     listEmailTemplates(),
+    currentDeskSession(),
   ]);
   if (!workspace) notFound();
   const {
@@ -113,6 +117,18 @@ export default async function ContactDetailPage({
                 <dd>{email || "—"}</dd>
               </div>
               <div>
+                <dt className="text-xs text-muted-foreground">SSN</dt>
+                <dd>
+                  <MaskedPiiField
+                    entityType="contact"
+                    entityId={contact.id}
+                    field="ssn"
+                    mask={ssnMaskFromRow(contact)}
+                    canReveal={session.isAdmin || session.userId === contact.ownerId || (!contact.ownerId && session.signedIn)}
+                  />
+                </dd>
+              </div>
+              <div>
                 <dt className="text-xs text-muted-foreground">Lifetime / in-force</dt>
                 <dd>
                   {policyCount} / {activePolicyCount}
@@ -175,6 +191,19 @@ export default async function ContactDetailPage({
               <div>
                 <Label className="text-xs">Date of birth</Label>
                 <Input name="dateOfBirth" defaultValue={dob} className="mt-1 h-8" />
+              </div>
+              <div>
+                <Label className="text-xs">SSN</Label>
+                <Input
+                  name="ssn"
+                  defaultValue=""
+                  placeholder={ssnMaskFromRow(contact) ?? "000-00-0000"}
+                  autoComplete="off"
+                  className="mt-1 h-8"
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Encrypted at rest. Leave blank to keep {ssnMaskFromRow(contact) ?? "empty"}.
+                </p>
               </div>
               <div>
                 <Label className="text-xs">Tenure</Label>

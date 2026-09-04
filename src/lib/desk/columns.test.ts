@@ -22,6 +22,7 @@ describe("table column pickers", () => {
       "state",
       "zip",
       "dateOfBirth",
+      "ssn",
       "emailOptOut",
       "smsOptOut",
     ]) {

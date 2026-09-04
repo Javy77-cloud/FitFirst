@@ -446,6 +446,15 @@ Owner: this slice. Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Di
 
 Ana stays unbound, Cov A **$321,000**. Do not add Zoho Mail / Zoho Sign to this catalog.
 
+## PII field encryption (`cursor/pii-field-encryption-a70d`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive `0021_pii_vault`. Ana fixture untouched (unbound, Cov A **$321,000**). No live carriers.
+
+- AES-256-GCM via `PII_ENCRYPTION_KEY` (64 hex chars). Local Mac: copy `.env.example` as-is, or keep the documented demo key. Changing the key makes ciphertext unreadable — re-seed.
+- Encrypted at rest: contact SSN (`ssn_enc` / `ssn_iv` / `ssn_last4`), business EIN (`ein_enc` / `ein_iv` / `ein_last4` / `ein_lookup`), driver license (`license_number_enc` / `license_number_iv` / `license_number_last4`). Plaintext `ein` / `license_number` columns stay for additive migrate and are nulled after backfill.
+- UI lists send last4 masks only. Reveal (Admin or owning Agent) decrypts once and writes `pii_reveal_logs` without the value.
+- Seed: Elena fake SSN `000-00-4444` sealed; Harbor `59-1234567` and Ruiz Tile `59-7654321` sealed; Soto DL sealed. No plaintext SSN/DL/EIN left in Postgres after `db:seed`.
+
 ## Do not
 
 - Multi-tenant isolation, SaaS billing, vaults, real OAuth, native iOS

@@ -12,6 +12,8 @@ import {
   vehicleUseLabel,
 } from "@/lib/domain";
 import type { Driver, Vehicle } from "@/lib/db/schema";
+import { licenseMaskFromRow } from "@/lib/pii/vault";
+import { MaskedPiiField } from "@/components/pii/masked-field";
 
 type ContactOption = { id: string; firstName: string; lastName: string };
 
@@ -186,7 +188,14 @@ export function AutoSchedulePanel({
                   </td>
                   <td>{formatDob(driver.dateOfBirth)}</td>
                   <td>
-                    {[driver.licenseState, driver.licenseNumber].filter(Boolean).join(" ") || "—"}
+                    <span className="mr-1 text-muted-foreground">{driver.licenseState}</span>
+                    <MaskedPiiField
+                      entityType="driver"
+                      entityId={driver.id}
+                      field="license_number"
+                      mask={licenseMaskFromRow(driver)}
+                      canReveal
+                    />
                   </td>
                   <td>
                     {driver.contactId ? (

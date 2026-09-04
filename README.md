@@ -24,6 +24,7 @@ Stop the current `next dev` on **43147**, then:
 git fetch origin cursor/mac-ready-batch3-7pm
 git checkout -B cursor/mac-ready-batch3-7pm origin/cursor/mac-ready-batch3-7pm
 cp .env.example .env
+# Keep PII_ENCRYPTION_KEY from .env.example (64 hex chars). Local Mac demo key.
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
 npm install
 npm run db:migrate
@@ -60,6 +61,8 @@ npm run db:migrate
 npm run db:seed
 npm run dev -- --port 43147
 ```
+
+**PII at rest:** SSN, EIN/FEIN, and driver license numbers are AES-256-GCM encrypted with `PII_ENCRYPTION_KEY` before write. Postgres stores ciphertext + IV + last4 only. Lists show `***-**-1234` (or EIN/DL mask). Reveal is Admin or owning Agent and writes `pii_reveal_logs` (no decrypted value). Ana has no SSN. Elena demo SSN is fake encrypted `000-00-4444`. Harbor / Ruiz Tile EINs and Soto DL are sealed at seed.
 
 Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
 

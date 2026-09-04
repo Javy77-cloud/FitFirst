@@ -1282,7 +1282,7 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
       const owns = policyRows.some((policy) => policy.accountId === row.id && policy.ownerId === session.userId);
       if (!owns) continue;
     }
-    if (matchesQuery(q, row.name, row.legalName, row.dba, row.ein, row.city)) {
+    if (matchesQuery(q, row.name, row.legalName, row.dba, row.einLast4, row.city)) {
       hits.push(hitFromBusiness(row));
     }
   }

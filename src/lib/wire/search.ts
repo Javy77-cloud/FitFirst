@@ -69,12 +69,19 @@ export function hitFromContact(row: { id: string; firstName: string; lastName: s
   };
 }
 
-export function hitFromBusiness(row: { id: string; name: string; ein?: string | null }): SearchHit {
+export function hitFromBusiness(row: {
+  id: string;
+  name: string;
+  einLast4?: string | null;
+  ein?: string | null;
+}): SearchHit {
+  const last4 = row.einLast4 ?? (row.ein ? row.ein.replace(/\D/g, "").slice(-4) : null);
+  const mask = last4 ? `**-***${last4}` : null;
   return {
     kind: "business",
     id: row.id,
     title: row.name,
-    subtitle: row.ein ? `Business · EIN ${row.ein}` : "Business · Account 360",
+    subtitle: mask ? `Business · EIN ${mask}` : "Business · Account 360",
     href: `/accounts/${row.id}`,
   };
 }

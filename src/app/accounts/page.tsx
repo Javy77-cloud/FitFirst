@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { defaultColumns } from "@/lib/desk/columns";
 import { listAccounts } from "@/lib/db/queries";
+import { einMaskFromRow } from "@/lib/pii/vault";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +77,7 @@ export default async function AccountsPage({
                   <Col table="accounts" col="status">
                     <ClientStatusPill status={account.clientStatus} />
                   </Col>
-                  <Col table="accounts" col="ein">{account.ein ?? "—"}</Col>
+                  <Col table="accounts" col="ein">{einMaskFromRow(account) ?? "—"}</Col>
                   <Col table="accounts" col="phone">{account.phone ?? "—"}</Col>
                   <Col table="accounts" col="email">{account.email ?? "—"}</Col>
                   <Col table="accounts" col="mailingAddress">{account.mailingAddress ?? "—"}</Col>

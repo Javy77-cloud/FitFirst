@@ -63,6 +63,7 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "state", label: "State", defaultOn: false },
     { key: "zip", label: "ZIP", defaultOn: false },
     { key: "dateOfBirth", label: "Date of birth", defaultOn: false },
+    { key: "ssn", label: "SSN", defaultOn: false },
     { key: "language", label: "Language", defaultOn: false },
     { key: "maritalStatus", label: "Marital status", defaultOn: false },
     { key: "notes", label: "Notes", defaultOn: false },

@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { writeEin } from "@/lib/pii/write";
 import { db } from "./index";
 import {
   accounts,
@@ -157,7 +158,7 @@ export async function seedWireDesk() {
     .update(accounts)
     .set({
       dba: "Ruiz Tile",
-      ein: "59-7654321",
+      ...writeEin("59-7654321"),
       entityType: "llc",
       employeeCount: 6,
       annualSales: "890000.00",
@@ -329,7 +330,7 @@ export async function seedWireDesk() {
       tenantId: TENANT_ID,
       name: "Harbor Key Marine LLC",
       dba: "Harbor Key Marine",
-      ein: "59-1234567",
+      ...writeEin("59-1234567"),
       entityType: "llc",
       email: "office@harborkey.example",
       phone: "(321) 555-0144",
@@ -354,7 +355,7 @@ export async function seedWireDesk() {
       target: accounts.id,
       set: {
         name: "Harbor Key Marine LLC",
-        ein: "59-1234567",
+        ...writeEin("59-1234567"),
         employeeCount: 14,
         annualSales: "2150000.00",
         payrollW2: "540000.00",
