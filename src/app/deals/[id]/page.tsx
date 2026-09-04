@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { archiveDeal, bindDeal } from "@/app/actions/crm";
+import { bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
-import { EmailActivityList, HistoryList } from "@/components/templates/email-activity";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
-import { RiskForm } from "@/components/deal/risk-form";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
@@ -16,9 +14,8 @@ import { SectionTabs } from "@/components/section-tabs";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatPersonName } from "@/lib/crm/display";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace, listEmailTemplates, listRecordAsks, sumCommissionsForPolicies } from "@/lib/db/queries";
-import { listDeskUsers } from "@/lib/db/activity-queries";
-import { RecordAskPanel } from "@/components/record-ask";
+import { getDealWorkspace, listEmailTemplates, sumCommissionsForPolicies } from "@/lib/db/queries";
+import { dealTabShowsCommsLogs, parseAgentDealTab } from "@/lib/deals/tabs";
 import { RelatedPolicies, RelatedRollups } from "@/components/related-tables";
 import { toNumber } from "@/lib/commissions/math";
 import { formatDay, formatMoney } from "@/lib/domain";
@@ -37,16 +34,15 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string }>;
+  searchParams: Promise<{ tab?: string; notice?: string }>;
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const { tab, riskTab } = await searchParams;
-  const [workspace, templates, asks, users] = await Promise.all([
+  const { tab, notice } = await searchParams;
+  const activeTab = parseAgentDealTab(tab);
+  const [workspace, templates] = await Promise.all([
     getDealWorkspace(id),
     listEmailTemplates(),
-    listRecordAsks("deal", id),
-    listDeskUsers(),
   ]);
   if (!workspace) notFound();
   const {
@@ -133,6 +129,12 @@ export default async function DealPage({
         ) : null}
       </div>
 
+      {notice === "uploaded" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Files stored on this deal.
+        </p>
+      ) : null}
+
       {isAna ? (
         <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-xs text-fit-yellow">
           Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
@@ -154,7 +156,7 @@ export default async function DealPage({
         ) : (
           <SectionTabs
             defaultValue="documents"
-            active={tab}
+            active={activeTab}
             tabs={[
               {
                 id: "documents",
@@ -169,11 +171,6 @@ export default async function DealPage({
                 content: (
                   <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
                 ),
-              },
-              {
-                id: "risk",
-                label: "Master risk",
-                content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
               },
               {
                 id: "markets",
@@ -195,30 +192,21 @@ export default async function DealPage({
             ]}
           />
         )}
-        <RecordAskPanel
-          entityType="deal"
-          entityId={deal.id}
-          asks={asks}
-          users={users}
-          dealId={deal.id}
-          contactId={contact?.id}
-          accountId={account?.id}
-          policyId={boundPolicies[0]?.id}
-          leadId={lead?.id}
-        />
-        <div className="mt-6">
-          <ActivityTimeline
-            items={timeline}
-            dealId={deal.id}
-            contactId={contact?.id}
-            accountId={account?.id}
-            policyId={boundPolicies[0]?.id}
-            leadId={lead?.id}
-            phone={contact?.phone ?? account?.phone}
-            email={contact?.email ?? account?.email}
-            templates={templates}
-          />
-        </div>
+        {dealTabShowsCommsLogs(activeTab) ? (
+          <div className="mt-6">
+            <ActivityTimeline
+              items={timeline}
+              dealId={deal.id}
+              contactId={contact?.id}
+              accountId={account?.id}
+              policyId={boundPolicies[0]?.id}
+              leadId={lead?.id}
+              phone={contact?.phone ?? account?.phone}
+              email={contact?.email ?? account?.email}
+              templates={templates}
+            />
+          </div>
+        ) : null}
       </RecordSection>
 
       <RecordSection
@@ -252,26 +240,5 @@ export default async function DealPage({
         </p>
       </RecordSection>
     </AppShell>
-  );
-}
-
-function Glance({
-  label,
-  value,
-  hint,
-  extra,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  extra?: import("react").ReactNode;
-}) {
-  return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium text-navy">{value}</div>
-      <div className="text-[11px] text-muted-foreground">{hint}</div>
-      {extra}
-    </div>
   );
 }

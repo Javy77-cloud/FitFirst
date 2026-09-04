@@ -1512,6 +1512,22 @@ export const telephonySettings = pgTable(
   (t) => [uniqueIndex("telephony_settings_tenant_idx").on(t.tenantId)],
 );
 
+/** BYO e-sign stubs. No vendor keys stored. DocuSign / Dropbox Sign only in Settings. */
+export const esignSettings = pgTable(
+  "esign_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull().default("none"),
+    connected: boolean("connected").notNull().default(false),
+    accountLabel: text("account_label"),
+    notes: text("notes"),
+    lastConnectStatus: text("last_connect_status"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("esign_settings_tenant_idx").on(t.tenantId)],
+);
+
 export const signatureEnvelopes = pgTable(
   "signature_envelopes",
   {
@@ -1590,6 +1606,7 @@ export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 export type CampaignSendLog = typeof campaignSendLogs.$inferSelect;
 export type SmsSettings = typeof smsSettings.$inferSelect;
 export type TelephonySettings = typeof telephonySettings.$inferSelect;
+export type EsignSettings = typeof esignSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;

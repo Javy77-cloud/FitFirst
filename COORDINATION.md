@@ -417,3 +417,16 @@ Additive desk slice. Did not edit the Ana fixture. Did not bind Ana. Did not wri
 - Create a Policy from a quote
 - Fork a second CRM / files table / tasks table
 - Build a softphone, dialer, or live Google Calendar sync
+
+## BATCH3 deals docs + tabs + e-sign (`cursor/deals-docs-tabs-esign-5c3d`)
+
+Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). No Zoho.
+
+- **Deals list upload:** one section. Multi-line rows (doc type + file, add another line, multi-file OK). Deal name required with lookup/autofill from existing Deals (person or business). Files attach to that Deal. Melbourne sample dec button removed.
+- **Deal Documents:** Source documents, Issued quote PDFs, and **Signed app** (e-sign returns).
+- **Ask a teammate** removed from the Deal. Admin-only on Contact / Policy / Carrier / Business / Lead.
+- **Quote Sheet / Markets / Quotes:** no Ask, no manual email/SMS logs, no email-send on Quote Sheet.
+- **Master risk** is not an agent Deal tab. Admin background appetite tool at `/settings/master-risk`.
+- **E-sign stubs:** Settings → E-sign. DocuSign and Dropbox Sign BYO. No vendor keys. Signed apps still attach on the Deal.
+
+Migration `0015_esign_settings`.

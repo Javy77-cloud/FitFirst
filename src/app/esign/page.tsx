@@ -31,8 +31,9 @@ export default async function EsignPage({
     >
       <Notice code={notice} />
       <StubBanner>
-        Provider interface only (DocuSign, Dropbox Sign, Zoho Sign). Send returns not_implemented.
+        Provider interface only (DocuSign or Dropbox Sign BYO). Send returns not_implemented.
         Status is tracked in FitFirst as draft / sent / signed. No credentials, no outbound call.
+        Connect the stub under Settings.
       </StubBanner>
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden p-4">

@@ -67,6 +67,7 @@ import {
   risks,
   tenants,
   telephonySettings,
+  esignSettings,
   users,
   vehicles,
 } from "./schema";
@@ -291,6 +292,14 @@ export async function getTelephonySettings() {
   return row ?? null;
 }
 
+export async function getEsignSettings() {
+  const [row] = await db
+    .select()
+    .from(esignSettings)
+    .where(eq(esignSettings.tenantId, tenant()));
+  return row ?? null;
+}
+
 const tenant = () => DEFAULT_TENANT_ID;
 
 function ownerWhere(session: DeskSession, column: AnyPgColumn): SQL | undefined {
@@ -400,6 +409,17 @@ export async function listDeals(filter: DealListFilter = {}) {
 }
 
 export type DealListRow = Awaited<ReturnType<typeof listDeals>>[number];
+
+export async function listDealLookup() {
+  const rows = await listDeals();
+  return rows.map(({ deal, contact, account }) => ({
+    id: deal.id,
+    title: deal.title,
+    partyName: contact
+      ? `${contact.lastName}, ${contact.firstName}`
+      : account?.name ?? null,
+  }));
+}
 
 export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {
   const session = await currentDeskSession();

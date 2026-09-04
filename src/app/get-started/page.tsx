@@ -59,8 +59,8 @@ const STEPS = [
     cta: "Open Ana Dib shop",
   },
   {
-    title: "8. Drop a dec, wind mit, or 4-point on the deal",
-    body: "Deals → drop a source packet. The Melbourne sample matches Elena (name + phone/email) and stays on her deal. A new name opens a new shop. Leads hold the person only — no package drop there.",
+    title: "8. Upload source docs onto an existing deal",
+    body: "Deals → type the Deal name (person or business) so lookup attaches files to that shop. Add lines for 4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, or a signed app. Multi-file is fine. There is no Melbourne sample button.",
     href: "/deals",
     cta: "Go to Deals",
   },

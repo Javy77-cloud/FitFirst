@@ -8,6 +8,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 Contact record: no Ask a teammate (still Admin-only on other records). Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
 
+Deals list has one upload: pick an existing Deal by person or business name, then add typed file lines (4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, signed app). Inside the Deal: Source documents, Issued quote PDFs, and Signed app. Ask a teammate and email/SMS logs are off Quote Sheet, Markets, and Quotes. Master risk is Admin-only at Settings. E-sign stubs are DocuSign / Dropbox Sign BYO.
+
 Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
@@ -57,7 +59,9 @@ npm run dev -- --port 43147
 
 Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (paper + terracotta). Demo login: `javy@fitfirst.local` / `javy` (Admin, all book) or `maya@fitfirst.local` / `maya` (Agent, own book).
 
-Leads are the person record (name, DOB, contact, address, insurance wanted). Dec / 4-point / wind mit drop lives on **Deals**. Click path and leftover bugs live in `COORDINATION.md`.
+Leads are the person record (name, DOB, contact, address, insurance wanted). Document upload lives on **Deals** and requires an existing Deal name before files store. Click path and leftover bugs live in `COORDINATION.md`.
+
+**Settings → E-sign** is Admin BYO for DocuSign or Dropbox Sign (stub only). **Settings → Master risk** is the Admin appetite worksheet — not a Deal tab.
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No live Twilio or SendGrid.
 

@@ -528,6 +528,7 @@ export async function updateRisk(formData: FormData) {
 
   const dealId = str(formData, "dealId");
   revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/settings/master-risk");
 }
 
 export async function findMatchingContact(input: {

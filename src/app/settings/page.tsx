@@ -11,20 +11,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
-import { getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
-import { TELEPHONY_PROVIDER_LABEL, type TelephonyProvider } from "@/lib/domain";
+import { getEsignSettings, getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
+import {
+  ESIGN_SETTINGS_PROVIDER_LABEL,
+  TELEPHONY_PROVIDER_LABEL,
+  type EsignSettingsProvider,
+  type TelephonyProvider,
+} from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await currentDeskSession();
-  const [brand, templates, triggers, telephony] = await Promise.all([
+  const [brand, templates, triggers, telephony, esign] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),
     listEmailTriggers(),
     getTelephonySettings(),
+    getEsignSettings(),
   ]);
   const provider = (telephony?.provider ?? "none") as TelephonyProvider;
+  const esignProvider = (esign?.provider ?? "none") as EsignSettingsProvider;
 
   return (
     <AppShell title="Settings">
@@ -103,6 +110,56 @@ export default async function SettingsPage() {
               </p>
             ) : (
               <p className="mt-2 text-xs text-muted-foreground">Only an admin can connect a trunk.</p>
+            )}
+          </SettingsSection>
+
+          <SettingsSection
+            id="esign"
+            title="E-sign"
+            badge="Admin"
+            summary="DocuSign or Dropbox Sign. BYO stub. No vendor keys."
+          >
+            <p className="text-sm text-muted-foreground">
+              Status:{" "}
+              <span className="font-medium text-navy">
+                {esign?.connected
+                  ? `${ESIGN_SETTINGS_PROVIDER_LABEL[esignProvider]} · stub connected`
+                  : "not connected"}
+              </span>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Signed apps return on the Deal. Settings only remembers which BYO provider you
+              intend. Nothing is sent from here.
+            </p>
+            {session.isAdmin ? (
+              <p className="mt-3">
+                <Link href="/settings/esign" className="text-sm text-primary hover:underline">
+                  Open e-sign settings
+                </Link>
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">Only an admin can connect a provider.</p>
+            )}
+          </SettingsSection>
+
+          <SettingsSection
+            id="master-risk"
+            title="Master risk"
+            badge="Admin"
+            summary="Background appetite worksheet. Not on the agent Deal."
+          >
+            <p className="text-sm text-muted-foreground">
+              Agents shop Documents, Quote Sheet, Markets, and Quotes. Master risk stays here as
+              the structured appetite file.
+            </p>
+            {session.isAdmin ? (
+              <p className="mt-3">
+                <Link href="/settings/master-risk" className="text-sm text-primary hover:underline">
+                  Open master risk
+                </Link>
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">Admin-only background tool.</p>
             )}
           </SettingsSection>
 

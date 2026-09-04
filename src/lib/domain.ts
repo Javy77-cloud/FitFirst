@@ -57,6 +57,10 @@ export const DOC_TYPES = [
   "four_point",
   "inspection",
   "photo",
+  "current_policy",
+  "permits",
+  "hand_notes",
+  "signed_app",
   "quote",
   "quote_pdf",
   "policy_dec",
@@ -67,12 +71,16 @@ export const DOC_TYPES = [
 export type DocType = (typeof DOC_TYPES)[number];
 
 export const DOC_TYPE_LABELS: Record<DocType, string> = {
-  dec: "Dec page",
+  dec: "Dec pages",
   wind_mit: "Wind mit",
   four_point: "4-point",
   inspection: "Inspection",
   photo: "Photo",
-  quote: "Quote",
+  current_policy: "Current policy",
+  permits: "Permits",
+  hand_notes: "Hand notes",
+  signed_app: "Signed app",
+  quote: "Quotes",
   quote_pdf: "Quote PDF",
   policy_dec: "Policy dec",
   policy_complete: "Complete policy",
@@ -80,10 +88,35 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   other: "Other",
 };
 
-export const DOC_SLOTS = ["source_doc", "quote_pdf", "policy_file"] as const;
+/** Types an agent picks when attaching files to a Deal. */
+export const DEAL_UPLOAD_DOC_TYPES = [
+  "four_point",
+  "wind_mit",
+  "current_policy",
+  "quote",
+  "permits",
+  "hand_notes",
+  "dec",
+  "signed_app",
+  "inspection",
+  "photo",
+  "other",
+] as const;
+export type DealUploadDocType = (typeof DEAL_UPLOAD_DOC_TYPES)[number];
+
+export const DOC_SLOTS = ["source_doc", "quote_pdf", "signed_app", "policy_file"] as const;
 export type DocSlot = (typeof DOC_SLOTS)[number];
 
-export const SOURCE_DOC_TYPES = ["dec", "wind_mit", "four_point", "inspection", "photo"] as const;
+export const SOURCE_DOC_TYPES = [
+  "dec",
+  "wind_mit",
+  "four_point",
+  "inspection",
+  "photo",
+  "current_policy",
+  "permits",
+  "hand_notes",
+] as const;
 export const POLICY_FILE_TYPES = ["policy_dec", "policy_complete", "policy_id"] as const;
 
 export const POLICY_STATUSES = [
@@ -551,6 +584,16 @@ export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
 export const ESIGN_PROVIDERS = ["docusign", "dropbox_sign", "zoho_sign"] as const;
 export type EsignProvider = (typeof ESIGN_PROVIDERS)[number];
+
+/** Settings stubs agents can mark as BYO. Zoho Sign is not offered here. */
+export const ESIGN_SETTINGS_PROVIDERS = ["none", "docusign", "dropbox_sign"] as const;
+export type EsignSettingsProvider = (typeof ESIGN_SETTINGS_PROVIDERS)[number];
+
+export const ESIGN_SETTINGS_PROVIDER_LABEL: Record<EsignSettingsProvider, string> = {
+  none: "Not connected",
+  docusign: "DocuSign (BYO)",
+  dropbox_sign: "Dropbox Sign (BYO)",
+};
 
 export const ESIGN_STATUSES = ["draft", "sent", "signed"] as const;
 export type EsignStatus = (typeof ESIGN_STATUSES)[number];

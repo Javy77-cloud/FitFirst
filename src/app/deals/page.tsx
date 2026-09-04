@@ -1,17 +1,15 @@
 import Link from "next/link";
-import { dropLeadPacket, dropSampleDecPacket } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
 import { ColumnPicker, Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
-import { DecDropForm } from "@/components/crm/dec-drop-form";
+import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { DealRowComms } from "@/components/deal-row-comms";
-import { DeskDrop } from "@/components/desk-drop";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
-import { listBoundPendingDeals, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
+import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
 
@@ -41,10 +39,11 @@ export default async function DealsPage({
     lifeSub: first(params.lifeSub),
     healthSub: first(params.healthSub),
   };
-  const [rows, users, lineSettings] = await Promise.all([
+  const [rows, users, lineSettings, lookup] = await Promise.all([
     filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
     listUsersById(),
     loadDeskLineSettings(),
+    listDealLookup(),
   ]);
   const hint =
     filter.attention === "bound_pending"
@@ -52,6 +51,7 @@ export default async function DealsPage({
       : filter.stage
         ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
         : "Shopping lives on the deal. Quotes attach here. A policy is not created from a quote. Call, SMS, and email from the row write a durable log on the deal.";
+  const notice = first(params.notice);
 
   return (
     <AppShell
@@ -64,6 +64,16 @@ export default async function DealsPage({
       columns={<ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
+      {notice === "need-deal" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Choose an existing Deal (person or business name) before files are stored.
+        </p>
+      ) : null}
+      {notice === "no-files" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Add at least one file on a line.
+        </p>
+      ) : null}
       <BookFilterBar
         action="/deals"
         settings={lineSettings}
@@ -76,32 +86,8 @@ export default async function DealsPage({
           ...(filter.attention ? { attention: filter.attention } : {}),
         }}
       />
-      <div className="mb-4 grid gap-4 lg:grid-cols-2">
-        <DeskDrop compact />
-        <div className="space-y-3">
-          <form action={dropSampleDecPacket} className="ff-card space-y-2 p-4">
-            <h2 className="text-sm font-semibold text-navy">Melbourne sample dec</h2>
-            <p className="text-xs text-muted-foreground">
-              Matches Elena Ruiz (name + phone/email) and attaches the dec on her deal. A new
-              named insured opens a new shop. Source docs stay on the deal.
-            </p>
-            <Button type="submit" size="sm" variant="outline">
-              Drop Melbourne dec (matches Elena)
-            </Button>
-          </form>
-          <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold text-navy">Drop a dec, wind mit, or 4-point</h2>
-            <p className="text-xs text-muted-foreground">
-              PDF or text. Named insured + phone or email matches an existing lead. Empty file
-              uses the Melbourne sample. The file attaches to the shopping deal.
-            </p>
-            <input name="file" type="file" className="block w-full text-xs" />
-            <Button type="submit" size="sm">
-              Import packet onto a deal
-            </Button>
-          </form>
-          <DecDropForm />
-        </div>
+      <div className="mb-4">
+        <DealDocsUpload deals={lookup} />
       </div>
       {filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
         <p className="mb-3 text-[12px]">

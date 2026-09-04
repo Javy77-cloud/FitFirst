@@ -8,9 +8,8 @@ import {
 } from "@/app/actions/documents";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DOC_TYPE_LABELS, DOC_TYPES } from "@/lib/domain";
+import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
 
 export function DocumentsPanel({
   dealId,
@@ -26,8 +25,11 @@ export function DocumentsPanel({
   fields: ExtractedFieldRow[];
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
-  const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
+  const sourceDocs = docs.filter(
+    (d) => d.slot !== "quote_pdf" && d.slot !== "policy_file" && d.slot !== "signed_app",
+  );
   const quotePdfs = docs.filter((d) => d.slot === "quote_pdf");
+  const signedApps = docs.filter((d) => d.slot === "signed_app" || d.docType === "signed_app");
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
@@ -53,12 +55,13 @@ export function DocumentsPanel({
                   className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
                   defaultValue="dec"
                 >
-                  <option value="dec">Declarations</option>
-                  <option value="wind_mit">Wind mitigation</option>
-                  <option value="four_point">4-point</option>
-                  <option value="inspection">Inspection</option>
-                  <option value="photo">Photo</option>
-                  <option value="other">Other</option>
+                  {DEAL_UPLOAD_DOC_TYPES.filter((type) => type !== "signed_app" && type !== "quote").map(
+                    (type) => (
+                      <option key={type} value={type}>
+                        {DOC_TYPE_LABELS[type]}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
               <div>
@@ -112,6 +115,26 @@ export function DocumentsPanel({
             </Button>
           </form>
           <DocTable docs={quotePdfs} dealId={dealId} empty="No issued quote PDFs yet." />
+        </section>
+
+        <section className="ff-card p-4">
+          <h3 className="mb-1 text-sm font-semibold text-navy">Signed app</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            E-sign returns land here — the signed application after DocuSign or Dropbox Sign.
+            Connect a BYO provider in Settings. This is not a policy.
+          </p>
+          <form action={uploadDealSlot} className="mb-3 space-y-2 rounded-md border border-border p-3">
+            <input type="hidden" name="dealId" value={dealId} />
+            <input type="hidden" name="riskId" value={riskId} />
+            <input type="hidden" name="slot" value="signed_app" />
+            <input type="hidden" name="docType" value="signed_app" />
+            <Label className="text-xs">Signed application</Label>
+            <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+            <Button type="submit" size="sm">
+              Attach signed app
+            </Button>
+          </form>
+          <DocTable docs={signedApps} dealId={dealId} empty="No signed apps yet." />
         </section>
       </div>
 

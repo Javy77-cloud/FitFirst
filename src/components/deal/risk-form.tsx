@@ -37,10 +37,12 @@ export function RiskForm({
   risk,
   dealId,
   activeTab,
+  extraQuery,
 }: {
   risk: Risk;
   dealId: string;
   activeTab?: string | null;
+  extraQuery?: Record<string, string | undefined>;
 }) {
   return (
     <form action={updateRisk} className="ff-card p-4">
@@ -50,7 +52,7 @@ export function RiskForm({
         param="riskTab"
         defaultValue="home"
         active={activeTab}
-        extraQuery={{ tab: "risk" }}
+        extraQuery={extraQuery ?? { tab: "risk" }}
         tabs={[
           {
             id: "home",
