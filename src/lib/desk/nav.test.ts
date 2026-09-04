@@ -14,4 +14,10 @@ describe("isNavActive", () => {
     expect(isNavActive("/pipeline?pipeline=p-c", "/pipeline")).toBe(true);
     expect(isNavActive("/settings", "/settings/phone")).toBe(true);
   });
+
+  it("treats the old Forms routes as the Documents nav row", () => {
+    expect(isNavActive("/documents", "/documents")).toBe(true);
+    expect(isNavActive("/documents", "/forms")).toBe(true);
+    expect(isNavActive("/documents", "/forms/fl-ho3")).toBe(true);
+  });
 });

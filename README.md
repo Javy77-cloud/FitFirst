@@ -67,7 +67,7 @@ Open [http://localhost:43147](http://localhost:43147). `/login` has two cards:
 - **Admin** — Javy Rivera (`javy@fitfirst.local` / `javy`). Whole book. Settings, integration connect, global lists, Ask a teammate, appetite/carrier edit.
 - **Agent** — Maya Chen (`maya@fitfirst.local` / `maya`). Own book CRM, pipeline deals, calendar items, and client email/SMS when the agency line is connected. Cannot open Admin Settings, Ask a teammate, agency connect, or global list edits.
 
-Leads are the person record (name, DOB, contact, address, insurance wanted). Deal-level document upload still requires an existing Deal name. Agency **Documents** (`/documents`) is the Shared library (marketing, appetite guides, misc) plus the Forms library (ACORD + cancellation / AOR). Folders nest; create, rename, and move stay inside one library. Fillable forms open a workspace with a stub field map, paste, and **Scan & suggest** (demo fields, not live OCR). Ana stays untouched.
+Leads are the person record (name, DOB, contact, address, insurance wanted). Deal-level document upload still requires an existing Deal name. The left-nav **Forms** row is now **Documents** (`/documents`). Inside: **Forms** (ACORD, cancellation, AOR, fillable + Scan & suggest) and **Library** (marketing, carrier flyers, appetite guides, misc). Folders nest; create, rename, and move stay inside one area. `/forms` redirects to Documents → Forms. Quote Sheet fill stays at `/forms/[slug]`. Ana stays untouched.
 
 Click path and leftover bugs live in `COORDINATION.md`.
 
@@ -155,7 +155,7 @@ npm test
 
 ## Known leftovers
 
-- Documents is a NAV item. Shared library vs Forms library, nested folders, multi-file upload, fillable Scan & suggest stub. `/forms` catalog stays and is folded under Forms → ACORD.
+- Left nav **Documents** (was Forms). Page title Documents. Two areas: Forms + Library. Nested folders, multi-file upload, fillable Scan & suggest stub. `/forms` redirects into Documents → Forms.
 - `tsc` still drifts (asks.updatedAt, contact tags, quote-sheet `photo-ocr` source, email template field names). `npm run build` is green because Next skips that leftover (`typescript.ignoreBuildErrors`). Desk routes compile under Turbopack.
 - `/phone` is a call log + trunk stub. No PSTN. Google Calendar stays a stub.
 - Address autofill needs `GOOGLE_MAPS_API_KEY`; without it the fields are ordinary inputs.

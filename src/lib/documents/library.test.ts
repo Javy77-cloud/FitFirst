@@ -16,7 +16,8 @@ const folders = [
 ];
 
 describe("document libraries", () => {
-  it("treats the old library scope as Shared", () => {
+  it("defaults the Documents module to Forms; Library is the shared files area", () => {
+    expect(parseLibrary(undefined)).toBe("forms");
     expect(parseLibrary("library")).toBe("shared");
     expect(parseLibrary("forms")).toBe("forms");
     expect(parseLibrary("shared")).toBe("shared");

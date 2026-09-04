@@ -46,7 +46,7 @@ export default async function FormFillPage({
         <Link href={`/documents/fill/${template.slug}`} className="text-primary hover:underline">
           Documents → Forms
         </Link>
-        .
+        {" "}(scan-to-fill).
       </p>
       <div className="mb-4 flex flex-wrap gap-2 text-[11px]">
         <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 text-fit-yellow">

@@ -23,9 +23,9 @@ export function isDocumentLibrary(value: string): value is DocumentLibrary {
 }
 
 export function parseLibrary(value: string | null | undefined): DocumentLibrary {
+  if (value === "shared" || value === "library") return "shared";
   if (value === "forms") return "forms";
-  if (value === "library") return "shared";
-  return isDocumentLibrary(value ?? "") ? value! : "shared";
+  return "forms";
 }
 
 export function libraryLabel(library: string): string {
@@ -126,7 +126,7 @@ export function canMoveFolder(
     const parent = folders.find((f) => f.id === newParentId);
     if (!parent) return { ok: false, reason: "Destination folder not found." };
     if (folder.library && parent.library && folder.library !== parent.library) {
-      return { ok: false, reason: "Keep Shared and Forms libraries separate." };
+      return { ok: false, reason: "Keep Forms and Library separate." };
     }
   }
   return { ok: true };

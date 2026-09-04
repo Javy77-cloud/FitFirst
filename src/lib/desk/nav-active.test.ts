@@ -42,9 +42,11 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/settings/phone", "/settings")).toBe(true);
   });
 
-  it("highlights Documents on the library and fill workspace", () => {
+  it("highlights Documents on the module, fill workspace, and old Forms routes", () => {
     expect(navItemIsActive("/documents", "/documents")).toBe(true);
     expect(navItemIsActive("/documents/fill/fl-ho3", "/documents")).toBe(true);
-    expect(navItemIsActive("/forms", "/documents")).toBe(false);
+    expect(navItemIsActive("/forms", "/documents")).toBe(true);
+    expect(navItemIsActive("/forms/fl-ho3", "/documents")).toBe(true);
+    expect(navItemIsActive("/quotes", "/documents")).toBe(false);
   });
 });

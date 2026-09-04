@@ -32,7 +32,7 @@ export default async function DocumentFillPage({
             href={libraryHref({ library: "forms", folderId: template.folderId })}
             className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
           >
-            Back to Forms library
+            Back to Forms
           </Link>
           <Link href={`/forms/${template.slug}`} className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
             Quote Sheet fill
@@ -42,7 +42,7 @@ export default async function DocumentFillPage({
     >
       <StubBanner>
         Fillable stub. Field map is the template schema. Scan &amp; suggest pre-fills demo values —
-        not live OCR, not Ana Dib. Quote Sheet fill still lives on the original Forms catalog.
+        not live OCR, not Ana Dib. Quote Sheet fill still lives on /forms/[slug].
       </StubBanner>
       {notice === "scan-suggested" ? (
         <StubBanner>Suggested fields applied. Pasted lines overrode matching demo keys.</StubBanner>

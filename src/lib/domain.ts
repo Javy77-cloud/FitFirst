@@ -669,20 +669,20 @@ export type FolderKind = (typeof FOLDER_KINDS)[number];
 
 export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
   agency_library: "Agency library",
-  shared_library: "Shared library",
-  forms_library: "Forms library",
+  shared_library: "Library",
+  forms_library: "Forms",
   account: "Account",
   deal: "Deal",
   policy: "Policy",
   custom: "Folder",
 };
 
-export const DOCUMENT_LIBRARIES = ["shared", "forms"] as const;
+export const DOCUMENT_LIBRARIES = ["forms", "shared"] as const;
 export type DocumentLibrary = (typeof DOCUMENT_LIBRARIES)[number];
 
 export const DOCUMENT_LIBRARY_LABELS: Record<DocumentLibrary, string> = {
-  shared: "Shared library",
-  forms: "Forms library",
+  forms: "Forms",
+  shared: "Library",
 };
 
 export const CAMPAIGN_AUDIENCE_TYPES = ["tag", "pipeline_stage"] as const;

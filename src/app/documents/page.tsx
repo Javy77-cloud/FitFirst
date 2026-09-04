@@ -32,7 +32,7 @@ export default async function DocumentsPage({
       ? params.library
       : typeof params.scope === "string"
         ? params.scope
-        : "shared",
+        : "forms",
   );
   const folderId = typeof params.folder === "string" ? params.folder : "";
   const notice = typeof params.notice === "string" ? params.notice : "";
@@ -72,15 +72,14 @@ export default async function DocumentsPage({
     <AppShell
       title="Documents"
       actions={
-        <Link href="/forms" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-          Forms catalog
+        <Link href="/documents?library=shared" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+          Library
         </Link>
       }
     >
       <StubBanner>
-        Two libraries: Shared (marketing, appetite, quick-access) and Forms (ACORD + agency
-        paperwork). Folders nest. Fillable forms use a stub field map and Scan &amp; suggest — no live
-        OCR. Existing /forms catalog stays.
+        Documents has two areas: Forms (ACORD, cancellation, AOR — fillable) and Library (marketing,
+        carrier flyers, appetite guides, misc). Folders nest. Scan &amp; suggest is a stub, not live OCR.
       </StubBanner>
 
       {notice === "bad-move" ? (
@@ -96,7 +95,8 @@ export default async function DocumentsPage({
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <LibraryTabs library={library} />
         <p className="text-xs text-muted-foreground">
-          {libraryFolders.length} folders · {library === "forms" ? "fillable ACORD / agency forms" : "anyone can upload"}
+          {libraryFolders.length} folders ·{" "}
+          {library === "forms" ? "fillable ACORD / cancellation / AOR" : "marketing, appetite, carrier files"}
         </p>
       </div>
 
