@@ -567,3 +567,18 @@ Admin-only encrypted quoting-portal username + password on the carrier record. A
 - Seed: American Traditions `FF-AT-1048` and People's Trust `FF-PT-2201`. Existing Tailrow / American Integrity get agency codes only.
 - Incoming `0027_carrier_portal_secrets` renumbered to `0033_carrier_portal_secrets`. Ana fixture untouched. One Pipeline. Sidebar hex unchanged.
 
+## WAVE2 — Deal quote PDF view / email / SMS / print (`bc-405a83e9`)
+
+Wave-1 consolidator finished **without** this bot. It was still **RUNNING** (`FitFirst fix Deal quote PDF view`, `bc-405a83e9-25ff-47fa-b738-5035d72aba1b`) with **no remote branch** at wave-1 close.
+
+When its branch appears:
+
+```bash
+git fetch origin
+git branch -r | rg -i 'pdf|deal-doc|quote-pdf'
+git checkout cursor/mac-ready-batch4-7pm
+git merge origin/<that-branch>
+```
+
+Keep Deal Issued quote PDFs, view / email / SMS / print. Do not bind Ana (Cov A **$321,000**). Additive migrations only — next free number is **0034**. One Pipeline. Alerts off the sidebar. Build green.
+
