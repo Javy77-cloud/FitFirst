@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { Col } from "@/components/column-picker";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -27,21 +28,25 @@ export default async function WorkQueuePage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Kind</th>
-                <th>Item</th>
-                <th>Detail</th>
+                <Col table="queue-attention" col="kind" as="th">Kind</Col>
+                <Col table="queue-attention" col="item" as="th">Item</Col>
+                <Col table="queue-attention" col="detail" as="th">Detail</Col>
               </tr>
             </thead>
             <tbody>
               {snapshot.attention.map((item) => (
                 <tr key={item.id}>
-                  <td className="uppercase">{item.kind.replaceAll("_", " ")}</td>
-                  <td>
+                  <Col table="queue-attention" col="kind" className="uppercase">
+                    {item.kind.replaceAll("_", " ")}
+                  </Col>
+                  <Col table="queue-attention" col="item">
                     <Link href={item.href} className="font-medium text-primary hover:underline">
                       {item.title}
                     </Link>
-                  </td>
-                  <td className="text-xs text-muted-foreground">{item.detail}</td>
+                  </Col>
+                  <Col table="queue-attention" col="detail" className="text-xs text-muted-foreground">
+                    {item.detail}
+                  </Col>
                 </tr>
               ))}
             </tbody>
@@ -59,26 +64,32 @@ export default async function WorkQueuePage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Policy</th>
-                <th>Status</th>
-                <th>Party</th>
-                <th>Expires</th>
+                <Col table="queue-open" col="number" as="th">Policy</Col>
+                <Col table="queue-open" col="status" as="th">Status</Col>
+                <Col table="queue-open" col="party" as="th">Party</Col>
+                <Col table="queue-open" col="expires" as="th">Expires</Col>
               </tr>
             </thead>
             <tbody>
               {open.map(({ policy, contact, account }) => (
                 <tr key={policy.id}>
-                  <td>
+                  <Col table="queue-open" col="number">
                     <Link
                       href={`/policies/${policy.id}`}
                       className="font-medium text-primary hover:underline"
                     >
                       {policy.policyNumber}
                     </Link>
-                  </td>
-                  <td className="uppercase">{policy.status}</td>
-                  <td>{contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—"}</td>
-                  <td>{policy.expirationDate.toISOString().slice(0, 10)}</td>
+                  </Col>
+                  <Col table="queue-open" col="status" className="uppercase">
+                    {policy.status}
+                  </Col>
+                  <Col table="queue-open" col="party">
+                    {contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—"}
+                  </Col>
+                  <Col table="queue-open" col="expires" sortValue={policy.expirationDate.toISOString()}>
+                    {policy.expirationDate.toISOString().slice(0, 10)}
+                  </Col>
                 </tr>
               ))}
             </tbody>

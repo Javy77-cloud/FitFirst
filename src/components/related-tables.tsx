@@ -1,3 +1,4 @@
+import { Col } from "@/components/column-picker";
 import { RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { toNumber } from "@/lib/commissions/math";
@@ -44,26 +45,30 @@ export function RelatedPolicies({
         <table className="ff-table">
           <thead>
             <tr>
-              <th>Policy</th>
-              <th>Status</th>
-              <th>Carrier</th>
-              <th>Premium</th>
+              <Col table="related-policies" col="number" as="th">Policy</Col>
+              <Col table="related-policies" col="status" as="th">Status</Col>
+              <Col table="related-policies" col="carrier" as="th">Carrier</Col>
+              <Col table="related-policies" col="premium" as="th">Premium</Col>
             </tr>
           </thead>
           <tbody>
             {rows.map(({ policy, carrier, deal }) => (
               <tr key={policy.id}>
-                <td>
+                <Col table="related-policies" col="number">
                   <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
                   {deal ? (
                     <div className="text-[11px]">
                       <RecordLink href={`/deals/${deal.id}`}>{deal.title}</RecordLink>
                     </div>
                   ) : null}
-                </td>
-                <td className="uppercase">{policy.status}</td>
-                <td>{carrier?.name ?? "—"}</td>
-                <td>{formatMoney(policy.premium)}</td>
+                </Col>
+                <Col table="related-policies" col="status" className="uppercase">
+                  {policy.status}
+                </Col>
+                <Col table="related-policies" col="carrier">{carrier?.name ?? "—"}</Col>
+                <Col table="related-policies" col="premium" sortValue={policy.premium}>
+                  {formatMoney(policy.premium)}
+                </Col>
               </tr>
             ))}
           </tbody>

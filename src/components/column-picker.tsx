@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { saveColumnPrefs } from "@/app/actions/desk-prefs";
+import { SheetHeader } from "@/components/sheet/sheet-header";
 import { TABLE_COLUMNS, parseColumns } from "@/lib/desk/columns";
 
 export function ColumnPicker({
@@ -67,17 +68,30 @@ export function Col({
   children,
   as = "td",
   className,
+  sortValue,
 }: {
   table: string;
   col: string;
   children: React.ReactNode;
   as?: "td" | "th";
   className?: string;
+  sortValue?: string | number | null;
 }) {
-  const Tag = as;
+  if (as === "th") {
+    return (
+      <SheetHeader table={table} col={col} className={className}>
+        {children}
+      </SheetHeader>
+    );
+  }
   return (
-    <Tag data-col={`${table}.${col}`} className={className}>
+    <td
+      data-col={`${table}.${col}`}
+      data-sheet-col={col}
+      data-sort={sortValue == null ? undefined : String(sortValue)}
+      className={className}
+    >
       {children}
-    </Tag>
+    </td>
   );
 }

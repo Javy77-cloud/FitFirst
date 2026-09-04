@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { Col } from "@/components/column-picker";
 import { buttonVariants } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import { listQuoteLogs } from "@/lib/db/queries";
@@ -30,31 +31,42 @@ export default async function CarrierLogsPage() {
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Carrier</th>
-                <th>Deal</th>
-                <th>Result</th>
-                <th>Bindable</th>
-                <th>Premium</th>
-                <th>Cov A tried</th>
-                <th>Why</th>
-                <th>Snapshot</th>
+                <Col table="decline-log" col="date" as="th">Date</Col>
+                <Col table="decline-log" col="carrier" as="th">Carrier</Col>
+                <Col table="decline-log" col="deal" as="th">Deal</Col>
+                <Col table="decline-log" col="result" as="th">Result</Col>
+                <Col table="decline-log" col="bindable" as="th">Bindable</Col>
+                <Col table="decline-log" col="premium" as="th">Premium</Col>
+                <Col table="decline-log" col="covA" as="th">Cov A tried</Col>
+                <Col table="decline-log" col="why" as="th">Why</Col>
+                <Col table="decline-log" col="snapshot" as="th">Snapshot</Col>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ log, carrier, deal }) => (
                 <tr key={log.id}>
-                  <td className="whitespace-nowrap text-xs">
+                  <Col
+                    table="decline-log"
+                    col="date"
+                    className="whitespace-nowrap text-xs"
+                    sortValue={log.attemptedAt.toISOString()}
+                  >
                     {log.attemptedAt.toISOString().slice(0, 10)}
-                  </td>
-                  <td>{carrier.name}</td>
-                  <td>{deal.title}</td>
-                  <td className="uppercase">{log.result.replaceAll("_", " ")}</td>
-                  <td>{log.bindable ? "Y" : "N"}</td>
-                  <td>{formatMoney(log.premium)}</td>
-                  <td>{formatMoney(log.covATried)}</td>
-                  <td className="text-xs">{log.why}</td>
-                  <td className="text-[11px] text-muted-foreground">
+                  </Col>
+                  <Col table="decline-log" col="carrier">{carrier.name}</Col>
+                  <Col table="decline-log" col="deal">{deal.title}</Col>
+                  <Col table="decline-log" col="result" className="uppercase">
+                    {log.result.replaceAll("_", " ")}
+                  </Col>
+                  <Col table="decline-log" col="bindable">{log.bindable ? "Y" : "N"}</Col>
+                  <Col table="decline-log" col="premium" sortValue={log.premium}>
+                    {formatMoney(log.premium)}
+                  </Col>
+                  <Col table="decline-log" col="covA" sortValue={log.covATried}>
+                    {formatMoney(log.covATried)}
+                  </Col>
+                  <Col table="decline-log" col="why" className="text-xs">{log.why}</Col>
+                  <Col table="decline-log" col="snapshot" className="text-[11px] text-muted-foreground">
                     {[
                       log.snapYearBuilt,
                       log.snapConstruction,
@@ -65,7 +77,7 @@ export default async function CarrierLogsPage() {
                     ]
                       .filter(Boolean)
                       .join(" · ")}
-                  </td>
+                  </Col>
                 </tr>
               ))}
             </tbody>

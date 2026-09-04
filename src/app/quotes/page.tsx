@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { ColumnPicker } from "@/components/column-picker";
 import { DeskDetails } from "@/components/desk-details";
 import { ShopSummary, TrackingTable } from "@/components/quotes/tracking-table";
 import { StagePill } from "@/components/fit-badge";
 import { buttonVariants } from "@/components/ui/button";
+import { defaultColumns } from "@/lib/desk/columns";
 import { listQuoteTrackingShops } from "@/lib/db/queries";
 import { shopSectionOpen } from "@/lib/quotes/collapse";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,7 @@ export default async function QuotesBoardPage({
           New shopping deal
         </Link>
       }
+      columns={<ColumnPicker tableKey="quotes" initial={defaultColumns("quotes")} />}
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         Every shop already run — appetite logs and quote comparison rows — in one place. Status

@@ -161,7 +161,9 @@ export default async function DealsPage({
                   <Col table="deals" col="phone">{contact?.phone ?? account?.phone ?? "—"}</Col>
                   <Col table="deals" col="email">{contact?.email ?? account?.email ?? "—"}</Col>
                   <Col table="deals" col="assigned">{deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—"}</Col>
-                  <Col table="deals" col="premium">{formatMoney(deal.coverageAmount)}</Col>
+                  <Col table="deals" col="premium" sortValue={deal.coverageAmount}>
+                    {formatMoney(deal.coverageAmount)}
+                  </Col>
                   <Col table="deals" col="updated">{formatDay(deal.updatedAt)}</Col>
                   <Col table="deals" col="comms">
                     <DealRowComms

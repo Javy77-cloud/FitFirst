@@ -132,7 +132,9 @@ export default async function PoliciesPage({
                   </Col>
                   <Col table="policies" col="line">{policy.lineOfBusiness}</Col>
                   <Col table="policies" col="carrier">{carrier?.name ?? "—"}</Col>
-                  <Col table="policies" col="premium">{formatMoney(policy.premium)}</Col>
+                  <Col table="policies" col="premium" sortValue={policy.premium}>
+                    {formatMoney(policy.premium)}
+                  </Col>
                   <Col table="policies" col="effective">{formatDay(policy.effectiveDate)}</Col>
                   <Col table="policies" col="expires">{formatDay(policy.expirationDate)}</Col>
                   <Col table="policies" col="assigned">{policy.ownerId ? users.get(policy.ownerId) ?? "—" : "—"}</Col>

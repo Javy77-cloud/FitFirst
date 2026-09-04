@@ -58,6 +58,8 @@ Leads are the person record (name, DOB, contact, address, insurance wanted). Dec
 
 **Business record** mirrors that jump layout: Overview, Business information, Address, Policies, Deals, People, Locations, Certificates, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Harbor Key Marine LLC stays **Client** with **GL-HARBOR-2026**.
 
+List sheets share one header control: click a column to sort A→Z / Z→A, or open the header menu to pin it. The Columns picker stays on the title row.
+
 Quote tracking / Quote Sheet / deal Quotes sections fold when they do not need attention. Claims log has a prominent **Add new claim**. Commissions filters by Life / Health / P&C plus line subfilters and last/next windows. Ana stays shopping / $0 commission / unbound.
 
 Settings → Lines: hide Life or Health for agencies that do not write those books (pipeline switcher and filters follow). One Pipeline nav row — Life and Health stay as tabs on `/pipeline`. Life chips default to Term / Whole / IUL / Final Expense. Health chips default to Marketplace / Medicare Advantage / Medicare A&B / Supplemental. Selling Agency picklists stay off unless you turn them on in Settings.

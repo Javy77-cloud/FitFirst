@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ColumnPicker } from "@/components/crm/column-picker";
+import { SheetHeader } from "@/components/sheet/sheet-header";
 import { DealFilters } from "@/components/crm/deal-filters";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
@@ -87,9 +88,9 @@ export function DealListTable({
           <thead>
             <tr>
               {COLUMNS.map((col) => (
-                <th key={col.id} data-col={col.id}>
+                <SheetHeader key={col.id} table="deals-crm" col={col.id} dataCol={col.id}>
                   {col.header}
-                </th>
+                </SheetHeader>
               ))}
             </tr>
           </thead>
@@ -113,41 +114,41 @@ export function DealListTable({
                 const email = contact?.email ?? lead?.email;
                 return (
                   <tr key={deal.id}>
-                    <td data-col="deal">
+                    <td data-col="deal" data-sheet-col="deal">
                       <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
                         {deal.title}
                       </Link>
                     </td>
-                    <td data-col="actions">
+                    <td data-col="actions" data-sheet-col="actions">
                       <DealRowActions dealId={deal.id} phone={phone} email={email} />
                     </td>
-                    <td data-col="insured">
+                    <td data-col="insured" data-sheet-col="insured">
                       <InsuredLink href={href} name={insured} />
                     </td>
-                    <td data-col="phone">
+                    <td data-col="phone" data-sheet-col="phone">
                       <LinkedValue value={phone} kind="tel" />
                     </td>
-                    <td data-col="email">
+                    <td data-col="email" data-sheet-col="email">
                       <LinkedValue value={email} kind="email" />
                     </td>
-                    <td data-col="address">
+                    <td data-col="address" data-sheet-col="address">
                       <LinkedValue value={riskAddress(risk)} />
                     </td>
-                    <td data-col="stage">
+                    <td data-col="stage" data-sheet-col="stage">
                       <StagePill stage={labels.get(deal.pipelineStage) ?? deal.pipelineStage} />
                     </td>
-                    <td data-col="line">
+                    <td data-col="line" data-sheet-col="line">
                       {LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ??
                         deal.lineOfBusiness}
                     </td>
-                    <td data-col="state">{deal.state}</td>
-                    <td data-col="city">{risk?.city ?? contact?.city ?? "—"}</td>
-                    <td data-col="coverageA">
+                    <td data-col="state" data-sheet-col="state">{deal.state}</td>
+                    <td data-col="city" data-sheet-col="city">{risk?.city ?? contact?.city ?? "—"}</td>
+                    <td data-col="coverageA" data-sheet-col="coverageA" data-sort={risk?.coverageA ?? ""}>
                       {risk?.coverageA != null ? formatMoney(risk.coverageA) : "—"}
                     </td>
-                    <td data-col="updated">{formatIsoDate(deal.updatedAt)}</td>
-                    <td data-col="bound">{deal.boundAt ? formatIsoDate(deal.boundAt) : "Unbound"}</td>
-                    <td data-col="account" className="capitalize">
+                    <td data-col="updated" data-sheet-col="updated">{formatIsoDate(deal.updatedAt)}</td>
+                    <td data-col="bound" data-sheet-col="bound">{deal.boundAt ? formatIsoDate(deal.boundAt) : "Unbound"}</td>
+                    <td data-col="account" data-sheet-col="account" className="capitalize">
                       {contact?.accountKind === "commercial" ? "Business" : contact ? "Personal" : "Lead"}
                     </td>
                   </tr>

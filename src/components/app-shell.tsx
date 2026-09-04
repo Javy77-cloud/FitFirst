@@ -60,7 +60,7 @@ export async function AppShell({
   title: string;
   eyebrow?: string;
   actions?: ReactNode;
-  /** Column picker — always the far-right control on the title row. */
+  /** Column picker — far-right control on the title row. Sort/pin live on sheet headers. */
   columns?: ReactNode;
 }) {
   const [count] = await db

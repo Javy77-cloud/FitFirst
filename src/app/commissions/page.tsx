@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { ColumnPicker, Col } from "@/components/column-picker";
 import { CommissionFilters } from "@/components/commissions/filters";
 import { filterCommissionRows, isCommissionPeriod } from "@/lib/commissions/filters";
+import { defaultColumns } from "@/lib/desk/columns";
 import { formatMoney } from "@/lib/domain";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -55,7 +57,10 @@ export default async function CommissionsPage({
   const filtered = Boolean(family || (sub && sub !== "all") || (range && range !== "all"));
 
   return (
-    <AppShell title="Commissions">
+    <AppShell
+      title="Commissions"
+      columns={<ColumnPicker tableKey="commissions" initial={defaultColumns("commissions")} />}
+    >
       <p className="mb-3 text-sm text-muted-foreground">
         Per-policy agency earnings. Filter Life, Health, or P&amp;C, then a line, then a look-back
         or look-ahead window. Ana Dib stays shopping — $0 here, no bind. No live carrier payouts.
@@ -87,19 +92,25 @@ export default async function CommissionsPage({
           <table className="ff-table">
             <thead>
               <tr>
-                <th>Policy</th>
-                <th>Book</th>
-                <th>Status</th>
-                <th>Amount</th>
+                <Col table="commissions" col="policy" as="th">Policy</Col>
+                <Col table="commissions" col="book" as="th">Book</Col>
+                <Col table="commissions" col="status" as="th">Status</Col>
+                <Col table="commissions" col="amount" as="th">Amount</Col>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ commission, policy, lineOfBusiness }) => (
                 <tr key={commission.id}>
-                  <td>{policy?.policyNumber ?? "—"}</td>
-                  <td className="uppercase text-xs">{lineOfBusiness ?? "—"}</td>
-                  <td className="uppercase">{commission.status}</td>
-                  <td>{formatMoney(commission.amount)}</td>
+                  <Col table="commissions" col="policy">{policy?.policyNumber ?? "—"}</Col>
+                  <Col table="commissions" col="book" className="uppercase text-xs">
+                    {lineOfBusiness ?? "—"}
+                  </Col>
+                  <Col table="commissions" col="status" className="uppercase">
+                    {commission.status}
+                  </Col>
+                  <Col table="commissions" col="amount" sortValue={commission.amount}>
+                    {formatMoney(commission.amount)}
+                  </Col>
                 </tr>
               ))}
             </tbody>
