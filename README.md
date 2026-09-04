@@ -40,7 +40,7 @@ If this desk already had the old combined Won-Lost/ARCHIVE tab, migrate + seed (
 2. Elena Ruiz and Harbor Key Marine sit on Closed Won. Drag one to Review, then back.
 3. Collapse **Meet / Quotes**. Expand it again.
 4. **Edit stages** → add a column, rename it, move it with ← →, then remove it.
-5. **Columns** → hide Email, show Current carrier. Same picker applies to **Table**.
+5. **Deal details** → hide Email, show Current carrier. Same picker applies to **Table**. **Board** / **Table** switches the view.
 6. Open **Won-Lost** (Closed Won / Closed Lost only). Open **Archive** (separate tab).
 7. Open **Flood**. Confirm there is no Admin label. Stages edit the same way as P&C.
 

@@ -53,7 +53,7 @@ export default async function PipelinePage({
             href={pipelineHref(board.slug)}
             className={!tableView ? "font-semibold text-primary" : "text-muted-foreground"}
           >
-            Columns
+            Board
           </Link>
           <Link
             href={pipelineHref(board.slug, "table")}

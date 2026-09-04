@@ -12,7 +12,6 @@ import {
 const STORAGE_KEY = "ff_cols_pipeline_fields";
 
 export function PipelineFieldPicker() {
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<PipelineFieldId[]>(defaultPipelineFieldIds());
 
   useEffect(() => {
@@ -27,7 +26,7 @@ export function PipelineFieldPicker() {
     }
   }, [selected]);
 
-  const label = useMemo(() => `${selected.length} details`, [selected.length]);
+  const label = useMemo(() => `${selected.length} of ${PIPELINE_FIELDS.length} on`, [selected.length]);
 
   function toggle(id: PipelineFieldId) {
     const def = PIPELINE_FIELDS.find((field) => field.id === id);
@@ -44,34 +43,28 @@ export function PipelineFieldPicker() {
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="rounded-md border border-border bg-card px-2.5 py-1 text-sm text-navy hover:border-primary"
-      >
-        Columns · {label}
-      </button>
-      {open ? (
-        <div className="absolute right-0 z-30 mt-1 w-64 rounded-md border border-border bg-card p-2 shadow">
-          <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Deal details on cards and table
-          </p>
-          {PIPELINE_FIELDS.map((field) => (
-            <label key={field.id} className="flex items-center gap-2 px-1 py-1 text-sm text-navy">
-              <input
-                type="checkbox"
-                checked={selected.includes(field.id)}
-                disabled={field.required}
-                onChange={() => toggle(field.id)}
-              />
-              {field.label}
-              {field.required ? <span className="text-[10px] text-muted-foreground">always on</span> : null}
-            </label>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    <details className="relative z-20" data-testid="pipeline-field-picker">
+      <summary className="cursor-pointer list-none rounded-md border border-border bg-card px-2.5 py-1.5 text-sm font-medium text-navy hover:border-primary">
+        Deal details · {label}
+      </summary>
+      <div className="absolute right-0 z-40 mt-1 w-72 rounded-md border border-border bg-card p-2 shadow-md">
+        <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Show or hide fields on cards and the table
+        </p>
+        {PIPELINE_FIELDS.map((field) => (
+          <label key={field.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1.5 text-sm text-navy hover:bg-muted">
+            <input
+              type="checkbox"
+              checked={selected.includes(field.id)}
+              disabled={field.required}
+              onChange={() => toggle(field.id)}
+            />
+            {field.label}
+            {field.required ? <span className="text-[10px] text-muted-foreground">always on</span> : null}
+          </label>
+        ))}
+      </div>
+    </details>
   );
 }
 

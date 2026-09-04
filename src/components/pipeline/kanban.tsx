@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { PipelineDealCard } from "@/components/pipeline/deal-card";
 import { cn } from "@/lib/utils";
@@ -76,31 +77,32 @@ export function PipelineKanban({
               overSlug === stage.slug && "ring-2 ring-primary",
             )}
           >
-            <div
+            <button
+              type="button"
+              onClick={() => toggle(stage.slug)}
+              aria-expanded={!folded}
+              aria-label={folded ? `Expand ${stage.name}` : `Collapse ${stage.name}`}
+              data-testid={`collapse-${stage.slug}`}
               className={cn(
-                "flex items-center justify-between gap-2 border-b border-border bg-muted px-2 py-2",
-                folded && "flex-col px-1",
+                "flex w-full items-center gap-2 border-b border-border bg-muted px-2 py-2 text-left hover:bg-card",
+                folded && "min-h-40 flex-col px-1 py-3",
               )}
             >
-              <button
-                type="button"
-                onClick={() => toggle(stage.slug)}
-                className="rounded px-1 text-xs text-navy hover:bg-card"
-                aria-expanded={!folded}
-                aria-label={folded ? `Expand ${stage.name}` : `Collapse ${stage.name}`}
-              >
-                {folded ? "›" : "‹"}
-              </button>
-              <div
+              {folded ? (
+                <ChevronRight className="size-4 shrink-0 text-navy" />
+              ) : (
+                <ChevronLeft className="size-4 shrink-0 text-navy" />
+              )}
+              <span
                 className={cn(
                   "min-w-0 flex-1 text-sm font-semibold text-navy",
                   folded && "write-vertical flex-none py-2 text-[11px]",
                 )}
               >
                 {stage.name}
-              </div>
+              </span>
               <span className="text-[11px] text-muted-foreground">{column.length}</span>
-            </div>
+            </button>
             {folded ? null : (
               <div className="min-h-40 space-y-2 p-2">
                 {column.length === 0 ? (
