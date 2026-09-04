@@ -24,6 +24,7 @@ export const SETTINGS_NAV_IDS = [
   "security",
   "recovery",
   "compliance",
+  "export",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -113,6 +114,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "offices", href: "/settings/offices", label: "Offices", hint: "Desks + states" },
       { id: "territories", href: "/settings/territories", label: "Territories", hint: "Geo books" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },
+      { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
     ],
   },
   {

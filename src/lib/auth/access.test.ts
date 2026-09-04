@@ -53,6 +53,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/lines")).toBe(true);
     expect(isAdminOnlyPath("/settings/agents")).toBe(true);
     expect(isAdminOnlyPath("/settings/agents/abc/performance")).toBe(true);
+    expect(isAdminOnlyPath("/settings/export")).toBe(true);
     expect(isAdminOnlyPath("/logs/fill-learning")).toBe(true);
     expect(isAdminOnlyPath("/compliance")).toBe(true);
     expect(isAdminOnlyPath("/carriers/logs")).toBe(false);
@@ -76,6 +77,9 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/recover/mfa")).toBe(true);
     expect(isPublicPath("/enroll-mfa")).toBe(false);
     expect(isPublicPath("/fill-demo")).toBe(true);
+    expect(isPublicPath("/api/v1")).toBe(true);
+    expect(isPublicPath("/api/v1/contacts")).toBe(true);
+    expect(isPublicPath("/api/v1/export/contacts.csv")).toBe(true);
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/settings")).toBe(false);
     expect(adminRedirectPath()).toContain("admin-only");

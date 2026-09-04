@@ -158,6 +158,27 @@ export const authRecoveryTokens = pgTable(
   ],
 );
 
+/** Hashed bearer tokens for /api/v1. Plaintext is shown once at issue. */
+export const apiTokens = pgTable(
+  "api_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    tokenHash: text("token_hash").notNull(),
+    label: text("label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("api_tokens_tenant_idx").on(t.tenantId),
+    uniqueIndex("api_tokens_hash_idx").on(t.tokenHash),
+  ],
+);
+
 /** SMS / email stub codes for enroll or login verify. TOTP does not use this. */
 export const mfaChallenges = pgTable(
   "mfa_challenges",
@@ -2203,6 +2224,7 @@ export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type ApiToken = typeof apiTokens.$inferSelect;
 export type AuthRecoveryToken = typeof authRecoveryTokens.$inferSelect;
 export type Location = typeof locations.$inferSelect;
 export type MergeCandidate = typeof mergeCandidates.$inferSelect;

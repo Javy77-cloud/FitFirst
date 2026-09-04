@@ -59,6 +59,7 @@ import { seedCarrierPortals } from "./seed-carrier-portals";
 import { seedFillLearning } from "./seed-fill-learning";
 import { seedEoAudit } from "./seed-eo-audit";
 import { seedCampaignSequences } from "./seed-campaign-sequences";
+import { seedApiTokens } from "./seed-api-tokens";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -524,4 +525,5 @@ export async function seed() {
   await seedFillLearning();
   await seedEoAudit();
   await seedCampaignSequences();
+  await seedApiTokens();
 }

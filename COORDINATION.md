@@ -653,6 +653,16 @@ DIFF K merged onto `cursor/mac-ready-batch4-7pm`. Broker log — not a claims sh
 - Saving FNOL (or moving to referred / adding a carrier #) writes an in-app `fnol` alert to the Policy/Contact owner. Header bell opens `/claims/[id]`. Nothing emails.
 - Contact 360 and Policy 360 show the linked notices. Seed: Elena wind inquiry (no carrier #), Camila water `AI-CLM-19044` referred, Camila hail `AI-CLM-16220` closed. Maya gets the producer pings. Ana has zero claims.
 
+## Open API + clean export (`cursor/open-api-export-be9f`)
+
+DIFF I merged onto `cursor/mac-ready-batch4-7pm`. Incoming `0036_api_tokens` renumbered to `0041_api_tokens`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. No lock-in copy.
+
+- Bearer tokens hashed in `api_tokens`. Seeded `ff_demo_admin` for Admin (Javy). Session cookie `ff_actor_id` also authenticates `/api/v1`.
+- List/get: `/api/v1/contacts`, `/policies`, `/deals`, `/activities` plus `/:id`. Pagination `limit`/`offset`.
+- CSV: `/api/v1/export/contacts.csv`, `/policies.csv`, `/commissions.csv`. Admin page `/settings/export`.
+- Encrypted SSN / EIN / DL stay off JSON and CSV. Agents see own book only.
+- `POST /api/v1/auth/token` issues another hashed Admin bearer. `/api/v1` is public at the proxy; the route still requires a token or session.
+
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0040**. Next free additive migration is **0041**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+DIFF WAVE-1 took **0036**–**0041**. Next free additive migration is **0042**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped still-running bots (routing, version history, gaps, commission, portal). Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

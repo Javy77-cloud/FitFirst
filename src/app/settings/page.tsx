@@ -61,6 +61,19 @@ export default async function SettingsPage() {
           </div>
           <ConnectionBadge connected={catalogConnected} />
         </Link>
+        {session.isAdmin ? (
+          <Link
+            href="/settings/export"
+            className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+          >
+            <div>
+              <div className="text-sm font-semibold text-navy">Export</div>
+              <p className="text-xs text-muted-foreground">
+                CSV of contacts, policies, and commissions. Same rows as <code>/api/v1</code>.
+              </p>
+            </div>
+          </Link>
+        ) : null}
         <Link
           href="/settings/social"
           className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
