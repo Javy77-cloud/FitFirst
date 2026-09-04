@@ -593,6 +593,16 @@ Appetite-logs-style memory for Quote Sheet / master-sheet field mapping from dec
 - Admin browse `/logs/fill-learning` (tab next to Appetite / decline log). Agents can still mark a mapping wrong on the sheet.
 - Seeded Elena HO corrections: wind mit roof year 2014→2019, dec CBS→masonry, 4-point comp shingle→architectural shingle. No Ana rows.
 
+## Policy version history + document versions (`cursor/policy-version-history-aa85`)
+
+DIFF G. Off `cursor/mac-ready-batch4-7pm`. Additive `0036_policy_doc_versions`. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged.
+
+- `policy_change_logs`: who / when / field / before / after on Policy. Sources: bind, record edit, endorsement, cancellation, non-renewal, seed.
+- Save policy (`updatePolicyRecord`), bind, and `filePolicyChange` write field diffs.
+- `document_versions` on Deal and Policy attachments. Replace keeps the prior file. Current `documents` row stays the latest.
+- UI: Policy **Change history** timeline. Deal Documents and Policy Attachments show version + Replace.
+- Seeded on Elena `HO3-ELENA-2026`: bind bound → active, premium 3120 → 2840, billing monthly → annual (Maya). Wind mit and policy dec each keep a prior copy. No Ana rows.
+
 ## WAVE3 leftover
 
-Nothing queued from the WAVE-2 merge list. Next free additive migration is **0036**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.
+Nothing queued from the WAVE-2 merge list. Next free additive migration is **0037**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green.

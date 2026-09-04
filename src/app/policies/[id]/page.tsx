@@ -19,6 +19,7 @@ import { ClickToCall } from "@/components/click-to-call";
 import { RelatedRollups } from "@/components/related-tables";
 import { PolicyCommissionBlock } from "@/components/commissions/policy-commission-block";
 import { PolicyFileAttach } from "@/components/policy/policy-file-attach";
+import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
 import { PolicyRecordForm } from "@/components/policy/policy-record-form";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { partyLabel, policyRecordName } from "@/lib/desk/policy-name";
@@ -46,7 +47,8 @@ export default async function PolicyDetailPage({
     loadGlobalLists(),
   ]);
   if (!workspace) notFound();
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
+  const { policy, contact, account, carrier, deal, files, fileVersions, changeLogs, timeline, vehicles } =
+    workspace;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
   const family = insuranceFamilyFromPolicy(policy);
   const party = partyLabel(contact, account);
@@ -105,7 +107,7 @@ export default async function PolicyDetailPage({
         />
       </div>
 
-      <RecordSection id="record" title="This policy" summary="Family fields, term, files, auto timeline">
+      <RecordSection id="record" title="This policy" summary="Family fields, term, files, change history, auto timeline">
         <PolicyRecordForm
           policyId={policy.id}
           family={family}
@@ -133,7 +135,16 @@ export default async function PolicyDetailPage({
 
         {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
-        <PolicyFileAttach policyId={policy.id} dealId={policy.dealId} files={files} />
+        <PolicyFileAttach
+          policyId={policy.id}
+          dealId={policy.dealId}
+          files={files}
+          versions={fileVersions}
+        />
+
+        <div className="mt-6">
+          <PolicyChangeTimeline logs={changeLogs} />
+        </div>
 
         <div className="mt-6">
           <ActivityTimeline

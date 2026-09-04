@@ -9,6 +9,12 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
+    id: "policy-versions",
+    title: "Policy change history",
+    body: "Policy records keep who changed which field, when, and the value before / after. Deal and Policy attachments keep prior copies when you replace a file.",
+    date: "2026-09-04",
+  },
+  {
     id: "top-chrome",
     title: "Top chrome utilities",
     body: "The header holds Smart Search, Alerts (the bell is the alerts module), What’s New, profile, recently accessed, and quick add. Alerts and Search are off the left nav.",

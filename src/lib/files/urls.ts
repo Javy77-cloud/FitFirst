@@ -12,6 +12,11 @@ export function filePreviewHref(documentId: string, print = false): string {
   return print ? `/files/${documentId}?print=1` : `/files/${documentId}`;
 }
 
+export function fileVersionHref(documentId: string, versionId: string, download = false): string {
+  const query = download ? `version=${versionId}&download=1` : `version=${versionId}`;
+  return `/api/files/${documentId}?${query}`;
+}
+
 export function looksLikePdf(bytes: Uint8Array | Buffer): boolean {
   if (bytes.length < 5) return false;
   return (

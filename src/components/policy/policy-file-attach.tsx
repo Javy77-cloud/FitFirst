@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import { attachPolicyFiles } from "@/app/actions/policy-files";
+import { DocumentVersions } from "@/components/documents/document-versions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
+import type { DocumentVersionRow } from "@/lib/documents/versions";
+import { groupVersionsByDocument } from "@/lib/documents/versions";
+import { filePreviewHref } from "@/lib/files/urls";
 
 type FileRow = { id: number; category: string };
 
@@ -12,12 +16,15 @@ export function PolicyFileAttach({
   policyId,
   dealId,
   files,
+  versions = [],
 }: {
   policyId: string;
   dealId?: string | null;
   files: { id: string; filename: string; docType: string }[];
+  versions?: DocumentVersionRow[];
 }) {
   const [rows, setRows] = useState<FileRow[]>([{ id: 1, category: "policy_dec" }]);
+  const byDoc = groupVersionsByDocument(versions);
 
   return (
     <section className="space-y-3">
@@ -25,7 +32,7 @@ export function PolicyFileAttach({
         <h3 className="text-sm font-semibold text-navy">Attachments</h3>
         <p className="text-xs text-muted-foreground">
           Attach issued files here. This is not Save policy — drop one or more, add another row if
-          you need a second category.
+          you need a second category. Replace keeps the prior copy on the version timeline.
         </p>
       </div>
       <form action={attachPolicyFiles} className="space-y-3 rounded-md border border-border p-3">
@@ -72,10 +79,19 @@ export function PolicyFileAttach({
       {files.length === 0 ? (
         <p className="text-sm text-muted-foreground">No files on this policy yet.</p>
       ) : (
-        <ul className="text-sm">
+        <ul className="space-y-3 text-sm">
           {files.map((file) => (
-            <li key={file.id}>
-              {file.filename} · {file.docType.replaceAll("_", " ")}
+            <li key={file.id} className="rounded-md border border-border p-2">
+              <a href={filePreviewHref(file.id)} className="font-medium text-navy hover:underline">
+                {file.filename}
+              </a>
+              <span className="text-muted-foreground"> · {file.docType.replaceAll("_", " ")}</span>
+              <DocumentVersions
+                documentId={file.id}
+                versions={byDoc.get(file.id) ?? []}
+                dealId={dealId}
+                policyId={policyId}
+              />
             </li>
           ))}
         </ul>

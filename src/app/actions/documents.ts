@@ -23,6 +23,7 @@ import {
 import { inferDocType } from "@/lib/ingest/identity";
 import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import { libraryHref } from "@/lib/documents/library";
+import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import {
   coerceRiskValue,
   extractFieldsFromText,
@@ -115,6 +116,7 @@ export async function persistFile(input: {
       formTemplateId: input.formTemplateId || null,
     })
     .returning();
+  if (doc) await recordInitialDocumentVersion(doc);
   return doc;
 }
 

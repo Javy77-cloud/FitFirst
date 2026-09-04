@@ -665,6 +665,31 @@ export const clientHistory = pgTable(
   (t) => [index("client_history_tenant_idx").on(t.tenantId, t.contactId)],
 );
 
+export const policyChangeLogs = pgTable(
+  "policy_change_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id, { onDelete: "cascade" }),
+    changedBy: uuid("changed_by").references(() => users.id),
+    changedByName: text("changed_by_name").notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).defaultNow().notNull(),
+    fieldKey: text("field_key").notNull(),
+    fieldLabel: text("field_label").notNull(),
+    beforeValue: text("before_value"),
+    afterValue: text("after_value"),
+    source: text("source").notNull().default("record_edit"),
+    eventId: uuid("event_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("policy_change_logs_policy_idx").on(t.tenantId, t.policyId, t.changedAt),
+    index("policy_change_logs_field_idx").on(t.tenantId, t.policyId, t.fieldKey),
+  ],
+);
+
 export const reviewTasks = pgTable(
   "review_tasks",
   {
@@ -745,6 +770,30 @@ export const documents = pgTable(
     index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
     index("documents_tenant_folder_idx").on(t.tenantId, t.folderId),
     index("documents_tenant_library_idx").on(t.tenantId, t.library),
+  ],
+);
+
+export const documentVersions = pgTable(
+  "document_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    storagePath: text("storage_path").notNull(),
+    docType: text("doc_type").notNull().default("other"),
+    uploadedBy: uuid("uploaded_by").references(() => users.id),
+    uploadedByName: text("uploaded_by_name"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("document_versions_doc_idx").on(t.tenantId, t.documentId, t.versionNumber),
+    uniqueIndex("document_versions_doc_ver_uidx").on(t.tenantId, t.documentId, t.versionNumber),
   ],
 );
 
@@ -2109,6 +2158,8 @@ export type Policy = typeof policies.$inferSelect;
 export type Risk = typeof risks.$inferSelect;
 export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type Document = typeof documents.$inferSelect;
+export type PolicyChangeLog = typeof policyChangeLogs.$inferSelect;
+export type DocumentVersion = typeof documentVersions.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;
 export type CarrierSecretRevealLog = typeof carrierSecretRevealLogs.$inferSelect;

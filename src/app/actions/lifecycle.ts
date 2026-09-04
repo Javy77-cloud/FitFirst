@@ -23,6 +23,7 @@ import { buildQuoteResultsNote } from "@/lib/lifecycle/quote-results";
 import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import { MELBOURNE_HO_DEC_TEXT } from "@/lib/fixtures/sample-docs";
 import { inferMimeFromName } from "@/lib/files/urls";
+import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import { textFromUpload } from "@/lib/extraction/pdf";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
@@ -139,6 +140,13 @@ async function attachSourceText(dealId: string, filename: string, text: string) 
     slot: "source_doc",
     status: "uploaded",
   });
+  await recordInitialDocumentVersion({
+    id,
+    filename,
+    mimeType: "text/plain",
+    storagePath,
+    docType: "dec",
+  });
 }
 
 export async function uploadDealSlot(formData: FormData) {
@@ -168,6 +176,13 @@ export async function uploadDealSlot(formData: FormData) {
     docType,
     slot,
     status: "uploaded",
+  });
+  await recordInitialDocumentVersion({
+    id,
+    filename: file.name,
+    mimeType: inferMimeFromName(file.name, file.type),
+    storagePath,
+    docType,
   });
   if (dealId) revalidatePath(`/deals/${dealId}`);
   if (policyId) revalidatePath(`/policies/${policyId}`);

@@ -12,6 +12,8 @@ export async function GET(
     return new Response("Unauthorized", { status: 401 });
   }
   const { id } = await params;
-  const download = new URL(request.url).searchParams.get("download") === "1";
-  return serveDeskDocument(id, { download });
+  const search = new URL(request.url).searchParams;
+  const download = search.get("download") === "1";
+  const versionId = search.get("version");
+  return serveDeskDocument(id, { download, versionId });
 }

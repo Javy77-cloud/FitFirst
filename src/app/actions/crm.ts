@@ -17,6 +17,7 @@ import {
   type ShopLine,
 } from "@/lib/domain";
 import { persistFile } from "@/app/actions/documents";
+import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { db } from "@/lib/db";
@@ -824,6 +825,18 @@ export async function bindDeal(formData: FormData) {
     policyId: policy.id,
     eventType: "bind",
     body: `Bound ${deal.lineOfBusiness} ${policy.policyNumber}. Policy created only after bind — quotes stayed on the deal.`,
+  });
+
+  await recordPolicyFieldChanges({
+    policyId: policy.id,
+    before: { status: null, policyNumber: null, premium: null },
+    after: {
+      status: policy.status,
+      policyNumber: policy.policyNumber,
+      premium: policy.premium,
+    },
+    source: "bind",
+    actor: { id: actor.id || null, name: actor.name || "Desk" },
   });
 
   const followUpTitle = `30-day review · ${policy.policyNumber}`;

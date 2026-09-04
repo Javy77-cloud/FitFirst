@@ -3,6 +3,7 @@ import {
   contentDisposition,
   fileDownloadHref,
   filePreviewHref,
+  fileVersionHref,
   fileViewHref,
   inferMimeFromName,
   looksLikePdf,
@@ -17,6 +18,8 @@ describe("file URLs", () => {
     expect(fileDownloadHref("abc")).toBe("/api/files/abc?download=1");
     expect(filePreviewHref("abc")).toBe("/files/abc");
     expect(filePreviewHref("abc", true)).toBe("/files/abc?print=1");
+    expect(fileVersionHref("abc", "ver-1")).toBe("/api/files/abc?version=ver-1");
+    expect(fileVersionHref("abc", "ver-1", true)).toBe("/api/files/abc?version=ver-1&download=1");
   });
 
   it("sniffs PDF magic and quote slots", () => {
