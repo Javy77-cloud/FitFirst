@@ -137,17 +137,17 @@ export async function AppShell({
             </Link>
           ))}
         </nav>
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-5 py-3">
+        <header className="relative z-40 flex flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border bg-card px-5 py-3">
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
               {eyebrow ?? "Personal lines worksheet"}
             </div>
             <h1 className="text-lg font-semibold text-navy">{title}</h1>
           </div>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-visible">
             <SmartSearch />
             {actions}
-            {columns ? <div className="ml-1 shrink-0">{columns}</div> : null}
+            {columns ? <div className="relative z-50 ml-1 shrink-0">{columns}</div> : null}
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-5">{children}</main>

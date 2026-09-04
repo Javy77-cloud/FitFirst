@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { saveColumnPrefs } from "@/app/actions/desk-prefs";
 import { TABLE_COLUMNS, parseColumns } from "@/lib/desk/columns";
 
@@ -14,6 +14,7 @@ export function ColumnPicker({
   const defs = TABLE_COLUMNS[tableKey] ?? [];
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(initial);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(`ff_cols_${tableKey}`);
@@ -27,6 +28,22 @@ export function ColumnPicker({
       });
     }
   }, [defs, selected, tableKey]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(ev: MouseEvent) {
+      if (!boxRef.current?.contains(ev.target as Node)) setOpen(false);
+    }
+    function onKey(ev: KeyboardEvent) {
+      if (ev.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const label = useMemo(() => `${selected.length} columns`, [selected.length]);
 
@@ -42,16 +59,21 @@ export function ColumnPicker({
   }
 
   return (
-    <div className="relative">
+    <div ref={boxRef} className="relative">
       <button
         type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
         onClick={() => setOpen((v) => !v)}
         className="rounded-md border border-border bg-card px-2.5 py-1 text-sm text-navy hover:border-primary"
       >
         Columns · {label}
       </button>
       {open ? (
-        <div className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-border bg-card p-2 shadow">
+        <div
+          role="listbox"
+          className="absolute right-0 z-50 mt-1 max-h-80 w-56 overflow-auto rounded-md border border-border bg-card p-2 shadow-lg"
+        >
           {defs.map((col) => (
             <label key={col.key} className="flex items-center gap-2 px-1 py-1 text-sm">
               <input

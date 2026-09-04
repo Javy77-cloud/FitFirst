@@ -39,7 +39,7 @@ export async function ColumnPickerMenu({
       <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-[0.8rem] font-medium text-navy hover:bg-muted">
         Columns
       </summary>
-      <div className="absolute right-0 z-30 mt-1 w-72 rounded-md border border-border bg-card p-2 shadow-md">
+      <div className="absolute right-0 z-50 mt-1 max-h-80 w-72 overflow-auto rounded-md border border-border bg-card p-2 shadow-lg">
         <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {sourceLabel}
         </p>
