@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActorSwitcher } from "@/components/actor-switcher";
-import { groupIdForPath, NAV_GROUPS, PINNED_HOME, pathIsActive } from "@/components/desk-nav";
+import { groupIdForPath, NAV_GROUPS, PINNED_HOME, pathIsActive } from "@/components/desk-nav-groups";
 import { logoutDesk } from "@/app/actions/auth";
 import type { Actor } from "@/lib/auth/rbac";
 import { cn } from "@/lib/utils";

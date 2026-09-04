@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { DeskHeader } from "@/components/desk-header";
 import { DeskSidebar } from "@/components/desk-sidebar";
-import { FLAT_NAV } from "@/components/desk-nav";
+import { FLAT_NAV } from "@/components/desk-nav-groups";
 import { SupportLauncher } from "@/components/support/help-center";
 import { SupportProvider } from "@/components/support/support-context";
 import { currentDeskSession, getActor } from "@/lib/auth/session";
