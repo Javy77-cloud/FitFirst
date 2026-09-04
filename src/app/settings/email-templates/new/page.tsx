@@ -5,7 +5,7 @@ import { requireAdminPage } from "@/lib/auth/guards";
 export const dynamic = "force-dynamic";
 
 export default async function NewEmailTemplatePage() {
-  const session = await requireAdminPage();
+  await requireAdminPage();
 
   return (
     <SettingsShell title="New email template" current="templates">
