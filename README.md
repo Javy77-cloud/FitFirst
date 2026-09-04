@@ -162,7 +162,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 - **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Integrations catalog** (`/settings/integrations`) — BYO providers (Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Meet, DocuSign, Dropbox Sign). Connect stub only. Agency pays. No Zoho. No live OAuth.
-- **Automations** is its own nav row (`/automations`) — not buried only in Settings. Email campaigns use the Mailchimp / Constant Contact / SendGrid stubs when connected; otherwise **Connect integration**. Bulk SMS is the same for Twilio / RingCentral / Lightspeed. Work-email templates read the existing library. Guided builder is Trigger → Condition → Action (prefer in-app notify). Agents draft signatures; Admin approves before live. Additive `0021_automations_hub`.
+- **Automations** is its own nav row (`/automations`) — not buried only in Settings. Email campaigns use the Mailchimp / Constant Contact / SendGrid stubs when connected; otherwise **Connect integration**. Bulk SMS is the same for Twilio / RingCentral / Lightspeed. Work-email templates read the existing library. Guided builder is Trigger → Condition → Action (prefer in-app notify). Agents draft signatures; Admin approves before live. Additive `0025_automations_hub`.
 
 **Alerts** stay in-desk (asks + work-queue pings).
 - **Meetings** from a pipeline card: Video-call, In-Home, or In-Office. Settings → Communications stores Zoom / Meet / BYO stubs plus the agency office and each agent’s meeting address.
