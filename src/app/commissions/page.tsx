@@ -1,13 +1,17 @@
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { AskThread } from "@/components/ask-thread";
 import { formatMoney } from "@/lib/domain";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { getActor } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { listAsksForEntities } from "@/lib/db/queries";
 import { commissions, policies } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
 export default async function CommissionsPage() {
+  const actor = await getActor();
   const rows = await db
     .select({ commission: commissions, policy: policies })
     .from(commissions)
@@ -19,11 +23,22 @@ export default async function CommissionsPage() {
   const paid = rows
     .filter((r) => r.commission.status === "paid")
     .reduce((sum, r) => sum + Number(r.commission.amount ?? 0), 0);
+  const asks = await listAsksForEntities(
+    "commission",
+    rows.map((row) => row.commission.id),
+  );
+  const asksById = new Map<string, typeof asks>();
+  for (const row of asks) {
+    const list = asksById.get(row.ask.entityId) ?? [];
+    list.push(row);
+    asksById.set(row.ask.entityId, list);
+  }
 
   return (
     <AppShell title="Commissions">
       <p className="mb-3 text-base text-muted-foreground">
-        Per-policy agency earnings. Pending vs paid. No live carrier payouts.
+        Per-policy agency earnings. Pending vs paid. Ask a teammate on a seeded row — no live
+        carrier payouts.
       </p>
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
         <div className="ff-card p-4">
@@ -47,6 +62,7 @@ export default async function CommissionsPage() {
                 <th>Policy</th>
                 <th>Status</th>
                 <th>Amount</th>
+                <th>Ask a teammate</th>
               </tr>
             </thead>
             <tbody>
@@ -55,6 +71,15 @@ export default async function CommissionsPage() {
                   <td>{policy?.policyNumber ?? "—"}</td>
                   <td className="uppercase">{commission.status}</td>
                   <td>{formatMoney(commission.amount)}</td>
+                  <td>
+                    <AskThread
+                      entityType="commission"
+                      entityId={commission.id}
+                      actor={actor}
+                      asks={asksById.get(commission.id) ?? []}
+                      compact
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

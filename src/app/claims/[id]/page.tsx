@@ -7,12 +7,14 @@ import { RecordLink } from "@/components/record-links";
 import { formatDay } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { claimActivity, claimNotes, claims, contacts, deals, policies } from "@/lib/db/schema";
+import { isDeskUuid } from "@/lib/desk-id";
 import { loadRecordContext } from "@/lib/record-context";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isDeskUuid(id)) notFound();
   const [row] = await db
     .select({ claim: claims, policy: policies, contact: contacts, deal: deals })
     .from(claims)

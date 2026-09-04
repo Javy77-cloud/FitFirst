@@ -1,10 +1,12 @@
 import { notFound, redirect } from "next/navigation";
-import { completeDeskActivity } from "@/app/actions/activities-desk";
+import { completeDeskActivity, updateDeskActivity } from "@/app/actions/activities-desk";
+import { updateReviewTask } from "@/app/actions/alerts";
 import { AppShell } from "@/components/app-shell";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StagePill } from "@/components/fit-badge";
 import { ACTIVITY_KIND_LABEL, formatDay, type ActivityKind } from "@/lib/domain";
 import { getActivityRecord, getReviewTaskRecord, loadRecordContext } from "@/lib/record-context";
@@ -104,6 +106,32 @@ export async function ActivityRecordPage({
                     {activity.notes ?? "No notes."}
                   </p>
                 </div>
+                <form action={updateDeskActivity} className="mt-4 space-y-2 border-t border-border pt-3">
+                  <input type="hidden" name="activityId" value={activity.id} />
+                  <h3 className="text-sm font-semibold text-navy">Edit</h3>
+                  <label className="block text-xs text-muted-foreground">
+                    Title
+                    <Input name="title" required defaultValue={activity.title} className="mt-1 h-8" />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    Notes
+                    <Input name="notes" defaultValue={activity.notes ?? ""} className="mt-1 h-8" />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    Due
+                    <Input
+                      name="dueAt"
+                      type="datetime-local"
+                      defaultValue={
+                        activity.dueAt ? new Date(activity.dueAt).toISOString().slice(0, 16) : ""
+                      }
+                      className="mt-1 h-8"
+                    />
+                  </label>
+                  <Button type="submit" size="sm" variant="secondary">
+                    Save changes
+                  </Button>
+                </form>
               </section>
               <section className="ff-card overflow-hidden">
                 <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
@@ -183,6 +211,37 @@ export async function ActivityRecordPage({
             <p className="mt-4 text-base text-muted-foreground">
               Desk 30/60/90 review item. Activity logs on Contact and Policy stay on those records.
             </p>
+            <form action={updateReviewTask} className="mt-4 space-y-2 border-t border-border pt-3">
+              <input type="hidden" name="taskId" value={task.id} />
+              <h3 className="text-sm font-semibold text-navy">Edit</h3>
+              <label className="block text-xs text-muted-foreground">
+                Title
+                <Input name="title" required defaultValue={task.title} className="mt-1 h-8" />
+              </label>
+              <label className="block text-xs text-muted-foreground">
+                Status
+                <select
+                  name="status"
+                  defaultValue={task.status}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  <option value="open">open</option>
+                  <option value="done">done</option>
+                </select>
+              </label>
+              <label className="block text-xs text-muted-foreground">
+                Due
+                <Input
+                  name="dueDate"
+                  type="date"
+                  defaultValue={task.dueDate.toISOString().slice(0, 10)}
+                  className="mt-1 h-8"
+                />
+              </label>
+              <Button type="submit" size="sm" variant="secondary">
+                Save changes
+              </Button>
+            </form>
           </section>
         }
         rail={<RecordContextRail context={context} />}

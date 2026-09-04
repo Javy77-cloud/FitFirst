@@ -135,7 +135,9 @@ export async function filePolicyChange(input: FilePolicyChangeInput) {
       }),
     );
   } else if (input.attachDeskCopy) {
-    const [contact] = await db.select().from(contacts).where(eq(contacts.id, policy.contactId));
+    const [contact] = policy.contactId
+      ? await db.select().from(contacts).where(eq(contacts.id, policy.contactId))
+      : [];
     const text = deskCopyText({
       kind: input.kind,
       policyNumber: policy.policyNumber,

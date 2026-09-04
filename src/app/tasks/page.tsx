@@ -15,7 +15,14 @@ export default async function TasksPage({
   const filter = pickFilterParams(await searchParams, ["status", "kind"]);
   const tasks = await listReviewTasks(filter);
   return (
-    <AppShell title="Tasks">
+    <AppShell
+      title="Tasks"
+      actions={
+        <Link href="/tasks/new" className="text-sm font-medium text-primary hover:underline">
+          New task
+        </Link>
+      }
+    >
       <p className="mb-3 text-base text-muted-foreground">
         Desk 30/60/90 and review tasks. Activity timeline on Contact and Policy still owns
         task/call logs assigned to those records.

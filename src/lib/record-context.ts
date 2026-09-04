@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, formatDay } from "@/lib/domain";
+import { isDeskUuid } from "@/lib/desk-id";
 import { db } from "@/lib/db";
 import {
   accounts,
@@ -225,6 +226,7 @@ export async function loadRecordContext(
 }
 
 export async function getActivityRecord(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [row] = await db
     .select({
       activity: activities,
@@ -251,6 +253,7 @@ export async function getActivityRecord(id: string) {
 }
 
 export async function getReviewTaskRecord(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [row] = await db
     .select({
       task: reviewTasks,

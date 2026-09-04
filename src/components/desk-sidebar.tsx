@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 import { groupIdForPath, NAV_GROUPS, pathIsActive } from "@/components/desk-nav";
 import { cn } from "@/lib/utils";
 
+const SIDEBAR_BG = "#d6e8f8";
+const SIDEBAR_TEXT = "#111827";
+
 export function DeskSidebar({ unread }: { unread: number }) {
   const pathname = usePathname();
   const search = useSearchParams();
@@ -17,11 +20,16 @@ export function DeskSidebar({ unread }: { unread: number }) {
   }, [pathname]);
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
-      <div className="border-b border-sidebar-border px-4 py-4">
+    <aside
+      className="hidden w-56 shrink-0 flex-col md:flex"
+      style={{ backgroundColor: SIDEBAR_BG, color: SIDEBAR_TEXT }}
+    >
+      <div className="border-b border-[#9bb8d3] px-4 py-4">
         <Link href="/" className="block">
-          <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
-          <div className="text-[11px] text-sidebar-foreground/70">
+          <div className="text-lg font-semibold tracking-tight" style={{ color: SIDEBAR_TEXT }}>
+            FitFirst
+          </div>
+          <div className="text-[11px]" style={{ color: "#1f2937" }}>
             Owner desk · filter-first P&amp;C
           </div>
         </Link>
@@ -35,7 +43,8 @@ export function DeskSidebar({ unread }: { unread: number }) {
                 type="button"
                 aria-expanded={open}
                 onClick={() => setOpenId(group.id)}
-                className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/70 hover:text-white"
+                className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide hover:bg-[#c5dbf0]"
+                style={{ color: "#1f2937" }}
               >
                 {group.label}
                 <ChevronDown className={cn("size-3.5 transition", open ? "rotate-180" : "")} />
@@ -56,10 +65,9 @@ export function DeskSidebar({ unread }: { unread: number }) {
                         href={item.href}
                         className={cn(
                           "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px]",
-                          active
-                            ? "bg-[var(--ff-card)] text-navy"
-                            : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
+                          active ? "bg-[#fffcf7]" : "hover:bg-[#c5dbf0]",
                         )}
+                        style={{ color: SIDEBAR_TEXT }}
                       >
                         <Icon className="size-3.5 opacity-80" />
                         <span className="flex-1">{item.label}</span>
@@ -77,7 +85,7 @@ export function DeskSidebar({ unread }: { unread: number }) {
           );
         })}
       </nav>
-      <div className="border-t border-sidebar-border px-4 py-3 text-[11px] text-sidebar-foreground/60">
+      <div className="border-t border-[#9bb8d3] px-4 py-3 text-[11px]" style={{ color: "#1f2937" }}>
         Single-tenant demo
         <br />
         No Zoho sync · no portal logins

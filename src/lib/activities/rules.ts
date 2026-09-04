@@ -14,13 +14,18 @@ export type RelatedIds = {
   businessId?: string | null;
 };
 
-export function normalizeStatus(status: string | null | undefined): ActivityStatus {
+/** Calendar / leftover ops statuses plus desk ACTIVITY_STATUSES. */
+export type OpsActivityStatus = ActivityStatus | "incomplete" | "canceled" | "rescheduled" | "in_progress";
+
+export function normalizeStatus(status: string | null | undefined): OpsActivityStatus {
   const raw = (status ?? "incomplete").trim().toLowerCase();
+  if (raw === "open") return "incomplete";
+  if (raw === "cancelled") return "canceled";
   const aliased = ACTIVITY_STATUS_ALIASES[raw] ?? raw;
   if ((ACTIVITY_STATUSES as readonly string[]).includes(aliased)) {
     return aliased as ActivityStatus;
   }
-  return "incomplete";
+  return aliased as OpsActivityStatus;
 }
 
 export function assertContactOrPolicy(related: RelatedIds): void {
@@ -35,14 +40,14 @@ export function canDeleteActivity(): false {
   return false;
 }
 
-export function cancelInsteadOfDelete(): { status: ActivityStatus } {
+export function cancelInsteadOfDelete(): { status: OpsActivityStatus } {
   return { status: "canceled" };
 }
 
 export type RescheduleRecord = {
   previousDueAt: Date | null;
   dueAt: Date;
-  status: ActivityStatus;
+  status: OpsActivityStatus;
   actorId: string | null;
   actorName: string | null;
 };
@@ -110,7 +115,7 @@ export function canCloseCall(input: {
 
 export function isClosedStatus(status: string): boolean {
   const mapped = normalizeStatus(status);
-  return mapped === "completed" || mapped === "canceled";
+  return mapped === "completed" || mapped === "canceled" || mapped === "cancelled";
 }
 
 export function whenForActivity(row: {

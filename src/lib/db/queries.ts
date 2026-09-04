@@ -1,6 +1,13 @@
 import { and, asc, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { Activity } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isDeskUuid } from "@/lib/desk-id";
+import {
+  matchReplacementPolicies,
+  normalizePremises,
+  resolvePolicyNumberForNotice,
+} from "@/lib/policy/premises";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { addUtcDays, DESK_AS_OF, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
 import {
@@ -46,10 +53,12 @@ import {
   quoteAttemptLogs,
   quoteSheets,
   quotes,
+  recordAsks,
   renewalCompareLogs,
   reviewTasks,
   risks,
   tenants,
+  users,
   vehicles,
 } from "./schema";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
@@ -305,6 +314,7 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
 }
 
 export async function getLead(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [lead] = await db
     .select()
     .from(leads)
@@ -317,6 +327,7 @@ export async function getLead(id: string) {
 }
 
 export async function getContactWorkspace(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [contact] = await db
     .select()
     .from(contacts)
@@ -363,6 +374,7 @@ export async function getContactWorkspace(id: string) {
 }
 
 export async function getAccountWorkspace(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [account] = await db
     .select()
     .from(accounts)
@@ -412,6 +424,7 @@ export async function getBusinessWorkspace(id: string) {
 }
 
 export async function getIssuedCertificate(accountId: string, certId: string) {
+  if (!isDeskUuid(accountId) || !isDeskUuid(certId)) return null;
   const workspace = await getAccountWorkspace(accountId);
   if (!workspace) return null;
   const certificate = workspace.certificates.find((row) => row.id === certId);
@@ -424,6 +437,7 @@ export async function getIssuedCertificate(accountId: string, certId: string) {
 }
 
 export async function getClaimAttachment(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [row] = await db
     .select()
     .from(claimAttachments)
@@ -442,6 +456,7 @@ export async function getLastQuoteSheetDealId() {
 }
 
 export async function getPolicyWorkspace(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [row] = await db
     .select({
       policy: policies,
@@ -535,6 +550,7 @@ export async function listReviewTasks(filter: { status?: string; kind?: string }
 }
 
 export async function getDealWorkspace(dealId: string) {
+  if (!isDeskUuid(dealId)) return null;
   const [deal] = await db
     .select()
     .from(deals)
@@ -946,6 +962,7 @@ async function mergeBundle(entityType: string, id: string) {
 }
 
 export async function getMergeReview(id: string) {
+  if (!isDeskUuid(id)) return null;
   const [candidate] = await db
     .select()
     .from(mergeCandidates)
@@ -1092,4 +1109,65 @@ export async function listCalendarRelatedOptions() {
       title: `${row.lastName}, ${row.firstName}`,
     })),
   };
+}
+
+export async function getContact360(id: string) {
+  const workspace = await getContactWorkspace(id);
+  if (!workspace) return null;
+  return {
+    ...workspace,
+    counts: { active: workspace.activePolicyCount, lifetime: workspace.policyCount },
+  };
+}
+
+export async function matchReplacementNotice(query: {
+  address1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  policyNumber?: string | null;
+}) {
+  const rows = await db.select().from(policies).where(eq(policies.tenantId, tenant()));
+  const matchable = rows.map((policy) => ({
+    id: policy.id,
+    policyNumber: policy.policyNumber,
+    status: policy.status,
+    premisesKey: normalizePremises({
+      address1: policy.premisesAddress,
+      city: policy.premisesCity,
+      state: policy.premisesState,
+      zip: policy.premisesZip,
+    }),
+  }));
+  const numberHit = resolvePolicyNumberForNotice(matchable, query.policyNumber);
+  const matches = matchReplacementPolicies(matchable, query).map((row) => ({
+    policy: rows.find((policy) => policy.id === row.id)!,
+  }));
+  return {
+    ignoredCancelledNumber: numberHit.ignoredCancelledNumber,
+    matches,
+  };
+}
+
+export async function listAsksForEntities(entityType: string, entityIds: string[]) {
+  const ids = entityIds.filter(isDeskUuid);
+  if (ids.length === 0) return [];
+  const askAuthor = alias(users, "ask_author");
+  return db
+    .select({
+      ask: recordAsks,
+      author: askAuthor,
+    })
+    .from(recordAsks)
+    .leftJoin(askAuthor, eq(recordAsks.authorId, askAuthor.id))
+    .where(and(eq(recordAsks.tenantId, tenant()), eq(recordAsks.entityType, entityType)))
+    .orderBy(desc(recordAsks.createdAt))
+    .then((rows) =>
+      rows
+        .filter((row) => ids.includes(row.ask.entityId))
+        .map((row) => ({
+          ask: row.ask,
+          author: { name: row.author?.name ?? "Desk" },
+        })),
+    );
 }

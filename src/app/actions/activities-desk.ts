@@ -123,6 +123,45 @@ export async function completeDeskActivity(formData: FormData) {
   revalidatePath(`/meetings/${id}`);
 }
 
+export async function updateDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId");
+  if (!id) return;
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) return;
+
+  const title = str(formData, "title") || activity.title;
+  const notes = str(formData, "notes") || null;
+  const dueAt = when(formData, "dueAt");
+  await db
+    .update(activities)
+    .set({
+      title,
+      notes,
+      dueAt: dueAt ?? activity.dueAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(activities.id, id));
+
+  await db.insert(activityLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    activityId: activity.id,
+    kind: activity.kind,
+    eventType: "logged",
+    body: activityLogBody(activity.kind, "logged", title),
+    contactId: activity.contactId,
+    accountId: activity.accountId,
+    policyId: activity.policyId,
+    dealId: activity.dealId,
+  });
+
+  revalidateRelated(activity);
+  revalidatePath(`/tasks/${id}`);
+  revalidatePath(`/meetings/${id}`);
+}
+
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */
 export async function saveCallOutcome(formData: FormData) {
   const id = str(formData, "id") || str(formData, "activityId");

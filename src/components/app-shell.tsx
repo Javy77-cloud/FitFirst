@@ -30,7 +30,7 @@ export async function AppShell({
   return (
     <SupportProvider>
       <div className="flex min-h-screen bg-background">
-        <Suspense fallback={<aside className="hidden w-56 shrink-0 bg-sidebar md:block" />}>
+        <Suspense fallback={<aside className="hidden w-56 shrink-0 md:block" style={{ backgroundColor: "#d6e8f8" }} />}>
           <DeskSidebar unread={unread} />
         </Suspense>
         <div className="flex min-w-0 flex-1 flex-col">

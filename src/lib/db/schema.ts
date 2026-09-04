@@ -1187,3 +1187,7 @@ export type Vehicle = typeof vehicles.$inferSelect;
 export type PolicyTerm = typeof policyTerms.$inferSelect;
 export type RenewalCompareLog = typeof renewalCompareLogs.$inferSelect;
 export type PolicyWorkItem = typeof policyWorkItems.$inferSelect;
+export type PolicyWorkFlag = typeof policyWorkFlags.$inferSelect;
+export type PolicyWorkNote = typeof policyWorkNotes.$inferSelect;
+export type DeskUser = User;
+export type RecordAsk = typeof recordAsks.$inferSelect;
