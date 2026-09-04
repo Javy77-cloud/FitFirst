@@ -43,7 +43,7 @@ export function RelatedPolicies({
         <p className="text-sm text-muted-foreground">No policies on this record.</p>
       ) : (
         <table className="ff-table">
-            <thead>
+          <thead>
             <tr>
               <Col table="related-policies" col="number" as="th">Policy</Col>
               <Col table="related-policies" col="status" as="th">Status</Col>
