@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { CommissionFilters } from "@/components/commissions/filters";
 import { filterCommissionRows, isCommissionPeriod } from "@/lib/commissions/filters";
 import { defaultColumns } from "@/lib/desk/columns";
@@ -98,7 +99,7 @@ export default async function CommissionsPage({
                 <Col table="commissions" col="amount" as="th">Amount</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.map(({ commission, policy, lineOfBusiness }) => (
                 <tr key={commission.id}>
                   <Col table="commissions" col="policy">{policy?.policyNumber ?? "—"}</Col>
@@ -113,7 +114,7 @@ export default async function CommissionsPage({
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

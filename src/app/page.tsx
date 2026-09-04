@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { OwnerDesk } from "@/components/home/owner-desk";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { markAlertRead } from "@/app/actions/alerts";
@@ -77,7 +78,7 @@ export default async function HomePage() {
                 <Col table="home-deals" col="line" as="th">Line</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {recentDeals.map((deal) => (
                 <tr key={deal.id}>
                   <Col table="home-deals" col="title">
@@ -91,7 +92,7 @@ export default async function HomePage() {
                   <Col table="home-deals" col="line">{deal.lineOfBusiness}</Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         </section>
       </div>

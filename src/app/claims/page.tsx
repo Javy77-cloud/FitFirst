@@ -2,6 +2,7 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { buttonVariants } from "@/components/ui/button";
 import { defaultColumns } from "@/lib/desk/columns";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -57,7 +58,7 @@ export default async function ClaimsPage() {
                 <Col table="claims" col="party" as="th">Party</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.map(({ claim, policy, contact }) => (
                 <tr key={claim.id}>
                   <Col table="claims" col="status">
@@ -75,7 +76,7 @@ export default async function ClaimsPage() {
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

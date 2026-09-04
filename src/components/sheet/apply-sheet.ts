@@ -26,7 +26,7 @@ function rememberOrder(row: HTMLElement, index: number) {
 }
 
 export function applySheetSort(tableEl: HTMLElement, sort: SheetSort | null) {
-  tableEl.querySelectorAll("tbody").forEach((tbody) => {
+  tableEl.querySelectorAll(":scope > tbody").forEach((tbody) => {
     const rows = Array.from(tbody.querySelectorAll(":scope > tr")) as HTMLElement[];
     rows.forEach((row, index) => rememberOrder(row, index));
     const locked = rows.filter((row) => row.querySelector("[colspan]"));

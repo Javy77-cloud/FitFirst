@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { RecordLink } from "@/components/record-links";
 import { defaultColumns } from "@/lib/desk/columns";
 import { listCarriers } from "@/lib/db/queries";
@@ -47,7 +48,7 @@ export default async function CarriersPage() {
               <Col table="carriers" col="lines" as="th">Lines</Col>
             </tr>
           </thead>
-          <tbody>
+          <SheetTbody>
             {unique.map(({ carrier }) => (
               <tr key={carrier.id}>
                 <Col table="carriers" col="name">
@@ -82,7 +83,7 @@ export default async function CarriersPage() {
                 <Col table="carriers" col="lines">{(carrier.writtenLines ?? []).join(", ") || "—"}</Col>
               </tr>
             ))}
-          </tbody>
+          </SheetTbody>
         </table>
       </section>
     </AppShell>

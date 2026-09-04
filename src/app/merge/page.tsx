@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { listOpenMergeCandidates } from "@/lib/db/queries";
@@ -76,7 +77,7 @@ export default async function MergeQueuePage() {
                 <Col table="merge" col="action" as="th">Review</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {candidates.map((row) => {
                 const names = row.entityType === "lead" ? leadNames : contactNames;
                 const left = names.get(row.leftId) ?? "Record";
@@ -114,7 +115,7 @@ export default async function MergeQueuePage() {
                   </tr>
                 );
               })}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

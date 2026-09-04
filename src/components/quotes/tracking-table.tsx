@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { TrackingStatusBadge } from "@/components/quotes/status-badge";
 import { formatMoney } from "@/lib/domain";
 import { cheapestQuotedSummary, type TrackingShop } from "@/lib/quotes/tracking";
@@ -35,7 +36,7 @@ export function TrackingTable({
             <Col table="quotes" col="links" as="th">Links</Col>
           </tr>
         </thead>
-        <tbody>
+        <SheetTbody>
           {shop.rows.map((row) => (
             <tr key={row.id} id={`track-${row.id}`}>
               <Col
@@ -101,7 +102,7 @@ export function TrackingTable({
               </Col>
             </tr>
           ))}
-        </tbody>
+        </SheetTbody>
       </table>
     </div>
   );

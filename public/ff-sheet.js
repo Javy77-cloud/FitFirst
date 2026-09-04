@@ -116,8 +116,12 @@
     return (cell.getAttribute("data-sort") || cell.textContent || "").replace(/\s+/g, " ").trim();
   }
 
+  function tableBodies(tableEl) {
+    return tableEl.querySelectorAll(":scope > tbody");
+  }
+
   function applySort(tableEl, sort) {
-    tableEl.querySelectorAll("tbody").forEach(function (tbody) {
+    tableBodies(tableEl).forEach(function (tbody) {
       var rows = Array.prototype.slice.call(tbody.querySelectorAll(":scope > tr"));
       rows.forEach(function (row, index) {
         if (row.dataset.sheetIndex == null) row.dataset.sheetIndex = String(index);
@@ -189,7 +193,20 @@
     return el.closest("table");
   }
 
+  function hydrated() {
+    return document.documentElement.getAttribute("data-ff-hydrated") === "1";
+  }
+
+  function whenHydrated(fn) {
+    if (hydrated()) {
+      fn();
+      return;
+    }
+    window.addEventListener("ff-hydrated", fn, { once: true });
+  }
+
   function commit(el, updater) {
+    if (!hydrated()) return;
     var table = el.getAttribute("data-sheet-table");
     var tableEl = closestTable(el);
     if (!table || !tableEl) return;
@@ -275,13 +292,16 @@
     });
   }
 
-  function bootAfterHydrate() {
-    setTimeout(boot, 1);
+  function bootRoute() {
+    applied = typeof WeakSet !== "undefined" ? new WeakSet() : null;
+    boot();
   }
 
-  if (document.readyState === "complete") bootAfterHydrate();
-  else window.addEventListener("load", bootAfterHydrate);
+  whenHydrated(boot);
+  window.addEventListener("ff-sheet-route", function () {
+    if (hydrated()) bootRoute();
+  });
   window.addEventListener("pageshow", function (event) {
-    if (event.persisted) bootAfterHydrate();
+    if (event.persisted) whenHydrated(bootRoute);
   });
 })();

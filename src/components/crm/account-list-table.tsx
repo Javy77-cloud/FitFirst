@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ColumnPicker } from "@/components/crm/column-picker";
 import { SheetHeader } from "@/components/sheet/sheet-header";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { LinkedValue } from "@/components/crm/linked-value";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { formatTenure } from "@/lib/crm/display";
@@ -55,7 +56,7 @@ export function AccountListTable({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <SheetTbody>
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="text-muted-foreground">
@@ -111,7 +112,7 @@ export function AccountListTable({
                 ),
               )
             )}
-          </tbody>
+          </SheetTbody>
         </table>
       </section>
     </ColumnPicker>
