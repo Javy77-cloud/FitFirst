@@ -28,6 +28,11 @@ describe("integrations catalog", () => {
         "google_meet",
         "docusign",
         "dropbox_sign",
+        "facebook",
+        "instagram",
+        "x",
+        "linkedin",
+        "google_business_profile",
       ]),
     );
     expect(ids.some((id) => id.includes("zoho"))).toBe(false);
@@ -39,6 +44,7 @@ describe("integrations catalog", () => {
       "phone_sms",
       "video",
       "esign",
+      "social",
     ]);
   });
 
@@ -50,5 +56,14 @@ describe("integrations catalog", () => {
     expect(result.message).toContain("DocuSign");
     expect(isIntegrationProviderId("gmail")).toBe(true);
     expect(isIntegrationProviderId("zoho_mail")).toBe(false);
+    expect(isIntegrationProviderId("facebook")).toBe(true);
+    expect(isIntegrationProviderId("google_business_profile")).toBe(true);
+    expect(providersIn("social").map((item) => item.id)).toEqual([
+      "facebook",
+      "instagram",
+      "x",
+      "linkedin",
+      "google_business_profile",
+    ]);
   });
 });

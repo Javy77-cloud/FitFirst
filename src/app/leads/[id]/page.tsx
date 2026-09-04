@@ -13,8 +13,11 @@ import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { AwardLeadForm } from "@/components/leads/award-form";
+import { currentDeskSession } from "@/lib/auth/session";
 import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
+import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
 import type { LineOfBusiness } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 
@@ -27,14 +30,17 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, templates, asks, users] = await Promise.all([
+  const [row, templates, asks, users, session, agents] = await Promise.all([
     getLead(id),
     listEmailTemplates(),
     listRecordAsks("lead", id),
     listDeskUsers(),
+    currentDeskSession(),
+    listAwardableAgents(),
   ]);
   if (!row) notFound();
   const { lead, deal, timeline } = row;
+  const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
   const lineLabel = lead.insuranceTypeDesired
     ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
     : null;
@@ -45,6 +51,9 @@ export default async function LeadDetailPage({
         <span className="uppercase text-muted-foreground">{lead.status}</span>
         {deal ? <StagePill stage={deal.pipelineStage} /> : null}
         <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
+        <span className="text-muted-foreground">
+          {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
+        </span>
         {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
         {lead.preferredLanguage ? (
           <span className="uppercase text-muted-foreground">{lead.preferredLanguage}</span>
@@ -56,6 +65,16 @@ export default async function LeadDetailPage({
           phone={lead.phone}
         />
       </div>
+
+      {session.isAdmin && !lead.ownerId && isInboundSocialSource(lead.source) ? (
+        <div className="mb-4 ff-card p-4">
+          <h2 className="text-sm font-semibold text-navy">Award this inbound</h2>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Agency-level social / inbound. Awarding assigns the Lead and pings that agent.
+          </p>
+          <AwardLeadForm leadId={lead.id} agents={agents} next={`/leads/${lead.id}`} />
+        </div>
+      ) : null}
 
       <RecordSection id="record" title="This lead" summary="Person and coverage they asked for — source docs wait for the deal">
         <form action={updateLeadRecord} className="mb-4 space-y-3">

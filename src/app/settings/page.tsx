@@ -48,18 +48,33 @@ export default async function SettingsPage() {
           </p>
         </div>
       </Link>
-      <Link
-        href="/settings/integrations"
-        className="mb-4 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
-      >
-        <div>
-          <div className="text-sm font-semibold text-navy">Integrations catalog</div>
-          <p className="text-xs text-muted-foreground">
-            Gmail, Outlook, Mailchimp, Twilio, Zoom, DocuSign — Connect stub, agency pays. No Zoho.
-          </p>
-        </div>
-        <ConnectionBadge connected={catalogConnected} />
-      </Link>
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/settings/integrations"
+          className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+        >
+          <div>
+            <div className="text-sm font-semibold text-navy">Integrations catalog</div>
+            <p className="text-xs text-muted-foreground">
+              Gmail, Outlook, Mailchimp, Twilio, Zoom, DocuSign — Connect stub, agency pays. No Zoho.
+            </p>
+          </div>
+          <ConnectionBadge connected={catalogConnected} />
+        </Link>
+        <Link
+          href="/settings/social"
+          className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+        >
+          <div>
+            <div className="text-sm font-semibold text-navy">Social / GBP</div>
+            <p className="text-xs text-muted-foreground">
+              Facebook, Instagram, X, LinkedIn, Google Business Profile. GBP needs Admin approval
+              before agents monitor.
+            </p>
+          </div>
+          <ConnectionBadge connected={catalog.some((item) => item.category === "social" && item.connected)} />
+        </Link>
+      </div>
 
       <div className={session.isAdmin ? "grid gap-4 xl:grid-cols-2 xl:items-start" : "space-y-3"}>
         {session.isAdmin ? (

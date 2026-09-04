@@ -29,7 +29,7 @@ export default async function IntegrationsCatalogPage({
   const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 
   return (
-    <SettingsShell title="Integrations">
+    <SettingsShell title="Integrations" current="integrations">
       <p className="mb-3 text-sm text-muted-foreground">
         Connectable providers the agency already pays. FitFirst does not bill Gmail, Twilio, Zoom,
         or anyone else. Connect is a stub so later OAuth can land on this settings shape — no

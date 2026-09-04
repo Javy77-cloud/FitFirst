@@ -309,6 +309,7 @@ export const INTEGRATION_CATEGORIES = [
   "phone_sms",
   "video",
   "esign",
+  "social",
 ] as const;
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
 
@@ -337,6 +338,11 @@ export const INTEGRATION_CATALOG: readonly IntegrationCatalogItem[] = [
   { category: "video", provider: "meet", label: "Google Meet" },
   { category: "esign", provider: "docusign", label: "DocuSign" },
   { category: "esign", provider: "dropbox_sign", label: "Dropbox Sign" },
+  { category: "social", provider: "facebook", label: "Facebook" },
+  { category: "social", provider: "instagram", label: "Instagram" },
+  { category: "social", provider: "x", label: "X (Twitter)" },
+  { category: "social", provider: "linkedin", label: "LinkedIn" },
+  { category: "social", provider: "google_business_profile", label: "Google Business Profile" },
 ];
 
 export const SEEDED_PIPELINE_SLUGS = ["p-c", "health", "life", "flood", "won-lost", "archive"] as const;

@@ -14,6 +14,7 @@ import {
   Phone,
   Kanban,
   ListChecks,
+  Share2,
   Shield,
   Users,
   Workflow,
@@ -26,6 +27,7 @@ import { navItemIsActive } from "@/lib/desk/nav-active";
 const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = {
   "Get Started": ListChecks,
   Home,
+  Social: Share2,
   Pipeline: Kanban,
   Leads: Users,
   Deals: ClipboardList,

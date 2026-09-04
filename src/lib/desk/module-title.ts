@@ -2,6 +2,7 @@
 
 const MODULE_PREFIXES: readonly [string, string][] = [
   ["/get-started", "Get Started"],
+  ["/social", "Social"],
   ["/pipeline", "Pipeline"],
   ["/leads", "Leads"],
   ["/deals", "Deals"],

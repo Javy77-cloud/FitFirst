@@ -20,6 +20,7 @@ export type CatalogItem = IntegrationProvider & {
   connected: boolean;
   accountLabel: string | null;
   lastConnectStatus: string | null;
+  ownerUserId: string | null;
 };
 
 type LegacyFlags = {
@@ -101,6 +102,7 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
       connected,
       accountLabel: row?.accountLabel ?? (connected ? stubAccountLabel(provider.id) : null),
       lastConnectStatus: row?.lastConnectStatus ?? (connected ? "not_implemented" : null),
+      ownerUserId: row?.ownerUserId ?? null,
     };
   });
 }
@@ -116,6 +118,7 @@ export async function listCatalogByCategory(): Promise<
     "phone_sms",
     "video",
     "esign",
+    "social",
   ];
   return order.map((category) => ({
     category,

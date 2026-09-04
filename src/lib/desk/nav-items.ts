@@ -4,6 +4,7 @@ import { SUPPORT_HREF } from "@/lib/desk/quick-actions";
 export const DESK_NAV_ITEMS = [
   { href: "/get-started", label: "Get Started" },
   { href: "/", label: "Home" },
+  { href: "/social", label: "Social" },
   { href: "/pipeline?pipeline=p-c", label: "Pipeline" },
   { href: "/leads", label: "Leads" },
   { href: "/deals", label: "Deals" },

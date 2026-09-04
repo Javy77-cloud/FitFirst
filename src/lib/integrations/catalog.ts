@@ -7,6 +7,7 @@ export const INTEGRATION_CATEGORIES = [
   "phone_sms",
   "video",
   "esign",
+  "social",
 ] as const;
 
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
@@ -18,6 +19,7 @@ export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
   phone_sms: "Phone / SMS",
   video: "Video",
   esign: "E-sign",
+  social: "Social / GBP",
 };
 
 export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
@@ -27,6 +29,8 @@ export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   phone_sms: "Call log and SMS. Twilio, RingCentral, or Lightspeed Voice. Nothing dials from this build.",
   video: "Meeting links on the calendar. Zoom or Google Meet — agency account.",
   esign: "Send a packet for signature. DocuSign or Dropbox Sign. No envelope leaves the desk today.",
+  social:
+    "Agency Facebook, Instagram, X, LinkedIn, and Google Business Profile. Connect is a stub. FitFirst does not buy ads or API seats.",
 };
 
 export const INTEGRATION_PROVIDER_IDS = [
@@ -45,6 +49,11 @@ export const INTEGRATION_PROVIDER_IDS = [
   "google_meet",
   "docusign",
   "dropbox_sign",
+  "facebook",
+  "instagram",
+  "x",
+  "linkedin",
+  "google_business_profile",
 ] as const;
 
 export type IntegrationProviderId = (typeof INTEGRATION_PROVIDER_IDS)[number];
@@ -181,6 +190,46 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     blurb: "HelloSign / Dropbox Sign for the same packet flow.",
     byoNote: "Agency Dropbox Sign plan. No document leaves the desk.",
   },
+  {
+    id: "facebook",
+    category: "social",
+    name: "Facebook",
+    initials: "Fb",
+    blurb: "Page inbox and lead forms. Inquiries land on Leads. Pulse shows followers and post views.",
+    byoNote: "Agency Facebook Page. OAuth does not open Meta. No ad spend.",
+  },
+  {
+    id: "instagram",
+    category: "social",
+    name: "Instagram",
+    initials: "Ig",
+    blurb: "DMs and comment asks for a quote. Same social → Lead path as the stub button.",
+    byoNote: "Agency Instagram. Connect is a stub. Nothing syncs from Meta.",
+  },
+  {
+    id: "x",
+    category: "social",
+    name: "X (Twitter)",
+    initials: "X",
+    blurb: "Mentions and DMs that ask for coverage. Pulse is demo numbers after connect.",
+    byoNote: "Agency X account. No live Twitter API. Agency pays X later.",
+  },
+  {
+    id: "linkedin",
+    category: "social",
+    name: "LinkedIn",
+    initials: "Li",
+    blurb: "Company-page messages for commercial shops. Inquiries become Leads.",
+    byoNote: "Agency LinkedIn Page. No Sales Navigator seat from FitFirst.",
+  },
+  {
+    id: "google_business_profile",
+    category: "social",
+    name: "Google Business Profile",
+    initials: "Gb",
+    blurb: "GBP messages and listing views. Agents see this only after Admin allows monitoring.",
+    byoNote: "Agency Google Business Profile. Admin approval required before agents monitor.",
+  },
 ];
 
 export function isIntegrationProviderId(value: string): value is IntegrationProviderId {
@@ -235,5 +284,15 @@ export function stubAccountLabel(id: IntegrationProviderId): string {
       return "Agency DocuSign · stub";
     case "dropbox_sign":
       return "Agency Dropbox Sign · stub";
+    case "facebook":
+      return "FitFirst Insurance · Facebook Page stub";
+    case "instagram":
+      return "@fitfirst.insurance · Instagram stub";
+    case "x":
+      return "@FitFirstFL · X stub";
+    case "linkedin":
+      return "FitFirst Insurance · LinkedIn stub";
+    case "google_business_profile":
+      return "FitFirst Insurance · Palm Bay GBP stub";
   }
 }

@@ -129,6 +129,8 @@ export const agencySettings = pgTable(
     byoVideoUrl: text("byo_video_url"),
     videoProvider: text("video_provider").notNull().default("none"),
     showCompanyWidgets: boolean("show_company_widgets").notNull().default(false),
+    /** Admin must enable this before agents can see GBP pulse / inquiries. */
+    allowAgentsMonitorGbp: boolean("allow_agents_monitor_gbp").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
@@ -923,6 +925,8 @@ export const alerts = pgTable(
     severity: text("severity").notNull().default("info"),
     entityType: text("entity_type"),
     entityId: uuid("entity_id"),
+    /** When set, the ping is for this desk user. Null stays agency-wide. */
+    userId: uuid("user_id"),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -1744,6 +1748,8 @@ export const integrationConnections = pgTable(
     lastStatus: text("last_status"),
     lastConnectStatus: text("last_connect_status"),
     connectedAt: timestamp("connected_at", { withTimezone: true }),
+    /** Social stub owner. Null = agency / unassigned inbound. */
+    ownerUserId: uuid("owner_user_id"),
     ...timestamps,
   },
   (t) => [
@@ -1818,6 +1824,35 @@ export const leadOfferClaims = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [uniqueIndex("lead_offer_claims_agent_uidx").on(t.tenantId, t.offerId, t.agentId)],
+);
+
+/**
+ * Inbound / social lead offers. Separate from management lead_offers.
+ * Social inbound create Lead + notify + award.
+ */
+export const socialLeadOffers = pgTable(
+  "social_lead_offers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id),
+    source: text("source").notNull(),
+    platform: text("platform"),
+    status: text("status").notNull().default("open"),
+    ownerUserId: uuid("owner_user_id"),
+    offeredToUserId: uuid("offered_to_user_id"),
+    awardedByUserId: uuid("awarded_by_user_id"),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }),
+    alertId: uuid("alert_id"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("social_lead_offers_tenant_status_idx").on(t.tenantId, t.status),
+    uniqueIndex("social_lead_offers_lead_uidx").on(t.tenantId, t.leadId),
+  ],
 );
 
 export const signatureEnvelopes = pgTable(
@@ -1904,6 +1939,8 @@ export type TelephonySettings = typeof telephonySettings.$inferSelect;
 export type EsignSettings = typeof esignSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type IntegrationConnection = typeof integrationConnections.$inferSelect;
+export type LeadOfferRow = typeof leadOffers.$inferSelect;
+export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;

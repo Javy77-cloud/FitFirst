@@ -495,3 +495,22 @@ Side branch off the Mac desk-test consolidate. Additive only. Ana fixture untouc
 - **Signatures:** additive columns on `email_signatures` (`owner_user_id`, `approval_status`, review fields). Agents draft; Admin queue stub. Maya’s producer close seeds as pending.
 
 Migration `0025_automations_hub`. Do not bind Ana.
+
+## BATCH4 social + GBP connectors (`cursor/mac-ready-batch4-social-d88f`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`#c5ddf4`). No live OAuth. No vendor spend.
+
+- Settings → Social / Integrations catalog: Facebook, Instagram, X, LinkedIn, Google Business Profile connect/disconnect stubs. BYO — agency pays.
+- `/social` pulse + Home widget: demo followers / engagement / views after a connect stub. Seed connects FB, IG, GBP.
+- Inbound inquiry → Lead via `findOrCreateLead` (Priya Shah Instagram is the existing stub path).
+- GBP Admin gate: `agency_settings.allow_agents_monitor_gbp` (default false). Agents see a locked GBP card until Admin enables monitoring.
+
+Migration `0026_social_gbp`.
+
+### Javy add-on — Lead + notify + award
+
+- `src/lib/leads/offers.ts` is the contract for the home bulletin (home bot owns the board UI).
+- Social inbound on an **agent-owned** stub: `ingestSocialLead` creates/matches a Lead, sets `owner_id`, writes a targeted `alerts.user_id` ping.
+- Agency / unassigned inbound: Lead with null owner + `lead_offers.status=open`. Admin **Awards** to any agent (`awardLeadToAgent`) — assigns + notifies.
+- Settings → Social: Admin sets each stub to Agency or an agent. Seed: Instagram → Maya; FB/GBP → agency.
+- GBP monitor gate unchanged. Social inbound table is `social_lead_offers` (not management `lead_offers`). Migration `0026_social_gbp`.
