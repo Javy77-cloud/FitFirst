@@ -1,11 +1,9 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { OwnerDesk } from "@/components/home/owner-desk";
-import { buttonVariants } from "@/components/ui/button";
+import { HomeNewMenu } from "@/components/home/home-new-menu";
 import { dashboardStats, ownerHomeDashboard } from "@/lib/db/queries";
 import { loadHitLostReport } from "@/lib/db/hit-lost-queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { cn } from "@/lib/utils";
 import { parseAttentionWindow } from "@/lib/home/attention-window";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadSocialPulse } from "@/lib/social/store";
@@ -39,11 +37,7 @@ export default async function HomePage({
   return (
     <AppShell
       title="Home"
-      actions={
-        <Link href="/deals/new" className={cn(buttonVariants())}>
-          New shopping deal
-        </Link>
-      }
+      actions={<HomeNewMenu />}
     >
       {params.locked === "modules" ? (
         <p className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-sm text-fit-yellow">

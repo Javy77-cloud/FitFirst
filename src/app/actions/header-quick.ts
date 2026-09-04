@@ -8,3 +8,9 @@ export async function createHeaderMeeting(formData: FormData) {
   await logDeskActivity(formData);
   redirect("/calendar");
 }
+
+export async function createHeaderCall(formData: FormData) {
+  formData.set("kind", "call");
+  await logDeskActivity(formData);
+  redirect("/calendar");
+}
