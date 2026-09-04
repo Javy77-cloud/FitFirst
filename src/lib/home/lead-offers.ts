@@ -59,7 +59,13 @@ export function claimRelationLabel(relation: string | null | undefined): string 
 }
 
 function emailLocalToName(email: string): string {
-  return (email.split("@")[0] ?? "").replace(/[._+]+/g, " ").trim();
+  return (email.split("@")[0] ?? "")
+    .replace(/[._+]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
 }
 
 /** Parse "Name <email@x>" or a bare address into a Lead identity. Name-only never matches later. */
