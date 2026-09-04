@@ -184,6 +184,17 @@
 .ff-table th.ff-sheet-th {
   padding-right: 0.35rem;
 }
+.ff-table th.ff-sheet-th[aria-sort="ascending"] [data-icon="none"],
+.ff-table th.ff-sheet-th[aria-sort="descending"] [data-icon="none"] {
+  display: none;
+}
+.ff-table th.ff-sheet-th[aria-sort="ascending"] [data-icon="asc"],
+.ff-table th.ff-sheet-th[aria-sort="descending"] [data-icon="desc"] {
+  display: inline;
+}
+.ff-table th.ff-col-pinned [data-icon="pin"] {
+  display: inline;
+}
 .ff-table th.ff-col-pinned,
 .ff-table td.ff-col-pinned {
   position: sticky;
