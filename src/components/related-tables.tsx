@@ -1,4 +1,5 @@
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { toNumber } from "@/lib/commissions/math";
@@ -51,7 +52,7 @@ export function RelatedPolicies({
               <Col table="related-policies" col="premium" as="th">Premium</Col>
             </tr>
           </thead>
-          <tbody>
+          <SheetTbody>
             {rows.map(({ policy, carrier, deal }) => (
               <tr key={policy.id}>
                 <Col table="related-policies" col="number">
@@ -71,7 +72,7 @@ export function RelatedPolicies({
                 </Col>
               </tr>
             ))}
-          </tbody>
+          </SheetTbody>
         </table>
       )}
     </div>

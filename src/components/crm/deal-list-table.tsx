@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ColumnPicker } from "@/components/crm/column-picker";
 import { SheetHeader } from "@/components/sheet/sheet-header";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { DealFilters } from "@/components/crm/deal-filters";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
@@ -94,7 +95,7 @@ export function DealListTable({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <SheetTbody>
             {visible.length === 0 ? (
               <tr>
                 <td colSpan={COLUMNS.length} className="text-muted-foreground">
@@ -155,7 +156,7 @@ export function DealListTable({
                 );
               })
             )}
-          </tbody>
+          </SheetTbody>
         </table>
       </section>
     </ColumnPicker>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { RecordLink } from "@/components/record-links";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
@@ -99,7 +100,7 @@ export default async function PoliciesPage({
                 <Col table="policies" col="assigned" as="th">Assigned</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.map(({ policy, contact, account, carrier }) => (
                 <tr key={policy.id}>
                   <Col table="policies" col="number">
@@ -140,7 +141,7 @@ export default async function PoliciesPage({
                   <Col table="policies" col="assigned">{policy.ownerId ? users.get(policy.ownerId) ?? "—" : "—"}</Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

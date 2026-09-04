@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,7 @@ export default async function AccountsPage({
                 <Col table="accounts" col="inForce" as="th">In-force</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.map((account) => (
                 <tr key={account.id}>
                   <Col table="accounts" col="name">
@@ -79,7 +80,7 @@ export default async function AccountsPage({
                   <Col table="accounts" col="inForce">{account.activePolicyCount}</Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

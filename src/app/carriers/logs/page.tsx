@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { buttonVariants } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import { listQuoteLogs } from "@/lib/db/queries";
@@ -42,7 +43,7 @@ export default async function CarrierLogsPage() {
                 <Col table="decline-log" col="snapshot" as="th">Snapshot</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.map(({ log, carrier, deal }) => (
                 <tr key={log.id}>
                   <Col
@@ -80,7 +81,7 @@ export default async function CarrierLogsPage() {
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

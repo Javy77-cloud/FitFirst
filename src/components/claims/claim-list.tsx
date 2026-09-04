@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { ClaimStatusBadge } from "@/components/claims/status-badge";
 import { claimCauseLabel, claimChannelLabel } from "@/lib/claims";
 import { formatDate } from "@/lib/domain";
@@ -42,7 +43,7 @@ export function ClaimList({
           <Col table="claim-rows" col="status" as="th">Status</Col>
         </tr>
       </thead>
-      <tbody>
+      <SheetTbody>
         {rows.map((row) => (
           <tr key={row.id}>
             <Col table="claim-rows" col="reported" sortValue={row.dateReported.toISOString()}>
@@ -75,7 +76,7 @@ export function ClaimList({
             </Col>
           </tr>
         ))}
-      </tbody>
+      </SheetTbody>
     </table>
   );
 }

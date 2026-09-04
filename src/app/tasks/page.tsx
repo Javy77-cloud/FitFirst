@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { RecordLink } from "@/components/record-links";
 import { buttonVariants } from "@/components/ui/button";
 import { defaultColumns } from "@/lib/desk/columns";
@@ -40,7 +41,7 @@ export default async function TasksPage() {
                 <Col table="tasks" col="related" as="th">Related</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {tasks.map((task) => (
                 <tr key={task.id}>
                   <Col table="tasks" col="title">
@@ -63,7 +64,7 @@ export default async function TasksPage() {
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

@@ -4,23 +4,28 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/mac-ready-overnight-3bad`
+**Mac desk-test branch:** `cursor/list-hydrate-fix-46dc` (hydration fix on top of `cursor/mac-ready-overnight-3bad`)
 
-Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture.
+Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. This branch stops the Next.js hydration overlay on list sheets (Tasks / Leads / Deals / Contacts / etc.). Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
 ## Run locally (Mac)
 
+Stop the current `next dev` on **43147**, then:
+
 ```bash
-git fetch origin cursor/mac-ready-overnight-3bad
-git checkout cursor/mac-ready-overnight-3bad
+git fetch origin cursor/list-hydrate-fix-46dc
+git checkout cursor/list-hydrate-fix-46dc
 git reset --hard FETCH_HEAD
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
 npm install
+# migrate + seed only if this checkout is a first boot; skip if the overnight DB is already up
 npm run db:migrate
 npm run db:seed
 npm run dev -- --port 43147
 ```
+
+Hard-refresh Chrome on `/tasks`, `/leads`, `/deals`, and `/contacts`. The red Next.js hydration overlay should be gone. Sort / pin still work after the first paint.
 
 If `db:migrate` / `db:seed` fail after a consolidate pull (missing `deals.account_kind` or similar), reset the local database and run migrate + seed again. Do not edit the Ana Dib fixture.
 

@@ -6,6 +6,7 @@ import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
 import { ColumnPickerMenu } from "@/components/crm/column-picker";
 import { SheetHeader } from "@/components/sheet/sheet-header";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
 
 const EXPIRING_COLUMNS = [
@@ -92,7 +93,7 @@ export default async function ReviewsPage() {
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <SheetTbody>
                 {expiring.map(({ policy, contact }) => (
                   <tr key={policy.id}>
                     <td data-col="policy" data-sheet-col="policy">
@@ -118,7 +119,7 @@ export default async function ReviewsPage() {
                     </td>
                   </tr>
                 ))}
-              </tbody>
+              </SheetTbody>
             </table>
             </ColumnPicker>
           )}

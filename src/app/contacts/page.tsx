@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { AddressFieldset } from "@/components/address-autofill";
 import { Button } from "@/components/ui/button";
@@ -92,7 +93,7 @@ export default async function ContactsPage({
                 <Col table="contacts" col="inForce" as="th">In-force</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-muted-foreground">
@@ -119,7 +120,7 @@ export default async function ContactsPage({
                   </tr>
                 ))
               )}
-            </tbody>
+            </SheetTbody>
           </table>
         </section>
       </div>

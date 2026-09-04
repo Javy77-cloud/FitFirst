@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StagePill } from "@/components/fit-badge";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { DecDropForm } from "@/components/crm/dec-drop-form";
 import { DealRowComms } from "@/components/deal-row-comms";
 import { DeskDrop } from "@/components/desk-drop";
@@ -132,7 +133,7 @@ export default async function DealsPage({
                 <Col table="deals" col="comms" as="th">Comms</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {rows.map(({ deal, contact, account }) => (
                 <tr key={deal.id}>
                   <Col table="deals" col="title">
@@ -176,7 +177,7 @@ export default async function DealsPage({
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>

@@ -3,6 +3,7 @@ import { createDealFromLead, createLead } from "@/app/actions/crm";
 import { stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { ColumnPicker, Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { LeadFormFields } from "@/components/crm/lead-form-fields";
 import { LineSelect } from "@/components/crm/line-select";
 import { RecordLink } from "@/components/record-links";
@@ -68,7 +69,7 @@ export default async function LeadsPage() {
                   <Col table="leads" col="action" as="th">Shop</Col>
                 </tr>
               </thead>
-              <tbody>
+              <SheetTbody>
                 {rows.map((lead) => (
                   <tr key={lead.id}>
                     <Col table="leads" col="name" className="font-medium">
@@ -107,7 +108,7 @@ export default async function LeadsPage() {
                     </Col>
                   </tr>
                 ))}
-              </tbody>
+              </SheetTbody>
             </table>
           )}
         </section>

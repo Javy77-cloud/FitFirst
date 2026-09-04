@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Col } from "@/components/column-picker";
+import { SheetTbody } from "@/components/sheet/sheet-table";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export default async function WorkQueuePage() {
                 <Col table="queue-attention" col="detail" as="th">Detail</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {snapshot.attention.map((item) => (
                 <tr key={item.id}>
                   <Col table="queue-attention" col="kind" className="uppercase">
@@ -49,7 +50,7 @@ export default async function WorkQueuePage() {
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>
@@ -70,7 +71,7 @@ export default async function WorkQueuePage() {
                 <Col table="queue-open" col="expires" as="th">Expires</Col>
               </tr>
             </thead>
-            <tbody>
+            <SheetTbody>
               {open.map(({ policy, contact, account }) => (
                 <tr key={policy.id}>
                   <Col table="queue-open" col="number">
@@ -92,7 +93,7 @@ export default async function WorkQueuePage() {
                   </Col>
                 </tr>
               ))}
-            </tbody>
+            </SheetTbody>
           </table>
         )}
       </section>
