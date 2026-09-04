@@ -229,6 +229,7 @@ export async function seedUsersAndBook() {
       role: "admin",
       passwordHash: null,
       active: true,
+      meetingAddress: "Suite 110 · owner desk",
     })
     .onConflictDoUpdate({
       target: users.id,
@@ -237,6 +238,7 @@ export async function seedUsersAndBook() {
         email: "javy@fitfirst.local",
         role: "admin",
         active: true,
+        meetingAddress: "Suite 110 · owner desk",
         updatedAt: new Date(),
       },
     });
@@ -251,6 +253,7 @@ export async function seedUsersAndBook() {
       role: "agent",
       passwordHash: null,
       active: true,
+      meetingAddress: "Suite 112 · producer desk",
     })
     .onConflictDoUpdate({
       target: users.id,
@@ -259,6 +262,7 @@ export async function seedUsersAndBook() {
         email: "maya@fitfirst.local",
         role: "agent",
         active: true,
+        meetingAddress: "Suite 112 · producer desk",
         updatedAt: new Date(),
       },
     });
@@ -271,6 +275,11 @@ export async function seedUsersAndBook() {
       fiscalYearStartMonth: 1,
       agencyName: "FitFirst Insurance",
       emailSignature: "Javy Rivera\nFitFirst Insurance",
+      officeAddress: "2100 Palm Bay Rd NE, Palm Bay, FL 32905",
+      zoomUrl: "https://zoom.us/j/fitfirst-demo",
+      meetUrl: "https://meet.google.com/fit-first-demo",
+      byoVideoUrl: "https://fitfirst.example/video/room",
+      videoProvider: "zoom",
     })
     .onConflictDoUpdate({
       target: agencySettings.id,
@@ -278,6 +287,11 @@ export async function seedUsersAndBook() {
         fiscalYearStartMonth: 1,
         agencyName: "FitFirst Insurance",
         emailSignature: "Javy Rivera\nFitFirst Insurance",
+        officeAddress: "2100 Palm Bay Rd NE, Palm Bay, FL 32905",
+        zoomUrl: "https://zoom.us/j/fitfirst-demo",
+        meetUrl: "https://meet.google.com/fit-first-demo",
+        byoVideoUrl: "https://fitfirst.example/video/room",
+        videoProvider: "zoom",
       },
     });
 

@@ -4,7 +4,7 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-**Mac desk-test branch:** `cursor/list-hydrate-fix-46dc` (hydration fix on top of `cursor/mac-ready-overnight-3bad`)
+**Mac desk-test branch:** `cursor/pipeline-meetings-11f3` (pipeline collapse + meetings on top of `cursor/list-hydrate-fix-46dc`)
 
 Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + address autofill, and later record / AMS slices. This branch stops the Next.js hydration overlay on list sheets (Tasks / Leads / Deals / Contacts / etc.). Ana Dib stays Quote Sent / unbound, Cov A **$321,000**. Do not bind her. Do not edit the Ana fixture. No live Zoho.
 
@@ -13,8 +13,8 @@ Overnight merge of Home donut, Pipeline overhaul, Leads cleanup, Columns + addre
 Stop the current `next dev` on **43147**, then:
 
 ```bash
-git fetch origin cursor/list-hydrate-fix-46dc
-git checkout cursor/list-hydrate-fix-46dc
+git fetch origin cursor/pipeline-meetings-11f3
+git checkout cursor/pipeline-meetings-11f3
 git reset --hard FETCH_HEAD
 cp .env.example .env
 # Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
@@ -82,9 +82,12 @@ Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). 
 - Personal-lines tab is **P&C pipeline** (slug stays `p-c`).
 - **Won-Lost** and **Archive** are two tabs, not one combined “Won-Lost / ARCHIVE”.
 - **Flood** is a normal board — no Admin badge, no Admin stage panel.
-- Columns sit side-by-side and collapse from the header chevron.
+- Columns sit side-by-side. Each stage header has a small up/down arrow on the right to collapse or expand that column.
 - **Edit stages** on any board: add, rename, remove, reorder.
 - Drag a deal card onto another column to move it.
+- Cards show **Call**, **SMS**, **Task**, and **Meeting**. Dial and Mail are gone. Meeting types: Video-call, In-Home, In-Office.
+- In-Office uses the agency office plus the agent’s meeting address from Settings → Communications. In-Home pulls the Deal / Lead street. Video opens the Zoom / Meet / BYO stub saved there.
+- **Ask a teammate** does not appear on pipeline cards (Admin-only on records).
 - **Columns** picker chooses which deal details show on cards and the table. Title stays on.
 
 ## Columns picker
@@ -114,6 +117,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 - **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Alerts** stay in-desk (asks + work-queue pings).
+- **Meetings** from a pipeline card: Video-call, In-Home, or In-Office. Settings → Communications stores Zoom / Meet / BYO stubs plus the agency office and each agent’s meeting address.
 
 ## Tests
 

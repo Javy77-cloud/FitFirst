@@ -22,7 +22,7 @@ import type { PipelineStageRow } from "@/lib/db/schema";
 
 const COLUMNS = [
   { id: "deal", header: "Deal", defaultVisible: true, hideable: false },
-  { id: "actions", header: "Call / SMS / Email / Task", defaultVisible: true, hideable: false },
+  { id: "actions", header: "Call / SMS / Task / Meeting", defaultVisible: true, hideable: false },
   { id: "insured", header: "Insured / contact name", defaultVisible: true },
   { id: "phone", header: "Phone", defaultVisible: true, promoteIfMissing: true },
   { id: "email", header: "Email", defaultVisible: true, promoteIfMissing: true },
@@ -121,7 +121,14 @@ export function DealListTable({
                       </Link>
                     </td>
                     <td data-col="actions" data-sheet-col="actions">
-                      <DealRowActions dealId={deal.id} phone={phone} email={email} />
+                      <DealRowActions
+                        dealId={deal.id}
+                        phone={phone}
+                        email={email}
+                        homeAddress={riskAddress(risk) ?? undefined}
+                        contactId={deal.contactId}
+                        leadId={deal.leadId}
+                      />
                     </td>
                     <td data-col="insured" data-sheet-col="insured">
                       <InsuredLink href={href} name={insured} />

@@ -76,7 +76,14 @@ export function PipelineDealCard({
         {deal.boundAt ? `Bound ${formatIsoDate(new Date(deal.boundAt))}` : "Unbound"}
       </FieldSlot>
       <div className="mt-2">
-        <DealRowActions dealId={deal.id} phone={deal.phone} email={deal.email} />
+        <DealRowActions
+          dealId={deal.id}
+          phone={deal.phone}
+          email={deal.email}
+          homeAddress={deal.address}
+          contactId={deal.contactId}
+          leadId={deal.leadId}
+        />
       </div>
       {showArchive && isClosedWonStage(deal.pipelineStageSlug ?? deal.pipelineStage) ? (
         <form action={archiveWonDeal} className="mt-2">

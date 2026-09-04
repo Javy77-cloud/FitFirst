@@ -378,6 +378,15 @@ Starts from `cursor/full-desk-test-4d20`. Merges Batch 1 (Home donut, Pipeline o
 
 HTTP smoke on this branch (dev + seeded Postgres, port 43147): every app-shell NAV route 200. Elena / Ana / Harbor records 200. Invalid UUIDs 404. Ana deal `Dib · Palm Bay HO3` stays **Quote Sent**, Cov A **$321,000**, 0 policies. `/quotes` is quote tracking (no `HO3-ELENA` policy number). `/carriers/:id` 200 (calendar slice). `/documents` still 500.
 
+## Pipeline board UX + Meetings (`cursor/pipeline-meetings-11f3`)
+
+Owner: BATCH3. Starts from `cursor/list-hydrate-fix-46dc`. Additive only. Did not edit the Ana fixture. Ana stays Quote Sent / unbound, Cov A **$321,000**. No live Zoho.
+
+- Stage columns collapse from a small up/down arrow on the right of the header.
+- Pipeline cards: one **Call** (no Dial), no Mail, plus **Meeting**.
+- Meetings: Video-call / In-Home / In-Office. In-Office = agency + per-agent address. In-Home = Deal/Lead address. Video = Zoom / Meet / BYO stubs on Settings → Communications (`0015_meetings_comms`).
+- Ask a teammate stays off pipeline cards. Admin-only on records.
+
 ## List sheet hydration (`cursor/list-hydrate-fix-46dc`)
 
 Javy hit a Next.js overlay on Mac Chrome localhost:43147 after the datasheet sort/pin fold: server HTML had `data-sheet-index` on `<tr>` (stamped by `ff-sheet.js` before React committed) and the client tree omitted it. Overlay also suggested a `tbody` inside `thead` risk.
@@ -389,7 +398,7 @@ Fix:
 - Sort/pin only touch `table > tbody` (`:scope > tbody`), never a body nested under `thead`.
 - Ana stays unbound, Cov A **$321,000**. No Zoho.
 
-Mac pull: fetch `cursor/list-hydrate-fix-46dc`, `git reset --hard FETCH_HEAD`, restart `npm run dev -- --port 43147`.
+Mac pull: fetch `cursor/pipeline-meetings-11f3`, `git reset --hard FETCH_HEAD`, `npm run db:migrate`, restart `npm run dev -- --port 43147`. Ana stays unbound / $321k.
 
 ## Quotes collapse + Claims add + Commissions filters (`cursor/quotes-claims-commissions-4af1`)
 
