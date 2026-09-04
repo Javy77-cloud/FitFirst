@@ -25,9 +25,11 @@ export function fileGlyph(docType: string, mimeType?: string | null): {
   return { icon: "file", tone: "muted" };
 }
 
-export function folderHref(input: { folderId?: string | null; scope?: string }) {
+export function folderHref(input: { folderId?: string | null; scope?: string; library?: string }) {
   const q = new URLSearchParams();
-  if (input.scope) q.set("scope", input.scope);
+  const library = input.library ?? (input.scope === "library" ? "shared" : input.scope);
+  if (library === "shared" || library === "forms") q.set("library", library);
+  else if (input.scope) q.set("scope", input.scope);
   if (input.folderId) q.set("folder", input.folderId);
   const qs = q.toString();
   return qs ? `/documents?${qs}` : "/documents";

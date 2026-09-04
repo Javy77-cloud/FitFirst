@@ -20,9 +20,12 @@ export default async function FormsPage({
   return (
     <AppShell title="Forms">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Style-label catalog only — not a licensed ACORD product. Fill from Quote Sheet copies
-        matching keys from the open Deal&apos;s <code>quote_sheets</code> row (or the last sheet
-        updated). Deal-level Forms Fill still passes the current deal.
+        Style-label catalog only — not a licensed ACORD product. These templates also live under{" "}
+        <Link href="/documents?library=forms" className="text-primary hover:underline">
+          Documents → Forms library
+        </Link>{" "}
+        (ACORD and Agency forms folders) with Scan &amp; suggest. This page still fills from the
+        open Deal Quote Sheet.
       </p>
       {templates.length === 0 ? (
         <p className="text-sm text-muted-foreground">No form templates. Run db:seed.</p>
@@ -35,12 +38,17 @@ export default async function FormsPage({
               </div>
               <h2 className="text-sm font-semibold text-navy">{template.name}</h2>
               <p className="mt-1 text-xs text-muted-foreground">{template.summary}</p>
-              <Link
-                href={`/forms/${template.slug}?dealId=${dealId}`}
-                className="mt-3 inline-block text-sm text-primary hover:underline"
-              >
-                Fill from open Quote Sheet
-              </Link>
+              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                <Link
+                  href={`/forms/${template.slug}?dealId=${dealId}`}
+                  className="text-primary hover:underline"
+                >
+                  Fill from open Quote Sheet
+                </Link>
+                <Link href={`/documents/fill/${template.slug}`} className="text-primary hover:underline">
+                  Scan-to-fill workspace
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

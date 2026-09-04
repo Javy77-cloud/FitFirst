@@ -41,4 +41,10 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/settings", "/settings")).toBe(true);
     expect(navItemIsActive("/settings/phone", "/settings")).toBe(true);
   });
+
+  it("highlights Documents on the library and fill workspace", () => {
+    expect(navItemIsActive("/documents", "/documents")).toBe(true);
+    expect(navItemIsActive("/documents/fill/fl-ho3", "/documents")).toBe(true);
+    expect(navItemIsActive("/forms", "/documents")).toBe(false);
+  });
 });

@@ -21,6 +21,7 @@ describe("document manager helpers", () => {
       "c",
     );
     expect(trail.map((f) => f.name)).toEqual(["Agency library", "ACORD", "HO apps"]);
-    expect(folderHref({ folderId: "b", scope: "library" })).toBe("/documents?scope=library&folder=b");
+    expect(folderHref({ folderId: "b", scope: "library" })).toBe("/documents?library=shared&folder=b");
+    expect(folderHref({ folderId: "b", library: "forms" })).toBe("/documents?library=forms&folder=b");
   });
 });

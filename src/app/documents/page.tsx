@@ -1,24 +1,22 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import {
-  FileGrid,
-  FolderGrid,
-  ManagerToolbar,
-  ScopeTabs,
-} from "@/components/ops/document-manager";
+import { FileList } from "@/components/documents/file-list";
+import { FolderTools } from "@/components/documents/folder-tools";
+import { FolderTree } from "@/components/documents/folder-tree";
+import { LibraryTabs } from "@/components/documents/library-tabs";
+import { LibraryUpload } from "@/components/documents/library-upload";
 import { StubBanner } from "@/components/ops/stub-banner";
 import { buttonVariants } from "@/components/ui/button";
 import {
   folderFileCounts,
   getFolder,
   listDocumentsInFolder,
-  listDocumentsWithExtracted,
-  listFolderChildren,
-  listFolders,
-  listRelatedOptions,
+  listLibraryDocuments,
+  listLibraryFolders,
 } from "@/lib/db/ops-queries";
-import { CONFIDENCE_THRESHOLD, formatPct } from "@/lib/domain";
-import { folderBreadcrumbs, folderHref } from "@/lib/ops/documents";
+import { listFormTemplates } from "@/lib/db/queries";
+import { buildFolderTree, libraryHref, libraryLabel, parseLibrary } from "@/lib/documents/library";
+import { folderBreadcrumbs } from "@/lib/ops/documents";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -29,128 +27,132 @@ export default async function DocumentsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const scope = typeof params.scope === "string" ? params.scope : "library";
+  const library = parseLibrary(
+    typeof params.library === "string"
+      ? params.library
+      : typeof params.scope === "string"
+        ? params.scope
+        : "shared",
+  );
   const folderId = typeof params.folder === "string" ? params.folder : "";
+  const notice = typeof params.notice === "string" ? params.notice : "";
   const folder = folderId ? await getFolder(folderId) : null;
 
-  const [allFolders, related, { counts, unfiled }, { fields }] = await Promise.all([
-    listFolders(),
-    listRelatedOptions(),
+  const [libraryFolders, { counts }, templates] = await Promise.all([
+    listLibraryFolders(library),
     folderFileCounts(),
-    listDocumentsWithExtracted(),
+    listFormTemplates(),
   ]);
-
-  const childKind =
-    folder?.kind ??
-    (scope === "accounts" ? "account" : scope === "deals" ? "deal" : scope === "library" ? "agency_library" : undefined);
-
-  const folders = folder
-    ? await listFolderChildren(folder.id)
-    : scope === "all"
-      ? []
-      : await listFolderChildren(null, childKind);
 
   const files = folder
     ? await listDocumentsInFolder(folder.id)
-    : scope === "all"
-      ? (await listDocumentsWithExtracted()).docs
-      : [];
+    : await listLibraryDocuments(library, null);
 
+  const tree = buildFolderTree(
+    libraryFolders.map((row) => ({
+      id: row.id,
+      name: row.name,
+      parentId: row.parentId,
+      library: row.library,
+      kind: row.kind,
+    })),
+  );
   const crumbs = folderBreadcrumbs(
-    allFolders.map((f) => ({ id: f.id, name: f.name, parentId: f.parentId })),
+    libraryFolders.map((f) => ({ id: f.id, name: f.name, parentId: f.parentId })),
     folder?.id ?? null,
   );
-  const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
-  const returnTo = folderHref({ scope, folderId: folder?.id });
-
-  const heading = folder
-    ? folder.name
-    : scope === "accounts"
-      ? "Account files"
-      : scope === "deals"
-        ? "Deal files"
-        : scope === "all"
-          ? "All files"
-          : "Agency library";
+  const folderTemplates =
+    library === "forms" && folder
+      ? templates.filter((t) => t.folderId === folder.id)
+      : library === "forms" && !folder
+        ? templates.filter((t) => !t.folderId)
+        : [];
 
   return (
     <AppShell
-      title="Document Manager"
+      title="Documents"
       actions={
-        <Link href="/esign" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-          E-sign envelopes
+        <Link href="/forms" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+          Forms catalog
         </Link>
       }
     >
       <StubBanner>
-        Agency library (ACORD, carrier flyers, marketing) stays separate from per-account and
-        per-deal files. Demo names only — no InsuredMine data. No Zoho upload. Extraction
-        confidence flags still apply on deal/risk files.
+        Two libraries: Shared (marketing, appetite, quick-access) and Forms (ACORD + agency
+        paperwork). Folders nest. Fillable forms use a stub field map and Scan &amp; suggest — no live
+        OCR. Existing /forms catalog stays.
       </StubBanner>
 
+      {notice === "bad-move" ? (
+        <StubBanner>That move would nest a folder inside itself. Pick another destination.</StubBanner>
+      ) : null}
+      {notice === "scan-suggested" ? (
+        <StubBanner>Scan &amp; suggest filled demo fields. Edit anything that looks wrong.</StubBanner>
+      ) : null}
+      {notice === "uploaded" ? (
+        <StubBanner>Files stored in this library. Type and name are on the list below.</StubBanner>
+      ) : null}
+
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <ScopeTabs scope={scope} />
-        <div className="text-xs text-muted-foreground">
-          {unfiled ? `${unfiled} unfiled · ` : null}
-          {allFolders.length} folders
-        </div>
+        <LibraryTabs library={library} />
+        <p className="text-xs text-muted-foreground">
+          {libraryFolders.length} folders · {library === "forms" ? "fillable ACORD / agency forms" : "anyone can upload"}
+        </p>
       </div>
 
       <nav className="mb-3 flex flex-wrap items-center gap-1 text-xs">
-        <Link href={folderHref({ scope })} className="text-primary hover:underline">
-          {scope === "accounts" ? "Accounts" : scope === "deals" ? "Deals" : "Agency library"}
+        <Link href={libraryHref({ library })} className="text-primary hover:underline">
+          {libraryLabel(library)}
         </Link>
         {crumbs.map((crumb) => (
           <span key={crumb.id} className="flex items-center gap-1">
             <span className="text-muted-foreground">/</span>
-            <Link href={folderHref({ scope, folderId: crumb.id })} className="text-primary hover:underline">
+            <Link
+              href={libraryHref({ library, folderId: crumb.id })}
+              className="text-primary hover:underline"
+            >
               {crumb.name}
             </Link>
           </span>
         ))}
       </nav>
 
-      <ManagerToolbar folder={folder} scope={scope} related={related} />
-
-      <section className="mt-4">
-        <h2 className="mb-2 text-sm font-semibold text-navy">{heading}</h2>
-        {scope === "all" && !folder ? (
-          <FileGrid docs={files} returnTo={returnTo} />
-        ) : (
-          <div className="space-y-4">
-            <FolderGrid folders={folders} counts={counts} scope={scope} />
-            {folder ? <FileGrid docs={files} returnTo={returnTo} /> : null}
+      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="ff-card p-3">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Folders
           </div>
-        )}
-      </section>
+          <Link
+            href={libraryHref({ library })}
+            className={`mb-2 block rounded-md px-2 py-1.5 text-sm ${
+              folder ? "text-navy hover:bg-muted" : "bg-fit-check-bg font-semibold text-navy"
+            }`}
+          >
+            {libraryLabel(library)} root
+          </Link>
+          <FolderTree nodes={tree} library={library} activeId={folder?.id ?? null} counts={counts} />
+        </aside>
 
-      {flagged.length > 0 ? (
-        <section className="ff-card mt-4 overflow-hidden p-4">
-          <h2 className="mb-1 text-sm font-semibold text-navy">Confidence flags</h2>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Fields under {Math.round(CONFIDENCE_THRESHOLD * 100)}% stay off the worksheet until
-            accepted on the deal.
-          </p>
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Raw</th>
-                <th>Conf.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flagged.map((field) => (
-                <tr key={field.id} className="bg-fit-flag-bg/40">
-                  <td>{field.fieldKey.replaceAll("_", " ")}</td>
-                  <td className="font-mono text-[11px]">{field.rawValue}</td>
-                  <td className="font-semibold text-fit-flag">{formatPct(Number(field.confidence))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      ) : null}
+        <div className="space-y-4">
+          <FolderTools library={library} folder={folder} siblings={libraryFolders} />
+          <LibraryUpload library={library} folderId={folder?.id ?? null} />
+
+          <section className="ff-card p-4">
+            <h2 className="mb-3 text-sm font-semibold text-navy">
+              {folder ? folder.name : `${libraryLabel(library)} files`}
+            </h2>
+            <FileList
+              docs={files}
+              templates={folderTemplates}
+              empty={
+                folder
+                  ? "This folder is empty. Upload files or add a subfolder."
+                  : "Open a folder to file uploads, or create one on the left."
+              }
+            />
+          </section>
+        </div>
+      </div>
     </AppShell>
   );
 }

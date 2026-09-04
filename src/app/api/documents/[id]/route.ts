@@ -14,7 +14,12 @@ export async function GET(
   const [doc] = await db.select().from(documents).where(eq(documents.id, id));
   if (!doc) return new Response("Not found", { status: 404 });
   const abs = path.join(uploadRoot, doc.storagePath);
-  const buffer = await readFile(abs);
+  let buffer: Buffer;
+  try {
+    buffer = await readFile(abs);
+  } catch {
+    buffer = Buffer.from(`${doc.filename}\n${doc.docType}\nDemo library file.`, "utf8");
+  }
   return new Response(buffer, {
     headers: {
       "Content-Type": doc.mimeType || "application/octet-stream",

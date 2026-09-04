@@ -76,6 +76,13 @@ export const DOC_TYPES = [
   "policy_dec",
   "policy_complete",
   "policy_id",
+  "acord",
+  "flyer",
+  "marketing",
+  "appetite_guide",
+  "cancellation",
+  "aor",
+  "agency_form",
   "other",
 ] as const;
 export type DocType = (typeof DOC_TYPES)[number];
@@ -95,8 +102,32 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   policy_dec: "Policy dec",
   policy_complete: "Complete policy",
   policy_id: "ID card",
+  acord: "ACORD form",
+  flyer: "Carrier flyer",
+  marketing: "Marketing",
+  appetite_guide: "Appetite guide",
+  cancellation: "Cancellation",
+  aor: "Agent of record",
+  agency_form: "Agency form",
   other: "Other",
 };
+
+export const SHARED_LIBRARY_DOC_TYPES = [
+  "marketing",
+  "appetite_guide",
+  "flyer",
+  "photo",
+  "other",
+] as const;
+
+export const FORMS_LIBRARY_DOC_TYPES = [
+  "acord",
+  "cancellation",
+  "aor",
+  "agency_form",
+  "signed_app",
+  "other",
+] as const;
 
 /** Types an agent picks when attaching files to a Deal. */
 export const DEAL_UPLOAD_DOC_TYPES = [
@@ -114,7 +145,7 @@ export const DEAL_UPLOAD_DOC_TYPES = [
 ] as const;
 export type DealUploadDocType = (typeof DEAL_UPLOAD_DOC_TYPES)[number];
 
-export const DOC_SLOTS = ["source_doc", "quote_pdf", "signed_app", "policy_file"] as const;
+export const DOC_SLOTS = ["source_doc", "quote_pdf", "signed_app", "policy_file", "library_file"] as const;
 export type DocSlot = (typeof DOC_SLOTS)[number];
 
 export const SOURCE_DOC_TYPES = [
@@ -625,15 +656,33 @@ export function resolveColumnKeys(listKey: string, layout?: ColumnLayout | null)
   return picked.length > 0 ? picked : catalog.map((c) => c.key);
 }
 
-export const FOLDER_KINDS = ["agency_library", "account", "deal", "policy", "custom"] as const;
+export const FOLDER_KINDS = [
+  "agency_library",
+  "shared_library",
+  "forms_library",
+  "account",
+  "deal",
+  "policy",
+  "custom",
+] as const;
 export type FolderKind = (typeof FOLDER_KINDS)[number];
 
 export const FOLDER_KIND_LABELS: Record<FolderKind, string> = {
   agency_library: "Agency library",
+  shared_library: "Shared library",
+  forms_library: "Forms library",
   account: "Account",
   deal: "Deal",
   policy: "Policy",
   custom: "Folder",
+};
+
+export const DOCUMENT_LIBRARIES = ["shared", "forms"] as const;
+export type DocumentLibrary = (typeof DOCUMENT_LIBRARIES)[number];
+
+export const DOCUMENT_LIBRARY_LABELS: Record<DocumentLibrary, string> = {
+  shared: "Shared library",
+  forms: "Forms library",
 };
 
 export const CAMPAIGN_AUDIENCE_TYPES = ["tag", "pipeline_stage"] as const;

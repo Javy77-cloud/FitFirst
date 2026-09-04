@@ -47,6 +47,7 @@ import {
   emailTemplates,
   emailTriggers,
   extractedFields,
+  formFills,
   formTemplates,
   claimAttachments,
   commissions,
@@ -1240,6 +1241,24 @@ export async function getFormTemplate(slug: string) {
     .select()
     .from(formTemplates)
     .where(and(eq(formTemplates.tenantId, tenant()), eq(formTemplates.slug, slug)));
+  return row ?? null;
+}
+
+export async function getFormFill(id: string) {
+  const [row] = await db
+    .select()
+    .from(formFills)
+    .where(and(eq(formFills.tenantId, tenant()), eq(formFills.id, id)));
+  return row ?? null;
+}
+
+export async function latestFormFill(templateId: string) {
+  const [row] = await db
+    .select()
+    .from(formFills)
+    .where(and(eq(formFills.tenantId, tenant()), eq(formFills.formTemplateId, templateId)))
+    .orderBy(desc(formFills.updatedAt))
+    .limit(1);
   return row ?? null;
 }
 
