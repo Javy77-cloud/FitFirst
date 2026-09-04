@@ -232,6 +232,13 @@
       "when": 1788540000000,
       "tag": "0032_auth_mfa_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788541000000,
+      "tag": "0033_carrier_portal_secrets",
+      "breakpoints": true
     }
   ]
 }

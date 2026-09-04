@@ -55,6 +55,7 @@ import { seedAutomationsHub } from "./seed-automations";
 import { seedSocialConnectors } from "./seed-social";
 import { seedPiiVault } from "./seed-pii";
 import { seedMfaDemo } from "./seed-mfa";
+import { seedCarrierPortals } from "./seed-carrier-portals";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -284,7 +285,9 @@ export async function seed() {
         writtenLines: carrier.writtenLines,
         dontWriteNotes: carrier.dontWriteNotes,
         portalStatus: carrier.portalStatus,
+        portalUrl: desk.portalUrl ?? desk.agentPortalUrl ?? null,
         portalLogin: desk.portalLogin,
+        agencyCode: desk.agencyCode ?? null,
         customerServicePhone: desk.customerServicePhone,
         agentPhone: desk.agentPhone,
         website: desk.website,
@@ -316,7 +319,9 @@ export async function seed() {
           writtenLines: carrier.writtenLines,
           dontWriteNotes: carrier.dontWriteNotes,
           portalStatus: carrier.portalStatus,
+          portalUrl: desk.portalUrl ?? desk.agentPortalUrl ?? null,
           portalLogin: desk.portalLogin,
+          agencyCode: desk.agencyCode ?? null,
           customerServicePhone: desk.customerServicePhone,
           agentPhone: desk.agentPhone,
           website: desk.website,
@@ -493,4 +498,5 @@ export async function seed() {
   await seedSocialConnectors();
   await seedPiiVault();
   await seedMfaDemo();
+  await seedCarrierPortals();
 }

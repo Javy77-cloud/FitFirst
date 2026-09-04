@@ -216,12 +216,40 @@ export async function updateCarrierContact(formData: FormData) {
     .split(/[,;]/)
     .map((s) => s.trim())
     .filter(Boolean);
+  const [existing] = await db
+    .select({
+      portalUsernameEnc: carriers.portalUsernameEnc,
+      portalUsernameIv: carriers.portalUsernameIv,
+      portalUsernameHint: carriers.portalUsernameHint,
+      portalPasswordEnc: carriers.portalPasswordEnc,
+      portalPasswordIv: carriers.portalPasswordIv,
+    })
+    .from(carriers)
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, id)));
+  const { replacePortalPassword, replacePortalUsername } = await import("@/lib/carriers/secrets");
+  const { isMaskedSecretInput } = await import("@/lib/secrets/vault");
+  const incomingUser = str(formData, "portalUsername");
+  const incomingPass = str(formData, "portalPassword");
+  const nextUser = replacePortalUsername(incomingUser, {
+    portalUsernameEnc: existing?.portalUsernameEnc ?? null,
+    portalUsernameIv: existing?.portalUsernameIv ?? null,
+    portalUsernameHint: existing?.portalUsernameHint ?? null,
+  });
+  const nextPass = replacePortalPassword(incomingPass, {
+    portalPasswordEnc: existing?.portalPasswordEnc ?? null,
+    portalPasswordIv: existing?.portalPasswordIv ?? null,
+  });
+  const secretsTouched = !isMaskedSecretInput(incomingUser) || !isMaskedSecretInput(incomingPass);
   await db
     .update(carriers)
     .set({
       naic: str(formData, "naic") || null,
       portalUrl: str(formData, "portalUrl") || null,
       portalLogin: str(formData, "portalLogin") || null,
+      agencyCode: str(formData, "agencyCode") || null,
+      ...nextUser,
+      ...nextPass,
+      portalSecretsUpdatedAt: secretsTouched ? new Date() : undefined,
       customerServicePhone: str(formData, "customerServicePhone") || null,
       agentPhone: str(formData, "agentPhone") || null,
       website: str(formData, "website") || null,

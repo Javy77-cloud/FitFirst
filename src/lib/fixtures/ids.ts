@@ -378,6 +378,12 @@ export const BOOK_CARRIER_IDS = {
   heritage: "33333333-3333-4333-8333-333333333321",
   progressive: "33333333-3333-4333-8333-333333333322",
 } as const;
+
+/** Demo quoting-portal carriers. Off shop 301–310 and book 321–322. */
+export const PORTAL_DEMO_CARRIER_IDS = {
+  americanTraditions: "33333333-3333-4333-8333-333333333331",
+  peoplesTrust: "33333333-3333-4333-8333-333333333332",
+} as const;
 export const HALE_CONTACT_ID = "22222222-2222-4222-8222-222222222241";
 export const HALE_DEAL_ID = "22222222-2222-4222-8222-222222222242";
 export const HALE_RISK_ID = "22222222-2222-4222-8222-222222222243";

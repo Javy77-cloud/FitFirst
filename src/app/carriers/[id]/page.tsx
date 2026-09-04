@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { listCarrierSecretAudits } from "@/app/actions/carrier-secrets";
 import { updateCarrierContact } from "@/app/actions/pipeline-admin";
+import { PortalLoginAdmin } from "@/components/carriers/portal-login-admin";
 import { AppShell } from "@/components/app-shell";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordSection } from "@/components/record-section";
@@ -9,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { currentDeskSession } from "@/lib/auth/session";
+import { quoteHandoffReadiness } from "@/lib/carriers/secrets";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { getCarrier, listRecordAsks } from "@/lib/db/queries";
 import { CARRIER_BINDING, CARRIER_BINDING_LABEL, CARRIER_SUBMISSION_METHODS, formatMoney } from "@/lib/domain";
@@ -55,6 +58,13 @@ export default async function CarrierRecordPage({
   if (!row) notFound();
   const { carrier, rule } = row;
   const admin = session.isAdmin;
+  const audits = admin ? await listCarrierSecretAudits(id) : [];
+  const readiness = quoteHandoffReadiness({
+    portalUrl: carrier.portalUrl,
+    agencyCode: carrier.agencyCode,
+    hasPortalUsername: carrier.hasPortalUsername,
+    hasPortalPassword: carrier.hasPortalPassword,
+  });
 
   return (
     <AppShell title={carrier.name}>
@@ -176,10 +186,11 @@ export default async function CarrierRecordPage({
           </div>
         </RecordSection>
 
-        <RecordSection id="portal" title="Portal and info" summary="Login, website, and desk notes">
+        <RecordSection id="portal" title="Portal and info" summary="Login URL, agency code, website, and desk notes">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Portal URL" name="portalUrl" defaultValue={carrier.portalUrl} admin={admin} />
-            <Field label="Portal login" name="portalLogin" defaultValue={carrier.portalLogin} admin={admin} />
+            <Field label="Agency code" name="agencyCode" defaultValue={carrier.agencyCode} admin={admin} />
+            <Field label="Portal name" name="portalLogin" defaultValue={carrier.portalLogin} admin={admin} />
             <Field label="Website" name="website" defaultValue={carrier.website} admin={admin} />
             <Field label="Agent portal" name="agentPortalUrl" defaultValue={carrier.agentPortalUrl} admin={admin} />
             <div className="sm:col-span-2">
@@ -191,12 +202,30 @@ export default async function CarrierRecordPage({
               )}
             </div>
           </div>
-          {admin ? (
-            <Button type="submit" size="sm" className="mt-3">
-              Save carrier
-            </Button>
-          ) : null}
         </RecordSection>
+
+        {admin ? (
+          <RecordSection
+            id="portal-login"
+            title="Portal login (Admin only)"
+            summary="Encrypted quoting-portal username and password. Agents never see these fields."
+          >
+            <PortalLoginAdmin
+              carrierId={carrier.id}
+              usernameHint={carrier.portalUsernameHint}
+              hasUsername={carrier.hasPortalUsername}
+              hasPassword={carrier.hasPortalPassword}
+              readiness={readiness}
+              audits={audits}
+            />
+          </RecordSection>
+        ) : null}
+
+        {admin ? (
+          <Button type="submit" size="sm">
+            Save carrier
+          </Button>
+        ) : null}
       </form>
 
       {admin ? <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} /> : null}

@@ -558,3 +558,12 @@ Parallel auth-security track. Keep **with** People / Agents — enroll, challeng
 - UI: Settings → Profile, Settings → Security, Settings → People / Agents (roster + recovery).
 - Additive migration `0032_auth_mfa_recovery` (incoming `0021` renumbered). Alters `mfa_challenges` from `0029`; does not drop it. Ana fixture untouched. One Pipeline nav row. Sidebar hex unchanged.
 
+## BATCH4 carrier portal credentials (`cursor/carrier-portal-creds-06cb`)
+
+Admin-only encrypted quoting-portal username + password on the carrier record. Agency code and portal URL stay on the sheet for Agents.
+
+- AES-256-GCM via `CARRIER_SECRETS_KEY` (falls back to `PII_ENCRYPTION_KEY`, then the local demo key). Ciphertext + IV on `carriers`; never plaintext columns.
+- Reveal writes `carrier_secret_reveal_logs` (no decrypted value stored). Admin only — Agents get `hasPortalUsername/Password=false` and no username hint.
+- Seed: American Traditions `FF-AT-1048` and People's Trust `FF-PT-2201`. Existing Tailrow / American Integrity get agency codes only.
+- Incoming `0027_carrier_portal_secrets` renumbered to `0033_carrier_portal_secrets`. Ana fixture untouched. One Pipeline. Sidebar hex unchanged.
+

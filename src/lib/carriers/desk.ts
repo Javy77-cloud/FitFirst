@@ -4,6 +4,8 @@ type CarrierKey = keyof typeof CARRIER_IDS;
 
 export type CarrierDeskContact = {
   portalLogin: string;
+  portalUrl?: string;
+  agencyCode?: string;
   customerServicePhone: string;
   agentPhone: string;
   website: string;
@@ -70,6 +72,8 @@ function deskExtras(partial: Partial<CarrierDeskContact> = {}): Pick<
 export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   tailrow: {
     portalLogin: "Harmony",
+    portalUrl: "https://harmony.tailrow.com",
+    agencyCode: "FC-HAR-1006",
     customerServicePhone: "888-813-8376",
     agentPhone: "First Connect · 888-373-3111",
     website: "https://www.tailrow.com",
@@ -89,6 +93,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   hoc: {
     portalLogin: "Harmony (service / takeout)",
+    portalUrl: "https://harmony.hci-group.com",
+    agencyCode: "AFA-HOC-12944",
     customerServicePhone: "877-861-6742",
     agentPhone: "AFA · 813-443-2100",
     website: "https://www.hci-group.com",
@@ -104,6 +110,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   vyrd: {
     portalLogin: "VYRD takeout",
+    portalUrl: "https://agents.vyrdins.com",
+    agencyCode: "AFA-VYRD-16820",
     customerServicePhone: "844-208-8973",
     agentPhone: "AFA · 813-443-2100",
     website: "https://www.vyrdins.com",
@@ -119,6 +127,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   qbe: {
     portalLogin: "Swyfft",
+    portalUrl: "https://www.swyfft.com",
+    agencyCode: "AFA-QBE-39217",
     customerServicePhone: "877-346-6585",
     agentPhone: "AFA · 813-443-2100",
     website: "https://www.qbe.com/us",
@@ -133,6 +143,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   vave: {
     portalLogin: "Swyfft",
+    portalUrl: "https://www.swyfft.com",
+    agencyCode: "AGT-VAVE-15792",
     customerServicePhone: "800-221-3880",
     agentPhone: "Agentero · 888-982-7950",
     website: "https://www.lloyds.com",
@@ -148,6 +160,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   benchmark: {
     portalLogin: "Swyfft",
+    portalUrl: "https://www.swyfft.com",
+    agencyCode: "AFA-BNCH-16187",
     customerServicePhone: "866-568-4100",
     agentPhone: "AFA · 813-443-2100",
     website: "https://www.benchmarkinsurancesolutions.com",
@@ -160,6 +174,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   hadron: {
     portalLogin: "Swyfft",
+    portalUrl: "https://www.swyfft.com",
+    agencyCode: "FC-HAD-16705",
     customerServicePhone: "888-423-7661",
     agentPhone: "First Connect · 888-373-3111",
     website: "https://www.hadroninsurance.com",
@@ -172,6 +188,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   geovera: {
     portalLogin: "GeoVera agent",
+    portalUrl: "https://agents.geovera.com",
+    agencyCode: "AFA-GEO-10799",
     customerServicePhone: "800-220-1351",
     agentPhone: "AFA · 813-443-2100",
     website: "https://www.geovera.com",
@@ -186,6 +204,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   sagesure: {
     portalLogin: "SageSure",
+    portalUrl: "https://agents.sagesure.com",
+    agencyCode: "FC-SAGE-38970",
     customerServicePhone: "888-32-SAGE-1",
     agentPhone: "First Connect · 888-373-3111",
     website: "https://www.sagesure.com",
@@ -199,6 +219,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
   },
   americanIntegrity: {
     portalLogin: "AIC agent",
+    portalUrl: "https://agents.aiicfl.com",
+    agencyCode: "AFA-AIC-12841",
     customerServicePhone: "866-277-9871",
     agentPhone: "AFA · 813-443-2100",
     website: "https://www.aiicfl.com",
@@ -217,7 +239,8 @@ export const CARRIER_DESK: Record<CarrierKey, CarrierDeskContact> = {
 };
 
 export const CARRIER_TABLE_COLUMNS = [
-  { id: "portalLogin", label: "Portal login", defaultVisible: true },
+  { id: "agencyCode", label: "Agency code", defaultVisible: true },
+  { id: "portalLogin", label: "Portal name", defaultVisible: true },
   { id: "customerServicePhone", label: "Customer-service phone", defaultVisible: true },
   { id: "agentPhone", label: "Agent phone", defaultVisible: true },
   { id: "website", label: "Website / agent portal", defaultVisible: true },
