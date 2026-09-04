@@ -52,7 +52,9 @@ Open [http://localhost:43147](http://localhost:43147). Home is the owner desk (p
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No Twilio or SendGrid.
 
-Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
+**Contact record** is Zoho-style: a left jump menu lists Overview, Contact information, Address, Policies, Deals, Businesses, Locations, Ask a teammate (Admin only), Email/SMS/calls, and Timeline. Click jumps to that section. There is no typed activity log — work done from the desk (email, SMS, task, meeting, click-to-call) saves onto that contact’s Timeline. Ana stays **Not a client** with **0 policies**. No live Zoho.
+
+Admins can tag a teammate on a Policy or any other record (**Ask a teammate**). On the Contact record the tag form is **hidden for agents**. That writes the same `record_asks` row used on commissions, logs it on the record, and pings Alerts. Not a chat product. No email or SMS to the tagged person. Seeded: Javy asked Maya for status on `HO3-ELENA-2026`.
 
 Click path and leftover bugs live in `COORDINATION.md`.
 
@@ -71,9 +73,9 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row.
 
 ## Communication (this desk)
 
-- **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
-- **Activities** on Account 360: task / meeting / call. Calls need duration + outcome.
-- **Click-to-call** writes an in-app Alerts ping only (`/phone` is a stub). No email.
+- **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. On Contact the whole Ask block is Admin-only (hidden for agents). Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
+- **Contact Timeline** auto-saves email, SMS, tasks, meetings, and calls done from the desk. No manual “log activity” form on Contact.
+- **Click-to-call** writes an in-app Alerts ping and a call row on the record (`/phone` is a stub). No email.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Alerts** stay in-desk (asks + work-queue pings).
 

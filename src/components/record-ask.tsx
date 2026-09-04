@@ -17,6 +17,9 @@ type AskProps = {
   policyId?: string | null;
   dealId?: string | null;
   leadId?: string | null;
+  /** Contact record: hide the whole panel for agents. */
+  hideWhenNotAdmin?: boolean;
+  framed?: boolean;
 };
 
 /** Ask a teammate — admin tags from a required dropdown. In-app ping + log. */
@@ -30,8 +33,11 @@ export async function RecordAskPanel({
   policyId,
   dealId,
   leadId,
+  hideWhenNotAdmin = false,
+  framed = true,
 }: AskProps) {
   const session = await currentDeskSession();
+  if (hideWhenNotAdmin && !session.isAdmin) return null;
   const [asks, users] = await Promise.all([
     asksProp ? Promise.resolve(asksProp) : listRecordAsks(entityType, entityId),
     usersProp ? Promise.resolve(usersProp) : listDeskUsers(),
@@ -39,12 +45,21 @@ export async function RecordAskPanel({
   const names = new Map(users.map((user) => [user.id, user.name]));
 
   return (
-    <section className="ff-card mt-4 p-4">
-      <h2 className="text-sm font-semibold text-navy">Ask a teammate</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Admin v1: tag someone from the dropdown (required). Typing a name does not submit.
-        In-app ping + durable log. Not a chat product.
-      </p>
+    <section className={framed ? "ff-card mt-4 p-4" : ""}>
+      {framed ? (
+        <>
+          <h2 className="text-sm font-semibold text-navy">Ask a teammate</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Admin only. Tag someone from the dropdown (required). Typing a name does not submit.
+            In-app ping + durable log. Not a chat product.
+          </p>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Tag someone from the dropdown (required). Typing a name does not submit. In-app ping +
+          durable log. Not a chat product.
+        </p>
+      )}
       {session.isAdmin ? (
         <form action={createRecordAsk} className="mt-3 grid gap-2 sm:grid-cols-2">
           <input type="hidden" name="entityType" value={entityType} />
