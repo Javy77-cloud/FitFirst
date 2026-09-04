@@ -9,7 +9,6 @@ export type WhatsNewEntry = {
 
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
   {
-<<<<<<< HEAD
     id: "eo-compliance",
     title: "E&O Compliance desk",
     body: "Admin Compliance holds an append-only client-interaction trail and simple gap flags. Alerts stay in-app — nothing emails Javy.",
