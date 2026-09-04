@@ -12,6 +12,8 @@ export const ACTIVITY_COLORS: Record<string, string> = {
   call: "#059669",
   email: "#d97706",
   sms: "#0d9488",
+  company: "#c2410c",
+  training: "#1d6fb8",
 };
 
 export function normalizeEmailSubject(subject: string | null | undefined): string {

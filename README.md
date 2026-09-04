@@ -16,6 +16,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **Batch 4 social:** `/social` pulse + Settings → Social / GBP connect stubs. Inbound inquiry → Lead + in-app notify. Agency inbound stays unassigned until Admin awards it.
 
+**Batch 4 company meetings:** Admin Calendar **Company meeting** / **Training** with video URL and invite Whole agency / Office / Territory / Management. Invited agents get an in-app alert and the event. Personal Video / In-Home / In-Office stay.
+
 Login is required. `src/proxy.ts` plus session guards enforce Admin vs Agent — not CSS.
 
 Contact record: Ask a teammate is Admin-only on every record. Email / Call / SMS stay. No typed email/SMS log — timeline fills when the desk sends or receives. SMS and email opt-out tracking on the contact. Left menu highlights the active module (`/contacts/*` → Contacts). Leads list/detail show the related deal’s pipeline stage. Column pickers include that module’s create/edit form fields.
@@ -79,7 +81,7 @@ Click path and leftover bugs live in `COORDINATION.md`.
 
 Communications (email, SMS, calls, meetings, tasks) write a durable log on the Contact, Deal, Policy, Lead, or Business record — inbound and outbound email stay as one conversation. No live Twilio or SendGrid.
 
-**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, drag-drop reschedule, delete, and **+ Add event** for any type. Previous month / Next month (and week/day) are labeled. Google Calendar stays a stub.
+**Calendar** is a real month / week / day board with hourly slots, type colors, filters, in-place edit, drag-drop reschedule, delete, and **+ Add event** for any type. Admins also add **Company meeting** or **Training** (video URL + invite Whole agency / Office / Territory / Management). Invited agents get an in-app alert and the event on their calendar; they open the video from the event. Personal Video / In-Home / In-Office meetings stay. Previous month / Next month (and week/day) are labeled. Google Calendar stays a stub.
 
 **Phone** is a call log (duration + outcome, attached to Contact / Policy / Deal / Lead / Business). Admin Settings can mark a Twilio / Vonage / BYO trunk as connected — stub only; the agency pays later. Nothing dials.
 
@@ -165,7 +167,7 @@ Super-Copy, Send to Fill, and Forms Fill read the same `quote_sheets` row. Commu
 - **Ask a teammate** on Policy / Contact / Lead / Deal / Business / Carrier. Tag dropdown is required. The whole Ask block is Admin-only (hidden for agents) on every record. It never appears on pipeline cards. Seeded Javy → Maya on `HO3-ELENA-2026`. Writes a durable activity log + Alerts ping.
 - **Contact / Business Timeline** auto-saves email, SMS, tasks, meetings, and calls done from the desk. No manual “log activity” form on those records.
 - **Phone call log** (`/phone`) — duration + outcome, attached like platform auto-activity. Admin **Phone line** settings are a Twilio/BYO stub. No PSTN.
-- **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule.
+- **Calendar** — month / week / day, hourly slots, type colors, filter, edit, drag-drop reschedule. Admin **Company meeting / Training** with a video URL and invite Whole agency / Office / Territory / Management. Invited agents get an in-app alert plus the event.
 - **Email templates + triggers** live under Settings as stubs. Nothing sends.
 - **Integrations catalog** (`/settings/integrations`) — BYO providers (Gmail, Outlook, Yahoo, Mailchimp, Constant Contact, SendGrid, Google/Outlook Calendar, Twilio, RingCentral, Lightspeed Voice, Zoom, Meet, DocuSign, Dropbox Sign, Facebook, Instagram, X, LinkedIn, Google Business Profile). Connect stub only. Agency pays. No Zoho. No live OAuth.
 - **Automations** is its own nav row (`/automations`) — not buried only in Settings. Email campaigns use the Mailchimp / Constant Contact / SendGrid stubs when connected; otherwise **Connect integration**. Bulk SMS is the same for Twilio / RingCentral / Lightspeed. Work-email templates read the existing library. Guided builder is Trigger → Condition → Action (prefer in-app notify). Agents draft signatures; Admin approves before live. Additive `0025_automations_hub`.

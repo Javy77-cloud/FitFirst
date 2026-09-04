@@ -74,6 +74,8 @@ export function entityHref(entityType?: string | null, entityId?: string | null)
       return `/policies/${entityId}`;
     case "lead":
       return `/leads/${entityId}`;
+    case "activity":
+      return `/calendar?event=${entityId}`;
     default:
       return null;
   }

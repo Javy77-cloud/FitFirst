@@ -961,6 +961,11 @@ export const activities = pgTable(
     meetingType: text("meeting_type"),
     meetingLocation: text("meeting_location"),
     videoProvider: text("video_provider"),
+    videoUrl: text("video_url"),
+    inviteAudience: text("invite_audience"),
+    inviteOfficeId: uuid("invite_office_id"),
+    inviteTerritoryId: uuid("invite_territory_id"),
+    createdByUserId: uuid("created_by_user_id"),
     ...timestamps,
   },
   (t) => [
@@ -1007,6 +1012,28 @@ export const activityLogs = pgTable(
     index("activity_logs_policy_idx").on(t.tenantId, t.policyId),
     index("activity_logs_deal_idx").on(t.tenantId, t.dealId),
     index("activity_logs_thread_idx").on(t.tenantId, t.threadKey),
+  ],
+);
+
+/** Invited desk users for Admin company / training events. */
+export const calendarInvites = pgTable(
+  "calendar_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("calendar_invites_uidx").on(t.tenantId, t.activityId, t.userId),
+    index("calendar_invites_user_idx").on(t.tenantId, t.userId),
   ],
 );
 
@@ -1895,6 +1922,9 @@ export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type CalendarInvite = typeof calendarInvites.$inferSelect;
+export type Office = typeof offices.$inferSelect;
+export type Territory = typeof territories.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type PipelineStage = typeof pipelineStages.$inferSelect;

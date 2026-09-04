@@ -47,6 +47,7 @@ import { seedBookRenewals } from "./seed-book-renewals";
 import { seedCommsDesk } from "./seed-comms";
 import { ensureDefaultLineSubfilters } from "./line-settings";
 import { seedCalendarDesk } from "./seed-calendar";
+import { seedCompanyMeetings } from "./seed-company-meetings";
 import { seedGlobalLists } from "./seed-global-lists";
 import { seedHomeDashboard } from "./seed-home-dashboard";
 import { seedDocumentLibraries } from "./seed-documents";
@@ -482,6 +483,7 @@ export async function seed() {
   await seedCommsDesk();
   await ensureDefaultLineSubfilters();
   await seedCalendarDesk();
+  await seedCompanyMeetings();
   await seedGlobalLists();
   await seedHomeDashboard();
   await seedDocumentLibraries();

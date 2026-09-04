@@ -73,7 +73,7 @@ export default async function LoginPage({
             <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
               <li>Leads, contacts, deals, and policies she owns</li>
               <li>Send client email / SMS when the agency line is connected</li>
-              <li>Calendar items assigned to her</li>
+              <li>Calendar items assigned to her, plus company / training invites</li>
               <li>Pipeline deals on her book — no Admin settings</li>
             </ul>
             <Button type="submit" className="mt-auto">

@@ -19,6 +19,14 @@ export type CalendarActivity = {
   outcome?: string | null;
   phoneNumber?: string | null;
   direction?: string | null;
+  meetingType?: string | null;
+  meetingLocation?: string | null;
+  videoProvider?: string | null;
+  videoUrl?: string | null;
+  inviteAudience?: string | null;
+  inviteOfficeId?: string | null;
+  inviteTerritoryId?: string | null;
+  createdByUserId?: string | null;
 };
 
 export const CALENDAR_VIEWS = ["month", "week", "day"] as const;
@@ -212,13 +220,29 @@ export function activitiesOnDay(activities: CalendarActivity[], day: Date): Cale
     });
 }
 
-export function kindClass(kind: string): string {
+export function kindClass(kind: string, meetingType?: string | null): string {
+  if (meetingType === "training") return "ff-cal-training";
+  if (meetingType === "company") return "ff-cal-company";
   if (kind === "meeting") return "ff-cal-meeting";
   if (kind === "call") return "ff-cal-call";
   if (kind === "sms") return "ff-cal-sms";
   if (kind === "email") return "ff-cal-email";
   return "ff-cal-task";
 }
+
+export function eventToneColor(activity: { kind: string; meetingType?: string | null }): string {
+  if (activity.meetingType === "training") return "#1d6fb8";
+  if (activity.meetingType === "company") return "#c2410c";
+  return ACTIVITY_KIND_HEX[activity.kind] ?? "#5c6b7a";
+}
+
+const ACTIVITY_KIND_HEX: Record<string, string> = {
+  task: "#2563eb",
+  meeting: "#7c3aed",
+  call: "#059669",
+  email: "#d97706",
+  sms: "#0d9488",
+};
 
 export function isActivityKind(value: string): value is ActivityKind {
   return (

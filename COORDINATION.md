@@ -514,3 +514,14 @@ Migration `0026_social_gbp`.
 - Agency / unassigned inbound: Lead with null owner + `lead_offers.status=open`. Admin **Awards** to any agent (`awardLeadToAgent`) — assigns + notifies.
 - Settings → Social: Admin sets each stub to Agency or an agent. Seed: Instagram → Maya; FB/GBP → agency.
 - GBP monitor gate unchanged. Social inbound table is `social_lead_offers` (not management `lead_offers`). Migration `0026_social_gbp`.
+
+## BATCH4 Admin calendar company meetings (`cursor/admin-company-meetings-0864`)
+
+Side branch off `cursor/mac-ready-batch3-7pm`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Sidebar hex unchanged (`--ff-sidebar: #c5ddf4`). Personal Video / In-Home / In-Office meetings stay.
+
+- Calendar event types **Company meeting** and **Training** (Admin-created). `kind` stays `meeting`; `meeting_type` is `company` or `training`.
+- Fields: title, start/end, video URL (Zoom / Meet / other http(s)), notes.
+- Invite pickers: Whole agency | Office | Territory | Management only. Uses the offices / territories tables already on this consolidator (`0023_offices_territories`).
+- Invited agents get `calendar_invites` + an in-app alert (`alerts.user_id`) and the event on their calendar (`listCalendarActivities` includes invitees).
+- Event detail **Open video**. Agents cannot create company events.
+- Migration `0027_company_meetings`. Do not bind Ana.

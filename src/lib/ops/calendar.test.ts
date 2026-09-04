@@ -66,6 +66,8 @@ describe("calendar helpers", () => {
   it("maps kinds to --ff-* calendar classes", () => {
     expect(kindClass("task")).toBe("ff-cal-task");
     expect(kindClass("meeting")).toBe("ff-cal-meeting");
+    expect(kindClass("meeting", "company")).toBe("ff-cal-company");
+    expect(kindClass("meeting", "training")).toBe("ff-cal-training");
     expect(kindClass("call")).toBe("ff-cal-call");
     expect(kindClass("sms")).toBe("ff-cal-sms");
     expect(kindClass("email")).toBe("ff-cal-email");
