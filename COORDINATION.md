@@ -736,3 +736,22 @@ Click path:
 5. **Settings → IVANS / AL3** — Not connected. Attempt import does not invent a download.
 
 Sidebar stays `#1d4e89`. One Pipeline nav row. `getActor` still goes through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.
+
+## AMS wave 4 — desk depth (`cursor/ams-wave4-depth-a034`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API.
+
+Additive `0049_ams_wave4`:
+
+- `policy_additional_interests` — mortgagee / additional interest / loss payee on a personal-lines Policy (`tenant_id` required).
+- Service-request polish stays on `policy_service_requests` (no status rewrite). Required fields + next-step copy + in-app `review_tasks`.
+- Packet checklist actions write `review_tasks` (`servicing_dec` / `servicing_id_card` / `servicing_aor`).
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR missing with open collect task (seed proof). Dec + ID on file. Mortgagee **First Community Bank ISAOA** on the personal-lines list. Endorsement still **in progress** — do not file to “prove” cancel.
+2. **Service requests** `/service-requests` — Elena in progress, Hale requested. Status chip + next-step sentence. File still calls `filePolicyChange` on the same Policy.
+3. **Book health** `/book-health` — agency totals plus producer book rollup (owner). Elena AOR still in missing docs.
+4. **Claims** `/claims` — FNOL pipeline + carrier-site disclaimer. Detail uses the existing intake record + timeline. No carrier API.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.

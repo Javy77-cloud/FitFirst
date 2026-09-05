@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { PolicySnapshot } from "@/lib/policy/workflow";
 import {
   applyServiceRequestAction,
+  missingServiceRequestFields,
   nextServiceRequestStatus,
+  validateServiceRequestFields,
   type ServiceRequestDraft,
 } from "./service-requests";
 
@@ -72,6 +74,44 @@ describe("service request pipeline", () => {
     if (!withdrawn.ok) return;
     expect(withdrawn.status).toBe("withdrawn");
     expect(withdrawn.policy).toEqual(policy);
+  });
+
+  it("requires summary and a reason that matches the kind", () => {
+    expect(
+      missingServiceRequestFields({
+        kind: "endorsement",
+        reason: "additional_interest",
+        summary: "Lender mortgagee",
+        effectiveDate: new Date("2026-09-10"),
+        coverageA: null,
+      }),
+    ).toEqual([]);
+    expect(
+      missingServiceRequestFields({
+        kind: "endorsement",
+        reason: "coverage_change",
+        summary: "Raise Cov A",
+        effectiveDate: new Date("2026-09-20"),
+        coverageA: 285000,
+      }),
+    ).toEqual([]);
+    expect(
+      missingServiceRequestFields({
+        kind: "cancellation",
+        reason: "coverage_change",
+        summary: "Flat cancel",
+        effectiveDate: new Date("2026-09-20"),
+        coverageA: null,
+      }),
+    ).toContain("Reason that matches Cancellation");
+    const blank = validateServiceRequestFields({
+      kind: "non_renewal",
+      reason: "",
+      summary: "",
+      effectiveDate: null,
+      coverageA: null,
+    });
+    expect(blank.ok).toBe(false);
   });
 
   it("refuses to file a second time or endorse an already cancelled policy", () => {

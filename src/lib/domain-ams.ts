@@ -363,3 +363,56 @@ export const CARRIER_DOWNLOAD_LABELS: Record<CarrierDownloadProvider, string> = 
 export const CARRIER_DOWNLOAD_NOT_CONNECTED = "not_connected";
 export const CARRIER_DOWNLOAD_STUB_REASON =
   "needs carrier download / IVANS later";
+
+export const SERVICE_REQUEST_NEXT_STEPS: Record<ServiceRequestStatus, string> = {
+  requested: "Queued. Start when the change packet is ready.",
+  in_progress: "Working. File when the carrier confirms — same Policy, no rewrite.",
+  filed: "On the Policy. Activity log recorded.",
+  withdrawn: "Withdrawn. Policy unchanged.",
+};
+
+export function serviceRequestNextStep(status: string): string {
+  return isServiceRequestStatus(status) ? SERVICE_REQUEST_NEXT_STEPS[status] : "";
+}
+
+export const INTEREST_KINDS = ["mortgagee", "additional_interest", "loss_payee"] as const;
+export type InterestKind = (typeof INTEREST_KINDS)[number];
+
+export const INTEREST_KIND_LABELS: Record<InterestKind, string> = {
+  mortgagee: "Mortgagee",
+  additional_interest: "Additional interest",
+  loss_payee: "Loss payee",
+};
+
+export function isInterestKind(value: string): value is InterestKind {
+  return (INTEREST_KINDS as readonly string[]).includes(value);
+}
+
+export function interestKindLabel(kind: string): string {
+  return isInterestKind(kind) ? INTEREST_KIND_LABELS[kind] : kind.replaceAll("_", " ");
+}
+
+export const PERSONAL_LINES = ["HO", "AUTO", "FLOOD", "UMBRELLA", "LANDLORD"] as const;
+
+export function isPersonalLinesCode(lineOfBusiness: string): boolean {
+  return (PERSONAL_LINES as readonly string[]).includes(appointmentLine(lineOfBusiness));
+}
+
+export const SERVICING_TASK_KINDS: Record<ServicingDocKey, string> = {
+  dec: "servicing_dec",
+  id_card: "servicing_id_card",
+  aor: "servicing_aor",
+};
+
+export const SERVICE_REQUEST_TASK_KIND = "service_request";
+
+export function servicingTaskKind(key: ServicingDocKey): string {
+  return SERVICING_TASK_KINDS[key];
+}
+
+export function servicingDocKeyFromTaskKind(kind: string): ServicingDocKey | null {
+  const found = (SERVICING_DOC_KEYS as readonly string[]).find(
+    (key) => SERVICING_TASK_KINDS[key as ServicingDocKey] === kind,
+  );
+  return (found as ServicingDocKey | undefined) ?? null;
+}

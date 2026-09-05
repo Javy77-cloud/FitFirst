@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getPolicyWorkspace } from "@/lib/db/queries";
 import { loadPolicyServicing } from "@/lib/ams/queries";
+import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
+import { isPersonalLinesPolicy } from "@/lib/ams/additional-interests";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
@@ -77,6 +79,12 @@ export default async function PolicyDetailPage({
         <Link href="/book-health" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
           Book health
         </Link>
+        <Link
+          href={`/claims/new?policy=${policy.id}${contact ? `&contact=${contact.id}` : ""}`}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        >
+          Log FNOL
+        </Link>
       </div>
 
       <RecordDetailLayout
@@ -84,7 +92,16 @@ export default async function PolicyDetailPage({
           <div>
       {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
-      {servicing ? <ServicingChecklistCard checklist={servicing.checklist} /> : null}
+      {servicing ? (
+        <ServicingChecklistCard
+          checklist={servicing.checklist}
+          policyId={policy.id}
+          packetByKey={servicing.packetByKey}
+        />
+      ) : null}
+      {isPersonalLinesPolicy(policy) ? (
+        <AdditionalInterestPanel policyId={policy.id} interests={servicing?.interests ?? []} />
+      ) : null}
       <ServiceRequestPanel
         policyId={policy.id}
         status={policy.status}

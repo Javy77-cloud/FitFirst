@@ -584,3 +584,13 @@ export const AMS_WAVE2_IDS = {
   harborCoiLog: "a0481111-a048-4048-8048-a04811111109",
 } as const;
 
+/** AMS wave 4. Off wave2 a048… and Ana / Elena owner blocks. */
+export const AMS_WAVE4_IDS = {
+  elenaMortgagee: "a0491111-a049-4049-8049-a04911111101",
+  elenaAorTask: "a0491111-a049-4049-8049-a04911111102",
+  elenaAorActivity: "a0491111-a049-4049-8049-a04911111103",
+  elenaAorLog: "a0491111-a049-4049-8049-a04911111104",
+  elenaServiceTask: "a0491111-a049-4049-8049-a04911111105",
+  haleServiceTask: "a0491111-a049-4049-8049-a04911111106",
+} as const;
+

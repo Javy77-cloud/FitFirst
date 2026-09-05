@@ -1,80 +1,52 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
-import { ColumnTable } from "@/components/lists/column-table";
-import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { db } from "@/lib/db";
-import { claims, policies, contacts } from "@/lib/db/schema";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
+import { ClaimStatusPipeline } from "@/components/claims/status-pipeline";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { listDeskClaims } from "@/lib/db/claim-queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClaimsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const filter = pickFilterParams(await searchParams, ["status", "cause"]);
-  const all = await db
-    .select({ claim: claims, policy: policies, contact: contacts })
-    .from(claims)
-    .leftJoin(policies, eq(claims.policyId, policies.id))
-    .leftJoin(contacts, eq(policies.contactId, contacts.id))
-    .where(eq(claims.tenantId, DEFAULT_TENANT_ID));
-  const rows = all.filter(
-    ({ claim }) => matchesField(claim.status, filter.status) && matchesField(claim.causeType, filter.cause),
-  );
+export default async function ClaimsPage() {
+  const rows = await listDeskClaims();
 
   return (
     <AppShell title="Claims log">
-      <p className="mb-3 text-base text-muted-foreground">
-        Desk log only — not a carrier claims system. Inquiry, referred to carrier, or closed.
-      </p>
-      <SavedFiltersBar
-        moduleId="claims"
-        fields={[
-          {
-            key: "status",
-            label: "Status",
-            options: uniqueOptions(all.map(({ claim }) => claim.status)),
-          },
-          {
-            key: "cause",
-            label: "Cause",
-            options: uniqueOptions(all.map(({ claim }) => claim.causeType)),
-          },
-        ]}
-      />
-      <section className="ff-card overflow-hidden">
-        <ColumnTable
-          moduleId="claims"
-          columns={[
-            { id: "status", label: "Status", locked: true },
-            { id: "carrierClaim", label: "Carrier claim" },
-            { id: "cause", label: "Cause" },
-            { id: "policy", label: "Policy" },
-            { id: "party", label: "Party" },
-          ]}
-          empty="No claims on the book yet. Log one from a policy record when the slice seed is wired."
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-3xl text-base text-muted-foreground">
+          FNOL desk intake and timeline. Inquiry → referred to carrier → closed. Handle the claim
+          on the carrier website — FitFirst does not file FNOL, set reserves, or talk to a
+          carrier claims API.
+        </p>
+        <Link href="/claims/new" className={cn(buttonVariants({ size: "sm" }))}>
+          Log FNOL
+        </Link>
+      </div>
+      <div className="mb-4">
+        <ClaimsDeskNotice />
+      </div>
+      {rows.length === 0 ? (
+        <section className="ff-card px-4 py-8 text-base text-muted-foreground">
+          No claims on the book yet. Log FNOL from a Policy or Contact.
+        </section>
+      ) : (
+        <ClaimStatusPipeline
           rows={rows.map(({ claim, policy, contact }) => ({
-            key: claim.id,
-            cells: {
-              status: (
-                <Link href={`/claims/${claim.id}`} className="font-medium text-primary hover:underline">
-                  {claim.status}
-                </Link>
-              ),
-              carrierClaim: (
-                <span className="font-mono text-xs">{claim.carrierClaimNumber ?? "—"}</span>
-              ),
-              cause: claim.causeType ?? "—",
-              policy: policy?.policyNumber ?? "—",
-              party: contact ? `${contact.lastName}, ${contact.firstName}` : "—",
-            },
+            id: claim.id,
+            status: claim.status,
+            causeType: claim.causeType,
+            description: claim.description,
+            dateOfLoss: claim.dateOfLoss,
+            dateReported: claim.dateReported,
+            carrierClaimNumber: claim.carrierClaimNumber,
+            policyId: policy?.id ?? null,
+            policyNumber: policy?.policyNumber ?? null,
+            contactId: contact?.id ?? null,
+            contactName: contact ? `${contact.lastName}, ${contact.firstName}` : null,
           }))}
         />
-      </section>
+      )}
     </AppShell>
   );
 }

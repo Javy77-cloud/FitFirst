@@ -2558,6 +2558,33 @@ export const carrierDownloadConnections = pgTable(
   (t) => [uniqueIndex("carrier_download_connections_uidx").on(t.tenantId, t.provider)],
 );
 
+/** Mortgagee / additional interest / loss payee on a personal-lines Policy. */
+export const policyAdditionalInterests = pgTable(
+  "policy_additional_interests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    kind: text("kind").notNull(),
+    name: text("name").notNull(),
+    address: text("address"),
+    city: text("city"),
+    state: text("state"),
+    zip: text("zip"),
+    loanNumber: text("loan_number"),
+    clause: text("clause"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("policy_additional_interests_tenant_idx").on(t.tenantId, t.policyId),
+    index("policy_additional_interests_kind_idx").on(t.tenantId, t.kind),
+  ],
+);
+
 export type PolicyServiceRequest = typeof policyServiceRequests.$inferSelect;
 export type CertificateRequest = typeof certificateRequests.$inferSelect;
 export type CarrierDownloadConnection = typeof carrierDownloadConnections.$inferSelect;
+export type PolicyAdditionalInterest = typeof policyAdditionalInterests.$inferSelect;

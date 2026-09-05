@@ -1,25 +1,13 @@
-import {
-  advanceServiceRequest,
-  createServiceRequest,
-} from "@/app/actions/ams";
+import { advanceServiceRequest } from "@/app/actions/ams";
+import { ServiceRequestForm } from "@/components/ams/service-request-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { formatDay } from "@/lib/domain";
-import {
-  CANCELLATION_REASONS,
-  ENDORSEMENT_REASONS,
-  NON_RENEWAL_REASONS,
-} from "@/lib/policy/reasons";
-import { serviceKindLabel } from "@/lib/ams/service-requests";
-import { serviceRequestStatusLabel } from "@/lib/domain-ams";
+import { serviceKindLabel, serviceRequestNextStepCopy } from "@/lib/ams/service-requests";
+import { isServiceRequestStatus, serviceRequestStatusLabel } from "@/lib/domain-ams";
 import type { PolicyServiceRequest } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { reasonLabel } from "@/lib/policy/reasons";
+import type { PolicyChangeKind } from "@/lib/policy/status";
 
 export function ServiceRequestPanel({
   policyId,
@@ -50,8 +38,8 @@ export function ServiceRequestPanel({
     <section className="ff-card mb-4 p-4">
       <h2 className="text-base font-semibold text-navy">Service request pipeline</h2>
       <p className="mt-1 text-base text-muted-foreground">
-        Request an endorsement, cancellation, or non-renewal. Filing updates this Policy and
-        writes the activity log. Does not open a Deal and does not create a new Policy.
+        Request → start → file. Filing updates this Policy and writes the activity log plus an
+        in-app Task. Does not open a Deal and does not create a new Policy.
       </p>
       {error ? (
         <p className="mt-2 text-sm text-destructive" role="alert">
@@ -66,108 +54,61 @@ export function ServiceRequestPanel({
         <p className="mt-3 text-sm text-muted-foreground">No open service requests on this Policy.</p>
       ) : (
         <ul className="mt-3 divide-y divide-border rounded-md border border-border">
-          {open.map((row) => (
-            <li key={row.id} className="space-y-2 px-3 py-3">
-              <div className="flex flex-wrap items-baseline gap-2">
-                <span className="font-medium text-navy">{serviceKindLabel(row.kind)}</span>
-                <span className="text-xs uppercase text-muted-foreground">
-                  {serviceRequestStatusLabel(row.status)}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  effective {formatDay(row.effectiveDate)}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {row.reason.replaceAll("_", " ")}
-                {row.summary ? ` · ${row.summary}` : ""}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {row.status === "requested" ? (
+          {open.map((row) => {
+            const statusLabel = serviceRequestStatusLabel(row.status);
+            const next = isServiceRequestStatus(row.status)
+              ? serviceRequestNextStepCopy(row.status)
+              : "";
+            const kind = row.kind as PolicyChangeKind;
+            return (
+              <li key={row.id} className="space-y-2 px-3 py-3">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-medium text-navy">{serviceKindLabel(row.kind)}</span>
+                  <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
+                    {statusLabel}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    effective {formatDay(row.effectiveDate)}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {reasonLabel(kind, row.reason)}
+                  {row.summary ? ` · ${row.summary}` : ""}
+                </p>
+                {next ? <p className="text-sm text-navy">{next}</p> : null}
+                <div className="flex flex-wrap gap-2">
+                  {row.status === "requested" ? (
+                    <form action={advanceServiceRequest}>
+                      <input type="hidden" name="requestId" value={row.id} />
+                      <input type="hidden" name="action" value="start" />
+                      <Button type="submit" size="sm" variant="outline">
+                        Start
+                      </Button>
+                    </form>
+                  ) : null}
                   <form action={advanceServiceRequest}>
                     <input type="hidden" name="requestId" value={row.id} />
-                    <input type="hidden" name="action" value="start" />
-                    <Button type="submit" size="sm" variant="outline">
-                      Start
+                    <input type="hidden" name="action" value="file" />
+                    <Button type="submit" size="sm">
+                      File on Policy
                     </Button>
                   </form>
-                ) : null}
-                <form action={advanceServiceRequest}>
-                  <input type="hidden" name="requestId" value={row.id} />
-                  <input type="hidden" name="action" value="file" />
-                  <Button type="submit" size="sm">
-                    File on Policy
-                  </Button>
-                </form>
-                <form action={advanceServiceRequest}>
-                  <input type="hidden" name="requestId" value={row.id} />
-                  <input type="hidden" name="action" value="withdraw" />
-                  <Button type="submit" size="sm" variant="secondary">
-                    Withdraw
-                  </Button>
-                </form>
-              </div>
-            </li>
-          ))}
+                  <form action={advanceServiceRequest}>
+                    <input type="hidden" name="requestId" value={row.id} />
+                    <input type="hidden" name="action" value="withdraw" />
+                    <Button type="submit" size="sm" variant="secondary">
+                      Withdraw
+                    </Button>
+                  </form>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
       {inForce ? (
-        <form action={createServiceRequest} className="mt-4 grid gap-3 border-t border-border pt-4">
-          <input type="hidden" name="policyId" value={policyId} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label className="text-xs">Request type</Label>
-              <select
-                name="kind"
-                required
-                defaultValue="endorsement"
-                className="mt-1 h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                <option value="endorsement">Endorsement</option>
-                <option value="cancellation">Cancellation</option>
-                <option value="non_renewal">Non-renewal</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Effective date</Label>
-              <Input name="effectiveDate" type="date" required defaultValue={todayIso()} className="mt-1" />
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">Reason</Label>
-            <select
-              name="reason"
-              required
-              className="mt-1 h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
-              defaultValue="coverage_change"
-            >
-              {[...ENDORSEMENT_REASONS, ...CANCELLATION_REASONS, ...NON_RENEWAL_REASONS]
-                .filter((row, index, list) => list.findIndex((item) => item.value === row.value) === index)
-                .map((row) => (
-                  <option key={row.value} value={row.value}>
-                    {row.label}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label className="text-xs">Coverage A (endorsement)</Label>
-              <Input name="coverageA" type="number" defaultValue={coverageA ?? undefined} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs">Premium (endorsement)</Label>
-              <Input name="premium" defaultValue={premium ?? undefined} className="mt-1" />
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">What the insured asked for</Label>
-            <Textarea name="summary" rows={2} className="mt-1" />
-          </div>
-          <Button type="submit" size="sm">
-            Queue request
-          </Button>
-        </form>
+        <ServiceRequestForm policyId={policyId} coverageA={coverageA} premium={premium} />
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">
           This Policy is off the book. Open requests can still be withdrawn; new ones are not

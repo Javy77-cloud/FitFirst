@@ -31,7 +31,7 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
-## AMS wave 2 (this branch)
+## AMS wave 2 (kept)
 
 In-house servicing on Policies that already exist. No IVANS, no rater, no Stripe / Twilio / DocuSign.
 
@@ -41,7 +41,28 @@ In-house servicing on Policies that already exist. No IVANS, no rater, no Stripe
 - **Certificates** (`/certificates`) — COI request queue. Issue still prints a desk stub. **Not a licensed ACORD product.**
 - **IVANS / AL3** (`/settings/carrier-download`) — empty importer. Status stays **Not connected**. Attempt import returns `needs carrier download / IVANS later`. No fake carrier fees.
 
-Try: bind is already on Elena `HO3-ELENA-2026` (dec + ID, missing AOR, endorsement in progress). Hale `HP-FL-88421` is in the 30-day renewal window with a compare. Harbor Key has an open COI request for Brevard County Parks. Do not bind Ana.
+## AMS wave 4 (this branch)
+
+Function-first depth on the same Policies. No redesign. Build stops at the API wall.
+
+- **Service request queue** — clearer statuses + next-step copy, required fields (reason matches kind, summary, coverage A on coverage-change endorsements), activity log, in-app Task. File still updates the same Policy.
+- **Mortgagee / additional interest** — personal-lines list CRUD on the Policy. Adding a name does not file an endorsement.
+- **Packet checklist actions** — missing dec / ID / AOR can create an in-app Task. Elena AOR missing is the seed proof.
+- **Book health** — agency book vs producer book rollups (by Policy owner).
+- **Claims / FNOL** — intake + status pipeline + timeline. Carrier-site disclaimer. No carrier API.
+
+Try: Elena `HO3-ELENA-2026` still has dec + ID, missing AOR (collect task open), mortgagee **First Community Bank ISAOA**, endorsement **in progress**. Hale `HP-FL-88421` endorsement stays **requested**. Do not file those to “prove” a cancel. Do not bind Ana.
+
+## Localhost :43147 notes
+
+After `npm run db:migrate && npm run db:seed` and `npm run dev`:
+
+1. Sign in as **javy@fitfirst.local** / **javy**.
+2. Open Elena Policy — checklist AOR missing + task, mortgagee list, service request **In progress**.
+3. `/service-requests` — Elena in progress, Hale requested.
+4. `/book-health` — agency + producer rollups; Elena AOR in missing docs.
+5. `/claims` — FNOL pipeline and “Handle the claim on the carrier website.”
+6. Settings → IVANS / AL3 still **Not connected**.
 
 ## Tests
 

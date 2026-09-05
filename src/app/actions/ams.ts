@@ -14,6 +14,7 @@ import {
   carrierDownloadConnections,
   certificateRequests,
   issuedCertificates,
+  policyAdditionalInterests,
   policyServiceRequests,
   reviewTasks,
   tenants,
@@ -24,9 +25,19 @@ import { parseIsoDate } from "@/lib/policy/workflow";
 import {
   applyServiceRequestAction,
   serviceKindLabel,
+  serviceRequestTaskKind,
+  serviceRequestTaskTitle,
+  validateServiceRequestFields,
   type ServiceRequestAction,
 } from "@/lib/ams/service-requests";
-import { getCertificateRequest, getServiceRequest } from "@/lib/ams/queries";
+import { isPersonalLinesPolicy, validateInterestDraft } from "@/lib/ams/additional-interests";
+import { packetTaskTitle } from "@/lib/ams/packet-tasks";
+import {
+  SERVICING_DOC_KEYS,
+  servicingTaskKind,
+  type ServicingDocKey,
+} from "@/lib/domain-ams";
+import { getCertificateRequest, getServiceRequest, loadPolicyServicing } from "@/lib/ams/queries";
 import {
   matchingIssuedCertificate,
   nextCertificateRequestStatus,
@@ -122,10 +133,18 @@ export async function createServiceRequest(formData: FormData) {
   const effectiveDate = parseIsoDate(str(formData, "effectiveDate"));
   if (!effectiveDate) bounce(`/policies/${policyId}`, "A valid effective date is required.");
   const reason = str(formData, "reason");
-  if (!reason) bounce(`/policies/${policyId}`, "Reason is required.");
-  const actor = await actorName();
+  const summary = str(formData, "summary");
   const coverageARaw = str(formData, "coverageA");
   const coverageA = coverageARaw ? Number(coverageARaw) : null;
+  const parsed = validateServiceRequestFields({
+    kind,
+    reason,
+    summary,
+    effectiveDate,
+    coverageA: coverageA != null && Number.isFinite(coverageA) ? coverageA : null,
+  });
+  if (!parsed.ok) bounce(`/policies/${policyId}`, parsed.error);
+  const actor = await actorName();
   const [row] = await db
     .insert(policyServiceRequests)
     .values({
@@ -134,7 +153,7 @@ export async function createServiceRequest(formData: FormData) {
       kind,
       status: "requested",
       reason,
-      summary: str(formData, "summary") || null,
+      summary: summary || null,
       effectiveDate,
       coverageA: coverageA != null && Number.isFinite(coverageA) ? coverageA : null,
       premium: str(formData, "premium") || null,
@@ -143,16 +162,28 @@ export async function createServiceRequest(formData: FormData) {
     })
     .returning();
   const loaded = await getServiceRequest(row.id);
+  const due = new Date(effectiveDate);
+  await db.insert(reviewTasks).values({
+    tenantId: DEFAULT_TENANT_ID,
+    policyId,
+    contactId: loaded?.policy.contactId ?? null,
+    accountId: loaded?.policy.accountId ?? null,
+    dealId: loaded?.policy.dealId ?? null,
+    kind: serviceRequestTaskKind(),
+    title: serviceRequestTaskTitle(kind, loaded?.policy.policyNumber ?? policyId),
+    dueDate: due,
+    status: "open",
+  });
   await writeServicingLog({
     title: `${serviceKindLabel(kind)} requested`,
-    body: `${serviceKindLabel(kind)} requested on this Policy. Status: requested. Not filed yet.`,
+    body: `${serviceKindLabel(kind)} requested on this Policy. Status: requested. In-app task opened. Not filed yet.`,
     eventType: "service_requested",
     policyId,
     contactId: loaded?.policy.contactId,
     accountId: loaded?.policy.accountId,
     dealId: loaded?.policy.dealId,
   });
-  refreshPolicy(policyId);
+  refreshPolicy(policyId, ["/tasks"]);
   bounce(`/policies/${policyId}`, undefined, "requested");
 }
 
@@ -214,6 +245,20 @@ export async function advanceServiceRequest(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(policyServiceRequests.id, loaded.request.id));
+
+  if (action === "file" || action === "withdraw") {
+    await db
+      .update(reviewTasks)
+      .set({ status: "done", completedAt: new Date() })
+      .where(
+        and(
+          eq(reviewTasks.tenantId, DEFAULT_TENANT_ID),
+          eq(reviewTasks.policyId, loaded.policy.id),
+          eq(reviewTasks.kind, serviceRequestTaskKind()),
+          eq(reviewTasks.status, "open"),
+        ),
+      );
+  }
 
   await writeServicingLog({
     title: `${serviceKindLabel(loaded.request.kind)} ${drafted.status.replaceAll("_", " ")}`,
@@ -475,5 +520,140 @@ export async function attemptCarrierDownloadImport(formData: FormData) {
   revalidatePath("/settings/carrier-download");
   revalidatePath("/ams/carrier-download");
   bounce("/settings/carrier-download", result.reason, "not_connected");
+}
+
+function asServicingDocKey(value: string): ServicingDocKey | null {
+  return (SERVICING_DOC_KEYS as readonly string[]).includes(value)
+    ? (value as ServicingDocKey)
+    : null;
+}
+
+export async function createPacketTask(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const key = asServicingDocKey(str(formData, "docKey"));
+  if (!isUuid(policyId) || !key) bounce(`/policies/${policyId || ""}`, "Choose a missing packet slot.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const [workspace, servicing] = await Promise.all([
+    getPolicyWorkspace(policyId),
+    loadPolicyServicing(policyId),
+  ]);
+  if (!workspace || !servicing) bounce(`/policies/${policyId}`, "Policy not found.");
+  const missing = servicing.checklist.items
+    .filter((item) => !item.ok && (SERVICING_DOC_KEYS as readonly string[]).includes(item.key))
+    .map((item) => item.key as ServicingDocKey);
+  if (!missing.includes(key)) {
+    bounce(`/policies/${policyId}`, `${key.replaceAll("_", " ")} is already on file.`);
+  }
+  if (servicing.packetByKey[key]) {
+    bounce(`/policies/${policyId}`, undefined, "task_exists");
+  }
+  const title = packetTaskTitle(key, workspace.policy.policyNumber);
+  const due = new Date();
+  due.setUTCDate(due.getUTCDate() + 7);
+  await db.insert(reviewTasks).values({
+    tenantId: DEFAULT_TENANT_ID,
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+    kind: servicingTaskKind(key),
+    title,
+    dueDate: due,
+    status: "open",
+  });
+  await writeServicingLog({
+    title,
+    body: `${title}. In-app task only — shopping docs stay on the Deal.`,
+    eventType: "packet_task",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/tasks", "/book-health"]);
+  bounce(`/policies/${policyId}`, undefined, "packet_task");
+}
+
+export async function saveAdditionalInterest(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  if (!isUuid(policyId)) bounce("/policies", "Policy is required.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(`/policies/${policyId}`, "Policy not found.");
+  if (!isPersonalLinesPolicy(workspace.policy)) {
+    bounce(`/policies/${policyId}`, "Mortgagee / additional interest is for personal-lines Policies.");
+  }
+  const parsed = validateInterestDraft({
+    kind: str(formData, "kind"),
+    name: str(formData, "name"),
+    address: str(formData, "address"),
+    city: str(formData, "city"),
+    state: str(formData, "state"),
+    zip: str(formData, "zip"),
+    loanNumber: str(formData, "loanNumber"),
+    clause: str(formData, "clause"),
+    notes: str(formData, "notes"),
+  });
+  if (!parsed.ok) bounce(`/policies/${policyId}`, parsed.error);
+  const [row] = await db
+    .insert(policyAdditionalInterests)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      kind: parsed.kind,
+      name: parsed.name,
+      address: str(formData, "address") || null,
+      city: str(formData, "city") || null,
+      state: str(formData, "state") || null,
+      zip: str(formData, "zip") || null,
+      loanNumber: str(formData, "loanNumber") || null,
+      clause: str(formData, "clause") || null,
+      notes: str(formData, "notes") || null,
+    })
+    .returning();
+  await writeServicingLog({
+    title: `Added ${parsed.kind.replaceAll("_", " ")}`,
+    body: `${parsed.name} added on ${workspace.policy.policyNumber}. Does not file an endorsement by itself.`,
+    eventType: "interest_added",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId);
+  bounce(`/policies/${policyId}`, undefined, `interest_${row.kind}`);
+}
+
+export async function deleteAdditionalInterest(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const interestId = str(formData, "interestId");
+  if (!isUuid(policyId) || !isUuid(interestId)) {
+    bounce(`/policies/${policyId || ""}`, "Interest not found.");
+  }
+  const [existing] = await db
+    .select()
+    .from(policyAdditionalInterests)
+    .where(
+      and(
+        eq(policyAdditionalInterests.tenantId, DEFAULT_TENANT_ID),
+        eq(policyAdditionalInterests.id, interestId),
+        eq(policyAdditionalInterests.policyId, policyId),
+      ),
+    );
+  if (!existing) bounce(`/policies/${policyId}`, "Interest not found.");
+  await db.delete(policyAdditionalInterests).where(eq(policyAdditionalInterests.id, interestId));
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  await writeServicingLog({
+    title: `Removed ${existing.kind.replaceAll("_", " ")}`,
+    body: `${existing.name} removed from this Policy.`,
+    eventType: "interest_removed",
+    policyId,
+    contactId: workspace?.policy.contactId,
+    accountId: workspace?.policy.accountId,
+    dealId: workspace?.policy.dealId,
+  });
+  refreshPolicy(policyId);
+  bounce(`/policies/${policyId}`, undefined, "interest_removed");
 }
 

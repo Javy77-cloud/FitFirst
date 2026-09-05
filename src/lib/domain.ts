@@ -885,6 +885,18 @@ export {
   CARRIER_DOWNLOAD_LABELS,
   CARRIER_DOWNLOAD_NOT_CONNECTED,
   CARRIER_DOWNLOAD_STUB_REASON,
+  SERVICE_REQUEST_NEXT_STEPS,
+  serviceRequestNextStep,
+  INTEREST_KINDS,
+  INTEREST_KIND_LABELS,
+  isInterestKind,
+  interestKindLabel,
+  PERSONAL_LINES,
+  isPersonalLinesCode,
+  SERVICING_TASK_KINDS,
+  SERVICE_REQUEST_TASK_KIND,
+  servicingTaskKind,
+  servicingDocKeyFromTaskKind,
 } from "./domain-ams";
 export type {
   AppointmentLine,
@@ -918,6 +930,7 @@ export type {
   CertificateRequestStatus,
   ServicingDocKey,
   CarrierDownloadProvider,
+  InterestKind,
 } from "./domain-ams";
 
 export {

@@ -29,6 +29,18 @@ export type MissingDocRow = {
   labels: string[];
 };
 
+export type OwnedBookPolicy = BookPolicy & {
+  ownerId: string | null;
+  ownerName: string;
+};
+
+export type ProducerBookRow = {
+  ownerId: string | null;
+  ownerName: string;
+  counts: BookHealthCounts;
+  missingCount: number;
+};
+
 export function isLapsedBookStatus(status: string): boolean {
   const raw = status.toLowerCase();
   if (isEndedStatus(raw)) return true;
@@ -66,4 +78,35 @@ export function missingDocRows(
   }
   rows.sort((a, b) => b.missing.length - a.missing.length || a.policyNumber.localeCompare(b.policyNumber));
   return rows;
+}
+
+export function producerBookRows(
+  policies: OwnedBookPolicy[],
+  filesByPolicy: Map<string, ServicingFile[]>,
+): { agency: BookHealthCounts; producers: ProducerBookRow[] } {
+  const agency = bookHealthCounts(policies);
+  const grouped = new Map<string, OwnedBookPolicy[]>();
+  for (const policy of policies) {
+    const key = policy.ownerId ?? "unassigned";
+    const list = grouped.get(key) ?? [];
+    list.push(policy);
+    grouped.set(key, list);
+  }
+  const missing = missingDocRows(policies, filesByPolicy);
+  const missingByOwner = new Map<string, number>();
+  for (const row of missing) {
+    const policy = policies.find((item) => item.id === row.policyId);
+    const key = policy?.ownerId ?? "unassigned";
+    missingByOwner.set(key, (missingByOwner.get(key) ?? 0) + 1);
+  }
+  const producers: ProducerBookRow[] = [...grouped.entries()].map(([key, rows]) => ({
+    ownerId: key === "unassigned" ? null : key,
+    ownerName: rows[0]?.ownerName || "Unassigned",
+    counts: bookHealthCounts(rows),
+    missingCount: missingByOwner.get(key) ?? 0,
+  }));
+  producers.sort(
+    (a, b) => b.counts.active - a.counts.active || a.ownerName.localeCompare(b.ownerName),
+  );
+  return { agency, producers };
 }
