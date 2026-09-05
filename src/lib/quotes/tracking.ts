@@ -1,5 +1,12 @@
 import { formatMoney, type TrackingStatus } from "@/lib/domain";
 
+export type QuoteParty = {
+  contactId: string | null;
+  accountId: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
 export type TrackingAttemptInput = {
   id: string;
   dealId: string;
@@ -15,7 +22,13 @@ export type TrackingAttemptInput = {
   attemptedAt: Date;
   why: string | null;
   quoteId?: string | null;
-};
+  lostReason?: string | null;
+  coverageA?: number | null;
+  aopDeductible?: string | null;
+  hurricaneDeductible?: string | null;
+  coverageGaps?: string[];
+  notes?: string | null;
+} & Partial<QuoteParty>;
 
 export type BoundPolicyInput = {
   dealId: string;
@@ -37,7 +50,12 @@ export type QuoteComparisonInput = {
   createdAt: Date;
   notes: string | null;
   quoteAttemptLogId: string | null;
-};
+  lostReason?: string | null;
+  coverageA?: number | null;
+  aopDeductible?: string | null;
+  hurricaneDeductible?: string | null;
+  coverageGaps?: string[];
+} & Partial<QuoteParty>;
 
 export type TrackingRow = {
   id: string;
@@ -57,6 +75,18 @@ export type TrackingRow = {
   policyId: string | null;
   why: string | null;
   cheapestQuotedRank: number | null;
+  lostReason: string | null;
+  coverageA: number | null;
+  aopDeductible: string | null;
+  hurricaneDeductible: string | null;
+  coverageGaps: string[];
+  notes: string | null;
+  pdfDocumentId: string | null;
+  pdfFilename: string | null;
+  contactId: string | null;
+  accountId: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 export type TrackingShop = {
@@ -110,6 +140,15 @@ export function assignCheapestQuotedRanks(rows: TrackingRow[]): TrackingRow[] {
   }));
 }
 
+function partyFrom(input: Partial<QuoteParty>): QuoteParty {
+  return {
+    contactId: input.contactId ?? null,
+    accountId: input.accountId ?? null,
+    email: input.email ?? null,
+    phone: input.phone ?? null,
+  };
+}
+
 function attemptToRow(
   attempt: TrackingAttemptInput,
   policy: BoundPolicyInput | undefined,
@@ -132,6 +171,15 @@ function attemptToRow(
     policyId: policy?.policyId ?? null,
     why: attempt.why,
     cheapestQuotedRank: null,
+    lostReason: attempt.lostReason ?? null,
+    coverageA: attempt.coverageA ?? null,
+    aopDeductible: attempt.aopDeductible ?? null,
+    hurricaneDeductible: attempt.hurricaneDeductible ?? null,
+    coverageGaps: attempt.coverageGaps ?? [],
+    notes: attempt.notes ?? attempt.why,
+    pdfDocumentId: null,
+    pdfFilename: null,
+    ...partyFrom(attempt),
   };
 }
 
@@ -158,6 +206,16 @@ export function buildTrackingRows(
           premium: attempt.premium ?? quote.premium,
           quoteNumber: attempt.quoteNumber ?? quote.quoteNumber,
           bindable: attempt.bindable || quote.bindable,
+          lostReason: attempt.lostReason ?? quote.lostReason ?? null,
+          coverageA: attempt.coverageA ?? quote.coverageA ?? null,
+          aopDeductible: attempt.aopDeductible ?? quote.aopDeductible ?? null,
+          hurricaneDeductible: attempt.hurricaneDeductible ?? quote.hurricaneDeductible ?? null,
+          coverageGaps: attempt.coverageGaps?.length ? attempt.coverageGaps : (quote.coverageGaps ?? []),
+          notes: attempt.notes ?? quote.notes ?? attempt.why,
+          contactId: attempt.contactId ?? quote.contactId ?? null,
+          accountId: attempt.accountId ?? quote.accountId ?? null,
+          email: attempt.email ?? quote.email ?? null,
+          phone: attempt.phone ?? quote.phone ?? null,
         }
       : attempt;
     return attemptToRow(merged, policyByDealCarrier.get(`${attempt.dealId}:${attempt.carrierId}`));
@@ -185,6 +243,15 @@ export function buildTrackingRows(
         policyId: policy?.policyId ?? null,
         why: quote.notes,
         cheapestQuotedRank: null,
+        lostReason: quote.lostReason ?? null,
+        coverageA: quote.coverageA ?? null,
+        aopDeductible: quote.aopDeductible ?? null,
+        hurricaneDeductible: quote.hurricaneDeductible ?? null,
+        coverageGaps: quote.coverageGaps ?? [],
+        notes: quote.notes,
+        pdfDocumentId: null,
+        pdfFilename: null,
+        ...partyFrom(quote),
       } satisfies TrackingRow;
     });
 

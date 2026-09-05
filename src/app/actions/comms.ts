@@ -30,6 +30,7 @@ function revalidate(ids: ReturnType<typeof related>) {
   if (ids.policyId) revalidatePath(`/policies/${ids.policyId}`);
   if (ids.dealId) revalidatePath(`/deals/${ids.dealId}`);
   if (ids.leadId) revalidatePath(`/leads/${ids.leadId}`);
+  revalidatePath("/quotes");
 }
 
 /** Queue an outbound email. Nothing leaves the desk — vendor send is later. */
