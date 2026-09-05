@@ -4,6 +4,12 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Deal Name typeahead (this slice)
+
+**`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name on create and on Deals upload typeaheads **Contacts + Businesses** as you type. Contains match, case-insensitive, on name / email / phone. Null-safe for Zoho-imported blanks (empty first/last, missing email or phone). No submit click. Pipeline create uses the same picker. Does **not** wipe the book.
+
+Try: Deals → New shopping deal, or Pipeline → Deal name. Type `javy` (or a phone / email). Javy Rivera and other book names appear live. Pick one to link the shop. Same field on Deals upload finds the person/business, then the shop.
+
 ## Tip branch
 
 **`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:

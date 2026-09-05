@@ -13,7 +13,7 @@ import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
+import { listBoundPendingDeals, listDealLookup, listDeals, listPartyTypeahead, listUsersById, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +43,12 @@ export default async function DealsPage({
     lifeSub: first(params.lifeSub),
     healthSub: first(params.healthSub),
   };
-  const [rows, users, lineSettings, lookup] = await Promise.all([
+  const [rows, users, lineSettings, lookup, parties] = await Promise.all([
     filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
     listUsersById(),
     loadDeskLineSettings(),
     listDealLookup(),
+    listPartyTypeahead(),
   ]);
   const hint =
     filter.attention === "bound_pending"
@@ -91,7 +92,7 @@ export default async function DealsPage({
         }}
       />
       <div className="mb-4">
-        <DealDocsUpload deals={lookup} />
+        <DealDocsUpload deals={lookup} parties={parties} />
       </div>
       {filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
         <p className="mb-3 text-sm">

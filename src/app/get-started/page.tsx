@@ -68,7 +68,7 @@ const STEPS = [
   },
   {
     title: "8. Upload source docs onto an existing deal",
-    body: "Deals → type the Deal name (person or business) so lookup attaches files to that shop. Add lines for 4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, or a signed app. Multi-file is fine. There is no Melbourne sample button.",
+    body: "Deals → type the Deal name. Contacts and Businesses appear as you type (name, email, or phone). Pick the person or business so lookup attaches files to that shop. Add lines for 4-point, wind mit, current policy, quotes, permits, hand notes, dec pages, or a signed app. Multi-file is fine. There is no Melbourne sample button.",
     href: "/deals",
     cta: "Go to Deals",
   },

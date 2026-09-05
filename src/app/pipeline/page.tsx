@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { createPipelineDeal } from "@/app/actions/pipeline-admin";
 import { AppShell } from "@/components/app-shell";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { StagePill } from "@/components/fit-badge";
+import { PipelineCreateDealForm } from "@/components/pipeline/create-deal-form";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { requireSignedIn } from "@/lib/auth/guards";
-import { getPipelineBoard } from "@/lib/db/queries";
+import { getPipelineBoard, listPartyTypeahead } from "@/lib/db/queries";
 import { lineForPipelineSlug } from "@/lib/desk/line-settings";
 import { cn } from "@/lib/utils";
 import {
@@ -33,7 +31,10 @@ export default async function PipelinePage({
 }) {
   const session = await requireSignedIn();
   const { pipeline: slug, view: rawView, stage, lifeSub, healthSub } = await searchParams;
-  const data = await getPipelineBoard(slug || "p-c", { lifeSub, healthSub });
+  const [data, parties] = await Promise.all([
+    getPipelineBoard(slug || "p-c", { lifeSub, healthSub }),
+    listPartyTypeahead(),
+  ]);
   if (!data) {
     return (
       <AppShell title="Pipeline">
@@ -98,44 +99,14 @@ export default async function PipelinePage({
         />
       ) : null}
 
-      <form
-        action={createPipelineDeal}
-        className="mb-4 flex flex-wrap items-end gap-2 rounded-md border border-border bg-card p-3"
-      >
-        <input type="hidden" name="pipelineSlug" value={board.slug} />
-        <input type="hidden" name="lineOfBusiness" value={lineForPipelineSlug(board.slug)} />
-        <Input name="title" required placeholder="New deal title" className="h-8 w-56" />
-        {board.slug === "life" ? (
-          <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-            <option value="">Life type</option>
-            {lineSettings.lifeOptions.map((option) => (
-              <option key={option.slug} value={option.label}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : null}
-        {board.slug === "health" ? (
-          <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-            <option value="">Health type</option>
-            {lineSettings.healthOptions.map((option) => (
-              <option key={option.slug} value={option.label}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : null}
-        <select name="stageSlug" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-          {board.stages.map((item) => (
-            <option key={item.slug} value={item.slug}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" size="sm">
-          Create deal
-        </Button>
-      </form>
+      <PipelineCreateDealForm
+        parties={parties}
+        pipelineSlug={board.slug}
+        lineOfBusiness={lineForPipelineSlug(board.slug)}
+        lifeOptions={lineSettings.lifeOptions}
+        healthOptions={lineSettings.healthOptions}
+        stages={board.stages.map((item) => ({ slug: item.slug, name: item.name }))}
+      />
 
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

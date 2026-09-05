@@ -1,3 +1,5 @@
+import { formatPersonName } from "@/lib/crm/display";
+import { foldPartyQuery, matchesPartyQuery, phoneDigits } from "@/lib/crm/party-typeahead";
 import type { DocSlot, DocType } from "@/lib/domain";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPES } from "@/lib/domain";
 
@@ -5,25 +7,46 @@ export type DealLookupRow = {
   id: string;
   title: string;
   partyName: string | null;
+  email?: string | null;
+  phone?: string | null;
+  contactId?: string | null;
+  accountId?: string | null;
 };
 
 export function normalizeDealQuery(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+  return foldPartyQuery(value);
 }
 
 export function partyLabel(input: {
-  contact?: { firstName: string; lastName: string } | null;
-  account?: { name: string } | null;
+  contact?: { firstName?: string | null; lastName?: string | null } | null;
+  account?: { name?: string | null; legalName?: string | null; dba?: string | null } | null;
 }): string | null {
   if (input.contact) {
-    return `${input.contact.lastName}, ${input.contact.firstName}`;
+    const label = formatPersonName({
+      firstName: input.contact.firstName,
+      lastName: input.contact.lastName,
+    });
+    return label === "—" ? null : label;
   }
-  if (input.account?.name) return input.account.name;
-  return null;
+  const business =
+    input.account?.name?.trim() ||
+    input.account?.legalName?.trim() ||
+    input.account?.dba?.trim() ||
+    "";
+  return business || null;
 }
 
 export function dealLookupHaystack(row: DealLookupRow): string {
-  return normalizeDealQuery([row.title, row.partyName ?? ""].filter(Boolean).join(" "));
+  return [
+    row.title,
+    row.partyName ?? "",
+    row.email ?? "",
+    row.phone ?? "",
+    phoneDigits(row.phone),
+  ]
+    .map((part) => foldPartyQuery(part))
+    .filter(Boolean)
+    .join(" ");
 }
 
 /**
@@ -55,7 +78,16 @@ export function matchDealLookup(
   });
   if (starts.length === 1) return starts[0];
 
-  const includes = rows.filter((row) => dealLookupHaystack(row).includes(q));
+  const includes = rows.filter((row) =>
+    matchesPartyQuery(query, {
+      kind: "contact",
+      id: row.id,
+      title: row.title,
+      partyName: row.partyName,
+      email: row.email,
+      phone: row.phone,
+    }),
+  );
   if (includes.length === 1) return includes[0];
 
   return null;
@@ -63,8 +95,19 @@ export function matchDealLookup(
 
 export function suggestDealLookup(rows: DealLookupRow[], query: string, limit = 8): DealLookupRow[] {
   const q = normalizeDealQuery(query);
-  if (!q) return rows.slice(0, limit);
-  return rows.filter((row) => dealLookupHaystack(row).includes(q)).slice(0, limit);
+  if (!q) return [];
+  return rows
+    .filter((row) =>
+      matchesPartyQuery(query, {
+        kind: "contact",
+        id: row.id,
+        title: row.title,
+        partyName: row.partyName,
+        email: row.email,
+        phone: row.phone,
+      }),
+    )
+    .slice(0, limit);
 }
 
 export function isDealUploadDocType(value: string): value is (typeof DEAL_UPLOAD_DOC_TYPES)[number] {
