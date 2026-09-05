@@ -88,7 +88,7 @@ export function DeskSidebar({
                       >
                         <Icon className="size-3.5 opacity-80" />
                         <span className="flex-1">{item.label}</span>
-                        {item.match === "/alerts" && unread > 0 ? (
+                        {item.match === "/notifications" && unread > 0 ? (
                           <span className="rounded-sm bg-fit-flag px-1.5 text-caption font-semibold text-white">
                             {unread}
                           </span>

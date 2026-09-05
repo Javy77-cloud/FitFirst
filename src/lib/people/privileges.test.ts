@@ -20,6 +20,7 @@ describe("agent privilege defaults", () => {
     expect(isModulePath("/phone")).toBe(true);
     expect(isModulePath("/")).toBe(false);
     expect(isModulePath("/alerts")).toBe(false);
+    expect(isModulePath("/notifications")).toBe(false);
     expect(isModulePath("/settings/my-desk")).toBe(false);
   });
 });

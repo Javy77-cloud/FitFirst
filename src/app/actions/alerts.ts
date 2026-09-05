@@ -2,18 +2,38 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
+import { alertVisibleWhere } from "@/lib/alerts/visibility";
+import { currentDeskSession } from "@/lib/auth/session";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isDeskUuid } from "@/lib/desk-id";
 import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
 
-export async function markAlertRead(formData: FormData) {
-  const id = String(formData.get("alertId") ?? "");
-  await db.update(alerts).set({ readAt: new Date() }).where(eq(alerts.id, id));
+function revalidateNotificationSurfaces() {
   revalidatePath("/");
   revalidatePath("/alerts");
+  revalidatePath("/notifications");
+}
+
+export async function markAlertRead(formData: FormData) {
+  const id = String(formData.get("alertId") ?? "");
+  if (!id) return;
+  const session = await currentDeskSession();
+  const visible = alertVisibleWhere(session, DEFAULT_TENANT_ID);
+  await db.update(alerts).set({ readAt: new Date() }).where(and(eq(alerts.id, id), visible));
+  revalidateNotificationSurfaces();
+}
+
+export async function markAllAlertsRead() {
+  const session = await currentDeskSession();
+  const visible = alertVisibleWhere(session, DEFAULT_TENANT_ID);
+  await db
+    .update(alerts)
+    .set({ readAt: new Date() })
+    .where(and(visible, isNull(alerts.readAt)));
+  revalidateNotificationSurfaces();
 }
 
 export async function completeTask(formData: FormData) {

@@ -49,6 +49,10 @@ describe("grouped desk nav", () => {
     const records = NAV_GROUPS.find((group) => group.id === "records");
     const labels = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.label));
     expect(desk?.items.map((item) => item.label)).toEqual(["Calendar", "Phone", "Inbox", "Alerts"]);
+    expect(desk?.items.find((item) => item.label === "Alerts")?.href).toBe("/notifications");
+    const alerts = desk?.items.find((item) => item.label === "Alerts");
+    expect(pathIsActive("/notifications", alerts!)).toBe(true);
+    expect(pathIsActive("/alerts", alerts!)).toBe(true);
     expect(work?.items.some((item) => item.label === "Tasks")).toBe(true);
     expect(work?.items.some((item) => item.label === "Work queue")).toBe(true);
     expect(records?.items.some((item) => item.label === "Carriers")).toBe(true);

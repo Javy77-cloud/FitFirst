@@ -15,6 +15,22 @@ describe("toHeaderAlert", () => {
     });
     expect(alert.read).toBe(false);
     expect(alert.href).toBe("/policies/p1");
+    expect(alert.createdAt).toBe("");
+  });
+
+  it("keeps a created day stamp for the panel", () => {
+    const alert = toHeaderAlert({
+      id: "a1",
+      title: "Ask Maya",
+      body: "Status on HO3-ELENA-2026",
+      severity: "info",
+      kind: "ask",
+      readAt: null,
+      entityType: "policy",
+      entityId: "p1",
+      createdAt: "2026-09-05T12:00:00.000Z",
+    });
+    expect(alert.createdAt).toBe("2026-09-05");
   });
 
   it("maps an FNOL ping onto the claim record", () => {
