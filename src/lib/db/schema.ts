@@ -2215,6 +2215,21 @@ export const integrationConnections = pgTable(
   ],
 );
 
+/** Named Home boards. Tile order/span + hidden cards, scoped per user/tenant. */
+export const userHomeLayouts = pgTable(
+  "user_home_layouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    placements: jsonb("placements").$type<{ id: string; span: string }[]>().notNull().default([]),
+    hiddenWidgets: jsonb("hidden_widgets").$type<string[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [index("user_home_layouts_user_idx").on(t.tenantId, t.userId)],
+);
+
 /** Per-user home layout: preset, hidden widgets, admin My book vs Agency-wide. */
 export const userDashboardPrefs = pgTable(
   "user_dashboard_prefs",
@@ -2225,6 +2240,8 @@ export const userDashboardPrefs = pgTable(
     preset: text("preset").notNull().default("my_production"),
     hiddenWidgets: jsonb("hidden_widgets").$type<string[]>().notNull().default([]),
     bookScope: text("book_scope").notNull().default("agency"),
+    activeLayoutId: uuid("active_layout_id"),
+    resizeTiles: boolean("resize_tiles").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("user_dashboard_prefs_user_uidx").on(t.tenantId, t.userId)],
@@ -2525,6 +2542,7 @@ export type FillFeedbackLog = typeof fillFeedbackLogs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;
 export type UserDashboardPref = typeof userDashboardPrefs.$inferSelect;
+export type UserHomeLayout = typeof userHomeLayouts.$inferSelect;
 export type Contest = typeof contests.$inferSelect;
 export type LeadOffer = typeof leadOffers.$inferSelect;
 export type LeadOfferClaim = typeof leadOfferClaims.$inferSelect;

@@ -31,7 +31,7 @@ Overnight feel-pass: grouped left nav, named list filters, header column sliders
 
 Typography: full desk scale-up on a **16px** root. Tailwind `text-sm`/`base`/`lg`/`xl` sit one step larger (15 / 17 / 20 / 22px). Helper **15px**, caption **14px**, `--ff-muted` **#3f4e5c**. Buttons/inputs default **h-9**. Nav items **15px** on a `w-60` rail. Tables **16px**. Leftover 10–13px classes remap through the shared tokens.
 
-Home tiles: drag the grip to reorder, size menu **1×1 / 1×2 / 2×1 / 2×2**, stored in `localStorage` as `ff-home-layout:v1:<book>`. **Reset tile layout** is on the Home header. Line-of-business donut stays 68px.
+Home tiles: drag the grip to reorder. Size chips stay (**1×1 / 1×2 / 1×3 / 2×1 / 2×2 / 2×3 / 3×1 / 3×2 / 4×1 / 4×2**). Widget settings → **Resize tiles** adds a corner handle so one tile can stretch/shrink; neighbors keep their stored size. Built-in Layout presets stay. **Custom layouts** in the Layout dropdown name the current board and persist on `user_home_layouts` (per user / tenant). Rename later from that menu. `localStorage` `ff-home-layout:v1:<book>` is still the working board for built-in presets. **Reset tile layout** is in Widget settings. Line-of-business donut stays 68px.
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, offices + territories, Social/GBP BYO connect, carrier portal login admin, login/session/MFA.
 

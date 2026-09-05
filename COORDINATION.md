@@ -933,6 +933,27 @@ npm run dev -- --port 43147
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
 
+## Feel-pass FIX pack A — Home (`cursor/fp-home-layouts-resize-a094`)
+
+Off `cursor/feel-pass-consolidate-sep5b-6195`. Function first. No Home redesign.
+
+- Layout dropdown: built-in presets stay. **Custom layouts** — create + name the current board (tile order/span + hidden cards), rename later. Rows live on `user_home_layouts` (`tenant_id` + `user_id`). Active id + **Resize tiles** flag are additive columns on `user_dashboard_prefs`.
+- Widget settings: **Resize tiles** toggle. When on, drag a tile corner to snap to a preset (kept 1×1 / 1×2 / 2×1 / 2×2, plus 1×3 / 2×3 / 3×1 / 3×2 / 4×1 / 4×2). Tiles stay independent (`self-start`, no CSS row-span).
+- Incoming `0064_home_custom_layouts` remapped to `0066_home_custom_layouts`. Nothing dropped. Sidebar `#1d4e89`. Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Quotes never create a Policy.
+
+Mac Chrome (Air **and** mini):
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/fp-home-layouts-resize-a094 && git pull
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Home → Layout → Create layout… / Rename. Widget settings → Resize tiles. Do not bind Ana.
+
 ## Feel-pass consolidate Sep 5 (`cursor/feel-pass-consolidate-sep5-fed3`)
 
 One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. Wave 6/7 `0051`/`0052` remapped to **0060–0061**. No migration dropped. `0055_developer_hub` (power-user superset after `0054`) wraps shared FK adds in `DO $$ … EXCEPTION WHEN duplicate_object` so `db:migrate` can apply both files.
