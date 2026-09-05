@@ -12,7 +12,7 @@ Try: Deals → New shopping deal, or Deals Board → Deal name. Type `javy` (or 
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions and Deals = Pipeline. Still includes:
+**`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions, Deals = Pipeline, and left-nav hide/show. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
@@ -21,6 +21,7 @@ Try: Deals → New shopping deal, or Deals Board → Deal name. Type `javy` (or 
 5. **`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name typeaheads Contacts + Businesses as you type (name / email / phone). Pipeline create and Deals upload use the same picker.
 6. **`cursor/ff-deal-upload-half-88fe`** — Deal Documents upload is half width; the right half is a live shop desk (person, email/call, sheet status, collect-next, open activities).
 7. **`cursor/ff-deals-merge-pipeline-b3cc`** — Deals and Pipeline are one module. Pipeline is gone from the left nav. `/pipeline` redirects to `/deals` and keeps the query. Table / Board / Funnel share the same filters (P&C, Health, Life, Flood, Won-Lost, Archive). Stored customize ids named `pipeline` remap to `deals`.
+8. **`cursor/ff-nav-hide-items-d507`** — hide or show any primary rail module. Settings stays pinned and unhidable. Visibility lives on the same `nav_layout` blob as reorder.
 
 Skipped for the next tip: AMS waves 10–16, live search.
 
@@ -69,13 +70,14 @@ Ana Dib stays locked. No fake “would send” clicks.
 
 ### Left nav customize (this slice)
 
-Primary rail: **Home**, **Leads**, **Deals**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom. Pipeline is Deals — there is no second rail row.
+Primary rail: **Home**, **Leads**, **Deals**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom and **cannot be hidden** — that is how login, My desk, and sign-out stay reachable. Pipeline is Deals — there is no second rail row. The FitFirst wordmark still opens Home even if Home is hidden.
 
 1. Click the **label** to open that module. Click the **chevron** to expand its submenu. Only one submenu is open at a time.
-2. **Customize menu** at the bottom of the rail. Drag the grip to reorder primaries, or use the up/down arrows. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog. Get Started, Inbox, and Support are not addable.
-3. **Reset to default** restores the factory order and submenus (still no demo stubs).
-4. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
-5. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
+2. **Customize menu** (gear) at the bottom of the rail. Drag the grip to reorder primaries, or use the up/down arrows. Click the **eye** to hide a primary (or show it again). Hidden modules stay in place while you edit and disappear when you click **Done customizing**.
+3. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog. Get Started, Inbox, and Support are not addable.
+4. **Reset to default** restores the factory order, submenus, and visibility (still no demo stubs).
+5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`, includes `hiddenPrimaryIds`). Survives refresh. Maya’s menu stays hers.
+6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
 
 ### Air checkout (no wipe, skip seed)
 
@@ -88,7 +90,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` adds nullable `agent_ui_prefs.nav_layout` if this desk has not already applied `0070_nav_layout`. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` adds nullable `agent_ui_prefs.nav_layout` if this desk has not already applied `0070_nav_layout`. Hide is a JSON field (`hiddenPrimaryIds`) on that same blob — no extra table. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Manage columns (this slice)
 

@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  GripVertical,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings2,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { resetNavLayoutAction, saveNavLayoutAction } from "@/app/actions/nav-layout";
 import { logoutDesk } from "@/app/actions/auth";
@@ -21,6 +31,7 @@ import {
   reorderPrimaries,
   reorderSubmenu,
   resolveNavLayout,
+  togglePrimaryHidden,
   type StoredNavLayout,
 } from "@/lib/desk/nav-layout";
 import {
@@ -93,7 +104,8 @@ export function DeskSidebar({
   const dragRef = useRef<DragPayload | null>(null);
   const layoutRef = useRef(layout);
   const narrow = rail === "narrow";
-  const rows = resolveNavLayout(layout);
+  const allRows = resolveNavLayout(layout);
+  const rows = customizing ? allRows : allRows.filter((row) => !row.hidden);
   layoutRef.current = layout;
 
   useEffect(() => {
@@ -256,6 +268,7 @@ export function DeskSidebar({
                 className={cn(
                   "flex items-center rounded-md",
                   dropKey === primaryDrop ? "ring-1 ring-white/70" : "",
+                  customizing && row.hidden ? "opacity-55" : "",
                 )}
                 onDragOver={
                   customizing && !row.pinned
@@ -320,9 +333,26 @@ export function DeskSidebar({
                   {narrow ? (
                     <span className="sr-only">{row.link.label}</span>
                   ) : (
-                    <span className="flex-1 truncate">{row.link.label}</span>
+                    <span className="flex-1 truncate">
+                      {row.link.label}
+                      {customizing && row.hidden ? (
+                        <span className="ml-1 font-normal text-sidebar-foreground/70">Hidden</span>
+                      ) : null}
+                    </span>
                   )}
                 </Link>
+                {customizing && !narrow && row.hidable ? (
+                  <button
+                    type="button"
+                    title={row.hidden ? `Show ${row.link.label} in the menu` : `Hide ${row.link.label} from the menu`}
+                    aria-label={row.hidden ? `Show ${row.link.label}` : `Hide ${row.link.label}`}
+                    aria-pressed={row.hidden}
+                    onClick={() => persist(togglePrimaryHidden(layout, row.id))}
+                    className="rounded-md p-1.5 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white"
+                  >
+                    {row.hidden ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                  </button>
+                ) : null}
                 {showChevron ? (
                   <button
                     type="button"
@@ -477,9 +507,11 @@ export function DeskSidebar({
           <div className="space-y-1.5">
             <button
               type="button"
+              aria-pressed={customizing}
               onClick={() => setCustomizing((current) => !current)}
-              className="flex w-full items-center rounded-md px-1 py-1.5 text-caption text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white"
+              className="flex w-full items-center gap-1.5 rounded-md px-1 py-1.5 text-caption text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white"
             >
+              <Settings2 className="size-3.5 shrink-0" />
               {customizing ? "Done customizing" : "Customize menu"}
             </button>
             {customizing ? (
@@ -492,9 +524,10 @@ export function DeskSidebar({
               </button>
             ) : null}
             {saveError ? <p className="px-1 text-caption text-amber-200">{saveError}</p> : null}
-            {customizing && persistEnabled ? (
+            {customizing ? (
               <p className="px-1 text-caption text-sidebar-foreground/60">
-                Saved to your desk. Survives refresh.
+                Drag to reorder. Eye to hide a module. Settings stays pinned so you can always
+                open it and sign out. Saved to your desk.
               </p>
             ) : null}
           </div>

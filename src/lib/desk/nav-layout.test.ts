@@ -6,6 +6,8 @@ import {
   DEFAULT_PRIMARY_ORDER,
   defaultStoredNavLayout,
   flattenResolvedNav,
+  hidePrimary,
+  isHidablePrimaryId,
   normalizeNavLayout,
   nudgePrimary,
   nudgeSubmenu,
@@ -15,6 +17,8 @@ import {
   reorderPrimaries,
   reorderSubmenu,
   resolveNavLayout,
+  showPrimary,
+  togglePrimaryHidden,
 } from "./nav-layout";
 
 describe("nav layout defaults", () => {
@@ -44,6 +48,10 @@ describe("nav layout defaults", () => {
       "Settings",
     ]);
     expect(rows.find((row) => row.id === "settings")?.pinned).toBe(true);
+    expect(rows.find((row) => row.id === "settings")?.hidable).toBe(false);
+    expect(rows.every((row) => row.hidden === false)).toBe(true);
+    expect(isHidablePrimaryId("leads")).toBe(true);
+    expect(isHidablePrimaryId("settings")).toBe(false);
   });
 
   it("puts existing desk rows under a primary so nothing is dropped", () => {
@@ -92,6 +100,7 @@ describe("normalizeNavLayout", () => {
     expect(next.primaryOrder).not.toContain("bogus");
     expect(next.submenus.policies).toEqual(["renewals"]);
     expect(next.submenus.leads).toEqual(["quotes"]);
+    expect(next.hiddenPrimaryIds).toEqual([]);
     const dropped = normalizeNavLayout({
       version: 1,
       primaryOrder: [...DEFAULT_PRIMARY_ORDER],
@@ -102,16 +111,42 @@ describe("normalizeNavLayout", () => {
     const remapped = normalizeNavLayout({
       version: 1,
       primaryOrder: ["home", "pipeline", "leads"],
+      hiddenPrimaryIds: ["pipeline", "leads"],
       submenus: { pipeline: ["quotes"], deals: ["quotes"] },
     });
     expect(remapped.primaryOrder).toContain("deals");
     expect(remapped.primaryOrder).not.toContain("pipeline");
     expect(remapped.submenus.deals).toEqual(["quotes"]);
+    expect(remapped.hiddenPrimaryIds).toEqual(["leads"]);
+  });
+
+  it("keeps hidden primaries and drops Settings or unknown hide ids", () => {
+    const next = normalizeNavLayout({
+      version: 1,
+      primaryOrder: ["leads", "home"],
+      hiddenPrimaryIds: ["leads", "settings", "bogus", "leads"],
+      submenus: {},
+    });
+    expect(next.hiddenPrimaryIds).toEqual(["leads"]);
+    expect(next.primaryOrder).toContain("leads");
   });
 
   it("parses bad JSON as the default layout", () => {
     expect(parseStoredNavLayout("not-json").primaryOrder).toEqual([...DEFAULT_PRIMARY_ORDER]);
     expect(parseStoredNavLayout(null).primaryOrder).toEqual([...DEFAULT_PRIMARY_ORDER]);
+  });
+
+  it("fills hiddenPrimaryIds when an older saved layout omitted them", () => {
+    const next = parseStoredNavLayout(
+      JSON.stringify({
+        version: 1,
+        primaryOrder: ["policies", "home"],
+        submenus: { policies: ["renewals"] },
+      }),
+    );
+    expect(next.hiddenPrimaryIds).toEqual([]);
+    expect(next.primaryOrder[0]).toBe("policies");
+    expect(next.submenus.policies).toEqual(["renewals"]);
   });
 });
 
@@ -152,6 +187,32 @@ describe("reorder and submenu edits", () => {
     expect(nudgePrimary(start, "settings", -1).primaryOrder).toEqual(start.primaryOrder);
     const home = addSubmenuLink(start, "home", "phone");
     expect(nudgeSubmenu(home, "home", "social", 1).submenus.home[1]).toBe("social");
+  });
+});
+
+describe("hide and show primaries", () => {
+  it("hides any primary except Settings and restores it in place", () => {
+    const start = defaultStoredNavLayout();
+    const hidden = hidePrimary(start, "carriers");
+    expect(hidden.hiddenPrimaryIds).toEqual(["carriers"]);
+    expect(hidden.primaryOrder).toEqual(start.primaryOrder);
+    const rows = resolveNavLayout(hidden);
+    expect(rows.find((row) => row.id === "carriers")?.hidden).toBe(true);
+    expect(flattenResolvedNav(rows).map((item) => item.id)).not.toContain("carriers");
+    expect(showPrimary(hidden, "carriers").hiddenPrimaryIds).toEqual([]);
+    expect(hidePrimary(start, "settings").hiddenPrimaryIds).toEqual([]);
+    expect(togglePrimaryHidden(hidden, "carriers").hiddenPrimaryIds).toEqual([]);
+    expect(togglePrimaryHidden(start, "home").hiddenPrimaryIds).toEqual(["home"]);
+  });
+
+  it("lets Javy hide every module except Settings", () => {
+    let layout = defaultStoredNavLayout();
+    for (const id of DEFAULT_PRIMARY_ORDER) {
+      layout = hidePrimary(layout, id);
+    }
+    expect(layout.hiddenPrimaryIds).toEqual([...DEFAULT_PRIMARY_ORDER]);
+    const visible = resolveNavLayout(layout).filter((row) => !row.hidden);
+    expect(visible.map((row) => row.id)).toEqual(["settings"]);
   });
 });
 

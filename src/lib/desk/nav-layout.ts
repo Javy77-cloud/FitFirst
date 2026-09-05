@@ -49,12 +49,16 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
 export type StoredNavLayout = {
   version: typeof NAV_LAYOUT_VERSION;
   primaryOrder: string[];
+  /** Hidable primaries the user tucked away. Settings is never stored here. */
+  hiddenPrimaryIds: string[];
   submenus: Record<string, string[]>;
 };
 
 export type ResolvedPrimary = {
   id: string;
   pinned: boolean;
+  hidden: boolean;
+  hidable: boolean;
   link: NavLinkDef;
   submenu: NavLinkDef[];
 };
@@ -63,6 +67,7 @@ export function defaultStoredNavLayout(): StoredNavLayout {
   return {
     version: NAV_LAYOUT_VERSION,
     primaryOrder: [...DEFAULT_PRIMARY_ORDER],
+    hiddenPrimaryIds: [],
     submenus: Object.fromEntries(
       Object.entries(DEFAULT_SUBMENUS).map(([id, items]) => [id, [...items]]),
     ),
@@ -75,6 +80,11 @@ export function isPrimaryId(id: string): boolean {
 
 export function isPinnedPrimaryId(id: string): boolean {
   return (PINNED_PRIMARY_IDS as readonly string[]).includes(id);
+}
+
+/** Settings stays on the rail so login / My desk / sign-out stay reachable. */
+export function isHidablePrimaryId(id: string): boolean {
+  return isPrimaryId(id) && !isPinnedPrimaryId(id);
 }
 
 export function isCatalogId(id: string): boolean {
@@ -122,7 +132,13 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
     const source = stored ?? [...(DEFAULT_SUBMENUS[id] ?? [])];
     submenus[id] = uniqueKnown(source.filter((item) => item !== id));
   }
-  return { version: NAV_LAYOUT_VERSION, primaryOrder, submenus };
+
+  const savedHidden = Array.isArray(parsed.hiddenPrimaryIds)
+    ? parsed.hiddenPrimaryIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const hiddenPrimaryIds = uniqueKnown(savedHidden.filter((id) => isHidablePrimaryId(id)));
+
+  return { version: NAV_LAYOUT_VERSION, primaryOrder, hiddenPrimaryIds, submenus };
 }
 
 export function parseStoredNavLayout(raw: string | null | undefined): StoredNavLayout {
@@ -147,6 +163,8 @@ export function resolveNavLayout(stored: StoredNavLayout | null | undefined): Re
       return {
         id,
         pinned: isPinnedPrimaryId(id),
+        hidden: layout.hiddenPrimaryIds.includes(id),
+        hidable: isHidablePrimaryId(id),
         link,
         submenu,
       } satisfies ResolvedPrimary;
@@ -214,6 +232,24 @@ export function reorderSubmenu(
   };
 }
 
+export function hidePrimary(layout: StoredNavLayout, id: string): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (!isHidablePrimaryId(id) || current.hiddenPrimaryIds.includes(id)) return current;
+  return { ...current, hiddenPrimaryIds: [...current.hiddenPrimaryIds, id] };
+}
+
+export function showPrimary(layout: StoredNavLayout, id: string): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (!current.hiddenPrimaryIds.includes(id)) return current;
+  return { ...current, hiddenPrimaryIds: current.hiddenPrimaryIds.filter((item) => item !== id) };
+}
+
+export function togglePrimaryHidden(layout: StoredNavLayout, id: string): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (!isHidablePrimaryId(id)) return current;
+  return current.hiddenPrimaryIds.includes(id) ? showPrimary(current, id) : hidePrimary(current, id);
+}
+
 export function addSubmenuLink(
   layout: StoredNavLayout,
   primaryId: string,
@@ -254,6 +290,7 @@ export function flattenResolvedNav(rows: ResolvedPrimary[]): NavLinkDef[] {
   const seen = new Set<string>();
   const out: NavLinkDef[] = [];
   for (const row of rows) {
+    if (row.hidden) continue;
     const pack = [row.link, ...row.submenu];
     for (const link of pack) {
       const key = `${link.href}::${link.label}`;
