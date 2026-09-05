@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, exists, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, inArray, isNull, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
@@ -1148,6 +1148,30 @@ export async function listReviewTasks(opts: { all?: boolean } = {}) {
         : and(eq(reviewTasks.tenantId, tenant()), eq(reviewTasks.status, "open")),
     )
     .orderBy(asc(reviewTasks.dueDate));
+}
+
+/** Review items plus open activity tasks (playbook fires). Same /tasks columns. */
+export async function listDeskTaskRows() {
+  const session = await currentDeskSession();
+  const review = await listReviewTasks();
+  const clauses: SQL[] = [
+    eq(activities.tenantId, tenant()),
+    eq(activities.kind, "task"),
+    notInArray(activities.status, ["completed", "cancelled", "done"]),
+  ];
+  if (!session.isAdmin) {
+    clauses.push(
+      session.name || session.userId
+        ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""))!
+        : sql`false`,
+    );
+  }
+  const activityRows = await db
+    .select()
+    .from(activities)
+    .where(and(...clauses))
+    .orderBy(asc(activities.dueAt));
+  return { review, activities: activityRows };
 }
 
 export async function getReviewTask(id: string) {

@@ -150,7 +150,9 @@ export default async function AutomationsPlaybooksPage({
             </thead>
             <tbody>
               {runs.map(({ run, playbook }) => {
-                const href = recordHref(run.entityType, run.entityId);
+                const href = run.activityId
+                  ? `/tasks/${run.activityId}`
+                  : recordHref(run.entityType, run.entityId);
                 return (
                   <tr key={run.id}>
                     <td>

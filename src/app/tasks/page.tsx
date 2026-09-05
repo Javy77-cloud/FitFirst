@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { listReviewTasks } from "@/lib/db/queries";
+import { listDeskTaskRows } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { filterDeskTaskRows, mergeDeskTaskRows } from "@/lib/tasks/desk-list";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,8 @@ export default async function TasksPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const filter = pickFilterParams(await searchParams, ["status", "kind"]);
-  const tasks = await listReviewTasks(filter);
+  const { review, activities } = await listDeskTaskRows();
+  const tasks = filterDeskTaskRows(mergeDeskTaskRows({ review, activities }), filter);
   return (
     <AppShell
       title="Tasks"
@@ -57,7 +59,7 @@ export default async function TasksPage({
             { id: "due", label: "Due" },
             { id: "status", label: "Status" },
           ]}
-          empty="No open review tasks."
+          empty="No open tasks."
           rows={tasks.map((task) => ({
             key: task.id,
             cells: {
@@ -66,7 +68,7 @@ export default async function TasksPage({
                   {task.title}
                 </Link>
               ),
-              due: task.dueDate.toISOString().slice(0, 10),
+              due: task.due.toISOString().slice(0, 10),
               status: task.status,
             },
           }))}
