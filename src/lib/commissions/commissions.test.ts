@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { commissionAmount, periodKey, splitCommission } from "./math";
 import {
@@ -170,5 +171,16 @@ describe("agency rollups", () => {
     expect(progress[0]?.writtenPremium).toBeCloseTo(2184);
     expect(progress[0]?.writtenPolicies).toBe(1);
     expect(progress[0]?.premiumGoal).toBe(8000);
+  });
+});
+
+describe("commissions desk chrome", () => {
+  it("keeps Ask a teammate off the commissions list", () => {
+    const page = readFileSync("src/app/commissions/page.tsx", "utf8");
+    expect(page).not.toMatch(/AskThread/);
+    expect(page).not.toMatch(/ask a teammate/i);
+    expect(page).toMatch(/Pending/);
+    expect(page).toMatch(/Paid/);
+    expect(page).toMatch(/CommissionFilters/);
   });
 });

@@ -1,4 +1,5 @@
-import { bookFamily, isPcSubLine, type BookFamily } from "@/lib/desk/policy-line";
+import { isPcSubLine, type BookFamily } from "@/lib/desk/policy-line";
+import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
 import { DESK_AS_OF } from "@/lib/home/as-of";
 import type { CommissionRange } from "@/lib/domain";
 import { rangeWindow, type DateWindow } from "./windows";
@@ -63,17 +64,30 @@ export const HEALTH_SUBFILTERS = [
   { value: "vision", label: "Vision" },
 ] as const;
 
+export const COMMISSION_STATUS_TABS = ["all", "pending", "paid"] as const;
+export type CommissionStatusTab = (typeof COMMISSION_STATUS_TABS)[number];
+
+export const COMMISSION_STATUS_TAB_LABEL: Record<CommissionStatusTab, string> = {
+  all: "My commissions",
+  pending: "Pending",
+  paid: "Paid",
+};
+
 export type CommissionBookFilter = {
   family?: string;
   sub?: string;
   range?: string;
+  status?: string;
 };
 
 export type CommissionFilterRow = {
   lineOfBusiness?: string | null;
   policyLineOfBusiness?: string | null;
+  insuranceType?: string | null;
+  policyType?: string | null;
   policySubType?: string | null;
   status: string;
+  agentId?: string | null;
   dueDate?: Date | string | null;
   paidDate?: Date | string | null;
   createdAt?: Date | string | null;
@@ -100,6 +114,21 @@ export function isCommissionPeriod(value: string | undefined): value is Commissi
   return Boolean(value && (COMMISSION_PERIODS as readonly string[]).includes(value));
 }
 
+export function isCommissionStatusTab(value: string | undefined): value is CommissionStatusTab {
+  return Boolean(value && (COMMISSION_STATUS_TABS as readonly string[]).includes(value));
+}
+
+export function isPendingCommissionStatus(status: string): boolean {
+  return status !== "paid";
+}
+
+export function matchesCommissionStatus(status: string, tab?: string): boolean {
+  const key = isCommissionStatusTab(tab) ? tab : "all";
+  if (key === "all") return true;
+  if (key === "paid") return status === "paid";
+  return isPendingCommissionStatus(status);
+}
+
 export function subfiltersFor(family: string | undefined) {
   if (family === "life") return LIFE_SUBFILTERS;
   if (family === "health") return HEALTH_SUBFILTERS;
@@ -111,21 +140,85 @@ export function commissionLine(row: CommissionFilterRow): string {
   return (row.lineOfBusiness || row.policyLineOfBusiness || "").trim();
 }
 
+export function commissionBookFamily(row: CommissionFilterRow): BookFamily {
+  const fromType = insuranceFamilyFromPolicy({
+    insuranceType: row.insuranceType,
+    lineOfBusiness: commissionLine(row),
+    policySubType: row.policySubType,
+  });
+  if (fromType === "Life") return "life";
+  if (fromType === "Health") return "health";
+  return "pc";
+}
+
+function subtypeHaystack(row: CommissionFilterRow): string {
+  return [
+    row.policySubType,
+    row.policyType,
+    row.insuranceType,
+    commissionLine(row),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function matchesPcSubtype(row: CommissionFilterRow, sub: string): boolean {
+  const line = commissionLine(row);
+  if (isPcSubLine(line, sub)) return true;
+  const hay = subtypeHaystack(row);
+  if (sub === "home") {
+    return /\bho\d|homeowner|home\b|dp\d|renter|condo|landlord/.test(hay);
+  }
+  if (sub === "auto") {
+    return /\bauto\b|motorcycle|rideshare|classic\/collection/.test(hay);
+  }
+  if (sub === "flood") {
+    return /\bflood\b|\bnfip\b/.test(hay);
+  }
+  if (sub === "commercial") {
+    return /\bcommercial\b|\bgl\b|\bbop\b|workers|workers'\s*comp|\bcpp\b|\bcgl\b|\bwc\b|cyber|professional liability/.test(
+      hay,
+    );
+  }
+  return false;
+}
+
 export function matchesCommissionBook(
   row: CommissionFilterRow,
   family?: string,
   sub?: string,
 ): boolean {
-  const line = commissionLine(row);
-  const book = bookFamily(line || "HO");
+  const book = commissionBookFamily(row);
   if (family && family !== "all" && book !== family) return false;
   if (!sub || sub === "all") return true;
-  if (book === "pc" || family === "pc") return isPcSubLine(line, sub);
-  const hay = `${row.policySubType ?? ""} ${line}`.toLowerCase();
+  if (book === "pc" || family === "pc") return matchesPcSubtype(row, sub);
+  const hay = subtypeHaystack(row);
   const needles =
     book === "life" || family === "life" ? LIFE_SUB_MATCH[sub] : HEALTH_SUB_MATCH[sub];
   if (!needles) return false;
   return needles.some((needle) => hay.includes(needle));
+}
+
+export function scopeCommissionRows<T extends { agentId?: string | null }>(
+  rows: T[],
+  opts: { isAdmin: boolean; viewerId: string | null },
+): T[] {
+  if (opts.isAdmin || !opts.viewerId) return rows;
+  return rows.filter((row) => row.agentId === opts.viewerId);
+}
+
+export function commissionsHref(
+  params: { status?: string; family?: string; sub?: string; range?: string },
+  base = "/commissions",
+): string {
+  const query = new URLSearchParams();
+  if (params.status && params.status !== "all") query.set("status", params.status);
+  if (params.family) query.set("family", params.family);
+  if (params.sub) query.set("sub", params.sub);
+  if (params.range && params.range !== "all") query.set("range", params.range);
+  const qs = query.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 function asDate(value: Date | string | null | undefined): Date | null {
@@ -165,7 +258,8 @@ export function filterCommissionRows<T extends CommissionFilterRow>(
   return rows.filter(
     (row) =>
       matchesCommissionBook(row, filter.family, filter.sub) &&
-      matchesCommissionRange(row, filter.range, now),
+      matchesCommissionRange(row, filter.range, now) &&
+      matchesCommissionStatus(row.status, filter.status),
   );
 }
 

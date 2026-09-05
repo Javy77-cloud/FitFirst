@@ -33,6 +33,17 @@ describe("parseRecordAsk", () => {
     if (res.ok) expect(res.value.entityType).toBe("carrier");
   });
 
+  it("rejects a commission row — Commissions has no ask-teammate chrome", () => {
+    const res = parseRecordAsk({
+      entityType: "commission",
+      entityId: ELENA_POLICY_ID,
+      assigneeId: AGENT_USER_ID,
+      body: "Check this payout.",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/Policy, Contact, Lead, Deal, Business, or Carrier/);
+  });
+
   it("accepts a tagged teammate + ask text", () => {
     const res = parseRecordAsk({
       entityType: "policy",

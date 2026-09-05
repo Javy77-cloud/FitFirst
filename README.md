@@ -19,16 +19,19 @@ Open [http://localhost:43147](http://localhost:43147).
 
 Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
 
-## What this branch keeps
+## Commissions (`/commissions`)
 
-Overnight feel-pass: grouped left nav, named list filters, header column sliders, RecordContextRail, Start Shop, in-desk calendar, quick comms, Choose files, floating Support, settings accordion, widget resize chrome, Ask a teammate, HTML 404s, ~15px helper copy.
-
-Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, Automations hub, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
-
-**Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
+Cleanup for Javy: no Ask-a-teammate chrome. Agent sees **My commissions**, **Pending**, and **Paid**. Filter insurance type **Life / Health / P&C**, then a subtype (Home / Auto / Flood / Commercial, or Life and Health subs). Admin still gets a simple agency-by-producer rollup. Ana Dib stays shopping / unbound / Cov A **$321,000** — $0 here, no bind.
 
 ## Tests
 
 ```bash
 npm test
 ```
+
+### Commissions test notes
+
+- `src/lib/commissions/filters.test.ts` — Life / Health / P&C + subtype match (including Zoho-style `insuranceType` + `policySubType` such as DP3 and Accidental Death). Pending includes payable/held; paid is paid only. Agent scope hides other producers. Filter hrefs drop default `all` params.
+- `src/lib/commissions/commissions.test.ts` — agency/producer pending vs paid rollups; page source must not mention Ask a teammate.
+- `src/lib/desk/record-asks.test.ts` — tagging a `commission` entity is rejected.
+- Manual: as Maya, `/commissions` shows only her rows, tabs My commissions / Pending / Paid, no teammate column. As Javy, same filters plus **Agency by producer**. Sidebar stays `#1d4e89`. Do not bind Ana.

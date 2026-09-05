@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { filterCommissionRows, matchesCommissionBook, subfiltersFor } from "./filters";
+import {
+  commissionsHref,
+  filterCommissionRows,
+  matchesCommissionBook,
+  matchesCommissionStatus,
+  scopeCommissionRows,
+  subfiltersFor,
+} from "./filters";
 import { nextCalendarQuarter, rangeWindow } from "./windows";
 
 const now = new Date("2026-09-03T16:00:00.000Z");
@@ -31,12 +38,60 @@ describe("commission book filters", () => {
       ),
     ).toBe(true);
     expect(matchesCommissionBook({ status: "pending", lineOfBusiness: "LIFE" }, "pc")).toBe(false);
+    expect(
+      matchesCommissionBook(
+        { status: "pending", insuranceType: "P&C", policyType: "Renter & Landord", policySubType: "DP3" },
+        "pc",
+        "home",
+      ),
+    ).toBe(true);
+    expect(
+      matchesCommissionBook(
+        { status: "pending", insuranceType: "P&C", policyType: "Commercial", policySubType: "Workers' Comp" },
+        "pc",
+        "commercial",
+      ),
+    ).toBe(true);
+    expect(
+      matchesCommissionBook(
+        { status: "pending", insuranceType: "Life", policySubType: "Accidental Death" },
+        "life",
+        "accidental",
+      ),
+    ).toBe(true);
     expect(subfiltersFor("pc").map((row) => row.value)).toEqual([
       "home",
       "auto",
       "flood",
       "commercial",
     ]);
+  });
+
+  it("splits pending vs paid without mixing the two", () => {
+    expect(matchesCommissionStatus("pending", "pending")).toBe(true);
+    expect(matchesCommissionStatus("payable", "pending")).toBe(true);
+    expect(matchesCommissionStatus("held", "pending")).toBe(true);
+    expect(matchesCommissionStatus("paid", "pending")).toBe(false);
+    expect(matchesCommissionStatus("paid", "paid")).toBe(true);
+    expect(matchesCommissionStatus("pending", "paid")).toBe(false);
+    expect(matchesCommissionStatus("held", "all")).toBe(true);
+  });
+
+  it("keeps an agent on their own rows and builds filter hrefs", () => {
+    const scoped = scopeCommissionRows(
+      [
+        { agentId: "maya", status: "pending" },
+        { agentId: "javy", status: "paid" },
+      ],
+      { isAdmin: false, viewerId: "maya" },
+    );
+    expect(scoped).toHaveLength(1);
+    expect(scoped[0]?.agentId).toBe("maya");
+    expect(scopeCommissionRows(scoped, { isAdmin: true, viewerId: "maya" })).toHaveLength(1);
+    expect(commissionsHref({ status: "pending", family: "life", sub: "term" })).toBe(
+      "/commissions?status=pending&family=life&sub=term",
+    );
+    expect(commissionsHref({ status: "all", range: "all" })).toBe("/commissions");
   });
 
   it("keeps Ana-shaped shopping rows out of a P&C paid last-month cut", () => {
