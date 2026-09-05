@@ -1,6 +1,7 @@
 import { createDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
+import { SourceSelect } from "@/components/crm/source-select";
 import { LinePicker } from "@/components/deal/line-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export default async function NewDealPage() {
             <Input id="county" name="county" className="mt-1 h-8" />
           </div>
         </div>
+        <SourceSelect defaultValue="referral" />
         <LinePicker defaultCode="HO" />
         <Button type="submit" size="sm">
           Create deal

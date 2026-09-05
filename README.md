@@ -6,13 +6,15 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass Air tip. Includes AMS wave 8/9, `cursor/error-sweep-sep5-31ef` (Reviews 500 fix), and `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations UUID 404s). Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
+**`cursor/fp-lead-sources-ed87`** — feel-pass FIX on the Sep 5b tip. Shared insurance-industry Lead / Deal / Contact source picklist (`src/lib/crm/sources.ts`). Ana stays shopping / unbound / Cov A **$321,000**.
+
+Parent tip: **`cursor/feel-pass-consolidate-sep5b-6195`**. Merged branch list is in `COORDINATION.md`.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/feel-pass-consolidate-sep5b-6195 && git pull
+git fetch && git checkout cursor/fp-lead-sources-ed87 && git pull
 npm install
 npm run db:migrate
 npm run db:seed
@@ -49,7 +51,11 @@ Calendar chrome is three rows: **Add event | Add company meeting | Add training*
 
 Nav cleanup: left-nav group is **Accounts** (Contacts + Businesses — not “People”). Sidebar Search is gone; Smart Search stays in the top bar. **Phone** (`/phone`) is a BYO-later setup stub with a dialer that logs outcomes on activities. **Inbox** (`/inbox`, eyebrow Envoys) is a work-email-later stub that shows seeded inbound queue rows.
 
-**Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
+**Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Source is **Book of business**. Do not bind.
+
+## Lead / Deal / Contact source
+
+One catalog in `src/lib/crm/sources.ts` — Referral, Google, Facebook, Instagram, Website, Call-in, Walk-in, Partner, AOR, Cross-sell, Renewal, Direct mail, Radio / TV, Event, Other, plus desk-intake values already on seeded rows. Lead, Deal, and Contact picklists all read that list. Convert and bind copy the same value. Do not fork a second source list.
 
 ## AMS wave 2 (kept)
 

@@ -1,5 +1,6 @@
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { SourceSelect } from "@/components/crm/source-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ export default function NewContactPage() {
           <Label className="text-xs">Email</Label>
           <Input name="email" type="email" className="mt-1 h-8" />
         </div>
+        <SourceSelect defaultValue="referral" />
         <Button type="submit" size="sm">
           Save contact
         </Button>

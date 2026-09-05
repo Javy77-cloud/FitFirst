@@ -14,6 +14,8 @@ import { ModuleListActions } from "@/components/developer-hub/module-list-action
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LEAD_STATUSES } from "@/lib/domain";
+import { SourceSelect } from "@/components/crm/source-select";
+import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +51,10 @@ export default async function LeadsPage({
           {
             key: "source",
             label: "Source",
-            options: uniqueOptions(all.map((lead) => lead.source)),
+            options: uniqueOptions(
+              all.map((lead) => lead.source),
+              sourceFilterOptions(),
+            ),
           },
         ]}
       />
@@ -98,6 +103,7 @@ export default async function LeadsPage({
               </Label>
               <Input id="email" name="email" type="email" className="mt-1 h-8" />
             </div>
+            <SourceSelect defaultValue="referral" />
             <Button type="submit" size="sm">
               Save lead
             </Button>
@@ -146,7 +152,7 @@ export default async function LeadsPage({
                     </div>
                   ),
                   status: <span className="uppercase">{lead.status}</span>,
-                  source: lead.source,
+                  source: sourceLabel(lead.source),
                   shop: lead.convertedDealId ? (
                     <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
                       Open deal

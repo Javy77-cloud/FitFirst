@@ -1050,7 +1050,11 @@ Click path:
 3. `/inspections` — Elena roof scheduled; Hale wind mit requested. Completing does not file.
 4. `/installments` — Elena October scheduled; Hale August past due. Settings → IVANS / AL3 still **Not connected**.
 
-Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0064**.
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0065** (`0064_record_sources` is the shared Lead / Deal / Contact source picklist).
+
+## Lead / Deal / Contact sources (`cursor/fp-lead-sources-ed87`)
+
+Feel-pass FIX off `cursor/feel-pass-consolidate-sep5b-6195`. One catalog: `src/lib/crm/sources.ts`. Insurance-industry values (referral, Google, Facebook, Instagram, website, call-in, walk-in, partner, AOR, cross-sell, renewal, direct mail, radio/TV, event, Other, …) plus desk-intake values already on seeded rows. Lead, Deal, and Contact picklists all read that list. Convert / bind / import copy the same `source` field. Ana stays shopping / unbound / Cov A **$321,000**, source **book**. Do not bind.
 
 ## Desk error sweep follow (`cursor/error-sweep-sep5-follow-31ef`)
 
