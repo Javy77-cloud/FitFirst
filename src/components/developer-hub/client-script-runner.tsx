@@ -71,6 +71,7 @@ export function ClientScriptRunner({
         delete next[field];
         return next;
       });
+      fieldEl(field)?.removeAttribute("aria-invalid");
       runMatching("onChange", field);
     }
 

@@ -114,14 +114,6 @@ export default async function DealPage({
           actionKind: button.actionKind,
         }))}
       />
-      <ClientScriptRunner
-        scripts={scripts.map((script) => ({
-          id: script.id,
-          event: script.event,
-          fieldName: script.fieldName,
-          body: script.body,
-        }))}
-      />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
         <span>{deal.lineOfBusiness}</span>
@@ -191,7 +183,19 @@ export default async function DealPage({
                   {
                     id: "risk",
                     label: "Master risk",
-                    content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
+                    content: (
+                      <div>
+                        <ClientScriptRunner
+                          scripts={scripts.map((script) => ({
+                            id: script.id,
+                            event: script.event,
+                            fieldName: script.fieldName,
+                            body: script.body,
+                          }))}
+                        />
+                        <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />
+                      </div>
+                    ),
                   },
                   {
                     id: "markets",
