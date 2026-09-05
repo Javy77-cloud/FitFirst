@@ -837,3 +837,7 @@ Fills `/automations` with power-user tools. Shares the same table names as Setti
 - Functions: Button / Automation / Schedule / Standalone. Body persists. Test log. Standalone REST at `/api/dev/functions/[apiName]/execute` with an org API key.
 - Webhooks, org API keys, custom buttons, client scripts, connections (OAuth wall).
 - Incoming `0048_developer_hub` remapped to `0055_developer_hub` (superset of `0054`; adds macros / buttons / scripts / widgets). Seed does not touch Ana. Sidebar stays `--ff-sidebar: #1d4e89`.
+
+## Developer Hub macros / buttons (`cursor/dev-hub-macros-buttons-649d`)
+
+List-page **Run Macro** on Leads / Contacts / Deals. Coverage A client-script warning on Master risk is `showError` only when empty — Ana Cov A **$321,000** is never overwritten. Incoming `0048_dev_hub_macros_buttons` remapped to `0056_dev_hub_macros_buttons`. One Macros card on Automations.

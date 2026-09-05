@@ -36,6 +36,15 @@ export const SETTINGS_NAV_IDS = [
   "custom-buttons",
   "client-scripts",
   "widgets",
+  "developer-hub",
+  "dev-functions",
+  "dev-api",
+  "dev-webhooks",
+  "dev-connections",
+  "dev-macros",
+  "dev-buttons",
+  "dev-scripts",
+  "dev-widgets",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -142,20 +151,50 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     ],
   },
   {
-    id: "developer",
-    href: "/settings/developer",
+    id: "developer-hub",
+    href: "/settings/developer-hub",
     label: "Developer Hub",
-    hint: "Functions · keys · webhooks",
+    hint: "Functions, macros, buttons, scripts",
     children: [
-      { id: "developer", href: "/settings/developer", label: "Overview", hint: "What each tool does" },
-      { id: "functions", href: "/settings/developer/functions", label: "Functions", hint: "Custom code stubs" },
-      { id: "api-keys", href: "/settings/developer/api-keys", label: "API Keys", hint: "Org REST keys" },
-      { id: "webhooks", href: "/settings/developer/webhooks", label: "Webhooks", hint: "Out + inbound" },
-      { id: "connections", href: "/settings/developer/connections", label: "Connections", hint: "Named OAuth stubs" },
-      { id: "macros", href: "/settings/developer/macros", label: "Macros", hint: "Sibling bot" },
-      { id: "custom-buttons", href: "/settings/developer/buttons", label: "Custom Buttons", hint: "Sibling bot" },
-      { id: "client-scripts", href: "/settings/developer/client-scripts", label: "Client Scripts", hint: "Sibling bot" },
-      { id: "widgets", href: "/settings/developer/widgets", label: "Widgets", hint: "Sibling bot" },
+      {
+        id: "developer-hub",
+        href: "/settings/developer-hub",
+        label: "Overview",
+        hint: "Hub home",
+      },
+      {
+        id: "dev-functions",
+        href: "/settings/developer-hub/functions",
+        label: "Functions",
+        hint: "Server functions",
+      },
+      { id: "dev-api", href: "/settings/developer-hub/api", label: "API", hint: "REST stubs" },
+      {
+        id: "dev-webhooks",
+        href: "/settings/developer-hub/webhooks",
+        label: "Webhooks",
+        hint: "Outbound hooks",
+      },
+      {
+        id: "dev-connections",
+        href: "/settings/developer-hub/connections",
+        label: "Connections",
+        hint: "OAuth stubs",
+      },
+      { id: "dev-macros", href: "/settings/developer-hub/macros", label: "Macros", hint: "Manual run" },
+      {
+        id: "dev-buttons",
+        href: "/settings/developer-hub/custom-buttons",
+        label: "Custom Buttons",
+        hint: "Links & buttons",
+      },
+      {
+        id: "dev-scripts",
+        href: "/settings/developer-hub/client-scripts",
+        label: "Client Scripts",
+        hint: "Form events",
+      },
+      { id: "dev-widgets", href: "/settings/developer-hub/widgets", label: "Widgets", hint: "Embed stubs" },
     ],
   },
   {
@@ -190,7 +229,19 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   },
 ];
 
+const DEVELOPER_HUB_ALIASES = new Set<SettingsNavId>([
+  "functions",
+  "api-keys",
+  "webhooks",
+  "connections",
+  "macros",
+  "custom-buttons",
+  "client-scripts",
+  "widgets",
+]);
+
 export function settingsGroupFor(current: SettingsNavId): SettingsNavId {
+  if (DEVELOPER_HUB_ALIASES.has(current)) return "developer-hub";
   if (SETTINGS_NAV.some((group) => group.id === current && group.children.length === 0)) {
     return current;
   }

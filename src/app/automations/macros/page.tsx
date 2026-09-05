@@ -15,7 +15,7 @@ export default async function MacrosPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireSignedIn();
+  const session = await requireSignedIn();
   const query = await searchParams;
   const [macros, runs] = await Promise.all([listDeskMacros(), listDeskMacroRuns()]);
 
@@ -23,9 +23,11 @@ export default async function MacrosPage({
     <AppShell
       title="Macros"
       actions={
-        <Link href="/automations/macros/new" className={cn(buttonVariants())}>
-          New macro
-        </Link>
+        session.isAdmin ? (
+          <Link href="/settings/developer-hub/macros/new" className={cn(buttonVariants())}>
+            New macro
+          </Link>
+        ) : null
       }
     >
       <AutomationsModuleNav />
@@ -34,14 +36,14 @@ export default async function MacrosPage({
         error={typeof query.error === "string" ? query.error : undefined}
       />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Manual only. Each macro may queue one email stub, apply up to three field updates, and
-        create up to three tasks. Run Macro lives on Leads, Contacts, and Deals lists. Ana Dib
-        is skipped.
+        Manual only — not workflows and never scheduled. Check rows on Leads, Contacts, Deals,
+        Policies, or Tasks, then <strong>Run Macro</strong>. Ana Dib is skipped. Admin CRUD also
+        lives under Settings → Developer Hub.
       </p>
       <section className="ff-card overflow-hidden">
         {macros.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            No macros yet. Create one or seed the desk.
+            No macros yet. Admin can create one in Developer Hub.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -50,36 +52,44 @@ export default async function MacrosPage({
                 <tr>
                   <th>Name</th>
                   <th>Module</th>
-                  <th>Enabled</th>
+                  <th>Status</th>
                   <th>Run on list</th>
                 </tr>
               </thead>
               <tbody>
-                {macros.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <Link href={`/automations/macros/${row.id}`} className="font-medium text-primary hover:underline">
-                        {row.name}
-                      </Link>
-                      {row.description ? (
-                        <div className="text-xs text-muted-foreground">{row.description}</div>
-                      ) : null}
-                    </td>
-                    <td>
-                      {isDevHubModule(row.module) ? DEV_HUB_MODULE_LABEL[row.module] : row.module}
-                    </td>
-                    <td>{row.enabled ? "On" : "Off"}</td>
-                    <td>
-                      {isDevHubModule(row.module) ? (
-                        <Link href={MODULE_LIST_HREF[row.module]} className="text-xs text-primary hover:underline">
-                          {DEV_HUB_MODULE_LABEL[row.module]} list
+                {macros.map((macro) => {
+                  const href = isDevHubModule(macro.module) ? MODULE_LIST_HREF[macro.module] : "/leads";
+                  return (
+                    <tr key={macro.id}>
+                      <td>
+                        {session.isAdmin ? (
+                          <Link
+                            href={`/settings/developer-hub/macros/${macro.id}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {macro.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-navy">{macro.name}</span>
+                        )}
+                        {macro.description ? (
+                          <div className="text-xs text-muted-foreground">{macro.description}</div>
+                        ) : null}
+                      </td>
+                      <td>
+                        {isDevHubModule(macro.module)
+                          ? DEV_HUB_MODULE_LABEL[macro.module]
+                          : macro.module}
+                      </td>
+                      <td>{macro.enabled ? "on" : "off"}</td>
+                      <td>
+                        <Link href={href} className="text-sm text-primary hover:underline">
+                          Run on list
                         </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

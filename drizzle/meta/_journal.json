@@ -393,6 +393,13 @@
       "when": 1788558500000,
       "tag": "0055_developer_hub",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1788558600000,
+      "tag": "0056_dev_hub_macros_buttons",
+      "breakpoints": true
     }
   ]
 }

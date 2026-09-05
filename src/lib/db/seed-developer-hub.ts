@@ -25,6 +25,69 @@ import {
   developerWebhooks,
 } from "./schema";
 
+const MACRO_SEEDS = [
+  {
+    id: DEV_HUB_IDS.macroLeadFollowup,
+    module: "leads" as const,
+    name: "Mark contacted + follow-up",
+    description:
+      "Manual only. Sets status to contacted, opens a 3-day follow-up task, and queues a stub email. Never runs on Ana Dib.",
+    actions: {
+      email: {
+        templateId: EMAIL_TEMPLATE_IDS.googleReview,
+        subject: "Checking in, {{record.firstName}}",
+        body: "Hi {{record.firstName}} — we logged a follow-up from the desk. This stays in the outbound stub queue.",
+      },
+      fieldUpdates: [{ field: "status", value: "contacted" }],
+      createTasks: [{ title: "Follow up after macro", kind: "macro", dueInDays: 3 }],
+    },
+  },
+  {
+    id: DEV_HUB_IDS.macroContactNote,
+    module: "contacts" as const,
+    name: "Log contact follow-up",
+    description: "Writes a notes stamp and opens a follow-up task. Skips Ana Dib.",
+    actions: {
+      email: null,
+      fieldUpdates: [{ field: "notes", value: "Desk macro follow-up logged." }],
+      createTasks: [{ title: "Follow up after macro", kind: "macro", dueInDays: 3 }],
+    },
+  },
+  {
+    id: DEV_HUB_IDS.macroDealFollowup,
+    module: "deals" as const,
+    name: "Deal follow-up note + task",
+    description: "Stamps deal notes and creates a task. Ana’s shop is skipped.",
+    actions: {
+      email: null,
+      fieldUpdates: [{ field: "notes", value: "Desk macro follow-up logged." }],
+      createTasks: [{ title: "Follow up after macro", kind: "macro", dueInDays: 3 }],
+    },
+  },
+  {
+    id: DEV_HUB_IDS.macroPolicyTask,
+    module: "policies" as const,
+    name: "Policy review task",
+    description: "Creates a review task on the selected policies. Does not change status.",
+    actions: {
+      email: null,
+      fieldUpdates: [],
+      createTasks: [{ title: "Follow up after macro", kind: "macro", dueInDays: 7 }],
+    },
+  },
+  {
+    id: DEV_HUB_IDS.macroTaskConfirm,
+    module: "tasks" as const,
+    name: "Keep task open + confirm",
+    description: "Sets status to open and adds a confirm-after-macro task.",
+    actions: {
+      email: null,
+      fieldUpdates: [{ field: "status", value: "open" }],
+      createTasks: [{ title: "Confirm after macro", kind: "macro", dueInDays: 1 }],
+    },
+  },
+];
+
 export async function seedDeveloperHub() {
   await db
     .insert(developerFunctions)
@@ -62,7 +125,7 @@ export async function seedDeveloperHub() {
   await db
     .insert(developerFunctions)
     .values({
-      id: "d0480000-0000-4048-8048-000000000008",
+      id: "d0480000-0000-4048-8048-000000000018",
       tenantId: TENANT_ID,
       name: "Lead follow-up stub",
       apiName: "lead_followup_stub",
@@ -174,93 +237,29 @@ export async function seedDeveloperHub() {
     });
   }
 
-  await db
-    .insert(deskMacros)
-    .values({
-      id: DEV_HUB_IDS.macroLeadFollowup,
-      tenantId: TENANT_ID,
-      module: "leads",
-      name: "Mark contacted + follow-up",
-      description:
-        "Manual only. Sets status to contacted, opens a 3-day follow-up task, and queues a stub email. Never runs on Ana Dib.",
-      enabled: true,
-      actions: {
-        email: {
-          templateId: EMAIL_TEMPLATE_IDS.googleReview,
-          subject: "Checking in, {{record.firstName}}",
-          body: "Hi {{record.firstName}} — we logged a follow-up from the desk. This stays in the outbound stub queue.",
+  for (const seed of MACRO_SEEDS) {
+    await db
+      .insert(deskMacros)
+      .values({
+        id: seed.id,
+        tenantId: TENANT_ID,
+        module: seed.module,
+        name: seed.name,
+        description: seed.description,
+        enabled: true,
+        actions: seed.actions,
+      })
+      .onConflictDoUpdate({
+        target: deskMacros.id,
+        set: {
+          name: seed.name,
+          description: seed.description,
+          enabled: true,
+          actions: seed.actions,
+          updatedAt: new Date(),
         },
-        fieldUpdates: [{ field: "status", value: "contacted" }],
-        createTasks: [{ title: "Follow up after macro", kind: "macro", dueInDays: 3 }],
-      },
-    })
-    .onConflictDoUpdate({
-      target: deskMacros.id,
-      set: {
-        name: "Mark contacted + follow-up",
-        description:
-          "Manual only. Sets status to contacted, opens a 3-day follow-up task, and queues a stub email. Never runs on Ana Dib.",
-        enabled: true,
-        actions: {
-          email: {
-            templateId: EMAIL_TEMPLATE_IDS.googleReview,
-            subject: "Checking in, {{record.firstName}}",
-            body: "Hi {{record.firstName}} — we logged a follow-up from the desk. This stays in the outbound stub queue.",
-          },
-          fieldUpdates: [{ field: "status", value: "contacted" }],
-          createTasks: [{ title: "Follow up after macro", kind: "macro", dueInDays: 3 }],
-        },
-        updatedAt: new Date(),
-      },
-    });
-
-  await db
-    .insert(deskMacros)
-    .values({
-      id: "d0480000-0000-4048-8048-000000000018",
-      tenantId: TENANT_ID,
-      module: "contacts",
-      name: "Note + callback",
-      description: "Manual only. Writes a follow-up note and a 2-day task. Skips Ana.",
-      enabled: true,
-      actions: {
-        email: null,
-        fieldUpdates: [{ field: "notes", value: "Desk follow-up from macro." }],
-        createTasks: [{ title: "Call back after macro", kind: "macro", dueInDays: 2 }],
-      },
-    })
-    .onConflictDoUpdate({
-      target: deskMacros.id,
-      set: {
-        name: "Note + callback",
-        enabled: true,
-        updatedAt: new Date(),
-      },
-    });
-
-  await db
-    .insert(deskMacros)
-    .values({
-      id: "d0480000-0000-4048-8048-000000000019",
-      tenantId: TENANT_ID,
-      module: "deals",
-      name: "Shop note + task",
-      description: "Manual only. Adds a shop note and a 3-day task. Skips Ana.",
-      enabled: true,
-      actions: {
-        email: null,
-        fieldUpdates: [{ field: "notes", value: "Macro shop follow-up logged." }],
-        createTasks: [{ title: "Shop follow-up after macro", kind: "macro", dueInDays: 3 }],
-      },
-    })
-    .onConflictDoUpdate({
-      target: deskMacros.id,
-      set: {
-        name: "Shop note + task",
-        enabled: true,
-        updatedAt: new Date(),
-      },
-    });
+      });
+  }
 
   await db
     .insert(deskWidgets)

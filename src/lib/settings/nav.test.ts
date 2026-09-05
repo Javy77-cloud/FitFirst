@@ -13,6 +13,7 @@ describe("settings nav", () => {
 
   it("keeps People/Agents and Account recovery as distinct ids", () => {
     expect(new Set(SETTINGS_NAV_IDS).size).toBe(SETTINGS_NAV_IDS.length);
+    expect(SETTINGS_NAV_IDS).toContain("developer-hub");
     expect(settingsGroupFor("agents")).toBe("people");
     expect(settingsGroupFor("profile")).toBe("account");
     expect(settingsGroupFor("security")).toBe("account");
@@ -20,24 +21,27 @@ describe("settings nav", () => {
     expect(settingsGroupFor("compliance")).toBe("compliance");
   });
 
-  it("nests Developer Hub tools under one group", () => {
-    expect(settingsGroupFor("functions")).toBe("developer");
-    expect(settingsGroupFor("api-keys")).toBe("developer");
-    expect(settingsGroupFor("webhooks")).toBe("developer");
-    expect(settingsGroupFor("connections")).toBe("developer");
-    expect(settingsGroupFor("macros")).toBe("developer");
-    const hub = SETTINGS_NAV.find((group) => group.id === "developer");
-    expect(hub?.children.map((child) => child.id)).toEqual([
-      "developer",
-      "functions",
-      "api-keys",
-      "webhooks",
-      "connections",
-      "macros",
-      "custom-buttons",
-      "client-scripts",
-      "widgets",
-    ]);
+  it("keeps Developer Hub as one Settings group", () => {
+    expect(settingsGroupFor("dev-macros")).toBe("developer-hub");
+    expect(settingsGroupFor("dev-buttons")).toBe("developer-hub");
+    expect(settingsGroupFor("dev-scripts")).toBe("developer-hub");
+    expect(settingsGroupFor("dev-widgets")).toBe("developer-hub");
+    expect(settingsGroupFor("dev-functions")).toBe("developer-hub");
+    expect(settingsGroupFor("functions")).toBe("developer-hub");
+    expect(settingsGroupFor("api-keys")).toBe("developer-hub");
+    expect(settingsGroupFor("macros")).toBe("developer-hub");
+    const hub = SETTINGS_NAV.find((group) => group.id === "developer-hub");
+    expect(hub?.label).toBe("Developer Hub");
+    expect(SETTINGS_NAV.filter((group) => group.label === "Developer Hub")).toHaveLength(1);
+    expect(hub?.children.map((child) => child.id)).toEqual(
+      expect.arrayContaining([
+        "dev-functions",
+        "dev-macros",
+        "dev-buttons",
+        "dev-scripts",
+        "dev-widgets",
+      ]),
+    );
   });
 
   it("nests Export and Lead routing under Brand / Agency", () => {

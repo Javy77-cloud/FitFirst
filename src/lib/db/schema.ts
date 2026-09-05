@@ -2847,6 +2847,7 @@ export const developerConnections = pgTable(
   ],
 );
 
+/** Manual, user-run macros. Never scheduled. Developer Hub → Macros. */
 export const deskMacros = pgTable(
   "desk_macros",
   {
@@ -2856,7 +2857,9 @@ export const deskMacros = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     enabled: boolean("enabled").notNull().default(true),
-    actions: jsonb("actions").$type<Record<string, unknown>>().notNull(),
+    actions: jsonb("actions")
+      .$type<import("@/lib/developer-hub/types").MacroActions>()
+      .notNull(),
     ...timestamps,
   },
   (t) => [index("desk_macros_module_idx").on(t.tenantId, t.module)],
@@ -2879,6 +2882,7 @@ export const deskMacroRuns = pgTable(
   (t) => [index("desk_macro_runs_macro_idx").on(t.tenantId, t.macroId)],
 );
 
+/** Links & Buttons. Placement: list / detail / mass_action. */
 export const deskCustomButtons = pgTable(
   "desk_custom_buttons",
   {
@@ -2924,7 +2928,11 @@ export const deskWidgets = pgTable(
     type: text("type").notNull(),
     hosting: text("hosting").notNull(),
     externalUrl: text("external_url"),
-    zipMeta: jsonb("zip_meta").$type<Record<string, unknown> | null>(),
+    zipMeta: jsonb("zip_meta").$type<{
+      fileName?: string;
+      byteSize?: number;
+      uploadedAt?: string;
+    } | null>(),
     enabled: boolean("enabled").notNull().default(true),
     ...timestamps,
   },

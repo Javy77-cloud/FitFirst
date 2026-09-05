@@ -5,6 +5,8 @@ import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { listPolicies, type PolicyListFilter } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
@@ -103,9 +105,11 @@ export default async function PoliciesPage({
         </p>
       ) : null}
       <section className="ff-card overflow-hidden">
+        <ModuleListActions module="policies" recordIds={rows.map(({ policy }) => policy.id)}>
         <ColumnTable
           moduleId="policies"
           columns={[
+            { id: "pick", label: "", locked: true },
             { id: "policy", label: "Policy", locked: true },
             { id: "status", label: "Status" },
             { id: "party", label: "Party" },
@@ -118,6 +122,7 @@ export default async function PoliciesPage({
           rows={rows.map(({ policy, contact, account, carrier }) => ({
             key: policy.id,
             cells: {
+              pick: <SelectRowCheckbox id={policy.id} />,
               policy: (
                 <span className="font-medium">
                   <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
@@ -144,6 +149,7 @@ export default async function PoliciesPage({
             },
           }))}
         />
+        </ModuleListActions>
       </section>
     </AppShell>
   );

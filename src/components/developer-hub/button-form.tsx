@@ -90,6 +90,9 @@ export function ButtonForm({
           placeholder="lead_followup_stub"
           className="mt-1 h-8"
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Runs the Developer Hub function by apiName. Empty is allowed for URL / widget buttons.
+        </p>
       </div>
       <div>
         <Label className="text-xs">URL template</Label>

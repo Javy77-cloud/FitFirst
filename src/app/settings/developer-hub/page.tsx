@@ -1,5 +1,61 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { SettingsShell } from "@/components/settings/settings-shell";
+import { WidgetHost } from "@/components/developer-hub/widget-host";
+import { requireAdminPage } from "@/lib/auth/guards";
+import { DEV_HUB_SECTIONS } from "@/lib/developer-hub/hub";
+import { listDeskButtons, listDeskMacros, listDeskScripts, listEnabledWidgetsByType } from "@/lib/db/developer-hub-queries";
 
-export default function DeveloperHubAliasPage() {
-  redirect("/settings/developer");
+export const dynamic = "force-dynamic";
+
+export default async function DeveloperHubPage() {
+  await requireAdminPage();
+  const [macros, buttons, scripts, settingsWidgets] = await Promise.all([
+    listDeskMacros(),
+    listDeskButtons(),
+    listDeskScripts(),
+    listEnabledWidgetsByType("settings"),
+  ]);
+  const counts: Record<string, number> = {
+    macros: macros.length,
+    "custom-buttons": buttons.length,
+    "client-scripts": scripts.length,
+    widgets: settingsWidgets.length,
+  };
+
+  return (
+    <SettingsShell title="Developer Hub" current="developer-hub">
+      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+        Functions, API, Webhooks, and Connections share this hub name with the sibling core
+        branch. This desk owns Macros (manual only), Custom Buttons, Client Scripts, and Widget
+        stubs. Macros never schedule or auto-fire.
+      </p>
+      <div className="mb-6 grid gap-3 md:grid-cols-2">
+        {DEV_HUB_SECTIONS.map((section) => (
+          <Link
+            key={section.id}
+            href={section.href}
+            className="ff-card block p-4 hover:border-primary/40"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-sm font-semibold text-navy">{section.label}</div>
+              <span className="text-xs text-muted-foreground">
+                {section.ownedHere
+                  ? `${counts[section.id] ?? 0} on this desk`
+                  : "Core branch"}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{section.hint}</p>
+          </Link>
+        ))}
+      </div>
+      {settingsWidgets.length ? (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-navy">Settings widgets</h2>
+          {settingsWidgets.map((widget) => (
+            <WidgetHost key={widget.id} name={widget.name} url={widget.externalUrl} compact />
+          ))}
+        </div>
+      ) : null}
+    </SettingsShell>
+  );
 }

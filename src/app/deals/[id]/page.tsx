@@ -14,7 +14,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
+import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
+import { RecordDeveloperActions } from "@/components/developer-hub/record-actions";
+import { WidgetHost } from "@/components/developer-hub/widget-host";
 import { getDealWorkspace, getLatestInDeskEnvelope, listRecordActivities } from "@/lib/db/queries";
+import {
+  listEnabledMacrosFor,
+  listEnabledScriptsFor,
+  listEnabledWidgetsByType,
+  listVisibleButtons,
+} from "@/lib/db/developer-hub-queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { HealthStrip } from "@/components/completeness/health-strip";
@@ -51,7 +60,13 @@ export default async function DealPage({
     boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
-  const comms = await listRecordActivities({ dealId: deal.id });
+  const [comms, macros, buttons, scripts, relatedWidgets] = await Promise.all([
+    listRecordActivities({ dealId: deal.id }),
+    listEnabledMacrosFor("deals"),
+    listVisibleButtons({ module: "deals", placement: "detail" }),
+    listEnabledScriptsFor("deals", "edit"),
+    listEnabledWidgetsByType("related_list"),
+  ]);
   const context = await loadRecordContext({
     dealId: deal.id,
     leadId: deal.leadId,
@@ -94,6 +109,16 @@ export default async function DealPage({
         ) : null
       }
     >
+      <RecordDeveloperActions
+        module="deals"
+        recordId={deal.id}
+        macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
+        buttons={buttons.map((button) => ({
+          id: button.id,
+          label: button.label,
+          actionKind: button.actionKind,
+        }))}
+      />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
         <span>{deal.lineOfBusiness}</span>
@@ -178,7 +203,19 @@ export default async function DealPage({
                   {
                     id: "risk",
                     label: "Master risk",
-                    content: <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />,
+                    content: (
+                      <div>
+                        <ClientScriptRunner
+                          scripts={scripts.map((script) => ({
+                            id: script.id,
+                            event: script.event,
+                            fieldName: script.fieldName,
+                            body: script.body,
+                          }))}
+                        />
+                        <RiskForm risk={risk} dealId={deal.id} activeTab={riskTab} />
+                      </div>
+                    ),
                   },
                   {
                     id: "markets",
@@ -204,6 +241,13 @@ export default async function DealPage({
             <div className="mt-4">
               <QuickCommsBoard items={comms} dealId={deal.id} />
             </div>
+            {relatedWidgets.length ? (
+              <div className="mt-4 space-y-3">
+                {relatedWidgets.map((widget) => (
+                  <WidgetHost key={widget.id} name={widget.name} url={widget.externalUrl} compact />
+                ))}
+              </div>
+            ) : null}
 
             <p className="mt-4 text-base text-muted-foreground">
               Shopping lives here.{" "}

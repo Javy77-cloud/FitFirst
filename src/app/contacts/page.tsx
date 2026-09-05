@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { ListMassBar, ListSelectionProvider, SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { listEnabledMacrosFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { matchesField, pickFilterParams } from "@/lib/saved-filters";
 
@@ -21,10 +21,6 @@ export default async function ContactsPage({
 }) {
   const filter = pickFilterParams(await searchParams, ["status"]);
   const all = await listContacts();
-  const [macros, buttons] = await Promise.all([
-    listEnabledMacrosFor("contacts"),
-    listVisibleButtons({ module: "contacts", placement: "mass_action" }),
-  ]);
   const rows = all.filter((contact) => matchesField(contact.clientStatus, filter.status));
   return (
     <AppShell title="Contacts">
@@ -73,22 +69,11 @@ export default async function ContactsPage({
           </Button>
         </form>
         <section className="ff-card overflow-hidden">
-          <ListSelectionProvider>
-          <div className="px-3 pt-3">
-            <ListMassBar
-              module="contacts"
-              macros={macros.map((row) => ({ id: row.id, name: row.name }))}
-              buttons={buttons.map((row) => ({
-                id: row.id,
-                label: row.label,
-                actionKind: row.actionKind,
-              }))}
-            />
-          </div>
+          <ModuleListActions module="contacts" recordIds={rows.map((c) => c.id)}>
           <ColumnTable
             moduleId="contacts"
             columns={[
-              { id: "select", label: "", locked: true },
+              { id: "pick", label: "", locked: true },
               { id: "name", label: "Name", locked: true },
               { id: "status", label: "Status" },
               { id: "lifetime", label: "Lifetime" },
@@ -98,7 +83,7 @@ export default async function ContactsPage({
             rows={rows.map((c) => ({
               key: c.id,
               cells: {
-                select: <SelectRowCheckbox id={c.id} />,
+                pick: <SelectRowCheckbox id={c.id} />,
                 name: (
                   <span className="font-medium">
                     <RecordLink href={`/contacts/${c.id}`}>
@@ -112,7 +97,7 @@ export default async function ContactsPage({
               },
             }))}
           />
-          </ListSelectionProvider>
+          </ModuleListActions>
         </section>
       </div>
     </AppShell>

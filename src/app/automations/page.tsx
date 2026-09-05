@@ -13,21 +13,25 @@ import {
 } from "@/lib/db/automation-queries";
 import { listCampaignSequences } from "@/lib/db/sequence-queries";
 import { listEmailTemplates } from "@/lib/db/queries";
+import { listDeskButtons, listDeskMacros } from "@/lib/db/developer-hub-queries";
 import { developerToolCounts } from "@/lib/developer-hub/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
-  const [templates, automations, pending, mine, sequences, runs, tools] = await Promise.all([
-    listEmailTemplates(),
-    listGuidedAutomations({ isAdmin: session.isAdmin }),
-    listPendingSignatureApprovals(),
-    session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
-    listCampaignSequences(),
-    listAutomationRuns({ isAdmin: session.isAdmin }),
-    developerToolCounts(),
-  ]);
+  const [templates, automations, pending, mine, sequences, runs, tools, macros, buttons] =
+    await Promise.all([
+      listEmailTemplates(),
+      listGuidedAutomations({ isAdmin: session.isAdmin }),
+      listPendingSignatureApprovals(),
+      session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
+      listCampaignSequences(),
+      listAutomationRuns({ isAdmin: session.isAdmin }),
+      developerToolCounts(),
+      listDeskMacros(),
+      listDeskButtons(),
+    ]);
   const myLive = mine.filter((row) => row.approvalStatus === "live").length;
   const myPending = mine.filter((row) => row.approvalStatus === "pending").length;
   const sequencesOn = sequences.filter((row) => row.enabled).length;
@@ -54,11 +58,12 @@ export default async function AutomationsHubPage() {
           : "Draft a signature for Admin review",
     campaigns: "Not offered — no Mailchimp / SendGrid",
     sms: "Not offered — no Twilio",
-    macros: `${tools.macros} macros · manual run on Leads / Contacts / Deals`,
+    macros: `${macros.filter((row) => row.enabled).length} of ${macros.length} on · Run from list checkboxes`,
     functions: `${tools.functions} functions · test log + REST stub`,
     webhooks: `${tools.webhooks} outbound · ${tools.inbound} inbound slugs`,
     "api-keys": `${tools.liveKeys} live org keys`,
     buttons: `${tools.buttons} custom buttons`,
+    "custom-buttons": `${buttons.filter((row) => row.enabled).length} of ${buttons.length} on · list / detail / mass action`,
     "client-scripts": `${tools.scripts} client scripts`,
     connections: `${tools.connections} named connectors · OAuth wall`,
   };
@@ -88,7 +93,7 @@ export default async function AutomationsHubPage() {
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Link
-          href="/settings/developer"
+          href="/settings/developer-hub"
           className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold text-navy hover:border-primary/40"
         >
           Open Developer Hub
@@ -116,6 +121,7 @@ export default async function AutomationsHubPage() {
       </h2>
       <p className="mb-3 max-w-3xl text-xs text-muted-foreground">
         Working stubs up to the OAuth wall. Admin creates and runs them. Same tables as Settings.
+        Check rows on Leads, Contacts, Deals, Policies, or Tasks, then Run Macro.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {AUTOMATION_DEV_SECTIONS.map((section) => (

@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { clickDeskButton, runDeskMacro } from "@/app/actions/developer-hub";
 import { Button } from "@/components/ui/button";
+import { WidgetHost } from "@/components/developer-hub/widget-host";
 import type { DevHubModule } from "@/lib/developer-hub/types";
 
 type MacroOption = { id: string; name: string };
@@ -10,11 +11,13 @@ type ButtonOption = {
   id: string;
   label: string;
   actionKind: string;
+  functionApiName?: string | null;
 };
 
 const SelectionContext = createContext<{
   selected: string[];
   toggle: (id: string) => void;
+  setAll: (ids: string[]) => void;
   clear: () => void;
 } | null>(null);
 
@@ -25,6 +28,7 @@ export function ListSelectionProvider({ children }: { children: ReactNode }) {
       selected,
       toggle: (id: string) =>
         setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])),
+      setAll: (ids: string[]) => setSelected(ids),
       clear: () => setSelected([]),
     }),
     [selected],
@@ -50,19 +54,35 @@ export function SelectRowCheckbox({ id }: { id: string }) {
   );
 }
 
+export function SelectAllCheckbox({ ids }: { ids: string[] }) {
+  const { selected, setAll, clear } = useSelection();
+  const allOn = ids.length > 0 && ids.every((id) => selected.includes(id));
+  return (
+    <input
+      type="checkbox"
+      checked={allOn}
+      onChange={() => (allOn ? clear() : setAll(ids))}
+      aria-label="Select all rows"
+    />
+  );
+}
+
 export function ListMassBar({
   module,
   macros,
-  buttons,
+  buttons = [],
+  recordIds = [],
 }: {
   module: DevHubModule;
   macros: MacroOption[];
   buttons?: ButtonOption[];
+  recordIds?: string[];
 }) {
   const { selected, clear } = useSelection();
   const [macroId, setMacroId] = useState(macros[0]?.id ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [widget, setWidget] = useState<{ name: string; url: string | null } | null>(null);
 
   async function runMacro() {
     if (!macroId || selected.length === 0) {
@@ -93,17 +113,19 @@ export function ListMassBar({
       form.set("recordId", id);
       const result = await clickDeskButton(form);
       if (result.kind === "url" && result.url) window.open(result.url, "_blank", "noopener,noreferrer");
+      if (result.kind === "widget") {
+        setWidget({ name: result.widgetName ?? "Widget", url: result.widgetUrl ?? null });
+      }
       notes.push(result.message);
     }
     setMessage(notes[0] ?? "Done.");
     setBusy(false);
   }
 
-  if (macros.length === 0 && !buttons?.length) return null;
-
   return (
     <div className="mb-3 space-y-2">
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+        {recordIds.length ? <SelectAllCheckbox ids={recordIds} /> : null}
         <span className="text-xs text-muted-foreground">{selected.length} selected</span>
         {macros.length ? (
           <>
@@ -122,8 +144,12 @@ export function ListMassBar({
               Run Macro
             </Button>
           </>
-        ) : null}
-        {(buttons ?? []).map((button) => (
+        ) : (
+          <a href="/automations/macros" className="text-xs text-primary hover:underline">
+            No macros for this list — open Automations → Macros
+          </a>
+        )}
+        {buttons.map((button) => (
           <Button
             key={button.id}
             type="button"
@@ -135,8 +161,12 @@ export function ListMassBar({
             {button.label}
           </Button>
         ))}
+        <a href="/automations/macros" className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline">
+          Automations · Macros
+        </a>
       </div>
       {message ? <p className="text-sm text-navy">{message}</p> : null}
+      {widget ? <WidgetHost name={widget.name} url={widget.url} onClose={() => setWidget(null)} /> : null}
     </div>
   );
 }

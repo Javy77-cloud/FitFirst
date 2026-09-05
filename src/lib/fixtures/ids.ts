@@ -662,7 +662,7 @@ export const AMS_WAVE5_IDS = {
   haleAorLog: "a0501111-a050-4050-8050-a05011111110",
 } as const;
 
-/** Shared with Settings Developer Hub siblings (`developer-hub-core`, `dev-hub-macros-buttons`). */
+/** Developer Hub macros / buttons / scripts / widgets. Do not reuse Ana or OWNER_* ids. */
 export const DEV_HUB_IDS = {
   macroLeadFollowup: "d0480000-0000-4048-8048-000000000001",
   buttonDealMap: "d0480000-0000-4048-8048-000000000002",
@@ -671,5 +671,9 @@ export const DEV_HUB_IDS = {
   scriptDealCovA: "d0480000-0000-4048-8048-000000000005",
   widgetSettingsPulse: "d0480000-0000-4048-8048-000000000006",
   widgetDealRelated: "d0480000-0000-4048-8048-000000000007",
+  macroContactNote: "d0480000-0000-4048-8048-000000000008",
+  macroDealFollowup: "d0480000-0000-4048-8048-000000000009",
+  macroPolicyTask: "d0480000-0000-4048-8048-00000000000a",
+  macroTaskConfirm: "d0480000-0000-4048-8048-00000000000b",
 } as const;
 
