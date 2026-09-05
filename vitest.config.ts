@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // Shared Postgres + seed(). Workers do not share the in-process mutex.
+    fileParallelism: false,
   },
   resolve: {
     alias: {

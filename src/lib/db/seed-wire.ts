@@ -80,26 +80,42 @@ export async function seedWireDesk() {
 
   for (const [index, board] of SEEDED_PIPELINES.entries()) {
     const id = PIPELINE_IDS[board.slug];
-    await db.insert(pipelines).values({
-      id,
-      tenantId: TENANT_ID,
-      name: board.name,
-      slug: board.slug,
-      kind: board.kind,
-      seeded: board.seeded,
-      sortOrder: index,
-    });
-    await db.insert(pipelineStages).values(
-      board.stages.map((stage, sortOrder) => ({
+    await db
+      .insert(pipelines)
+      .values({
+        id,
         tenantId: TENANT_ID,
-        pipelineId: id,
-        name: stage.name,
-        slug: stage.slug,
-        sortOrder,
-        color: defaultStageColor(sortOrder, stage.slug),
+        name: board.name,
+        slug: board.slug,
+        kind: board.kind,
         seeded: board.seeded,
-      })),
-    );
+        sortOrder: index,
+      })
+      .onConflictDoUpdate({
+        target: pipelines.id,
+        set: {
+          name: board.name,
+          slug: board.slug,
+          kind: board.kind,
+          seeded: board.seeded,
+          sortOrder: index,
+          updatedAt: new Date(),
+        },
+      });
+    await db
+      .insert(pipelineStages)
+      .values(
+        board.stages.map((stage, sortOrder) => ({
+          tenantId: TENANT_ID,
+          pipelineId: id,
+          name: stage.name,
+          slug: stage.slug,
+          sortOrder,
+          color: defaultStageColor(sortOrder, stage.slug),
+          seeded: board.seeded,
+        })),
+      )
+      .onConflictDoNothing();
   }
 
   const anaValues = emptySheetValues();
