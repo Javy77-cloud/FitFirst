@@ -4,10 +4,12 @@ import { AppShell } from "@/components/app-shell";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
-import { getAccountWorkspace } from "@/lib/db/queries";
+import { getAccountWorkspace, listEmailTemplates } from "@/lib/db/queries";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
+import { AccountGlance } from "@/components/crm/account-glance";
+import { RecordComms } from "@/components/record-comms";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,7 @@ export default async function AccountDetailPage({
     locations,
     certificates,
   } = workspace;
+  const templates = await listEmailTemplates();
   const context = await loadRecordContext({
     accountId: account.id,
     contactId: contacts[0]?.id,
@@ -52,6 +55,12 @@ export default async function AccountDetailPage({
       <RecordDetailLayout
         main={
           <div>
+      <AccountGlance
+        policyCount={policyCount}
+        activePolicyCount={activePolicyCount}
+        dealCount={deals.length}
+        activityCount={timeline.length}
+      />
       <section className="ff-card mb-4 p-4 text-sm">
         <h2 className="text-base font-semibold text-navy">Account 360 · commercial profile</h2>
         <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
@@ -149,20 +158,40 @@ export default async function AccountDetailPage({
           dealId={deals[0]?.id}
         />
       </div>
-      {deals.length > 0 ? (
-        <section className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-            Deals
-          </div>
+      <section id="work" className="ff-card mb-4 p-4">
+        <h2 className="text-base font-semibold text-navy">Email, SMS, calls</h2>
+        <p className="mt-1 mb-3 text-helper text-muted-foreground">
+          Queue outbound intent on this business. Nothing sends until a vendor is plugged in later.
+        </p>
+        <RecordComms
+          accountId={account.id}
+          contactId={contacts[0]?.id}
+          dealId={deals[0]?.id}
+          policyId={policies[0]?.policy.id}
+          phone={account.phone}
+          email={account.email}
+          templates={templates}
+        />
+      </section>
+      <section className="ff-card overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
+          Deals
+        </div>
+        {deals.length === 0 ? (
+          <p className="px-4 py-6 text-base text-muted-foreground">No deals linked.</p>
+        ) : (
           <ul className="divide-y divide-border">
             {deals.map((deal) => (
               <li key={deal.id} className="px-4 py-2 text-sm">
                 <RecordLink href={`/deals/${deal.id}`}>{deal.title}</RecordLink>
+                <span className="ml-2 text-xs uppercase text-muted-foreground">
+                  {deal.pipelineStage}
+                </span>
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+        )}
+      </section>
           </div>
         }
         rail={<RecordContextRail context={context} />}

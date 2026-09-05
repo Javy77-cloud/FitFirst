@@ -99,6 +99,10 @@ export default async function CommunicationsSettingsPage() {
         })}
       </div>
       <p className="mt-4 text-sm">
+        <Link href="/settings/outbound" className="text-primary hover:underline">
+          Outbound email / SMS queue
+        </Link>
+        <span className="mx-2 text-muted-foreground">·</span>
         <Link href="/settings/integrations" className="text-primary hover:underline">
           Open the Integrations catalog
         </Link>

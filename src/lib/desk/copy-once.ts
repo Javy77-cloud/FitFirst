@@ -20,10 +20,14 @@ export type AddressFields = {
 
 export type LeadCopyFields = AddressFields & {
   firstName?: string | null;
+  middleName?: string | null;
   lastName?: string | null;
   email?: string | null;
   phone?: string | null;
   dateOfBirth?: string | null;
+  notes?: string | null;
+  source?: string | null;
+  preferredLanguage?: string | null;
 };
 
 /** Lead mailing → Deal risk. Convert does not ask the agent to retype. */
@@ -48,9 +52,23 @@ export function fillSheetFromLead(
     values[key] = { value, status: "confirmed", source: "agent" };
   };
   put("address1", lead.mailingAddress);
+  put("mailing_address", lead.mailingAddress);
   put("city", lead.city);
   put("state", lead.state);
   put("zip", lead.zip);
+  const named = [lead.firstName, lead.middleName, lead.lastName]
+    .map((part) => (part ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+  put("named_insured", named);
+  const noteBits = [
+    lead.notes?.trim(),
+    lead.email ? `Email ${lead.email}` : "",
+    lead.phone ? `Phone ${lead.phone}` : "",
+    lead.dateOfBirth ? `DOB ${lead.dateOfBirth}` : "",
+    lead.preferredLanguage ? `Language ${lead.preferredLanguage}` : "",
+  ].filter(Boolean);
+  if (noteBits.length) put("notes", noteBits.join(" · "));
   return values;
 }
 

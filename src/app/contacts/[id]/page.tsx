@@ -4,10 +4,13 @@ import { AppShell } from "@/components/app-shell";
 import { LocationsList } from "@/components/desk-ams-panels";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
-import { getContactWorkspace } from "@/lib/db/queries";
+import { getContactWorkspace, listEmailTemplates } from "@/lib/db/queries";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
+import { AccountGlance } from "@/components/crm/account-glance";
+import { OptOutForm } from "@/components/crm/opt-out-form";
+import { RecordComms } from "@/components/record-comms";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +34,7 @@ export default async function ContactDetailPage({
     locations,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
+  const templates = await listEmailTemplates();
   const context = await loadRecordContext({
     contactId: contact.id,
     accountId: businesses[0]?.id,
@@ -57,6 +61,14 @@ export default async function ContactDetailPage({
       <RecordDetailLayout
         main={
           <div>
+      <AccountGlance
+        policyCount={policyCount}
+        activePolicyCount={activePolicyCount}
+        dealCount={deals.length}
+        activityCount={timeline.length}
+        emailOptOut={contact.emailOptOut}
+        smsOptOut={contact.smsOptOut}
+      />
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card p-4 text-sm">
           <h2 className="text-base font-semibold text-navy">Copied at bind</h2>
@@ -104,6 +116,30 @@ export default async function ContactDetailPage({
       </div>
 
       <LocationsList locations={locations} />
+
+      <section id="work" className="ff-card mb-4 p-4">
+        <h2 className="text-base font-semibold text-navy">Email, SMS, calls</h2>
+        <p className="mt-1 mb-3 text-helper text-muted-foreground">
+          Queue outbound intent here. Nothing sends until a vendor is plugged in later.
+        </p>
+        <RecordComms
+          contactId={contact.id}
+          dealId={deals[0]?.id}
+          policyId={latestPolicyId}
+          accountId={businesses[0]?.id}
+          phone={contact.phone}
+          email={contact.email}
+          templates={templates}
+          emailOptOut={contact.emailOptOut}
+          smsOptOut={contact.smsOptOut}
+        />
+      </section>
+
+      <OptOutForm
+        contactId={contact.id}
+        emailOptOut={contact.emailOptOut}
+        smsOptOut={contact.smsOptOut}
+      />
 
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">

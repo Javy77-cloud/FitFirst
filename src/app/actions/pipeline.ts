@@ -11,6 +11,7 @@ import {
   dealStageForPipeline,
   isArchiveStage,
 } from "@/lib/wire/pipeline";
+import { shouldCreateStageTask, writeCrmSignalsSafe } from "@/lib/crm/signals";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -64,6 +65,17 @@ export async function moveDealToStage(input: {
   }
 
   await db.update(deals).set(patch).where(eq(deals.id, dealId));
+  await writeCrmSignalsSafe({
+    kind: "stage_moved",
+    title: `Stage · ${patch.pipelineStageSlug} · ${deal.title}`,
+    body: `Deal moved to ${patch.pipelineStageSlug} on ${pipelineSlug}.`,
+    entityType: "deal",
+    entityId: dealId,
+    dealId,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+    createTask: shouldCreateStageTask(patch.pipelineStageSlug),
+  });
   revalidatePath("/pipeline");
   revalidatePath(`/deals/${dealId}`);
 }

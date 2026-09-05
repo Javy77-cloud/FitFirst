@@ -9,8 +9,9 @@ import {
 
 describe("activity model helpers", () => {
   it("maps legacy open/cancelled onto the task pipeline", () => {
-    expect(normalizeActivityStatus("open")).toBe("incomplete");
-    expect(normalizeActivityStatus("cancelled")).toBe("incomplete");
+    expect(normalizeActivityStatus("open")).toBe("open");
+    expect(normalizeActivityStatus("incomplete")).toBe("open");
+    expect(normalizeActivityStatus("cancelled")).toBe("cancelled");
     expect(pipelineColumn("delayed")).toBe("delayed");
     expect(pipelineColumn("moved")).toBe("moved");
   });

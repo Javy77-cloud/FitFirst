@@ -46,8 +46,12 @@ import {
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
-import { leadValuesFromForm, namedInsuredFromLead } from "@/lib/crm/lead-fields";
+import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
+import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
+import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import { writeDeskComms } from "@/lib/desk/write-comms";
+import { isKnownStageToken, nextMorning, resolveStageMove } from "@/lib/wire/pipeline";
 import {
   accountFieldsFromSheet,
   contactFieldsFromSheet,
@@ -57,7 +61,6 @@ import {
 } from "@/lib/wire/match-party";
 import { writeEin, writeSsn } from "@/lib/pii/write";
 import { piiLookupHash } from "@/lib/pii/vault";
-import { nextMorning } from "@/lib/wire/pipeline";
 import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
 
 function str(form: FormData, key: string) {
@@ -157,34 +160,40 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
   if (!lead) throw new Error("Lead not found");
   if (lead.convertedDealId) return lead.convertedDealId;
 
-  const dealLine =
-    (LINES.includes(line as (typeof LINES)[number]) ? line : null) ||
-    (lead.insuranceTypeDesired && LINES.includes(lead.insuranceTypeDesired as (typeof LINES)[number])
-      ? lead.insuranceTypeDesired
-      : "HO");
-  const pipelineSlug =
-    dealLine === "HEALTH" ? "health" : dealLine === "LIFE" ? "life" : dealLine === "FLOOD" ? "flood" : "p-c";
+  const dealLine = resolveConvertLine(line, lead.insuranceTypeDesired);
+  const copy = convertFieldCopy(lead, dealLine, state);
   const [pipeline] = await db
     .select()
     .from(pipelines)
-    .where(eq(pipelines.slug, pipelineSlug));
-  const dealState = state || lead.state || "FL";
-  const riskCopy = leadOntoRisk(lead, dealState);
+    .where(eq(pipelines.slug, copy.pipelineSlug));
 
-  const shopLines = shopLinesFromLine(dealLine);
+  const partyRows = await db.select().from(contacts).where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
+  const matchedContact =
+    partyRows.find((row) =>
+      isSameContact(row, {
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        email: lead.email,
+        phone: lead.phone,
+      }),
+    ) ?? null;
+
   const [deal] = await db
     .insert(deals)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId,
+      contactId: matchedContact?.id ?? null,
       ownerId: lead.ownerId ?? actor.id ?? null,
-      title: `${lead.lastName} · ${dealLine} shop`,
+      title: copy.title,
+      notes: copy.notes,
+      shopLines: copy.shopLines,
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: dealLine,
-      state: dealState,
-      primaryNamedInsured: namedInsuredFromLead(lead),
+      state: copy.dealState,
+      primaryNamedInsured: copy.primaryNamedInsured,
     })
     .returning();
 
@@ -192,26 +201,45 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     riskType: dealLine === "AUTO" ? "auto" : "property",
-    ...riskCopy,
+    ...copy.risk,
   });
-
-  const sheetValues = fillSheetFromLead(lead);
-  if (lead.email && !sheetValues.notes?.value) {
-    sheetValues.notes = { value: `Lead ${lead.email}`, status: "confirmed", source: "agent" };
-  }
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    line: dealLine === "AUTO" ? "auto" : "home",
-    values: sheetValues as typeof quoteSheets.$inferInsert.values,
+    line: copy.sheetLine,
+    values: copy.sheetValues as typeof quoteSheets.$inferInsert.values,
   });
-  await insertSheetsForDeal(deal.id, shopLines);
+  await insertSheetsForDeal(deal.id, copy.shopLines);
 
   await db
     .update(leads)
     .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, leadId));
+
+  await writeDeskComms({
+    kind: "task",
+    title: `Lead converted · ${copy.title}`,
+    notes: copy.notes,
+    eventType: "created",
+    status: "completed",
+    leadId,
+    dealId: deal.id,
+    contactId: matchedContact?.id ?? null,
+    logEmailJob: false,
+  }).catch(() => null);
+
+  await writeCrmSignalsSafe({
+    kind: "lead_converted",
+    title: `Shop opened · ${copy.title}`,
+    body: `Lead ${lead.lastName}, ${lead.firstName} converted. Gather the sheet — do not bind Ana.`,
+    entityType: "deal",
+    entityId: deal.id,
+    userId: lead.ownerId ?? actor.id ?? null,
+    dealId: deal.id,
+    contactId: matchedContact?.id ?? null,
+    createTask: true,
+  });
 
   return deal.id;
 }
@@ -334,6 +362,8 @@ export async function createDealFromDecDrop(formData: FormData) {
     })
     .returning();
 
+  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
+  const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const [deal] = await db
     .insert(deals)
     .values({
@@ -342,6 +372,9 @@ export async function createDealFromDecDrop(formData: FormData) {
       ownerId: lead.ownerId,
       title: `${lastName} · ${line} shop`,
       pipelineStage: "shopping",
+      pipelineId: pipeline?.id ?? null,
+      pipelineStageSlug: "gather",
+      shopLines: shopLinesFromLine(line),
       lineOfBusiness: line,
       state: str(formData, "state") || "FL",
       primaryNamedInsured: `${firstName} ${lastName}`.trim(),
@@ -380,11 +413,15 @@ export async function createDealFromDecDrop(formData: FormData) {
 export async function updateDealStage(formData: FormData) {
   const dealId = str(formData, "dealId");
   const stage = str(formData, "stage");
+  const resolved = resolveStageMove(stage);
   const stages = await ensurePipelineStages();
-  if (stages.length > 0 && !stages.some((row) => row.slug === stage || row.name === stage)) {
+  const known =
+    isKnownStageToken(stage) ||
+    stages.some((row) => row.slug === stage || row.name === stage || row.slug === resolved.pipelineStageSlug);
+  if (stages.length > 0 && !known) {
     throw new Error("Unknown pipeline stage");
   }
-  if (stage === "bound") {
+  if (stage === "bound" || resolved.pipelineStage === "bound") {
     throw new BindBlockedError("Use Bind to move a deal to bound. That is the only path that creates a policy.");
   }
 
@@ -396,8 +433,23 @@ export async function updateDealStage(formData: FormData) {
 
   await db
     .update(deals)
-    .set({ pipelineStage: stage, updatedAt: new Date() })
+    .set({
+      pipelineStage: resolved.pipelineStage,
+      pipelineStageSlug: resolved.pipelineStageSlug,
+      updatedAt: new Date(),
+    })
     .where(eq(deals.id, dealId));
+  await writeCrmSignalsSafe({
+    kind: "stage_moved",
+    title: `Stage · ${resolved.pipelineStageSlug} · ${deal.title}`,
+    body: `Deal moved to ${resolved.pipelineStageSlug}.`,
+    entityType: "deal",
+    entityId: dealId,
+    dealId,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+    createTask: resolved.pipelineStageSlug === "quote_sent" || resolved.pipelineStageSlug === "closed_lost",
+  });
   revalidateCrm([`/deals/${dealId}`]);
 }
 
@@ -989,8 +1041,15 @@ function shopLinesFromForm(formData: FormData, primaryLine: string): ShopLine[] 
 
 async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
   if (lines.length === 0) return;
+  const existing = await db
+    .select({ line: quoteSheets.line })
+    .from(quoteSheets)
+    .where(eq(quoteSheets.dealId, dealId));
+  const have = new Set(existing.map((row) => row.line));
+  const missing = lines.filter((line) => !have.has(line));
+  if (missing.length === 0) return;
   await db.insert(quoteSheets).values(
-    lines.map((line) => ({
+    missing.map((line) => ({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,

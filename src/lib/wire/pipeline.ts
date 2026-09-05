@@ -187,6 +187,44 @@ export function dealStageForPipeline(slug: string) {
   return "shopping";
 }
 
+/** Legacy `pipeline_stage` names → board slugs so both move paths stay in sync. */
+export function pipelineSlugForDealStage(stage: string) {
+  if (stage === "shopping") return "gather";
+  if (stage === "quoting") return "quotes";
+  if (stage === "bound") return "closed_won";
+  if (stage === "lost") return "closed_lost";
+  return stage;
+}
+
+export function resolveStageMove(input: string): {
+  pipelineStage: string;
+  pipelineStageSlug: string;
+} {
+  const raw = input.trim();
+  const slug = pipelineSlugForDealStage(raw);
+  return {
+    pipelineStageSlug: slug,
+    pipelineStage: dealStageForPipeline(slug),
+  };
+}
+
+export function isKnownStageToken(value: string) {
+  const known = new Set([
+    "shopping",
+    "quoting",
+    "quote_sent",
+    "bound",
+    "lost",
+    "archive",
+    "gather",
+    "quotes",
+    "review",
+    "closed_won",
+    "closed_lost",
+  ]);
+  return known.has(value);
+}
+
 export function dealMatchesStage(
   deal: {
     pipelineStage: string;

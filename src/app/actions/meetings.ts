@@ -7,6 +7,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { agencySettings, contacts, deals, leads, risks, users } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
+import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import { ADMIN_USER_ID, AGENCY_SETTINGS_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
 import {
   defaultVideoProvider,
@@ -146,6 +147,17 @@ export async function scheduleDealMeeting(formData: FormData) {
     meetingType: type,
     meetingLocation: location,
     videoProvider,
+  });
+  await writeCrmSignalsSafe({
+    kind: "meeting_scheduled",
+    title,
+    body: `${MEETING_TYPE_LABEL[type]} on ${deal.title}. ${location || "No place yet."}`,
+    entityType: "deal",
+    entityId: deal.id,
+    dealId: deal.id,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+    createTask: true,
   });
 
   revalidatePath("/pipeline");

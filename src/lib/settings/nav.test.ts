@@ -17,6 +17,7 @@ describe("settings nav", () => {
     expect(settingsGroupFor("security")).toBe("account");
     expect(settingsGroupFor("recovery")).toBe("account");
     expect(settingsGroupFor("compliance")).toBe("compliance");
+    expect(settingsGroupFor("outbound")).toBe("communications");
   });
 
   it("nests Export and Lead routing under Brand / Agency", () => {

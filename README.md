@@ -31,6 +31,15 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
+## CRM depth (this branch)
+
+In-house CRM up to the API wall. No paid email/SMS/Zoho plugs. Chrome stays (sidebar `#1d4e89`).
+
+- **Lead → Deal convert** copies name, mailing, notes, source, language, email, phone, DOB onto the deal, risk, and Quote Sheet blanks. Idempotent. Links a matching Contact when one already exists (does not create a Contact — bind still does that). Writes a convert task + alert.
+- **Contact / Business 360** shows policies, deals, and activities at a glance. Contact opt-out flags are editable. Record comms queue email/SMS from the record.
+- **Pipeline** stage moves update both `pipeline_stage` and `pipeline_stage_slug`. Meeting types (video / in-home / in-office) write a calendar activity plus an in-app task/alert.
+- **Outbound queue** at `/settings/outbound` drafts or holds email/SMS intent. Nothing sends. Opt-outs hold the job.
+
 ## Tests
 
 ```bash
