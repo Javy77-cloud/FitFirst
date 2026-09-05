@@ -887,6 +887,16 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 - `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
 - Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.
 
+## Home custom layouts + corner resize (`cursor/home-custom-layout-resize-0cb4`)
+
+Feel-pass desk fix on `cursor/feel-pass-consolidate-sep5b-6195`. Additive only. Did not bind Ana. Did not touch language / license lead-offer rules or `domain.ts` / `OWNER_*` exports.
+
+- Home **Layout** dropdown (same outline control as Book): three presets plus **Custom layouts**. Name the current board, switch it later, **Rename current layout…**. Rows live on `user_dashboard_prefs.custom_layouts` + `active_layout_id` (per user / tenant). Migration `0064_home_custom_layouts`.
+- Widget settings → **Resize tiles** (`resize_tiles`). Corner handle on each Home card; pull to stretch / shrink that tile only. Preset chips stay: 1×1 / 1×2 / 1×3 / 2×1 / 2×2 / 3×1 / 3×2 / 4×1 / 4×2.
+- Quotes still never create a Policy. Ana HO3 stays shopping / unbound / Cov A **$321,000**.
+
+Click path: Home → Layout → Save as custom layout… → name it → Widget settings → Resize tiles → pull a tile corner. Lead-offer board: Montana licensed producers row still language + state.
+
 ## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
 
 Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s). Fast-forwarded `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations / template / fill UUID 404s instead of 500s). Both tip names point at this same commit.

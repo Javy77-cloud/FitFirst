@@ -20,8 +20,16 @@ import {
   hiddenForPreset,
   parseBookScope,
   parseDashboardPreset,
+  parseHiddenWidgets,
   type HomeWidgetId,
 } from "@/lib/home/presets";
+import {
+  findNamedHomeLayout,
+  parseNamedHomeLayouts,
+  renameNamedHomeLayout,
+  upsertNamedHomeLayout,
+} from "@/lib/home/custom-layouts";
+import { mergeHomeLayout, type NamedHomeLayout } from "@/lib/home/layout";
 
 function refreshHome() {
   revalidatePath("/");
@@ -34,7 +42,11 @@ export async function saveHomePreset(formData: FormData) {
   const session = await requireSignedInAction();
   if (!session.userId) return;
   const preset = parseDashboardPreset(String(formData.get("preset") ?? ""));
-  await upsertPrefs(session.userId, { preset, hiddenWidgets: hiddenForPreset(preset) });
+  await upsertPrefs(session.userId, {
+    preset,
+    hiddenWidgets: hiddenForPreset(preset),
+    activeLayoutId: null,
+  });
   refreshHome();
 }
 
@@ -51,8 +63,96 @@ export async function saveHomeHiddenWidgets(formData: FormData) {
   if (!session.userId) return;
   const shown = new Set(HOME_WIDGET_IDS.filter((id) => formData.get(`show_${id}`) === "1"));
   const hidden = HOME_WIDGET_IDS.filter((id) => !shown.has(id));
-  await upsertPrefs(session.userId, { hiddenWidgets: hidden });
+  const existing = await loadPrefsRow(session.userId);
+  const layouts = parseNamedHomeLayouts(existing?.customLayouts);
+  const active = findNamedHomeLayout(layouts, existing?.activeLayoutId);
+  const customLayouts = active
+    ? upsertNamedHomeLayout(layouts, { ...active, hiddenWidgets: hidden })
+    : layouts;
+  await upsertPrefs(session.userId, { hiddenWidgets: hidden, customLayouts });
   refreshHome();
+}
+
+export async function saveResizeTiles(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  await upsertPrefs(session.userId, { resizeTiles: formData.get("resizeTiles") === "1" });
+  refreshHome();
+}
+
+export async function saveCustomHomeLayout(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  const name = String(formData.get("name") ?? "");
+  let placementsRaw: unknown = [];
+  try {
+    placementsRaw = JSON.parse(String(formData.get("placements") ?? "[]"));
+  } catch {
+    placementsRaw = [];
+  }
+  const existing = await loadPrefsRow(session.userId);
+  const layouts = parseNamedHomeLayouts(existing?.customLayouts);
+  const hidden = existing ? parseHiddenWidgets(existing.hiddenWidgets) : hiddenForPreset("my_production");
+  const layout: NamedHomeLayout = {
+    id: crypto.randomUUID(),
+    name,
+    placements: mergeHomeLayout(placementsRaw),
+    hiddenWidgets: hidden,
+  };
+  if (!layout.name.trim()) return;
+  const customLayouts = upsertNamedHomeLayout(layouts, layout);
+  if (customLayouts === layouts) return;
+  await upsertPrefs(session.userId, { customLayouts, activeLayoutId: layout.id });
+  refreshHome();
+}
+
+export async function renameCustomHomeLayout(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  const layoutId = String(formData.get("layoutId") ?? "").trim();
+  const name = String(formData.get("name") ?? "");
+  const existing = await loadPrefsRow(session.userId);
+  const layouts = parseNamedHomeLayouts(existing?.customLayouts);
+  const customLayouts = renameNamedHomeLayout(layouts, layoutId, name);
+  if (customLayouts === layouts) return;
+  await upsertPrefs(session.userId, { customLayouts });
+  refreshHome();
+}
+
+export async function selectCustomHomeLayout(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  const layoutId = String(formData.get("layoutId") ?? "").trim();
+  const existing = await loadPrefsRow(session.userId);
+  const layouts = parseNamedHomeLayouts(existing?.customLayouts);
+  const layout = findNamedHomeLayout(layouts, layoutId);
+  if (!layout) return;
+  await upsertPrefs(session.userId, {
+    activeLayoutId: layout.id,
+    hiddenWidgets: parseHiddenWidgets(layout.hiddenWidgets),
+  });
+  refreshHome();
+}
+
+export async function persistCustomLayoutPlacements(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.userId) return;
+  const layoutId = String(formData.get("layoutId") ?? "").trim();
+  let placementsRaw: unknown = [];
+  try {
+    placementsRaw = JSON.parse(String(formData.get("placements") ?? "[]"));
+  } catch {
+    return;
+  }
+  const existing = await loadPrefsRow(session.userId);
+  const layouts = parseNamedHomeLayouts(existing?.customLayouts);
+  const layout = findNamedHomeLayout(layouts, layoutId);
+  if (!layout) return;
+  const customLayouts = upsertNamedHomeLayout(layouts, {
+    ...layout,
+    placements: mergeHomeLayout(placementsRaw),
+  });
+  await upsertPrefs(session.userId, { customLayouts, activeLayoutId: layout.id });
 }
 
 export async function saveShowCompanyWidgets(formData: FormData) {
@@ -86,20 +186,28 @@ export async function postContest(formData: FormData) {
   refreshHome();
 }
 
-async function upsertPrefs(
-  userId: string,
-  patch: {
-    preset?: ReturnType<typeof parseDashboardPreset>;
-    bookScope?: ReturnType<typeof parseBookScope>;
-    hiddenWidgets?: HomeWidgetId[];
-  },
-) {
+async function loadPrefsRow(userId: string) {
   const [existing] = await db
     .select()
     .from(userDashboardPrefs)
     .where(
       and(eq(userDashboardPrefs.tenantId, DEFAULT_TENANT_ID), eq(userDashboardPrefs.userId, userId)),
     );
+  return existing ?? null;
+}
+
+async function upsertPrefs(
+  userId: string,
+  patch: {
+    preset?: ReturnType<typeof parseDashboardPreset>;
+    bookScope?: ReturnType<typeof parseBookScope>;
+    hiddenWidgets?: HomeWidgetId[];
+    customLayouts?: NamedHomeLayout[];
+    activeLayoutId?: string | null;
+    resizeTiles?: boolean;
+  },
+) {
+  const existing = await loadPrefsRow(userId);
   if (existing) {
     await db
       .update(userDashboardPrefs)
@@ -107,6 +215,9 @@ async function upsertPrefs(
         preset: patch.preset ?? existing.preset,
         bookScope: patch.bookScope ?? existing.bookScope,
         hiddenWidgets: patch.hiddenWidgets ?? existing.hiddenWidgets,
+        customLayouts: patch.customLayouts ?? existing.customLayouts,
+        activeLayoutId: patch.activeLayoutId === undefined ? existing.activeLayoutId : patch.activeLayoutId,
+        resizeTiles: patch.resizeTiles ?? existing.resizeTiles,
         updatedAt: new Date(),
       })
       .where(eq(userDashboardPrefs.id, existing.id));
@@ -119,6 +230,9 @@ async function upsertPrefs(
     preset,
     bookScope: patch.bookScope ?? "agency",
     hiddenWidgets: patch.hiddenWidgets ?? hiddenForPreset(preset),
+    customLayouts: patch.customLayouts ?? [],
+    activeLayoutId: patch.activeLayoutId ?? null,
+    resizeTiles: patch.resizeTiles ?? false,
   });
 }
 

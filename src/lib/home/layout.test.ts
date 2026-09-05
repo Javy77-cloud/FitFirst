@@ -6,8 +6,11 @@ import {
   homeLayoutStorageKey,
   mergeHomeLayout,
   moveWidget,
+  nearestSpan,
+  setWidgetSize,
   setWidgetSpan,
   spanClass,
+  tileGridClass,
 } from "./layout";
 import { HOME_WIDGET_IDS as PRESET_IDS } from "./presets";
 
@@ -44,6 +47,9 @@ describe("home widget layout", () => {
     expect(setWidgetSpan(moved, "ana", "1x2").find((row) => row.id === "ana")?.span).toBe("1x2");
     expect(spanClass("2x1")).toContain("col-span-2");
     expect(spanClass("2x2")).not.toContain("row-span");
+    expect(spanClass("3x1")).toContain("xl:col-span-3");
+    expect(spanClass("4x1")).toContain("xl:col-span-4");
+    expect(spanClass("1x3")).toContain("min-h-[33rem]");
   });
 
   it("covers every batch4 preset widget with at least one tile", () => {
@@ -88,6 +94,38 @@ describe("home widget layout", () => {
     expect(social.find((row) => row.id === "social-facebook")?.span).toBe(
       DEFAULT_HOME_LAYOUT.find((row) => row.id === "social-facebook")?.span,
     );
+  });
+
+  it("keeps custom corner size on A without changing B", () => {
+    const next = setWidgetSize(DEFAULT_HOME_LAYOUT, "ana", { cols: 3, heightPx: 360 });
+    const ana = next.find((row) => row.id === "ana");
+    expect(ana).toMatchObject({ id: "ana", cols: 3, heightPx: 360, span: "3x2" });
+    expect(tileGridClass(ana!)).toContain("xl:col-span-3");
+    expect(nearestSpan(4, 140)).toBe("4x1");
+    expect(nearestSpan(1, 500)).toBe("1x3");
+    for (const row of DEFAULT_HOME_LAYOUT) {
+      if (row.id === "ana") continue;
+      expect(next.find((item) => item.id === row.id)).toEqual(row);
+    }
+  });
+
+  it("merges stored corner sizes and drops junk dimensions", () => {
+    const merged = mergeHomeLayout([
+      { id: "ana", span: "3x1", cols: 3, heightPx: 220 },
+      { id: "alerts", span: "2x1", cols: 99, heightPx: -4 },
+    ]);
+    expect(merged.find((row) => row.id === "ana")).toEqual({
+      id: "ana",
+      span: "3x1",
+      cols: 3,
+      heightPx: 220,
+    });
+    expect(merged.find((row) => row.id === "alerts")).toEqual({
+      id: "alerts",
+      span: "2x1",
+      cols: 4,
+      heightPx: 128,
+    });
   });
 
   it("covers every batch4 preset widget with at least one tile", () => {

@@ -32,6 +32,8 @@ import {
   type HomeWidgetId,
 } from "@/lib/home/presets";
 import { parseLeadOfferKind, parseLeadOfferStatus, type LeadOfferKind, type LeadOfferStatus } from "@/lib/home/lead-offers";
+import { parseNamedHomeLayouts } from "@/lib/home/custom-layouts";
+import type { NamedHomeLayout } from "@/lib/home/layout";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { filterByBookScope, type BookScopeOption } from "@/lib/org/book-scope";
 import { resolveBookScope } from "@/lib/org/queries";
@@ -1697,6 +1699,9 @@ export type HomeDashboardPrefs = {
   preset: DashboardPreset;
   hiddenWidgets: HomeWidgetId[];
   bookScope: BookScope;
+  customLayouts: NamedHomeLayout[];
+  activeLayoutId: string | null;
+  resizeTiles: boolean;
 };
 
 export type HomeContestView = {
@@ -1743,17 +1748,31 @@ export type HomeAgentOption = { id: string; name: string; role: string };
 export async function loadHomeDashboardPrefs(userId: string | null): Promise<HomeDashboardPrefs> {
   const fallbackPreset = parseDashboardPreset("my_production");
   if (!userId) {
-    return { preset: fallbackPreset, hiddenWidgets: hiddenForPreset(fallbackPreset), bookScope: "agency" };
+    return {
+      preset: fallbackPreset,
+      hiddenWidgets: hiddenForPreset(fallbackPreset),
+      bookScope: "agency",
+      customLayouts: [],
+      activeLayoutId: null,
+      resizeTiles: false,
+    };
   }
   const [row] = await db
     .select()
     .from(userDashboardPrefs)
     .where(and(eq(userDashboardPrefs.tenantId, tenant()), eq(userDashboardPrefs.userId, userId)));
   const preset = parseDashboardPreset(row?.preset);
+  const customLayouts = parseNamedHomeLayouts(row?.customLayouts);
+  const activeLayoutId = row?.activeLayoutId && customLayouts.some((item) => item.id === row.activeLayoutId)
+    ? row.activeLayoutId
+    : null;
   return {
     preset,
     hiddenWidgets: row ? parseHiddenWidgets(row.hiddenWidgets) : hiddenForPreset(preset),
     bookScope: parseBookScope(row?.bookScope),
+    customLayouts,
+    activeLayoutId,
+    resizeTiles: Boolean(row?.resizeTiles),
   };
 }
 

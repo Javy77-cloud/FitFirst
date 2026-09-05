@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { HomeWidgetId } from "@/lib/home/layout";
-import { LAYOUT_WIDGET_LABEL } from "@/lib/home/layout";
+import { LAYOUT_WIDGET_LABEL, nearestSpan, tileGridClass } from "@/lib/home/layout";
 import { WidgetChrome } from "@/components/home/widget-chrome";
 import { useHomeLayout } from "@/components/home/use-home-layout";
 import { cn } from "@/lib/utils";
@@ -58,20 +58,41 @@ function pickDropTarget(
   return hit?.id ?? nearest?.id ?? null;
 }
 
+function columnCount(width: number): number {
+  return width >= 1280 ? 4 : 2;
+}
+
+function columnWidth(board: HTMLElement): { cols: number; colWidth: number } {
+  const cols = columnCount(board.clientWidth);
+  const styles = window.getComputedStyle(board);
+  const gap = Number.parseFloat(styles.columnGap || styles.gap || "12") || 12;
+  return { cols, colWidth: (board.clientWidth - gap * (cols - 1)) / cols };
+}
+
 export function HomeBoard({
   widgets,
 }: {
   widgets: Partial<Record<HomeWidgetId, ReactNode>>;
 }) {
-  const { layout, move } = useHomeLayout();
+  const { layout, move, previewSize, commit, resizeTiles } = useHomeLayout();
   const boardRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [resizing, setResizing] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const dragRef = useRef<{
     id: string;
     offsetX: number;
     offsetY: number;
+  } | null>(null);
+  const resizeRef = useRef<{
+    id: HomeWidgetId;
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+    colWidth: number;
+    maxCols: number;
   } | null>(null);
 
   const endDrag = useCallback(
@@ -123,6 +144,34 @@ export function HomeBoard({
     };
   }, [dragging, endDrag]);
 
+  useEffect(() => {
+    if (!resizing) return;
+
+    const onMove = (event: PointerEvent) => {
+      const session = resizeRef.current;
+      if (!session) return;
+      const width = session.startW + (event.clientX - session.startX);
+      const height = session.startH + (event.clientY - session.startY);
+      const cols = Math.min(session.maxCols, Math.max(1, Math.round(width / session.colWidth)));
+      previewSize(session.id, { cols, heightPx: height, span: nearestSpan(cols, height) });
+    };
+
+    const onUp = () => {
+      resizeRef.current = null;
+      setResizing(null);
+      commit();
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [commit, previewSize, resizing]);
+
   return (
     <>
       <div
@@ -136,11 +185,14 @@ export function HomeBoard({
             <WidgetChrome
               key={item.id}
               tileId={item.id}
-              span={item.span}
+              gridClass={tileGridClass(item)}
+              style={item.heightPx ? { height: item.heightPx, minHeight: item.heightPx } : undefined}
+              resizeEnabled={resizeTiles}
               dragging={dragging === item.id}
+              resizing={resizing === item.id}
               over={over === item.id && dragging !== item.id}
               onDragHandlePointerDown={(event) => {
-                if (event.button !== 0) return;
+                if (event.button !== 0 || resizeRef.current) return;
                 event.preventDefault();
                 const tile = (event.currentTarget as HTMLElement).closest<HTMLElement>("[data-home-tile]");
                 if (!tile) return;
@@ -160,6 +212,26 @@ export function HomeBoard({
                   h: Math.min(rect.height, 220),
                   label: LAYOUT_WIDGET_LABEL[item.id],
                 });
+              }}
+              onResizeHandlePointerDown={(event) => {
+                if (event.button !== 0) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const tile = (event.currentTarget as HTMLElement).closest<HTMLElement>("[data-home-tile]");
+                const board = boardRef.current;
+                if (!tile || !board) return;
+                const rect = tile.getBoundingClientRect();
+                const measure = columnWidth(board);
+                resizeRef.current = {
+                  id: item.id,
+                  startX: event.clientX,
+                  startY: event.clientY,
+                  startW: rect.width,
+                  startH: rect.height,
+                  colWidth: measure.colWidth,
+                  maxCols: measure.cols,
+                };
+                setResizing(item.id);
               }}
             >
               {body}
