@@ -1,167 +1,254 @@
-import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { markCommissionPaid, markCommissionStatus } from "@/app/actions/commissions";
 import { AppShell } from "@/components/app-shell";
-import { AskThread } from "@/components/ask-thread";
-import { Button } from "@/components/ui/button";
-import { currentDeskSession, getActor } from "@/lib/auth/session";
+import { CommissionFilters } from "@/components/commissions/filters";
+import { CommissionDeskTable, type CommissionDeskRow } from "@/components/commissions/desk-table";
+import { EarningsStrip } from "@/components/commissions/earnings-strip";
+import { CommissionStatusTabs } from "@/components/commissions/status-tabs";
+import { currentDeskSession } from "@/lib/auth/session";
 import {
-  commissionBucket,
-  commissionBucketLabel,
-  pendingPaidTotals,
-} from "@/lib/commissions/buckets";
-import { DEFAULT_TENANT_ID, formatMoney } from "@/lib/domain";
+  filterCommissionRows,
+  isCommissionPeriod,
+  isCommissionStatusTab,
+  isPendingCommissionStatus,
+  matchesCommissionStatus,
+  scopeCommissionRows,
+  type CommissionStatusTab,
+} from "@/lib/commissions/filters";
+import { earningsTotals, rollupPendingPaidBy } from "@/lib/commissions/rollups";
+import { formatMoney } from "@/lib/domain";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { listAsksForEntities } from "@/lib/db/queries";
-import { commissions, policies } from "@/lib/db/schema";
-import { cn } from "@/lib/utils";
+import { commissions, policies, users } from "@/lib/db/schema";
+import { RecordLink } from "@/components/record-links";
 
 export const dynamic = "force-dynamic";
+
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function toDeskRow(row: {
+  commission: typeof commissions.$inferSelect;
+  policy: typeof policies.$inferSelect | null;
+  agentName: string | null;
+}): CommissionDeskRow {
+  return {
+    id: row.commission.id,
+    agentId: row.commission.agentId,
+    policyId: row.policy?.id ?? row.commission.policyId,
+    policyNumber: row.policy?.policyNumber ?? null,
+    agentName: row.agentName || "Unassigned",
+    insuranceType: row.commission.insuranceType ?? row.policy?.insuranceType,
+    lineOfBusiness: row.commission.lineOfBusiness ?? row.policy?.lineOfBusiness,
+    policyType: row.commission.policyType ?? row.policy?.policyType,
+    policySubType: row.commission.policySubType ?? row.policy?.policySubType,
+    status: row.commission.status,
+    amount: row.commission.amount,
+    dueDate: row.commission.dueDate,
+    paidDate: row.commission.paidDate,
+  };
+}
 
 export default async function CommissionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ bucket?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { bucket } = await searchParams;
-  const [actor, session] = await Promise.all([getActor(), currentDeskSession()]);
-  const rows = await db
-    .select({ commission: commissions, policy: policies })
+  const session = await currentDeskSession();
+  const params = await searchParams;
+  const family = first(params.family);
+  const sub = first(params.sub);
+  const rangeRaw = first(params.range);
+  const range = isCommissionPeriod(rangeRaw) ? rangeRaw : "all";
+  const status: CommissionStatusTab = isCommissionStatusTab(first(params.status))
+    ? (first(params.status) as CommissionStatusTab)
+    : "all";
+
+  const loaded = await db
+    .select({
+      commission: commissions,
+      policy: policies,
+      agentName: users.name,
+    })
     .from(commissions)
     .leftJoin(policies, eq(commissions.policyId, policies.id))
+    .leftJoin(users, eq(commissions.agentId, users.id))
     .where(eq(commissions.tenantId, DEFAULT_TENANT_ID));
-  const totals = pendingPaidTotals(rows.map((row) => row.commission));
-  const visible = rows.filter((row) => {
-    if (bucket === "paid") return commissionBucket(row.commission.status) === "paid";
-    if (bucket === "pending") return commissionBucket(row.commission.status) === "pending";
-    return true;
-  });
-  const asks = await listAsksForEntities(
-    "commission",
-    rows.map((row) => row.commission.id),
+
+  const scoped = scopeCommissionRows(
+    loaded.map((row) => ({
+      ...row,
+      agentId: row.commission.agentId,
+    })),
+    { isAdmin: session.isAdmin, viewerId: session.userId },
   );
-  const asksById = new Map<string, typeof asks>();
-  for (const row of asks) {
-    const list = asksById.get(row.ask.entityId) ?? [];
-    list.push(row);
-    asksById.set(row.ask.entityId, list);
-  }
+
+  const bookFiltered = filterCommissionRows(
+    scoped.map((row) => ({
+      ...row,
+      lineOfBusiness: row.commission.lineOfBusiness ?? row.policy?.lineOfBusiness,
+      policyLineOfBusiness: row.policy?.lineOfBusiness,
+      insuranceType: row.commission.insuranceType ?? row.policy?.insuranceType,
+      policyType: row.commission.policyType ?? row.policy?.policyType,
+      policySubType: row.commission.policySubType ?? row.policy?.policySubType,
+      status: row.commission.status,
+      dueDate: row.commission.dueDate,
+      paidDate: row.commission.paidDate,
+      createdAt: row.commission.createdAt,
+    })),
+    { family, sub, range },
+  );
+
+  const visible = bookFiltered.filter((row) => matchesCommissionStatus(row.status, status));
+  const pendingRows = bookFiltered.filter((row) => isPendingCommissionStatus(row.status));
+  const paidRows = bookFiltered.filter((row) => row.status === "paid");
+  const totals = earningsTotals(
+    bookFiltered.map((row) => ({
+      amount: row.commission.amount ?? 0,
+      agencyAmount: row.commission.agencyAmount,
+      status: row.commission.status,
+    })),
+  );
+  const rollups = session.isAdmin
+    ? rollupPendingPaidBy(
+        bookFiltered.map((row) => ({
+          agentId: row.commission.agentId ?? "none",
+          agentName: row.agentName || "Unassigned",
+          carrierId: row.commission.carrierId,
+          carrierName: "",
+          lineOfBusiness: row.commission.lineOfBusiness ?? "",
+          premium: row.commission.premium ?? 0,
+          amount: row.commission.amount ?? 0,
+          status: row.commission.status,
+        })),
+        (row) => ({ key: row.agentId, label: row.agentName }),
+      )
+    : [];
+
+  const filtered = Boolean(family || (sub && sub !== "all") || (range && range !== "all"));
+  const showProducer = session.isAdmin;
+  const pendingDesk = pendingRows.map(toDeskRow);
+  const paidDesk = paidRows.map(toDeskRow);
+  const visibleDesk = visible.map(toDeskRow);
 
   return (
     <AppShell title="Commissions">
       <p className="mb-3 text-base text-muted-foreground">
-        Per-policy agency earnings. Pending is still owed (pending, payable, or held). Paid is
-        received. Marking paid does not change the Policy. Ana is $0 / unbound.
+        {session.isAdmin
+          ? "Agency earnings by policy. Pending vs paid. Filter Life, Health, or P&C, then a subtype. Ana Dib stays shopping — $0 here, no bind."
+          : "Your commissions only. Pending vs paid. Filter Life, Health, or P&C, then a subtype to find a row. Ana Dib stays shopping — $0 / unbound."}
       </p>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2">
-        <Link
-          href="/commissions?bucket=pending"
-          className={cn("ff-card p-4 hover:border-primary", bucket === "pending" && "border-primary")}
-        >
-          <div className="text-xs text-muted-foreground">Pending — still owed</div>
-          <div className="text-2xl font-semibold text-navy">{formatMoney(totals.pending)}</div>
-          <div className="text-base text-muted-foreground">{totals.pendingCount} rows</div>
-        </Link>
-        <Link
-          href="/commissions?bucket=paid"
-          className={cn("ff-card p-4 hover:border-primary", bucket === "paid" && "border-primary")}
-        >
-          <div className="text-xs text-muted-foreground">Paid — received</div>
-          <div className="text-2xl font-semibold text-navy">{formatMoney(totals.paid)}</div>
-          <div className="text-base text-muted-foreground">{totals.paidCount} rows</div>
-        </Link>
-      </div>
-      {bucket ? (
-        <p className="mb-3 text-base">
-          Showing {bucket === "paid" ? "paid" : "pending"} only.{" "}
-          <Link href="/commissions" className="text-primary hover:underline">
-            Show all
-          </Link>
+      <CommissionStatusTabs
+        status={status}
+        family={family}
+        sub={sub}
+        range={range}
+        allLabel={session.isAdmin ? "All" : "My commissions"}
+        counts={{
+          all: bookFiltered.length,
+          pending: pendingRows.length,
+          paid: paidRows.length,
+        }}
+      />
+      <CommissionFilters family={family} sub={sub} range={range} status={status} />
+      {filtered ? (
+        <p className="mb-3 text-base text-muted-foreground">
+          Showing {visible.length} row{visible.length === 1 ? "" : "s"} for this cut.
         </p>
       ) : null}
-      <section className="ff-card overflow-hidden">
-        {visible.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No {bucket || "commission"} rows yet. Owner-book policies still show on Home written
-            premium.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Bucket</th>
-                <th>Desk status</th>
-                <th>Amount</th>
-                <th>Action</th>
-                {session.isAdmin ? <th>Ask a teammate</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map(({ commission, policy }) => {
-                const paid = commissionBucket(commission.status) === "paid";
-                return (
-                  <tr key={commission.id}>
+      <EarningsStrip totals={totals} mode={session.isAdmin ? "agency" : "producer"} />
+      {session.isAdmin && rollups.length > 0 ? (
+        <section className="ff-card mb-4 overflow-hidden">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold text-navy">Agency by producer</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="ff-table">
+              <thead>
+                <tr>
+                  <th>Producer</th>
+                  <th>Pending</th>
+                  <th>Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rollups.map((row) => (
+                  <tr key={row.key}>
                     <td>
-                      {policy ? (
-                        <Link
-                          href={`/policies/${policy.id}`}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {policy.policyNumber}
-                        </Link>
+                      {row.key !== "none" ? (
+                        <RecordLink href={`/commissions/agents/${row.key}`}>{row.label}</RecordLink>
                       ) : (
-                        "—"
+                        row.label
                       )}
                     </td>
                     <td>
-                      <span
-                        className={cn(
-                          "inline-flex rounded-sm px-1.5 py-0.5 text-[11px] font-semibold uppercase",
-                          paid ? "bg-fit-green-bg text-fit-green" : "bg-fit-yellow-bg text-fit-yellow",
-                        )}
-                      >
-                        {paid ? "Paid" : "Pending"}
+                      {formatMoney(row.pending)}
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        {row.pendingCount}
                       </span>
                     </td>
-                    <td>{commissionBucketLabel(commission.status)}</td>
-                    <td>{formatMoney(commission.amount)}</td>
                     <td>
-                      {paid ? (
-                        <form action={markCommissionStatus}>
-                          <input type="hidden" name="commissionId" value={commission.id} />
-                          <input type="hidden" name="status" value="pending" />
-                          <Button type="submit" size="xs" variant="outline">
-                            Move back to pending
-                          </Button>
-                        </form>
-                      ) : (
-                        <form action={markCommissionPaid}>
-                          <input type="hidden" name="commissionId" value={commission.id} />
-                          <Button type="submit" size="xs">
-                            Mark paid
-                          </Button>
-                        </form>
-                      )}
+                      {formatMoney(row.paid)}
+                      <span className="ml-1 text-xs text-muted-foreground">{row.paidCount}</span>
                     </td>
-                    {session.isAdmin ? (
-                      <td>
-                        <AskThread
-                          entityType="commission"
-                          entityId={commission.id}
-                          actor={actor}
-                          asks={asksById.get(commission.id) ?? []}
-                          compact
-                        />
-                      </td>
-                    ) : null}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </section>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+      {status === "all" ? (
+        <div className="space-y-4">
+          <section className="ff-card overflow-hidden">
+            <div className="border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold text-navy">Pending</h2>
+            </div>
+            <CommissionDeskTable
+              rows={pendingDesk}
+              showProducer={showProducer}
+              empty={
+                filtered
+                  ? "No pending commissions in this book or date window. Quotes are not earnings — Ana remains $0 / unbound."
+                  : "Nothing pending. Owner-book policies still show on Home written premium. Ana stays $0."
+              }
+            />
+          </section>
+          <section className="ff-card overflow-hidden">
+            <div className="border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold text-navy">Paid</h2>
+            </div>
+            <CommissionDeskTable
+              rows={paidDesk}
+              showProducer={showProducer}
+              empty={
+                filtered
+                  ? "No paid commissions in this book or date window."
+                  : "No paid rows yet."
+              }
+            />
+          </section>
+        </div>
+      ) : (
+        <section className="ff-card overflow-hidden">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold text-navy">
+              {status === "pending" ? "Pending" : "Paid"}
+            </h2>
+          </div>
+          <CommissionDeskTable
+            rows={visibleDesk}
+            showProducer={showProducer}
+            empty={
+              filtered
+                ? "No commission rows in this book or date window. Quotes are not earnings — Ana remains $0 / unbound."
+                : status === "pending"
+                  ? "Nothing pending on this book. Ana stays $0."
+                  : "No paid rows on this book. Ana stays $0."
+            }
+          />
+        </section>
+      )}
     </AppShell>
   );
 }

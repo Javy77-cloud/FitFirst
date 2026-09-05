@@ -12,25 +12,28 @@ export function CommissionFilters({
   family,
   sub,
   range,
+  status,
 }: {
   family?: string;
   sub?: string;
   range?: string;
+  status?: string;
 }) {
   const [book, setBook] = useState(family ?? "");
   const options = subfiltersFor(book);
 
   return (
     <form method="get" className="mb-4 flex flex-wrap items-end gap-2 text-sm">
+      {status && status !== "all" ? <input type="hidden" name="status" value={status} /> : null}
       <label className="block text-[11px] text-muted-foreground">
-        Book
+        Insurance type
         <select
           name="family"
           value={book}
           onChange={(event) => setBook(event.target.value)}
           className="mt-1 h-8 min-w-32 rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">All books</option>
+          <option value="">All types</option>
           {COMMISSION_BOOKS.map((row) => (
             <option key={row.value} value={row.value}>
               {row.label}
@@ -39,7 +42,7 @@ export function CommissionFilters({
         </select>
       </label>
       <label className="block text-[11px] text-muted-foreground">
-        Subfilter
+        Subtype
         <select
           key={book || "none"}
           name="sub"
@@ -47,7 +50,7 @@ export function CommissionFilters({
           disabled={options.length === 0}
           className="mt-1 h-8 min-w-36 rounded-md border border-input bg-card px-2 text-sm disabled:opacity-60"
         >
-          <option value="">{book ? "All in book" : "Pick a book first"}</option>
+          <option value="">{book ? "All subtypes" : "Pick a type first"}</option>
           {options.map((row) => (
             <option key={row.value} value={row.value}>
               {row.label}
