@@ -6,9 +6,11 @@ import {
   certificateRequests,
   issuedCertificates,
   policyNotices,
+  reviewTasks,
 } from "./schema";
 import {
   AMS_WAVE2_IDS,
+  AMS_WAVE4_IDS,
   AMS_WAVE6_IDS,
   HALE_CONTACT_ID,
   HALE_POLICY_ID,
@@ -17,6 +19,11 @@ import {
 } from "../fixtures/ids";
 
 export async function seedAmsWave6() {
+  await db
+    .update(reviewTasks)
+    .set({ status: "open" })
+    .where(eq(reviewTasks.id, AMS_WAVE4_IDS.elenaAorTask));
+
   await db
     .update(certificateRequests)
     .set({
