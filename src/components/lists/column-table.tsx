@@ -6,12 +6,14 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  columnMenuLabel,
   defaultVisibleIds,
   loadVisibleColumns,
   saveVisibleColumns,
@@ -50,6 +52,7 @@ export function ColumnTable({
   }, [moduleId, colKey]);
 
   const shown = useMemo(() => shownColumns(columns, visible), [columns, visible]);
+  const visibleSet = useMemo(() => new Set(visible), [visible]);
 
   function persist(next: string[]) {
     setVisible(next);
@@ -64,13 +67,23 @@ export function ColumnTable({
     persist(defaultVisibleIds(columns));
   }
 
+  function cellHidden(id: string) {
+    return !visibleSet.has(id);
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="ff-table">
         <thead>
           <tr>
-            {shown.map((column) => (
-              <th key={column.id}>{column.label}</th>
+            {columns.map((column) => (
+              <th
+                key={column.id}
+                hidden={cellHidden(column.id)}
+                className={cn(cellHidden(column.id) && "hidden")}
+              >
+                {column.label}
+              </th>
             ))}
             <th className="ff-col-manage">
               <DropdownMenu>
@@ -85,22 +98,30 @@ export function ColumnTable({
                   <SlidersHorizontal className="size-3.5" strokeWidth={1.75} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" side="bottom" className="w-56 min-w-56">
-                  <DropdownMenuLabel>Columns</DropdownMenuLabel>
-                  {columns.map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={visible.includes(column.id)}
-                      disabled={column.locked}
-                      onCheckedChange={() => toggle(column.id)}
-                    >
-                      {column.label}
-                      {column.locked ? (
-                        <span className="ml-auto text-[10px] text-muted-foreground">
-                          required
-                        </span>
-                      ) : null}
-                    </DropdownMenuCheckboxItem>
-                  ))}
+                  {/* Base UI GroupLabel throws unless it sits inside Menu.Group. */}
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Columns</DropdownMenuLabel>
+                    {columns.map((column) => {
+                      const itemLabel = columnMenuLabel(column);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          checked={visibleSet.has(column.id)}
+                          disabled={column.locked}
+                          label={itemLabel}
+                          closeOnClick={false}
+                          onCheckedChange={() => toggle(column.id)}
+                        >
+                          {itemLabel}
+                          {column.locked ? (
+                            <span className="ml-auto text-[10px] text-muted-foreground">
+                              required
+                            </span>
+                          ) : null}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={reset}>
                     <RotateCcw className="size-3.5" />
@@ -121,8 +142,14 @@ export function ColumnTable({
           ) : (
             rows.map((row) => (
               <tr key={row.key} id={row.id}>
-                {shown.map((column) => (
-                  <td key={column.id}>{row.cells[column.id]}</td>
+                {columns.map((column) => (
+                  <td
+                    key={column.id}
+                    hidden={cellHidden(column.id)}
+                    className={cn(cellHidden(column.id) && "hidden")}
+                  >
+                    {row.cells[column.id]}
+                  </td>
                 ))}
                 <td className="ff-col-manage" aria-hidden />
               </tr>

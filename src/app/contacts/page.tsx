@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { CONTACTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
@@ -72,13 +73,7 @@ export default async function ContactsPage({
           <ModuleListActions module="contacts" recordIds={rows.map((c) => c.id)}>
           <ColumnTable
             moduleId="contacts"
-            columns={[
-              { id: "pick", label: "", locked: true },
-              { id: "name", label: "Name", locked: true },
-              { id: "status", label: "Status" },
-              { id: "lifetime", label: "Lifetime" },
-              { id: "inForce", label: "In-force" },
-            ]}
+            columns={CONTACTS_LIST_COLUMNS}
             empty="Empty book. Bind a deal or add an existing client."
             rows={rows.map((c) => ({
               key: c.id,

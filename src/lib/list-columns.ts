@@ -26,10 +26,9 @@ export function mergeVisibleColumns(
   const visible = stored.filter(
     (id): id is string => typeof id === "string" && allowed.has(id),
   );
-  for (const id of locked) {
-    if (!visible.includes(id)) visible.unshift(id);
-  }
-  return visible.length ? visible : defaults;
+  const missingLocked = locked.filter((id) => !visible.includes(id));
+  const next = missingLocked.length ? [...missingLocked, ...visible] : visible;
+  return next.length ? next : defaults;
 }
 
 export function loadVisibleColumns(
@@ -73,3 +72,24 @@ export function toggleColumnVisibility(
 export function shownColumns(columns: ListColumn[], visible: string[]): ListColumn[] {
   return columns.filter((column) => visible.includes(column.id));
 }
+
+/** Accessible name for the manage-columns checkbox (empty labels are invalid). */
+export function columnMenuLabel(column: ListColumn): string {
+  return column.label.trim() || "Select";
+}
+
+export const LEADS_LIST_COLUMNS: ListColumn[] = [
+  { id: "pick", label: "", locked: true },
+  { id: "name", label: "Name", locked: true },
+  { id: "status", label: "Status" },
+  { id: "source", label: "Source" },
+  { id: "shop", label: "Shop" },
+];
+
+export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
+  { id: "pick", label: "", locked: true },
+  { id: "name", label: "Name", locked: true },
+  { id: "status", label: "Status" },
+  { id: "lifetime", label: "Lifetime" },
+  { id: "inForce", label: "In-force" },
+];
