@@ -4,18 +4,24 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Run locally
+## Tip branch
+
+**`cursor/feel-pass-consolidate-sep5-fed3`** — one Mac Chrome desk for Air + mini. Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5).
+
+## Run locally (Mac Air and Mac mini)
 
 ```bash
-cp .env.example .env
-# Postgres on DATABASE_URL (default postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst)
+cd ~/FitFirst
+git fetch && git checkout cursor/feel-pass-consolidate-sep5-fed3 && git pull
 npm install
 npm run db:migrate
 npm run db:seed
-npm run dev
+npm run dev -- --port 43147
 ```
 
-Open [http://localhost:43147](http://localhost:43147).
+Then Chrome [http://localhost:43147](http://localhost:43147).
+
+First-time only: `cp .env.example .env`. Postgres on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`). `docker compose up -d db` if you need the local database.
 
 Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
 

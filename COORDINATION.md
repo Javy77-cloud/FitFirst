@@ -886,3 +886,55 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 - `/phone` — connect-later wall (BYO line later, no Twilio buy) + dialer stub. Outcome + notes write `activities` / `activity_logs` via `saveCallOutcome`. Existing call log (`listCallLog`) stays on the page. `/settings/phone` is unchanged.
 - `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
 - Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.
+
+## Feel-pass consolidate Sep 5 (`cursor/feel-pass-consolidate-sep5-fed3`)
+
+One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. No migration dropped.
+
+### Merged (schema first, then features, then UX)
+
+AMS:
+- `cursor/ams-wave2-book-3be9` (already on wave5)
+- `cursor/ams-wave3-servicing-0ccd` → `0051_ams_wave3`
+- `cursor/ams-wave4-depth-a034` (already on wave5)
+- `cursor/ams-wave5-depth-9dbf` (base)
+- `cursor/ams-desk-polish-5344` (bc-406eb30f deeper AMS polish)
+
+CRM / Quote / function:
+- `cursor/quote-sheet-fill-appetite-6178`
+- `cursor/quote-sheet-edit-master-risk-6051`
+- `cursor/in-desk-automations-cfc4` → `0052_automation_playbooks`
+- `cursor/connect-stubs-hub-1028`
+- `cursor/in-desk-esign-stub-fdce` → `0053_in_desk_esign`
+- `cursor/crm-depth-api-wall-7faa` → `0059_comms_outbound_jobs` (this-session desk branch)
+
+Developer / Settings:
+- `cursor/developer-hub-core-a882` → `0054_developer_hub`
+- `cursor/automations-dev-tools-de23` (bc-60c542ef power-user fill) → `0055_developer_hub`
+- `cursor/dev-hub-macros-buttons-649d` → `0056_dev_hub_macros_buttons`
+- `cursor/settings-ia-cards-2ba0`
+- `cursor/import-export-hub-41c4` → `0057_import_export_jobs`
+
+UX feel-pass:
+- `cursor/home-widget-ux-f053`
+- `cursor/pipeline-funnel-colors-32ce` → `0058_pipeline_stage_color`
+- `cursor/quotes-list-collapse-253c`
+- `cursor/commissions-cleanup-869a`
+- `cursor/calendar-toolbar-rows-1432`
+- `cursor/nav-phone-inbox-stubs-8078`
+- `cursor/policy-detail-info-433d`
+
+Skipped: product-site / marketing branches. Side branches were not deleted.
+
+Mac Chrome (Air **and** mini):
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/feel-pass-consolidate-sep5-fed3 && git pull
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
