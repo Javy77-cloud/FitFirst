@@ -9,7 +9,13 @@ import {
   connectedSmsIntegrations,
   smsReady,
 } from "@/lib/automations/connections";
-import { AUTOMATION_HUB_SECTIONS, SIGNATURE_STATUS_LABEL } from "@/lib/automations/types";
+import {
+  AUTOMATION_DEVELOPER_SECTIONS,
+  AUTOMATION_HUB_SECTIONS,
+} from "@/lib/automations/types";
+import { StatusChip } from "@/components/developer-hub/status-chip";
+import { hubOverviewCounts } from "@/lib/developer-hub/store";
+import type { HubToolStatus } from "@/lib/developer-hub/types";
 import {
   listGuidedAutomations,
   listPendingSignatureApprovals,
@@ -24,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
-  const [catalog, sms, templates, automations, pending, mine, sequences] = await Promise.all([
+  const [catalog, sms, templates, automations, pending, mine, sequences, hub] = await Promise.all([
     listCatalogItems(),
     getSmsSettings(),
     listEmailTemplates(),
@@ -32,6 +38,7 @@ export default async function AutomationsHubPage() {
     listPendingSignatureApprovals(),
     session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
     listCampaignSequences(),
+    hubOverviewCounts(),
   ]);
   const campaignOk = campaignsReady(catalog);
   const smsOk = smsReady(catalog, Boolean(sms?.connected));
@@ -67,8 +74,9 @@ export default async function AutomationsHubPage() {
       <AutomationsModuleNav />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Insurance campaign sequences, guided campaigns, bulk SMS, work-email templates, and a
-        simple Trigger → Condition → Action builder. Agent alerts stay in Alerts — Javy does
-        not want a second email ping. Signatures need Admin before they go live.
+        simple Trigger → Condition → Action builder. Developer tools (Functions, Macros, Webhooks,
+        API Keys, Connections) live here too — same records as Settings → Developer Hub. Agent
+        alerts stay in Alerts. Signatures need Admin before they go live.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {AUTOMATION_HUB_SECTIONS.map((section) => (
@@ -89,6 +97,45 @@ export default async function AutomationsHubPage() {
             <p className="mt-2 text-xs text-navy">{status[section.id]}</p>
           </Link>
         ))}
+      </div>
+
+      <h2 className="mb-2 mt-6 text-sm font-semibold text-navy">Developer tools</h2>
+      <p className="mb-3 max-w-3xl text-xs text-muted-foreground">
+        Working stubs up to the OAuth wall. Admin creates and runs them. Same tables as Settings.
+      </p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {AUTOMATION_DEVELOPER_SECTIONS.map((section) => {
+          const chip: HubToolStatus =
+            section.id === "macros"
+              ? "stub"
+              : section.id === "connections"
+                ? "needs_oauth"
+                : "working";
+          const count =
+            section.id === "functions"
+              ? `${hub.functions} functions`
+              : section.id === "api-keys"
+                ? `${hub.liveKeys} live keys`
+                : section.id === "webhooks"
+                  ? `${hub.webhooks} outbound · ${hub.inbound} inbound`
+                  : section.id === "connections"
+                    ? `${hub.connections} connectors`
+                    : "Coming / sibling bot";
+          return (
+            <Link
+              key={section.id}
+              href={section.href}
+              className="ff-card block p-4 hover:border-primary/40"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-sm font-semibold text-navy">{section.label}</h2>
+                <StatusChip status={chip} />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{section.summary}</p>
+              <p className="mt-2 text-xs text-navy">{count}</p>
+            </Link>
+          );
+        })}
       </div>
     </AppShell>
   );

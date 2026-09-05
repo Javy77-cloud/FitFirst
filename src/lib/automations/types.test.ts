@@ -3,6 +3,7 @@ import {
   preferredActionFor,
   validateGuidedAutomation,
   AUTOMATION_ACTION_LABEL,
+  AUTOMATION_DEVELOPER_SECTIONS,
   AUTOMATION_HUB_SECTIONS,
   AUTOMATION_TRIGGER_LABEL,
 } from "./types";
@@ -81,5 +82,18 @@ describe("labels", () => {
   it("lists campaign sequences on the automations hub", () => {
     expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("sequences");
     expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/sequences");
+  });
+
+  it("puts Developer Hub tools on Automations, not Settings-only", () => {
+    expect(AUTOMATION_DEVELOPER_SECTIONS.map((section) => section.id)).toEqual([
+      "functions",
+      "macros",
+      "webhooks",
+      "api-keys",
+      "connections",
+    ]);
+    expect(AUTOMATION_DEVELOPER_SECTIONS.every((section) => section.href.startsWith("/automations/"))).toBe(
+      true,
+    );
   });
 });

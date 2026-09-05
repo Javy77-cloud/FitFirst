@@ -11,17 +11,21 @@ import {
   FUNCTION_LANGUAGE_LABEL,
 } from "@/lib/developer-hub/types";
 import type { DeveloperConnection } from "@/lib/db/schema";
+import type { HubSurface } from "@/lib/developer-hub/paths";
 
 export function FunctionForm({
   fn,
   connections,
+  surface = "settings",
 }: {
   fn?: DeveloperFunction;
   connections: DeveloperConnection[];
+  surface?: HubSurface;
 }) {
   const standaloneDefault = (fn?.category ?? "standalone") === "standalone";
   return (
     <form action={saveDeveloperFunction} className="ff-card max-w-3xl space-y-3 p-4">
+      <input type="hidden" name="surface" value={surface} />
       {fn ? <input type="hidden" name="id" value={fn.id} /> : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

@@ -34,6 +34,8 @@ Settings → Developer Hub. Working stubs stop at the OAuth wall. No live Zoho w
 | Route | What it does |
 | --- | --- |
 | `/settings/developer` | Overview + status chips |
+| `/automations` | Same tools as hub cards + Developer tools tabs |
+| `/automations/functions` (also macros, webhooks, api-keys, connections) | Same records, Automations chrome |
 | `/settings/developer/functions` | CRUD + Run test + execution log |
 | `/settings/developer/api-keys` | Create / regenerate / revoke. Secret shown once. |
 | `/settings/developer/webhooks` | Outbound queue + inbound Signals slugs |

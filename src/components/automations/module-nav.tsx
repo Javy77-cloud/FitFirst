@@ -2,22 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AUTOMATION_HUB_SECTIONS } from "@/lib/automations/types";
+import { AUTOMATION_DEVELOPER_SECTIONS, AUTOMATION_HUB_SECTIONS } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
 
-export function AutomationsModuleNav() {
-  const pathname = usePathname() ?? "";
-  const items = [
-    { href: "/automations", label: "Hub", exact: true },
-    ...AUTOMATION_HUB_SECTIONS.map((section) => ({
-      href: section.href,
-      label: section.label,
-      exact: false,
-    })),
-  ];
-
+function NavRow({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: { href: string; label: string; exact?: boolean }[];
+  pathname: string;
+}) {
   return (
-    <nav className="mb-4 flex flex-wrap gap-1.5" aria-label="Automations sections">
+    <nav className="flex flex-wrap gap-1.5" aria-label={label}>
       {items.map((item) => {
         const active = item.exact
           ? pathname === item.href
@@ -39,5 +37,38 @@ export function AutomationsModuleNav() {
         );
       })}
     </nav>
+  );
+}
+
+export function AutomationsModuleNav() {
+  const pathname = usePathname() ?? "";
+
+  return (
+    <div className="mb-4 space-y-2">
+      <NavRow
+        label="Automations sections"
+        pathname={pathname}
+        items={[
+          { href: "/automations", label: "Hub", exact: true },
+          ...AUTOMATION_HUB_SECTIONS.map((section) => ({
+            href: section.href,
+            label: section.label,
+          })),
+        ]}
+      />
+      <div>
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Developer tools
+        </div>
+        <NavRow
+          label="Developer tools"
+          pathname={pathname}
+          items={AUTOMATION_DEVELOPER_SECTIONS.map((section) => ({
+            href: section.href,
+            label: section.label,
+          }))}
+        />
+      </div>
+    </div>
   );
 }

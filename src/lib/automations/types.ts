@@ -105,6 +105,40 @@ export const AUTOMATION_HUB_SECTIONS = [
   },
 ] as const;
 
+/** Same Developer Hub surfaces as Settings — cards + tabs on Automations. */
+export const AUTOMATION_DEVELOPER_SECTIONS = [
+  {
+    id: "functions",
+    href: "/automations/functions",
+    label: "Functions",
+    summary: "Custom functions. Run test + REST stub. Same rows as Settings → Developer Hub.",
+  },
+  {
+    id: "macros",
+    href: "/automations/macros",
+    label: "Macros",
+    summary: "Sibling-bot placeholder. Same stub as Settings → Developer Hub → Macros.",
+  },
+  {
+    id: "webhooks",
+    href: "/automations/webhooks",
+    label: "Webhooks",
+    summary: "Outbound desk events + inbound Signals. Local queue, localhost Send test.",
+  },
+  {
+    id: "api-keys",
+    href: "/automations/api-keys",
+    label: "API Keys",
+    summary: "Org keys for Function REST. Secret shown once. Same table as Settings.",
+  },
+  {
+    id: "connections",
+    href: "/automations/connections",
+    label: "Connections",
+    summary: "Named connectors. Authorize is an OAuth wall. No live Zoho writes.",
+  },
+] as const;
+
 export function isAutomationTrigger(value: string): value is AutomationTrigger {
   return (AUTOMATION_TRIGGERS as readonly string[]).includes(value);
 }
