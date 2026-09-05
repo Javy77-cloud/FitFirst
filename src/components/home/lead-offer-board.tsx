@@ -19,14 +19,16 @@ export function LeadOfferBoard({
   agents,
   isAdmin,
   currentUserId,
+  embedded = false,
 }: {
   offers: HomeLeadOfferView[];
   agents: HomeAgentOption[];
   isAdmin: boolean;
   currentUserId: string | null;
+  embedded?: boolean;
 }) {
   return (
-    <section className="ff-card overflow-hidden">
+    <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"}>
       <div className="border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-navy">
           <Handshake className="size-3.5 text-fit-flag" />

@@ -3,9 +3,9 @@ import { ShieldAlert } from "lucide-react";
 import { RenewalRiskBadge } from "@/components/renewal-risk/risk-card";
 import type { RenewalRiskAccount } from "@/lib/renewal-risk/load";
 
-export function RenewalRiskBoard({ rows }: { rows: RenewalRiskAccount[] }) {
+export function RenewalRiskBoard({ rows, embedded = false }: { rows: RenewalRiskAccount[]; embedded?: boolean }) {
   return (
-    <section className="ff-card overflow-hidden" data-widget="renewal_risk">
+    <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"} data-widget="renewal_risk">
       <div className="border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-navy">
           <ShieldAlert className="size-3.5 text-fit-flag" />

@@ -49,8 +49,8 @@ export function HomeBoard({
 export function HomeLayoutReset() {
   const { reset } = useHomeLayout();
   return (
-    <button type="button" onClick={reset} className="text-xs text-primary hover:underline">
-      Reset layout
+    <button type="button" onClick={reset} className="text-sm text-primary hover:underline">
+      Reset tile layout
     </button>
   );
 }

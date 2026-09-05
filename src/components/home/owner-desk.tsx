@@ -47,6 +47,10 @@ import { Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
 import type { BookScopeOption } from "@/lib/org/book-scope";
 import { BookScopeFilter } from "./book-scope-filter";
+import { HomeBoard, HomeLayoutReset } from "./home-board";
+import { HomeLayoutProvider } from "./use-home-layout";
+import { LAYOUT_TO_PRESET, type HomeWidgetId } from "@/lib/home/layout";
+import type { HomeWidgetId as PresetWidgetId } from "@/lib/home/presets";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -102,10 +106,12 @@ export function OwnerDesk({
     dateStyle: "medium",
     timeZone: "UTC",
   });
-  const show = (id: Parameters<typeof isWidgetVisible>[0]) =>
+  const show = (id: PresetWidgetId) =>
     isWidgetVisible(id, prefs.preset, prefs.hiddenWidgets, { showCompanyWidgets, isAgent, isAdmin });
+  const tile = (id: HomeWidgetId) => show(LAYOUT_TO_PRESET[id]);
 
   return (
+    <HomeLayoutProvider scope={{ role: scope.role, agentUserId: scope.agentUserId }}>
     <div className="space-y-4">
       <section className="ff-card overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-border bg-[color:var(--ff-wash)] px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
@@ -141,451 +147,582 @@ export function OwnerDesk({
             </div>
           </div>
         </div>
-        <div className="px-4 py-3">
+        <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <DashboardToolbar
             preset={prefs.preset}
             hiddenWidgets={prefs.hiddenWidgets}
             bookScope={scope.bookScope}
             canToggleBook={scope.canToggleBook}
           />
+          <HomeLayoutReset />
         </div>
       </section>
 
-      {show("kpis") ? (
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
-          <KpiLink
-            href="/contacts?status=client"
-            icon={Users}
-            label="Active accounts"
-            value={fmt(snapshot.activeAccounts)}
-            hint="Contacts and businesses with active, bound, or pending policies"
-          />
-          <KpiLink
-            href="/policies?status=in_force"
-            icon={CircleDollarSign}
-            label="Premium in-force"
-            value={formatMoney(snapshot.inForcePremium)}
-            hint="Active or Bound only"
-          />
-          <KpiLink
-            href="/policies?status=in_force"
-            icon={Shield}
-            label="Policies"
-            value={fmt(snapshot.inForceCount)}
-            hint={`${formatMoney(snapshot.inForcePremium)} written`}
-          />
-          <KpiLink
-            href="/carriers"
-            icon={Building2}
-            label="Carriers"
-            value={fmt(snapshot.carrierCount)}
-            hint="Distinct on this book"
-          />
-          <KpiLink
-            href="/policies?written=this_month"
-            icon={CircleDollarSign}
-            label="Written this month"
-            value={formatMoney(snapshot.written.thisMonth.premium)}
-            hint={`${fmt(snapshot.written.thisMonth.count)} bound`}
-            extra={
-              <span className={momTone(snapshot.written.thisMonth.premium, snapshot.written.lastMonth.premium)}>
-                {momLabel(snapshot.written.thisMonth.premium, snapshot.written.lastMonth.premium, true)}
-              </span>
-            }
-          />
-          {snapshot.commissions ? (
-            <KpiLink
-              href="/commissions"
-              icon={Briefcase}
-              label="Commission pending"
-              value={formatMoney(snapshot.commissions.pending)}
-              hint={`${formatMoney(snapshot.commissions.paid)} paid`}
-            />
-          ) : (
-            <KpiLink
-              href="/policies?renewal=60"
-              icon={RefreshCcw}
-              label="Renewals · 60 days"
-              value={fmt(snapshot.renewals60.count)}
-              hint={formatMoney(snapshot.renewals60.premium)}
-            />
-          )}
-        </div>
-      ) : null}
-
-      {show("ratios") ? (
-        <div className="grid gap-2 sm:grid-cols-3">
-          <StatCard
-            label="Premium / account"
-            value={formatMoney(snapshot.premiumPerAccount)}
-            hint={`${fmt(snapshot.activeAccounts)} active accounts`}
-          />
-          <StatCard
-            label="Premium / policy"
-            value={formatMoney(snapshot.premiumPerPolicy)}
-            hint={`${fmt(snapshot.inForceCount)} in-force policies`}
-          />
-          <StatCard
-            label="Policies / account"
-            value={snapshot.policiesPerAccount.toFixed(2)}
-            hint="In-force policies ÷ active accounts"
-          />
-        </div>
-      ) : null}
-
-      {show("mom") ? (
-        <div className="grid gap-2 sm:grid-cols-3">
-          <KpiLink
-            href="/policies?written=this_month"
-            icon={CircleDollarSign}
-            label="New business this month"
-            value={formatMoney(snapshot.newBusiness.thisMonth.premium)}
-            hint={`${fmt(snapshot.newBusiness.thisMonth.count)} first-term writings`}
-            extra={
-              <span className={momTone(snapshot.newBusiness.thisMonth.premium, snapshot.newBusiness.lastMonth.premium)}>
-                {momLabel(snapshot.newBusiness.thisMonth.premium, snapshot.newBusiness.lastMonth.premium, true)}
-              </span>
-            }
-          />
-          <KpiLink
-            href="/policies?written=this_month"
-            icon={RefreshCcw}
-            label="Renewals this month"
-            value={formatMoney(snapshot.renewalsWritten.thisMonth.premium)}
-            hint={`${fmt(snapshot.renewalsWritten.thisMonth.count)} renewed writings`}
-            extra={
-              <span
-                className={momTone(
-                  snapshot.renewalsWritten.thisMonth.premium,
-                  snapshot.renewalsWritten.lastMonth.premium,
-                )}
-              >
-                {momLabel(
-                  snapshot.renewalsWritten.thisMonth.premium,
-                  snapshot.renewalsWritten.lastMonth.premium,
-                  true,
-                )}
-              </span>
-            }
-          />
-          <KpiLink
-            href="/policies?status=cancelled"
-            icon={AlertTriangle}
-            label="Cancellations this month"
-            value={fmt(snapshot.cancellations.thisMonth.count)}
-            hint={formatMoney(snapshot.cancellations.thisMonth.premium)}
-            extra={
-              <span
-                className={momTone(
-                  snapshot.cancellations.thisMonth.count,
-                  snapshot.cancellations.lastMonth.count,
-                  true,
-                )}
-              >
-                {momLabel(snapshot.cancellations.thisMonth.count, snapshot.cancellations.lastMonth.count)}
-              </span>
-            }
-          />
-        </div>
-      ) : null}
-
-      {show("strip") ? (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-          <StripLink href="/leads" label="Active leads" value={fmt(snapshot.strip.activeLeads)} />
-          <StripLink href="/deals?stage=open" label="Open deals" value={fmt(snapshot.strip.openDeals)} />
-          <StripLink href="/deals?stage=quote_sent" label="Quote sent" value={fmt(snapshot.pipeline.quoteSent)} />
-          <StripLink href="/work-queue" label="Lapse" value={fmt(snapshot.strip.lapseCount)} />
-          <StripLink href="/work-queue" label="Bound / pending" value={fmt(snapshot.strip.boundPending)} />
-          <StripLink
-            href="/policies?status=cancelled"
-            label="Cancelled / terminated"
-            value={`${fmt(snapshot.strip.cancelledCount)} / ${fmt(snapshot.strip.terminatedCount)}`}
-          />
-        </div>
-      ) : null}
-
-      {isAdmin && show("hit_lost") && hitLost ? <HitLostCards report={hitLost} /> : null}
-
-      {show("company") ? (
-        <section className="ff-card p-4">
-          <h3 className="text-sm font-semibold text-navy">Agency this month</h3>
-          <p className="text-helper text-muted-foreground">
-            Company widget on agent desks when Admin turns it on. Ana&apos;s shop is still not written premium.
-          </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <StatCard
-              label="Agency written"
-              value={formatMoney(agencyHighlight.writtenThisMonth)}
-              hint={`${fmt(agencyHighlight.writtenCount)} policies`}
-            />
-            <StatCard
-              label="Agency in-force"
-              value={formatMoney(agencyHighlight.inForcePremium)}
-              hint={`${fmt(agencyHighlight.inForceCount)} policies`}
-            />
-            <StatCard label="Open pipeline" value={fmt(snapshot.pipeline.openQuotes)} hint="Open shops on this view" />
-          </div>
-        </section>
-      ) : null}
-
-      {show("charts") ? (
-        <div className="grid gap-3 lg:grid-cols-2">
-          <section className="ff-card p-3" aria-label="Policy type">
-            <Header title="Policies by line of business" href="/policies?status=in_force" action="Policies" />
-            <p className="mb-2 mt-1 text-helper text-muted-foreground">
-              In-force premium by policy type. Quotes are not written.
-            </p>
-            <MixDonut
-              slices={lineSettings ? filterLineMix(snapshot.lineMix, lineSettings) : snapshot.lineMix}
-              empty="No in-force policy types yet."
-            />
-          </section>
-          <section className="ff-card p-3">
-            <Header title="Carrier by business share" href="/policies?status=in_force" action="Policies" />
-            <p className="mb-2 mt-1 text-helper text-muted-foreground">
-              Top writing companies on this book. Compact share bars.
-            </p>
-            <MixBars compact slices={snapshot.carrierMix} empty="No in-force carriers yet." />
-          </section>
-        </div>
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {show("leaderboard") ? (
-          <section className="ff-card overflow-hidden">
-            <div className="border-b border-border px-4 py-3">
-              <h3 className="text-sm font-semibold text-navy">Production leaderboard</h3>
-              <p className="text-helper text-muted-foreground">
-                Top 10 this month and last month. Agency ranking is visible so producers can see who is winning.
-              </p>
-            </div>
-            <div className="grid gap-0 sm:grid-cols-2">
-              <LeaderTable title="This month" rows={snapshot.leaderboardThisMonth} />
-              <LeaderTable title="Last month" rows={snapshot.leaderboardLastMonth} />
-            </div>
-          </section>
-        ) : null}
-        {show("contest") ? <ContestBoard contests={contests} isAdmin={isAdmin} /> : null}
-      </div>
-
-      {show("lead_offers") ? (
-        <LeadOfferBoard
-          offers={leadOffers}
-          agents={agents}
-          isAdmin={isAdmin}
-          currentUserId={currentUserId}
-        />
-      ) : null}
-
-      {show("renewal_risk") ? <RenewalRiskBoard rows={renewalRisk} /> : null}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {show("birthdays") ? (
-          <section className="ff-card p-4">
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-navy">
-              <Cake className="size-3.5 text-primary" />
-              Birthdays
-            </h3>
-            <p className="mb-3 text-helper text-muted-foreground">From Contact date of birth. Scoped to this book.</p>
-            <div className="space-y-4">
-              <PeopleList title="Today" rows={snapshot.birthdays.today} empty="No birthdays today." />
-              <PeopleList title="Next week" rows={snapshot.birthdays.nextWeek} empty="Nobody in the next seven days." />
-              <PeopleList title="Next month" rows={snapshot.birthdays.nextMonth} empty="Nobody next month." />
-            </div>
-          </section>
-        ) : null}
-        {show("turning65") ? (
-          <section className="ff-card p-4">
-            <h3 className="text-sm font-semibold text-navy">Turning 65</h3>
-            <p className="mb-3 text-helper text-muted-foreground">
-              Life / Medicare prep. Contacts who turn 65 next month or next year.
-            </p>
-            <div className="space-y-4">
-              <PeopleList
-                title="Next month"
-                rows={snapshot.turning65.nextMonth}
-                empty="Nobody turns 65 next month."
-              />
-              <PeopleList
-                title="Next year"
-                hint="Medicare enrollment window"
-                rows={snapshot.turning65.nextYear}
-                empty="Nobody turns 65 next year."
-              />
-            </div>
-          </section>
-        ) : null}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {show("renewals") ? (
-          <section className="ff-card p-4">
-            <Header title="Renewals" href="/policies?renewal=60" action="Open list" />
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Link href="/policies?renewal=30" className="rounded-md border border-border bg-secondary/70 px-3 py-3 hover:border-primary">
-                <div className="text-caption uppercase tracking-wide text-muted-foreground">In 30 days</div>
-                <div className="text-lg font-semibold text-navy">{fmt(snapshot.renewals30.count)}</div>
-                <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals30.premium)}</div>
-              </Link>
-              <Link href="/policies?renewal=60" className="rounded-md border border-border bg-secondary/70 px-3 py-3 hover:border-primary">
-                <div className="text-caption uppercase tracking-wide text-muted-foreground">In 60 days</div>
-                <div className="text-lg font-semibold text-navy">{fmt(snapshot.renewals60.count)}</div>
-                <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals60.premium)}</div>
-              </Link>
-            </div>
-            <p className="mt-3 text-helper text-muted-foreground">
-              30-day names sit inside the 60-day window. Counts are in-force terms only.
-            </p>
-          </section>
-        ) : null}
-
-        {show("attention") ? (
-          <section className="ff-card overflow-hidden">
-            <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-navy">Needs attention</h3>
-                <p className="text-helper text-muted-foreground">Overdue, this week, this month, next month</p>
-              </div>
-              <Link href="/work-queue" className="text-sm font-medium text-primary hover:underline">
-                Work queue
-              </Link>
-            </div>
-            <div className="border-b border-border px-4 py-2">
-              <AttentionFilters current={attentionWindow} basePath="/" />
-            </div>
-            {(() => {
-              const rows = filterAttentionItems(snapshot.attention, snapshot.asOf, attentionWindow);
-              if (rows.length === 0) {
-                return (
-                  <p className="px-4 py-6 text-sm text-muted-foreground">
-                    {snapshot.attention.length === 0 ? "Nothing flagged on the book." : "Nothing in this window."}
-                  </p>
-                );
+      <HomeBoard
+        widgets={{
+          ...(tile("kpi-accounts")
+            ? {
+                "kpi-accounts": (
+                  <KpiLink
+                    framed={false}
+                    href="/contacts?status=client"
+                    icon={Users}
+                    label="Active accounts"
+                    value={fmt(snapshot.activeAccounts)}
+                    hint="Contacts and businesses with active, bound, or pending policies"
+                  />
+                ),
               }
-              return (
-                <ul className="divide-y divide-border">
-                  {rows.map((item) => (
-                    <li key={item.id}>
-                      <Link href={item.href} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/50">
-                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fit-flag" />
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-navy">{item.title}</div>
-                          <div className="text-helper text-muted-foreground">
-                            {item.detail} · due {item.dueAt.toISOString().slice(0, 10)} · {item.priority} · {item.status}
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              );
-            })()}
-          </section>
-        ) : null}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {show("cross_sell") ? <CrossSellPanel rows={snapshot.holders} /> : null}
-        {show("ana") ? (
-          <section className="ff-card p-4">
-            <h3 className="text-sm font-semibold text-navy">Ana Dib shop</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Still an unbound Palm Bay HO3. Coverage A is $321,000. Eight markets, zero bindable.
-              She is open pipeline — not an in-force policy.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
-                Open the shop
-              </Link>
-              <Link href="/deals?stage=open" className={cn(buttonVariants({ variant: "outline" }))}>
-                Open quotes
-              </Link>
-              <Link href="/deals?stage=quote_sent" className={cn(buttonVariants({ variant: "outline" }))}>
-                Quote sent
-              </Link>
-              <Link href="/deals?stage=won" className={cn(buttonVariants({ variant: "outline" }))}>
-                Closed won
-              </Link>
-            </div>
-          </section>
-        ) : null}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {show("alerts") ? (
-          <section className="ff-card overflow-hidden">
-            <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">In-app alerts</div>
-            {unread.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground">No unread alerts.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {unread.map((alert) => (
-                  <li key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                    <div>
-                      {entityHref(alert.entityType, alert.entityId) ? (
-                        <Link
-                          href={entityHref(alert.entityType, alert.entityId)!}
-                          className="text-sm font-medium text-primary hover:underline"
+            : {}),
+          ...(tile("kpi-inforce")
+            ? {
+                "kpi-inforce": (
+                  <KpiLink
+                    framed={false}
+                    href="/policies?status=in_force"
+                    icon={CircleDollarSign}
+                    label="Premium in-force"
+                    value={formatMoney(snapshot.inForcePremium)}
+                    hint="Active or Bound only"
+                  />
+                ),
+              }
+            : {}),
+          ...(tile("kpi-policies")
+            ? {
+                "kpi-policies": (
+                  <KpiLink
+                    framed={false}
+                    href="/policies?status=in_force"
+                    icon={Shield}
+                    label="Policies"
+                    value={fmt(snapshot.inForceCount)}
+                    hint={`${formatMoney(snapshot.inForcePremium)} written`}
+                  />
+                ),
+              }
+            : {}),
+          ...(tile("kpi-carriers")
+            ? {
+                "kpi-carriers": (
+                  <KpiLink
+                    framed={false}
+                    href="/carriers"
+                    icon={Building2}
+                    label="Carriers"
+                    value={fmt(snapshot.carrierCount)}
+                    hint="Distinct on this book"
+                  />
+                ),
+              }
+            : {}),
+          ...(tile("kpi-written")
+            ? {
+                "kpi-written": (
+                  <KpiLink
+                    framed={false}
+                    href="/policies?written=this_month"
+                    icon={CircleDollarSign}
+                    label="Written this month"
+                    value={formatMoney(snapshot.written.thisMonth.premium)}
+                    hint={`${fmt(snapshot.written.thisMonth.count)} bound`}
+                    extra={
+                      <span className={momTone(snapshot.written.thisMonth.premium, snapshot.written.lastMonth.premium)}>
+                        {momLabel(snapshot.written.thisMonth.premium, snapshot.written.lastMonth.premium, true)}
+                      </span>
+                    }
+                  />
+                ),
+              }
+            : {}),
+          ...(tile("kpi-fourth")
+            ? {
+                "kpi-fourth": snapshot.commissions ? (
+                  <KpiLink
+                    framed={false}
+                    href="/commissions"
+                    icon={Briefcase}
+                    label="Commission pending"
+                    value={formatMoney(snapshot.commissions.pending)}
+                    hint={`${formatMoney(snapshot.commissions.paid)} paid`}
+                  />
+                ) : (
+                  <KpiLink
+                    framed={false}
+                    href="/policies?renewal=60"
+                    icon={RefreshCcw}
+                    label="Renewals · 60 days"
+                    value={fmt(snapshot.renewals60.count)}
+                    hint={formatMoney(snapshot.renewals60.premium)}
+                  />
+                ),
+              }
+            : {}),
+          ...(tile("ratios")
+            ? {
+                ratios: (
+                  <div className="grid h-full gap-2 p-3 sm:grid-cols-3">
+                    <StatCard
+                      framed={false}
+                      label="Premium / account"
+                      value={formatMoney(snapshot.premiumPerAccount)}
+                      hint={`${fmt(snapshot.activeAccounts)} active accounts`}
+                    />
+                    <StatCard
+                      framed={false}
+                      label="Premium / policy"
+                      value={formatMoney(snapshot.premiumPerPolicy)}
+                      hint={`${fmt(snapshot.inForceCount)} in-force policies`}
+                    />
+                    <StatCard
+                      framed={false}
+                      label="Policies / account"
+                      value={snapshot.policiesPerAccount.toFixed(2)}
+                      hint="In-force policies ÷ active accounts"
+                    />
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("mom")
+            ? {
+                mom: (
+                  <div className="grid h-full gap-2 p-3 sm:grid-cols-3">
+                    <KpiLink
+                      framed={false}
+                      href="/policies?written=this_month"
+                      icon={CircleDollarSign}
+                      label="New business this month"
+                      value={formatMoney(snapshot.newBusiness.thisMonth.premium)}
+                      hint={`${fmt(snapshot.newBusiness.thisMonth.count)} first-term writings`}
+                      extra={
+                        <span
+                          className={momTone(
+                            snapshot.newBusiness.thisMonth.premium,
+                            snapshot.newBusiness.lastMonth.premium,
+                          )}
                         >
-                          {alert.title}
-                        </Link>
-                      ) : (
-                        <div className="text-sm font-medium">{alert.title}</div>
-                      )}
-                      <p className="text-helper text-muted-foreground">{alert.body}</p>
+                          {momLabel(
+                            snapshot.newBusiness.thisMonth.premium,
+                            snapshot.newBusiness.lastMonth.premium,
+                            true,
+                          )}
+                        </span>
+                      }
+                    />
+                    <KpiLink
+                      framed={false}
+                      href="/policies?written=this_month"
+                      icon={RefreshCcw}
+                      label="Renewals this month"
+                      value={formatMoney(snapshot.renewalsWritten.thisMonth.premium)}
+                      hint={`${fmt(snapshot.renewalsWritten.thisMonth.count)} renewed writings`}
+                      extra={
+                        <span
+                          className={momTone(
+                            snapshot.renewalsWritten.thisMonth.premium,
+                            snapshot.renewalsWritten.lastMonth.premium,
+                          )}
+                        >
+                          {momLabel(
+                            snapshot.renewalsWritten.thisMonth.premium,
+                            snapshot.renewalsWritten.lastMonth.premium,
+                            true,
+                          )}
+                        </span>
+                      }
+                    />
+                    <KpiLink
+                      framed={false}
+                      href="/policies?status=cancelled"
+                      icon={AlertTriangle}
+                      label="Cancellations this month"
+                      value={fmt(snapshot.cancellations.thisMonth.count)}
+                      hint={formatMoney(snapshot.cancellations.thisMonth.premium)}
+                      extra={
+                        <span
+                          className={momTone(
+                            snapshot.cancellations.thisMonth.count,
+                            snapshot.cancellations.lastMonth.count,
+                            true,
+                          )}
+                        >
+                          {momLabel(snapshot.cancellations.thisMonth.count, snapshot.cancellations.lastMonth.count)}
+                        </span>
+                      }
+                    />
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("strip")
+            ? {
+                strip: (
+                  <div className="grid h-full grid-cols-2 gap-2 p-3 sm:grid-cols-3">
+                    <StripLink href="/leads" label="Active leads" value={fmt(snapshot.strip.activeLeads)} />
+                    <StripLink href="/deals?stage=open" label="Open deals" value={fmt(snapshot.strip.openDeals)} />
+                    <StripLink href="/deals?stage=quote_sent" label="Quote sent" value={fmt(snapshot.pipeline.quoteSent)} />
+                    <StripLink href="/work-queue" label="Lapse" value={fmt(snapshot.strip.lapseCount)} />
+                    <StripLink href="/work-queue" label="Bound / pending" value={fmt(snapshot.strip.boundPending)} />
+                    <StripLink
+                      href="/policies?status=cancelled"
+                      label="Cancelled / terminated"
+                      value={`${fmt(snapshot.strip.cancelledCount)} / ${fmt(snapshot.strip.terminatedCount)}`}
+                    />
+                  </div>
+                ),
+              }
+            : {}),
+          ...(isAdmin && tile("hit-lost") && hitLost ? { "hit-lost": <HitLostCards report={hitLost} embedded /> } : {}),
+          ...(tile("company")
+            ? {
+                company: (
+                  <div className="p-4">
+                    <h3 className="text-sm font-semibold text-navy">Agency this month</h3>
+                    <p className="text-helper text-muted-foreground">
+                      Company widget on agent desks when Admin turns it on. Ana&apos;s shop is still not written
+                      premium.
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <StatCard
+                        framed={false}
+                        label="Agency written"
+                        value={formatMoney(agencyHighlight.writtenThisMonth)}
+                        hint={`${fmt(agencyHighlight.writtenCount)} policies`}
+                      />
+                      <StatCard
+                        framed={false}
+                        label="Agency in-force"
+                        value={formatMoney(agencyHighlight.inForcePremium)}
+                        hint={`${fmt(agencyHighlight.inForceCount)} policies`}
+                      />
+                      <StatCard
+                        framed={false}
+                        label="Open pipeline"
+                        value={fmt(snapshot.pipeline.openQuotes)}
+                        hint="Open shops on this view"
+                      />
                     </div>
-                    <form action={markAlertRead}>
-                      <input type="hidden" name="alertId" value={alert.id} />
-                      <Button type="submit" variant="ghost" size="xs">
-                        Dismiss
-                      </Button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ) : null}
-
-        {show("recent_deals") ? (
-          <section className="ff-card overflow-hidden">
-            <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">Recent deals</div>
-            <table className="ff-table">
-              <thead>
-                <tr>
-                  <Col table="home-deals" col="title" as="th">
-                    Deal
-                  </Col>
-                  <Col table="home-deals" col="stage" as="th">
-                    Stage
-                  </Col>
-                  <Col table="home-deals" col="line" as="th">
-                    Line
-                  </Col>
-                </tr>
-              </thead>
-              <SheetTbody>
-                {recentDeals.map((deal) => (
-                  <tr key={deal.id}>
-                    <Col table="home-deals" col="title">
-                      <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                        {deal.title}
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("line-mix")
+            ? {
+                "line-mix": (
+                  <div className="p-3" aria-label="Policy type">
+                    <Header title="Policies by line of business" href="/policies?status=in_force" action="Policies" />
+                    <p className="mb-2 mt-1 text-helper text-muted-foreground">
+                      In-force premium by policy type. Quotes are not written.
+                    </p>
+                    <MixDonut
+                      slices={lineSettings ? filterLineMix(snapshot.lineMix, lineSettings) : snapshot.lineMix}
+                      empty="No in-force policy types yet."
+                    />
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("carrier-mix")
+            ? {
+                "carrier-mix": (
+                  <div className="p-3">
+                    <Header title="Carrier by business share" href="/policies?status=in_force" action="Policies" />
+                    <p className="mb-2 mt-1 text-helper text-muted-foreground">
+                      Top writing companies on this book. Compact share bars.
+                    </p>
+                    <MixBars compact slices={snapshot.carrierMix} empty="No in-force carriers yet." />
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("leaderboard")
+            ? {
+                leaderboard: (
+                  <div className="overflow-hidden">
+                    <div className="border-b border-border px-4 py-3">
+                      <h3 className="text-sm font-semibold text-navy">Production leaderboard</h3>
+                      <p className="text-helper text-muted-foreground">
+                        Top 10 this month and last month. Agency ranking is visible so producers can see who is
+                        winning.
+                      </p>
+                    </div>
+                    <div className="grid gap-0 sm:grid-cols-2">
+                      <LeaderTable title="This month" rows={snapshot.leaderboardThisMonth} />
+                      <LeaderTable title="Last month" rows={snapshot.leaderboardLastMonth} />
+                    </div>
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("contest") ? { contest: <ContestBoard contests={contests} isAdmin={isAdmin} embedded /> } : {}),
+          ...(tile("lead-offers")
+            ? {
+                "lead-offers": (
+                  <LeadOfferBoard
+                    offers={leadOffers}
+                    agents={agents}
+                    isAdmin={isAdmin}
+                    currentUserId={currentUserId}
+                    embedded
+                  />
+                ),
+              }
+            : {}),
+          ...(tile("renewal-risk") ? { "renewal-risk": <RenewalRiskBoard rows={renewalRisk} embedded /> } : {}),
+          ...(tile("birthdays")
+            ? {
+                birthdays: (
+                  <div className="p-4">
+                    <h3 className="flex items-center gap-1.5 text-sm font-semibold text-navy">
+                      <Cake className="size-3.5 text-primary" />
+                      Birthdays
+                    </h3>
+                    <p className="mb-3 text-helper text-muted-foreground">
+                      From Contact date of birth. Scoped to this book.
+                    </p>
+                    <div className="space-y-4">
+                      <PeopleList title="Today" rows={snapshot.birthdays.today} empty="No birthdays today." />
+                      <PeopleList
+                        title="Next week"
+                        rows={snapshot.birthdays.nextWeek}
+                        empty="Nobody in the next seven days."
+                      />
+                      <PeopleList
+                        title="Next month"
+                        rows={snapshot.birthdays.nextMonth}
+                        empty="Nobody next month."
+                      />
+                    </div>
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("turning65")
+            ? {
+                turning65: (
+                  <div className="p-4">
+                    <h3 className="text-sm font-semibold text-navy">Turning 65</h3>
+                    <p className="mb-3 text-helper text-muted-foreground">
+                      Life / Medicare prep. Contacts who turn 65 next month or next year.
+                    </p>
+                    <div className="space-y-4">
+                      <PeopleList
+                        title="Next month"
+                        rows={snapshot.turning65.nextMonth}
+                        empty="Nobody turns 65 next month."
+                      />
+                      <PeopleList
+                        title="Next year"
+                        hint="Medicare enrollment window"
+                        rows={snapshot.turning65.nextYear}
+                        empty="Nobody turns 65 next year."
+                      />
+                    </div>
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("renewals")
+            ? {
+                renewals: (
+                  <div className="p-4">
+                    <Header title="Renewals" href="/policies?renewal=60" action="Open list" />
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <Link
+                        href="/policies?renewal=30"
+                        className="rounded-md border border-border bg-secondary/70 px-3 py-3 hover:border-primary"
+                      >
+                        <div className="text-caption uppercase tracking-wide text-muted-foreground">In 30 days</div>
+                        <div className="text-lg font-semibold text-navy">{fmt(snapshot.renewals30.count)}</div>
+                        <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals30.premium)}</div>
                       </Link>
-                    </Col>
-                    <Col table="home-deals" col="stage" className="uppercase">
-                      {deal.pipelineStage.replaceAll("_", " ")}
-                    </Col>
-                    <Col table="home-deals" col="line">
-                      {deal.lineOfBusiness}
-                    </Col>
-                  </tr>
-                ))}
-              </SheetTbody>
-            </table>
-          </section>
-        ) : null}
-      </div>
+                      <Link
+                        href="/policies?renewal=60"
+                        className="rounded-md border border-border bg-secondary/70 px-3 py-3 hover:border-primary"
+                      >
+                        <div className="text-caption uppercase tracking-wide text-muted-foreground">In 60 days</div>
+                        <div className="text-lg font-semibold text-navy">{fmt(snapshot.renewals60.count)}</div>
+                        <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals60.premium)}</div>
+                      </Link>
+                    </div>
+                    <p className="mt-3 text-helper text-muted-foreground">
+                      30-day names sit inside the 60-day window. Counts are in-force terms only.
+                    </p>
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("attention")
+            ? {
+                attention: (
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-navy">Needs attention</h3>
+                        <p className="text-helper text-muted-foreground">
+                          Overdue, this week, this month, next month
+                        </p>
+                      </div>
+                      <Link href="/work-queue" className="text-sm font-medium text-primary hover:underline">
+                        Work queue
+                      </Link>
+                    </div>
+                    <div className="border-b border-border px-4 py-2">
+                      <AttentionFilters current={attentionWindow} basePath="/" />
+                    </div>
+                    {(() => {
+                      const rows = filterAttentionItems(snapshot.attention, snapshot.asOf, attentionWindow);
+                      if (rows.length === 0) {
+                        return (
+                          <p className="px-4 py-6 text-sm text-muted-foreground">
+                            {snapshot.attention.length === 0
+                              ? "Nothing flagged on the book."
+                              : "Nothing in this window."}
+                          </p>
+                        );
+                      }
+                      return (
+                        <ul className="divide-y divide-border">
+                          {rows.map((item) => (
+                            <li key={item.id}>
+                              <Link
+                                href={item.href}
+                                className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/50"
+                              >
+                                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fit-flag" />
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium text-navy">{item.title}</div>
+                                  <div className="text-helper text-muted-foreground">
+                                    {item.detail} · due {item.dueAt.toISOString().slice(0, 10)} · {item.priority} ·{" "}
+                                    {item.status}
+                                  </div>
+                                </div>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("cross-sell") ? { "cross-sell": <CrossSellPanel rows={snapshot.holders} embedded /> } : {}),
+          ...(tile("ana")
+            ? {
+                ana: (
+                  <div className="p-4">
+                    <h3 className="text-sm font-semibold text-navy">Ana Dib shop</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Still an unbound Palm Bay HO3. Coverage A is $321,000. Eight markets, zero bindable. She is
+                      open pipeline — not an in-force policy.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
+                        Open the shop
+                      </Link>
+                      <Link href="/deals?stage=open" className={cn(buttonVariants({ variant: "outline" }))}>
+                        Open quotes
+                      </Link>
+                      <Link href="/deals?stage=quote_sent" className={cn(buttonVariants({ variant: "outline" }))}>
+                        Quote sent
+                      </Link>
+                      <Link href="/deals?stage=won" className={cn(buttonVariants({ variant: "outline" }))}>
+                        Closed won
+                      </Link>
+                    </div>
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("alerts")
+            ? {
+                alerts: (
+                  <div className="overflow-hidden">
+                    <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+                      In-app alerts
+                    </div>
+                    {unread.length === 0 ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">No unread alerts.</p>
+                    ) : (
+                      <ul className="divide-y divide-border">
+                        {unread.map((alert) => (
+                          <li key={alert.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                            <div>
+                              {entityHref(alert.entityType, alert.entityId) ? (
+                                <Link
+                                  href={entityHref(alert.entityType, alert.entityId)!}
+                                  className="text-sm font-medium text-primary hover:underline"
+                                >
+                                  {alert.title}
+                                </Link>
+                              ) : (
+                                <div className="text-sm font-medium">{alert.title}</div>
+                              )}
+                              <p className="text-helper text-muted-foreground">{alert.body}</p>
+                            </div>
+                            <form action={markAlertRead}>
+                              <input type="hidden" name="alertId" value={alert.id} />
+                              <Button type="submit" variant="ghost" size="xs">
+                                Dismiss
+                              </Button>
+                            </form>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ),
+              }
+            : {}),
+          ...(tile("recent-deals")
+            ? {
+                "recent-deals": (
+                  <div className="overflow-hidden">
+                    <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+                      Recent deals
+                    </div>
+                    <table className="ff-table">
+                      <thead>
+                        <tr>
+                          <Col table="home-deals" col="title" as="th">
+                            Deal
+                          </Col>
+                          <Col table="home-deals" col="stage" as="th">
+                            Stage
+                          </Col>
+                          <Col table="home-deals" col="line" as="th">
+                            Line
+                          </Col>
+                        </tr>
+                      </thead>
+                      <SheetTbody>
+                        {recentDeals.map((deal) => (
+                          <tr key={deal.id}>
+                            <Col table="home-deals" col="title">
+                              <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
+                                {deal.title}
+                              </Link>
+                            </Col>
+                            <Col table="home-deals" col="stage" className="uppercase">
+                              {deal.pipelineStage.replaceAll("_", " ")}
+                            </Col>
+                            <Col table="home-deals" col="line">
+                              {deal.lineOfBusiness}
+                            </Col>
+                          </tr>
+                        ))}
+                      </SheetTbody>
+                    </table>
+                  </div>
+                ),
+              }
+            : {}),
+        }}
+      />
     </div>
+    </HomeLayoutProvider>
   );
 }
 
@@ -608,6 +745,7 @@ function KpiLink({
   value,
   hint,
   extra,
+  framed = true,
 }: {
   href: string;
   icon: typeof Shield;
@@ -615,9 +753,17 @@ function KpiLink({
   value: string;
   hint: string;
   extra?: ReactNode;
+  framed?: boolean;
 }) {
   return (
-    <Link href={href} className="ff-card group p-3 hover:border-primary">
+    <Link
+      href={href}
+      className={
+        framed
+          ? "ff-card group p-3 hover:border-primary"
+          : "group flex h-full flex-col p-3 hover:bg-secondary/40"
+      }
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="rounded-md bg-secondary p-1.5 text-primary">
           <Icon className="size-3.5" />
@@ -632,9 +778,23 @@ function KpiLink({
   );
 }
 
-function StatCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+function StatCard({
+  label,
+  value,
+  hint,
+  framed = true,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  framed?: boolean;
+}) {
   return (
-    <div className="ff-card p-3">
+    <div
+      className={
+        framed ? "ff-card p-3" : "rounded-md border border-border bg-secondary/50 p-3"
+      }
+    >
       <div className="text-caption uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="truncate text-xl font-semibold tabular-nums text-navy">{value}</div>
       <div className="text-helper text-muted-foreground">{hint}</div>
