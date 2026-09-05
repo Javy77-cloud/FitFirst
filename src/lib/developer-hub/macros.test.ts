@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { COV_A_EMPTY_SCRIPT, parseClientScript, runClientScript } from "./client-scripts";
-import { clampMacroActions, macroIsManualOnly, parseMacroActions, validateMacroActions } from "./macros";
+import {
+  clampMacroActions,
+  macroIsManualOnly,
+  macroTargetsModule,
+  normalizeMacroModules,
+  parseMacroActions,
+  parseMacroKind,
+  validateMacroActions,
+} from "./macros";
 import { mergeTokens } from "./merge";
 import { isProtectedAnaRecord } from "./protected";
 import { DEAL_ID, LEAD_ID } from "@/lib/fixtures/ids";
@@ -43,6 +51,27 @@ describe("developer hub macros", () => {
       createTasks: [{ title: "Follow up" }],
     });
     expect(good.ok).toBe(true);
+  });
+
+  it("targets multiple modules and only allows stage move on deals or quotes", () => {
+    expect(normalizeMacroModules("leads", ["leads", "tasks"])).toEqual(["leads", "tasks"]);
+    expect(macroTargetsModule("leads", ["leads", "tasks"], "tasks")).toBe(true);
+    expect(macroTargetsModule("leads", [], "contacts")).toBe(false);
+    expect(parseMacroKind("follow_up")).toBe("follow_up");
+    expect(parseMacroKind("nope")).toBe("standard");
+    const parsed = parseMacroActions({
+      email: null,
+      fieldUpdates: [],
+      createTasks: [],
+      stageMove: { stage: "quoting" },
+    });
+    expect(parsed.stageMove).toEqual({ stage: "quoting" });
+    expect(
+      validateMacroActions(["leads"], { email: null, fieldUpdates: [], createTasks: [], stageMove: { stage: "quoting" } }).ok,
+    ).toBe(false);
+    expect(
+      validateMacroActions(["deals", "quotes"], { email: null, fieldUpdates: [], createTasks: [], stageMove: { stage: "quoting" } }).ok,
+    ).toBe(true);
   });
 
   it("merges record tokens for URL and email stubs", () => {

@@ -2,11 +2,13 @@ import { and, desc, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
+import { macroTargetsModule, parseMacroKind } from "@/lib/developer-hub/macros";
 import {
   isButtonPlacement,
   isDevHubModule,
   type ButtonPlacement,
   type DevHubModule,
+  type MacroKind,
   type VisibilityProfile,
 } from "@/lib/developer-hub/types";
 import { db } from "./index";
@@ -23,13 +25,15 @@ function tenant() {
 }
 
 export async function listDeskMacros(module?: string) {
-  const filters = [eq(deskMacros.tenantId, tenant())];
-  if (module && isDevHubModule(module)) filters.push(eq(deskMacros.module, module));
-  return db
+  const rows = await db
     .select()
     .from(deskMacros)
-    .where(and(...filters))
+    .where(eq(deskMacros.tenantId, tenant()))
     .orderBy(deskMacros.module, deskMacros.name);
+  if (module && isDevHubModule(module)) {
+    return rows.filter((row) => macroTargetsModule(row.module, row.modules, module));
+  }
+  return rows;
 }
 
 export async function getDeskMacro(id: string) {
@@ -41,12 +45,17 @@ export async function getDeskMacro(id: string) {
   return row ?? null;
 }
 
-export async function listEnabledMacrosFor(module: DevHubModule) {
-  return db
+export async function listEnabledMacrosFor(module: DevHubModule, kind?: MacroKind) {
+  const rows = await db
     .select()
     .from(deskMacros)
-    .where(and(eq(deskMacros.tenantId, tenant()), eq(deskMacros.module, module), eq(deskMacros.enabled, true)))
+    .where(and(eq(deskMacros.tenantId, tenant()), eq(deskMacros.enabled, true)))
     .orderBy(deskMacros.name);
+  return rows.filter((row) => {
+    if (!macroTargetsModule(row.module, row.modules, module)) return false;
+    if (kind && parseMacroKind(row.kind) !== kind) return false;
+    return true;
+  });
 }
 
 export async function listDeskMacroRuns(macroId?: string) {

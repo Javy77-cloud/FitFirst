@@ -129,7 +129,7 @@ export default async function DealPage({
       <RecordDeveloperActions
         module="deals"
         recordId={deal.id}
-        macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
+        macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
         buttons={buttons.map((button) => ({
           id: button.id,
           label: button.label,

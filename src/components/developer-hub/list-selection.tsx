@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
 import type { DevHubModule } from "@/lib/developer-hub/types";
 
-type MacroOption = { id: string; name: string };
+type MacroOption = { id: string; name: string; kind?: string };
 type ButtonOption = {
   id: string;
   label: string;
@@ -72,32 +72,45 @@ export function ListMassBar({
   macros,
   buttons = [],
   recordIds = [],
+  showFollowUp = false,
 }: {
   module: DevHubModule;
   macros: MacroOption[];
   buttons?: ButtonOption[];
   recordIds?: string[];
+  showFollowUp?: boolean;
 }) {
   const { selected, clear } = useSelection();
-  const [macroId, setMacroId] = useState(macros[0]?.id ?? "");
+  const standardMacros = showFollowUp ? macros.filter((macro) => macro.kind !== "follow_up") : macros;
+  const followUpMacros = macros.filter((macro) => macro.kind === "follow_up");
+  const [macroId, setMacroId] = useState(standardMacros[0]?.id ?? "");
+  const [followUpId, setFollowUpId] = useState(followUpMacros[0]?.id ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [widget, setWidget] = useState<{ name: string; url: string | null } | null>(null);
 
-  async function runMacro() {
-    if (!macroId || selected.length === 0) {
-      setMessage("Select one or more rows, then run a macro.");
+  async function runSelected(id: string, emptyMessage: string) {
+    if (!id || selected.length === 0) {
+      setMessage(emptyMessage);
       return;
     }
     setBusy(true);
     const form = new FormData();
-    form.set("macroId", macroId);
+    form.set("macroId", id);
     form.set("module", module);
-    for (const id of selected) form.append("recordId", id);
+    for (const recordId of selected) form.append("recordId", recordId);
     const result = await runDeskMacro(form);
     setMessage(result.summary);
     setBusy(false);
     if (result.ok) clear();
+  }
+
+  async function runMacro() {
+    await runSelected(macroId, "Select one or more rows, then run a macro.");
+  }
+
+  async function runFollowUp() {
+    await runSelected(followUpId, "Select one or more rows, then run a follow-up macro.");
   }
 
   async function runButton(buttonId: string) {
@@ -127,14 +140,14 @@ export function ListMassBar({
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
         {recordIds.length ? <SelectAllCheckbox ids={recordIds} /> : null}
         <span className="text-xs text-muted-foreground">{selected.length} selected</span>
-        {macros.length ? (
+        {standardMacros.length ? (
           <>
             <select
               value={macroId}
               onChange={(event) => setMacroId(event.target.value)}
               className="h-8 rounded-md border border-input bg-card px-2 text-xs"
             >
-              {macros.map((macro) => (
+              {standardMacros.map((macro) => (
                 <option key={macro.id} value={macro.id}>
                   {macro.name}
                 </option>
@@ -145,10 +158,34 @@ export function ListMassBar({
             </Button>
           </>
         ) : (
-          <a href="/automations/macros" className="text-xs text-primary hover:underline">
-            No macros for this list — open Automations → Macros
+          <a href="/settings/developer-hub/macros" className="text-xs text-primary hover:underline">
+            No macros for this list — open Settings → Macros
           </a>
         )}
+        {showFollowUp ? (
+          followUpMacros.length ? (
+            <>
+              <select
+                value={followUpId}
+                onChange={(event) => setFollowUpId(event.target.value)}
+                className="h-8 rounded-md border border-input bg-card px-2 text-xs"
+              >
+                {followUpMacros.map((macro) => (
+                  <option key={macro.id} value={macro.id}>
+                    {macro.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="button" size="sm" variant="outline" onClick={() => void runFollowUp()} disabled={busy}>
+                Run Follow-up Macro
+              </Button>
+            </>
+          ) : (
+            <a href="/settings/developer-hub/macros" className="text-xs text-primary hover:underline">
+              No follow-up macros — define one in Settings
+            </a>
+          )
+        ) : null}
         {buttons.map((button) => (
           <Button
             key={button.id}
@@ -161,8 +198,8 @@ export function ListMassBar({
             {button.label}
           </Button>
         ))}
-        <a href="/automations/macros" className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline">
-          Automations · Macros
+        <a href="/settings/developer-hub/macros" className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline">
+          Settings · Macros
         </a>
       </div>
       {message ? <p className="text-sm text-navy">{message}</p> : null}

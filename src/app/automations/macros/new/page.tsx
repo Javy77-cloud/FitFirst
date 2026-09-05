@@ -13,8 +13,9 @@ export default async function NewMacroPage() {
     <AppShell title="New macro">
       <AutomationsModuleNav />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Caps stay at one email stub, three field updates, and three tasks. The macro never
-        schedules itself.
+        Caps stay at one email stub, three field updates, and three tasks, plus an optional
+        pipeline stage move. Pick every module this should run on. The macro never schedules
+        itself.
       </p>
       <MacroForm templates={templates.map((row) => ({ id: row.id, name: row.name }))} />
     </AppShell>

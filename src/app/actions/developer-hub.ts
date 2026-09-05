@@ -7,7 +7,12 @@ import { requireAdminAction, requireSignedInAction } from "@/lib/auth/guards";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { executeFunctionByApiName } from "@/lib/developer-hub/function-execute";
-import { parseMacroActions, validateMacroActions } from "@/lib/developer-hub/macros";
+import {
+  macroTargetsModule,
+  parseMacroActions,
+  parseMacroKind,
+  validateMacroActions,
+} from "@/lib/developer-hub/macros";
 import { mergeTokens, type MergeRecord } from "@/lib/developer-hub/merge";
 import { parseJsonInput } from "@/lib/developer-hub/runner";
 import { applyMacroToRecords } from "@/lib/developer-hub/run-macro";
@@ -35,6 +40,7 @@ import {
   isButtonActionKind,
   isButtonPlacement,
   isDevHubModule,
+  isMacroStage,
   isScriptEvent,
   isScriptPage,
   isWidgetHosting,
@@ -136,11 +142,23 @@ function parseActionsFromForm(form: FormData): MacroActions {
   const templateId = str(form, "emailTemplateId") || null;
   const subject = str(form, "emailSubject");
   const body = str(form, "emailBody");
+  const stage = str(form, "stageMove");
   return parseMacroActions({
     email: templateId || subject || body ? { templateId, subject, body } : null,
     fieldUpdates: parseFieldUpdates(form),
     createTasks: parseCreateTasks(form),
+    stageMove: stage && isMacroStage(stage) ? { stage } : null,
   });
+}
+
+function parseModulesFromForm(form: FormData): DevHubModule[] {
+  const selected = form
+    .getAll("modules")
+    .map((value) => String(value))
+    .filter(isDevHubModule);
+  const legacy = str(form, "module");
+  if (selected.length) return [...new Set(selected)];
+  return isDevHubModule(legacy) ? [legacy] : [];
 }
 
 export async function saveDeveloperFunction(formData: FormData) {
@@ -324,13 +342,16 @@ export async function removeDeveloperConnection(formData: FormData) {
 export async function saveDeskMacro(formData: FormData) {
   await requireAdminAction();
   const id = str(formData, "id");
-  const module = str(formData, "module");
-  if (!isDevHubModule(module)) throw new Error("Unknown module.");
+  const modules = parseModulesFromForm(formData);
+  const module = modules[0];
+  if (!module) throw new Error("Pick at least one target module.");
   const actions = parseActionsFromForm(formData);
-  const checked = validateMacroActions(module, actions);
+  const checked = validateMacroActions(modules, actions);
   if (!checked.ok) throw new Error(checked.error);
   const values = {
     module,
+    modules,
+    kind: parseMacroKind(str(formData, "kind")),
     name: str(formData, "name") || "Untitled macro",
     description: str(formData, "description") || null,
     enabled: bool(formData, "enabled"),
@@ -376,7 +397,9 @@ export async function runDeskMacro(formData: FormData): Promise<{ ok: boolean; s
   }
   const macro = await getDeskMacro(macroId);
   if (!macro || !macro.enabled) return { ok: false, summary: "That macro is off or missing." };
-  if (macro.module !== moduleRaw) return { ok: false, summary: "Macro module does not match the list." };
+  if (!macroTargetsModule(macro.module, macro.modules, moduleRaw)) {
+    return { ok: false, summary: "Macro module does not match the list." };
+  }
   const result = await applyMacroToRecords({
     module: moduleRaw,
     actions: parseMacroActions(macro.actions),
@@ -594,11 +617,14 @@ export async function deleteDeskWidget(formData: FormData) {
 }
 
 function modulePaths(module: DevHubModule, id: string): string[] {
-  if (module === "leads") return [`/leads/${id}`];
-  if (module === "contacts") return [`/contacts/${id}`];
-  if (module === "deals") return [`/deals/${id}`];
-  if (module === "policies") return [`/policies/${id}`];
-  return [`/tasks/${id}`];
+  if (module === "leads") return [`/leads/${id}`, "/leads"];
+  if (module === "contacts") return [`/contacts/${id}`, "/contacts"];
+  if (module === "deals") return [`/deals/${id}`, "/deals", "/pipeline"];
+  if (module === "policies") return [`/policies/${id}`, "/policies"];
+  if (module === "businesses") return [`/accounts/${id}`, "/accounts"];
+  if (module === "campaigns") return [`/campaigns/${id}`, "/campaigns"];
+  if (module === "quotes") return ["/quotes", `/deals/${id}`];
+  return [`/tasks/${id}`, "/tasks"];
 }
 
 async function loadMergeRecord(module: DevHubModule, id: string): Promise<MergeRecord | null> {

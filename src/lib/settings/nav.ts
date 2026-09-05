@@ -149,7 +149,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     href: "/automations",
     label: "Automations & Developer",
     hint: "Playbooks, macros, developer tools",
-    blurb: "One Setup card for the Automations hub and Developer Hub. Macros live once at /automations/macros — same desk_macros rows as the Developer Hub alias pages.",
+    blurb: "One Setup card for the Automations hub and Developer Hub. Platform macros live once at /automations/macros (Settings editor at /settings/developer-hub/macros) — same desk_macros rows. No second Macros card.",
     icon: "automations",
     children: [
       { id: "automations", href: "/automations", label: "Automations hub", hint: "Playbooks · sequences · tools" },

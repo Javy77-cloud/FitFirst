@@ -1093,3 +1093,23 @@ Javy ask: top-right Home / shell bell.
 4. Back to Home, open the bell again. Click a recent row (policy / claim / playbook) — lands on that record.
 5. **Mark as read** on one row; **Mark all as read** clears the badge.
 6. Do not bind Ana.
+
+## Platform macros (`cursor/macros-platform-settings-1dae`)
+
+Owner: feel-pass fix. Additive on `cursor/feel-pass-consolidate-sep5b-6195`. Reuses `desk_macros` / `desk_macro_runs`. Did **not** add a second Settings Macros card. Did not edit Ana fixture. Ana stays shopping / unbound / Cov A **$321,000**.
+
+`0064_platform_macros` adds `desk_macros.modules` (jsonb) and `desk_macros.kind` (`standard` | `follow_up`). One Settings editor at `/settings/developer-hub/macros` (alias list `/automations/macros`).
+
+- Target modules: Leads, Deals / Pipeline, Contacts, Businesses, Policies, Campaigns, Tasks, Quotes.
+- Actions: field update (≤3), create task (≤3), email stub (≤1), stage move (Deals / Quotes only). Name + enable/disable.
+- Leads list + record: **Run Macro** (standard) and **Run Follow-up Macro** (kind `follow_up`) pull from those rows.
+- Tasks list already had Run Macro; task records (review + activity) now run the same task-scoped macros. Runner loads `review_tasks` then `activities`.
+- Businesses, Campaigns, Quotes lists also Run Macro from the same table. Quote bulk bar uses `quoteId` or the shop `dealId`. Stage move never binds and skips Ana’s shop.
+
+### Click path
+
+1. Sign in **javy@fitfirst.local** / **javy**. Settings → Automations & Developer → **Macros** (`/automations/macros`). Open **Mark contacted + follow-up** — editor is `/settings/developer-hub/macros/<id>`. Confirm modules, kind follow-up, enable.
+2. **New macro** — check target modules, pick field update / task / email stub / stage move, save. Still one Macros row on the Setup card.
+3. **Leads** — tick a non-Ana row (Elena is fine). **Run Macro** uses *Stamp lead notes*. **Run Follow-up Macro** uses *Mark contacted + follow-up*. Open that lead: both buttons on the record.
+4. **Tasks** — tick a row or open a task record. **Run Macro** (*Keep task open + confirm*). Works on review tasks and activity tasks.
+5. Optional: Businesses / Campaigns / Quotes bulk **Run Macro**. Deals **Move shop to quoting** skips Ana. Do not bind Ana.

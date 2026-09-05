@@ -3086,6 +3086,11 @@ export const deskMacros = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     module: text("module").notNull(),
+    modules: jsonb("modules")
+      .$type<import("@/lib/developer-hub/types").DevHubModule[]>()
+      .notNull()
+      .default([]),
+    kind: text("kind").notNull().default("standard"),
     name: text("name").notNull(),
     description: text("description"),
     enabled: boolean("enabled").notNull().default(true),

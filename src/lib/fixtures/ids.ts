@@ -675,6 +675,11 @@ export const DEV_HUB_IDS = {
   macroDealFollowup: "d0480000-0000-4048-8048-000000000009",
   macroPolicyTask: "d0480000-0000-4048-8048-00000000000a",
   macroTaskConfirm: "d0480000-0000-4048-8048-00000000000b",
+  macroBusinessNote: "d0480000-0000-4048-8048-00000000000c",
+  macroCampaignPause: "d0480000-0000-4048-8048-00000000000d",
+  macroQuoteNote: "d0480000-0000-4048-8048-00000000000e",
+  macroDealStage: "d0480000-0000-4048-8048-00000000000f",
+  macroLeadNote: "d0480000-0000-4048-8048-000000000010",
 } as const;
 
 /** AMS wave 6. Off wave5 a050… and Ana / Elena owner blocks. */

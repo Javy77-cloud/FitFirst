@@ -1,62 +1,112 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { saveDeskMacro } from "@/app/actions/developer-hub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { parseMacroActions } from "@/lib/developer-hub/macros";
+import { allowedFieldsForModules, normalizeMacroModules, parseMacroActions, parseMacroKind } from "@/lib/developer-hub/macros";
 import {
-  ALLOWED_MACRO_FIELDS,
   DEV_HUB_MODULES,
   DEV_HUB_MODULE_LABEL,
+  MACRO_KIND_LABEL,
+  MACRO_KINDS,
+  MACRO_STAGE_OPTIONS,
   type DevHubModule,
 } from "@/lib/developer-hub/types";
-import type { DeskMacro } from "@/lib/db/schema";
+type MacroFormRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  module: string;
+  modules?: string[] | null;
+  kind?: string | null;
+  enabled: boolean;
+  actions: unknown;
+};
 
 export function MacroForm({
   macro,
   templates,
 }: {
-  macro?: DeskMacro;
+  macro?: MacroFormRow;
   templates: Array<{ id: string; name: string }>;
 }) {
   const actions = parseMacroActions(macro?.actions);
-  const module = (macro?.module ?? "leads") as DevHubModule;
-  const fields = ALLOWED_MACRO_FIELDS[module] ?? ALLOWED_MACRO_FIELDS.leads;
+  const initialModules = normalizeMacroModules(macro?.module ?? "leads", macro?.modules);
+  const [modules, setModules] = useState<DevHubModule[]>(initialModules.length ? initialModules : ["leads"]);
+  const fields = useMemo(() => allowedFieldsForModules(modules), [modules]);
+  const kind = parseMacroKind(macro?.kind);
+  const stageCapable = modules.some((item) => item === "deals" || item === "quotes");
+
+  function toggleModule(item: DevHubModule) {
+    setModules((current) => {
+      if (current.includes(item)) {
+        const next = current.filter((value) => value !== item);
+        return next.length ? next : current;
+      }
+      return [...current, item];
+    });
+  }
 
   return (
     <form action={saveDeskMacro} className="ff-card max-w-3xl space-y-4 p-4">
       {macro ? <input type="hidden" name="id" value={macro.id} /> : null}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label className="text-xs">Name</Label>
-          <Input name="name" defaultValue={macro?.name} required className="mt-1 h-8" />
-        </div>
-        <div>
-          <Label className="text-xs">Module</Label>
-          <select
-            name="module"
-            defaultValue={module}
-            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-          >
-            {DEV_HUB_MODULES.map((item) => (
-              <option key={item} value={item}>
-                {DEV_HUB_MODULE_LABEL[item]}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <Label className="text-xs">Name</Label>
+        <Input name="name" defaultValue={macro?.name} required className="mt-1 h-8" />
       </div>
       <div>
         <Label className="text-xs">Description</Label>
         <Textarea name="description" defaultValue={macro?.description ?? ""} className="mt-1" />
       </div>
-      <label className="inline-flex items-center gap-2 text-sm">
-        <input type="checkbox" name="enabled" defaultChecked={macro?.enabled ?? true} />
-        Enabled (still never auto-runs)
-      </label>
+      <fieldset className="space-y-2 rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-semibold text-navy">Target modules</legend>
+        <p className="text-xs text-muted-foreground">
+          One Settings row. Brokers run this macro only on the lists and records you pick.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {DEV_HUB_MODULES.map((item) => (
+            <label key={item} className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="modules"
+                value={item}
+                checked={modules.includes(item)}
+                onChange={() => toggleModule(item)}
+              />
+              {DEV_HUB_MODULE_LABEL[item]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">Kind</Label>
+          <select
+            name="kind"
+            defaultValue={kind}
+            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+          >
+            {MACRO_KINDS.map((item) => (
+              <option key={item} value={item}>
+                {MACRO_KIND_LABEL[item]}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Follow-up macros show as <strong>Run Follow-up Macro</strong> on Leads.
+          </p>
+        </div>
+        <label className="mt-6 inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" name="enabled" defaultChecked={macro?.enabled ?? true} />
+          Enabled (still never auto-runs)
+        </label>
+      </div>
 
       <fieldset className="space-y-2 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-semibold text-navy">Email (≤1)</legend>
+        <legend className="px-1 text-sm font-semibold text-navy">Email stub (≤1)</legend>
         <p className="text-xs text-muted-foreground">
           Queues the outbound stub. Merge tokens: {"{{record.firstName}}"} {"{{record.email}}"}.
         </p>
@@ -84,7 +134,7 @@ export function MacroForm({
             <div key={index} className="grid gap-2 sm:grid-cols-2">
               <select
                 name={`updateField${index}`}
-                defaultValue={row?.field ?? ""}
+                defaultValue={row?.field && fields.includes(row.field) ? row.field : ""}
                 className="h-8 rounded-md border border-input bg-card px-2 text-sm"
               >
                 <option value="">—</option>
@@ -118,6 +168,27 @@ export function MacroForm({
             </div>
           );
         })}
+      </fieldset>
+
+      <fieldset className="space-y-2 rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-semibold text-navy">Stage move</legend>
+        <p className="text-xs text-muted-foreground">
+          Moves the Deal (or the quote’s shop) to a pipeline stage. Off unless Deals or Quotes is
+          selected. Does not bind. Ana’s shop is skipped.
+        </p>
+        <select
+          name="stageMove"
+          defaultValue={actions.stageMove?.stage ?? ""}
+          disabled={!stageCapable}
+          className="h-8 w-full rounded-md border border-input bg-card px-2 text-sm disabled:opacity-60"
+        >
+          <option value="">No stage change</option>
+          {MACRO_STAGE_OPTIONS.map((stage) => (
+            <option key={stage} value={stage}>
+              {stage.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
       </fieldset>
 
       <Button type="submit" size="sm">
