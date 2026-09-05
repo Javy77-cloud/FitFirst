@@ -1561,6 +1561,7 @@ export async function getFormTemplate(slug: string) {
 }
 
 export async function getFormFill(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(formFills)
@@ -1569,6 +1570,7 @@ export async function getFormFill(id: string) {
 }
 
 export async function latestFormFill(templateId: string) {
+  if (!isUuid(templateId)) return null;
   const [row] = await db
     .select()
     .from(formFills)

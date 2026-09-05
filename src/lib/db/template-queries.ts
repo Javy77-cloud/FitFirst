@@ -1,5 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { db } from "./index";
 import {
   clientHistory,
@@ -22,6 +23,7 @@ export async function listEmailTemplates() {
 }
 
 export async function getEmailTemplate(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(emailTemplates)

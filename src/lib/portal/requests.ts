@@ -1,5 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { reasonLabel } from "@/lib/policy/reasons";
 import { isInForceStatus, type PolicyChangeKind } from "@/lib/policy/status";
@@ -350,6 +351,7 @@ export async function listOpenPortalRequests() {
 }
 
 export async function getPortalRequest(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(portalRequests)

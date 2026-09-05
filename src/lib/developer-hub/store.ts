@@ -1,5 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
 import {
@@ -49,6 +50,7 @@ export async function listDeveloperFunctions(category?: string | null) {
 }
 
 export async function getDeveloperFunction(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(developerFunctions)
@@ -251,6 +253,7 @@ export async function listDeveloperWebhooks() {
 }
 
 export async function getDeveloperWebhook(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(developerWebhooks)
@@ -444,6 +447,7 @@ export async function listDeveloperConnections() {
 }
 
 export async function getDeveloperConnection(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(developerConnections)

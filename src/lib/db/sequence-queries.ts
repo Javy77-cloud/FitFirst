@@ -3,6 +3,7 @@ import { INSURANCE_SEQUENCES } from "@/lib/campaign-sequences/catalog";
 import { SEQUENCE_SLUGS } from "@/lib/campaign-sequences/types";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { CAMPAIGN_SEQUENCE_IDS } from "@/lib/fixtures/ids";
+import { isUuid } from "@/lib/ids";
 import { db } from "./index";
 import { campaignSequences } from "./schema";
 
@@ -63,6 +64,7 @@ export async function listCampaignSequences() {
 }
 
 export async function getCampaignSequence(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(campaignSequences)

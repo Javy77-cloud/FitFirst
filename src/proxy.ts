@@ -2,11 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { adminRedirectPath, isAdminOnlyPath, isPublicPath } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
 import { isMfaChallengePath, isMfaSetupPath } from "@/lib/auth/mfa";
-import { isDeskUuid } from "@/lib/desk-id";
+import { isInvalidDeskRecordPath } from "@/lib/desk-id";
 import { isModulePath } from "@/lib/people/privileges";
-
-const RECORD = /^\/(leads|deals|contacts|policies|tasks|claims|accounts|businesses|merge|meetings)\/([^/]+)/;
-const RESERVED = new Set(["new", "compare", "agents", "diary"]);
 
 function invalidRecordHtml() {
   return new NextResponse(
@@ -42,8 +39,7 @@ function invalidRecordHtml() {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const record = pathname.match(RECORD);
-  if (record && !RESERVED.has(record[2]) && !isDeskUuid(record[2])) {
+  if (isInvalidDeskRecordPath(pathname)) {
     return invalidRecordHtml();
   }
   if (isPublicPath(pathname)) {

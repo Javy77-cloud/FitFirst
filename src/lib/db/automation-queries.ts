@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { playbookVisibleTo } from "@/lib/automations/engine";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isUuid } from "@/lib/ids";
 import { db } from "./index";
 import { automationRuns, bulkSmsDrafts, emailSignatures, guidedAutomations, users } from "./schema";
 
@@ -46,6 +47,7 @@ export async function countAutomationRunsByPlaybook(playbookIds: string[]) {
 }
 
 export async function getGuidedAutomation(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(guidedAutomations)

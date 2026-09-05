@@ -1051,3 +1051,15 @@ Click path:
 4. `/installments` — Elena October scheduled; Hale August past due. Settings → IVANS / AL3 still **Not connected**.
 
 Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0064**.
+
+## Desk error sweep follow (`cursor/error-sweep-sep5-follow-31ef`)
+
+On top of `cursor/feel-pass-consolidate-sep5b-6195` (already includes Reviews `desk_agents` fix). Did not bind Ana.
+
+**Patched remaining 500s** (bad UUID on Developer Hub / template / fill):
+- `/automations/functions|webhooks|connections/:id`
+- `/settings/developer/functions|webhooks|connections/:id`
+- `/settings/email-templates/:id`
+- `/documents/fill/:slug?fillId=`
+
+Loaders now `isUuid()`-guard. Proxy 404s those record paths the same way as Contact/Deal/Policy.
