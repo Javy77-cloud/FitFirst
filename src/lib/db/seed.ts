@@ -62,6 +62,7 @@ import { seedCampaignSequences } from "./seed-campaign-sequences";
 import { seedApiTokens } from "./seed-api-tokens";
 import { seedPolicyDocVersions } from "./seed-versions";
 import { seedClientPortal } from "./seed-portal";
+import { seedWorkQueue } from "./seed-work-queue";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -506,6 +507,7 @@ export async function seed() {
   await seedMergeDuplicates();
   await seedWave1ZohoBook();
   await seedUsersAndBook();
+  await seedWorkQueue();
   await seedOfficesAndTerritories();
   await seedClaimsBook();
   await seedAutoBook();

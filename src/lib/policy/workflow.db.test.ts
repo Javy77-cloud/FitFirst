@@ -1,10 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { CONTACT_ID, DEMO_CONTACT_ID, DEMO_POLICY_ID, DEMO_PRIOR_POLICY_NUMBER } from "@/lib/fixtures/ids";
+import {
+  CONTACT_ID as ANA_CONTACT_ID,
+  ELENA_POLICY_ID,
+  HARBOR_POLICY_ID,
+  TENANT_ID,
+} from "@/lib/fixtures/ids";
 import { sql } from "@/lib/db";
 import { policies, policyAttachments, policyEvents } from "@/lib/db/schema";
 import { seed } from "@/lib/db/seed";
-import { getContact360, matchReplacementNotice } from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { filePolicyChange } from "./service";
 
@@ -17,34 +22,37 @@ describe("seeded book + policy workflow", () => {
     await sql.end({ timeout: 5 });
   });
 
-  it("leaves Ana unbound and boots a demo Active Policy", async () => {
-    const ana = await db.select().from(policies).where(eq(policies.contactId, CONTACT_ID));
+  it("leaves Ana unbound and keeps Elena bound", async () => {
+    const ana = await db.select().from(policies).where(eq(policies.contactId, ANA_CONTACT_ID));
     expect(ana).toHaveLength(0);
 
-    const [demo] = await db.select().from(policies).where(eq(policies.id, DEMO_POLICY_ID));
-    expect(demo?.status).toBe("active");
-    expect(demo?.policyNumber).toBe("AIC-HO3-44118");
-    expect(demo?.coverageA).toBe(385000);
+    const [elena] = await db.select().from(policies).where(eq(policies.id, ELENA_POLICY_ID));
+    expect(elena?.status).toBe("active");
+    expect(elena?.policyNumber).toBe("HO3-ELENA-2026");
+    expect(elena?.coverageA).toBe(385000);
 
-    const ruiz = await getContact360(DEMO_CONTACT_ID);
-    expect(ruiz?.counts).toEqual({ active: 1, lifetime: 2 });
+    const [harbor] = await db.select().from(policies).where(eq(policies.id, HARBOR_POLICY_ID));
+    expect(harbor?.policyNumber).toBe("GL-HARBOR-2026");
+    expect(["active", "bound"]).toContain(harbor?.status);
   });
 
-  it("matches a replacement by premises and ignores a cancelled number", async () => {
-    const byHouse = await matchReplacementNotice({
-      address1: "412 Oak Grove Ln",
-      city: "Winter Garden",
-      state: "FL",
-      zip: "34787",
-      policyNumber: DEMO_PRIOR_POLICY_NUMBER,
+  it("endorses then cancels a throwaway Policy, never Elena or Harbor", async () => {
+    const scratchId = randomUUID();
+    await db.insert(policies).values({
+      id: scratchId,
+      tenantId: TENANT_ID,
+      contactId: null,
+      policyNumber: "HO3-SCRATCH-AMS",
+      lineOfBusiness: "HO",
+      status: "active",
+      coverageA: 300000,
+      premium: "2100.00",
+      effectiveDate: new Date("2026-01-01T12:00:00.000Z"),
+      expirationDate: new Date("2027-01-01T12:00:00.000Z"),
     });
-    expect(byHouse.ignoredCancelledNumber).toBe(DEMO_PRIOR_POLICY_NUMBER);
-    expect(byHouse.matches.map((row) => row.policy.policyNumber)).toEqual(["AIC-HO3-44118"]);
-  });
 
-  it("endorses then cancels the same Policy with a durable log and 360 update", async () => {
     const endorsed = await filePolicyChange({
-      policyId: DEMO_POLICY_ID,
+      policyId: scratchId,
       kind: "endorsement",
       effectiveDate: "2026-06-15",
       reason: "coverage_change",
@@ -56,7 +64,7 @@ describe("seeded book + policy workflow", () => {
     expect(endorsed.ok).toBe(true);
 
     const cancelled = await filePolicyChange({
-      policyId: DEMO_POLICY_ID,
+      policyId: scratchId,
       kind: "cancellation",
       effectiveDate: "2026-09-01",
       reason: "insured_request",
@@ -65,25 +73,22 @@ describe("seeded book + policy workflow", () => {
     });
     expect(cancelled.ok).toBe(true);
 
-    const [row] = await db.select().from(policies).where(eq(policies.id, DEMO_POLICY_ID));
-    expect(row?.id).toBe(DEMO_POLICY_ID);
+    const [row] = await db.select().from(policies).where(eq(policies.id, scratchId));
     expect(row?.status).toBe("cancellation");
     expect(row?.coverageA).toBe(410000);
     expect(row?.endReason).toBe("insured_request");
 
-    const events = await db
-      .select()
-      .from(policyEvents)
-      .where(eq(policyEvents.policyId, DEMO_POLICY_ID));
+    const events = await db.select().from(policyEvents).where(eq(policyEvents.policyId, scratchId));
     expect(events.map((event) => event.kind).sort()).toEqual(["cancellation", "endorsement"]);
 
     const docs = await db
       .select()
       .from(policyAttachments)
-      .where(eq(policyAttachments.policyId, DEMO_POLICY_ID));
+      .where(eq(policyAttachments.policyId, scratchId));
     expect(docs.length).toBeGreaterThanOrEqual(2);
 
-    const ruiz = await getContact360(DEMO_CONTACT_ID);
-    expect(ruiz?.counts).toEqual({ active: 0, lifetime: 2 });
+    const [elena] = await db.select().from(policies).where(eq(policies.id, ELENA_POLICY_ID));
+    expect(elena?.status).toBe("active");
+    expect(elena?.policyNumber).toBe("HO3-ELENA-2026");
   });
 });

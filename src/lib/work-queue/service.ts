@@ -22,6 +22,7 @@ import {
   type WorkFlag,
   type WorkStatus,
 } from "./types";
+import { pingTargets } from "./ping";
 
 function tenantId() {
   return DEFAULT_TENANT_ID;
@@ -174,6 +175,10 @@ export async function notifyAssignee(input: {
     })
     .returning();
 
+  const target = pingTargets({
+    assigneeId: item.assigneeId,
+    actorId: input.actorId,
+  });
   const [alert] = await db
     .insert(alerts)
     .values({
@@ -184,6 +189,8 @@ export async function notifyAssignee(input: {
       severity: "warning",
       entityType: "policy",
       entityId: policy.id,
+      userId: target.userId,
+      recipientUserId: target.recipientUserId,
     })
     .returning();
 

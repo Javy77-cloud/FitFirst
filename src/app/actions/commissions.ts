@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
+import { currentDeskSession } from "@/lib/auth/session";
 import { COMMISSION_STATUSES, DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { commissionEvents, commissions, policies } from "@/lib/db/schema";
@@ -49,7 +50,8 @@ export async function markCommissionStatus(formData: FormData) {
   if (!id || !COMMISSION_STATUSES.includes(status as (typeof COMMISSION_STATUSES)[number])) {
     return;
   }
-  await writeStatus(id, status, ADMIN_USER_ID, `Status set to ${status}`);
+  const session = await currentDeskSession();
+  await writeStatus(id, status, session.userId || ADMIN_USER_ID, `Status set to ${status}`);
   revalidatePath("/commissions");
   revalidatePath("/");
 }
@@ -136,7 +138,8 @@ export async function savePolicyCommission(formData: FormData) {
 export async function markCommissionPaid(formData: FormData) {
   const id = str(formData, "commissionId");
   if (!id) return;
-  await writeStatus(id, "paid", ADMIN_USER_ID, "Marked paid — policy status unchanged");
+  const session = await currentDeskSession();
+  await writeStatus(id, "paid", session.userId || ADMIN_USER_ID, "Marked paid — policy status unchanged");
   revalidatePath("/commissions");
   revalidatePath("/");
 }

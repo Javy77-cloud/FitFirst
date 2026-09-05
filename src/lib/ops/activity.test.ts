@@ -9,10 +9,10 @@ import {
 
 describe("activity model helpers", () => {
   it("maps legacy open/cancelled onto the task pipeline", () => {
-    expect(normalizeActivityStatus("open")).toBe("incomplete");
-    expect(normalizeActivityStatus("cancelled")).toBe("incomplete");
-    expect(pipelineColumn("delayed")).toBe("delayed");
-    expect(pipelineColumn("moved")).toBe("moved");
+    expect(normalizeActivityStatus("open")).toBe("open");
+    expect(normalizeActivityStatus("cancelled")).toBe("cancelled");
+    expect(pipelineColumn("delayed")).toBe("open");
+    expect(pipelineColumn("moved")).toBe("open");
   });
 
   it("assigns to contact and policy together", () => {

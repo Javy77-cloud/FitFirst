@@ -5,7 +5,9 @@ describe("activity related-record FKs", () => {
   it("rejects an orphan task with no contact, policy, or business", () => {
     expect(hasRelatedRecord({})).toBe(false);
     expect(hasRelatedRecord({ dealId: "deal-only" })).toBe(false);
-    expect(() => assertRelatedRecord({ dealId: "deal-only" })).toThrow(/Contact, Policy, and\/or Business/);
+    expect(() => assertRelatedRecord({ dealId: "deal-only" })).toThrow(
+      /Contact, Policy, Business, and\/or Lead/,
+    );
   });
 
   it("accepts contact and/or policy and/or business", () => {

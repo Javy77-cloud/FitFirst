@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sheetBlankHref } from "@/lib/completeness/fix-href";
 import type { CompletenessReport } from "@/lib/completeness/report";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +12,13 @@ export function HealthStrip({
   report,
   title = "Sheet health",
   href,
+  dealId,
   compact = false,
 }: {
   report: CompletenessReport;
   title?: string;
   href?: string;
+  dealId?: string;
   compact?: boolean;
 }) {
   const confirmedW = pct(report.confirmed, report.total);
@@ -83,13 +86,13 @@ export function HealthStrip({
       </p>
 
       {compact ? null : (
-        <BlockerList report={report} />
+        <BlockerList report={report} dealId={dealId} />
       )}
     </section>
   );
 }
 
-function BlockerList({ report }: { report: CompletenessReport }) {
+function BlockerList({ report, dealId }: { report: CompletenessReport; dealId?: string }) {
   const rows = report.bindReady
     ? []
     : report.bindBlockers.length > 0
@@ -113,7 +116,16 @@ function BlockerList({ report }: { report: CompletenessReport }) {
           >
             {row.status === "check" ? "CHECK" : "missing"}
           </span>
-          <span className="text-foreground">{row.label}</span>
+          {dealId ? (
+            <Link
+              href={sheetBlankHref(dealId, row.key)}
+              className="font-medium text-primary hover:underline"
+            >
+              Fix {row.label}
+            </Link>
+          ) : (
+            <span className="text-foreground">{row.label}</span>
+          )}
           <span className="text-muted-foreground">
             {row.blocks === "shop" ? "blocks shop" : "blocks bind"}
           </span>

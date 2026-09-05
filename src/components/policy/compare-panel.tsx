@@ -1,4 +1,3 @@
-// @ts-nocheck — leftover ComparePanel. Desk compare page is a thin reader; do not reattach until walked.
 import { recordRenewalCompare, saveProposedTerm } from "@/app/actions/renewal";
 import { PremiumChangeSummary } from "@/components/policy/premium-change";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/domain";
-import type { Policy, PolicyTerm, RenewalCompareLog } from "@/lib/db/schema";
+import type { Policy, PolicyCoverageLine, PolicyTerm, RenewalCompareLog } from "@/lib/db/schema";
 import {
   coverageRows,
   deductiblesForLine,
@@ -14,6 +13,14 @@ import {
   premiumChange,
 } from "@/lib/renewal/compare";
 import { cn } from "@/lib/utils";
+
+function coverageList(
+  value: PolicyCoverageLine[] | Record<string, string> | null | undefined,
+): PolicyCoverageLine[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return Object.entries(value).map(([key, lineValue]) => ({ key, label: key, value: lineValue }));
+}
 
 function isoDate(value: Date | null | undefined): string {
   return value ? value.toISOString().slice(0, 10) : "";
@@ -108,7 +115,7 @@ export function ComparePanel({
             </p>
           </div>
           <input type="hidden" name="policyId" value={policy.id} />
-          <input type="hidden" name="coverageCount" value={proposed?.coverages.length ?? 0} />
+          <input type="hidden" name="coverageCount" value={coverageList(proposed?.coverages).length} />
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-xs">Proposed premium</Label>
@@ -152,7 +159,7 @@ export function ComparePanel({
           </div>
           <div className="space-y-2">
             <div className="text-xs font-medium text-muted-foreground">Key coverages</div>
-            {(proposed?.coverages ?? []).map((line, index) => (
+            {coverageList(proposed?.coverages).map((line, index) => (
               <div key={line.key} className="grid gap-2 sm:grid-cols-[1fr_1fr]">
                 <input type="hidden" name={`coverageKey_${index}`} value={line.key} />
                 <input type="hidden" name={`coverageLabel_${index}`} value={line.label} />

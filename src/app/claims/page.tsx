@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
-import { ColumnTable } from "@/components/lists/column-table";
+import { ClaimList } from "@/components/claims/claim-list";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { db } from "@/lib/db";
-import { claims, policies, contacts } from "@/lib/db/schema";
+import { buttonVariants } from "@/components/ui/button";
+import { CLAIM_PIPELINE, CLAIM_STATUS_LABELS, claimStatusLabel } from "@/lib/claims";
+import { listDeskClaims } from "@/lib/db/claim-queries";
 import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -16,20 +16,24 @@ export default async function ClaimsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const filter = pickFilterParams(await searchParams, ["status", "cause"]);
-  const all = await db
-    .select({ claim: claims, policy: policies, contact: contacts })
-    .from(claims)
-    .leftJoin(policies, eq(claims.policyId, policies.id))
-    .leftJoin(contacts, eq(policies.contactId, contacts.id))
-    .where(eq(claims.tenantId, DEFAULT_TENANT_ID));
+  const all = await listDeskClaims();
   const rows = all.filter(
-    ({ claim }) => matchesField(claim.status, filter.status) && matchesField(claim.causeType, filter.cause),
+    ({ claim }) =>
+      matchesField(claim.status, filter.status) && matchesField(claim.causeType, filter.cause),
   );
 
   return (
-    <AppShell title="Claims log">
+    <AppShell
+      title="Claims log"
+      actions={
+        <Link href="/claims/new" className={cn(buttonVariants({ size: "sm" }))}>
+          Add FNOL
+        </Link>
+      }
+    >
       <p className="mb-3 text-base text-muted-foreground">
-        Desk log only — not a carrier claims system. Inquiry, referred to carrier, or closed.
+        Agency FNOL log — inquiry, referred to carrier, or closed. Not a claims shop. No reserves
+        or adjusters.
       </p>
       <SavedFiltersBar
         moduleId="claims"
@@ -46,34 +50,56 @@ export default async function ClaimsPage({
           },
         ]}
       />
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        {CLAIM_PIPELINE.map((status) => {
+          const count = all.filter((row) => row.claim.status === status).length;
+          const active = filter.status === status;
+          return (
+            <Link
+              key={status}
+              href={active ? "/claims" : `/claims?status=${status}`}
+              className={cn(
+                "ff-card p-4 hover:border-primary",
+                active && "border-primary",
+              )}
+            >
+              <div className="text-xs uppercase text-muted-foreground">
+                {CLAIM_STATUS_LABELS[status]}
+              </div>
+              <div className="text-2xl font-semibold text-navy">{count}</div>
+              <div className="text-base text-muted-foreground">
+                {active ? "Showing this column" : "Open this column"}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
       <section className="ff-card overflow-hidden">
-        <ColumnTable
-          moduleId="claims"
-          columns={[
-            { id: "status", label: "Status", locked: true },
-            { id: "carrierClaim", label: "Carrier claim" },
-            { id: "cause", label: "Cause" },
-            { id: "policy", label: "Policy" },
-            { id: "party", label: "Party" },
-          ]}
-          empty="No claims on the book yet. Log one from a policy record when the slice seed is wired."
+        <ClaimList
+          showPolicy
+          empty="No claims on the book yet. Add FNOL from this page or a Policy record."
           rows={rows.map(({ claim, policy, contact }) => ({
-            key: claim.id,
-            cells: {
-              status: (
-                <Link href={`/claims/${claim.id}`} className="font-medium text-primary hover:underline">
-                  {claim.status}
-                </Link>
-              ),
-              carrierClaim: (
-                <span className="font-mono text-xs">{claim.carrierClaimNumber ?? "—"}</span>
-              ),
-              cause: claim.causeType ?? "—",
-              policy: policy?.policyNumber ?? "—",
-              party: contact ? `${contact.lastName}, ${contact.firstName}` : "—",
-            },
+            id: claim.id,
+            status: claim.status,
+            causeType: claim.causeType ?? "other",
+            description: claim.description,
+            reportedHow: claim.reportedHow ?? "phone",
+            dateReported: claim.dateReported ?? claim.createdAt,
+            dateOfLoss: claim.dateOfLoss,
+            carrierClaimNumber: claim.carrierClaimNumber,
+            policyId: policy?.id ?? claim.policyId,
+            policyNumber: policy?.policyNumber,
+            contactId: contact?.id ?? claim.contactId,
+            contactName: contact ? `${contact.lastName}, ${contact.firstName}` : null,
           }))}
         />
+        {filter.status ? (
+          <p className="px-4 py-3 text-base text-muted-foreground">
+            Showing {claimStatusLabel(filter.status)}. Clear the filter to see the full log.
+          </p>
+        ) : null}
       </section>
     </AppShell>
   );

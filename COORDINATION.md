@@ -716,3 +716,15 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 ## WAVE3 leftover
 
 DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+
+## AMS desk polish (`cursor/ams-desk-polish-5344`)
+
+Side branch off `cursor/fitfirst-type-readability-e960`. Additive only. No new migration. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. One Settings. Sidebar stays `#1d4e89`. Quotes still do not create a Policy.
+
+- Policy record files endorsement / cancellation / non-renewal and shows the outcome on that same Policy (in-force vs off the book).
+- Renewal compare uses the premium-change summary (Hale +$363 / +16.6%, Nair −$72 / −5.0%).
+- Work queue lists flags, notes, assignee, and in-app pings. `notifyAssignee` writes `alerts.user_id` + `recipient_user_id` so the bell is not agency-wide. `seedWorkQueue()` is wired after Elena exists.
+- Claims log is Inquiry / Referred / Closed with Add FNOL. Claim detail uses the FNOL record.
+- Commissions pending vs paid cards filter the sheet. Payable/held stay pending. Mark paid does not change Policy status.
+- Sheet health blockers link to `?tab=quote-sheet&field=` and `#sheet-field-*`.
+

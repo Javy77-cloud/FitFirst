@@ -20,6 +20,8 @@ import { HealthStrip } from "@/components/completeness/health-strip";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { reportFromSheet } from "@/lib/completeness/report";
+import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
+import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
 import type { ShopLine } from "@/lib/domain";
 
@@ -30,10 +32,11 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string; field?: string }>;
 }) {
   const { id } = await params;
-  const { tab, riskTab } = await searchParams;
+  const { tab, riskTab, field } = await searchParams;
+  const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -124,11 +127,15 @@ export default async function DealPage({
       ) : null}
 
       {health ? (
-        <HealthStrip
-          report={health}
-          title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
-          href={`/deals/${deal.id}?tab=quote-sheet`}
-        />
+        <>
+          <HealthStrip
+            report={health}
+            title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
+            href={`/deals/${deal.id}?tab=quote-sheet`}
+            dealId={deal.id}
+          />
+          <SheetFieldFocus field={focusField} />
+        </>
       ) : null}
 
       <RecordDetailLayout

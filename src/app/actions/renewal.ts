@@ -89,7 +89,7 @@ export async function saveProposedTerm(formData: FormData) {
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
   if (!policy) throw new Error("Policy not found");
-  if (policy.status !== "active") {
+  if (policy.status !== "active" && policy.status !== "bound") {
     throw new Error("Compare renewal is only for in-force policies.");
   }
 

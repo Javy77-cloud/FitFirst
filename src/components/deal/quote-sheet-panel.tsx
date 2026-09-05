@@ -3,6 +3,7 @@ import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { QuoteSheetFieldValue } from "@/lib/domain";
 import { groupHomeFields } from "@/lib/lifecycle/quote-sheet";
+import { sheetFieldDomId } from "@/lib/completeness/fix-href";
 import { cn } from "@/lib/utils";
 import { SheetHandoffButtons } from "./sheet-handoff";
 
@@ -79,6 +80,7 @@ export function QuoteSheetPanel({
                 return (
                   <tr
                     key={field.key}
+                    id={sheetFieldDomId(field.key)}
                     className={
                       status === "missing"
                         ? "bg-fit-yellow-bg/60"

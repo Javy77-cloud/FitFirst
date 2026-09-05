@@ -18,6 +18,7 @@ import { DeskDetails } from "@/components/desk-details";
 import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
 import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { SheetDrop } from "@/components/deal/sheet-drop";
+import { sheetFieldDomId } from "@/lib/completeness/fix-href";
 import { cn } from "@/lib/utils";
 
 export function QuoteSheetForm({
@@ -207,7 +208,7 @@ function SheetField({
   const tag = sourceTag(cell);
 
   return (
-    <div>
+    <div id={sheetFieldDomId(fieldKey)}>
       <div className="mb-1 flex items-center justify-between gap-2">
         <Label htmlFor={fieldKey} className="text-xs">
           {label}

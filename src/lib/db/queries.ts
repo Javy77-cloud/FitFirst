@@ -1007,7 +1007,8 @@ export async function getPolicyWorkspace(id: string) {
     : row.policy.dealId
       ? await db.select().from(risks).where(eq(risks.dealId, row.policy.dealId))
       : [];
-  const [terms, compareLogs, vehicleRows] = await Promise.all([
+  const { getPolicyWorkBundle } = await import("@/lib/work-queue/list");
+  const [terms, compareLogs, vehicleRows, work] = await Promise.all([
     db
       .select()
       .from(policyTerms)
@@ -1021,6 +1022,7 @@ export async function getPolicyWorkspace(id: string) {
       .from(vehicles)
       .where(and(eq(vehicles.tenantId, tenant()), eq(vehicles.policyId, id)))
       .orderBy(asc(vehicles.sortOrder)),
+    getPolicyWorkBundle(id),
   ]);
   return {
     ...row,
@@ -1033,6 +1035,7 @@ export async function getPolicyWorkspace(id: string) {
     terms,
     compareLogs,
     vehicles: vehicleRows,
+    work,
   };
 }
 
