@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function NewClaimPage({
   searchParams,
 }: {
-  searchParams: Promise<{ policy?: string; contact?: string }>;
+  searchParams: Promise<{ policy?: string; contact?: string; error?: string }>;
 }) {
-  const { policy: policyId, contact: contactId } = await searchParams;
+  const { policy: policyId, contact: contactId, error } = await searchParams;
   const [{ policies, contacts }, session] = await Promise.all([
     listClaimPartyOptions(),
     currentDeskSession(),
@@ -24,6 +24,11 @@ export default async function NewClaimPage({
           Back to claims log
         </Link>
       </p>
+      {error ? (
+        <section className="mb-4 rounded-md border border-fit-red bg-fit-red-bg px-4 py-3 text-sm text-fit-red">
+          {error}
+        </section>
+      ) : null}
       <FnolIntakeForm
         policyId={policyId}
         contactId={contactId}

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { bindDeal } from "@/app/actions/crm";
+import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
+import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { RiskForm } from "@/components/deal/risk-form";
@@ -158,8 +160,26 @@ export default async function DealPage({
                   {
                     id: "quote-sheet",
                     label: "Quote Sheet",
-                    content: (
-                      <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
+                    content: quoteSheet ? (
+                      <div className="space-y-3">
+                        <form action={fillQuoteSheetBlanks}>
+                          <input type="hidden" name="dealId" value={deal.id} />
+                          <input type="hidden" name="line" value={sheetLine} />
+                          <Button type="submit" size="sm">
+                            Fill blanks from source docs
+                          </Button>
+                        </form>
+                        <QuoteSheetForm
+                          dealId={deal.id}
+                          dealTitle={deal.title}
+                          line={sheetLine}
+                          sheet={quoteSheet}
+                          contact={contact}
+                          riskId={risk.id}
+                        />
+                      </div>
+                    ) : (
+                      <QuoteSheetPanel dealId={deal.id} values={null} line={sheetLine} />
                     ),
                   },
                   {

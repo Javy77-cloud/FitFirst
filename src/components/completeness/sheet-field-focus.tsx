@@ -13,6 +13,8 @@ export function SheetFieldFocus({ field }: { field?: string | null }) {
     if (!key) return;
     const node = document.getElementById(sheetFieldDomId(key)) ?? document.getElementById(key);
     if (!node) return;
+    const details = node.closest("details");
+    if (details && !details.open) details.open = true;
     node.scrollIntoView({ behavior: "smooth", block: "center" });
     node.classList.add("ring-2", "ring-[var(--ff-terracotta)]", "ring-offset-2");
     const timer = window.setTimeout(() => {

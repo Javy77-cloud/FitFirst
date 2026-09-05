@@ -28,6 +28,7 @@ export default async function WorkQueuePage({
     return matchesField(status, filter.status);
   });
   const flagged = workRows.filter((row) => {
+    if (row.flags.length === 0) return false;
     if (filter.assignee && !matchesField(row.assignee?.name ?? "Unassigned", filter.assignee)) {
       return false;
     }

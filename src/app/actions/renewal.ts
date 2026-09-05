@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -82,23 +83,31 @@ async function persistCompareLog(input: {
   });
 }
 
+function bounceCompare(policyId: string, error?: string): never {
+  const params = new URLSearchParams();
+  if (error) params.set("error", error);
+  else params.set("filed", "compare");
+  redirect(`/policies/${policyId}/compare?${params.toString()}`);
+}
+
 export async function saveProposedTerm(formData: FormData) {
   const policyId = str(formData, "policyId");
+  if (!policyId) throw new Error("Policy is required.");
   const [policy] = await db
     .select()
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
-  if (!policy) throw new Error("Policy not found");
+  if (!policy) bounceCompare(policyId, "Policy not found.");
   if (policy.status !== "active" && policy.status !== "bound") {
-    throw new Error("Compare renewal is only for in-force policies.");
+    bounceCompare(policyId, "Compare renewal is only for in-force policies.");
   }
 
   const premium = parseMoney(str(formData, "premium"));
-  if (premium == null) throw new Error("Proposed premium is required.");
+  if (premium == null) bounceCompare(policyId, "Proposed premium is required.");
 
   const effective = dateOrNull(str(formData, "termEffective"));
   const expiration = dateOrNull(str(formData, "termExpiration"));
-  if (!effective || !expiration) throw new Error("Proposed term dates are required.");
+  if (!effective || !expiration) bounceCompare(policyId, "Proposed term dates are required.");
 
   const coverages = readCoverages(formData);
   const fields = {
@@ -154,21 +163,27 @@ export async function saveProposedTerm(formData: FormData) {
     );
 
   if (current && proposed) {
-    await persistCompareLog({
-      policyId,
-      eventType: "proposed_updated",
-      current,
-      proposed,
-    });
+    try {
+      await persistCompareLog({
+        policyId,
+        eventType: "proposed_updated",
+        current,
+        proposed,
+      });
+    } catch (error) {
+      bounceCompare(policyId, error instanceof Error ? error.message : "Could not log compare.");
+    }
   }
 
   revalidatePath(`/policies/${policyId}`);
   revalidatePath(`/policies/${policyId}/compare`);
   revalidatePath("/policies");
+  bounceCompare(policyId);
 }
 
 export async function recordRenewalCompare(formData: FormData) {
   const policyId = str(formData, "policyId");
+  if (!policyId) throw new Error("Policy is required.");
   const terms = await db
     .select()
     .from(policyTerms)
@@ -176,14 +191,19 @@ export async function recordRenewalCompare(formData: FormData) {
   const current = terms.find((term) => term.role === "current");
   const proposed = terms.find((term) => term.role === "proposed");
   if (!current || !proposed) {
-    throw new Error("Current and proposed terms are required to log a compare.");
+    bounceCompare(policyId, "Current and proposed terms are required to log a compare.");
   }
-  await persistCompareLog({
-    policyId,
-    eventType: "recorded",
-    current,
-    proposed,
-  });
+  try {
+    await persistCompareLog({
+      policyId,
+      eventType: "recorded",
+      current,
+      proposed,
+    });
+  } catch (error) {
+    bounceCompare(policyId, error instanceof Error ? error.message : "Could not log compare.");
+  }
   revalidatePath(`/policies/${policyId}`);
   revalidatePath(`/policies/${policyId}/compare`);
+  bounceCompare(policyId);
 }
