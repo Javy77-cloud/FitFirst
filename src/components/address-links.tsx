@@ -18,6 +18,10 @@ export function PropertyAddressLinks({
 
   return (
     <span className={cn("ff-address-links", className)}>
+      <a href={links.maps} target="_blank" rel="noopener">
+        <ExternalLink aria-hidden />
+        Maps
+      </a>
       <a href={links.zillow} target="_blank" rel="noopener">
         <ExternalLink aria-hidden />
         Zillow

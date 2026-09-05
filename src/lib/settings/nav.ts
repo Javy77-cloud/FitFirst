@@ -140,7 +140,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     children: [
       { id: "integrations", href: "/settings/integrations", label: "Catalog", hint: "BYO providers" },
       { id: "carrier-download", href: "/settings/carrier-download", label: "IVANS / AL3", hint: "Not connected" },
-      { id: "social", href: "/settings/social", label: "Social / GBP", hint: "FB · IG · X · LI · GBP" },
+      { id: "social", href: "/settings/social", label: "Social / GBP", hint: "BYO OAuth · X paid wall" },
       { id: "esign", href: "/settings/esign", label: "E-sign", hint: "DocuSign / Dropbox Sign" },
     ],
   },

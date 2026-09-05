@@ -74,7 +74,7 @@ const STEPS = [
   },
   {
     title: "9. Social + GBP connectors",
-    body: "Settings → Integrations: connect stubs for Google, Outlook, Zoho Mail/Calendar, Facebook, Instagram, GBP, SMS, e-sign, and EZLynx / QuoteRush. Connect / Disconnect is a demo toggle. Agency pays the vendor. GBP stays locked for agents until Admin allows monitoring. Open as Lead reuses the social → Lead path (Priya Shah from Instagram).",
+    body: "Settings → Social or Integrations: paste the agency’s free Meta / Google / LinkedIn app and try OAuth. X stays a paid-API wall. Maps stay free public search links. Desk demo Connect still marks pulse seeds. Agency pays the vendor. GBP stays locked for agents until Admin allows monitoring. Open as Lead reuses the social → Lead path (Priya Shah from Instagram).",
     href: "/settings/integrations",
     cta: "Open Integrations",
   },

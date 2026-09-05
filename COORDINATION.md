@@ -895,6 +895,16 @@ Off `cursor/feel-pass-consolidate-sep5b-6195`. Quotes list chrome only. Ana stay
 - **Select shop** is **Select Quote**.
 - Expand / collapse uses up/down arrow icons; the active state is highlighted. Words are gone.
 
+## Social BYO connect (`cursor/social-byo-connect-4bd5`)
+
+Off `cursor/feel-pass-consolidate-sep5b-6195`. Javy can try Facebook / Instagram / GBP / LinkedIn connect without FitFirst buying Meta, X, or Google APIs.
+
+- Settings → Social and Settings → Integrations (social section) paste agency App ID / Client Secret (encrypted). **Connect with Facebook / Instagram / Google / LinkedIn** builds a real authorize URL from those credentials and redirects. Callback `/api/social/oauth/callback` exchanges the code with the agency secret or shows the vendor wall.
+- **Works:** Meta Login (FB + IG, IG can reuse the Facebook app), Google OAuth + userinfo, LinkedIn Sign In (OpenID). Status **Connected (BYO)**. Desk demo Connect still flips pulse seeds.
+- **Stubbed / wall:** X API (paid — Connect does not open X). LinkedIn page inbox / Community Management. GBP listing API after Google verification. Inbox sync and ads. Pulse numbers stay demo. Maps stay free public search links (Google Maps / Zillow / FEMA) — not a catalog vendor and not Maps Platform.
+- Incoming `0064_social_byo` remapped to `0065_social_byo` — credential / token columns on `integration_connections`. No FitFirst vendor keys in `.env`.
+- Ana unbound / Cov A **$321,000**. Sidebar `#1d4e89`.
+
 ## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
 
 Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s). Fast-forwarded `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations / template / fill UUID 404s instead of 500s). Both tip names point at this same commit.

@@ -25,6 +25,10 @@ export type CatalogItem = IntegrationProvider & {
   accountLabel: string | null;
   lastConnectStatus: string | null;
   ownerUserId: string | null;
+  clientId: string | null;
+  hasCredentials: boolean;
+  connectMode: string | null;
+  lastOauthError: string | null;
 };
 
 type LegacyFlags = {
@@ -105,16 +109,32 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
   );
   const byProviderOnly = new Map(stored.map((row) => [row.provider, row]));
 
-  return INTEGRATION_PROVIDERS.map((provider) => {
+  const items = INTEGRATION_PROVIDERS.map((provider) => {
     const row =
       byProvider.get(`${provider.category}:${provider.id}`) ?? byProviderOnly.get(provider.id);
     const connected = Boolean(row?.connected) || legacyConnected(provider.id, flags);
+    const hasOwnSecret = Boolean(row?.clientSecretEnc && row?.clientSecretIv);
+    const hasOwnClient = Boolean(row?.clientId?.trim());
     return {
       ...provider,
       connected,
       accountLabel: row?.accountLabel ?? (connected ? stubAccountLabel(provider.id) : null),
       lastConnectStatus: row?.lastConnectStatus ?? (connected ? "not_implemented" : null),
       ownerUserId: row?.ownerUserId ?? null,
+      clientId: row?.clientId ?? null,
+      hasCredentials: hasOwnClient && hasOwnSecret,
+      connectMode: row?.connectMode ?? (connected ? "demo" : null),
+      lastOauthError: row?.lastOauthError ?? null,
+    };
+  });
+  const facebook = items.find((item) => item.id === "facebook");
+  return items.map((item) => {
+    if (item.id !== "instagram" || item.hasCredentials) return item;
+    if (!facebook?.hasCredentials) return item;
+    return {
+      ...item,
+      clientId: item.clientId ?? facebook.clientId,
+      hasCredentials: true,
     };
   });
 }
@@ -181,6 +201,7 @@ export async function upsertCatalogConnection(input: {
     accountLabel: input.accountLabel,
     notes: input.notes,
     lastConnectStatus: input.lastConnectStatus,
+    connectMode: input.connected ? "demo" : null,
     connectedAt: input.connected ? new Date() : null,
     updatedAt: new Date(),
   };

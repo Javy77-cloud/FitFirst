@@ -24,6 +24,10 @@ function item(
     accountLabel: connected ? "stub" : null,
     lastConnectStatus: connected ? "not_implemented" : null,
     ownerUserId: null,
+    clientId: null,
+    hasCredentials: false,
+    connectMode: connected ? "demo" : null,
+    lastOauthError: null,
   };
 }
 
