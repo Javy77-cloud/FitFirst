@@ -100,7 +100,7 @@ export default async function CommunicationsSettingsPage() {
       </div>
       <p className="mt-4 text-sm">
         <Link href="/settings/integrations" className="text-primary hover:underline">
-          Open Connect
+          Open the Integrations catalog
         </Link>
       </p>
 

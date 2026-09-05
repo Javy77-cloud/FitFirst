@@ -14,10 +14,10 @@ export const INTEGRATION_CATEGORIES = [
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
 
 export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
-  email: "Inbox",
+  email: "Email",
   calendar: "Calendar",
   social: "Social / GBP",
-  phone_sms: "SMS",
+  phone_sms: "Phone / SMS",
   esign: "E-sign",
   rater: "Rater",
   campaigns: "Campaigns",
@@ -104,8 +104,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
   {
     id: "gmail",
     category: "email",
-    name: "Google",
-    initials: "G",
+    name: "Gmail / Google",
+    initials: "Gm",
     blurb: "Agency Google Workspace inbox for client mail.",
     byoNote: "Agency pays Google Workspace. FitFirst does not host mail.",
     tone: "google",
@@ -113,7 +113,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
   {
     id: "outlook",
     category: "email",
-    name: "Outlook",
+    name: "Outlook / Microsoft 365",
     initials: "Ol",
     blurb: "Microsoft 365 mailbox for client threads.",
     byoNote: "Agency pays Microsoft 365. No Graph tokens stored here.",
@@ -216,8 +216,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
   {
     id: "twilio",
     category: "phone_sms",
-    name: "SMS",
-    initials: "SMS",
+    name: "Twilio",
+    initials: "Tw",
     blurb: "Agency SMS vendor for logged texts. FitFirst does not buy a number.",
     byoNote: "Agency pays the SMS vendor. No Twilio project, SID, or API key is stored.",
     tone: "sms",

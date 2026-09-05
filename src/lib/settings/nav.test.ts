@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { SETTINGS_NAV, SETTINGS_NAV_IDS, settingsGroupFor } from "./nav";
 
 describe("settings nav", () => {
-  it("nests Social under Connect", () => {
+  it("nests Social under Integrations", () => {
     const integrations = SETTINGS_NAV.find((group) => group.id === "integrations");
-    expect(integrations?.label).toBe("Connect");
+    expect(integrations?.label).toBe("Integrations");
     expect(integrations?.children.map((child) => child.id)).toEqual(
       expect.arrayContaining(["integrations", "social"]),
     );

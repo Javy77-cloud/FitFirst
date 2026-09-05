@@ -77,14 +77,14 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   {
     id: "integrations",
     href: "/settings/integrations",
-    label: "Connect",
-    hint: "Google · Outlook · Zoho · rater",
+    label: "Integrations",
+    hint: "Connectable catalog",
     children: [
       {
         id: "integrations",
         href: "/settings/integrations",
-        label: "Connect",
-        hint: "Demo toggles",
+        label: "Catalog",
+        hint: "BYO providers",
       },
       {
         id: "social",

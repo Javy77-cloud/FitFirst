@@ -27,7 +27,7 @@ export default async function VideoSettingsPage() {
         </Link>
         <span className="text-muted-foreground"> · </span>
         <Link href="/settings/integrations" className="text-primary hover:underline">
-          Open Connect
+          Full catalog
         </Link>
       </p>
     </SettingsShell>

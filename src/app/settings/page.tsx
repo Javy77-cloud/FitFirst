@@ -37,8 +37,8 @@ export default async function SettingsPage() {
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Admin settings change the agency. Agent settings change only this desk. Use the left menu: Communications, Connect, Lines / lists, Brand, then Admin vs Agent prefs."
-          : "Agent settings change only this desk. Agency chrome, Connect vendors, and global lists stay with Admin."}
+          ? "Admin settings change the agency. Agent settings change only this desk. Use the left menu: Communications, Integrations, Lines / lists, Brand, then Admin vs Agent prefs."
+          : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
       <Link
         href="/automations"
@@ -58,10 +58,10 @@ export default async function SettingsPage() {
           className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
         >
           <div>
-            <div className="text-sm font-semibold text-navy">Connect</div>
+            <div className="text-sm font-semibold text-navy">Integrations</div>
             <p className="text-helper text-muted-foreground">
               Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign,
-              EZLynx / QuoteRush. Demo toggle. Agency pays the vendor.
+              EZLynx / QuoteRush. Connect / Disconnect is a demo toggle. Agency pays the vendor.
             </p>
           </div>
           <ConnectionBadge connected={catalogConnected} />

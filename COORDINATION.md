@@ -717,11 +717,11 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 
 Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Dark sidebar stays. No live OAuth, API keys, Stripe, or Twilio.
 
-- Settings → **Connect** (`/settings/integrations`) is the BYO hub. Cards: Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign (DocuSign / Dropbox Sign), rater (EZLynx / QuoteRush).
+- Settings → **Integrations** keeps the existing catalog chrome. Cards now include Zoho Mail/Calendar and rater (EZLynx / QuoteRush) plus the existing Google, Outlook, social/GBP, SMS, and e-sign stubs.
 - Each card: Connect / Disconnect demo toggle, **Agency pays the vendor.**, status **Connected (demo)** vs **Not connected**.
-- Admin-gated: GBP (plus the existing monitor checkbox), SMS, e-sign, raters. Agents see status only.
+- Connecting stays Admin-only. GBP monitor gate stays on Settings → Social.
 - Zoho Mail/Calendar are inbox/calendar plugs — not a Zoho CRM sync. Raters do not call EZLynx or QuoteRush.
-- Settings overview links to Connect. Optional campaigns / video / Yahoo stay under “Also on this desk.”
+- Settings overview still links to `/settings/integrations`. No visual redesign.
 
 Do not bind Ana.
 

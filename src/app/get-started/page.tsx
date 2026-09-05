@@ -73,10 +73,10 @@ const STEPS = [
     cta: "Go to Deals",
   },
   {
-    title: "9. Connect stubs + GBP",
-    body: "Settings → Connect: Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign, EZLynx / QuoteRush. Demo Connect / Disconnect. Agency pays the vendor. GBP stays locked for agents until Admin allows monitoring. Pulse still uses the social → Lead path (Priya Shah from Instagram).",
+    title: "9. Social + GBP connectors",
+    body: "Settings → Integrations: connect stubs for Google, Outlook, Zoho Mail/Calendar, Facebook, Instagram, GBP, SMS, e-sign, and EZLynx / QuoteRush. Connect / Disconnect is a demo toggle. Agency pays the vendor. GBP stays locked for agents until Admin allows monitoring. Open as Lead reuses the social → Lead path (Priya Shah from Instagram).",
     href: "/settings/integrations",
-    cta: "Open Connect",
+    cta: "Open Integrations",
   },
   {
     title: "10. Run-it-yourself: stub lead → deal → bind",
