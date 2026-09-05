@@ -226,6 +226,9 @@ export default async function DealPage({
                           docs={docs}
                           fields={fields}
                           jobs={jobs}
+                          context={context}
+                          health={health}
+                          sheetLine={sheetLine}
                         />
                         <InDeskEsignPanel
                           recordKind="deal"

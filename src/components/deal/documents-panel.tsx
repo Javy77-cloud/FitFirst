@@ -7,9 +7,13 @@ import {
 } from "@/app/actions/documents";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { ChooseFiles } from "@/components/choose-files";
+import { DealUploadDesk } from "@/components/deal/deal-upload-desk";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import type { CompletenessReport } from "@/lib/completeness/report";
 import type { ExtractionJob } from "@/lib/db/schema";
+import type { ShopLine } from "@/lib/domain";
+import type { RecordContextPayload } from "@/lib/record-context-types";
 
 export function DocumentsPanel({
   dealId,
@@ -17,20 +21,28 @@ export function DocumentsPanel({
   docs,
   fields,
   jobs = [],
+  context,
+  health,
+  sheetLine,
 }: {
   dealId: string;
   riskId: string;
   docs: Document[];
   fields: ExtractedFieldRow[];
   jobs?: ExtractionJob[];
+  context: RecordContextPayload;
+  health: CompletenessReport | null;
+  sheetLine: ShopLine;
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
   const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
   const quotePdfs = docs.filter((d) => d.slot === "quote_pdf");
+  const sourceDocTypes = sourceDocs.map((doc) => doc.docType);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-      <div className="space-y-4">
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2" data-ff-deal-upload-split>
+        <div className="min-w-0 space-y-4" data-ff-deal-upload>
         <section className="ff-card p-4">
           <h3 className="mb-1 text-base font-semibold text-navy">Source documents</h3>
           <p className="mb-3 text-base text-muted-foreground">
@@ -100,6 +112,15 @@ export function DocumentsPanel({
           </form>
           <DocTable docs={quotePdfs} dealId={dealId} empty="No issued quote PDFs yet." />
         </section>
+        </div>
+
+        <DealUploadDesk
+          context={context}
+          health={health}
+          dealId={dealId}
+          sheetLine={sheetLine}
+          sourceDocTypes={sourceDocTypes}
+        />
       </div>
 
       <section className="ff-card p-4">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown, Mail, Phone } from "lucide-react";
 import {
   groupOpenActivities,
+  type RailOpenActivity,
   type RailPerson,
   type RecordContextPayload,
 } from "@/lib/record-context-types";
@@ -54,10 +55,7 @@ export function RecordContextRail({
 }) {
   const [tab, setTab] = useState<"info" | "conversations">("info");
   const [personKey, setPersonKey] = useState(context.people[0]?.key ?? "");
-  const [openKind, setOpenKind] = useState<string | null>(null);
   const person = context.people.find((row) => row.key === personKey) ?? context.people[0] ?? null;
-  const groups = useMemo(() => groupOpenActivities(context.openActivities), [context.openActivities]);
-  const expanded = openKind ?? groups.find((g) => g.items.length > 0)?.kind ?? null;
 
   return (
     <div className="ff-card overflow-hidden">
@@ -109,7 +107,7 @@ export function RecordContextRail({
       ) : (
         <div>
           {policyFacts ? <PolicyFactsCard facts={policyFacts} /> : null}
-          <PersonCard person={person} />
+          <RailPersonCard person={person} />
 
           <section className="border-t border-border px-3 py-3">
             <div className="mb-2 flex items-center justify-between">
@@ -152,52 +150,7 @@ export function RecordContextRail({
             </section>
           ) : null}
 
-          <section className="border-t border-border px-3 py-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-navy">Open activities</h3>
-              <Link href={context.newActivityHref} className="text-sm font-medium text-primary hover:underline">
-                + New
-              </Link>
-            </div>
-            <ul className="space-y-1.5">
-              {groups.map((group) => {
-                const open = expanded === group.kind;
-                return (
-                  <li key={group.kind} className="overflow-hidden rounded-md bg-muted">
-                    <button
-                      type="button"
-                      onClick={() => setOpenKind(open ? "" : group.kind)}
-                      className="flex w-full items-center justify-between px-2.5 py-2 text-left text-sm"
-                    >
-                      <span className="font-medium text-navy">{kindLabel(group.kind)}</span>
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <span className="rounded-sm bg-card px-1.5 text-caption font-semibold">{group.items.length}</span>
-                        <ChevronDown className={cn("size-3.5 transition", open && "rotate-180")} />
-                      </span>
-                    </button>
-                    {open ? (
-                      <ul className="border-t border-border/70 px-2.5 py-1.5">
-                        {group.items.length === 0 ? (
-                          <li className="py-1 text-base text-muted-foreground">None open</li>
-                        ) : (
-                          group.items.map((item) => (
-                            <li key={item.id} className="py-1">
-                              <Link href={item.href} className="text-sm text-primary hover:underline">
-                                {item.title}
-                              </Link>
-                              {item.when && item.when !== "—" ? (
-                                <div className="text-helper text-muted-foreground">{item.when}</div>
-                              ) : null}
-                            </li>
-                          ))
-                        )}
-                      </ul>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+          <RailOpenActivities items={context.openActivities} newHref={context.newActivityHref} />
         </div>
       )}
     </div>
@@ -234,7 +187,7 @@ function PolicyFactsCard({ facts }: { facts: RailPolicyFacts }) {
   );
 }
 
-function PersonCard({ person }: { person: RailPerson | null }) {
+export function RailPersonCard({ person }: { person: RailPerson | null }) {
   if (!person) {
     return (
       <div className="px-3 py-4">
@@ -310,6 +263,67 @@ function PersonCard({ person }: { person: RailPerson | null }) {
         More Info
       </Link>
     </div>
+  );
+}
+
+export function RailOpenActivities({
+  items,
+  newHref,
+}: {
+  items: RailOpenActivity[];
+  newHref: string;
+}) {
+  const groups = useMemo(() => groupOpenActivities(items), [items]);
+  const [openKind, setOpenKind] = useState<string | null>(null);
+  const expanded = openKind ?? groups.find((g) => g.items.length > 0)?.kind ?? null;
+
+  return (
+    <section className="border-t border-border px-3 py-3">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-navy">Open activities</h3>
+        <Link href={newHref} className="text-sm font-medium text-primary hover:underline">
+          + New
+        </Link>
+      </div>
+      <ul className="space-y-1.5">
+        {groups.map((group) => {
+          const open = expanded === group.kind;
+          return (
+            <li key={group.kind} className="overflow-hidden rounded-md bg-muted">
+              <button
+                type="button"
+                onClick={() => setOpenKind(open ? "" : group.kind)}
+                className="flex w-full items-center justify-between px-2.5 py-2 text-left text-sm"
+              >
+                <span className="font-medium text-navy">{kindLabel(group.kind)}</span>
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <span className="rounded-sm bg-card px-1.5 text-caption font-semibold">{group.items.length}</span>
+                  <ChevronDown className={cn("size-3.5 transition", open && "rotate-180")} />
+                </span>
+              </button>
+              {open ? (
+                <ul className="border-t border-border/70 px-2.5 py-1.5">
+                  {group.items.length === 0 ? (
+                    <li className="py-1 text-base text-muted-foreground">None open</li>
+                  ) : (
+                    group.items.map((item) => (
+                      <li key={item.id} className="py-1">
+                        <Link href={item.href} className="text-sm text-primary hover:underline">
+                          {item.title}
+                        </Link>
+                        {item.when && item.when !== "—" ? (
+                          <div className="text-helper text-muted-foreground">{item.when}</div>
+                        ) : null}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

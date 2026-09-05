@@ -289,6 +289,27 @@ The banner always reads **In-desk stub — not DocuSign**. `/esign` lists in-des
 
 Do not bind Ana. Her shop stays Quote Sent at Coverage A **$321,000**.
 
+## Deal Documents upload (this slice)
+
+On Deal detail → **Documents**, source-doc upload is **half width** (`lg:grid-cols-2`). The right half is a live shop desk — not a banner:
+
+- Related Contact / Lead / Business with **Send Email** and **Call** (same `RecordContextRail` person card)
+- Quote Sheet status (confirmed / CHECK / missing) plus **Collect next** (dec / wind mit / 4-point still needed)
+- Open activities, grouped like the rail
+
+Extracted fields stay under the split. Page-right context rail is unchanged. No wipe.
+
+```bash
+git fetch && git checkout cursor/ff-deal-upload-half-88fe && git pull
+npm install
+npm run db:migrate
+npm run dev -- --port 43147
+```
+
+1. Sign in as **javy@fitfirst.local** / **javy**.
+2. Open a Deal → Documents. Upload sits on the left. Desk on the right has a person, email/call, sheet status, and open activities.
+3. Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Do not bind.
+
 ## Policy detail (this branch)
 
 `/policies/[id]` shows a **Policy Information** card first: number, colored status, carrier, line/product/subtype, effective, expiration/renewal, premium, billing, Coverage A / limits, insured (Contact or Business link), premises, commission, selling agency, written date — whatever is already on `policies`. Servicing checklist, change history, and issued files stay below. The context rail repeats carrier + effective + premium.
