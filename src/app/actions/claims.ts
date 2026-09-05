@@ -213,6 +213,8 @@ export async function logClaim(formData: FormData) {
   }
 
   revalidateClaimSurfaces(claim.id, policy?.id, contact?.id);
+  const returnTo = str(formData, "returnTo");
+  if (returnTo.startsWith("/policies/")) redirect(returnTo);
   redirect(`/claims/${claim.id}`);
 }
 

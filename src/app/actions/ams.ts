@@ -15,7 +15,9 @@ import {
   certificateRequests,
   issuedCertificates,
   policyAdditionalInterests,
+  policyServiceRequestEvents,
   policyServiceRequests,
+  policyServicingChecks,
   reviewTasks,
   tenants,
 } from "@/lib/db/schema";
@@ -28,6 +30,8 @@ import {
   serviceRequestTaskKind,
   serviceRequestTaskTitle,
   validateServiceRequestFields,
+  workFlagForKind,
+  workStatusForKind,
   type ServiceRequestAction,
 } from "@/lib/ams/service-requests";
 import {
@@ -36,13 +40,17 @@ import {
   validateInterestDraft,
 } from "@/lib/ams/additional-interests";
 import { additionalInsuredFromInterest } from "@/lib/ams/coi-requests";
-import { isWorkDesk } from "@/lib/domain-ams";
-import { packetTaskTitle } from "@/lib/ams/packet-tasks";
 import {
+  isServicingCheckKey,
+  isWorkDesk,
   SERVICING_DOC_KEYS,
   servicingTaskKind,
+  type ServicingCheckKey,
   type ServicingDocKey,
 } from "@/lib/domain-ams";
+import { packetTaskTitle } from "@/lib/ams/packet-tasks";
+import { servicingTaskBody, servicingTaskTitle } from "@/lib/ams/checklist";
+import { ensureWorkItem, setWorkStatus, toggleWorkFlag } from "@/lib/work-queue/service";
 import { getCertificateRequest, getServiceRequest, loadPolicyServicing } from "@/lib/ams/queries";
 import {
   matchingIssuedCertificate,
@@ -54,6 +62,7 @@ import { buildCertificateDraft, nextCertificateNumber } from "@/lib/certificates
 import { renewalFollowupBody, renewalFollowupTitle } from "@/lib/ams/renewals";
 import type { PolicyChangeKind } from "@/lib/policy/status";
 import type { CarrierDownloadProvider } from "@/lib/domain-ams";
+
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -83,7 +92,40 @@ async function actorName() {
   return {
     id: session.userId,
     name: session.name || "Desk",
+    isAdmin: session.isAdmin,
   };
+}
+
+async function writeRequestEvent(input: {
+  requestId: string;
+  policyId: string;
+  action: string;
+  body: string;
+  actorId?: string | null;
+  actorName?: string | null;
+}) {
+  await db.insert(policyServiceRequestEvents).values({
+    tenantId: DEFAULT_TENANT_ID,
+    requestId: input.requestId,
+    policyId: input.policyId,
+    action: input.action,
+    body: input.body,
+    actorId: input.actorId ?? null,
+    actorName: input.actorName ?? null,
+  });
+}
+
+async function queueServiceWork(policyId: string, kind: PolicyChangeKind, actorId: string | null) {
+  await ensureWorkItem(policyId);
+  await setWorkStatus(policyId, workStatusForKind(kind));
+  if (actorId) {
+    await toggleWorkFlag({
+      policyId,
+      flag: workFlagForKind(kind),
+      actorId,
+      on: true,
+    });
+  }
 }
 
 async function writeServicingLog(input: {
@@ -137,19 +179,21 @@ export async function createServiceRequest(formData: FormData) {
   const kind = asKind(str(formData, "kind"));
   if (!isUuid(policyId) || !kind) bounce(`/policies/${policyId || ""}`, "Choose a change type.");
   const effectiveDate = parseIsoDate(str(formData, "effectiveDate"));
-  if (!effectiveDate) bounce(`/policies/${policyId}`, "A valid effective date is required.");
   const reason = str(formData, "reason");
   const summary = str(formData, "summary");
   const coverageARaw = str(formData, "coverageA");
   const coverageA = coverageARaw ? Number(coverageARaw) : null;
+  const premium = str(formData, "premium") || null;
   const parsed = validateServiceRequestFields({
     kind,
     reason,
     summary,
     effectiveDate,
     coverageA: coverageA != null && Number.isFinite(coverageA) ? coverageA : null,
+    premium,
   });
   if (!parsed.ok) bounce(`/policies/${policyId}`, parsed.error);
+  if (!effectiveDate) bounce(`/policies/${policyId}`, "A valid effective date is required.");
   const actor = await actorName();
   const [row] = await db
     .insert(policyServiceRequests)
@@ -162,7 +206,7 @@ export async function createServiceRequest(formData: FormData) {
       summary: summary || null,
       effectiveDate,
       coverageA: coverageA != null && Number.isFinite(coverageA) ? coverageA : null,
-      premium: str(formData, "premium") || null,
+      premium,
       requestedBy: actor.id,
       requestedByName: actor.name,
       workDesk: isWorkDesk(str(formData, "workDesk")) ? str(formData, "workDesk") : "csr",
@@ -181,16 +225,26 @@ export async function createServiceRequest(formData: FormData) {
     dueDate: due,
     status: "open",
   });
+  const body = `${serviceKindLabel(kind)} requested on this Policy. Status: requested. In-app task opened. Not filed yet. Filing is manual — policies stay in force until you file.`;
   await writeServicingLog({
     title: `${serviceKindLabel(kind)} requested`,
-    body: `${serviceKindLabel(kind)} requested on this Policy. Status: requested. In-app task opened. Not filed yet.`,
+    body,
     eventType: "service_requested",
     policyId,
     contactId: loaded?.policy.contactId,
     accountId: loaded?.policy.accountId,
     dealId: loaded?.policy.dealId,
   });
-  refreshPolicy(policyId, ["/tasks"]);
+  await writeRequestEvent({
+    requestId: row.id,
+    policyId,
+    action: "requested",
+    body,
+    actorId: actor.id,
+    actorName: actor.name,
+  });
+  await queueServiceWork(policyId, kind, actor.id);
+  refreshPolicy(policyId, ["/tasks", "/work-queue"]);
   bounce(`/policies/${policyId}`, undefined, "requested");
 }
 
@@ -267,20 +321,45 @@ export async function advanceServiceRequest(formData: FormData) {
       );
   }
 
+  const actor = await actorName();
+  const body =
+    action === "file"
+      ? `${serviceKindLabel(loaded.request.kind)} filed. Policy ${loaded.policy.policyNumber} is now ${drafted.policy.status}.`
+      : `${serviceKindLabel(loaded.request.kind)} moved to ${drafted.status.replaceAll("_", " ")}.`;
   await writeServicingLog({
     title: `${serviceKindLabel(loaded.request.kind)} ${drafted.status.replaceAll("_", " ")}`,
-    body:
-      action === "file"
-        ? `${serviceKindLabel(loaded.request.kind)} filed. Policy ${loaded.policy.policyNumber} is now ${drafted.policy.status}.`
-        : `${serviceKindLabel(loaded.request.kind)} moved to ${drafted.status.replaceAll("_", " ")}.`,
+    body,
     eventType: `service_${action}`,
     policyId: loaded.policy.id,
     contactId: loaded.policy.contactId,
     accountId: loaded.policy.accountId,
     dealId: loaded.policy.dealId,
   });
+  await writeRequestEvent({
+    requestId: loaded.request.id,
+    policyId: loaded.policy.id,
+    action: action === "start" ? "started" : action === "file" ? "filed" : "withdrawn",
+    body,
+    actorId: actor.id,
+    actorName: actor.name,
+  });
+  if (action === "file" || action === "withdraw") {
+    await setWorkStatus(loaded.policy.id, "ready");
+    if (actor.id) {
+      await toggleWorkFlag({
+        policyId: loaded.policy.id,
+        flag: workFlagForKind(loaded.request.kind as PolicyChangeKind),
+        actorId: actor.id,
+        on: false,
+      });
+    }
+  }
 
-  refreshPolicy(loaded.policy.id, loaded.policy.contactId ? [`/contacts/${loaded.policy.contactId}`] : []);
+  refreshPolicy(loaded.policy.id, [
+    "/work-queue",
+    "/tasks",
+    ...(loaded.policy.contactId ? [`/contacts/${loaded.policy.contactId}`] : []),
+  ]);
   bounce(`/policies/${loaded.policy.id}`, undefined, drafted.status);
 }
 
@@ -542,6 +621,174 @@ export async function createRenewalFollowup(formData: FormData) {
   bounce("/renewals", undefined, "followup_created");
 }
 
+async function upsertServicingCheck(input: {
+  policyId: string;
+  itemKey: ServicingCheckKey;
+  status: "complete" | "incomplete";
+  taskId?: string | null;
+  actorId?: string | null;
+}) {
+  const [existing] = await db
+    .select()
+    .from(policyServicingChecks)
+    .where(
+      and(
+        eq(policyServicingChecks.tenantId, DEFAULT_TENANT_ID),
+        eq(policyServicingChecks.policyId, input.policyId),
+        eq(policyServicingChecks.itemKey, input.itemKey),
+      ),
+    );
+  const completedAt = input.status === "complete" ? new Date() : null;
+  if (existing) {
+    const [row] = await db
+      .update(policyServicingChecks)
+      .set({
+        status: input.status,
+        taskId: input.taskId ?? existing.taskId,
+        completedAt,
+        completedBy: input.status === "complete" ? input.actorId ?? null : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(policyServicingChecks.id, existing.id))
+      .returning();
+    return row;
+  }
+  const [row] = await db
+    .insert(policyServicingChecks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId: input.policyId,
+      itemKey: input.itemKey,
+      status: input.status,
+      taskId: input.taskId ?? null,
+      completedAt,
+      completedBy: input.status === "complete" ? input.actorId ?? null : null,
+    })
+    .returning();
+  return row;
+}
+
+export async function toggleServicingCheck(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const itemKey = str(formData, "itemKey");
+  const nextStatus = str(formData, "status") === "complete" ? "complete" : "incomplete";
+  if (!isUuid(policyId) || !isServicingCheckKey(itemKey)) {
+    bounce(`/policies/${policyId || ""}`, "Unknown servicing item.");
+  }
+  const actor = await actorName();
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(`/policies/${policyId}`, "Policy not found.");
+
+  const [existing] = await db
+    .select()
+    .from(policyServicingChecks)
+    .where(
+      and(
+        eq(policyServicingChecks.tenantId, DEFAULT_TENANT_ID),
+        eq(policyServicingChecks.policyId, policyId),
+        eq(policyServicingChecks.itemKey, itemKey),
+      ),
+    );
+
+  let taskId = existing?.taskId ?? null;
+  if (nextStatus === "incomplete" && !taskId) {
+    const [task] = await db
+      .insert(reviewTasks)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        policyId,
+        contactId: workspace.policy.contactId,
+        accountId: workspace.policy.accountId,
+        kind: "servicing",
+        title: servicingTaskTitle(itemKey, workspace.policy.policyNumber),
+        dueDate: workspace.policy.expirationDate ?? new Date(),
+        status: "open",
+      })
+      .returning();
+    taskId = task.id;
+    await writeServicingLog({
+      title: servicingTaskTitle(itemKey, workspace.policy.policyNumber),
+      body: servicingTaskBody(itemKey, workspace.policy.policyNumber),
+      eventType: "servicing_task",
+      policyId,
+      contactId: workspace.policy.contactId,
+      accountId: workspace.policy.accountId,
+      dealId: workspace.policy.dealId,
+    });
+  }
+  if (nextStatus === "complete" && taskId) {
+    await db
+      .update(reviewTasks)
+      .set({ status: "done", completedAt: new Date() })
+      .where(eq(reviewTasks.id, taskId));
+  }
+
+  await upsertServicingCheck({
+    policyId,
+    itemKey,
+    status: nextStatus,
+    taskId,
+    actorId: actor.id,
+  });
+  refreshPolicy(policyId, ["/tasks", "/book-health"]);
+  bounce(`/policies/${policyId}`, undefined, nextStatus === "complete" ? "check_complete" : "check_open");
+}
+
+export async function createServicingTask(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const itemKey = str(formData, "itemKey");
+  if (!isUuid(policyId) || !isServicingCheckKey(itemKey)) {
+    bounce(`/policies/${policyId || ""}`, "Unknown servicing item.");
+  }
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(`/policies/${policyId}`, "Policy not found.");
+
+  const [existing] = await db
+    .select()
+    .from(policyServicingChecks)
+    .where(
+      and(
+        eq(policyServicingChecks.tenantId, DEFAULT_TENANT_ID),
+        eq(policyServicingChecks.policyId, policyId),
+        eq(policyServicingChecks.itemKey, itemKey),
+      ),
+    );
+  if (existing?.taskId) bounce(`/policies/${policyId}`, undefined, "task_exists");
+
+  const [task] = await db
+    .insert(reviewTasks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      contactId: workspace.policy.contactId,
+      accountId: workspace.policy.accountId,
+      kind: "servicing",
+      title: servicingTaskTitle(itemKey, workspace.policy.policyNumber),
+      dueDate: workspace.policy.expirationDate ?? new Date(),
+      status: "open",
+    })
+    .returning();
+  await upsertServicingCheck({
+    policyId,
+    itemKey,
+    status: existing?.status === "complete" ? "complete" : "incomplete",
+    taskId: task.id,
+  });
+  await writeServicingLog({
+    title: servicingTaskTitle(itemKey, workspace.policy.policyNumber),
+    body: servicingTaskBody(itemKey, workspace.policy.policyNumber),
+    eventType: "servicing_task",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/tasks"]);
+  bounce(`/policies/${policyId}`, undefined, "task_created");
+}
+
 export async function attemptCarrierDownloadImport(formData: FormData) {
   const provider = str(formData, "provider") as CarrierDownloadProvider;
   const result = attemptCarrierDownload(provider === "al3" ? "al3" : "ivans");
@@ -596,9 +843,7 @@ export async function createPacketTask(formData: FormData) {
     loadPolicyServicing(policyId),
   ]);
   if (!workspace || !servicing) bounce(`/policies/${policyId}`, "Policy not found.");
-  const missing = servicing.checklist.items
-    .filter((item) => !item.ok && (SERVICING_DOC_KEYS as readonly string[]).includes(item.key))
-    .map((item) => item.key as ServicingDocKey);
+  const missing = servicing.missingPackets;
   if (!missing.includes(key)) {
     bounce(`/policies/${policyId}`, `${key.replaceAll("_", " ")} is already on file.`);
   }

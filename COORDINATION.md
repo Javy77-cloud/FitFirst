@@ -715,7 +715,7 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. **0046**–**0047** landed later. AMS wave 2 took **0048**. Next free additive migration is **0049**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. **0046**–**0047** landed later. AMS wave 2 took **0048**. AMS wave 3 took **0049**. Next free additive migration is **0050**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
 
 ## AMS wave 2 — book-of-business depth (`cursor/ams-wave2-book-3be9`)
 
@@ -734,6 +734,26 @@ Click path:
 3. **Renewals** `/renewals` — Hale in 30 days ($2,184 vs $2,547). Follow up writes a Task + in-app Alert only.
 4. **Certificates** `/certificates` — Harbor request for Brevard County Parks. Issue stub. Palm Bay Marina Dockage already issued.
 5. **Settings → IVANS / AL3** — Not connected. Attempt import does not invent a download.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. `getActor` still goes through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.
+
+## AMS wave 3 — servicing depth (`cursor/ams-wave3-servicing-0ccd`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. No IVANS, rater, Stripe, Twilio, or DocuSign.
+
+Incoming `0049_ams_wave3` remapped to additive `0051_ams_wave3` (wave 4 already held 0049):
+
+- `policy_servicing_checks` — renewal docs / inspection / mortgagee / ID cards, complete or incomplete, optional Task FK. `tenant_id` on the table.
+- `policy_service_request_events` — durable endorsement / cancel / non-renew activity log.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — checklist: ID cards complete, mortgagee incomplete with an in-desk Task, inspection open, renewal docs not in the 90-day window. Endorsement still **in progress**. Claims panel shows the seeded wind FNOL + timeline; new FNOL stays on this Policy.
+2. Policy **HP-FL-88421** (Hale) — renewal docs due in 30 days, endorsement requested. **Do not auto-cancel.** Status stays Active.
+3. **Renewals** `/renewals` — 30-day bucket has Hale ($2,184 vs $2,547). 90-day bucket has Nair. Follow-up is Task + Alert only.
+4. **Book health** `/book-health` — agency vs producer rollups, lapse-risk flags (Hale Critical), monoline gaps, missing dec.
+5. Harbor Key — withdrawn cancellation in the service log. GL stays in force. COI request unchanged.
+6. **Settings → IVANS / AL3** — still Not connected.
 
 Sidebar stays `#1d4e89`. One Pipeline nav row. `getActor` still goes through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.
 
@@ -776,4 +796,4 @@ Click path:
 4. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
 5. Settings → IVANS / AL3 still **Not connected**.
 
-Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0051**.
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0052**.

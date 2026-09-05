@@ -536,6 +536,8 @@ export async function seed() {
   await seedClientPortal();
   const { seedAmsWave2 } = await import("./seed-ams-wave2");
   await seedAmsWave2();
+  const { seedAmsWave3 } = await import("./seed-ams-wave3");
+  await seedAmsWave3();
   const { seedAmsWave4 } = await import("./seed-ams-wave4");
   await seedAmsWave4();
   const { seedAmsWave5 } = await import("./seed-ams-wave5");

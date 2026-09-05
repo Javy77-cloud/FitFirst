@@ -15,12 +15,14 @@ import { getPolicyWorkspace } from "@/lib/db/queries";
 import { loadPolicyServicing } from "@/lib/ams/queries";
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { LossRunPanel } from "@/components/ams/loss-run-panel";
+import { PolicyClaimsPanel } from "@/components/ams/policy-claims-panel";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
 import { SuspensePanel } from "@/components/ams/suspense-panel";
 import { TermHistoryPanel } from "@/components/ams/term-history-panel";
 import { allowedInterestKinds, canHoldInterests, isPersonalLinesPolicy } from "@/lib/ams/additional-interests";
 import { listClaimsForPolicy } from "@/lib/db/claim-queries";
+import { currentDeskSession } from "@/lib/auth/session";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
@@ -39,9 +41,10 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const [servicing, policyClaims] = await Promise.all([
+  const [servicing, policyClaims, session] = await Promise.all([
     loadPolicyServicing(id),
     listClaimsForPolicy(id),
+    currentDeskSession(),
   ]);
   const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms } =
     workspace;
@@ -104,6 +107,7 @@ export default async function PolicyDetailPage({
           checklist={servicing.checklist}
           policyId={policy.id}
           packetByKey={servicing.packetByKey}
+          missingPackets={servicing.missingPackets}
         />
       ) : null}
       {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} /> : null}
@@ -123,8 +127,37 @@ export default async function PolicyDetailPage({
         coverageA={policy.coverageA}
         premium={policy.premium}
         requests={servicing?.requests ?? []}
+        events={servicing?.events ?? []}
         error={error}
         notice={notice}
+      />
+      <PolicyClaimsPanel
+        policyId={policy.id}
+        contactId={contact?.id}
+        policyNumber={policy.policyNumber}
+        partyName={
+          contact
+            ? `${contact.lastName}, ${contact.firstName}`
+            : account?.name ?? "Insured"
+        }
+        postedBy={session.name || "Javy"}
+        claims={(servicing?.claims ?? []).map(({ claim, contact: claimContact }) => ({
+          id: claim.id,
+          status: claim.status,
+          causeType: claim.causeType ?? "other",
+          description: claim.description,
+          reportedHow: claim.reportedHow ?? "phone",
+          dateReported: claim.dateReported ?? claim.createdAt,
+          dateOfLoss: claim.dateOfLoss,
+          carrierClaimNumber: claim.carrierClaimNumber,
+          policyId: claim.policyId,
+          policyNumber: policy.policyNumber,
+          contactId: claim.contactId,
+          contactName: claimContact
+            ? `${claimContact.lastName}, ${claimContact.firstName}`
+            : null,
+        }))}
+        activity={servicing?.claimActivity ?? []}
       />
 
       <section className="ff-card p-4">

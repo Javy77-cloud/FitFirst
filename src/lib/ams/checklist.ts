@@ -1,5 +1,12 @@
 import { formatDay } from "@/lib/domain";
-import { SERVICING_DOC_LABELS, type ServicingDocKey } from "@/lib/domain-ams";
+import {
+  SERVICING_CHECK_LABELS,
+  SERVICING_DOC_LABELS,
+  type ServicingCheckKey,
+  type ServicingDocKey,
+} from "@/lib/domain-ams";
+import { DESK_AS_OF } from "@/lib/home/as-of";
+import { daysUntilExpiration, expirationDay } from "./renewals";
 
 export type ServicingFile = {
   docType: string;
@@ -12,11 +19,22 @@ export type ServicingTask = {
   dueDate: Date | string | null;
 };
 
+export type ServicingCheck = {
+  id?: string;
+  key: ServicingCheckKey;
+  status: "complete" | "incomplete";
+  notes?: string | null;
+  taskId?: string | null;
+};
+
 export type ChecklistItem = {
-  key: ServicingDocKey | "renewal" | "next_task";
+  key: ServicingDocKey | ServicingCheckKey | "next_task";
   label: string;
   ok: boolean;
   detail: string;
+  toggleable: boolean;
+  checkId?: string | null;
+  taskId?: string | null;
 };
 
 export type ServicingChecklist = {
@@ -39,12 +57,45 @@ export function missingServicingDocs(files: ServicingFile[]): ServicingDocKey[] 
   return (["dec", "id_card", "aor"] as const).filter((key) => !hasServicingDoc(files, key));
 }
 
+export function checkByKey(
+  checks: ServicingCheck[] | undefined,
+  key: ServicingCheckKey,
+): ServicingCheck | undefined {
+  return checks?.find((row) => row.key === key);
+}
+
+export function isCheckComplete(
+  checks: ServicingCheck[] | undefined,
+  key: ServicingCheckKey,
+): boolean {
+  return checkByKey(checks, key)?.status === "complete";
+}
+
+export function servicingTaskTitle(itemKey: ServicingCheckKey, policyNumber: string): string {
+  return `Servicing · ${SERVICING_CHECK_LABELS[itemKey]} · ${policyNumber}`;
+}
+
+export function servicingTaskBody(itemKey: ServicingCheckKey, policyNumber: string): string {
+  return `${SERVICING_CHECK_LABELS[itemKey]} is incomplete on ${policyNumber}. In-desk task only — do not email.`;
+}
+
 export function buildServicingChecklist(input: {
   files: ServicingFile[];
   expirationDate: Date | string | null | undefined;
   nextTask: ServicingTask | null;
+  checks?: ServicingCheck[];
+  asOf?: Date;
 }): ServicingChecklist {
-  const renewal = input.expirationDate ? formatDay(input.expirationDate) : "";
+  const asOf = input.asOf ?? DESK_AS_OF;
+  const exp = expirationDay(input.expirationDate);
+  const days = exp ? daysUntilExpiration(exp, asOf) : null;
+  const renewalDocsDue = days != null && days >= 0 && days <= 90;
+  const idOnFile = hasServicingDoc(input.files, "id_card");
+  const idCheck = checkByKey(input.checks, "id_cards");
+  const renewalCheck = checkByKey(input.checks, "renewal_docs");
+  const inspectionCheck = checkByKey(input.checks, "inspection");
+  const mortgageeCheck = checkByKey(input.checks, "mortgagee");
+
   const items: ChecklistItem[] = [
     {
       key: "dec",
@@ -53,28 +104,64 @@ export function buildServicingChecklist(input: {
       detail: hasServicingDoc(input.files, "dec")
         ? "Issued dec or complete policy is on this record."
         : "Upload the issued dec on this Policy — shopping decs stay on the Deal.",
+      toggleable: false,
     },
     {
-      key: "id_card",
-      label: SERVICING_DOC_LABELS.id_card,
-      ok: hasServicingDoc(input.files, "id_card"),
-      detail: hasServicingDoc(input.files, "id_card")
+      key: "id_cards",
+      label: SERVICING_CHECK_LABELS.id_cards,
+      ok: idOnFile || idCheck?.status === "complete",
+      detail: idOnFile
         ? "ID card file is attached."
-        : "No ID card on this Policy yet.",
+        : idCheck?.status === "complete"
+          ? "Marked complete on the desk."
+          : "No ID cards on this Policy yet.",
+      toggleable: true,
+      checkId: idCheck?.id ?? null,
+      taskId: idCheck?.taskId ?? null,
     },
     {
-      key: "aor",
-      label: SERVICING_DOC_LABELS.aor,
-      ok: hasServicingDoc(input.files, "aor"),
-      detail: hasServicingDoc(input.files, "aor")
-        ? "AOR packet is on file."
-        : "AOR packet slot is empty. Not a licensed ACORD product.",
+      key: "renewal_docs",
+      label: SERVICING_CHECK_LABELS.renewal_docs,
+      ok: !renewalDocsDue
+        ? days == null
+          ? false
+          : true
+        : renewalCheck?.status === "complete",
+      detail:
+        days == null
+          ? "No expiration on this Policy."
+          : !renewalDocsDue
+            ? `Not in the 90-day window. Expires ${formatDay(exp)}.`
+            : renewalCheck?.status === "complete"
+              ? `Renewal packet complete. Expires in ${days} days.`
+              : `Due — expires in ${days} days (${formatDay(exp)}).`,
+      toggleable: true,
+      checkId: renewalCheck?.id ?? null,
+      taskId: renewalCheck?.taskId ?? null,
     },
     {
-      key: "renewal",
-      label: "Renewal date",
-      ok: Boolean(renewal),
-      detail: renewal ? `Expires ${renewal}` : "No expiration on this Policy.",
+      key: "inspection",
+      label: SERVICING_CHECK_LABELS.inspection,
+      ok: inspectionCheck?.status === "complete",
+      detail:
+        inspectionCheck?.status === "complete"
+          ? "Inspection marked complete."
+          : "Inspection not on file. Mark complete when the report lands.",
+      toggleable: true,
+      checkId: inspectionCheck?.id ?? null,
+      taskId: inspectionCheck?.taskId ?? null,
+    },
+    {
+      key: "mortgagee",
+      label: SERVICING_CHECK_LABELS.mortgagee,
+      ok: mortgageeCheck?.status === "complete",
+      detail:
+        mortgageeCheck?.status === "complete"
+          ? "Mortgagee / additional interest is current."
+          : "Mortgagee clause still open. File the endorsement when the lender packet is ready.",
+      toggleable: true,
+      checkId: mortgageeCheck?.id ?? null,
+      taskId: mortgageeCheck?.taskId ?? null,
     },
     {
       key: "next_task",
@@ -85,6 +172,8 @@ export function buildServicingChecklist(input: {
           ? `${input.nextTask.title} · due ${formatDay(input.nextTask.dueDate)}`
           : input.nextTask.title
         : "No open service task on this Policy.",
+      toggleable: false,
+      taskId: input.nextTask?.id ?? null,
     },
   ];
   return {

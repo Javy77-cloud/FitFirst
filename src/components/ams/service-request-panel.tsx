@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
 import { serviceKindLabel, serviceRequestNextStepCopy } from "@/lib/ams/service-requests";
 import { isServiceRequestStatus, serviceRequestStatusLabel, workDeskLabel } from "@/lib/domain-ams";
-import type { PolicyServiceRequest } from "@/lib/db/schema";
+import type { PolicyServiceRequest, PolicyServiceRequestEvent } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
 import { reasonLabel } from "@/lib/policy/reasons";
 import type { PolicyChangeKind } from "@/lib/policy/status";
@@ -15,6 +15,7 @@ export function ServiceRequestPanel({
   coverageA,
   premium,
   requests,
+  events = [],
   error,
   notice,
 }: {
@@ -23,6 +24,7 @@ export function ServiceRequestPanel({
   coverageA: number | null;
   premium: string | null;
   requests: PolicyServiceRequest[];
+  events?: PolicyServiceRequestEvent[];
   error?: string;
   notice?: string;
 }) {
@@ -38,8 +40,10 @@ export function ServiceRequestPanel({
     <section className="ff-card mb-4 p-4">
       <h2 className="text-base font-semibold text-navy">Service request pipeline</h2>
       <p className="mt-1 text-base text-muted-foreground">
-        Request → start → file. Filing updates this Policy and writes the activity log plus an
-        in-app Task. Does not open a Deal and does not create a new Policy.
+        Request → start → file. Required: type, reason, effective date, and what the insured
+        asked for. Cancel / non-renew stay on the book until you file. Filing updates this
+        Policy, writes the durable activity log plus an in-app Task, and a work-queue item.
+        Does not open a Deal and does not create a new Policy.
       </p>
       {error ? (
         <p className="mt-2 text-sm text-destructive" role="alert">
@@ -126,6 +130,23 @@ export function ServiceRequestPanel({
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {events.length > 0 ? (
+        <div className="mt-4 border-t border-border pt-3">
+          <h3 className="text-sm font-semibold text-navy">Service activity log</h3>
+          <ol className="mt-2 space-y-2">
+            {events.map((event) => (
+              <li key={event.id} className="text-sm">
+                <span className="uppercase text-muted-foreground">{event.action}</span>
+                {" · "}
+                <span>{formatDay(event.occurredAt)}</span>
+                {event.actorName ? ` · ${event.actorName}` : ""}
+                <div className="text-muted-foreground">{event.body}</div>
+              </li>
+            ))}
+          </ol>
+        </div>
       ) : null}
     </section>
   );

@@ -584,6 +584,30 @@ export const AMS_WAVE2_IDS = {
   harborCoiLog: "a0481111-a048-4048-8048-a04811111109",
 } as const;
 
+/** AMS wave 3. Off Ana / Elena owner / wave 2 a048… */
+export const AMS_WAVE3_IDS = {
+  elenaRenewalDocs: "a0511111-a051-4051-8051-a05111111101",
+  elenaInspection: "a0511111-a051-4051-8051-a05111111102",
+  elenaMortgagee: "a0511111-a051-4051-8051-a05111111103",
+  elenaIdCards: "a0511111-a051-4051-8051-a05111111104",
+  haleRenewalDocs: "a0511111-a051-4051-8051-a05111111105",
+  haleInspection: "a0511111-a051-4051-8051-a05111111106",
+  haleMortgagee: "a0511111-a051-4051-8051-a05111111107",
+  haleIdCards: "a0511111-a051-4051-8051-a05111111108",
+  harborRenewalDocs: "a0511111-a051-4051-8051-a05111111109",
+  harborInspection: "a0511111-a051-4051-8051-a05111111110",
+  harborMortgagee: "a0511111-a051-4051-8051-a05111111111",
+  harborIdCards: "a0511111-a051-4051-8051-a05111111112",
+  harborWithdrawnCancel: "a0511111-a051-4051-8051-a05111111113",
+  elenaMortgageeTask: "a0511111-a051-4051-8051-a05111111114",
+  haleRenewalDocsTask: "a0511111-a051-4051-8051-a05111111115",
+  elenaEndorsementEvent: "a0511111-a051-4051-8051-a05111111116",
+  haleEndorsementEvent: "a0511111-a051-4051-8051-a05111111117",
+  harborCancelEvent: "a0511111-a051-4051-8051-a05111111118",
+  elenaMortgageeActivity: "a0511111-a051-4051-8051-a05111111119",
+  haleRenewalActivity: "a0511111-a051-4051-8051-a05111111120",
+} as const;
+
 /** AMS wave 4. Off wave2 a048… and Ana / Elena owner blocks. */
 export const AMS_WAVE4_IDS = {
   elenaMortgagee: "a0491111-a049-4049-8049-a04911111101",

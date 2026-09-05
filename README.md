@@ -41,6 +41,14 @@ In-house servicing on Policies that already exist. No IVANS, no rater, no Stripe
 - **Certificates** (`/certificates`) — COI request queue. Issue still prints a desk stub. **Not a licensed ACORD product.**
 - **IVANS / AL3** (`/settings/carrier-download`) — empty importer. Status stays **Not connected**. Attempt import returns `needs carrier download / IVANS later`. No fake carrier fees.
 
+## AMS wave 3 (kept)
+
+Servicing depth on the same Policies. Incoming `0049_ams_wave3` remapped to `0051_ams_wave3`.
+
+- **Servicing checklist** — renewal docs, inspection, mortgagee, ID cards. Complete / incomplete toggles write in-desk Tasks.
+- **Endorsement / cancel / non-renew** — durable `policy_service_request_events` log. Hale stays Active; Harbor’s cancel seed is **withdrawn**.
+- **Book health** — lapse risk, monoline gaps, missing dec, plus wave 4/5 packet rollups.
+
 ## AMS wave 4 (kept)
 
 Function-first depth on the same Policies. No redesign. Build stops at the API wall.
@@ -53,7 +61,7 @@ Function-first depth on the same Policies. No redesign. Build stops at the API w
 
 Try: Elena `HO3-ELENA-2026` still has dec + ID, missing AOR (collect task open), mortgagee **First Community Bank ISAOA**, endorsement **in progress**. Hale `HP-FL-88421` endorsement stays **requested**. Do not file those to “prove” a cancel. Do not bind Ana.
 
-## AMS wave 5 (this branch)
+## AMS wave 5 (kept)
 
 Same Policies. No redesign. Stubs stop at the API wall.
 

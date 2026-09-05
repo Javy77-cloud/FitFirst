@@ -114,6 +114,47 @@ describe("service request pipeline", () => {
     expect(blank.ok).toBe(false);
   });
 
+  it("requires a summary to queue cancel or non-renew and never invents a Hale cancel", () => {
+    expect(
+      validateServiceRequestFields({
+        kind: "cancellation",
+        reason: "insured_request",
+        effectiveDate: new Date("2026-09-15"),
+        summary: null,
+        coverageA: null,
+        premium: null,
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateServiceRequestFields({
+        kind: "non_renewal",
+        reason: "carrier_nonrenew",
+        effectiveDate: new Date("2026-10-01"),
+        summary: "Carrier exit — file only when the desk is ready. Hale stays active.",
+        coverageA: null,
+        premium: null,
+      }).ok,
+    ).toBe(true);
+    expect(
+      validateServiceRequestFields({
+        kind: "endorsement",
+        reason: "coverage_change",
+        effectiveDate: new Date("2026-09-20"),
+        summary: "Raise Coverage A",
+        coverageA: null,
+        premium: "2547.00",
+      }).ok,
+    ).toBe(false);
+    const hale = applyServiceRequestAction(
+      request({ status: "requested", kind: "endorsement" }),
+      policy,
+      "start",
+    );
+    expect(hale.ok).toBe(true);
+    if (!hale.ok) return;
+    expect(hale.policy.status).toBe("active");
+  });
+
   it("refuses to file a second time or endorse an already cancelled policy", () => {
     expect(applyServiceRequestAction(request({ status: "filed" }), policy, "file").ok).toBe(
       false,

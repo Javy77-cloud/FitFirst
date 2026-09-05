@@ -2593,7 +2593,56 @@ export const policyAdditionalInterests = pgTable(
   ],
 );
 
+/** Complete / incomplete servicing items on a Policy (renewal docs, inspection, mortgagee, ID cards). */
+export const policyServicingChecks = pgTable(
+  "policy_servicing_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    itemKey: text("item_key").notNull(),
+    status: text("status").notNull().default("incomplete"),
+    notes: text("notes"),
+    taskId: uuid("task_id"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedBy: uuid("completed_by"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("policy_servicing_checks_uidx").on(t.tenantId, t.policyId, t.itemKey),
+    index("policy_servicing_checks_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+/** Durable activity log for endorsement / cancel / non-renew requests. */
+export const policyServiceRequestEvents = pgTable(
+  "policy_service_request_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    requestId: uuid("request_id")
+      .notNull()
+      .references(() => policyServiceRequests.id),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    action: text("action").notNull(),
+    body: text("body").notNull(),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("policy_service_request_events_request_idx").on(t.tenantId, t.requestId),
+    index("policy_service_request_events_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
 export type PolicyServiceRequest = typeof policyServiceRequests.$inferSelect;
 export type CertificateRequest = typeof certificateRequests.$inferSelect;
 export type CarrierDownloadConnection = typeof carrierDownloadConnections.$inferSelect;
 export type PolicyAdditionalInterest = typeof policyAdditionalInterests.$inferSelect;
+export type PolicyServicingCheck = typeof policyServicingChecks.$inferSelect;
+export type PolicyServiceRequestEvent = typeof policyServiceRequestEvents.$inferSelect;

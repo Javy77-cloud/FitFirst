@@ -13,28 +13,50 @@ import {
   carrierDownloadConnections,
   carriers,
   certificateRequests,
+  claimActivity,
+  claims,
   contacts,
   documents,
   issuedCertificates,
   policies,
   policyAdditionalInterests,
+  policyServiceRequestEvents,
   policyServiceRequests,
+  policyServicingChecks,
   policyTerms,
   reviewTasks,
   users,
 } from "@/lib/db/schema";
-import { bookHealthCounts, missingDocRows, producerBookRows, type OwnedBookPolicy } from "./book-health";
-import { buildServicingChecklist, type ServicingFile, type ServicingTask } from "./checklist";
-import { packetTaskTitle, packetTasksByKey, type PacketTask } from "./packet-tasks";
-
-const policyOwner = alias(users, "policy_owner");
 import {
+  bookHealthCounts,
+  lapseRiskRows,
+  missingDecRows,
+  missingDocRows,
+  monolineGaps,
+  producerBookRows,
+  producerRollups,
+  type OwnedBookPolicy,
+} from "./book-health";
+import {
+  buildServicingChecklist,
+  missingServicingDocs,
+  type ServicingCheck,
+  type ServicingFile,
+  type ServicingTask,
+} from "./checklist";
+import { packetTaskTitle, packetTasksByKey, type PacketTask } from "./packet-tasks";
+import {
+  bucketRenewalRows,
   buildRenewalRow,
   isUpcomingRenewal,
   sortRenewalRows,
   type RenewalPolicy,
 } from "./renewals";
 import { carrierDownloadCatalog } from "./carrier-download";
+import { parseMoney, premiumChange } from "@/lib/renewal/compare";
+import type { ServicingCheckKey, ServicingDocKey } from "@/lib/domain-ams";
+
+const policyOwner = alias(users, "policy_owner");
 
 const tenant = () => DEFAULT_TENANT_ID;
 
@@ -54,6 +76,7 @@ async function scopedPolicies() {
       contact: contacts,
       account: accounts,
       carrier: carriers,
+      owner: policyOwner,
       ownerName: policyOwner.name,
     })
     .from(policies)
@@ -203,6 +226,36 @@ export async function ensureServicingSuspense(policyId: string) {
   return pending;
 }
 
+export async function listServiceRequestEvents(policyId: string) {
+  if (!isUuid(policyId)) return [];
+  return db
+    .select()
+    .from(policyServiceRequestEvents)
+    .where(
+      and(eq(policyServiceRequestEvents.tenantId, tenant()), eq(policyServiceRequestEvents.policyId, policyId)),
+    )
+    .orderBy(desc(policyServiceRequestEvents.occurredAt));
+}
+
+export async function loadPolicyClaims(policyId: string) {
+  if (!isUuid(policyId)) return { claims: [], activity: [] };
+  const rows = await db
+    .select({ claim: claims, contact: contacts })
+    .from(claims)
+    .leftJoin(contacts, eq(claims.contactId, contacts.id))
+    .where(and(eq(claims.tenantId, tenant()), eq(claims.policyId, policyId)))
+    .orderBy(desc(claims.dateReported));
+  const claimIds = rows.map((row) => row.claim.id);
+  const activity = claimIds.length
+    ? await db
+        .select()
+        .from(claimActivity)
+        .where(and(eq(claimActivity.tenantId, tenant()), inArray(claimActivity.claimId, claimIds)))
+        .orderBy(desc(claimActivity.createdAt))
+    : [];
+  return { claims: rows, activity };
+}
+
 export async function loadPolicyServicing(policyId: string) {
   if (!isUuid(policyId)) return null;
   const [policy] = await db
@@ -211,44 +264,61 @@ export async function loadPolicyServicing(policyId: string) {
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
   if (!policy) return null;
   await ensureServicingSuspense(policyId);
-  const [files, requests, nextTask, interests, packetTaskRows, terms] = await Promise.all([
-    db
-      .select({ docType: documents.docType, slot: documents.slot })
-      .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId))),
-    listServiceRequests(policyId),
-    nextServiceTask(policyId),
-    db
-      .select()
-      .from(policyAdditionalInterests)
-      .where(
-        and(
-          eq(policyAdditionalInterests.tenantId, tenant()),
-          eq(policyAdditionalInterests.policyId, policyId),
+  const [files, requests, nextTask, interests, packetTaskRows, terms, checkRows, events, claimDesk] =
+    await Promise.all([
+      db
+        .select({ docType: documents.docType, slot: documents.slot })
+        .from(documents)
+        .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId))),
+      listServiceRequests(policyId),
+      nextServiceTask(policyId),
+      db
+        .select()
+        .from(policyAdditionalInterests)
+        .where(
+          and(
+            eq(policyAdditionalInterests.tenantId, tenant()),
+            eq(policyAdditionalInterests.policyId, policyId),
+          ),
+        )
+        .orderBy(asc(policyAdditionalInterests.name)),
+      db
+        .select()
+        .from(reviewTasks)
+        .where(
+          and(
+            eq(reviewTasks.tenantId, tenant()),
+            eq(reviewTasks.policyId, policyId),
+            inArray(reviewTasks.kind, [...Object.values(SERVICING_TASK_KINDS)]),
+          ),
         ),
-      )
-      .orderBy(asc(policyAdditionalInterests.name)),
-    db
-      .select()
-      .from(reviewTasks)
-      .where(
-        and(
-          eq(reviewTasks.tenantId, tenant()),
-          eq(reviewTasks.policyId, policyId),
-          inArray(reviewTasks.kind, [...Object.values(SERVICING_TASK_KINDS)]),
+      db
+        .select()
+        .from(policyTerms)
+        .where(and(eq(policyTerms.tenantId, tenant()), eq(policyTerms.policyId, policyId))),
+      db
+        .select()
+        .from(policyServicingChecks)
+        .where(
+          and(eq(policyServicingChecks.tenantId, tenant()), eq(policyServicingChecks.policyId, policyId)),
         ),
-      ),
-    db
-      .select()
-      .from(policyTerms)
-      .where(and(eq(policyTerms.tenantId, tenant()), eq(policyTerms.policyId, policyId))),
-  ]);
+      listServiceRequestEvents(policyId),
+      loadPolicyClaims(policyId),
+    ]);
   const packetTasks: PacketTask[] = packetTaskRows.map((row) => ({
     id: row.id,
     kind: row.kind,
     title: row.title,
     status: row.status,
   }));
+  const checks: ServicingCheck[] = checkRows.map((row) => ({
+    id: row.id,
+    key: row.itemKey as ServicingCheckKey,
+    status: row.status === "complete" ? "complete" : "incomplete",
+    notes: row.notes,
+    taskId: row.taskId,
+  }));
+  const missingPackets: ServicingDocKey[] = missingServicingDocs(files);
   return {
     policy,
     requests: requests.map((row) => row.request),
@@ -257,10 +327,16 @@ export async function loadPolicyServicing(policyId: string) {
     nextTask,
     packetTasks,
     packetByKey: packetTasksByKey(packetTasks),
+    missingPackets,
+    events,
+    checks,
+    claims: claimDesk.claims,
+    claimActivity: claimDesk.activity,
     checklist: buildServicingChecklist({
       files,
       expirationDate: policy.expirationDate,
       nextTask,
+      checks,
     }),
   };
 }
@@ -285,19 +361,52 @@ export async function loadBookHealth() {
     list.push({ docType: file.docType, slot: file.slot });
     filesByPolicy.set(file.policyId, list);
   }
-  const book: OwnedBookPolicy[] = rows.map(({ policy, contact, account, ownerName }) => ({
+  const terms = policyIds.length
+    ? await db
+        .select()
+        .from(policyTerms)
+        .where(and(eq(policyTerms.tenantId, tenant()), inArray(policyTerms.policyId, policyIds)))
+    : [];
+  const pctByPolicy = new Map<string, number | null>();
+  const currentByPolicy = new Map<string, string | null>();
+  const proposedByPolicy = new Map<string, string | null>();
+  for (const term of terms) {
+    if (term.role === "current") currentByPolicy.set(term.policyId, term.premium);
+    if (term.role === "proposed") proposedByPolicy.set(term.policyId, term.premium);
+  }
+  for (const { policy } of rows) {
+    const current = parseMoney(currentByPolicy.get(policy.id) ?? policy.premium);
+    const proposed = parseMoney(proposedByPolicy.get(policy.id) ?? null);
+    pctByPolicy.set(
+      policy.id,
+      current != null && proposed != null ? premiumChange(current, proposed).pct : null,
+    );
+  }
+  const book: OwnedBookPolicy[] = rows.map(({ policy, contact, account, owner, ownerName }) => ({
     id: policy.id,
     policyNumber: policy.policyNumber,
     status: policy.status,
     lineOfBusiness: policy.lineOfBusiness,
     expirationDate: policy.expirationDate,
     partyName: partyName(contact, account),
+    partyKey: contact?.id ?? account?.id ?? policy.id,
     ownerId: policy.ownerId,
-    ownerName: ownerName || "Unassigned",
+    ownerName: ownerName || owner?.name || (policy.producer ? policy.producer : "Unassigned"),
+    premium: policy.premium,
+    premiumChangePct: pctByPolicy.get(policy.id) ?? null,
   }));
   const counts = bookHealthCounts(book);
   const missing = missingDocRows(book, filesByPolicy);
-  const rollup = producerBookRows(book, filesByPolicy);
+  const missingDec = missingDecRows(missing);
+  const monoline = monolineGaps(book);
+  const lapseRisk = lapseRiskRows(book);
+  const packetRollup = producerBookRows(book, filesByPolicy);
+  const rollups = producerRollups(
+    book,
+    new Set(missingDec.map((row) => row.policyId)),
+    new Set(lapseRisk.map((row) => row.policyId)),
+    new Set(monoline.map((row) => row.partyKey)),
+  );
   const openRequests = await db
     .select({ n: sql<number>`count(*)` })
     .from(policyServiceRequests)
@@ -317,8 +426,13 @@ export async function loadBookHealth() {
   return {
     counts,
     missing,
-    producers: rollup.producers,
-    agency: rollup.agency,
+    missingDec,
+    monoline,
+    lapseRisk,
+    agency: rollups.agency,
+    producers: rollups.producers,
+    agencyCounts: packetRollup.agency,
+    producerBooks: packetRollup.producers,
     scope: session.isAdmin ? "agency" : "producer",
     viewerName: session.name || "Desk",
     openServiceRequests: Number(openRequests[0]?.n ?? 0),
@@ -375,13 +489,14 @@ export async function loadRenewalPipeline(windowDays = 60) {
   }
   const list = sortRenewalRows(
     upcoming.map((row) => buildRenewalRow(row, DESK_AS_OF)).filter((row) => row != null),
-  );
+  ).map((row) => ({
+    ...row,
+    hasFollowup: followupByPolicy.has(row.id),
+  }));
   return {
     windowDays,
-    rows: list.map((row) => ({
-      ...row,
-      hasFollowup: followupByPolicy.has(row.id),
-    })),
+    rows: list,
+    buckets: bucketRenewalRows(list),
   };
 }
 

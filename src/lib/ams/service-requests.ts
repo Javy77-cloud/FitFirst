@@ -83,6 +83,17 @@ export function serviceKindLabel(kind: string): string {
   return kind.replaceAll("_", " ");
 }
 
+export type ServiceRequestFieldInput = {
+  kind: PolicyChangeKind;
+  reason: string;
+  summary: string | null | undefined;
+  effectiveDate: Date | null;
+  coverageA: number | null;
+  premium?: string | null;
+};
+
+export type ServiceRequestFields = ServiceRequestFieldInput;
+
 export function reasonsForKind(kind: PolicyChangeKind) {
   if (kind === "endorsement") return ENDORSEMENT_REASONS;
   if (kind === "cancellation") return CANCELLATION_REASONS;
@@ -92,14 +103,6 @@ export function reasonsForKind(kind: PolicyChangeKind) {
 export function isReasonForKind(kind: PolicyChangeKind, reason: string): boolean {
   return reasonsForKind(kind).some((row) => row.value === reason);
 }
-
-export type ServiceRequestFieldInput = {
-  kind: PolicyChangeKind;
-  reason: string;
-  summary: string | null | undefined;
-  effectiveDate: Date | null;
-  coverageA: number | null;
-};
 
 export function missingServiceRequestFields(input: ServiceRequestFieldInput): string[] {
   const missing: string[] = [];
@@ -127,6 +130,12 @@ export function validateServiceRequestFields(
   return { ok: false, error: `Required: ${missing.join(", ")}.` };
 }
 
+export function requiredFieldsForKind(kind: PolicyChangeKind): string[] {
+  const fields = ["kind", "reason", "effectiveDate", "summary"];
+  if (kind === "endorsement") fields.push("reason_match");
+  return fields;
+}
+
 export function serviceRequestNextStepCopy(status: ServiceRequestStatus): string {
   return SERVICE_REQUEST_NEXT_STEPS[status];
 }
@@ -137,4 +146,12 @@ export function serviceRequestTaskTitle(kind: string, policyNumber: string): str
 
 export function serviceRequestTaskKind(): string {
   return SERVICE_REQUEST_TASK_KIND;
+}
+
+export function workStatusForKind(kind: PolicyChangeKind): "endorsement_pending" | "waiting_on_carrier" {
+  return kind === "endorsement" ? "endorsement_pending" : "waiting_on_carrier";
+}
+
+export function workFlagForKind(kind: PolicyChangeKind): "endorsement_required" | "lapse_warning" {
+  return kind === "endorsement" ? "endorsement_required" : "lapse_warning";
 }
