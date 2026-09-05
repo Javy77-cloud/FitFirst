@@ -302,7 +302,7 @@ export async function createDeal(formData: FormData) {
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
-      source: lead.source ?? str(formData, "source") || "manual",
+      source: lead.source ?? (str(formData, "source") || "manual"),
       policySubType,
       state: str(formData, "state") || "FL",
       ownerId: actor.id,
