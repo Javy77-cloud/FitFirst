@@ -160,6 +160,34 @@ export function moveId(order: string[], fromId: string, toId: string): string[] 
   return next;
 }
 
+export function moveByDelta(order: string[], id: string, delta: number): string[] {
+  const from = order.indexOf(id);
+  if (from < 0 || delta === 0) return [...order];
+  const to = Math.max(0, Math.min(order.length - 1, from + delta));
+  return moveId(order, id, order[to]);
+}
+
+export function nudgePrimary(layout: StoredNavLayout, id: string, delta: number): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (isPinnedPrimaryId(id)) return current;
+  return { ...current, primaryOrder: moveByDelta(current.primaryOrder, id, delta) };
+}
+
+export function nudgeSubmenu(
+  layout: StoredNavLayout,
+  primaryId: string,
+  id: string,
+  delta: number,
+): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (!isPrimaryId(primaryId)) return current;
+  const submenu = current.submenus[primaryId] ?? [];
+  return {
+    ...current,
+    submenus: { ...current.submenus, [primaryId]: moveByDelta(submenu, id, delta) },
+  };
+}
+
 export function reorderPrimaries(layout: StoredNavLayout, fromId: string, toId: string): StoredNavLayout {
   const current = normalizeNavLayout(layout);
   if (isPinnedPrimaryId(fromId) || isPinnedPrimaryId(toId)) return current;

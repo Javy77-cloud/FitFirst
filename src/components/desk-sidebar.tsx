@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown, GripVertical, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { resetNavLayoutAction, saveNavLayoutAction } from "@/app/actions/nav-layout";
 import { logoutDesk } from "@/app/actions/auth";
@@ -14,6 +14,8 @@ import {
   availableSubmenuLinks,
   defaultStoredNavLayout,
   normalizeNavLayout,
+  nudgePrimary,
+  nudgeSubmenu,
   primaryIdForPath,
   removeSubmenuLink,
   reorderPrimaries,
@@ -55,19 +57,10 @@ function writeCachedLayout(layout: StoredNavLayout): void {
   }
 }
 
-function parseDrag(event: React.DragEvent): DragPayload | null {
-  try {
-    const raw = event.dataTransfer.getData("text/plain");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as DragPayload;
-    if (parsed?.kind === "primary" && typeof parsed.id === "string") return parsed;
-    if (parsed?.kind === "sub" && typeof parsed.id === "string" && typeof parsed.primaryId === "string") {
-      return parsed;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+function dropKeyFromPoint(clientX: number, clientY: number): string | null {
+  const el = document.elementFromPoint(clientX, clientY);
+  const target = el?.closest("[data-nav-drop]") as HTMLElement | null;
+  return target?.dataset.navDrop ?? null;
 }
 
 export function DeskSidebar({
@@ -97,8 +90,11 @@ export function DeskSidebar({
   const [, startTransition] = useTransition();
   const persistEnabled = signedIn && Boolean(actor.id);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragRef = useRef<DragPayload | null>(null);
+  const layoutRef = useRef(layout);
   const narrow = rail === "narrow";
   const rows = resolveNavLayout(layout);
+  layoutRef.current = layout;
 
   useEffect(() => {
     const prefs = readSidebarPrefs();
@@ -139,24 +135,33 @@ export function DeskSidebar({
     }, 200);
   }
 
+  function applyDrop(key: string | null) {
+    const payload = dragRef.current;
+    dragRef.current = null;
+    setDropKey(null);
+    if (!payload || !key) return;
+    const current = layoutRef.current;
+    if (payload.kind === "primary" && key.startsWith("primary:")) {
+      persist(reorderPrimaries(current, payload.id, key.slice("primary:".length)));
+      return;
+    }
+    if (payload.kind === "sub" && key.startsWith("sub:")) {
+      const rest = key.slice(4);
+      const sep = rest.indexOf(":");
+      if (sep < 0) return;
+      const primaryId = rest.slice(0, sep);
+      const targetId = rest.slice(sep + 1);
+      if (payload.primaryId !== primaryId) return;
+      persist(reorderSubmenu(current, primaryId, payload.id, targetId));
+    }
+  }
+
+  function beginDrag(payload: DragPayload) {
+    dragRef.current = payload;
+  }
+
   function onChevron(id: string) {
     setOpenId((current) => toggleAccordionId(current, id));
-  }
-
-  function onPrimaryDrop(targetId: string, event: React.DragEvent) {
-    event.preventDefault();
-    setDropKey(null);
-    const payload = parseDrag(event);
-    if (!payload || payload.kind !== "primary") return;
-    persist(reorderPrimaries(layout, payload.id, targetId));
-  }
-
-  function onSubDrop(primaryId: string, targetId: string, event: React.DragEvent) {
-    event.preventDefault();
-    setDropKey(null);
-    const payload = parseDrag(event);
-    if (!payload || payload.kind !== "sub" || payload.primaryId !== primaryId) return;
-    persist(reorderSubmenu(layout, primaryId, payload.id, targetId));
   }
 
   function resetLayout() {
@@ -173,10 +178,52 @@ export function DeskSidebar({
     });
   }
 
+  function reorderHandle(payload: DragPayload, label: string) {
+    return (
+      <span
+        draggable
+        title={`Drag to reorder ${label}`}
+        aria-label={`Reorder ${label}`}
+        data-nav-handle={payload.kind === "primary" ? payload.id : `${payload.primaryId}:${payload.id}`}
+        className="cursor-grab px-0.5 text-sidebar-foreground/70 active:cursor-grabbing"
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          event.stopPropagation();
+          beginDrag(payload);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!dragRef.current) return;
+          setDropKey(dropKeyFromPoint(event.clientX, event.clientY));
+        }}
+        onPointerUp={(event) => {
+          if (!dragRef.current) return;
+          applyDrop(dropKeyFromPoint(event.clientX, event.clientY));
+        }}
+        onPointerCancel={() => {
+          dragRef.current = null;
+          setDropKey(null);
+        }}
+        onDragStart={(event) => {
+          beginDrag(payload);
+          event.dataTransfer.setData("text/plain", JSON.stringify(payload));
+          event.dataTransfer.effectAllowed = "move";
+        }}
+        onDragEnd={() => {
+          dragRef.current = null;
+          setDropKey(null);
+        }}
+      >
+        <GripVertical className="size-3.5" />
+      </span>
+    );
+  }
+
   return (
     <aside
       className={cn(
-        "hidden shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex",
+        "sticky top-0 hidden h-screen shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex",
         narrow ? "w-14" : "w-60",
       )}
     >
@@ -192,52 +239,71 @@ export function DeskSidebar({
           )}
         </Link>
       </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2" aria-label="Desk">
-        {rows.map((row) => {
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2" aria-label="Desk">
+        {rows.map((row, rowIndex) => {
           const open = openId === row.id;
           const Icon = row.link.icon;
           const panelId = `ff-nav-${row.id}`;
           const primaryActive = pathIsActive(pathname, row.link);
           const showChevron = !narrow && (customizing || row.submenu.length > 0);
           const addable = customizing ? availableSubmenuLinks(layout, row.id) : [];
+          const movablePrimaries = rows.filter((item) => !item.pinned);
+          const primaryDrop = `primary:${row.id}`;
           return (
             <div key={row.id}>
               <div
+                data-nav-drop={row.pinned ? undefined : primaryDrop}
                 className={cn(
                   "flex items-center rounded-md",
-                  dropKey === `primary:${row.id}` ? "ring-1 ring-white/70" : "",
+                  dropKey === primaryDrop ? "ring-1 ring-white/70" : "",
                 )}
                 onDragOver={
                   customizing && !row.pinned
                     ? (event) => {
                         event.preventDefault();
-                        setDropKey(`primary:${row.id}`);
+                        event.dataTransfer.dropEffect = "move";
+                        setDropKey(primaryDrop);
                       }
                     : undefined
                 }
                 onDragLeave={() => {
-                  setDropKey((current) => (current === `primary:${row.id}` ? null : current));
+                  setDropKey((current) => (current === primaryDrop ? null : current));
                 }}
                 onDrop={
-                  customizing && !row.pinned ? (event) => onPrimaryDrop(row.id, event) : undefined
+                  customizing && !row.pinned
+                    ? (event) => {
+                        event.preventDefault();
+                        applyDrop(primaryDrop);
+                      }
+                    : undefined
                 }
               >
                 {customizing && !narrow && !row.pinned ? (
-                  <span
-                    draggable
-                    title="Drag to reorder"
-                    aria-label={`Reorder ${row.link.label}`}
-                    className="cursor-grab px-0.5 text-sidebar-foreground/70 active:cursor-grabbing"
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData(
-                        "text/plain",
-                        JSON.stringify({ kind: "primary", id: row.id } satisfies DragPayload),
-                      );
-                      event.dataTransfer.effectAllowed = "move";
-                    }}
-                  >
-                    <GripVertical className="size-3.5" />
-                  </span>
+                  <>
+                    {reorderHandle({ kind: "primary", id: row.id }, row.link.label)}
+                    <span className="flex flex-col">
+                      <button
+                        type="button"
+                        title={`Move ${row.link.label} up`}
+                        aria-label={`Move ${row.link.label} up`}
+                        disabled={rowIndex === 0}
+                        onClick={() => persist(nudgePrimary(layout, row.id, -1))}
+                        className="rounded-sm p-0 text-sidebar-foreground/70 hover:text-white disabled:opacity-30"
+                      >
+                        <ChevronUp className="size-3" />
+                      </button>
+                      <button
+                        type="button"
+                        title={`Move ${row.link.label} down`}
+                        aria-label={`Move ${row.link.label} down`}
+                        disabled={rowIndex >= movablePrimaries.length - 1}
+                        onClick={() => persist(nudgePrimary(layout, row.id, 1))}
+                        className="rounded-sm p-0 text-sidebar-foreground/70 hover:text-white disabled:opacity-30"
+                      >
+                        <ChevronDown className="size-3" />
+                      </button>
+                    </span>
+                  </>
                 ) : null}
                 <Link
                   href={row.link.href}
@@ -272,60 +338,70 @@ export function DeskSidebar({
               </div>
               {open && !narrow ? (
                 <div id={panelId} className="mt-0.5 space-y-0.5" role="region" aria-label={row.link.label}>
-                  {row.submenu.map((item) => {
+                  {row.submenu.map((item, itemIndex) => {
                     const SubIcon = item.icon;
                     const settingsSection = search.get("section");
                     const active = item.href.includes("section=")
                       ? pathname === "/settings" && settingsSection === "phone" && item.href.includes("section=phone")
                       : pathIsActive(pathname, item);
+                    const subDrop = `sub:${row.id}:${item.id}`;
                     return (
                       <div
                         key={`${row.id}-${item.id}`}
+                        data-nav-drop={subDrop}
                         className={cn(
                           "flex items-center rounded-md",
-                          dropKey === `sub:${row.id}:${item.id}` ? "ring-1 ring-white/70" : "",
+                          dropKey === subDrop ? "ring-1 ring-white/70" : "",
                         )}
                         onDragOver={
                           customizing
                             ? (event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
-                                setDropKey(`sub:${row.id}:${item.id}`);
+                                event.dataTransfer.dropEffect = "move";
+                                setDropKey(subDrop);
                               }
                             : undefined
                         }
                         onDragLeave={() => {
-                          setDropKey((current) => (current === `sub:${row.id}:${item.id}` ? null : current));
+                          setDropKey((current) => (current === subDrop ? null : current));
                         }}
                         onDrop={
                           customizing
                             ? (event) => {
+                                event.preventDefault();
                                 event.stopPropagation();
-                                onSubDrop(row.id, item.id, event);
+                                applyDrop(subDrop);
                               }
                             : undefined
                         }
                       >
                         {customizing ? (
-                          <span
-                            draggable
-                            title="Drag to reorder submenu"
-                            aria-label={`Reorder ${item.label}`}
-                            className="cursor-grab px-0.5 text-sidebar-foreground/60 active:cursor-grabbing"
-                            onDragStart={(event) => {
-                              event.dataTransfer.setData(
-                                "text/plain",
-                                JSON.stringify({
-                                  kind: "sub",
-                                  primaryId: row.id,
-                                  id: item.id,
-                                } satisfies DragPayload),
-                              );
-                              event.dataTransfer.effectAllowed = "move";
-                            }}
-                          >
-                            <GripVertical className="size-3.5" />
-                          </span>
+                          <>
+                            {reorderHandle({ kind: "sub", primaryId: row.id, id: item.id }, item.label)}
+                            <span className="flex flex-col">
+                              <button
+                                type="button"
+                                title={`Move ${item.label} up`}
+                                aria-label={`Move ${item.label} up`}
+                                disabled={itemIndex === 0}
+                                onClick={() => persist(nudgeSubmenu(layout, row.id, item.id, -1))}
+                                className="rounded-sm p-0 text-sidebar-foreground/60 hover:text-white disabled:opacity-30"
+                              >
+                                <ChevronUp className="size-3" />
+                              </button>
+                              <button
+                                type="button"
+                                title={`Move ${item.label} down`}
+                                aria-label={`Move ${item.label} down`}
+                                disabled={itemIndex === row.submenu.length - 1}
+                                onClick={() => persist(nudgeSubmenu(layout, row.id, item.id, 1))}
+                                className="rounded-sm p-0 text-sidebar-foreground/60 hover:text-white disabled:opacity-30"
+                              >
+                                <ChevronDown className="size-3" />
+                              </button>
+                            </span>
+                          </>
                         ) : null}
                         <Link
                           href={item.href}
@@ -365,6 +441,7 @@ export function DeskSidebar({
                       <label className="block px-2.5 py-1 text-caption text-sidebar-foreground/80">
                         <span className="sr-only">Add a link under {row.link.label}</span>
                         <select
+                          aria-label={`Add a link under ${row.link.label}`}
                           className="h-7 w-full rounded-md border border-sidebar-border bg-sidebar-accent/40 px-1 text-caption text-white"
                           value=""
                           onChange={(event) => {
@@ -394,7 +471,7 @@ export function DeskSidebar({
           );
         })}
       </nav>
-      <div className={cn("space-y-3 border-t border-sidebar-border py-3", narrow ? "px-1.5" : "px-3")}>
+      <div className={cn("shrink-0 space-y-3 border-t border-sidebar-border py-3", narrow ? "px-1.5" : "px-3")}>
         {!narrow && users.length > 0 && actor.id ? <ActorSwitcher actor={actor} users={users} /> : null}
         {narrow ? null : (
           <div className="space-y-1.5">

@@ -7,6 +7,8 @@ import {
   defaultStoredNavLayout,
   flattenResolvedNav,
   normalizeNavLayout,
+  nudgePrimary,
+  nudgeSubmenu,
   parseStoredNavLayout,
   primaryIdForPath,
   removeSubmenuLink,
@@ -125,6 +127,15 @@ describe("reorder and submenu edits", () => {
     const start = addSubmenuLink(defaultStoredNavLayout(), "home", "phone");
     const moved = reorderSubmenu(start, "home", "phone", "get-started");
     expect(moved.submenus.home[0]).toBe("phone");
+  });
+
+  it("nudges a primary or submenu one step", () => {
+    const start = defaultStoredNavLayout();
+    expect(nudgePrimary(start, "leads", -1).primaryOrder[0]).toBe("leads");
+    expect(nudgePrimary(start, "home", -1).primaryOrder[0]).toBe("home");
+    expect(nudgePrimary(start, "settings", -1).primaryOrder).toEqual(start.primaryOrder);
+    const home = addSubmenuLink(start, "home", "phone");
+    expect(nudgeSubmenu(home, "home", "get-started", 1).submenus.home[1]).toBe("get-started");
   });
 });
 
