@@ -1,31 +1,26 @@
+import { saveDeveloperFunction } from "@/app/actions/developer-hub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { saveDeveloperFunction } from "@/app/actions/developer-hub";
-import type { DeveloperFunction } from "@/lib/db/schema";
+import type { DeveloperConnection, DeveloperFunction } from "@/lib/db/schema";
 import {
   FUNCTION_CATEGORIES,
   FUNCTION_CATEGORY_LABEL,
   FUNCTION_LANGUAGES,
   FUNCTION_LANGUAGE_LABEL,
 } from "@/lib/developer-hub/types";
-import type { DeveloperConnection } from "@/lib/db/schema";
-import type { HubSurface } from "@/lib/developer-hub/paths";
 
 export function FunctionForm({
   fn,
   connections,
-  surface = "settings",
 }: {
   fn?: DeveloperFunction;
   connections: DeveloperConnection[];
-  surface?: HubSurface;
 }) {
   const standaloneDefault = (fn?.category ?? "standalone") === "standalone";
   return (
     <form action={saveDeveloperFunction} className="ff-card max-w-3xl space-y-3 p-4">
-      <input type="hidden" name="surface" value={surface} />
       {fn ? <input type="hidden" name="id" value={fn.id} /> : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
@@ -109,9 +104,8 @@ export function FunctionForm({
           Standalone expose
         </legend>
         <p className="text-xs text-muted-foreground">
-          REST is a working stub at{" "}
-          <code>/api/dev/functions/[apiName]/execute</code> and checks an org API key. OAuth 2.0
-          is a wall — Connect later.
+          REST is a working stub at <code>/api/dev/functions/[apiName]/execute</code> and checks an
+          org API key. OAuth 2.0 is a wall — Connect later.
         </p>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="exposeAsRest" defaultChecked={fn?.exposeAsRest ?? standaloneDefault} />

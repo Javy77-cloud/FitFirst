@@ -1,17 +1,18 @@
-import { AutomationsDeveloperFrame } from "@/components/automations/developer-frame";
+import { AppShell } from "@/components/app-shell";
+import { AutomationsModuleNav } from "@/components/automations/module-nav";
 import { FunctionForm } from "@/components/developer-hub/function-form";
-import { requireSignedIn } from "@/lib/auth/guards";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { listDeveloperConnections } from "@/lib/developer-hub/store";
 
 export const dynamic = "force-dynamic";
 
-export default async function AutomationsNewFunctionPage() {
-  const session = await requireSignedIn();
-  const connections = session.isAdmin ? await listDeveloperConnections() : [];
-
+export default async function NewFunctionPage() {
+  await requireAdminPage();
+  const connections = await listDeveloperConnections();
   return (
-    <AutomationsDeveloperFrame title="New function" isAdmin={session.isAdmin}>
-      {session.isAdmin ? <FunctionForm connections={connections} surface="automations" /> : null}
-    </AutomationsDeveloperFrame>
+    <AppShell title="New function">
+      <AutomationsModuleNav />
+      <FunctionForm connections={connections} />
+    </AppShell>
   );
 }

@@ -4,6 +4,7 @@ import {
   validateGuidedAutomation,
   AUTOMATION_ACTION_LABEL,
   AUTOMATION_DEVELOPER_SECTIONS,
+  AUTOMATION_DEV_SECTIONS,
   AUTOMATION_HUB_SECTIONS,
   AUTOMATION_TRIGGER_LABEL,
 } from "./types";
@@ -84,18 +85,23 @@ describe("labels", () => {
     expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("playbooks");
     expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/playbooks");
     expect(AUTOMATION_ACTION_LABEL.task_and_alert).toBe("Task + in-app alert");
+    expect(AUTOMATION_HUB_SECTIONS.map((section) => section.id)).toEqual(
+      expect.arrayContaining(["sequences", "macros", "functions", "webhooks", "api-keys", "buttons"]),
+    );
   });
 
   it("puts Developer Hub tools on Automations, not Settings-only", () => {
-    expect(AUTOMATION_DEVELOPER_SECTIONS.map((section) => section.id)).toEqual([
-      "functions",
-      "macros",
-      "webhooks",
-      "api-keys",
-      "connections",
-    ]);
     expect(AUTOMATION_DEVELOPER_SECTIONS.every((section) => section.href.startsWith("/automations/"))).toBe(
       true,
     );
+    expect(AUTOMATION_DEV_SECTIONS.map((section) => section.id)).toEqual([
+      "macros",
+      "functions",
+      "webhooks",
+      "api-keys",
+      "buttons",
+      "client-scripts",
+      "connections",
+    ]);
   });
 });

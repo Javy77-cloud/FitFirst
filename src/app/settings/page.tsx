@@ -47,8 +47,8 @@ export default async function SettingsPage() {
         <div>
           <div className="text-sm font-semibold text-navy">Automations hub</div>
           <p className="text-helper text-muted-foreground">
-            Campaigns, bulk SMS, templates, guided builder, and signature approval — one nav row,
-            not buried only here.
+            Playbooks, macros, functions, webhooks, templates, guided builder, and signature
+            approval — one nav row, not buried only here.
           </p>
         </div>
       </Link>

@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AUTOMATION_DEVELOPER_SECTIONS, AUTOMATION_HUB_SECTIONS } from "@/lib/automations/types";
+import { AUTOMATION_DESK_SECTIONS, AUTOMATION_DEV_SECTIONS } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
 
 function NavRow({
   label,
   items,
-  pathname,
 }: {
   label: string;
   items: { href: string; label: string; exact?: boolean }[];
-  pathname: string;
 }) {
+  const pathname = usePathname() ?? "";
   return (
     <nav className="flex flex-wrap gap-1.5" aria-label={label}>
       {items.map((item) => {
@@ -41,32 +40,31 @@ function NavRow({
 }
 
 export function AutomationsModuleNav() {
-  const pathname = usePathname() ?? "";
-
   return (
     <div className="mb-4 space-y-2">
       <NavRow
         label="Automations sections"
-        pathname={pathname}
         items={[
           { href: "/automations", label: "Hub", exact: true },
-          ...AUTOMATION_HUB_SECTIONS.map((section) => ({
+          ...AUTOMATION_DESK_SECTIONS.map((section) => ({
             href: section.href,
             label: section.label,
           })),
         ]}
       />
       <div>
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Developer tools
-        </div>
+        </p>
         <NavRow
           label="Developer tools"
-          pathname={pathname}
-          items={AUTOMATION_DEVELOPER_SECTIONS.map((section) => ({
-            href: section.href,
-            label: section.label,
-          }))}
+          items={[
+            ...AUTOMATION_DEV_SECTIONS.map((section) => ({
+              href: section.href,
+              label: section.label,
+            })),
+            { href: "/settings/developer", label: "Developer Hub" },
+          ]}
         />
       </div>
     </div>

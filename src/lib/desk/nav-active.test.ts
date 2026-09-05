@@ -73,6 +73,9 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/playbooks", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/sequences", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/playbooks", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/macros", "/automations")).toBe(true);
+    expect(navItemIsActive("/automations/functions", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/signatures", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/functions", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/api-keys", "/automations")).toBe(true);

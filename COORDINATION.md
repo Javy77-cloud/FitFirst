@@ -827,3 +827,13 @@ Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture 
 - Status + timestamp stored on `deals` / `policies` (`esign_status`, `esign_requested_at`, `esign_signed_at`) and shown on those lists.
 - Banner copy is **In-desk stub — not DocuSign**. `/sign/[token]` is public. Finish-line DocuSign / Dropbox Sign stay `not_implemented`.
 - Incoming `0048_in_desk_esign` remapped to `0053_in_desk_esign`.
+
+## Automations developer tools (`cursor/automations-dev-tools-de23`)
+
+Fills `/automations` with power-user tools. Shares the same table names as Settings siblings `cursor/developer-hub-core-a882` (`developer_*`) and `cursor/dev-hub-macros-buttons-649d` (`desk_macros`, `desk_custom_buttons`, `desk_client_scripts`). Deep-links: Settings → Developer Hub → Automations pages. Sibling paths `/settings/developer/*` and `/settings/developer-hub/*` redirect here.
+
+- Playbooks: existing guided automations (Task + Alert). Campaign sequences + EN/ES templates stay. Paid SMS / Mailchimp stay connect stubs.
+- Macros: manual only. ≤1 email stub, ≤3 field updates, ≤3 tasks. **Run Macro** on Leads / Contacts / Deals. Ana records are skipped.
+- Functions: Button / Automation / Schedule / Standalone. Body persists. Test log. Standalone REST at `/api/dev/functions/[apiName]/execute` with an org API key.
+- Webhooks, org API keys, custom buttons, client scripts, connections (OAuth wall).
+- Incoming `0048_developer_hub` remapped to `0055_developer_hub` (superset of `0054`; adds macros / buttons / scripts / widgets). Seed does not touch Ana. Sidebar stays `--ff-sidebar: #1d4e89`.

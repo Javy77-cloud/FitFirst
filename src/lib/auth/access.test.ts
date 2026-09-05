@@ -81,6 +81,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/enroll-mfa")).toBe(false);
     expect(isPublicPath("/fill-demo")).toBe(true);
     expect(isPublicPath("/api/v1")).toBe(true);
+    expect(isPublicPath("/api/dev/functions/echo_payload/execute")).toBe(true);
+    expect(isPublicPath("/api/dev/webhooks/inbound/desk-echo")).toBe(true);
     expect(isPublicPath("/api/v1/contacts")).toBe(true);
     expect(isPublicPath("/api/v1/export/contacts.csv")).toBe(true);
     expect(isPublicPath("/api/dev/functions/echo_payload/execute")).toBe(true);

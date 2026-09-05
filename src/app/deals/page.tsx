@@ -10,6 +10,8 @@ import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
+import { ListMassBar, ListSelectionProvider, SelectRowCheckbox } from "@/components/developer-hub/list-selection";
+import { listEnabledMacrosFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
@@ -40,11 +42,13 @@ export default async function DealsPage({
     lifeSub: first(params.lifeSub),
     healthSub: first(params.healthSub),
   };
-  const [rows, users, lineSettings, lookup] = await Promise.all([
+  const [rows, users, lineSettings, lookup, macros, buttons] = await Promise.all([
     filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
     listUsersById(),
     loadDeskLineSettings(),
     listDealLookup(),
+    listEnabledMacrosFor("deals"),
+    listVisibleButtons({ module: "deals", placement: ["mass_action", "list"] }),
   ]);
   const hint =
     filter.attention === "bound_pending"
@@ -98,6 +102,18 @@ export default async function DealsPage({
         </p>
       ) : null}
       <section className="ff-card overflow-x-auto">
+        <ListSelectionProvider>
+        <div className="px-3 pt-3">
+          <ListMassBar
+            module="deals"
+            macros={macros.map((row) => ({ id: row.id, name: row.name }))}
+            buttons={buttons.map((row) => ({
+              id: row.id,
+              label: row.label,
+              actionKind: row.actionKind,
+            }))}
+          />
+        </div>
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
             No deals match this filter. Shopping stays on the deal list — quotes are not
@@ -107,6 +123,7 @@ export default async function DealsPage({
           <table className="ff-table">
             <thead>
               <tr>
+                <th className="w-8"></th>
                 <Col table="deals" col="title" as="th">Deal</Col>
                 <Col table="deals" col="stage" as="th">Stage</Col>
                 <Col table="deals" col="line" as="th">Line</Col>
@@ -129,6 +146,9 @@ export default async function DealsPage({
             <SheetTbody>
               {rows.map(({ deal, contact, account }) => (
                 <tr key={deal.id}>
+                  <td>
+                    <SelectRowCheckbox id={deal.id} />
+                  </td>
                   <Col table="deals" col="title">
                     <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
                       {deal.title}
@@ -185,6 +205,7 @@ export default async function DealsPage({
             </SheetTbody>
           </table>
         )}
+        </ListSelectionProvider>
       </section>
     </AppShell>
   );

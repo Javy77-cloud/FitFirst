@@ -61,13 +61,16 @@ export async function POST(
   }
 
   const { result, log } = await executeDeveloperFunction({ fn, input, source: "rest" });
-  return json({
-    ok: result.ok,
-    stub: result.stub,
-    apiName: fn.apiName,
-    connectionLinkName: fn.connectionLinkName,
-    executionId: log?.id ?? null,
-    output: result.output,
-    error: result.error ?? null,
-  }, result.ok ? 200 : 422);
+  return json(
+    {
+      ok: result.ok,
+      stub: result.stub,
+      apiName: fn.apiName,
+      connectionLinkName: fn.connectionLinkName,
+      executionId: log?.id ?? null,
+      output: result.output,
+      error: result.error ?? null,
+    },
+    result.ok ? 200 : 422,
+  );
 }

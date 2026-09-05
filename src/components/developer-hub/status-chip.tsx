@@ -1,8 +1,5 @@
 import { cn } from "@/lib/utils";
-import {
-  HUB_TOOL_STATUS_LABEL,
-  type HubToolStatus,
-} from "@/lib/developer-hub/types";
+import { HUB_TOOL_STATUS_LABEL, type HubToolStatus } from "@/lib/developer-hub/types";
 
 const TONE: Record<HubToolStatus, string> = {
   working: "bg-[var(--ff-green-bg)] text-[var(--ff-green)]",

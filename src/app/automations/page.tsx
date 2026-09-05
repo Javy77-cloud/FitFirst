@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
-import { requireSignedIn } from "@/lib/auth/guards";
-import { AUTOMATION_DEVELOPER_SECTIONS, AUTOMATION_HUB_SECTIONS } from "@/lib/automations/types";
-import { outcomeBadges } from "@/lib/automations/engine";
 import { StatusChip } from "@/components/developer-hub/status-chip";
-import { hubOverviewCounts } from "@/lib/developer-hub/store";
-import type { HubToolStatus } from "@/lib/developer-hub/types";
+import { requireSignedIn } from "@/lib/auth/guards";
+import { AUTOMATION_DESK_SECTIONS, AUTOMATION_DEV_SECTIONS } from "@/lib/automations/types";
+import { outcomeBadges } from "@/lib/automations/engine";
 import {
   listAutomationRuns,
   listGuidedAutomations,
@@ -15,19 +13,20 @@ import {
 } from "@/lib/db/automation-queries";
 import { listCampaignSequences } from "@/lib/db/sequence-queries";
 import { listEmailTemplates } from "@/lib/db/queries";
+import { developerToolCounts } from "@/lib/developer-hub/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
-  const [templates, automations, pending, mine, sequences, runs, hub] = await Promise.all([
+  const [templates, automations, pending, mine, sequences, runs, tools] = await Promise.all([
     listEmailTemplates(),
     listGuidedAutomations({ isAdmin: session.isAdmin }),
     listPendingSignatureApprovals(),
     session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
     listCampaignSequences(),
     listAutomationRuns({ isAdmin: session.isAdmin }),
-    hubOverviewCounts(),
+    developerToolCounts(),
   ]);
   const myLive = mine.filter((row) => row.approvalStatus === "live").length;
   const myPending = mine.filter((row) => row.approvalStatus === "pending").length;
@@ -55,6 +54,13 @@ export default async function AutomationsHubPage() {
           : "Draft a signature for Admin review",
     campaigns: "Not offered — no Mailchimp / SendGrid",
     sms: "Not offered — no Twilio",
+    macros: `${tools.macros} macros · manual run on Leads / Contacts / Deals`,
+    functions: `${tools.functions} functions · test log + REST stub`,
+    webhooks: `${tools.webhooks} outbound · ${tools.inbound} inbound slugs`,
+    "api-keys": `${tools.liveKeys} live org keys`,
+    buttons: `${tools.buttons} custom buttons`,
+    "client-scripts": `${tools.scripts} client scripts`,
+    connections: `${tools.connections} named connectors · OAuth wall`,
   };
 
   return (
@@ -63,7 +69,8 @@ export default async function AutomationsHubPage() {
       <p className="mb-2 max-w-3xl text-sm text-muted-foreground">
         In-desk automations. Playbooks create Tasks and in-app Alerts. Templates stay EN/ES
         drafts. Paid campaign and SMS vendors are off. Developer tools (Functions, Macros,
-        Webhooks, API Keys, Connections) live here too — same records as Settings → Developer Hub.
+        Buttons, Client Scripts, Webhooks, API Keys, Connections) live here too — same records as
+        Settings → Developer Hub. Ana Dib is never auto-updated.
       </p>
       <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
         {session.isAdmin ? (
@@ -79,8 +86,20 @@ export default async function AutomationsHubPage() {
           </>
         )}
       </p>
-      <div className="grid gap-3 md:grid-cols-2">
-        {AUTOMATION_HUB_SECTIONS.map((section) => (
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Link
+          href="/settings/developer"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold text-navy hover:border-primary/40"
+        >
+          Open Developer Hub
+        </Link>
+        <StatusChip status="working" />
+      </div>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Desk playbooks
+      </h2>
+      <div className="mb-6 grid gap-3 md:grid-cols-2">
+        {AUTOMATION_DESK_SECTIONS.map((section) => (
           <Link
             key={section.id}
             href={section.href}
@@ -92,44 +111,29 @@ export default async function AutomationsHubPage() {
           </Link>
         ))}
       </div>
-
-      <h2 className="mb-2 mt-6 text-sm font-semibold text-navy">Developer tools</h2>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Developer tools
+      </h2>
       <p className="mb-3 max-w-3xl text-xs text-muted-foreground">
         Working stubs up to the OAuth wall. Admin creates and runs them. Same tables as Settings.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
-        {AUTOMATION_DEVELOPER_SECTIONS.map((section) => {
-          const chip: HubToolStatus =
-            section.id === "macros"
-              ? "stub"
-              : section.id === "connections"
-                ? "needs_oauth"
-                : "working";
-          const count =
-            section.id === "functions"
-              ? `${hub.functions} functions`
-              : section.id === "api-keys"
-                ? `${hub.liveKeys} live keys`
-                : section.id === "webhooks"
-                  ? `${hub.webhooks} outbound · ${hub.inbound} inbound`
-                  : section.id === "connections"
-                    ? `${hub.connections} connectors`
-                    : "Coming / sibling bot";
-          return (
-            <Link
-              key={section.id}
-              href={section.href}
-              className="ff-card block p-4 hover:border-primary/40"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="text-sm font-semibold text-navy">{section.label}</h2>
-                <StatusChip status={chip} />
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">{section.summary}</p>
-              <p className="mt-2 text-xs text-navy">{count}</p>
-            </Link>
-          );
-        })}
+        {AUTOMATION_DEV_SECTIONS.map((section) => (
+          <Link
+            key={section.id}
+            href={section.href}
+            className="ff-card block p-4 hover:border-primary/40"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-semibold text-navy">{section.label}</h3>
+              <StatusChip
+                status={section.id === "connections" ? "needs_oauth" : "working"}
+              />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{section.summary}</p>
+            <p className="mt-2 text-xs text-navy">{status[section.id]}</p>
+          </Link>
+        ))}
       </div>
     </AppShell>
   );

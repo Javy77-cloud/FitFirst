@@ -547,6 +547,22 @@ export async function hubOverviewCounts() {
   };
 }
 
+export async function developerToolCounts() {
+  const { listDeskButtons, listDeskMacros, listDeskScripts } = await import("@/lib/db/developer-hub-queries");
+  const [core, macros, buttons, scripts] = await Promise.all([
+    hubOverviewCounts(),
+    listDeskMacros(),
+    listDeskButtons(),
+    listDeskScripts(),
+  ]);
+  return {
+    ...core,
+    macros: macros.length,
+    buttons: buttons.length,
+    scripts: scripts.length,
+  };
+}
+
 export function maskConnectionSecret(row: DeveloperConnection) {
   return row.clientSecretEnc ? "••••••••••••" : "";
 }

@@ -1,150 +1,139 @@
 import Link from "next/link";
 import { removeInboundHook, saveInboundHook } from "@/app/actions/developer-hub";
-import { AutomationsDeveloperFrame } from "@/components/automations/developer-frame";
+import { AppShell } from "@/components/app-shell";
+import { AutomationsModuleNav } from "@/components/automations/module-nav";
+import { AutomationsNotice } from "@/components/automations/notice";
 import { StatusChip } from "@/components/developer-hub/status-chip";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireSignedIn } from "@/lib/auth/guards";
-import {
-  listDeveloperWebhooks,
-  listInboundHooks,
-  listInboundPayloads,
-} from "@/lib/developer-hub/store";
+import { listDeveloperWebhooks, listInboundHooks, listInboundPayloads } from "@/lib/developer-hub/store";
 import { WEBHOOK_EVENT_LABEL, isWebhookEvent } from "@/lib/developer-hub/types";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function AutomationsWebhooksPage({
+export default async function WebhooksPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const session = await requireSignedIn();
+  await requireSignedIn();
   const query = await searchParams;
-  const notice = typeof query.notice === "string" ? query.notice : undefined;
-  const [hooks, inbound, payloads] = session.isAdmin
-    ? await Promise.all([listDeveloperWebhooks(), listInboundHooks(), listInboundPayloads(undefined, 6)])
-    : [[], [], []];
+  const [hooks, inbound, payloads] = await Promise.all([
+    listDeveloperWebhooks(),
+    listInboundHooks(),
+    listInboundPayloads(undefined, 8),
+  ]);
 
   return (
-    <AutomationsDeveloperFrame
+    <AppShell
       title="Webhooks"
-      isAdmin={session.isAdmin}
       actions={
         <Link href="/automations/webhooks/new" className={cn(buttonVariants())}>
           New outbound
         </Link>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Outbound desk events enqueue a local delivery. Send test POSTs localhost only. Inbound
-        Signals: <code>POST /api/dev/webhooks/inbound/[slug]</code>.
+      <AutomationsModuleNav />
+      <AutomationsNotice
+        notice={typeof query.notice === "string" ? query.notice : undefined}
+        error={typeof query.error === "string" ? query.error : undefined}
+      />
+      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+        Outbound hooks enqueue a delivery row. Send test POSTs to localhost; remote URLs log a stub
+        attempt. Inbound Signals: <code>POST /api/dev/webhooks/inbound/[slug]</code> stores the
+        payload and raises an in-app Alert.
       </p>
-      {notice === "inbound" ? (
-        <p className="mb-3 rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">Inbound slug saved.</p>
-      ) : null}
-      {session.isAdmin ? (
-        <>
-          <section className="ff-card mb-4 overflow-hidden">
-            <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-              Outbound
-            </div>
-            {hooks.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground">No outbound webhooks.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="ff-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Event</th>
-                      <th>Enabled</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hooks.map((hook) => (
-                      <tr key={hook.id}>
-                        <td>
-                          <Link
-                            href={`/automations/webhooks/${hook.id}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {hook.name}
-                          </Link>
-                        </td>
-                        <td>
-                          <code className="text-xs">
-                            {isWebhookEvent(hook.event) ? WEBHOOK_EVENT_LABEL[hook.event] : hook.event}
-                          </code>
-                        </td>
-                        <td>
-                          {hook.enabled ? (
-                            <StatusChip status="working" />
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Off</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-          <section className="ff-card mb-4 p-4">
-            <div className="text-sm font-semibold text-navy">Inbound Signals</div>
-            <form action={saveInboundHook} className="mt-3 grid gap-3 sm:grid-cols-3 sm:items-end">
-              <input type="hidden" name="surface" value="automations" />
-              <div>
-                <Label className="text-xs">Name</Label>
-                <Input name="name" className="mt-1 h-8" required />
-              </div>
-              <div>
-                <Label className="text-xs">Slug</Label>
-                <Input name="slug" className="mt-1 h-8" placeholder="desk-echo" />
-              </div>
-              <Button type="submit" size="sm">
-                Add inbound slug
-              </Button>
-            </form>
-            <ul className="mt-3 space-y-2">
-              {inbound.map((hook) => (
-                <li
-                  key={hook.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
-                >
-                  <code className="text-xs">/api/dev/webhooks/inbound/{hook.slug}</code>
-                  <form action={removeInboundHook}>
-                    <input type="hidden" name="surface" value="automations" />
-                    <input type="hidden" name="id" value={hook.id} />
-                    <Button type="submit" size="xs" variant="outline">
-                      Remove
-                    </Button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          </section>
-          <section className="ff-card overflow-hidden">
-            <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-              Recent inbound
-            </div>
-            {payloads.length === 0 ? (
-              <p className="px-4 py-4 text-sm text-muted-foreground">None yet.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {payloads.map((row) => (
-                  <li key={row.id} className="px-4 py-2 text-xs">
-                    {row.slug} · {JSON.stringify(row.payload)}
-                  </li>
+      <section className="ff-card mb-4 overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">Outbound</div>
+        {hooks.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">No outbound webhooks.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="ff-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Event</th>
+                  <th>URL</th>
+                  <th>Enabled</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hooks.map((hook) => (
+                  <tr key={hook.id}>
+                    <td>
+                      <Link
+                        href={`/automations/webhooks/${hook.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {hook.name}
+                      </Link>
+                    </td>
+                    <td>
+                      {isWebhookEvent(hook.event) ? WEBHOOK_EVENT_LABEL[hook.event] : hook.event}
+                    </td>
+                    <td className="max-w-[240px] truncate font-mono text-xs">{hook.targetUrl}</td>
+                    <td>{hook.enabled ? <StatusChip status="working" /> : "Off"}</td>
+                  </tr>
                 ))}
-              </ul>
-            )}
-          </section>
-        </>
-      ) : null}
-    </AutomationsDeveloperFrame>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      <section className="ff-card mb-4 p-4">
+        <h2 className="text-sm font-semibold text-navy">Inbound Signals</h2>
+        <form action={saveInboundHook} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <div>
+            <Label className="text-xs">Name</Label>
+            <Input name="name" className="mt-1 h-8" required />
+          </div>
+          <div>
+            <Label className="text-xs">Slug</Label>
+            <Input name="slug" className="mt-1 h-8" placeholder="desk-echo" />
+          </div>
+          <div className="flex items-end">
+            <Button type="submit" size="sm">
+              Add slug
+            </Button>
+          </div>
+        </form>
+        <ul className="mt-3 space-y-2">
+          {inbound.map((hook) => (
+            <li key={hook.id} className="flex items-center justify-between gap-2 text-sm">
+              <span>
+                <span className="font-medium text-navy">{hook.name}</span>{" "}
+                <code className="text-xs">/api/dev/webhooks/inbound/{hook.slug}</code>
+              </span>
+              <form action={removeInboundHook}>
+                <input type="hidden" name="id" value={hook.id} />
+                <Button type="submit" size="xs" variant="outline">
+                  Remove
+                </Button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="ff-card overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
+          Recent inbound payloads
+        </div>
+        {payloads.length === 0 ? (
+          <p className="px-4 py-4 text-sm text-muted-foreground">No inbound signals yet.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {payloads.map((row) => (
+              <li key={row.id} className="px-4 py-2 font-mono text-xs">
+                {row.slug} · {JSON.stringify(row.payload).slice(0, 160)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </AppShell>
   );
 }

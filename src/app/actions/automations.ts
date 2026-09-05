@@ -88,7 +88,12 @@ export async function toggleGuidedAutomation(formData: FormData) {
     .set({ enabled, updatedAt: new Date() })
     .where(and(eq(guidedAutomations.tenantId, DEFAULT_TENANT_ID), eq(guidedAutomations.id, id)));
   refreshAutomations();
-  redirect("/automations/playbooks?notice=automation-saved");
+  const next = str(formData, "next");
+  redirect(
+    next.startsWith("/automations/")
+      ? `${next}?notice=automation-saved`
+      : "/automations/playbooks?notice=automation-saved",
+  );
 }
 
 export async function runPlaybookNow(formData: FormData) {

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { SettingsShell } from "@/components/settings/settings-shell";
 import { StatusChip } from "@/components/developer-hub/status-chip";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { hubOverviewCounts } from "@/lib/developer-hub/store";
+import { developerToolCounts } from "@/lib/developer-hub/store";
 import type { HubToolStatus } from "@/lib/developer-hub/types";
 
 export const dynamic = "force-dynamic";
@@ -12,72 +12,74 @@ const TOOLS: {
   title: string;
   body: string;
   status: HubToolStatus;
-  countKey?: keyof Awaited<ReturnType<typeof hubOverviewCounts>>;
+  countKey?: keyof Awaited<ReturnType<typeof developerToolCounts>>;
 }[] = [
   {
-    href: "/settings/developer/functions",
+    href: "/automations/macros",
+    title: "Macros",
+    body: "Manual run. One email stub, three field updates, three tasks. Same desk_macros table as the macros sibling.",
+    status: "working",
+    countKey: "macros",
+  },
+  {
+    href: "/automations/functions",
     title: "Functions",
-    body: "Named custom functions with a category, language picklist, and a persisted code body. Run test uses an allowlisted JSON transform — no host process spawn.",
+    body: "Button / Automation / Schedule / Standalone. Persist the body. Test log. REST with an org API key.",
     status: "working",
     countKey: "functions",
   },
   {
-    href: "/settings/developer/api-keys",
-    title: "API Keys",
-    body: "Org-level keys (name, prefix, hashed secret). Shown once on create. The Function REST stub checks these keys.",
-    status: "working",
-    countKey: "liveKeys",
-  },
-  {
-    href: "/settings/developer/webhooks",
+    href: "/automations/webhooks",
     title: "Webhooks",
-    body: "Outbound desk events enqueue a local delivery row. Send test POSTs only to localhost. Inbound Signals store a payload and raise an in-app alert.",
+    body: "Outbound desk events and inbound Signals. Same developer_webhooks tables as Developer Hub core.",
     status: "working",
     countKey: "webhooks",
   },
   {
-    href: "/settings/developer/connections",
+    href: "/automations/api-keys",
+    title: "API Keys",
+    body: "Org-level keys. Hashed secret. Used by Standalone function REST.",
+    status: "working",
+    countKey: "liveKeys",
+  },
+  {
+    href: "/automations/buttons",
+    title: "Custom Buttons",
+    body: "List / detail / mass-action. URL, function, or widget stub.",
+    status: "working",
+    countKey: "buttons",
+  },
+  {
+    href: "/automations/client-scripts",
+    title: "Client Scripts",
+    body: "onLoad / onChange bodies persist. Allowlisted getValue / setValue / showError.",
+    status: "working",
+    countKey: "scripts",
+  },
+  {
+    href: "/automations/connections",
     title: "Connections",
-    body: "Named connectors (Google, Outlook, DocuSign, Stripe, Zoho CRM sync, Custom OAuth). Client secrets are encrypted at rest. Authorize stops at the OAuth wall.",
+    body: "Named OAuth connectors. Authorize is a wall. Same developer_connections table.",
     status: "needs_oauth",
     countKey: "connections",
-  },
-  {
-    href: "/settings/developer/macros",
-    title: "Macros",
-    body: "Coming on the Macros sibling branch.",
-    status: "stub",
-  },
-  {
-    href: "/settings/developer/buttons",
-    title: "Custom Buttons",
-    body: "Coming on the Custom Buttons sibling branch.",
-    status: "stub",
-  },
-  {
-    href: "/settings/developer/client-scripts",
-    title: "Client Scripts",
-    body: "Coming on the Client Scripts sibling branch.",
-    status: "stub",
-  },
-  {
-    href: "/settings/developer/widgets",
-    title: "Widgets",
-    body: "Coming on the Widgets sibling branch.",
-    status: "stub",
   },
 ];
 
 export default async function DeveloperHubOverviewPage() {
   await requireAdminPage();
-  const counts = await hubOverviewCounts();
+  const counts = await developerToolCounts();
 
   return (
     <SettingsShell title="Developer Hub" current="developer">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Power-user tools for this desk — Functions, org API keys, webhooks, and named connections.
-        Working paths stop at the API wall. FitFirst does not call paid vendors and does not write
-        to live Zoho.
+        Power-user tools live on Automations and share the Settings Developer Hub sibling tables
+        (<code>developer_*</code> + <code>desk_macros</code>). Working UIs stop at the API / OAuth
+        wall. FitFirst does not call paid vendors and does not write to live Zoho.
+      </p>
+      <p className="mb-4 text-sm">
+        <Link href="/automations" className="font-semibold text-primary hover:underline">
+          Open Automations hub
+        </Link>
       </p>
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="ff-card px-4 py-3">
@@ -89,8 +91,8 @@ export default async function DeveloperHubOverviewPage() {
           <div className="text-xl font-semibold text-navy">{counts.liveKeys}</div>
         </div>
         <div className="ff-card px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Webhooks</div>
-          <div className="text-xl font-semibold text-navy">{counts.webhooks}</div>
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Macros</div>
+          <div className="text-xl font-semibold text-navy">{counts.macros}</div>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
