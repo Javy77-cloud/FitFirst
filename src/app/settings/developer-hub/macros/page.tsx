@@ -3,7 +3,7 @@ import { HubNotice } from "@/components/developer-hub/hub-notice";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { DEV_HUB_MODULE_LABEL, isDevHubModule } from "@/lib/developer-hub/types";
+import { formatMacroModules } from "@/lib/developer-hub/macros";
 import { listDeskMacros } from "@/lib/db/developer-hub-queries";
 import { cn } from "@/lib/utils";
 
@@ -29,8 +29,9 @@ export default async function MacrosPage({
       }
     >
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        User-run only. Not workflows. One email, three field updates, three create-task actions.
-        Run from a module list (checkboxes) or a record detail page. Ana Dib is never updated.
+        Platform macros for every broker run surface. Pick target modules, actions (field update,
+        task create, email stub, stage move), name, and enable. Same <code>desk_macros</code> table
+        as Automations — not a second Settings list. Ana Dib is never updated.
       </p>
       <HubNotice notice={notice} />
       <section className="ff-card overflow-hidden">
@@ -41,7 +42,8 @@ export default async function MacrosPage({
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Module</th>
+                <th>Modules</th>
+                <th>Kind</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -59,9 +61,8 @@ export default async function MacrosPage({
                       <div className="text-xs text-muted-foreground">{macro.description}</div>
                     ) : null}
                   </td>
-                  <td>
-                    {isDevHubModule(macro.module) ? DEV_HUB_MODULE_LABEL[macro.module] : macro.module}
-                  </td>
+                  <td>{formatMacroModules(macro.module, macro.modules)}</td>
+                  <td>{macro.kind === "follow_up" ? "follow-up" : "standard"}</td>
                   <td>{macro.enabled ? "on" : "off"}</td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { completeDeskActivity, updateDeskActivity } from "@/app/actions/activities-desk";
 import { updateReviewTask } from "@/app/actions/alerts";
+import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { AppShell } from "@/components/app-shell";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
@@ -54,6 +55,9 @@ export async function ActivityRecordPage({
         <RecordDetailLayout
           main={
             <div className="space-y-4">
+              {expectKind === "task" || activity.kind === "task" ? (
+                <RecordModuleMacros module="tasks" recordId={activity.id} />
+              ) : null}
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <StagePill stage={activity.status} />
                 <span className="uppercase text-muted-foreground">{activity.kind}</span>
@@ -178,6 +182,7 @@ export async function ActivityRecordPage({
       <RecordDetailLayout
         main={
           <section className="ff-card p-4">
+            <RecordModuleMacros module="tasks" recordId={task.id} />
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <StagePill stage={task.status} />
               <span className="uppercase text-muted-foreground">{task.kind.replaceAll("_", " ")}</span>

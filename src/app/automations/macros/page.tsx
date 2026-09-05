@@ -5,7 +5,8 @@ import { AutomationsNotice } from "@/components/automations/notice";
 import { buttonVariants } from "@/components/ui/button";
 import { requireSignedIn } from "@/lib/auth/guards";
 import { listDeskMacroRuns, listDeskMacros } from "@/lib/db/developer-hub-queries";
-import { DEV_HUB_MODULE_LABEL, isDevHubModule, MODULE_LIST_HREF } from "@/lib/developer-hub/types";
+import { formatMacroModules } from "@/lib/developer-hub/macros";
+import { isDevHubModule, MODULE_LIST_HREF } from "@/lib/developer-hub/types";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -36,9 +37,11 @@ export default async function MacrosPage({
         error={typeof query.error === "string" ? query.error : undefined}
       />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Manual only — not workflows and never scheduled. Check rows on Leads, Contacts, Deals,
-        Policies, or Tasks, then <strong>Run Macro</strong>. Ana Dib is skipped. Admin CRUD also
-        lives under Settings → Developer Hub.
+        Manual only — not workflows and never scheduled. Same <code>desk_macros</code> rows as
+        Settings → Automations &amp; Developer → Macros. Configure every run surface there
+        (Leads, Deals / Pipeline, Contacts, Businesses, Policies, Campaigns, Tasks, Quotes).
+        Check rows, then <strong>Run Macro</strong>. Leads also has <strong>Run Follow-up Macro</strong>.
+        Ana Dib is skipped.
       </p>
       <section className="ff-card overflow-hidden">
         {macros.length === 0 ? (
@@ -51,7 +54,8 @@ export default async function MacrosPage({
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Module</th>
+                  <th>Modules</th>
+                  <th>Kind</th>
                   <th>Status</th>
                   <th>Run on list</th>
                 </tr>
@@ -76,11 +80,8 @@ export default async function MacrosPage({
                           <div className="text-xs text-muted-foreground">{macro.description}</div>
                         ) : null}
                       </td>
-                      <td>
-                        {isDevHubModule(macro.module)
-                          ? DEV_HUB_MODULE_LABEL[macro.module]
-                          : macro.module}
-                      </td>
+                      <td>{formatMacroModules(macro.module, macro.modules)}</td>
+                      <td>{macro.kind === "follow_up" ? "follow-up" : "standard"}</td>
                       <td>{macro.enabled ? "on" : "off"}</td>
                       <td>
                         <Link href={href} className="text-sm text-primary hover:underline">

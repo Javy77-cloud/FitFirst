@@ -86,16 +86,49 @@ export const HUB_TOOL_STATUS_LABEL: Record<HubToolStatus, string> = {
 export const ALLOWED_TRANSFORM_OPS = ["identity", "pick", "wrap", "set"] as const;
 export type AllowedTransformOp = (typeof ALLOWED_TRANSFORM_OPS)[number];
 
-export const DEV_HUB_MODULES = ["leads", "contacts", "deals", "policies", "tasks"] as const;
+export const DEV_HUB_MODULES = [
+  "leads",
+  "contacts",
+  "deals",
+  "policies",
+  "tasks",
+  "businesses",
+  "campaigns",
+  "quotes",
+] as const;
 export type DevHubModule = (typeof DEV_HUB_MODULES)[number];
 
 export const DEV_HUB_MODULE_LABEL: Record<DevHubModule, string> = {
   leads: "Leads",
   contacts: "Contacts",
-  deals: "Deals",
+  deals: "Deals / Pipeline",
   policies: "Policies",
   tasks: "Tasks",
+  businesses: "Businesses",
+  campaigns: "Campaigns",
+  quotes: "Quotes",
 };
+
+export const MACRO_KINDS = ["standard", "follow_up"] as const;
+export type MacroKind = (typeof MACRO_KINDS)[number];
+
+export const MACRO_KIND_LABEL: Record<MacroKind, string> = {
+  standard: "Standard",
+  follow_up: "Follow-up",
+};
+
+export const MACRO_STAGE_OPTIONS = [
+  "shopping",
+  "quoting",
+  "comparing",
+  "quote_sent",
+  "closed_won",
+  "bound",
+  "lost",
+  "closed_lost",
+  "archive",
+] as const;
+export type MacroStage = (typeof MACRO_STAGE_OPTIONS)[number];
 
 export const BUTTON_PLACEMENTS = ["list", "detail", "mass_action"] as const;
 export type ButtonPlacement = (typeof BUTTON_PLACEMENTS)[number];
@@ -139,10 +172,15 @@ export type MacroCreateTask = {
   dueInDays?: number;
 };
 
+export type MacroStageMove = {
+  stage: string;
+};
+
 export type MacroActions = {
   email: MacroEmailAction | null;
   fieldUpdates: MacroFieldUpdate[];
   createTasks: MacroCreateTask[];
+  stageMove?: MacroStageMove | null;
 };
 
 export const ALLOWED_MACRO_FIELDS: Record<DevHubModule, readonly string[]> = {
@@ -151,6 +189,9 @@ export const ALLOWED_MACRO_FIELDS: Record<DevHubModule, readonly string[]> = {
   deals: ["notes", "pipelineStage"],
   policies: ["status"],
   tasks: ["status"],
+  businesses: ["notes"],
+  campaigns: ["status"],
+  quotes: ["notes"],
 };
 
 export const MODULE_LIST_HREF: Record<DevHubModule, string> = {
@@ -159,6 +200,9 @@ export const MODULE_LIST_HREF: Record<DevHubModule, string> = {
   deals: "/deals",
   policies: "/policies",
   tasks: "/tasks",
+  businesses: "/accounts",
+  campaigns: "/campaigns",
+  quotes: "/quotes",
 };
 
 export function isFunctionCategory(value: string): value is FunctionCategory {
@@ -179,6 +223,14 @@ export function isConnectionKind(value: string): value is ConnectionKind {
 
 export function isDevHubModule(value: string): value is DevHubModule {
   return (DEV_HUB_MODULES as readonly string[]).includes(value);
+}
+
+export function isMacroKind(value: string): value is MacroKind {
+  return (MACRO_KINDS as readonly string[]).includes(value);
+}
+
+export function isMacroStage(value: string): value is MacroStage {
+  return (MACRO_STAGE_OPTIONS as readonly string[]).includes(value);
 }
 
 export function isButtonPlacement(value: string): value is ButtonPlacement {
@@ -206,7 +258,7 @@ export function isWidgetHosting(value: string): value is WidgetHosting {
 }
 
 export function emptyMacroActions(): MacroActions {
-  return { email: null, fieldUpdates: [], createTasks: [] };
+  return { email: null, fieldUpdates: [], createTasks: [], stageMove: null };
 }
 
 export function slugifyApiName(raw: string): string {

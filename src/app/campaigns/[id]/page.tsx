@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { stubSendCampaign, upsertCampaign } from "@/app/actions/campaigns";
 import { AppShell } from "@/components/app-shell";
+import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { Notice, StubBanner } from "@/components/ops/stub-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export default async function CampaignDetailPage({
 
   return (
     <AppShell title={campaign.name}>
+      <RecordModuleMacros module="campaigns" recordId={campaign.id} />
       <Notice code={notice} />
       <StubBanner>
         Sending does not email anyone. FitFirst writes a “would send” log row per recipient.

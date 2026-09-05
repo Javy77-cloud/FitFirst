@@ -121,7 +121,8 @@ export default async function AutomationsHubPage() {
       </h2>
       <p className="mb-3 max-w-3xl text-xs text-muted-foreground">
         Working stubs up to the OAuth wall. Admin creates and runs them. Same tables as Settings.
-        Check rows on Leads, Contacts, Deals, Policies, or Tasks, then Run Macro.
+        Check rows on Leads, Contacts, Deals, Policies, Tasks, Businesses, Campaigns, or Quotes,
+        then Run Macro. Leads also has Run Follow-up Macro. Same Settings desk_macros rows.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {AUTOMATION_DEV_SECTIONS.map((section) => (

@@ -1,4 +1,6 @@
 import { AppShell } from "@/components/app-shell";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { listAccounts } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
@@ -36,9 +38,11 @@ export default async function AccountsPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
+        <ModuleListActions module="businesses" recordIds={rows.map((account) => account.id)}>
         <ColumnTable
           moduleId="businesses"
           columns={[
+            { id: "pick", label: "", locked: true },
             { id: "business", label: "Business", locked: true },
             { id: "status", label: "Status" },
             { id: "lifetime", label: "Lifetime" },
@@ -48,6 +52,7 @@ export default async function AccountsPage({
           rows={rows.map((account) => ({
             key: account.id,
             cells: {
+              pick: <SelectRowCheckbox id={account.id} />,
               business: (
                 <>
                   <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
@@ -62,6 +67,7 @@ export default async function AccountsPage({
             },
           }))}
         />
+        </ModuleListActions>
       </section>
     </AppShell>
   );

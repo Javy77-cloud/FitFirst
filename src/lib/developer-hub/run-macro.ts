@@ -6,13 +6,16 @@ import { anaSkipMessage, isProtectedAnaRecord } from "@/lib/developer-hub/protec
 import type { DevHubModule, MacroActions } from "@/lib/developer-hub/types";
 import { db } from "@/lib/db";
 import {
+  accounts,
   activities,
   contacts,
   deals,
+  emailCampaigns,
   emailSendJobs,
   emailTemplates,
   leads,
   policies,
+  quotes,
   reviewTasks,
 } from "@/lib/db/schema";
 import { CONTACT_ID, DEAL_ID, LEAD_ID } from "@/lib/fixtures/ids";
@@ -36,6 +39,8 @@ type LoadedRecord = {
   policyId: string | null;
   leadId: string | null;
   accountId: string | null;
+  taskSource?: "review" | "activity";
+  quoteSource?: "quote" | "deal";
 };
 
 export async function applyMacroToRecords(input: {
@@ -79,9 +84,18 @@ export async function applyMacroToRecords(input: {
       result.errors.push(`Record ${id} was not found on ${input.module}.`);
       continue;
     }
+    if (
+      isProtectedAnaRecord(record.dealId ?? "") ||
+      isProtectedAnaRecord(record.contactId ?? "") ||
+      isProtectedAnaRecord(record.leadId ?? "")
+    ) {
+      result.skippedAna += 1;
+      continue;
+    }
     try {
       const updated = await applyFieldUpdates(input.module, record, actions);
-      if (updated) result.updated += 1;
+      const moved = await applyStageMove(input.module, record, actions);
+      if (updated || moved) result.updated += 1;
       result.tasksCreated += await createMacroTasks(input.module, record, actions);
       result.emailsQueued += await queueMacroEmail(record, actions);
       result.ran += 1;
@@ -221,30 +235,174 @@ async function loadRecords(module: DevHubModule, ids: string[]): Promise<Map<str
         },
       });
     }
-  } else {
+  } else if (module === "businesses") {
     const rows = await db
       .select()
-      .from(reviewTasks)
-      .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), inArray(reviewTasks.id, ids)));
+      .from(accounts)
+      .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), inArray(accounts.id, ids)));
+    for (const row of rows) {
+      map.set(row.id, {
+        id: row.id,
+        email: row.email,
+        contactId: row.officerContactId,
+        dealId: null,
+        policyId: null,
+        leadId: null,
+        accountId: row.id,
+        merge: {
+          id: row.id,
+          module,
+          title: row.name,
+          name: row.name,
+          email: row.email,
+          phone: row.phone,
+          address: row.mailingAddress,
+          city: row.city,
+          state: row.state,
+          zip: row.zip,
+        },
+      });
+    }
+  } else if (module === "campaigns") {
+    const rows = await db
+      .select()
+      .from(emailCampaigns)
+      .where(and(eq(emailCampaigns.tenantId, DEFAULT_TENANT_ID), inArray(emailCampaigns.id, ids)));
     for (const row of rows) {
       map.set(row.id, {
         id: row.id,
         email: null,
-        contactId: row.contactId,
-        dealId: row.dealId,
-        policyId: row.policyId,
+        contactId: null,
+        dealId: null,
+        policyId: null,
         leadId: null,
-        accountId: row.accountId,
+        accountId: null,
         merge: {
           id: row.id,
           module,
-          title: row.title,
+          title: row.name,
+          name: row.name,
           status: row.status,
         },
       });
     }
+  } else if (module === "quotes") {
+    await loadQuoteRecords(map, ids);
+  } else {
+    await loadTaskRecords(map, ids);
   }
   return map;
+}
+
+async function loadQuoteRecords(map: Map<string, LoadedRecord>, ids: string[]) {
+  const quoteRows = await db
+    .select({ quote: quotes, deal: deals, contact: contacts })
+    .from(quotes)
+    .innerJoin(deals, eq(quotes.dealId, deals.id))
+    .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), inArray(quotes.id, ids)));
+  for (const row of quoteRows) {
+      map.set(row.quote.id, {
+      id: row.quote.id,
+      email: row.contact?.email ?? null,
+      contactId: row.deal.contactId,
+      dealId: row.deal.id,
+      policyId: null,
+      leadId: row.deal.leadId,
+      accountId: row.deal.accountId,
+      quoteSource: "quote",
+      merge: {
+        id: row.quote.id,
+        module: "quotes",
+        title: row.quote.quoteNumber ?? row.deal.title,
+        firstName: row.contact?.firstName ?? null,
+        lastName: row.contact?.lastName ?? null,
+        email: row.contact?.email ?? null,
+        phone: row.contact?.phone ?? null,
+        coverageA: row.quote.coverageA,
+        status: row.deal.pipelineStage,
+      },
+    });
+  }
+  const missing = ids.filter((id) => !map.has(id));
+  if (missing.length === 0) return;
+  const dealRows = await db
+    .select({ deal: deals, contact: contacts })
+    .from(deals)
+    .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), inArray(deals.id, missing)));
+  for (const row of dealRows) {
+    map.set(row.deal.id, {
+      id: row.deal.id,
+      email: row.contact?.email ?? null,
+      contactId: row.deal.contactId,
+      dealId: row.deal.id,
+      policyId: null,
+      leadId: row.deal.leadId,
+      accountId: row.deal.accountId,
+      quoteSource: "deal",
+      merge: {
+        id: row.deal.id,
+        module: "quotes",
+        title: row.deal.title,
+        firstName: row.contact?.firstName ?? null,
+        lastName: row.contact?.lastName ?? null,
+        email: row.contact?.email ?? null,
+        phone: row.contact?.phone ?? null,
+        coverageA: row.deal.coverageAmount,
+        status: row.deal.pipelineStage,
+      },
+    });
+  }
+}
+
+async function loadTaskRecords(map: Map<string, LoadedRecord>, ids: string[]) {
+  const reviewRows = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), inArray(reviewTasks.id, ids)));
+  for (const row of reviewRows) {
+    map.set(row.id, {
+      id: row.id,
+      email: null,
+      contactId: row.contactId,
+      dealId: row.dealId,
+      policyId: row.policyId,
+      leadId: null,
+      accountId: row.accountId,
+      taskSource: "review",
+      merge: {
+        id: row.id,
+        module: "tasks",
+        title: row.title,
+        status: row.status,
+      },
+    });
+  }
+  const missing = ids.filter((id) => !map.has(id));
+  if (missing.length === 0) return;
+  const activityRows = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), inArray(activities.id, missing)));
+  for (const row of activityRows) {
+    map.set(row.id, {
+      id: row.id,
+      email: null,
+      contactId: row.contactId,
+      dealId: row.dealId,
+      policyId: row.policyId,
+      leadId: row.leadId,
+      accountId: row.accountId,
+      taskSource: "activity",
+      merge: {
+        id: row.id,
+        module: "tasks",
+        title: row.title,
+        status: row.status,
+      },
+    });
+  }
 }
 
 async function applyFieldUpdates(
@@ -303,15 +461,78 @@ async function applyFieldUpdates(
       .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, record.id)));
     return true;
   }
+  if (module === "businesses") {
+    const patch: Record<string, unknown> = { updatedAt: now };
+    for (const update of actions.fieldUpdates) {
+      if (update.field === "notes") patch.notes = update.value;
+    }
+    if (Object.keys(patch).length === 1) return false;
+    await db
+      .update(accounts)
+      .set(patch)
+      .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, record.id)));
+    return true;
+  }
+  if (module === "campaigns") {
+    const patch: Record<string, unknown> = { updatedAt: now };
+    for (const update of actions.fieldUpdates) {
+      if (update.field === "status") patch.status = update.value;
+    }
+    if (Object.keys(patch).length === 1) return false;
+    await db
+      .update(emailCampaigns)
+      .set(patch)
+      .where(and(eq(emailCampaigns.tenantId, DEFAULT_TENANT_ID), eq(emailCampaigns.id, record.id)));
+    return true;
+  }
+  if (module === "quotes") {
+    const notes = actions.fieldUpdates.find((update) => update.field === "notes")?.value;
+    if (notes == null) return false;
+    if (record.quoteSource === "deal") {
+      await db
+        .update(deals)
+        .set({ notes, updatedAt: now })
+        .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, record.id)));
+      return true;
+    }
+    await db
+      .update(quotes)
+      .set({ notes })
+      .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.id, record.id)));
+    return true;
+  }
   const patch: Record<string, unknown> = {};
   for (const update of actions.fieldUpdates) {
     if (update.field === "status") patch.status = update.value;
   }
   if (Object.keys(patch).length === 0) return false;
+  if (record.taskSource === "activity") {
+    await db
+      .update(activities)
+      .set({ ...patch, updatedAt: now })
+      .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, record.id)));
+    return true;
+  }
   await db
     .update(reviewTasks)
     .set(patch)
     .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, record.id)));
+  return true;
+}
+
+async function applyStageMove(
+  module: DevHubModule,
+  record: LoadedRecord,
+  actions: MacroActions,
+): Promise<boolean> {
+  const stage = actions.stageMove?.stage;
+  if (!stage || (module !== "deals" && module !== "quotes")) return false;
+  const dealId = record.dealId ?? (module === "deals" ? record.id : null);
+  if (!dealId || isProtectedAnaRecord(dealId) || dealId === DEAL_ID) return false;
+  await db
+    .update(deals)
+    .set({ pipelineStage: stage, updatedAt: new Date() })
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, dealId)));
   return true;
 }
 

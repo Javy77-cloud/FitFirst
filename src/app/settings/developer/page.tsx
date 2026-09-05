@@ -17,7 +17,7 @@ const TOOLS: {
   {
     href: "/automations/macros",
     title: "Macros",
-    body: "Manual run. One email stub, three field updates, three tasks. Same desk_macros table as the macros sibling.",
+    body: "Platform Settings macros. Target Leads, Deals, Contacts, Businesses, Policies, Campaigns, Tasks, Quotes. Same desk_macros table — not a second list.",
     status: "working",
     countKey: "macros",
   },

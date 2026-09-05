@@ -11,7 +11,8 @@ export default async function NewMacroPage() {
   return (
     <SettingsShell title="New macro" current="macros">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Macros do not schedule. Agents run them from a list or a record.
+        Pick target modules and actions. Macros do not schedule. Agents run them from the
+        matching list or record. Same desk_macros row as Automations.
       </p>
       <MacroForm templates={templates.map((row) => ({ id: row.id, name: row.name }))} />
     </SettingsShell>

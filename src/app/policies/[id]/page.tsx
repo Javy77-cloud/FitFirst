@@ -3,6 +3,7 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { ChooseFiles } from "@/components/choose-files";
 import { VehiclesList } from "@/components/desk-ams-panels";
 import { RecordLink } from "@/components/record-links";
@@ -88,6 +89,7 @@ export default async function PolicyDetailPage({
 
   return (
     <AppShell title={policy.policyNumber}>
+      <RecordModuleMacros module="policies" recordId={policy.id} />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <PolicyStatusBadge status={policy.status} />
         <span>{policy.lineOfBusiness}</span>

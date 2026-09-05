@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { upsertCampaign } from "@/app/actions/campaigns";
 import { AppShell } from "@/components/app-shell";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { StubBanner } from "@/components/ops/stub-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,9 +144,11 @@ export default async function CampaignsPage({
               No campaigns yet. Compose a draft and pick an audience by tag or pipeline stage.
             </p>
           ) : (
+            <ModuleListActions module="campaigns" recordIds={rows.map((row) => row.id)}>
             <table className="ff-table">
               <thead>
                 <tr>
+                  <th />
                   <th>Campaign</th>
                   <th>Audience</th>
                   <th>Status</th>
@@ -153,6 +157,9 @@ export default async function CampaignsPage({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
+                    <td>
+                      <SelectRowCheckbox id={row.id} />
+                    </td>
                     <td>
                       <Link href={`/campaigns/${row.id}`} className="font-medium text-primary hover:underline">
                         {row.name}
@@ -167,6 +174,7 @@ export default async function CampaignsPage({
                 ))}
               </tbody>
             </table>
+            </ModuleListActions>
           )}
         </section>
       </div>

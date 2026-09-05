@@ -13,6 +13,7 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
 import { AccountGlance } from "@/components/crm/account-glance";
+import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { RecordComms } from "@/components/record-comms";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,7 @@ export default async function AccountDetailPage({
 
   return (
     <AppShell title={account.name}>
+      <RecordModuleMacros module="businesses" recordId={account.id} />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <ClientStatusPill status={clientStatus} />
         <span>

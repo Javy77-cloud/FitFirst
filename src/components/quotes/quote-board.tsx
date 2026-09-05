@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { runDeskMacro } from "@/app/actions/developer-hub";
 import { QuoteCard } from "@/components/quotes/quote-card";
 import { ShopSummary } from "@/components/quotes/tracking-table";
 import { StagePill } from "@/components/fit-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { compareHref, quoteCompareId, selectedSameDeal } from "@/lib/quotes/board";
 import { quoteCardDefaultOpen, shopSectionOpen } from "@/lib/quotes/collapse";
 import type { TrackingRow, TrackingShop } from "@/lib/quotes/tracking";
@@ -14,9 +15,11 @@ import { cn } from "@/lib/utils";
 export function QuoteBoard({
   shops,
   focusedDeal = false,
+  macros = [],
 }: {
   shops: TrackingShop[];
   focusedDeal?: boolean;
+  macros?: Array<{ id: string; name: string }>;
 }) {
   const allRows = useMemo(() => shops.flatMap((shop) => shop.rows), [shops]);
   const [openShops, setOpenShops] = useState<Record<string, boolean>>(() =>
@@ -26,6 +29,9 @@ export function QuoteBoard({
     Object.fromEntries(allRows.map((row) => [row.id, quoteCardDefaultOpen(row, focusedDeal)])),
   );
   const [selected, setSelected] = useState<string[]>([]);
+  const [macroId, setMacroId] = useState(macros[0]?.id ?? "");
+  const [macroMessage, setMacroMessage] = useState<string | null>(null);
+  const [macroBusy, setMacroBusy] = useState(false);
 
   const selectedRows = allRows.filter((row) => selected.includes(row.id));
   const compareDealId = selectedSameDeal(selectedRows);
@@ -64,6 +70,24 @@ export function QuoteBoard({
     setSelected(on ? allRows.map((row) => row.id) : []);
   }
 
+  async function runQuoteMacro() {
+    const recordIds = [
+      ...new Set(selectedRows.map((row) => row.quoteId || row.dealId).filter((id): id is string => Boolean(id))),
+    ];
+    if (!macroId || recordIds.length === 0) {
+      setMacroMessage("Tick one or more quotes, then run a Settings macro.");
+      return;
+    }
+    setMacroBusy(true);
+    const form = new FormData();
+    form.set("macroId", macroId);
+    form.set("module", "quotes");
+    for (const id of recordIds) form.append("recordId", id);
+    const result = await runDeskMacro(form);
+    setMacroMessage(result.summary);
+    setMacroBusy(false);
+  }
+
   function expandAll(open: boolean) {
     setOpenQuotes(Object.fromEntries(allRows.map((row) => [row.id, open])));
     if (open) {
@@ -100,14 +124,37 @@ export function QuoteBoard({
               Compare selected
             </span>
           )}
+          {macros.length ? (
+            <>
+              <select
+                value={macroId}
+                onChange={(event) => setMacroId(event.target.value)}
+                className="h-8 rounded-md border border-input bg-card px-2 text-xs"
+              >
+                {macros.map((macro) => (
+                  <option key={macro.id} value={macro.id}>
+                    {macro.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="button" size="sm" disabled={macroBusy} onClick={() => void runQuoteMacro()}>
+                Run Macro
+              </Button>
+            </>
+          ) : (
+            <a href="/settings/developer-hub/macros" className="text-xs text-primary hover:underline">
+              No quote macros — open Settings → Macros
+            </a>
+          )}
           <span className="text-xs text-muted-foreground">
             {selectedRows.length === 0
-              ? "Tick quotes to compare. Actions stay on every card — nothing is hidden in a menu."
+              ? "Tick quotes to compare or run a Settings macro. Actions stay on every card — nothing is hidden in a menu."
               : compareDealId
                 ? `${selectedRows.length} selected on one shop.`
                 : `${selectedRows.length} selected across shops — pick one deal to compare.`}
           </span>
         </div>
+        {macroMessage ? <p className="mt-2 text-sm text-navy">{macroMessage}</p> : null}
       </section>
 
       {shops.map((shop) => {

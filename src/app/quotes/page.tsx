@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { QuoteBoard } from "@/components/quotes/quote-board";
 import { buttonVariants } from "@/components/ui/button";
+import { listEnabledMacrosFor } from "@/lib/db/developer-hub-queries";
 import { listQuoteTrackingShops } from "@/lib/db/queries";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { DEAL_STAGES, LINES } from "@/lib/domain";
@@ -18,7 +19,10 @@ export default async function QuotesBoardPage({
   const params = await searchParams;
   const deal = Array.isArray(params.deal) ? params.deal[0] : params.deal;
   const filter = pickFilterParams(params, ["stage", "line"]);
-  const all = await listQuoteTrackingShops(deal || undefined);
+  const [all, macros] = await Promise.all([
+    listQuoteTrackingShops(deal || undefined),
+    listEnabledMacrosFor("quotes"),
+  ]);
   const shops = all.filter(
     (shop) => matchesField(shop.dealStage, filter.stage) && matchesField(shop.line, filter.line),
   );
@@ -75,7 +79,11 @@ export default async function QuotesBoardPage({
           No quote attempts on the book yet. Open a deal, filter markets, then log the shop.
         </section>
       ) : (
-        <QuoteBoard shops={shops} focusedDeal={Boolean(deal)} />
+        <QuoteBoard
+          shops={shops}
+          focusedDeal={Boolean(deal)}
+          macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
+        />
       )}
     </AppShell>
   );

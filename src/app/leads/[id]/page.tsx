@@ -19,6 +19,7 @@ import { latestRoutingLog } from "@/lib/leads/apply-routing";
 import { currentDeskSession } from "@/lib/auth/session";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
 import { RecordDeveloperActions } from "@/components/developer-hub/record-actions";
+import { parseMacroKind } from "@/lib/developer-hub/macros";
 import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
 import { listEnabledMacrosFor, listEnabledScriptsFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
@@ -60,7 +61,12 @@ export default async function LeadDetailPage({
       <RecordDeveloperActions
         module="leads"
         recordId={lead.id}
-        macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
+        showFollowUp
+        macros={macros.map((macro) => ({
+          id: macro.id,
+          name: macro.name,
+          kind: parseMacroKind(macro.kind),
+        }))}
         buttons={buttons.map((button) => ({
           id: button.id,
           label: button.label,
