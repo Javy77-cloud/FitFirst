@@ -887,6 +887,14 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 - `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
 - Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.
 
+## Quotes chrome feel-pass (`cursor/fp-quotes-chrome-ddac`)
+
+Off `cursor/feel-pass-consolidate-sep5b-6195`. Quotes list chrome only. Ana stays unbound / Cov A **$321,000**.
+
+- Each quote card’s top-right **Actions** menu holds Compare, No PDF / Open PDF, email stub, SMS stub, open deal, and appetite log. Those are no longer listed as separate buttons.
+- **Select shop** is **Select Quote**.
+- Expand / collapse uses up/down arrow icons; the active state is highlighted. Words are gone.
+
 ## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
 
 Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s). Fast-forwarded `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations / template / fill UUID 404s instead of 500s). Both tip names point at this same commit.

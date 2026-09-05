@@ -1,8 +1,8 @@
 "use client";
 
 import { TrackingStatusBadge } from "@/components/quotes/status-badge";
-import { QuoteActions } from "@/components/quotes/quote-actions";
-import { buttonVariants } from "@/components/ui/button";
+import { ExpandCollapseControl } from "@/components/quotes/expand-collapse";
+import { QuoteActionsMenu, QuoteLostReason } from "@/components/quotes/quote-actions";
 import { formatMoney } from "@/lib/domain";
 import { quoteIdentity } from "@/lib/quotes/board";
 import type { TrackingRow } from "@/lib/quotes/tracking";
@@ -45,32 +45,38 @@ export function QuoteCard({
         </label>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <button
-              type="button"
-              onClick={onToggleOpen}
-              aria-expanded={open}
-              aria-controls={detailsId}
-              className={cn(buttonVariants({ size: "xs", variant: "secondary" }))}
-            >
-              {open ? "Collapse" : "Expand"}
-            </button>
-            <h3 className="text-base font-semibold text-navy">{identity.carrier}</h3>
-            <TrackingStatusBadge status={identity.status} />
-            <span className="text-sm font-medium text-navy">{identity.premium}</span>
-            <span className="font-mono text-xs text-muted-foreground">#{identity.quoteNumber}</span>
-            {row.cheapestQuotedRank != null ? (
-              <span className={cn("text-xs", row.cheapestQuotedRank === 1 && "font-semibold text-navy")}>
-                #{row.cheapestQuotedRank}
-                {row.cheapestQuotedRank === 1 ? " cheapest" : ""}
-              </span>
-            ) : null}
-            {!row.bindable && row.status === "quoted" ? (
-              <span className="text-xs text-fit-flag">Quoted · not bindable</span>
-            ) : null}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+              <ExpandCollapseControl
+                expanded={open}
+                onExpand={() => {
+                  if (!open) onToggleOpen();
+                }}
+                onCollapse={() => {
+                  if (open) onToggleOpen();
+                }}
+                expandLabel={`Expand ${identity.carrier} quote`}
+                collapseLabel={`Collapse ${identity.carrier} quote`}
+                testId={`quote-expand-${row.id}`}
+              />
+              <h3 className="text-base font-semibold text-navy">{identity.carrier}</h3>
+              <TrackingStatusBadge status={identity.status} />
+              <span className="text-sm font-medium text-navy">{identity.premium}</span>
+              <span className="font-mono text-xs text-muted-foreground">#{identity.quoteNumber}</span>
+              {row.cheapestQuotedRank != null ? (
+                <span className={cn("text-xs", row.cheapestQuotedRank === 1 && "font-semibold text-navy")}>
+                  #{row.cheapestQuotedRank}
+                  {row.cheapestQuotedRank === 1 ? " cheapest" : ""}
+                </span>
+              ) : null}
+              {!row.bindable && row.status === "quoted" ? (
+                <span className="text-xs text-fit-flag">Quoted · not bindable</span>
+              ) : null}
+            </div>
+            <QuoteActionsMenu row={row} />
           </div>
           <div className="mt-2">
-            <QuoteActions row={row} />
+            <QuoteLostReason row={row} />
           </div>
         </div>
       </div>
@@ -102,6 +108,7 @@ export function QuoteCard({
               wide
             />
           </dl>
+          <QuoteLostReason row={row} />
         </div>
       ) : null}
     </article>
