@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { getDealWorkspace } from "@/lib/db/queries";
+import { sheetForLine } from "@/lib/quoting/sheet-for-line";
 import { buildFillSheetFromQuoteSheet } from "@/lib/wire/sheet-packet";
 
 export async function GET(
@@ -9,14 +10,15 @@ export async function GET(
 ) {
   const { id, line } = await context.params;
   const workspace = await getDealWorkspace(id);
-  if (!workspace?.quoteSheet) {
+  const row = sheetForLine(workspace?.sheets ?? [], line) ?? workspace?.quoteSheet;
+  if (!workspace || !row) {
     return NextResponse.json({ error: "Quote Sheet not found" }, { status: 404 });
   }
   const sheet = buildFillSheetFromQuoteSheet({
     tenantId: DEFAULT_TENANT_ID,
     dealId: workspace.deal.id,
-    line: (line as ShopLine) || "home",
-    values: workspace.quoteSheet.values,
+    line: (row.line as ShopLine) || (line as ShopLine) || "home",
+    values: row.values,
     insured: workspace.deal.primaryNamedInsured,
   });
   return NextResponse.json(sheet);

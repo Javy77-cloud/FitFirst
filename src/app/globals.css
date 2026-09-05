@@ -398,3 +398,12 @@
 .ff-doc-yellow { background: var(--ff-yellow); color: #fff; }
 .ff-doc-flag { background: var(--ff-flag); color: #fff; }
 .ff-doc-muted { background: var(--ff-canvas); color: var(--ff-navy); border: 1px solid var(--ff-border); }
+
+.ff-field-missing {
+  background: var(--ff-yellow-bg);
+  border-color: color-mix(in srgb, var(--ff-yellow) 55%, var(--ff-border));
+}
+.ff-field-check {
+  background: var(--ff-check-bg);
+  border-color: color-mix(in srgb, var(--ff-check) 55%, var(--ff-border));
+}

@@ -37,7 +37,7 @@ type Pattern = {
 const PATTERNS: Pattern[] = [
   {
     key: "year_built",
-    re: /(?:year\s*(?:built|of\s*construction)|yr\.?\s*blt\.?|yr\s*built|constructed)\s*[:#]?\s*([0-9lIOqQ]{4})/i,
+    re: /(?:year\s*(?:built|of\s*construction)|yr\.?\s*blt\.?|yr\s*built|constructed|built(?:\s*in)?)\s*[:#]?\s*([0-9lIOqQ]{4})/i,
     normalize: normalizeYear,
   },
   {
@@ -47,7 +47,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     key: "coverage_a",
-    re: /(?:coverage\s*a(?:\s*\([^)]*\)|\s+dwelling)?|cov\.?\s*a|dwelling(?:\s*limit)?)\s*[:#]\s*\$?\s*([\d,]{3,})|^\s*A\.\s*Dwelling\s+\$?\s*([\d,]{3,})/im,
+    re: /(?:coverage\s*a(?:\s*\([^)]*\)|\s+dwelling)?|cov\.?\s*a|dwelling(?:\s*limit)?|building\s*limit)\s*[:#]?\s*\$?\s*([\d,]{3,})|^\s*A\.\s*Dwelling\s+\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
   },
   {
@@ -347,9 +347,21 @@ export function assessDocumentQuality(text: string): {
   return { messy: penalty >= 0.18, notes, penalty };
 }
 
+/** Collapse OCR/PDF spacing so "$ 321 , 000" and "Cov A  321000" still map. */
+export function normalizeExtractText(text: string): string {
+  return text
+    .replace(/\u0000/g, "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\$\s+(\d)/g, "$$$1")
+    .replace(/(\d)\s+,\s+(\d)/g, "$1,$2")
+    .replace(/(\d), (\d{3})/g, "$1,$2");
+}
+
 export function extractFieldsFromText(text: string): ExtractionResult {
   const quality = assessDocumentQuality(text);
   const byKey = new Map<string, ExtractedField>();
+  text = normalizeExtractText(text);
 
   for (const field of [...fromPatterns(text, quality.penalty), ...fromLabeledLines(text, quality.penalty)]) {
     if (isBlockedExtractKey(field.fieldKey) || looksLikeSsn(field.rawValue)) continue;

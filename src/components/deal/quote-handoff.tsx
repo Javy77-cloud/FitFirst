@@ -59,7 +59,9 @@ export function QuoteHandoff({
       window.localStorage.setItem(FILL_STORAGE_KEY, JSON.stringify(sheet));
       window.postMessage({ source: FILL_MESSAGE_SOURCE, type: FILL_MESSAGE_TYPE, sheet }, "*");
       await navigator.clipboard.writeText(JSON.stringify(sheet, null, 2)).catch(() => undefined);
-      setNote("Sent the approved master sheet to Fill (clipboard + localStorage). Not a raw PDF.");
+      setNote(
+        "Sheet ready. Chrome Fill (unpacked extensions/fill) or Fill demo reads this same approved row — never the PDF.",
+      );
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Send to Fill failed.");
     }
@@ -72,7 +74,7 @@ export function QuoteHandoff({
       window.postMessage({ source: FILL_MESSAGE_SOURCE, type: FILL_MESSAGE_TYPE, sheet }, "*");
       window.open("/fill-demo", "fitfirst-fill", "noopener,noreferrer,width=1100,height=800");
       setNote(
-        "Opened Fill. Chrome Fill reads this same approved master sheet if the add-on is installed.",
+        "Opened Fill demo. Chrome Fill uses the same packet if you loaded extensions/fill unpacked.",
       );
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Could not open Fill window.");

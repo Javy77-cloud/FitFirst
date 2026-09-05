@@ -43,7 +43,7 @@ export const MASTER_TO_FILL_STEPS: FillPathStep[] = [
 
 export const FILL_HANDOFF_TITLE = "Send the approved master sheet to Fill";
 export const FILL_HANDOFF_HINT =
-  "Zero rekey. Copy sheet, Send to Fill, and Open Fill window all read this master sheet — never the raw PDFs. Prefer the Chrome Fill add-on.";
+  "Zero rekey. Copy sheet, Send to Fill, and Open Fill window all read this master sheet — never the raw PDFs. Prefer the Chrome Fill add-on (load unpacked from extensions/fill). No paid vendor.";
 export const COPY_SHEET_LABEL = "Copy master sheet";
 export const SEND_TO_FILL_LABEL = "Send master sheet to Fill";
 export const OPEN_FILL_LABEL = "Open Fill window";

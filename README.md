@@ -31,6 +31,8 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
+Quote Sheet: yellow = missing, blue = CHECK. Approve twice to unlock Send to Fill (unpacked `extensions/fill` only — no paid vendor). Markets show shop / caution / don’t-write plus appointed vs not-appointed. Quotes are not policies.
+
 ## Tests
 
 ```bash

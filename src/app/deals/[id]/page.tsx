@@ -1,19 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { BindPath } from "@/components/deal/bind-path";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
+import { FillPathStepper } from "@/components/deal/fill-path-stepper";
 import { MarketsPanel } from "@/components/deal/markets-panel";
+import { QuoteHandoff } from "@/components/deal/quote-handoff";
+import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
+import { QuotingLinePicker } from "@/components/deal/quoting-line-picker";
+import { ReadyToShopCue } from "@/components/deal/ready-to-shop";
 import { RiskForm } from "@/components/deal/risk-form";
+import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
+import { SourceVsSheet } from "@/components/deal/source-vs-sheet";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace, listRecordActivities } from "@/lib/db/queries";
+import { getDealWorkspace, listCarriers, listRecordActivities } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { HealthStrip } from "@/components/completeness/health-strip";
@@ -22,6 +27,9 @@ import { RecordDetailLayout } from "@/components/record-context/record-detail-la
 import { reportFromSheet } from "@/lib/completeness/report";
 import { loadRecordContext } from "@/lib/record-context";
 import type { ShopLine } from "@/lib/domain";
+import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
+import { readyToShopCue } from "@/lib/quoting/ready-to-shop";
+import { sheetForLine } from "@/lib/quoting/sheet-for-line";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +38,10 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string; line?: string }>;
 }) {
   const { id } = await params;
-  const { tab, riskTab } = await searchParams;
+  const { tab, riskTab, line: lineHint } = await searchParams;
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -47,6 +55,8 @@ export default async function DealPage({
     contact,
     account,
     quoteSheet,
+    sheets,
+    jobs,
     boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
@@ -57,38 +67,30 @@ export default async function DealPage({
     contactId: deal.contactId,
     accountId: deal.accountId,
   });
+  const carrierRows = await listCarriers();
   const isAna = deal.id === DEAL_ID;
-  const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
-  const health = quoteSheet
-    ? reportFromSheet(sheetLine, quoteSheet.values)
-    : null;
+  const sheetLine = (lineHint as ShopLine | undefined) ?? (quoteSheet?.line as ShopLine | undefined) ?? "home";
+  const activeSheet = sheetForLine(sheets, sheetLine) ?? quoteSheet ?? null;
+  const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
+  const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
+  const unlocked = quotingUnlockedForDeal(deal);
+  const sourceDocs = docs.filter(
+    (doc) => doc.slot !== "quote_pdf" && doc.slot !== "policy_file" && doc.slot !== "proposal",
+  );
+  const fillFinished = Boolean(
+    activeSheet && Object.values(activeSheet.values).some((cell) => cell.value.trim()),
+  );
+  const cue = readyToShopCue({
+    isAna,
+    sourceDocCount: sourceDocs.length,
+    hasQuotingForm: Boolean(deal.quotingForm || activeSheet),
+    fillFinished,
+    unlocked,
+    health,
+  });
 
   return (
-    <AppShell
-      title={deal.title}
-      actions={
-        deal.pipelineStage !== "bound" && !isAna ? (
-          <form action={bindDeal} className="flex flex-wrap items-center gap-2">
-            <input type="hidden" name="dealId" value={deal.id} />
-            <select
-              name="bindTarget"
-              defaultValue={deal.bindTarget}
-              className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-            >
-              <option value="contact">Personal — create Contact</option>
-              <option value="account">Commercial — create Business</option>
-            </select>
-            <Input name="businessName" placeholder="Business name (commercial)" className="h-8 w-44" />
-            <Input name="ein" placeholder="EIN / FEIN" className="h-8 w-32" />
-            <Input name="policyNumber" placeholder="Policy # at bind" className="h-8 w-36" />
-            <Input name="premium" placeholder="Premium" className="h-8 w-24" />
-            <Button type="submit" size="sm" variant="secondary">
-              Bind (creates contact/business + policy)
-            </Button>
-          </form>
-        ) : null
-      }
-    >
+    <AppShell title={deal.title}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
         <span>{deal.lineOfBusiness}</span>
@@ -116,17 +118,36 @@ export default async function DealPage({
         ) : null}
       </div>
 
-      {isAna ? (
-        <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
-          Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-          bind this shop. Quotes are not coverage.
-        </div>
-      ) : null}
+      <BindPath
+        dealId={deal.id}
+        defaultTarget={deal.bindTarget === "account" ? "account" : "contact"}
+        lineLabel={quotingForm?.label ?? deal.lineOfBusiness}
+        isAna={isAna}
+        bound={deal.pipelineStage === "bound" || deal.pipelineStage === "closed_won"}
+        party={
+          account
+            ? { id: account.id, name: account.name, href: `/accounts/${account.id}`, kind: "account" }
+            : contact
+              ? {
+                  id: contact.id,
+                  name: `${contact.firstName} ${contact.lastName}`,
+                  href: `/contacts/${contact.id}`,
+                  kind: "contact",
+                }
+              : null
+        }
+        policies={boundPolicies.map((policy) => ({
+          id: policy.id,
+          policyNumber: policy.policyNumber ?? "Policy",
+        }))}
+      />
+
+      <ReadyToShopCue cue={cue} />
 
       {health ? (
         <HealthStrip
           report={health}
-          title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
+          title={`Sheet health · ${health.confirmed} confirmed / ${health.check} CHECK / ${health.missing} missing`}
           href={`/deals/${deal.id}?tab=quote-sheet`}
         />
       ) : null}
@@ -145,14 +166,67 @@ export default async function DealPage({
                     id: "documents",
                     label: "Documents",
                     content: (
-                      <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                      <div className="space-y-4">
+                        <FillPathStepper current={cue.fillStep} />
+                        <DocumentsPanel
+                          dealId={deal.id}
+                          riskId={risk.id}
+                          docs={docs}
+                          fields={fields}
+                          jobs={jobs}
+                        />
+                      </div>
                     ),
                   },
                   {
                     id: "quote-sheet",
                     label: "Quote Sheet",
                     content: (
-                      <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
+                      <div className="space-y-4">
+                        <FillPathStepper current={cue.fillStep} />
+                        <QuotingLinePicker
+                          dealId={deal.id}
+                          currentForm={deal.quotingForm}
+                          sourceDocCount={sourceDocs.length}
+                        />
+                        {activeSheet ? (
+                          <SourceVsSheet
+                            line={sheetLine}
+                            docs={docs}
+                            fields={fields}
+                            values={activeSheet.values}
+                          />
+                        ) : null}
+                        {activeSheet ? (
+                          <QuoteSheetForm
+                            dealId={deal.id}
+                            dealTitle={deal.title}
+                            line={sheetLine}
+                            sheet={activeSheet}
+                            contact={contact}
+                            riskId={risk.id}
+                            carriers={carrierRows.map(({ carrier }) => ({
+                              id: carrier.id,
+                              name: carrier.name,
+                            }))}
+                          />
+                        ) : (
+                          <QuoteSheetPanel dealId={deal.id} values={null} line={sheetLine} />
+                        )}
+                        <SheetApproveGate
+                          dealId={deal.id}
+                          line={sheetLine}
+                          formLabel={quotingForm?.label ?? "HO3"}
+                          unlocked={unlocked}
+                          approvedBy={deal.sheetApprovedBy}
+                        />
+                        <QuoteHandoff
+                          dealId={deal.id}
+                          line={sheetLine}
+                          formLabel={quotingForm?.label ?? "HO3"}
+                          unlocked={unlocked}
+                        />
+                      </div>
                     ),
                   },
                   {
@@ -163,7 +237,9 @@ export default async function DealPage({
                   {
                     id: "markets",
                     label: "Markets",
-                    content: <MarketsPanel dealId={deal.id} matches={matches} />,
+                    content: (
+                      <MarketsPanel dealId={deal.id} matches={matches} unlocked={unlocked} />
+                    ),
                   },
                   {
                     id: "quotes",
@@ -186,7 +262,7 @@ export default async function DealPage({
             </div>
 
             <p className="mt-4 text-base text-muted-foreground">
-              Shopping lives here.{" "}
+              Shopping lives here. Quotes are not policies.{" "}
               <Link href="/get-started" className="text-primary hover:underline">
                 Run the test path
               </Link>

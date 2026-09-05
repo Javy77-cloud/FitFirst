@@ -98,6 +98,8 @@ export const LABEL_ALIASES: Record<string, string> = {
   cova: "coverage_a",
   dwelling: "coverage_a",
   dwellinglimit: "coverage_a",
+  buildinglimit: "coverage_a",
+  dwellingcoverage: "coverage_a",
   coverageadwelling: "coverage_a",
   coveragebotherstructures: "coverage_b",
   coverageb: "coverage_b",

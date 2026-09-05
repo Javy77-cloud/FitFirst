@@ -103,6 +103,16 @@ describe("document extraction confidence", () => {
     expect(flagged.every((f) => f.confidence < CONFIDENCE_THRESHOLD)).toBe(true);
   });
 
+  it("maps dwelling-limit and spaced Cov A money after OCR cleanup", () => {
+    const result = extractFieldsFromText(
+      "Named Insured: Maya Chen\nBuilt in 2001\nDwelling Limit $ 275 , 000\nCity: Titusville",
+    );
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.fieldKey, f]));
+    expect(byKey.coverage_a.normalizedValue).toBe("275000");
+    expect(byKey.year_built.normalizedValue).toBe("2001");
+    expect(byKey.named_insured.normalizedValue).toBe("Maya Chen");
+  });
+
   it("reads named insured, premises, deductibles from a photo-dec transcript", () => {
     const result = extractFieldsFromText(PHOTO_DEC_TEXT);
     const byKey = Object.fromEntries(result.fields.map((f) => [f.fieldKey, f]));

@@ -10,17 +10,20 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import type { ExtractionJob } from "@/lib/db/schema";
 
 export function DocumentsPanel({
   dealId,
   riskId,
   docs,
   fields,
+  jobs = [],
 }: {
   dealId: string;
   riskId: string;
   docs: Document[];
   fields: ExtractedFieldRow[];
+  jobs?: ExtractionJob[];
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
   const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
@@ -32,8 +35,9 @@ export function DocumentsPanel({
         <section className="ff-card p-4">
           <h3 className="mb-1 text-base font-semibold text-navy">Source documents</h3>
           <p className="mb-3 text-base text-muted-foreground">
-            Dec pages, wind mit, 4-point, and inspections stay on the deal. They feed the Quote
-            Sheet. They are not issued policies.
+            Dec pages, wind mit, 4-point, photos, and inspections stay on the deal. They feed
+            the Quote Sheet (yellow missing / blue CHECK). Scanned PDFs with no text layer fall
+            back to in-desk OCR. They are not issued policies.
           </p>
 
           <form action={uploadDocument} className="mb-3 space-y-2 rounded-md border border-border p-3">
@@ -60,9 +64,15 @@ export function DocumentsPanel({
               </div>
               <div>
                 <Label htmlFor="file" className="text-xs">
-                  File (PDF or text)
+                  File (PDF, photo, or text)
                 </Label>
-                <ChooseFiles id="file" name="file" required className="mt-1" />
+                <ChooseFiles
+                  id="file"
+                  name="file"
+                  accept=".pdf,.txt,.md,image/*"
+                  required
+                  className="mt-1"
+                />
               </div>
             </div>
             <Button type="submit" size="sm">
@@ -124,6 +134,17 @@ export function DocumentsPanel({
             {flagged.length} field{flagged.length === 1 ? "" : "s"} below{" "}
             {Math.round(CONFIDENCE_THRESHOLD * 100)}% — glance and accept before they hit the
             master record.
+          </div>
+        ) : null}
+        {jobs.length > 0 ? (
+          <div className="mb-3 space-y-1 rounded-md border border-border px-3 py-2">
+            <p className="text-sm font-semibold text-navy">Latest ingest</p>
+            {jobs.slice(0, 4).map((job) => (
+              <p key={job.id} className="text-helper text-muted-foreground">
+                {job.engine} · {job.status}
+                {job.message ? ` — ${job.message}` : ""}
+              </p>
+            ))}
           </div>
         ) : null}
         {fields.length === 0 ? (
