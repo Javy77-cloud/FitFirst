@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { QuoteCard } from "@/components/quotes/quote-card";
+import { ExpandCollapseControl } from "@/components/quotes/expand-collapse";
 import { ShopSummary } from "@/components/quotes/tracking-table";
 import { StagePill } from "@/components/fit-badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export function QuoteBoard({
   const selectedRows = allRows.filter((row) => selected.includes(row.id));
   const compareDealId = selectedSameDeal(selectedRows);
   const compareIds = selectedRows.map(quoteCompareId);
+  const allQuotesExpanded = allRows.length > 0 && allRows.every((row) => openQuotes[row.id]);
 
   function toggleShop(dealId: string) {
     setOpenShops((current) => ({ ...current, [dealId]: !current[dealId] }));
@@ -82,12 +84,14 @@ export function QuoteBoard({
           <button type="button" className={cn(buttonVariants({ size: "xs", variant: "outline" }))} onClick={() => selectAll(false)}>
             Clear selection
           </button>
-          <button type="button" className={cn(buttonVariants({ size: "xs", variant: "outline" }))} onClick={() => expandAll(true)}>
-            Expand all
-          </button>
-          <button type="button" className={cn(buttonVariants({ size: "xs", variant: "outline" }))} onClick={() => expandAll(false)}>
-            Collapse all
-          </button>
+          <ExpandCollapseControl
+            expanded={allQuotesExpanded}
+            onExpand={() => expandAll(true)}
+            onCollapse={() => expandAll(false)}
+            expandLabel="Expand all quotes"
+            collapseLabel="Collapse all quotes"
+            testId="quotes-expand-all"
+          />
           {compareDealId && selectedRows.length > 0 ? (
             <Link
               href={compareHref(compareDealId, compareIds)}
@@ -102,7 +106,7 @@ export function QuoteBoard({
           )}
           <span className="text-xs text-muted-foreground">
             {selectedRows.length === 0
-              ? "Tick quotes to compare. Actions stay on every card — nothing is hidden in a menu."
+              ? "Tick quotes to compare. Compare, PDF, email, SMS, open deal, and appetite log live in each card’s Actions menu."
               : compareDealId
                 ? `${selectedRows.length} selected on one shop.`
                 : `${selectedRows.length} selected across shops — pick one deal to compare.`}
@@ -113,19 +117,25 @@ export function QuoteBoard({
       {shops.map((shop) => {
         const shopOpen = openShops[shop.dealId] ?? true;
         const shopSelected = shop.rows.filter((row) => selected.includes(row.id)).length;
+        const shopQuotesExpanded =
+          shop.rows.length > 0 && shop.rows.every((row) => openQuotes[row.id]);
         return (
           <section key={shop.dealId} className="ff-card overflow-hidden" data-testid={`quote-shop-${shop.dealId}`}>
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleShop(shop.dealId)}
-                    aria-expanded={shopOpen}
-                    className={cn(buttonVariants({ size: "xs", variant: "secondary" }))}
-                  >
-                    {shopOpen ? "Collapse shop" : "Expand shop"}
-                  </button>
+                  <ExpandCollapseControl
+                    expanded={shopOpen}
+                    onExpand={() => {
+                      if (!shopOpen) toggleShop(shop.dealId);
+                    }}
+                    onCollapse={() => {
+                      if (shopOpen) toggleShop(shop.dealId);
+                    }}
+                    expandLabel={`Expand ${shop.dealTitle}`}
+                    collapseLabel={`Collapse ${shop.dealTitle}`}
+                    testId={`quote-shop-expand-${shop.dealId}`}
+                  />
                   <Link
                     href={`/deals/${shop.dealId}?tab=quotes`}
                     className="text-base font-semibold text-navy hover:underline"
@@ -160,22 +170,16 @@ export function QuoteBoard({
                     className={cn(buttonVariants({ size: "xs", variant: "outline" }))}
                     onClick={() => selectShop(shop, shopSelected !== shop.rows.length)}
                   >
-                    {shopSelected === shop.rows.length ? "Unselect shop" : "Select shop"}
+                    {shopSelected === shop.rows.length ? "Unselect Quote" : "Select Quote"}
                   </button>
-                  <button
-                    type="button"
-                    className={cn(buttonVariants({ size: "xs", variant: "outline" }))}
-                    onClick={() => setShopQuotes(shop, true)}
-                  >
-                    Expand quotes
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(buttonVariants({ size: "xs", variant: "outline" }))}
-                    onClick={() => setShopQuotes(shop, false)}
-                  >
-                    Collapse quotes
-                  </button>
+                  <ExpandCollapseControl
+                    expanded={shopQuotesExpanded}
+                    onExpand={() => setShopQuotes(shop, true)}
+                    onCollapse={() => setShopQuotes(shop, false)}
+                    expandLabel={`Expand quotes in ${shop.dealTitle}`}
+                    collapseLabel={`Collapse quotes in ${shop.dealTitle}`}
+                    testId={`quote-shop-quotes-expand-${shop.dealId}`}
+                  />
                   {shopSelected > 0 ? (
                     <Link
                       href={compareHref(shop.dealId, shop.rows.filter((row) => selected.includes(row.id)).map(quoteCompareId))}
@@ -205,7 +209,7 @@ export function QuoteBoard({
               </>
             ) : (
               <p className="px-4 py-3 text-sm text-muted-foreground">
-                Shop collapsed. Identity stays above — expand to see every quote card and its actions.
+                Shop collapsed. Identity stays above — expand to see every quote card and its Actions menu.
               </p>
             )}
           </section>
