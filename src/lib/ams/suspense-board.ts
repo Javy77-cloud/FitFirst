@@ -1,4 +1,5 @@
-import { isSuspenseDocKey, type SuspenseDocKey } from "@/lib/domain-ams";
+import { type SuspenseDocKey } from "@/lib/domain-ams";
+import { isSuspenseDocKey } from "./suspense";
 
 export type SuspenseBoardRow = {
   taskId: string;
@@ -24,7 +25,9 @@ export function sortSuspenseBoard(rows: SuspenseBoardRow[]): SuspenseBoardRow[] 
     const aDue = a.dueDate?.getTime() ?? Number.POSITIVE_INFINITY;
     const bDue = b.dueDate?.getTime() ?? Number.POSITIVE_INFINITY;
     if (aDue !== bDue) return aDue - bDue;
-    return a.policyNumber.localeCompare(b.policyNumber);
+    const byPolicy = a.policyNumber.localeCompare(b.policyNumber);
+    if (byPolicy !== 0) return byPolicy;
+    return a.docKey.localeCompare(b.docKey);
   });
 }
 
