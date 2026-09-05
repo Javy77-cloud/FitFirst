@@ -491,6 +491,13 @@
       "when": 1788610000000,
       "tag": "0069_zoho_external_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1788620000000,
+      "tag": "0070_nav_layout",
+      "breakpoints": true
     }
   ]
 }

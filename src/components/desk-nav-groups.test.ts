@@ -4,9 +4,9 @@ import { groupIdForPath, NAV_GROUPS, pathIsActive, PINNED_HOME } from "./desk-na
 const settings = NAV_GROUPS.find((group) => group.id === "settings");
 
 describe("desk settings IA", () => {
-  it("keeps one Settings entry in the left nav", () => {
-    expect(settings?.items.map((item) => item.label)).toEqual(["Settings"]);
-    expect(settings?.items.map((item) => item.href)).toEqual(["/settings"]);
+  it("keeps one Settings entry pinned at the bottom of the left nav", () => {
+    expect(NAV_GROUPS.at(-1)?.id).toBe("settings");
+    expect(settings?.label).toBe("Settings");
   });
 
   it("keeps every settings path on the Settings accordion", () => {
@@ -20,58 +20,56 @@ describe("desk settings IA", () => {
   });
 
   it("treats Settings as matching the whole /settings tree", () => {
-    const setup = settings?.items.find((item) => item.label === "Settings");
-    expect(pathIsActive("/settings", setup!)).toBe(true);
-    expect(pathIsActive("/settings/agency", setup!)).toBe(true);
-    expect(pathIsActive("/settings/import-export", setup!)).toBe(true);
+    const setup = { href: "/settings", label: "Settings", icon: settings!.icon, match: "/settings" };
+    expect(pathIsActive("/settings", setup)).toBe(true);
+    expect(pathIsActive("/settings/agency", setup)).toBe(true);
+    expect(pathIsActive("/settings/import-export", setup)).toBe(true);
   });
 });
 
-describe("grouped desk nav", () => {
-  it("gives each accordion section a stable id and an icon", () => {
+describe("primary desk nav", () => {
+  it("lists Home through Carriers as primaries, not Work/Accounts groups", () => {
     expect(NAV_GROUPS.map((group) => group.id)).toEqual([
-      "work",
-      "accounts",
-      "records",
-      "desk",
+      "home",
+      "leads",
+      "deals",
+      "pipeline",
+      "contacts",
+      "business",
+      "policies",
+      "carriers",
+      "tasks",
+      "calendar",
       "settings",
     ]);
-    for (const group of NAV_GROUPS) {
-      expect(group.icon).toBeTruthy();
-      expect(group.label.length).toBeGreaterThan(0);
-    }
+    expect(NAV_GROUPS.some((group) => group.label === "People")).toBe(false);
+    expect(NAV_GROUPS.some((group) => group.id === "work")).toBe(false);
+    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Business");
   });
 
-  it("renames People to Accounts and keeps Contacts + Businesses", () => {
-    const accounts = NAV_GROUPS.find((group) => group.id === "accounts");
-    expect(accounts?.label).toBe("Accounts");
-    expect(NAV_GROUPS.some((group) => group.label === "People")).toBe(false);
-    expect(accounts?.items.map((item) => item.label)).toEqual(["Contacts", "Businesses"]);
-    expect(accounts?.items.map((item) => item.href)).toEqual(["/contacts", "/accounts"]);
+  it("keeps Contacts and Business as their own primaries", () => {
+    expect(NAV_GROUPS.find((group) => group.id === "contacts")?.label).toBe("Contacts");
+    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Business");
   });
 
   it("keeps one search surface — top bar only, not the sidebar", () => {
-    const hrefs = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.href));
-    const labels = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.label));
+    const hrefs = NAV_GROUPS.flatMap((group) => [group.id, ...group.items.map((item) => item.href)]);
+    const labels = NAV_GROUPS.flatMap((group) => [group.label, ...group.items.map((item) => item.label)]);
     expect(hrefs).not.toContain("/search");
     expect(labels).not.toContain("Search");
   });
 
-  it("keeps Phone and Inbox under Desk, and the rows Javy liked", () => {
-    const desk = NAV_GROUPS.find((group) => group.id === "desk");
-    const work = NAV_GROUPS.find((group) => group.id === "work");
-    const records = NAV_GROUPS.find((group) => group.id === "records");
+  it("keeps Phone, Inbox, and Alerts under Calendar by default", () => {
+    const calendar = NAV_GROUPS.find((group) => group.id === "calendar");
+    const deals = NAV_GROUPS.find((group) => group.id === "deals");
     const labels = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.label));
-    expect(desk?.items.map((item) => item.label)).toEqual(["Calendar", "Phone", "Inbox", "Alerts"]);
-    expect(desk?.items.find((item) => item.label === "Alerts")?.href).toBe("/notifications");
-    const alerts = desk?.items.find((item) => item.label === "Alerts");
+    expect(calendar?.items.map((item) => item.label)).toEqual(["Phone", "Inbox", "Alerts"]);
+    expect(calendar?.items.find((item) => item.label === "Alerts")?.href).toBe("/notifications");
+    const alerts = calendar?.items.find((item) => item.label === "Alerts");
     expect(pathIsActive("/notifications", alerts!)).toBe(true);
     expect(pathIsActive("/alerts", alerts!)).toBe(true);
-    expect(work?.items.some((item) => item.label === "Tasks")).toBe(true);
-    expect(work?.items.some((item) => item.label === "Work queue")).toBe(true);
-    expect(records?.items.some((item) => item.label === "Carriers")).toBe(true);
-    expect(records?.items.some((item) => item.label === "Documents")).toBe(true);
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(deals?.items.some((item) => item.label === "Quotes")).toBe(true);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(PINNED_HOME.label).toBe("Home");
   });
 });

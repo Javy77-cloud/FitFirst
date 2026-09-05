@@ -1,27 +1,17 @@
+import type { LucideIcon } from "lucide-react";
+import { Home } from "lucide-react";
+import { getNavLink, navLinkIsActive, type NavLinkDef } from "@/lib/desk/nav-catalog";
 import {
-  Bell,
-  Briefcase,
-  Building2,
-  CalendarDays,
-  ClipboardList,
-  Contact,
-  FileStack,
-  FileWarning,
-  Home,
-  Inbox,
-  Kanban,
-  ListChecks,
-  Phone,
-  Settings,
-  Shield,
-  Timer,
-  Users,
-} from "lucide-react";
+  flattenResolvedNav,
+  PINNED_PRIMARY_IDS,
+  primaryIdForPath,
+  resolveNavLayout,
+} from "@/lib/desk/nav-layout";
 
 export type NavItem = {
   href: string;
   label: string;
-  icon: typeof Home;
+  icon: LucideIcon;
   match?: string;
   exact?: boolean;
 };
@@ -29,101 +19,43 @@ export type NavItem = {
 export type NavGroup = {
   id: string;
   label: string;
-  icon: typeof Home;
+  icon: LucideIcon;
   items: NavItem[];
 };
 
-/** Always visible, never inside a Sales/Service/Settings accordion. */
-export const PINNED_HOME: NavItem = { href: "/", label: "Home", icon: Home, match: "/" };
+function asItem(link: NavLinkDef): NavItem {
+  return {
+    href: link.href,
+    label: link.label,
+    icon: link.icon,
+    match: link.match,
+    exact: link.exact,
+  };
+}
 
-export const NAV_GROUPS: NavGroup[] = [
-  {
-    id: "work",
-    label: "Work",
-    icon: Kanban,
-    items: [
-      { href: "/get-started", label: "Get Started", icon: ListChecks },
-      { href: "/social", label: "Social", icon: Users, match: "/social" },
-      { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban, match: "/pipeline" },
-      { href: "/leads", label: "Leads", icon: Users, match: "/leads" },
-      { href: "/deals", label: "Deals", icon: ClipboardList, match: "/deals" },
-      { href: "/quotes", label: "Quotes", icon: ClipboardList, match: "/quotes" },
-      { href: "/tasks", label: "Tasks", icon: ListChecks, match: "/tasks" },
-      { href: "/work-queue", label: "Work queue", icon: ListChecks, match: "/work-queue" },
-      { href: "/automations", label: "Automations", icon: ListChecks, match: "/automations" },
-    ],
-  },
-  {
-    id: "accounts",
-    label: "Accounts",
-    icon: Contact,
-    items: [
-      { href: "/contacts", label: "Contacts", icon: Contact, match: "/contacts" },
-      { href: "/accounts", label: "Businesses", icon: Briefcase, match: "/accounts" },
-    ],
-  },
-  {
-    id: "records",
-    label: "Records",
-    icon: Shield,
-    items: [
-      { href: "/policies", label: "Policies", icon: Shield, match: "/policies" },
-      { href: "/book-health", label: "Book health", icon: Shield, match: "/book-health" },
-      { href: "/renewals", label: "Renewals", icon: ClipboardList, match: "/renewals" },
-      { href: "/certificates", label: "Certificates", icon: FileStack, match: "/certificates" },
-      { href: "/service-requests", label: "Service", icon: ListChecks, match: "/service-requests" },
-      { href: "/suspense", label: "Suspense", icon: Timer, match: "/suspense" },
-      { href: "/notices", label: "Notices", icon: FileWarning, match: "/notices" },
-      { href: "/endorsements", label: "Endorsements", icon: FileStack, match: "/endorsements" },
-      { href: "/service-timeline", label: "Service timeline", icon: Timer, match: "/service-timeline" },
-      { href: "/inspections", label: "Inspections", icon: ClipboardList, match: "/inspections" },
-      { href: "/installments", label: "Installments", icon: Briefcase, match: "/installments" },
-      { href: "/documents", label: "Documents", icon: FileStack, match: "/documents" },
-      { href: "/forms", label: "Forms", icon: FileStack, match: "/forms" },
-      { href: "/merge", label: "Merge", icon: Users, match: "/merge" },
-      { href: "/claims", label: "Claims log", icon: FileStack, match: "/claims" },
-      { href: "/commissions", label: "Commissions", icon: Briefcase, match: "/commissions" },
-      { href: "/carriers", label: "Carriers", icon: Building2, match: "/carriers" },
-      { href: "/logs", label: "Decline log", icon: FileStack, match: "/logs" },
-    ],
-  },
-  {
-    id: "desk",
-    label: "Desk",
-    icon: CalendarDays,
-    items: [
-      { href: "/calendar", label: "Calendar", icon: CalendarDays, match: "/calendar" },
-      { href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
-      { href: "/inbox", label: "Inbox", icon: Inbox, match: "/inbox" },
-      { href: "/notifications", label: "Alerts", icon: Bell, match: "/notifications" },
-    ],
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-    items: [
-      { href: "/settings", label: "Settings", icon: Settings, match: "/settings" },
-    ],
-  },
-];
+const homeLink = getNavLink("home")!;
 
-export const FLAT_NAV = [PINNED_HOME, ...NAV_GROUPS.flatMap((group) => group.items)];
+/** Home is a reorderable primary now; kept for older callers. */
+export const PINNED_HOME: NavItem = asItem(homeLink);
+
+const defaultResolved = resolveNavLayout(null);
+
+export const NAV_GROUPS: NavGroup[] = defaultResolved.map((row) => ({
+  id: row.id,
+  label: row.link.label,
+  icon: row.link.icon,
+  items: row.submenu.map(asItem),
+}));
+
+export const FLAT_NAV: NavItem[] = flattenResolvedNav(defaultResolved).map(asItem);
 
 export function pathIsActive(pathname: string, item: NavItem): boolean {
-  const match = item.match ?? item.href.split("?")[0];
-  if (match === "/" || item.exact) return pathname === match;
-  if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/"))) {
-    return true;
-  }
-  return pathname === match || pathname.startsWith(`${match}/`);
+  return navLinkIsActive(pathname, item);
 }
 
 export function groupIdForPath(pathname: string): string {
-  if (pathIsActive(pathname, PINNED_HOME)) return "";
-  if (pathname === "/settings" || pathname.startsWith("/settings/")) return "settings";
-  for (const group of NAV_GROUPS) {
-    if (group.items.some((item) => pathIsActive(pathname, item))) return group.id;
-  }
-  return "work";
+  return primaryIdForPath(pathname);
 }
+
+export const PINNED_NAV_IDS = PINNED_PRIMARY_IDS;
+export { Home };

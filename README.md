@@ -6,6 +6,10 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
+**`cursor/ff-nav-dnd-customize-fe86`** — user-customizable left nav on the live CRM+Quote tip. Starts from **`cursor/live-crm-zoho-tip-sep5c`**, then adds drag-and-drop primary order plus editable submenus persisted on `agent_ui_prefs.nav_layout`.
+
+The previous live tip **`cursor/live-crm-zoho-tip-sep5c`** still has the click-label / chevron-submenu accordion. This slice keeps that behavior and lets Javy rearrange the rail himself.
+
 **`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
 
 1. **`cursor/ff-zoho-owner-fix-6b9e`** — Zoho import always writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls so Maya’s lists are not empty.
@@ -17,7 +21,7 @@ AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-nav-dnd-customize-fe86 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -26,22 +30,22 @@ npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-import
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the sidebar or owner-fix slices.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the nav customize, sidebar, or owner-fix slices.
 
-### Left nav accordion (this slice)
+### Left nav customize (this slice)
 
-Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home stays pinned above the accordion.
+Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom.
 
-1. Click a section header — that group expands and every other group collapses (one at a time).
-2. Click the open header again to close it. All closed is OK.
-3. Last-open section is remembered in `localStorage` (`ff-sidebar-accordion:v1`). Home restores that memory; a record route always opens its own section so the current page stays visible.
-4. **Collapse sidebar** at the bottom of the rail switches to an icon-only narrow rail. Same accordion. Preference is stored next to last-open.
-5. Color stays `#1d4e89`. AMS items already under Records are unchanged — this slice is nav chrome only.
+1. Click the **label** to open that module. Click the **chevron** to expand its submenu. Only one submenu is open at a time.
+2. **Customize menu** at the bottom of the rail. Drag the grip to reorder primaries. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog.
+3. **Reset to default** restores the factory order and submenus.
+4. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
+5. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
 
 ### Air checkout (no wipe)
 
 ```bash
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-nav-dnd-customize-fe86 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -49,7 +53,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` only adds nullable `agent_ui_prefs.nav_layout`. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Home custom layouts + corner resize (this slice)
 

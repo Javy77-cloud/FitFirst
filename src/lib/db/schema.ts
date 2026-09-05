@@ -2076,6 +2076,11 @@ export const agentUiPrefs = pgTable(
     fontPreset: text("font_preset"),
     density: text("density"),
     columnLayout: jsonb("column_layout").$type<Record<string, string[]> | null>(),
+    navLayout: jsonb("nav_layout").$type<{
+      version: number;
+      primaryOrder: string[];
+      submenus: Record<string, string[]>;
+    } | null>(),
     ...timestamps,
   },
   (t) => [index("agent_ui_prefs_actor_idx").on(t.tenantId, t.actorKey)],
