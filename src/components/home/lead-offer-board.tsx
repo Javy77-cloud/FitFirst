@@ -50,7 +50,7 @@ export function LeadOfferBoard({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-navy">{offer.title}</div>
-                    <p className="mt-1 text-[13px] text-muted-foreground">{offer.details}</p>
+                    <p className="mt-1 text-helper text-muted-foreground">{offer.details}</p>
                     {inbound ? (
                       <div className="mt-2 space-y-0.5 text-sm text-navy">
                         {offer.emailFrom ? <p>From {offer.emailFrom}</p> : null}

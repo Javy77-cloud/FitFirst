@@ -34,10 +34,10 @@ export function DeskHeader({
   return (
     <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-5 py-3">
       <div className="min-w-0 shrink-0">
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        <div className="text-caption uppercase tracking-wide text-muted-foreground">
           {eyebrow ?? "Personal lines worksheet"}
         </div>
-        <h1 className="text-lg font-semibold text-navy">{title}</h1>
+        <h1 className="text-xl font-semibold text-navy">{title}</h1>
       </div>
       <div className="min-w-0 flex-1">
         <SmartSearch />

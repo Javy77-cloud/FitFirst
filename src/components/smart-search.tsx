@@ -6,11 +6,11 @@ export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
         name="q"
         defaultValue={defaultQuery}
         placeholder="Search leads, deals, contacts, businesses, policies"
-        className="h-8 w-full min-w-40 rounded-md border border-input bg-card px-2 text-xs md:min-w-72"
+        className="h-9 w-full min-w-40 rounded-md border border-input bg-card px-2 text-sm md:min-w-72"
       />
       <button
         type="submit"
-        className="h-8 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground"
+        className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"
       >
         Search
       </button>

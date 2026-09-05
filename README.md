@@ -23,7 +23,7 @@ Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fi
 
 Overnight feel-pass: grouped left nav, named list filters, header column sliders, RecordContextRail, Start Shop, in-desk calendar, quick comms, Choose files, floating Support, settings accordion, widget resize chrome, Ask a teammate, HTML 404s.
 
-Typography: desk root **16px** (was 15px). Helper / muted / explanation copy uses `--ff-type-helper` **14px** and `--ff-type-caption` **13px** (was 11–12px). `--ff-muted` is **#3f4e5c** (was #5c6b7a) so grey holds on paper. `text-xs` remaps to 13px. Sidebar captions stay compact at 13px.
+Typography: full desk scale-up on a **16px** root. Tailwind `text-sm`/`base`/`lg`/`xl` sit one step larger (15 / 17 / 20 / 22px). Helper **15px**, caption **14px**, `--ff-muted` **#3f4e5c**. Buttons/inputs default **h-9**. Nav items **15px** on a `w-60` rail. Tables **16px**. Leftover 10–13px classes remap through the shared tokens.
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, Automations hub, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
 

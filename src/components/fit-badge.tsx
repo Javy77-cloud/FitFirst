@@ -11,7 +11,7 @@ export function FitBadge({ band, className }: { band: FitBand; className?: strin
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+        "inline-flex items-center rounded-sm px-1.5 py-0.5 text-caption font-semibold uppercase tracking-wide",
         band === "green" && "bg-fit-green-bg text-fit-green",
         band === "yellow" && "bg-fit-yellow-bg text-fit-yellow",
         band === "red" && "bg-fit-red-bg text-fit-red",
@@ -36,7 +36,7 @@ const STAGE_LABEL: Record<string, string> = {
 export function StagePill({ stage }: { stage: string }) {
   const label = STAGE_LABEL[stage] ?? stage.replaceAll("_", " ");
   return (
-    <span className="inline-flex rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-navy">
+    <span className="inline-flex rounded-sm bg-secondary px-1.5 py-0.5 text-caption font-semibold uppercase tracking-wide text-navy">
       {label}
     </span>
   );

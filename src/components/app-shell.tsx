@@ -47,7 +47,7 @@ export async function AppShell({
   return (
     <SupportProvider>
       <div className="flex min-h-screen bg-background">
-        <Suspense fallback={<aside className="hidden w-56 shrink-0 bg-sidebar md:block" />}>
+        <Suspense fallback={<aside className="hidden w-60 shrink-0 bg-sidebar md:block" />}>
           <DeskSidebar unread={unread} actor={actor} users={users} signedIn={session.signedIn} />
         </Suspense>
         <div className="flex min-w-0 flex-1 flex-col">

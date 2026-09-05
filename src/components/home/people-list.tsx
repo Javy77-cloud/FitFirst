@@ -21,7 +21,7 @@ export function PeopleList({
       ) : (
         <ul className="mt-2 divide-y divide-border">
           {rows.map((row) => (
-            <li key={`${title}-${row.id}`} className="flex items-baseline justify-between gap-3 py-1.5 text-[13px]">
+            <li key={`${title}-${row.id}`} className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
               <Link href={row.href} className="truncate font-medium text-primary hover:underline">
                 {row.name}
               </Link>

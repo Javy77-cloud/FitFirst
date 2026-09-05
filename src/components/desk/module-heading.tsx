@@ -10,7 +10,7 @@ export function ModuleHeading({ pageTitle }: { pageTitle?: string }) {
 
   return (
     <div className="min-w-0 shrink-0 pr-3">
-      <h1 className="whitespace-nowrap text-lg font-semibold text-navy">{moduleTitle}</h1>
+      <h1 className="whitespace-nowrap text-xl font-semibold text-navy">{moduleTitle}</h1>
       {subtitle ? <p className="max-w-[16rem] truncate text-sm text-muted-foreground sm:max-w-xs">{subtitle}</p> : null}
     </div>
   );

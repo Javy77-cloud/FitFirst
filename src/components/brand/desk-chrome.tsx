@@ -32,16 +32,16 @@ export function AgencyMark({
       ) : (
         <span
           aria-hidden
-          className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-sidebar-accent text-[11px] font-semibold text-white"
+          className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-sidebar-accent text-caption font-semibold text-white"
         >
           {initials(agencyName)}
         </span>
       )}
       <div className="min-w-0">
-        <div className="truncate text-[13px] font-semibold leading-tight text-white">
+        <div className="truncate text-sm font-semibold leading-tight text-white">
           {agencyName}
         </div>
-        <div className="truncate text-[10px] text-sidebar-foreground/60">FitFirst desk</div>
+        <div className="truncate text-caption text-sidebar-foreground/75">FitFirst desk</div>
       </div>
     </div>
   );

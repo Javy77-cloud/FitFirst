@@ -90,7 +90,7 @@ export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-2 rounded-md px-2.5 py-2 text-[15px]",
+              "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm",
               active
                 ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
                 : "text-sidebar-foreground hover:bg-sidebar-accent",

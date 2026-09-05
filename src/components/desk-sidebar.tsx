@@ -32,7 +32,7 @@ export function DeskSidebar({
   }, [pathname]);
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
+    <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
       <div className="border-b border-sidebar-border px-4 py-4">
         <Link href="/" className="block">
           <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
@@ -45,7 +45,7 @@ export function DeskSidebar({
         <Link
           href={PINNED_HOME.href}
           className={cn(
-            "mb-1 flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] font-semibold",
+            "mb-1 flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-semibold",
             homeActive
               ? "bg-[var(--ff-card)] text-navy"
               : "text-white hover:bg-sidebar-accent hover:text-white",
@@ -84,7 +84,7 @@ export function DeskSidebar({
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px]",
+                          "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm",
                           active
                             ? "bg-[var(--ff-card)] text-navy"
                             : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
@@ -93,7 +93,7 @@ export function DeskSidebar({
                         <Icon className="size-3.5 opacity-80" />
                         <span className="flex-1">{item.label}</span>
                         {item.match === "/alerts" && unread > 0 ? (
-                          <span className="rounded-sm bg-fit-flag px-1.5 text-[10px] font-semibold text-white">
+                          <span className="rounded-sm bg-fit-flag px-1.5 text-caption font-semibold text-white">
                             {unread}
                           </span>
                         ) : null}

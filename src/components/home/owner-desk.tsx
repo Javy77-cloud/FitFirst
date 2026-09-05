@@ -666,7 +666,7 @@ function LeaderTable({
       ) : (
         <ol className="mt-2 space-y-1.5">
           {rows.map((row) => (
-            <li key={`${title}-${row.userId}`} className="flex items-baseline justify-between gap-3 text-[13px]">
+            <li key={`${title}-${row.userId}`} className="flex items-baseline justify-between gap-3 text-sm">
               <span className="min-w-0 truncate">
                 <span className="mr-2 tabular-nums text-muted-foreground">{row.rank}.</span>
                 <span className="font-medium text-navy">{row.name}</span>

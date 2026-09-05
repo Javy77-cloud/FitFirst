@@ -33,8 +33,8 @@
   /* Darker than #5c6b7a so helper/caption grey holds on paper. */
   --ff-muted: #3f4e5c;
   --ff-type-body: 1rem;
-  --ff-type-helper: 0.875rem;
-  --ff-type-caption: 0.8125rem;
+  --ff-type-helper: 0.9375rem;
+  --ff-type-caption: 0.875rem;
   --ff-card: #fffcf7;
   --ff-border: #e2d6c6;
   --ff-green: #1f7a4d;
@@ -136,8 +136,18 @@
   --color-navy: var(--ff-navy);
   --color-navy-mid: var(--ff-navy-mid);
   --color-ink: var(--ff-ink);
-  --text-xs: 0.8125rem;
+  --text-xs: 0.875rem;
   --text-xs--line-height: 1.4;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 1.25;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -168,7 +178,7 @@
   box-shadow: var(--ff-shadow);
 }
 
-/* Shared type scale — helper/caption stay ≥13px and inherit the darker muted token. */
+/* Shared type scale — whole desk one step up; helper/caption stay readable. */
 .text-helper {
   font-size: var(--ff-type-helper);
   line-height: 1.45;
@@ -179,12 +189,23 @@
 }
 
 /*
-  Leftover 10–12px + muted-foreground (process notes, cross-sell, captions).
+  Leftover absolute px sizes from earlier compact passes.
   Higher specificity than a single Tailwind arbitrary size class.
 */
+[class*="text-[10px]"],
+[class*="text-[11px]"],
+[class*="text-[12px]"] {
+  font-size: var(--ff-type-caption);
+  line-height: 1.4;
+}
+[class*="text-[13px]"] {
+  font-size: var(--ff-type-helper);
+  line-height: 1.45;
+}
 .text-muted-foreground[class*="text-[10px]"],
 .text-muted-foreground[class*="text-[11px]"],
-.text-muted-foreground[class*="text-[12px]"] {
+.text-muted-foreground[class*="text-[12px]"],
+.text-muted-foreground[class*="text-[13px]"] {
   font-size: var(--ff-type-helper);
   line-height: 1.45;
 }
@@ -197,7 +218,7 @@
 .ff-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 .ff-table th {
   text-align: left;
@@ -305,7 +326,7 @@
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 [data-ff-density="compact"] {
-  --ff-density: 0.875rem;
+  --ff-density: 0.9375rem;
   font-size: 15px;
 }
 [data-ff-density="compact"] .ff-table th,
