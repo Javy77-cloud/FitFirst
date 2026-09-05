@@ -6,6 +6,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
+**`cursor/ff-sidebar-accordion-31b5`** — Zoho-like left-nav accordion on **`cursor/ff-zoho-owner-fix-6b9e`**. One section open at a time; click again to close. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands. Sidebar stays `#1d4e89`. No wipe.
+
 **`cursor/ff-zoho-owner-fix-6b9e`** — owner fix on **`cursor/live-ff-zoho-data-1809`**. Zoho import now writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls. No wipe.
 
 **`cursor/live-ff-zoho-data-1809`** — LIVE-TEST CRM+Quote tip (`cursor/live-crm-quote-tip-0836`) plus Zoho JSONL wipe+import (`cursor/zoho-data-import-a792`). Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home table layouts (`0066`), lead sources (`0067`), Home JSONB layouts (`0068`), Zoho external ids (`0069`). AMS waves 10–16 parked. Wipe+import replaces the demo CRM book. Ana is **not** re-seeded. Sidebar stays `#1d4e89`.
@@ -14,18 +16,36 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-zoho-data-1809 && git pull
+git fetch && git checkout cursor/ff-sidebar-accordion-31b5 && git pull
 npm install
-npm run db:migrate
-# put JSONL in import/zoho/
-npm run db:wipe-crm
-npm run db:import-zoho
-# already imported and Maya sees empty lists? do not wipe:
+# already have the Zoho book? do not wipe. migrate only if this desk is behind.
+# npm run db:migrate
+# Maya empty after an older import? owner fix only:
 # npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Wipe keeps users + carriers. Do not run `db:seed` after wipe.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Do **not** run `db:wipe-crm` to pick up this sidebar slice.
+
+### Left nav accordion (this slice)
+
+Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home stays pinned above the accordion.
+
+1. Click a section header — that group expands and every other group collapses (one at a time).
+2. Click the open header again to close it. All closed is OK.
+3. Last-open section is remembered in `localStorage` (`ff-sidebar-accordion:v1`). Home restores that memory; a record route always opens its own section so the current page stays visible.
+4. **Collapse sidebar** at the bottom of the rail switches to an icon-only narrow rail. Same accordion. Preference is stored next to last-open.
+5. Color stays `#1d4e89`. AMS items already under Records are unchanged — this slice is nav chrome only.
+
+### Air checkout (no wipe)
+
+```bash
+git fetch && git checkout cursor/ff-sidebar-accordion-31b5 && git pull
+npm install
+npm run dev -- --port 43147
+```
+
+Do not run `db:wipe-crm` or `db:seed`. If Maya’s lists are empty from the older Zoho import, `npm run db:assign-owner` only.
 
 ### Home custom layouts + corner resize (this slice)
 
