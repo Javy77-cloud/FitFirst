@@ -2,10 +2,10 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { UnassignedOfferBoard } from "@/components/leads/offer-board";
 import { InquiryList } from "@/components/social/inquiry-list";
-import { PulseCards } from "@/components/social/pulse-cards";
+import { SocialByoCard } from "@/components/social/social-byo-card";
 import { buttonVariants } from "@/components/ui/button";
 import { requireSignedIn } from "@/lib/auth/guards";
-import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
 import { connectionOwnerFor, listAwardableAgents, listOpenLeadOffers } from "@/lib/leads/offers";
 import { loadSocialPulse } from "@/lib/social/store";
 import { listUsers } from "@/lib/db/queries";
@@ -20,20 +20,21 @@ export default async function SocialPulsePage({
 }) {
   const session = await requireSignedIn();
   const role = session.isAdmin ? "admin" : "agent";
-  const [pulse, query, items, users, offers, agents] = await Promise.all([
+  const [pulse, query, groups, users, offers, agents] = await Promise.all([
     loadSocialPulse(role),
     searchParams,
-    listCatalogItems(),
+    listCatalogByCategory(),
     listUsers(),
     session.isAdmin ? listOpenLeadOffers() : Promise.resolve([]),
     session.isAdmin ? listAwardableAgents() : Promise.resolve([]),
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const names = new Map(users.map((user) => [user.id, user.name]));
+  const social = groups.find((group) => group.category === "social")?.items ?? [];
   const inquiries = pulse.inquiries.map((inquiry) => {
     const ownerId = connectionOwnerFor(
       inquiry.platform,
-      items.map((item) => ({ id: item.id, ownerUserId: item.ownerUserId })),
+      social.map((item) => ({ id: item.id, ownerUserId: item.ownerUserId })),
     );
     return {
       ...inquiry,
@@ -45,19 +46,17 @@ export default async function SocialPulsePage({
 
   return (
     <AppShell
-      title="Social pulse"
+      title="Social"
       actions={
         <Link href="/settings/social" className={cn(buttonVariants({ variant: "outline" }))}>
-          {session.isAdmin ? "Connect accounts" : "View connections"}
+          {session.isAdmin ? "Social settings" : "View connections"}
         </Link>
       }
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Followers, engagement, and views for connected accounts (demo seeds, or BYO OAuth on
-        Settings → Social). An inquiry on an agent&apos;s connected account creates a Lead and
-        pings that agent. Agency inbound stays unassigned until Admin awards it. GBP stays
-        Admin-gated. Admin connects with the agency&apos;s own Meta / Google / LinkedIn app —
-        FitFirst does not buy those APIs.
+        Connect the agency’s Meta, Google, or LinkedIn app. FitFirst does not buy those APIs or
+        invent follower counts. Inquiries on a connected account become Leads. X stays a paid
+        wall.
       </p>
       {notice === "gbp-locked" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
@@ -66,7 +65,7 @@ export default async function SocialPulsePage({
       ) : null}
       {notice === "platform-disconnected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          That platform is not connected. Ask Admin to click Connect on Settings → Integrations.
+          That platform is not connected. Ask Admin to connect it under Settings → Social.
         </p>
       ) : null}
       {notice === "no-new-inquiries" ? (
@@ -86,12 +85,21 @@ export default async function SocialPulsePage({
       ) : null}
       {pulse.gbpLocked ? (
         <p className="mb-3 rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm">
-          GBP is locked on this desk. Admin must toggle “Allow agents to monitor GBP” in Settings →
-          Social after connecting the listing.
+          GBP is locked on this desk. Admin must allow agents to monitor it in Settings → Social
+          after connecting the listing.
         </p>
       ) : null}
 
-      <PulseCards cards={pulse.cards} />
+      <div className="grid gap-3 md:grid-cols-2">
+        {social.map((item) => (
+          <SocialByoCard
+            key={item.id}
+            item={item}
+            canEdit={session.isAdmin}
+            returnTo="/settings/social"
+          />
+        ))}
+      </div>
       {session.isAdmin ? (
         <div className="mt-4">
           <UnassignedOfferBoard offers={offers} agents={agents} />

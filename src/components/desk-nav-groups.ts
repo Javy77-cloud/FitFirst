@@ -8,7 +8,6 @@ import {
   FileStack,
   FileWarning,
   Home,
-  Inbox,
   Kanban,
   ListChecks,
   Phone,
@@ -42,7 +41,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Work",
     icon: Kanban,
     items: [
-      { href: "/get-started", label: "Get Started", icon: ListChecks },
       { href: "/social", label: "Social", icon: Users, match: "/social" },
       { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban, match: "/pipeline" },
       { href: "/leads", label: "Leads", icon: Users, match: "/leads" },
@@ -94,7 +92,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/calendar", label: "Calendar", icon: CalendarDays, match: "/calendar" },
       { href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
-      { href: "/inbox", label: "Inbox", icon: Inbox, match: "/inbox" },
       { href: "/notifications", label: "Alerts", icon: Bell, match: "/notifications" },
     ],
   },

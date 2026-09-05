@@ -22,7 +22,7 @@ export default function NewPolicyPage() {
           </Link>
         </p>
         <p className="text-helper text-muted-foreground">
-          Ana Dib stays Quote Sent / unbound, Cov A $321,000. Do not bind her from this stub.
+          A policy is created only from bind — not from this shortcut.
         </p>
       </section>
     </AppShell>

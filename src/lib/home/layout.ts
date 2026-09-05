@@ -123,7 +123,7 @@ export const LAYOUT_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   renewals: "Renewal windows",
   attention: "Needs attention",
   "cross-sell": "Cross-sell",
-  ana: "Ana Dib shop",
+  ana: "Open shop",
   alerts: "In-app alerts",
   "recent-deals": "Recent deals",
   "social-facebook": "Facebook",

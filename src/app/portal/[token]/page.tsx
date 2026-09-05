@@ -57,8 +57,7 @@ export default async function PortalHomePage({
         </div>
         {session.policies.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            No in-force policies on this link. Ask the agency if this is the wrong
-            code. Ana Dib shops stay off the portal.
+            No in-force policies on this link. Ask the agency if this is the wrong code.
           </p>
         ) : (
           <ul className="divide-y divide-border">

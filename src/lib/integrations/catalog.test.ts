@@ -80,7 +80,7 @@ describe("integrations catalog", () => {
     expect(isIntegrationProviderId("zoho_mail")).toBe(true);
     expect(isIntegrationProviderId("zoho_crm")).toBe(false);
     expect(AGENCY_PAYS_VENDOR).toBe("Agency pays the vendor.");
-    expect(connectionStatusLabel(true)).toBe("Connected (demo)");
+    expect(connectionStatusLabel(true)).toBe("Connected");
     expect(connectionStatusLabel(false)).toBe("Not connected");
     expect(providersIn("social").map((item) => item.id)).toEqual([
       "facebook",

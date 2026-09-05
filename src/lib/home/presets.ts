@@ -49,7 +49,7 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   renewal_risk: "Renewal-risk flags",
   attention: "Needs attention",
   cross_sell: "Cross-sell",
-  ana: "Ana Dib shop",
+  ana: "Open shop",
   alerts: "In-app alerts",
   recent_deals: "Recent deals",
   company: "Agency widgets",
@@ -71,7 +71,6 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "hit_lost",
     "renewal_risk",
     "attention",
-    "ana",
     "social",
   ],
   pipeline_focus: [
@@ -84,7 +83,6 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "cross_sell",
     "charts",
     "hit_lost",
-    "ana",
     "social",
   ],
   retention: [
@@ -139,6 +137,7 @@ export function isWidgetVisible(
   opts?: { showCompanyWidgets?: boolean; isAgent?: boolean; isAdmin?: boolean },
 ): boolean {
   void preset;
+  if (id === "ana") return false;
   if (hidden.includes(id)) return false;
   if (id === "company" && opts?.isAgent && !opts.showCompanyWidgets) return false;
   if (id === "hit_lost" && opts && opts.isAdmin === false) return false;

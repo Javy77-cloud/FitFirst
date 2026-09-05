@@ -14,7 +14,6 @@ import {
   Home,
   Timer,
   Layers,
-  LifeBuoy,
   Phone,
   Kanban,
   ListChecks,
@@ -29,7 +28,6 @@ import { DESK_NAV_ITEMS } from "@/lib/desk/nav-items";
 import { navItemIsActive } from "@/lib/desk/nav-active";
 
 const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = {
-  "Get Started": ListChecks,
   Home,
   Social: Share2,
   Pipeline: Kanban,
@@ -60,7 +58,6 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Calendar,
   Carriers: Building2,
   Phone,
-  Support: LifeBuoy,
   Settings: ClipboardList,
 };
 

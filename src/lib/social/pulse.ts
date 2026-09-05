@@ -8,12 +8,7 @@ import {
   socialPlatformLabel,
   type SocialPlatformId,
 } from "./platforms";
-import {
-  SOCIAL_INQUIRY_SEEDS,
-  SOCIAL_PULSE_SEEDS,
-  type SocialInquirySeed,
-  type SocialPulseMetrics,
-} from "./seeds";
+import type { SocialInquirySeed, SocialPulseMetrics } from "./seeds";
 
 export type SocialPulseCard = {
   id: SocialPlatformId;
@@ -64,25 +59,16 @@ export function buildSocialPulse(input: {
           : "Google Business Profile stays locked until Admin connects it and allows agent monitoring."
         : null,
       accountLabel: connected && usable ? (item?.accountLabel ?? null) : null,
-      metrics: connected && usable ? SOCIAL_PULSE_SEEDS[id] : null,
+      metrics: null,
     };
   });
 
-  const visibleConnected = new Set(
-    cards.filter((card) => card.connected && !card.locked && card.metrics).map((card) => card.id),
-  );
-
-  const inquiries = SOCIAL_INQUIRY_SEEDS.filter((row) => visibleConnected.has(row.platform)).map(
-    (row) => ({
-      ...row,
-      platformLabel: socialPlatformLabel(row.platform),
-    }),
-  );
+  const inquiries: SocialPulseInquiry[] = [];
 
   return {
     cards,
     inquiries,
-    connectedVisible: visibleConnected.size,
+    connectedVisible: 0,
     gbpLocked,
     allowAgentsMonitorGbp: input.allowAgentsMonitorGbp,
   };

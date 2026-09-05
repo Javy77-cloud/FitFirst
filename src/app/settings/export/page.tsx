@@ -62,7 +62,7 @@ export default async function AdminExportPage() {
         </Link>
         <span className="text-muted-foreground"> · </span>
         <Link href={IMPORT_HREF} className="text-primary hover:underline">
-          Import stub
+          Import
         </Link>
       </p>
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
@@ -71,9 +71,8 @@ export default async function AdminExportPage() {
         <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">
           Import / Export hub
         </Link>
-        . Encrypted SSN / EIN / DL values stay off the file. Ana Dib stays shopping — she
-        appears as a contact with zero policies. Businesses, carriers, leads, documents, and quote sheets
-        sit on the hub as placeholders until those packs merge.
+        . Encrypted SSN / EIN / DL values stay off the file. Businesses, carriers, leads,
+        documents, and quote sheets sit on the Import / Export hub.
       </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">

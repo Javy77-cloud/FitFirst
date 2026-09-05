@@ -220,8 +220,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
           <DialogHeader>
             <DialogTitle>Import {active?.label}</DialogTitle>
             <DialogDescription>
-              Upload a CSV, dry-run the match, then commit. Import never deletes. Ana Dib stays unbound at Cov A
-              $321,000.
+              Upload a CSV, dry-run the match, then commit. Import never deletes customer rows.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

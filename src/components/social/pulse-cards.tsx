@@ -40,7 +40,7 @@ export function PulseTile({
               <p className="truncate text-[11px] text-muted-foreground">{card.accountLabel}</p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
-                {card.locked ? "Locked for agents" : card.connected ? "Connected stub" : "Not connected"}
+                {card.locked ? "Locked for agents" : card.connected ? "Connected" : "Not connected"}
               </p>
             )}
           </div>
@@ -88,7 +88,7 @@ export function PulseTile({
         </>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Connect in Settings → Social. Paste the agency’s free developer app, or mark a desk demo.
+          Connect in Settings → Social. Paste the agency’s developer app.
         </p>
       )}
     </article>
@@ -109,9 +109,8 @@ export function PulseCards({
       ))}
       {compact ? (
         <p className="sm:col-span-2 text-[11px] text-muted-foreground">
-          Demo seed numbers after a connect stub.{" "}
           <Link href="/social" className="text-primary hover:underline">
-            Open social pulse
+            Connect social accounts
           </Link>
         </p>
       ) : null}

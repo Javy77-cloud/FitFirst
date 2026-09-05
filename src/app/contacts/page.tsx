@@ -32,7 +32,7 @@ export default async function ContactsPage({
     <AppShell title="Contacts">
       <p className="mb-3 text-base text-muted-foreground">
         Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
-        policy is Active, Bound, or Pending. Ana is on the book for the shop only — not a client.
+        policy is Active, Bound, or Pending.
       </p>
       <SavedFiltersBar
         moduleId="contacts"

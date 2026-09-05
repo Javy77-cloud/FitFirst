@@ -30,9 +30,8 @@ export default async function AgentPerformancePage({
           Full producer scorecard
         </Link>
         {" · "}
-        Ranked conversion, retention, in-force premium, and binds from the book they own. Ana Dib
-        HO3 stays Quote Sent / unbound at <span className="font-medium text-navy">$321,000</span> —
-        not this production total.
+        Ranked conversion, retention, in-force premium, and binds from the book they own. Quotes
+        are not written premium.
       </p>
 
       {person.status !== "active" ? (

@@ -26,11 +26,11 @@ export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
 
 export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   email: "Agency inbox. Google, Outlook, or Zoho Mail — FitFirst does not host mail.",
-  calendar: "Desk calendar stays here. Google, Outlook, and Zoho Calendar are demo plugs.",
+  calendar: "Desk calendar stays here. Connect Google, Outlook, or Zoho Calendar when the agency is ready.",
   social:
-    "Facebook, Instagram, X, LinkedIn, and Google Business Profile. Paste the agency’s free developer app and try OAuth. FitFirst does not buy ads or API seats. Maps stay free public search links.",
-  phone_sms: "Call log and SMS. Twilio, RingCentral, or Lightspeed Voice. Nothing dials from this build.",
-  esign: "In-desk stub on Deal or Policy. Finish-line DocuSign / Dropbox Sign stay parked. No envelope leaves the desk.",
+    "Facebook, Instagram, X, LinkedIn, and Google Business Profile. Paste the agency’s developer app and try OAuth. FitFirst does not buy ads or API seats. Maps stay free public search links.",
+  phone_sms: "Call log and SMS. Connect Twilio, RingCentral, or Lightspeed Voice when the agency is ready.",
+  esign: "In-desk signing on Deal or Policy. DocuSign / Dropbox Sign are not wired.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
   campaigns: "Bulk and drip later. Mailchimp, Constant Contact, or SendGrid — agency pays the vendor.",
   video: "Meeting links on the calendar. Zoom or Google Meet — agency account.",
@@ -96,8 +96,8 @@ export type IntegrationProvider = {
 
 export const AGENCY_PAYS_VENDOR = "Agency pays the vendor.";
 
-export function connectionStatusLabel(connected: boolean): "Connected (demo)" | "Not connected" {
-  return connected ? "Connected (demo)" : "Not connected";
+export function connectionStatusLabel(connected: boolean): "Connected" | "Not connected" {
+  return connected ? "Connected" : "Not connected";
 }
 
 export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [

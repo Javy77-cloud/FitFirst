@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Clock,
-  LifeBuoy,
   Plus,
   RefreshCw,
   Sparkles,
@@ -14,14 +13,6 @@ import {
 import { logoutDesk } from "@/app/actions/auth";
 import { NotificationBell } from "@/components/desk/notification-bell";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,12 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { HeaderAlert } from "@/lib/desk/header-alerts";
-import {
-  PROFILE_SETTINGS_HREF,
-  QUICK_ACTIONS,
-  SUPPORT_COPY,
-  SUPPORT_HREF,
-} from "@/lib/desk/quick-actions";
+import { PROFILE_SETTINGS_HREF, QUICK_ACTIONS } from "@/lib/desk/quick-actions";
 import {
   mergeRecent,
   parseRecordPath,
@@ -233,35 +219,6 @@ export function HeaderUtilities({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Dialog>
-        <DialogTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className={chromeButtonClass()}
-              aria-label="Support"
-              title="Support"
-            />
-          }
-        >
-          <LifeBuoy className="size-3.5" />
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Support</DialogTitle>
-            <DialogDescription>{SUPPORT_COPY}</DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Same stub for Admin and Agent. The sidebar Support row stays so this is not forgotten.
-          </p>
-          <Link href={SUPPORT_HREF} className="text-sm text-primary hover:underline">
-            Open Support page
-          </Link>
-        </DialogContent>
-      </Dialog>
 
       <DropdownMenu>
         <DropdownMenuTrigger

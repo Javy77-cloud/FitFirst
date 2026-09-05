@@ -19,8 +19,8 @@ export default async function ScorecardsPage({
     <AppShell title="Scorecards">
       <p className="mb-3 text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Admin ranks every producer on conversion, retention, in-force premium, and binds. Quotes — including Ana Dib HO3 at $321,000 — are not written premium."
-          : "Your book only. Other producers stay hidden. Ana Dib HO3 stays Quote Sent / unbound at $321,000."}{" "}
+          ? "Admin ranks every producer on conversion, retention, in-force premium, and binds. Quotes are not written premium."
+          : "Your book only. Other producers stay hidden. Quotes are not written premium."}{" "}
         Open{" "}
         <Link href="/glance" className="text-primary hover:underline">
           Glance

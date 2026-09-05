@@ -13,8 +13,8 @@ export default async function EmailSettingsPage() {
   return (
     <SettingsShell title="Email" current="email">
       <p className="mb-4 text-sm text-muted-foreground">
-        Client mail goes through the agency inbox. Connect Google, Outlook, or Zoho Mail as a
-        demo toggle. Agency pays the vendor. Templates and signatures stay under Brand / lists.
+        Connect Gmail, Outlook, or Zoho Mail when the agency is ready. FitFirst does not host
+        mail. Templates and signatures stay under Brand / lists.
       </p>
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/settings/email-templates" className="text-primary hover:underline">

@@ -57,12 +57,15 @@ describe("grouped desk nav", () => {
     expect(labels).not.toContain("Search");
   });
 
-  it("keeps Phone and Inbox under Desk, and the rows Javy liked", () => {
+  it("keeps Phone under Desk, and the rows Javy liked", () => {
     const desk = NAV_GROUPS.find((group) => group.id === "desk");
     const work = NAV_GROUPS.find((group) => group.id === "work");
     const records = NAV_GROUPS.find((group) => group.id === "records");
     const labels = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.label));
-    expect(desk?.items.map((item) => item.label)).toEqual(["Calendar", "Phone", "Inbox", "Alerts"]);
+    expect(desk?.items.map((item) => item.label)).toEqual(["Calendar", "Phone", "Alerts"]);
+    expect(labels).not.toContain("Get Started");
+    expect(labels).not.toContain("Inbox");
+    expect(labels).not.toContain("Support");
     expect(desk?.items.find((item) => item.label === "Alerts")?.href).toBe("/notifications");
     const alerts = desk?.items.find((item) => item.label === "Alerts");
     expect(pathIsActive("/notifications", alerts!)).toBe(true);

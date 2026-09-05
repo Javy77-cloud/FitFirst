@@ -19,9 +19,9 @@ describe("header quick actions", () => {
     ]);
   });
 
-  it("keeps the Support stub copy and profile settings href", () => {
+  it("keeps help copy and profile settings href", () => {
     expect(SUPPORT_HREF).toBe("/support");
-    expect(SUPPORT_COPY).toBe("Coming soon — we'll wire this later.");
+    expect(SUPPORT_COPY).toBe("How-to and Q&A live in the desk help panel.");
     expect(PROFILE_SETTINGS_HREF).toBe("/settings/my-desk");
     expect(NOTIFICATION_LINKS.map((link) => link.href)).toEqual([
       "/notifications",

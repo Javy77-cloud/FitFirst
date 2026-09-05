@@ -12,13 +12,13 @@ export function phoneLineWallCopy(line: PhoneLineStatus): {
 } {
   if (line.connected) {
     return {
-      title: "Line marked for later",
-      body: `${line.providerLabel} is a stub${line.displayFrom ? ` · ${line.displayFrom}` : ""}. FitFirst does not buy numbers or store Twilio keys. Outcome still writes to the activity log.`,
+      title: "Line marked — not live",
+      body: `${line.providerLabel}${line.displayFrom ? ` · ${line.displayFrom}` : ""}. Twilio is not wired. Log a call on the book — nothing dials from this desk.`,
     };
   }
   return {
-    title: "Connect a line later",
-    body: "Bring your own trunk when the agency is ready. No Twilio purchase from this desk. The dialer below logs the call outcome on activities — it does not place a PSTN call.",
+    title: "Connect your phone line",
+    body: "Bring your own Twilio or SIP trunk when the agency is ready. FitFirst does not buy numbers. Log a call below — it writes to the activity log and does not place a PSTN call.",
   };
 }
 

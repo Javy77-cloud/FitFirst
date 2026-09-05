@@ -31,9 +31,9 @@ export function DialerStub({ contacts }: { contacts: DialerContact[] }) {
   return (
     <form action={logPhoneStubCall} className="ff-card space-y-3 p-4">
       <div>
-        <h2 className="text-base font-semibold text-navy">Dialer stub</h2>
+        <h2 className="text-base font-semibold text-navy">Log a call</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Logs the outcome on activities. Does not place a call.
+          Writes the outcome to the activity log. Does not place a call.
         </p>
       </div>
       <input type="hidden" name="phone" value={phone} />

@@ -21,13 +21,11 @@ export default async function ImportSettingsPage({
   return (
     <SettingsShell title="Import" current="import">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        CSV import on this page stays a placeholder. The Air-desk Zoho book path is JSONL:
-        copy dumps into <code>import/zoho/</code>, then{" "}
-        <code>npm run db:wipe-crm</code> and <code>npm run db:import-zoho</code>. That wipe
-        keeps users, tenant, and carriers. Ana is not re-seeded. File bytes stay out of this
-        pass. If lists are empty for Maya after an older import, run{" "}
-        <code>npm run db:assign-owner</code> — it only fills null <code>owner_id</code> on
-        contacts, leads, deals, and policies. Do not wipe.
+        CSV import on this page is not wired. The live book path is Zoho JSONL: copy dumps
+        into <code>import/zoho/</code>, then <code>npm run db:import-zoho</code>. Only run{" "}
+        <code>npm run db:wipe-crm</code> when you intend to replace the book. If lists are
+        empty for an agent after an older import, run <code>npm run db:assign-owner</code> —
+        it only fills null <code>owner_id</code>. Do not wipe a live book.
       </p>
       <p className="mb-4 text-sm">
         <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">

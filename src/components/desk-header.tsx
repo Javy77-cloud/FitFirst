@@ -17,7 +17,7 @@ const ICONS = [
     icon: CalendarDays,
     className: "text-[#b45309] hover:bg-[#fef3c7]",
   },
-  { href: "/inbox", label: "Mail", icon: Inbox, className: "text-[#1d6fb8] hover:bg-[#dbeafe]" },
+  { href: "/settings/email", label: "Email", icon: Inbox, className: "text-[#1d6fb8] hover:bg-[#dbeafe]" },
 ];
 
 export function DeskHeader({

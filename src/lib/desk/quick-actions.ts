@@ -18,7 +18,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 export const SUPPORT_HREF = "/support";
-export const SUPPORT_COPY = "Coming soon — we'll wire this later.";
+export const SUPPORT_COPY = "How-to and Q&A live in the desk help panel.";
 export const PROFILE_SETTINGS_HREF = "/settings/my-desk";
 
 export const NOTIFICATION_LINKS = [

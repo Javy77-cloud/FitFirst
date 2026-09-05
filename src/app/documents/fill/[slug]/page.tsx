@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FillWorkspace } from "@/components/documents/fill-workspace";
-import { StubBanner } from "@/components/ops/stub-banner";
 import { buttonVariants } from "@/components/ui/button";
 import { getFormFill, getFormTemplate, latestFormFill } from "@/lib/db/queries";
 import { libraryHref } from "@/lib/documents/library";
@@ -40,12 +39,14 @@ export default async function DocumentFillPage({
         </div>
       }
     >
-      <StubBanner>
-        Fillable stub. Field map is the template schema. Scan &amp; suggest pre-fills demo values —
-        not live OCR, not Ana Dib. Quote Sheet fill still lives on /forms/[slug].
-      </StubBanner>
+      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
+        Fillable form. Field map is the template schema. Scan &amp; suggest is not live OCR.
+        Quote Sheet fill still lives on /forms/[slug].
+      </p>
       {notice === "scan-suggested" ? (
-        <StubBanner>Suggested fields applied. Pasted lines overrode matching demo keys.</StubBanner>
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Suggested fields applied. Edit anything that looks wrong.
+        </p>
       ) : null}
       <p className="mb-4 text-sm text-muted-foreground">
         {template.family} · {template.line}. {template.summary}

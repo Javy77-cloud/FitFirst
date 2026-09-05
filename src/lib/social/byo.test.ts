@@ -111,7 +111,7 @@ describe("social BYO connect", () => {
           paidWall: false,
         }),
       ),
-    ).toBe("Connected (demo)");
+    ).toBe("Not connected");
     expect(
       socialConnectStatusLabel(
         socialConnectStatus({

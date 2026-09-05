@@ -41,7 +41,7 @@ export default async function MacrosPage({
         Settings → Automations &amp; Developer → Macros. Configure every run surface there
         (Leads, Deals / Pipeline, Contacts, Businesses, Policies, Campaigns, Tasks, Quotes).
         Check rows, then <strong>Run Macro</strong>. Leads also has <strong>Run Follow-up Macro</strong>.
-        Ana Dib is skipped.
+        Macros run on the records you pick.
       </p>
       <section className="ff-card overflow-hidden">
         {macros.length === 0 ? (

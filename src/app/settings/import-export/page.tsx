@@ -17,13 +17,12 @@ export default async function ImportExportPage() {
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Portable CRM + AMS packs. Export CSV with stable headers, download a blank template, then import
         with a dry-run preview. Create vs update matches email, policy number, or carrier code. Import never
-        deletes. CSV import does not bind a shop or invent a Policy. After a Zoho wipe+import the
-        demo Ana fixture is gone — the live book is the JSONL dump. No paid migration
-        vendor. Open API CSV still lives on{" "}
+        deletes. CSV import does not bind a shop or invent a Policy. Zoho JSONL is the live book
+        path. No paid migration vendor. Open API CSV still lives on{" "}
         <Link href={EXPORT_HREF} className="text-primary hover:underline">
           Export
         </Link>
-        . CSV upload stub is on{" "}
+        . CSV upload is on{" "}
         <Link href={IMPORT_HREF} className="text-primary hover:underline">
           Import
         </Link>
@@ -35,8 +34,8 @@ export default async function ImportExportPage() {
       <section className="ff-card mb-4 border-dashed p-4">
         <div className="text-sm font-semibold text-navy">IVANS / AL3 download</div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Not connected. Carrier download stays a separate stub. Use the CSV packs below for a book move —
-          do not paste a vendor key here.
+          Not connected. Connect IVANS / AL3 under Settings when the agency has a feed. Use the
+          CSV packs below for a book move — do not paste a vendor key here.
         </p>
         <button
           type="button"

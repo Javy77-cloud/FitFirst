@@ -81,7 +81,7 @@ export default async function PhonePage({
         <h2 className="text-base font-semibold text-navy">{wall.title}</h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{wall.body}</p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Status: {line.connected ? "connected (stub)" : "not connected"} · {line.providerLabel}
+          Status: {line.connected ? "preferred line saved" : "not connected"} · {line.providerLabel}
         </p>
       </section>
       {notice === "logged" ? (
@@ -104,7 +104,7 @@ export default async function PhonePage({
           </div>
           {calls.length === 0 ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">
-              No calls yet. Use the dialer stub or log a call on a record.
+              No calls yet. Log a call here or on a Contact.
             </p>
           ) : (
             <ul className="divide-y divide-border">

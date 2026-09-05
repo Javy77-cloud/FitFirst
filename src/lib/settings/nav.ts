@@ -90,7 +90,7 @@ export type SettingsNavGroup = {
   children: SettingsNavChild[];
 };
 
-/** Zoho-like Setup categories. Every href is a route that already exists (or /settings/billing stub). */
+/** Zoho-like Setup categories. Every href is a route that already exists. */
 export const SETTINGS_NAV: SettingsNavGroup[] = [
   {
     id: "agency-people",
@@ -123,7 +123,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     children: [
       { id: "communications", href: "/settings/communications", label: "Communications", hint: "Email, SMS, phone, video" },
       { id: "email", href: "/settings/email", label: "Email", hint: "Inbox + templates" },
-      { id: "sms", href: "/settings/sms", label: "SMS", hint: "Twilio stub" },
+      { id: "sms", href: "/settings/sms", label: "SMS", hint: "Connect Twilio" },
       { id: "outbound", href: "/settings/outbound", label: "Outbound queue", hint: "Email / SMS intent" },
       { id: "phone", href: "/settings/phone", label: "Phone", hint: "Call log line" },
       { id: "video", href: "/settings/video", label: "Video", hint: "Zoom / Meet" },
@@ -154,7 +154,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     children: [
       { id: "automations", href: "/automations", label: "Automations hub", hint: "Playbooks · sequences · tools" },
       { id: "playbooks", href: "/automations/playbooks", label: "Playbooks", hint: "Tasks + Alerts" },
-      { id: "sequences", href: "/automations/sequences", label: "Sequences", hint: "Nurture stubs" },
+      { id: "sequences", href: "/automations/sequences", label: "Sequences", hint: "Nurture drafts" },
       { id: "templates", href: "/automations/templates", label: "Templates", hint: "EN/ES preview" },
       { id: "triggers", href: "/settings/email-triggers", label: "Email triggers", hint: "Won-date jobs" },
       { id: "macros", href: "/automations/macros", label: "Macros", hint: "Manual run" },
@@ -186,7 +186,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     badge: "Admin",
     children: [
       { id: "import-export", href: "/settings/import-export", label: "Hub", hint: "All packs" },
-      { id: "import", href: "/settings/import", label: "Import", hint: "CSV stub" },
+      { id: "import", href: "/settings/import", label: "Import", hint: "CSV + Zoho JSONL" },
       { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
     ],
   },
@@ -199,7 +199,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     icon: "billing",
     badge: "Admin",
     children: [
-      { id: "billing", href: "/settings/billing", label: "Billing stub", hint: "No invoicing here" },
+      { id: "billing", href: "/settings/billing", label: "Billing", hint: "No invoicing here" },
     ],
   },
 ];

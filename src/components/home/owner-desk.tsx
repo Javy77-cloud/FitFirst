@@ -158,9 +158,9 @@ export function OwnerDesk({
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
                 {scope.agentUserId
-                  ? "Your in-force and open shops only. Quotes — including Ana Dib's $321,000 HO3 — stay unbound."
-                  : "Agency totals. In-force is Active or Bound only. Ana Dib's $321,000 HO3 shop is pipeline, not written premium."}{" "}
-                Figures are from the seed, as of {asOf}.
+                  ? "Your in-force and open shops only. Quotes stay unbound until bind."
+                  : "Agency totals. In-force is Active or Bound only. Open quotes are pipeline, not written premium."}{" "}
+                Figures as of {asOf}.
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
@@ -421,7 +421,7 @@ export function OwnerDesk({
                     <div className="p-4">
                       <h3 className="text-sm font-semibold text-navy">Agency this month</h3>
                       <p className="text-[11px] text-muted-foreground">
-                        Company widget on agent desks when Admin turns it on. Ana&apos;s shop is still not written
+                        Company widget on agent desks when Admin turns it on. Quotes are not written
                         premium.
                       </p>
                       <div className="mt-3 grid gap-2 sm:grid-cols-3">

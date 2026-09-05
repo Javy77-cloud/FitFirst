@@ -74,7 +74,7 @@ export default async function FunctionsPage({
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            No functions in this category. Create one or seed the desk.
+            No functions in this category. Create one from Developer Hub.
           </p>
         ) : (
           <div className="overflow-x-auto">

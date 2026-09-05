@@ -58,9 +58,8 @@ export default async function SettingsPage({
           <div>
             <div className="text-sm font-semibold text-navy">Integrations</div>
             <p className="text-helper text-muted-foreground">
-              Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign,
-              EZLynx / QuoteRush. Social is BYO OAuth with the agency’s free developer app. Other
-              cards stay a demo toggle. Agency pays the vendor.
+              Social is BYO OAuth with the agency’s developer app. Email, SMS, Twilio, IVANS, and
+              rater seats stay not connected until those paths are wired. Agency pays the vendor.
             </p>
           </div>
           <ConnectionBadge connected={catalogConnected} />
@@ -73,7 +72,7 @@ export default async function SettingsPage({
             <div>
               <div className="text-sm font-semibold text-navy">Import / Export</div>
               <p className="text-xs text-muted-foreground">
-                Contacts, businesses, policies, and related packs. Live CSV plus an import stub.
+                Contacts, businesses, policies, and related packs. Zoho JSONL is the live import.
               </p>
             </div>
           </Link>

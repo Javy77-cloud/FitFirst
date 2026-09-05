@@ -2,14 +2,17 @@ import { describe, expect, it } from "vitest";
 import { DESK_NAV_ITEMS } from "./nav-items";
 
 describe("desk nav chrome", () => {
-  it("keeps one Pipeline row, one Settings row, and a Support stub", () => {
+  it("keeps one Pipeline row and one Settings row, without stub-only rows", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
     expect(labels.filter((label) => label === "Settings")).toHaveLength(1);
-    expect(labels).toContain("Support");
+    expect(labels).not.toContain("Support");
+    expect(labels).not.toContain("Get Started");
+    expect(hrefs).not.toContain("/support");
+    expect(hrefs).not.toContain("/get-started");
     expect(DESK_NAV_ITEMS.filter((item) => item.href === "/settings")).toHaveLength(1);
     expect(labels.filter((label) => label === "Automations")).toHaveLength(1);
-    expect(DESK_NAV_ITEMS.some((item) => item.href === "/support")).toBe(true);
   });
 
   it("moves Alerts and Search out of the left nav into top chrome", () => {

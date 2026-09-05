@@ -13,7 +13,17 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 Skipped for the next tip: AMS waves 10–16, nav DnD, selection actions, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
 
-Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
+Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
+
+### Nav items removed (leave for a later nav-DnD merge)
+
+| Removed | Was | Why |
+| --- | --- | --- |
+| Get Started | `/get-started` (Work accordion) | Demo seed checklist. Bookmarks redirect to Home. |
+| Inbox | `/inbox` (Desk accordion + header Mail) | No mailbox. Header Mail now opens Settings → Email. |
+| Support | `/support` (flat nav + coming-soon dialog) | Coming-soon stub. In-app help panel stays. |
+
+Social stays in Work as a BYO connect wall (Settings → Social). Phone stays as a call log.
 
 ## Run locally (Mac Air and Mac mini)
 
@@ -137,7 +147,7 @@ Settings is Setup-style **card groups** (Agency & People, Desk & Phone, Integrat
 
 Calendar chrome is three rows: **Add event | Add company meeting | Add training**, then **Month | Week | Day**, then **Task | Meeting | Call | Email | SMS**. Company meeting and training stay Admin. Month/week/day, drag-drop, type filters, and add-by-type stay as they were.
 
-Nav cleanup: left-nav group is **Accounts** (Contacts + Businesses — not “People”). Sidebar Search is gone; Smart Search stays in the top bar. **Phone** (`/phone`) is a BYO-later setup stub with a dialer that logs outcomes on activities. **Inbox** (`/inbox`, eyebrow Envoys) is a work-email-later stub that shows seeded inbound queue rows.
+Nav cleanup: left-nav group is **Accounts** (Contacts + Businesses — not “People”). Sidebar Search is gone; Smart Search stays in the top bar. **Phone** (`/phone`) is a call log. Get Started, Inbox, and Support are off the rail — `/get-started` redirects Home; header Mail opens Settings → Email.
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Source is **Book of business**. Do not bind.
 

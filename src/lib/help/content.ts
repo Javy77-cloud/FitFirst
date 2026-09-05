@@ -47,7 +47,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     body: [
       "Quoted, declined, and floor-only results stay on the deal.",
       "Bind creates the Contact or Business and the Policy. Not before.",
-      "Ana Dib is a shopping fixture. Do not bind her. Coverage A is $321,000.",
+      "A quote is not coverage. Bind is the only step that creates a policy.",
     ],
   },
   {
@@ -78,7 +78,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     body: [
       "Personal: HO, auto, flood, umbrella. Bind creates a Contact.",
       "Commercial: GL, BOP, WC, and the rest. Bind creates a Business.",
-      "Harbor Key Marine is the commercial click-through. Ana and Elena are personal HO3.",
+      "Commercial bind creates a Business. Personal bind creates a Contact.",
     ],
   },
 ];
@@ -86,8 +86,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
 export const HELP_FAQ: HelpFaq[] = [
   {
     id: "ana",
-    q: "Why can’t I bind Ana Dib?",
-    a: "She is the shopping fixture. Unbound, 0 policies, Coverage A $321,000. Quotes on her deal are not coverage.",
+    q: "Why can’t I turn a quote into a policy?",
+    a: "Quotes attach to the deal. A policy exists only after bind / Closed Won.",
   },
   {
     id: "quote-policy",

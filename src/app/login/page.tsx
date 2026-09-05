@@ -18,11 +18,9 @@ export default async function LoginPage({
       <div className="w-full max-w-3xl space-y-5">
         <div className="text-center sm:text-left">
           <div className="text-caption uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
-          <h1 className="text-2xl font-semibold text-navy">Sign in as Admin or Agent</h1>
+          <h1 className="text-2xl font-semibold text-navy">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Password is required, then 2-step (SMS stub, email stub, or TOTP). Javy and Maya
-            are seeded enrolled; <code>FF_MFA_DEMO_BYPASS</code> (default on) skips the second
-            prompt so Mac desk-test can open. Role is enforced in middleware — not CSS.
+            Admin sees the whole book. Agent sees their own book. Role is enforced in middleware.
           </p>
         </div>
 
@@ -86,7 +84,6 @@ export default async function LoginPage({
             <Button type="submit" className="mt-auto">
               Sign in as Admin
             </Button>
-            <p className="text-helper text-muted-foreground">Seed password: {DEMO_USERS.admin.password}</p>
           </form>
 
           <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
@@ -121,7 +118,6 @@ export default async function LoginPage({
             <Button type="submit" className="mt-auto">
               Sign in as Agent
             </Button>
-            <p className="text-helper text-muted-foreground">Seed password: {DEMO_USERS.agent.password}</p>
           </form>
         </div>
 
@@ -129,8 +125,8 @@ export default async function LoginPage({
           <div>
             <h2 className="text-sm font-semibold text-navy">Email or username</h2>
             <p className="text-helper text-muted-foreground">
-              Same demo users, plus any agent Admin created. After login the rail shows Admin ·
-              all book or Agent · own book.
+              Any desk login Admin created. After sign-in the rail shows Admin · all book or
+              Agent · own book.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -148,12 +144,6 @@ export default async function LoginPage({
           </Button>
         </form>
       </div>
-      <p className="text-center text-sm text-muted-foreground">
-        Client self-serve (stub link, no desk password):{" "}
-        <a href="/portal" className="text-primary hover:underline">
-          Open client portal
-        </a>
-      </p>
     </div>
   );
 }

@@ -39,8 +39,8 @@ export default async function QuotesBoardPage({
       <p className="mb-3 max-w-3xl text-base text-muted-foreground">
         Every shop already run — appetite logs and quote comparison rows — in one place. Collapse
         a card and you still see carrier, premium, status, and quote #. Expand for the rest.
-        Compare, PDF, email/SMS stub, open deal, and appetite log live in each card’s Actions
-        menu. Tick quotes in Bulk to compare. This board does not call a carrier or rater.
+        Compare, PDF, email, SMS, open deal, and appetite log live in each card’s Actions menu.
+        Tick quotes in Bulk to compare. This board does not call a carrier or rater.
       </p>
 
       <SavedFiltersBar

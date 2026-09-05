@@ -3,7 +3,6 @@ import { upsertCampaign } from "@/app/actions/campaigns";
 import { AppShell } from "@/components/app-shell";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { StubBanner } from "@/components/ops/stub-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +16,7 @@ const TEMPLATES = [
   {
     name: "Wind mit chase",
     subject: "Need your wind mitigation inspection",
-    body: "Please send the wind mit so we can finish shopping. This campaign is a stub — FitFirst only logs would send.",
+    body: "Please send the wind mit so we can finish shopping.",
     audienceType: "tag",
     audienceValue: "ho3",
   },
@@ -61,10 +60,10 @@ export default async function CampaignsPage({
         </div>
       }
     >
-      <StubBanner>
-        Stub hub only: lists, templates, and create campaign. Sends log “would send”. No SMTP, no
-        drip builder.
-      </StubBanner>
+      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
+        Draft lists and templates. Sending waits until work email is connected under Settings →
+        Email. No SMTP from this desk today.
+      </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {TEMPLATES.map((tpl) => (
           <Link
