@@ -45,6 +45,8 @@ import {
 } from "@/lib/desk/line-settings";
 import { loadDeskLineSettings } from "./line-settings";
 import { publicCarrierView } from "@/lib/carriers/secrets";
+import type { PartyRecord } from "@/lib/crm/party-typeahead";
+import { partyLabel } from "@/lib/deals/lookup";
 import { db, sql as rawSql } from "./index";
 import {
   accounts,
@@ -625,10 +627,85 @@ export async function listDealLookup() {
   return rows.map(({ deal, contact, account }) => ({
     id: deal.id,
     title: deal.title,
-    partyName: contact
-      ? `${contact.lastName}, ${contact.firstName}`
-      : account?.name ?? null,
+    partyName: partyLabel({ contact, account }),
+    email: contact?.email ?? account?.email ?? null,
+    phone: contact?.phone ?? account?.phone ?? null,
+    contactId: deal.contactId ?? contact?.id ?? null,
+    accountId: deal.accountId ?? account?.id ?? null,
   }));
+}
+
+export async function listPartyTypeahead(): Promise<PartyRecord[]> {
+  const session = await currentDeskSession();
+  const contactScope = ownerWhere(session, contacts.ownerId);
+  const [contactRows, accountRows, policyRows, linkedContacts] = await Promise.all([
+    db
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        email: contacts.email,
+        phone: contacts.phone,
+      })
+      .from(contacts)
+      .where(and(eq(contacts.tenantId, tenant()), contactScope))
+      .orderBy(asc(contacts.lastName), asc(contacts.firstName)),
+    db
+      .select({
+        id: accounts.id,
+        name: accounts.name,
+        legalName: accounts.legalName,
+        dba: accounts.dba,
+        email: accounts.email,
+        phone: accounts.phone,
+      })
+      .from(accounts)
+      .where(eq(accounts.tenantId, tenant()))
+      .orderBy(asc(accounts.name)),
+    session.isAdmin
+      ? Promise.resolve([] as Array<{ accountId: string | null; ownerId: string | null }>)
+      : db
+          .select({ accountId: policies.accountId, ownerId: policies.ownerId })
+          .from(policies)
+          .where(eq(policies.tenantId, tenant())),
+    session.isAdmin
+      ? Promise.resolve([] as Array<{ accountId: string | null; ownerId: string | null }>)
+      : db
+          .select({ accountId: contactAccounts.accountId, ownerId: contacts.ownerId })
+          .from(contactAccounts)
+          .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
+          .where(eq(contactAccounts.tenantId, tenant())),
+  ]);
+
+  const contactsBook: PartyRecord[] = contactRows.map((row) => ({
+    kind: "contact",
+    id: row.id,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    phone: row.phone,
+  }));
+
+  const businesses: PartyRecord[] = accountRows
+    .filter((row) => {
+      if (session.isAdmin) return true;
+      const policyHit = policyRows.some((p) => p.accountId === row.id && p.ownerId === session.userId);
+      const contactHit = linkedContacts.some(
+        (link) => link.accountId === row.id && link.ownerId === session.userId,
+      );
+      return policyHit || contactHit;
+    })
+    .map((row) => ({
+      kind: "business",
+      id: row.id,
+      name: row.name,
+      legalName: row.legalName,
+      dba: row.dba,
+      email: row.email,
+      phone: row.phone,
+    }));
+
+  return [...contactsBook, ...businesses];
 }
 
 export async function listContacts(filter: { status?: string; ownerId?: string; city?: string } = {}) {

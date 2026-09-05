@@ -21,7 +21,10 @@ import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
+import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
+import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
+import { isUuid } from "@/lib/ids";
 import { defaultStageColor } from "@/lib/desk/status-colors";
 import { db } from "@/lib/db";
 import { ensurePipelineStages, refreshPartyCounts } from "@/lib/db/queries";
@@ -262,17 +265,41 @@ export async function createDealFromLead(formData: FormData) {
 
 export async function createDeal(formData: FormData) {
   const actor = await getActor();
-  const firstName = str(formData, "firstName") || "New";
-  const lastName = str(formData, "lastName") || "Shop";
+  const contactId = isUuid(str(formData, "contactId")) ? str(formData, "contactId") : "";
+  const accountId = isUuid(str(formData, "accountId")) ? str(formData, "accountId") : "";
+  const dealName = str(formData, "dealName");
+  const [pickedContact] = contactId
+    ? await db.select().from(contacts).where(eq(contacts.id, contactId))
+    : [];
+  const [pickedAccount] = accountId
+    ? await db.select().from(accounts).where(eq(accounts.id, accountId))
+    : [];
+  const typed = splitTypedPartyName(dealName);
+  const firstName =
+    str(formData, "firstName") ||
+    pickedContact?.firstName ||
+    typed.firstName ||
+    (pickedAccount ? "Shop" : "New");
+  const lastName =
+    str(formData, "lastName") ||
+    pickedContact?.lastName ||
+    typed.lastName ||
+    pickedAccount?.name ||
+    "Shop";
   const { lead } = await findOrCreateLead({
     firstName,
     lastName,
-    email: str(formData, "email") || null,
-    phone: str(formData, "phone") || null,
-    mailingAddress: str(formData, "address1") || str(formData, "mailingAddress") || null,
-    city: str(formData, "city") || null,
-    state: str(formData, "state") || null,
-    zip: str(formData, "zip") || null,
+    email: str(formData, "email") || pickedContact?.email || pickedAccount?.email || null,
+    phone: str(formData, "phone") || pickedContact?.phone || pickedAccount?.phone || null,
+    mailingAddress:
+      str(formData, "address1") ||
+      str(formData, "mailingAddress") ||
+      pickedContact?.mailingAddress ||
+      pickedAccount?.mailingAddress ||
+      null,
+    city: str(formData, "city") || pickedContact?.city || pickedAccount?.city || null,
+    state: str(formData, "state") || pickedContact?.state || pickedAccount?.state || null,
+    zip: str(formData, "zip") || pickedContact?.zip || pickedAccount?.zip || null,
     source: str(formData, "source") || "manual",
   });
   if (lead.convertedDealId) {
@@ -292,20 +319,28 @@ export async function createDeal(formData: FormData) {
         : str(formData, "policySubType") || null;
   const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
+  const partyTitle = pickedAccount && !pickedContact ? pickedAccount.name : lastName;
   const [deal] = await db
     .insert(deals)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
-      title: `${lastName} · ${line} shop`,
+      contactId: pickedContact?.id ?? null,
+      accountId: pickedAccount?.id ?? null,
+      title: `${partyTitle} · ${line} shop`,
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
       source: lead.source ?? (str(formData, "source") || "manual"),
       policySubType,
-      state: str(formData, "state") || "FL",
+      state: str(formData, "state") || pickedContact?.state || pickedAccount?.state || "FL",
       ownerId: actor.id,
+      accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
+      bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
+      primaryNamedInsured: pickedContact
+        ? formatPersonName(pickedContact)
+        : pickedAccount?.name ?? null,
     })
     .returning();
 

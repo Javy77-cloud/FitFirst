@@ -8,9 +8,11 @@ import {
 } from "./lookup";
 
 const rows = [
-  { id: "d-elena", title: "Ruiz · Melbourne HO3", partyName: "Ruiz, Elena" },
+  { id: "d-elena", title: "Ruiz · Melbourne HO3", partyName: "Ruiz, Elena", email: "elena@example.com", phone: "321-555-0101" },
   { id: "d-ana", title: "Dib · Palm Bay HO3", partyName: "Dib, Ana" },
   { id: "d-harbor", title: "Harbor Key Marine · GL", partyName: "Harbor Key Marine LLC" },
+  { id: "d-javy", title: "Rivera shop", partyName: "Rivera, Javy", email: "javy@fitfirst.local", phone: "(321) 555-0140" },
+  { id: "d-zoho", title: "Imported shop", partyName: null, email: null, phone: undefined },
 ];
 
 describe("deal lookup", () => {
@@ -38,6 +40,17 @@ describe("deal lookup", () => {
 
   it("suggests matching titles for the picker", () => {
     expect(suggestDealLookup(rows, "dib").map((r) => r.id)).toEqual(["d-ana"]);
+  });
+
+  it("pulls Javy from the linked contact name, email, or phone as you type", () => {
+    expect(suggestDealLookup(rows, "javy").map((r) => r.id)).toEqual(["d-javy"]);
+    expect(suggestDealLookup(rows, "FITFIRST.local").map((r) => r.id)).toEqual(["d-javy"]);
+    expect(matchDealLookup(rows, "5550140")?.id).toBe("d-javy");
+  });
+
+  it("does not throw on Zoho-imported null party fields", () => {
+    expect(partyLabel({ contact: { firstName: "", lastName: null } })).toBeNull();
+    expect(suggestDealLookup(rows, "imported").map((r) => r.id)).toEqual(["d-zoho"]);
   });
 });
 

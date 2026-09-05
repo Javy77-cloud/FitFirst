@@ -5,12 +5,19 @@ import { uploadDealDocuments } from "@/app/actions/documents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
+import { suggestParties, type PartyHit, type PartyRecord } from "@/lib/crm/party-typeahead";
 import { matchDealLookup, suggestDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
+import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
 
 type Row = { id: number; docType: string };
 
-export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
+export function DealDocsUpload({
+  deals,
+  parties,
+}: {
+  deals: DealLookupRow[];
+  parties: PartyRecord[];
+}) {
   const [dealName, setDealName] = useState("");
   const [dealId, setDealId] = useState("");
   const [rows, setRows] = useState<Row[]>([{ id: 0, docType: "dec" }]);
@@ -20,11 +27,28 @@ export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
     () => matchDealLookup(deals, dealName, dealId || null),
     [deals, dealName, dealId],
   );
-  const suggestions = useMemo(() => suggestDealLookup(deals, dealName, 8), [deals, dealName]);
+  const dealSuggestions = useMemo(() => suggestDealLookup(deals, dealName, 8), [deals, dealName]);
+  const partySuggestions = useMemo(() => suggestParties(parties, dealName, 8), [parties, dealName]);
+
+  function dealsForParty(hit: PartyHit): DealLookupRow[] {
+    return deals.filter((row) =>
+      hit.kind === "contact" ? row.contactId === hit.id : row.accountId === hit.id,
+    );
+  }
 
   function pickDeal(row: DealLookupRow) {
     setDealId(row.id);
-    setDealName(row.title);
+    setDealName(row.partyName || row.title);
+  }
+
+  function pickParty(hit: PartyHit) {
+    const related = dealsForParty(hit);
+    setDealName(hit.title);
+    if (related.length === 1) {
+      setDealId(related[0]!.id);
+    } else {
+      setDealId("");
+    }
   }
 
   function onNameChange(value: string) {
@@ -33,13 +57,18 @@ export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
     setDealId(next?.id ?? "");
   }
 
+  const relatedFromParty =
+    !match && dealName.trim()
+      ? partySuggestions.flatMap((hit) => dealsForParty(hit).map((row) => ({ hit, row })))
+      : [];
+
   return (
     <form action={uploadDealDocuments} className="ff-card space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold text-navy">Upload documents onto a deal</h2>
         <p className="mt-1 text-helper text-muted-foreground">
-          Pick the Deal first — person or business name, lookup from existing shops. Each line is
-          a doc type plus a file. Add another line for more. Multi-file on a line is fine.
+          Type the Deal name — Contacts and Businesses come up as you type (name, email, or phone).
+          Pick one so files attach to that shop.
         </p>
       </div>
 
@@ -51,20 +80,13 @@ export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
           id="dealName"
           name="dealName"
           required
-          list="deal-lookup"
           value={dealName}
           onChange={(event) => onNameChange(event.target.value)}
           className="mt-1 h-8"
-          placeholder="Ruiz, Elena or Harbor Key Marine"
+          placeholder="Javy Rivera or Harbor Key Marine"
           autoComplete="off"
+          data-testid="deal-docs-name"
         />
-        <datalist id="deal-lookup">
-          {deals.map((row) => (
-            <option key={row.id} value={row.title}>
-              {row.partyName ?? row.title}
-            </option>
-          ))}
-        </datalist>
         <input type="hidden" name="dealId" value={match?.id ?? dealId} />
         <input type="hidden" name="rowCount" value={rows.length} />
         {match ? (
@@ -74,23 +96,68 @@ export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
           </p>
         ) : dealName.trim() ? (
           <p className="mt-1 text-xs text-fit-flag">
-            No unique Deal match. Keep typing or pick from the list — files will not store until
-            a Deal is selected.
+            No unique Deal match yet. Pick a Contact, Business, or shop below — files will not
+            store until a Deal is selected.
           </p>
         ) : (
           <p className="mt-1 text-helper text-muted-foreground">Required before files are stored.</p>
         )}
-        {suggestions.length > 0 && dealName.trim() && !match ? (
-          <ul className="mt-2 space-y-1">
-            {suggestions.map((row) => (
+        {dealName.trim() && (partySuggestions.length > 0 || dealSuggestions.length > 0) ? (
+          <ul className="mt-2 max-h-52 space-y-1 overflow-auto rounded-md border border-border bg-card p-1">
+            {partySuggestions.map((hit) => {
+              const related = dealsForParty(hit);
+              return (
+                <li key={`${hit.kind}-${hit.id}`}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+                    onClick={() => pickParty(hit)}
+                  >
+                    <span>
+                      <span className="font-medium text-navy">{hit.title}</span>
+                      <span className="ml-2 text-muted-foreground">{hit.subtitle}</span>
+                      {related.length === 1 ? (
+                        <span className="ml-2 text-fit-green">· {related[0]!.title}</span>
+                      ) : related.length > 1 ? (
+                        <span className="ml-2 text-muted-foreground">· {related.length} shops</span>
+                      ) : (
+                        <span className="ml-2 text-muted-foreground">· no shop yet</span>
+                      )}
+                    </span>
+                    <span className="shrink-0 uppercase text-[10px] text-muted-foreground">{hit.kind}</span>
+                  </button>
+                </li>
+              );
+            })}
+            {dealSuggestions.map((row) => (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+                  onClick={() => pickDeal(row)}
+                >
+                  <span>
+                    <span className="font-medium text-primary">{row.title}</span>
+                    {row.partyName ? (
+                      <span className="ml-2 text-muted-foreground">{row.partyName}</span>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 uppercase text-[10px] text-muted-foreground">deal</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {relatedFromParty.length > 1 && !match ? (
+          <ul className="mt-1 space-y-1">
+            {relatedFromParty.map(({ row }) => (
               <li key={row.id}>
                 <button
                   type="button"
                   className="text-left text-xs text-primary hover:underline"
                   onClick={() => pickDeal(row)}
                 >
-                  {row.title}
-                  {row.partyName ? ` · ${row.partyName}` : ""}
+                  Use shop {row.title}
                 </button>
               </li>
             ))}

@@ -5,9 +5,11 @@ import { redirect } from "next/navigation";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { deals, pipelineStages, pipelines } from "@/lib/db/schema";
+import { accounts, contacts, deals, pipelineStages, pipelines } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
+import { formatPersonName } from "@/lib/crm/display";
 import { defaultStageColor } from "@/lib/desk/status-colors";
+import { isUuid } from "@/lib/ids";
 import { dealStageForPipeline } from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
@@ -33,7 +35,20 @@ async function assertAdmin() {
 export async function createPipelineDeal(formData: FormData) {
   const session = await currentDeskSession();
   if (!session.signedIn) throw new Error("Sign in to create a deal.");
-  const title = str(formData, "title");
+  const contactId = isUuid(str(formData, "contactId")) ? str(formData, "contactId") : "";
+  const accountId = isUuid(str(formData, "accountId")) ? str(formData, "accountId") : "";
+  const [pickedContact] = contactId
+    ? await db.select().from(contacts).where(eq(contacts.id, contactId))
+    : [];
+  const [pickedAccount] = accountId
+    ? await db.select().from(accounts).where(eq(accounts.id, accountId))
+    : [];
+  const title =
+    str(formData, "title") ||
+    str(formData, "dealName") ||
+    (pickedContact ? formatPersonName(pickedContact) : "") ||
+    pickedAccount?.name ||
+    "";
   const pipelineSlug = str(formData, "pipelineSlug") || "p-c";
   const stageSlug = str(formData, "stageSlug") || "gather";
   if (!title) return;
@@ -54,10 +69,18 @@ export async function createPipelineDeal(formData: FormData) {
     pipelineStageSlug: stageSlug,
     pipelineId: pipeline?.id,
     archivedAt: archived ? new Date() : null,
-    state: "FL",
+    state: pickedContact?.state || pickedAccount?.state || "FL",
     ownerId: session.userId,
+    contactId: pickedContact?.id ?? null,
+    accountId: pickedAccount?.id ?? null,
+    accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
+    bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
+    primaryNamedInsured: pickedContact
+      ? formatPersonName(pickedContact)
+      : pickedAccount?.name ?? null,
   });
   revalidatePath("/pipeline");
+  revalidatePath("/deals");
   redirect(`/pipeline?pipeline=${encodeURIComponent(pipelineSlug)}`);
 }
 

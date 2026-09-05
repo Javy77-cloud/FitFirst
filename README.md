@@ -4,6 +4,12 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Deal Name typeahead (this slice)
+
+**`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name on create and on Deals upload typeaheads **Contacts + Businesses** as you type. Contains match, case-insensitive, on name / email / phone. Null-safe for Zoho-imported blanks (empty first/last, missing email or phone). No submit click. Pipeline create uses the same picker. Does **not** wipe the book.
+
+Try: Deals → New shopping deal, or Pipeline → Deal name. Type `javy` (or a phone / email). Javy Rivera and other book names appear live. Pick one to link the shop. Same field on Deals upload finds the person/business, then the shop.
+
 ## Tip branch
 
 **`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions. Still includes:
@@ -12,8 +18,9 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
 3. **`cursor/ff-nav-dnd-customize-fe86`** — drag-and-drop left nav. Primary order + editable submenus persist on `agent_ui_prefs.nav_layout`. Default rail stays stub-free.
 4. **`cursor/ff-selection-actions-dae2`** — tick rows for Duplicate / Merge / Email / SMS / Print / Run macro / Archive / Delete. Call and hard-delete stay off.
+5. **`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name typeaheads Contacts + Businesses as you type (name / email / phone). Pipeline create and Deals upload use the same picker.
 
-Skipped for the next tip: AMS waves 10–16, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
+Skipped for the next tip: AMS waves 10–16, Deals/Pipeline merge, Deal upload half, live search.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
