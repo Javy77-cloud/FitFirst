@@ -28,6 +28,20 @@ describe("desk settings IA", () => {
 });
 
 describe("grouped desk nav", () => {
+  it("gives each accordion section a stable id and an icon", () => {
+    expect(NAV_GROUPS.map((group) => group.id)).toEqual([
+      "work",
+      "accounts",
+      "records",
+      "desk",
+      "settings",
+    ]);
+    for (const group of NAV_GROUPS) {
+      expect(group.icon).toBeTruthy();
+      expect(group.label.length).toBeGreaterThan(0);
+    }
+  });
+
   it("renames People to Accounts and keeps Contacts + Businesses", () => {
     const accounts = NAV_GROUPS.find((group) => group.id === "accounts");
     expect(accounts?.label).toBe("Accounts");

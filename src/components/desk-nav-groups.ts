@@ -29,6 +29,7 @@ export type NavItem = {
 export type NavGroup = {
   id: string;
   label: string;
+  icon: typeof Home;
   items: NavItem[];
 };
 
@@ -39,6 +40,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     id: "work",
     label: "Work",
+    icon: Kanban,
     items: [
       { href: "/get-started", label: "Get Started", icon: ListChecks },
       { href: "/social", label: "Social", icon: Users, match: "/social" },
@@ -54,6 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     id: "accounts",
     label: "Accounts",
+    icon: Contact,
     items: [
       { href: "/contacts", label: "Contacts", icon: Contact, match: "/contacts" },
       { href: "/accounts", label: "Businesses", icon: Briefcase, match: "/accounts" },
@@ -62,6 +65,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     id: "records",
     label: "Records",
+    icon: Shield,
     items: [
       { href: "/policies", label: "Policies", icon: Shield, match: "/policies" },
       { href: "/book-health", label: "Book health", icon: Shield, match: "/book-health" },
@@ -86,6 +90,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     id: "desk",
     label: "Desk",
+    icon: CalendarDays,
     items: [
       { href: "/calendar", label: "Calendar", icon: CalendarDays, match: "/calendar" },
       { href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
@@ -96,6 +101,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     id: "settings",
     label: "Settings",
+    icon: Settings,
     items: [
       { href: "/settings", label: "Settings", icon: Settings, match: "/settings" },
     ],
