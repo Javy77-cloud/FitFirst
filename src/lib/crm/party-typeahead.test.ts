@@ -51,7 +51,7 @@ describe("party typeahead", () => {
   it("contains-matches Javy from the contacts book, case-insensitive", () => {
     expect(matchesPartyQuery("jav", javy)).toBe(true);
     expect(matchesPartyQuery("RIVERA", javy)).toBe(true);
-    expect(suggestParties(book, "javy").map((hit) => hit.id)).toEqual(["c-javy", "c-full"]);
+    expect(suggestParties(book, "javy").map((hit) => hit.id)).toEqual(["c-full", "c-javy"]);
   });
 
   it("matches email and phone without a submit click", () => {

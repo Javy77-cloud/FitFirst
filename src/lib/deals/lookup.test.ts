@@ -11,7 +11,7 @@ const rows = [
   { id: "d-elena", title: "Ruiz · Melbourne HO3", partyName: "Ruiz, Elena", email: "elena@example.com", phone: "321-555-0101" },
   { id: "d-ana", title: "Dib · Palm Bay HO3", partyName: "Dib, Ana" },
   { id: "d-harbor", title: "Harbor Key Marine · GL", partyName: "Harbor Key Marine LLC" },
-  { id: "d-javy", title: "HO3 shop", partyName: "Rivera, Javy", email: "javy@fitfirst.local", phone: "(321) 555-0140" },
+  { id: "d-javy", title: "Rivera shop", partyName: "Rivera, Javy", email: "javy@fitfirst.local", phone: "(321) 555-0140" },
   { id: "d-zoho", title: "Imported shop", partyName: null, email: null, phone: undefined },
 ];
 
