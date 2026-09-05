@@ -6,7 +6,8 @@ import { TASKS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 import { filterDeskTaskRows, mergeDeskTaskRows } from "@/lib/tasks/desk-list";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,9 @@ export default async function TasksPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["status", "kind"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["status", "kind"]);
+  const q = firstParam(params.q) ?? "";
   const { review, activities } = await listDeskTaskRows();
   const tasks = filterDeskTaskRows(mergeDeskTaskRows({ review, activities }), filter);
   return (
@@ -34,6 +37,7 @@ export default async function TasksPage({
       </p>
       <SavedFiltersBar
         moduleId="tasks"
+        searchPlaceholder="Contains task title…"
         fields={[
           {
             key: "status",
@@ -66,10 +70,12 @@ export default async function TasksPage({
         >
         <DeskColumnTable
           moduleId="tasks"
+          initialQuery={q}
           columns={TASKS_LIST_COLUMNS}
           empty="No open tasks."
           rows={tasks.map((task) => ({
             key: task.id,
+            hay: haystack([task.title, task.status, task.kind]),
             cells: {
               pick: <SelectRowCheckbox id={task.id} />,
               task: (

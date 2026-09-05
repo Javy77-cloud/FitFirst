@@ -1,7 +1,11 @@
+"use client";
+
 import type { PipelineStageRow } from "@/lib/db/schema";
 import { LINES } from "@/lib/domain";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import type { DealListFilter } from "@/lib/crm/lists";
+import { HiddenLiveQuery } from "@/components/search/hidden-live-query";
+import { LiveContainsInput } from "@/components/search/live-contains-input";
 
 export function DealFilters({
   pathname,
@@ -17,15 +21,15 @@ export function DealFilters({
   return (
     <form method="get" action={pathname} className="flex flex-wrap items-end gap-2">
       {view ? <input type="hidden" name="view" value={view} /> : null}
-      <label className="text-xs text-muted-foreground">
-        Search
-        <input
-          name="q"
-          defaultValue={filter.q ?? ""}
-          placeholder="Name, phone, city"
-          className="mt-1 block h-8 w-40 rounded-md border border-input bg-card px-2 text-sm text-navy"
-        />
-      </label>
+      <HiddenLiveQuery moduleId="deals" />
+      <LiveContainsInput
+        moduleId="deals"
+        initialQuery={filter.q ?? ""}
+        placeholder="Name, phone, city"
+        aria-label="Search deals"
+        inputClassName="mt-0 h-8 w-40 text-sm"
+        className="text-xs text-muted-foreground"
+      />
       <label className="text-xs text-muted-foreground">
         Stage
         <select

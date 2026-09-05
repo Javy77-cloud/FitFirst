@@ -9,15 +9,18 @@ import { sourceLabel } from "@/lib/crm/sources";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import type { DealListRow } from "@/lib/db/queries";
+import { haystack } from "@/lib/search/live-query";
 
 type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account">;
 
 export async function DealsTable({
   rows,
   users,
+  initialQuery = "",
 }: {
   rows: DealsSheetRow[];
   users: Map<string, string>;
+  initialQuery?: string;
 }) {
   return (
     <section className="ff-card overflow-x-auto">
@@ -39,10 +42,27 @@ export async function DealsTable({
       >
         <DeskColumnTable
           moduleId="deals"
+          initialQuery={initialQuery}
           columns={DEALS_LIST_COLUMNS}
           empty="No deals match this filter. Shopping stays on the deal list — quotes are not policies."
           rows={rows.map(({ deal, contact, account }) => ({
             key: deal.id,
+            hay: haystack([
+              deal.title,
+              deal.pipelineStage,
+              deal.lineOfBusiness,
+              deal.state,
+              deal.propertyOneliner,
+              deal.source,
+              contact?.firstName,
+              contact?.lastName,
+              contact?.phone,
+              contact?.email,
+              contact?.city,
+              account?.name,
+              account?.phone,
+              account?.email,
+            ]),
             cells: {
               pick: <SelectRowCheckbox id={deal.id} />,
               title: (

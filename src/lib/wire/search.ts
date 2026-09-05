@@ -1,4 +1,4 @@
-export type SearchKind = "lead" | "deal" | "contact" | "business" | "policy";
+export type SearchKind = "lead" | "deal" | "contact" | "business" | "policy" | "carrier";
 
 export type SearchHit = {
   kind: SearchKind;
@@ -93,5 +93,21 @@ export function hitFromPolicy(row: { id: string; policyNumber: string; lineOfBus
     title: row.policyNumber,
     subtitle: `Policy · ${row.lineOfBusiness}`,
     href: `/policies/${row.id}`,
+  };
+}
+
+export function hitFromCarrier(row: {
+  id: string;
+  name: string;
+  naic?: string | null;
+  writtenLines?: string[] | null;
+}): SearchHit {
+  const lines = (row.writtenLines ?? []).filter(Boolean).join(", ");
+  return {
+    kind: "carrier",
+    id: row.id,
+    title: row.name,
+    subtitle: [lines || null, row.naic ? `NAIC ${row.naic}` : null].filter(Boolean).join(" · ") || "Carrier",
+    href: `/carriers/${row.id}`,
   };
 }

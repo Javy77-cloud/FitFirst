@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { LiveContainsInput } from "@/components/search/live-contains-input";
 import {
   filterStorageKey,
   parseSavedFilters,
@@ -10,6 +11,7 @@ import {
   type FilterField,
   type SavedNamedFilter,
 } from "@/lib/saved-filters";
+import { getLiveQuery, setLiveQuery } from "@/lib/search/live-query";
 import { cn } from "@/lib/utils";
 
 function readSaved(moduleId: string): SavedNamedFilter[] {
@@ -32,9 +34,11 @@ function writeSaved(moduleId: string, rows: SavedNamedFilter[]) {
 export function SavedFiltersBar({
   moduleId,
   fields,
+  searchPlaceholder = "Contains name, phone, number…",
 }: {
   moduleId: string;
   fields: FilterField[];
+  searchPlaceholder?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -46,6 +50,8 @@ export function SavedFiltersBar({
       const value = search.get(key);
       if (value) params[key] = value;
     }
+    const q = search.get("q");
+    if (q) params.q = q;
     return params;
   }, [keys, search]);
   const [saved, setSaved] = useState<SavedNamedFilter[]>([]);
@@ -57,7 +63,10 @@ export function SavedFiltersBar({
   }, [moduleId]);
 
   function go(params: Record<string, string>) {
-    const query = queryFromParams(params);
+    const next = { ...params };
+    const live = getLiveQuery(moduleId).trim();
+    if (live) next.q = live;
+    const query = queryFromParams(next);
     router.push(query ? `${pathname}?${query}` : pathname);
   }
 
@@ -91,6 +100,12 @@ export function SavedFiltersBar({
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
+      <LiveContainsInput
+        moduleId={moduleId}
+        initialQuery={current.q ?? ""}
+        placeholder={searchPlaceholder}
+        aria-label="Contains search"
+      />
       {fields.map((field) => (
         <label key={field.key} className="inline-flex items-center gap-1 text-muted-foreground">
           <span className="sr-only">{field.label}</span>
@@ -171,7 +186,14 @@ export function SavedFiltersBar({
       ) : null}
 
       {hasCurrent ? (
-        <button type="button" onClick={() => go({})} className="h-7 px-1 text-xs text-muted-foreground hover:underline">
+        <button
+          type="button"
+          onClick={() => {
+            setLiveQuery(moduleId, "");
+            go({});
+          }}
+          className="h-7 px-1 text-xs text-muted-foreground hover:underline"
+        >
           Clear
         </button>
       ) : null}

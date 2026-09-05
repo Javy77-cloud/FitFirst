@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { HiddenLiveQuery } from "@/components/search/hidden-live-query";
+import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { ColumnPicker } from "@/components/crm/column-picker";
 import { SheetHeader } from "@/components/sheet/sheet-header";
 import { SheetTbody } from "@/components/sheet/sheet-table";
@@ -130,15 +132,14 @@ export function AccountFilters({
 }) {
   return (
     <form method="get" action={pathname} className="flex flex-wrap items-end gap-2">
-      <label className="text-xs text-muted-foreground">
-        Search
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Name, phone, email"
-          className="mt-1 block h-8 rounded-md border border-input bg-card px-2 text-sm text-navy"
-        />
-      </label>
+      <HiddenLiveQuery moduleId="contacts" />
+      <LiveContainsInput
+        moduleId="contacts"
+        initialQuery={q}
+        placeholder="Name, phone, email"
+        aria-label="Search contacts"
+        inputClassName="mt-0 h-8 text-sm"
+      />
       <label className="text-xs text-muted-foreground">
         State
         <input

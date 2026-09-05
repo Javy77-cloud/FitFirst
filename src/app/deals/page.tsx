@@ -44,6 +44,7 @@ export default async function DealsPage({
   const pipeline = first(params.pipeline);
   const view = parsePipelineView(first(params.view));
   const stage = first(params.stage);
+  const q = first(params.q) ?? "";
   const filter: DealListFilter = {
     stage,
     attention: first(params.attention),
@@ -131,6 +132,7 @@ export default async function DealsPage({
         healthSub={filter.healthSub}
         attention={filter.attention}
         settings={settings}
+        initialQuery={q}
       />
 
       {board && board.kind === "shopping" && (pipeline || view !== "table") ? (
@@ -175,7 +177,7 @@ export default async function DealsPage({
           <div className="mb-4">
             <DealDocsUpload deals={lookup} parties={parties} />
           </div>
-          <DealsTable rows={tableRows} users={users} />
+          <DealsTable rows={tableRows} users={users} initialQuery={q} />
         </>
       ) : board ? (
         <PipelineWorkspace

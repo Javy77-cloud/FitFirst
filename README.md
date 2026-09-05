@@ -4,15 +4,17 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Deal Name typeahead (this slice)
+## Live typeahead search (this slice)
 
-**`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name on create and on Deals upload typeaheads **Contacts + Businesses** as you type. Contains match, case-insensitive, on name / email / phone. Null-safe for Zoho-imported blanks (empty first/last, missing email or phone). No submit click. Pipeline create uses the same picker. Does **not** wipe the book.
+**`cursor/ff-live-typeahead-search-d2d4`** — top chrome search fills as you type (200ms debounce). No Search click. Contains-match across **contacts, leads, deals, businesses, policies, and carriers**. Arrow keys + Enter open a hit; “See all results” still goes to `/search`.
 
-Try: Deals → New shopping deal, or Deals Board → Deal name. Type `javy` (or a phone / email). Javy Rivera and other book names appear live. Pick one to link the shop. Same field on Deals upload finds the person/business, then the shop.
+The same live-contains box sits on module lists (Leads, Contacts, Businesses, Policies, Carriers, Deals, Quotes, Tasks, Claims, Work queue). Typing filters the list immediately. Named dropdown filters are unchanged. Does **not** wipe the book.
+
+Try: type `javy` in the header. Book names appear live. Same box on Contacts / Deals / Policies filters the sheet as you type.
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions, Deals = Pipeline, and left-nav hide/show. Still includes:
+**`cursor/live-ff-tip-sep5e`** — follow tip on **`cursor/live-ff-tip-sep5d2`**. Same live CRM+Quote desk, plus live typeahead search. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
@@ -22,8 +24,9 @@ Try: Deals → New shopping deal, or Deals Board → Deal name. Type `javy` (or 
 6. **`cursor/ff-deal-upload-half-88fe`** — Deal Documents upload is half width; the right half is a live shop desk (person, email/call, sheet status, collect-next, open activities).
 7. **`cursor/ff-deals-merge-pipeline-b3cc`** — Deals and Pipeline are one module. Pipeline is gone from the left nav. `/pipeline` redirects to `/deals` and keeps the query. Table / Board / Funnel share the same filters (P&C, Health, Life, Flood, Won-Lost, Archive). Stored customize ids named `pipeline` remap to `deals`.
 8. **`cursor/ff-nav-hide-items-d507`** — hide or show any primary rail module. Settings stays pinned and unhidable. Visibility lives on the same `nav_layout` blob as reorder.
+9. **`cursor/ff-live-typeahead-search-d2d4`** — header Smart Search typeaheads the book as you type. Module list filters use the same live-contains box.
 
-Skipped for the next tip: AMS waves 10–16, live search.
+Skipped for the next tip: AMS waves 10–16. No AMS on this merge.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
@@ -41,7 +44,7 @@ Social stays under Home as a BYO connect wall (Settings → Social). Phone stays
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5e && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -82,7 +85,7 @@ Primary rail: **Home**, **Leads**, **Deals**, **Contacts**, **Business**, **Poli
 ### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5e && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -90,7 +93,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` adds nullable `agent_ui_prefs.nav_layout` if this desk has not already applied `0070_nav_layout`. Hide is a JSON field (`hiddenPrimaryIds`) on that same blob — no extra table. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. Live typeahead search adds no table — `db:migrate` only if this desk is behind (nullable `agent_ui_prefs.nav_layout` / `0070_nav_layout`). Hide is a JSON field (`hiddenPrimaryIds`) on that same blob. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Manage columns (this slice)
 
@@ -314,7 +317,7 @@ On Deal detail → **Documents**, source-doc upload is **half width** (`lg:grid-
 Extracted fields stay under the split. Page-right context rail is unchanged. No wipe.
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5e && git pull
 npm install
 npm run db:migrate
 npm run dev -- --port 43147

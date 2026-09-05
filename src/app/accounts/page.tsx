@@ -7,7 +7,8 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { ACCOUNTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { CLIENT_STATUSES } from "@/lib/domain";
-import { matchesField, pickFilterParams } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,9 @@ export default async function AccountsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["status"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["status"]);
+  const q = firstParam(params.q) ?? "";
   const all = await listAccounts();
   const rows = all.filter((account) => matchesField(account.clientStatus, filter.status));
   return (
@@ -27,6 +30,7 @@ export default async function AccountsPage({
       </p>
       <SavedFiltersBar
         moduleId="businesses"
+        searchPlaceholder="Contains business, phone, city…"
         fields={[
           {
             key: "status",
@@ -52,10 +56,20 @@ export default async function AccountsPage({
         >
         <DeskColumnTable
           moduleId="businesses"
+          initialQuery={q}
           columns={ACCOUNTS_LIST_COLUMNS}
           empty="No businesses yet. Bind a commercial deal as a Business, or open the Elena Ruiz personal path — she is linked to Ruiz Tile LLC with zero commercial policies."
           rows={rows.map((account) => ({
             key: account.id,
+            hay: haystack([
+              account.name,
+              account.legalName,
+              account.dba,
+              account.phone,
+              account.email,
+              account.city,
+              account.einLast4,
+            ]),
             cells: {
               pick: <SelectRowCheckbox id={account.id} />,
               business: (

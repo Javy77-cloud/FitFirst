@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
 import {
   allColumnIds,
   columnMenuLabel,
@@ -24,6 +25,7 @@ import {
   toggleColumnVisibility,
   type ListColumn,
 } from "@/lib/list-columns";
+import { matchesContains } from "@/lib/search/live-query";
 import { cn } from "@/lib/utils";
 
 export type { ListColumn };
@@ -31,23 +33,34 @@ export type { ListColumn };
 export type ColumnRow = {
   key: string;
   id?: string;
+  hay?: string;
   cells: Record<string, ReactNode>;
 };
 
 export function ColumnTable({
   moduleId,
+  searchModuleId,
+  initialQuery = "",
   columns,
   rows,
   empty,
   initialVisible,
 }: {
   moduleId: string;
+  searchModuleId?: string;
+  initialQuery?: string;
   columns: ListColumn[];
   rows: ColumnRow[];
   empty?: ReactNode;
   /** Server-loaded desk_column_prefs for this user / module. */
   initialVisible?: string[];
 }) {
+  const queryModule = searchModuleId ?? moduleId;
+  const liveQuery = useLiveContainsQuery(queryModule, initialQuery);
+  const visibleRows = useMemo(() => {
+    if (!rows.some((row) => row.hay != null)) return rows;
+    return rows.filter((row) => matchesContains(liveQuery, row.hay));
+  }, [liveQuery, rows]);
   const [visible, setVisible] = useState(() =>
     initialVisible
       ? mergeVisibleColumns(columns, initialVisible)
@@ -161,14 +174,16 @@ export function ColumnTable({
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 ? (
+          {visibleRows.length === 0 ? (
             <tr>
               <td colSpan={shown.length + 1} className="text-muted-foreground">
-                {empty ?? "No records."}
+                {liveQuery.trim()
+                  ? `No records containing “${liveQuery.trim()}”.`
+                  : (empty ?? "No records.")}
               </td>
             </tr>
           ) : (
-            rows.map((row) => (
+            visibleRows.map((row) => (
               <tr key={row.key} id={row.id}>
                 {columns.map((column) => (
                   <td

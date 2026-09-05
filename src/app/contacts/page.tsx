@@ -13,7 +13,8 @@ import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { SourceSelect } from "@/components/crm/source-select";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { CLIENT_STATUSES } from "@/lib/domain";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,9 @@ export default async function ContactsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["status", "source"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["status", "source"]);
+  const q = firstParam(params.q) ?? "";
   const all = await listContacts();
   const rows = all.filter(
     (contact) =>
@@ -36,6 +39,7 @@ export default async function ContactsPage({
       </p>
       <SavedFiltersBar
         moduleId="contacts"
+        searchPlaceholder="Contains name, phone, email…"
         fields={[
           {
             key: "status",
@@ -99,10 +103,12 @@ export default async function ContactsPage({
           >
           <DeskColumnTable
             moduleId="contacts"
+            initialQuery={q}
             columns={CONTACTS_LIST_COLUMNS}
             empty="Empty book. Bind a deal or add an existing client."
             rows={rows.map((c) => ({
               key: c.id,
+              hay: haystack([c.firstName, c.lastName, c.email, c.phone, c.city, c.source, c.clientStatus]),
               cells: {
                 pick: <SelectRowCheckbox id={c.id} />,
                 name: (

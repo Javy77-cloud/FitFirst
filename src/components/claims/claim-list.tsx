@@ -4,6 +4,7 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { claimCauseLabel, claimChannelLabel } from "@/lib/claims";
 import { formatDate } from "@/lib/domain";
 import { CLAIMS_LIST_COLUMNS } from "@/lib/list-columns";
+import { haystack } from "@/lib/search/live-query";
 
 export type ClaimListRow = {
   id: string;
@@ -24,10 +25,12 @@ export function ClaimList({
   rows,
   empty,
   showPolicy = false,
+  initialQuery = "",
 }: {
   rows: ClaimListRow[];
   empty: string;
   showPolicy?: boolean;
+  initialQuery?: string;
 }) {
   const columns = showPolicy
     ? CLAIMS_LIST_COLUMNS
@@ -36,10 +39,20 @@ export function ClaimList({
   return (
     <DeskColumnTable
       moduleId={showPolicy ? "claims" : "claim-rows"}
+      searchModuleId="claims"
+      initialQuery={initialQuery}
       columns={columns}
       empty={empty}
       rows={rows.map((row) => ({
         key: row.id,
+        hay: haystack([
+          row.policyNumber,
+          row.contactName,
+          row.causeType,
+          row.description,
+          row.carrierClaimNumber,
+          row.status,
+        ]),
         cells: {
           reported: (
             <>

@@ -8,21 +8,37 @@ import { ExpandCollapseControl } from "@/components/quotes/expand-collapse";
 import { ShopSummary } from "@/components/quotes/tracking-table";
 import { StagePill } from "@/components/fit-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
 import { compareHref, quoteCompareId, selectedSameDeal } from "@/lib/quotes/board";
 import { quoteCardDefaultOpen, shopSectionOpen } from "@/lib/quotes/collapse";
 import type { TrackingRow, TrackingShop } from "@/lib/quotes/tracking";
+import { matchesContains } from "@/lib/search/live-query";
 import { cn } from "@/lib/utils";
+
+function shopMatches(shop: TrackingShop, query: string) {
+  if (matchesContains(query, shop.dealTitle, shop.dealStage, shop.line)) return true;
+  return shop.rows.some((row) =>
+    matchesContains(query, row.carrierName, row.quoteNumber, row.status, row.notes, row.email, row.phone),
+  );
+}
 
 export function QuoteBoard({
   shops,
   focusedDeal = false,
+  initialQuery = "",
   macros = [],
 }: {
   shops: TrackingShop[];
   focusedDeal?: boolean;
+  initialQuery?: string;
   macros?: Array<{ id: string; name: string }>;
 }) {
-  const allRows = useMemo(() => shops.flatMap((shop) => shop.rows), [shops]);
+  const liveQuery = useLiveContainsQuery("quotes", initialQuery);
+  const visibleShops = useMemo(
+    () => shops.filter((shop) => shopMatches(shop, liveQuery)),
+    [liveQuery, shops],
+  );
+  const allRows = useMemo(() => visibleShops.flatMap((shop) => shop.rows), [visibleShops]);
   const [openShops, setOpenShops] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(shops.map((shop) => [shop.dealId, shopSectionOpen(shop, focusedDeal)])),
   );
@@ -161,7 +177,15 @@ export function QuoteBoard({
         {macroMessage ? <p className="mt-2 text-sm text-navy">{macroMessage}</p> : null}
       </section>
 
-      {shops.map((shop) => {
+      {visibleShops.length === 0 ? (
+        <section className="ff-card px-4 py-8 text-base text-muted-foreground">
+          {liveQuery.trim()
+            ? `No shops containing “${liveQuery.trim()}”.`
+            : "No quote attempts on the book yet. Open a deal, filter markets, then log the shop."}
+        </section>
+      ) : null}
+
+      {visibleShops.map((shop) => {
         const shopOpen = openShops[shop.dealId] ?? true;
         const shopSelected = shop.rows.filter((row) => selected.includes(row.id)).length;
         const shopQuotesExpanded =

@@ -12,6 +12,7 @@ import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function PoliciesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const q = firstParam(params.q) ?? "";
   const filter: PolicyListFilter = {
     status: firstParam(params.status),
     written: firstParam(params.written),
@@ -55,6 +57,7 @@ export default async function PoliciesPage({
       <p className="mb-3 text-base text-muted-foreground">{hint}</p>
       <SavedFiltersBar
         moduleId="policies"
+        searchPlaceholder="Contains policy #, party, carrier…"
         fields={[
           {
             key: "status",
@@ -123,10 +126,19 @@ export default async function PoliciesPage({
         >
         <DeskColumnTable
           moduleId="policies"
+          initialQuery={q}
           columns={POLICIES_LIST_COLUMNS}
           empty="No policies match. Bind a shopping deal when a market is actually written."
           rows={rows.map(({ policy, contact, account, carrier }) => ({
             key: policy.id,
+            hay: haystack([
+              policy.policyNumber,
+              policy.lineOfBusiness,
+              policy.status,
+              carrier?.name,
+              contact ? `${contact.lastName} ${contact.firstName}` : null,
+              account?.name,
+            ]),
             cells: {
               pick: <SelectRowCheckbox id={policy.id} />,
               policy: (

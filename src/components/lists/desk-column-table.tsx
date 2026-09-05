@@ -5,11 +5,15 @@ import type { ReactNode } from "react";
 
 export async function DeskColumnTable({
   moduleId,
+  searchModuleId,
+  initialQuery,
   columns,
   rows,
   empty,
 }: {
   moduleId: string;
+  searchModuleId?: string;
+  initialQuery?: string;
   columns: ListColumn[];
   rows: ColumnRow[];
   empty?: ReactNode;
@@ -19,6 +23,8 @@ export async function DeskColumnTable({
   return (
     <ColumnTable
       moduleId={moduleId}
+      searchModuleId={searchModuleId}
+      initialQuery={initialQuery}
       columns={columns}
       rows={rows}
       empty={empty}

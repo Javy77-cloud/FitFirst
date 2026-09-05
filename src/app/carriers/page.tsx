@@ -7,7 +7,8 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { CARRIERS_LIST_COLUMNS } from "@/lib/list-columns";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 import { RecordLink } from "@/components/record-links";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,9 @@ export default async function CarriersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["portal", "line"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["portal", "line"]);
+  const q = firstParam(params.q) ?? "";
   const all = await listCarriers();
   const rows = all.filter(({ carrier }) => {
     if (!matchesField(carrier.portalStatus, filter.portal)) return false;
@@ -34,6 +37,7 @@ export default async function CarriersPage({
       </p>
       <SavedFiltersBar
         moduleId="carriers"
+        searchPlaceholder="Contains carrier, NAIC, line…"
         fields={[
           {
             key: "portal",
@@ -67,10 +71,17 @@ export default async function CarriersPage({
         >
         <DeskColumnTable
           moduleId="carriers"
+          initialQuery={q}
           columns={CARRIERS_LIST_COLUMNS}
           empty="No carriers match this filter."
           rows={rows.map(({ carrier, rule }) => ({
             key: `${carrier.id}-${rule?.id ?? "none"}`,
+            hay: haystack([
+              carrier.name,
+              carrier.naic,
+              carrier.territory,
+              ...(carrier.writtenLines ?? []),
+            ]),
             cells: {
               pick: <SelectRowCheckbox id={carrier.id} />,
               carrier: (

@@ -4,10 +4,11 @@ import { ClaimList } from "@/components/claims/claim-list";
 import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
 import { ClaimStatusPipeline } from "@/components/claims/status-pipeline";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { LiveContainsScope } from "@/components/search/live-contains-scope";
 import { buttonVariants } from "@/components/ui/button";
 import { CLAIM_PIPELINE, CLAIM_STATUS_LABELS, claimStatusLabel } from "@/lib/claims";
 import { listDeskClaims } from "@/lib/db/claim-queries";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,9 @@ export default async function ClaimsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["status", "cause"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["status", "cause"]);
+  const q = firstParam(params.q) ?? "";
   const all = await listDeskClaims();
   const rows = all.filter(
     ({ claim }) =>
@@ -46,6 +49,7 @@ export default async function ClaimsPage({
       </div>
       <SavedFiltersBar
         moduleId="claims"
+        searchPlaceholder="Contains claim, policy, contact…"
         fields={[
           {
             key: "status",
@@ -107,8 +111,10 @@ export default async function ClaimsPage({
       )}
 
       <section className="ff-card overflow-hidden">
+        <LiveContainsScope moduleId="claims" initialQuery={q}>
         <ClaimList
           showPolicy
+          initialQuery={q}
           empty="No claims on the book yet. Add FNOL from this page or a Policy record."
           rows={rows.map(({ claim, policy, contact }) => ({
             id: claim.id,
@@ -125,6 +131,7 @@ export default async function ClaimsPage({
             contactName: contact ? `${contact.lastName}, ${contact.firstName}` : null,
           }))}
         />
+        </LiveContainsScope>
         {filter.status ? (
           <p className="px-4 py-3 text-base text-muted-foreground">
             Showing {claimStatusLabel(filter.status)}. Clear the filter to see the full log.

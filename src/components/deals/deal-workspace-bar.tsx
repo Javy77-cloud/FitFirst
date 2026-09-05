@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
+import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { StagePill } from "@/components/fit-badge";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ export function DealWorkspaceBar({
   healthSub,
   attention,
   settings,
+  initialQuery = "",
 }: {
   boards: BoardTab[];
   pipeline?: string | null;
@@ -40,6 +42,7 @@ export function DealWorkspaceBar({
   healthSub?: string | null;
   attention?: string | null;
   settings: DeskLineSettings;
+  initialQuery?: string;
 }) {
   const parsedView = parsePipelineView(view);
   const extras = {
@@ -106,23 +109,33 @@ export function DealWorkspaceBar({
           ))}
         </span>
       </div>
-      {showBookBar ? (
-        <BookFilterBar
-          action="/deals"
-          settings={settings}
-          family={boardFamily ?? undefined}
-          pcSub={pcSub ?? undefined}
-          lifeSub={lifeSub ?? undefined}
-          healthSub={healthSub ?? undefined}
-          hideFamily={hideFamily}
-          hidden={{
-            ...(pipeline ? { pipeline } : {}),
-            ...(parsedView !== "table" ? { view: parsedView } : {}),
-            ...(stage ? { stage } : {}),
-            ...(attention ? { attention } : {}),
-          }}
+      <div className="flex flex-wrap items-end gap-2">
+        <LiveContainsInput
+          moduleId="deals"
+          initialQuery={initialQuery}
+          placeholder="Contains deal, contact, phone…"
+          aria-label="Search deals"
+          inputClassName="h-8 w-56 text-sm"
         />
-      ) : null}
+        {showBookBar ? (
+          <BookFilterBar
+            action="/deals"
+            settings={settings}
+            family={boardFamily ?? undefined}
+            pcSub={pcSub ?? undefined}
+            lifeSub={lifeSub ?? undefined}
+            healthSub={healthSub ?? undefined}
+            hideFamily={hideFamily}
+            searchModuleId="deals"
+            hidden={{
+              ...(pipeline ? { pipeline } : {}),
+              ...(parsedView !== "table" ? { view: parsedView } : {}),
+              ...(stage ? { stage } : {}),
+              ...(attention ? { attention } : {}),
+            }}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
