@@ -727,4 +727,5 @@ Off `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouche
 - **Paid campaigns / bulk SMS** pages stay as in-house notices. `paidVendorsAllowed()` is false.
 - **Pop-up** — unread `playbook` / `automation` alerts open an in-desk dialog. Dismiss marks read. Nothing emails Javy.
 - **Seed fires** (Tasks + Alerts only): Elena Closed Won (Alert, Maya); Elena renewal 60 (Task + Alert, Maya); Ana Quote Sent (Alert only, Cov A $321k, do not bind); Marcus Hale renewal 30 (Task + Alert, Javy); Robert Hale birthday (agency-wide Alert).
+- `/tasks` lists open `activities` (kind=task) next to review items so playbook fires show on the existing Tasks table. `/alerts` Open jumps the related record. Chrome unchanged.
 - Migration `0048_automation_playbooks` (`guided_automations.visibility` + `automation_runs`).
