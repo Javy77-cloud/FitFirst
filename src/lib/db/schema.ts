@@ -1956,12 +1956,41 @@ export const guidedAutomations = pgTable(
     conditionValue: text("condition_value"),
     actionKind: text("action_kind").notNull(),
     actionValue: text("action_value"),
+    visibility: text("visibility").notNull().default("both"),
     enabled: boolean("enabled").notNull().default(true),
     isExample: boolean("is_example").notNull().default(false),
     createdBy: uuid("created_by").references(() => users.id),
     ...timestamps,
   },
   (t) => [index("guided_automations_tenant_idx").on(t.tenantId)],
+);
+
+/** One row per playbook fire. Tasks + in-app Alerts only — never a sent mail job. */
+export const automationRuns = pgTable(
+  "automation_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    automationId: uuid("automation_id")
+      .notNull()
+      .references(() => guidedAutomations.id),
+    firedAt: timestamp("fired_at", { withTimezone: true }).defaultNow().notNull(),
+    triggerKind: text("trigger_kind").notNull(),
+    actionKind: text("action_kind").notNull(),
+    createdTask: boolean("created_task").notNull().default(false),
+    createdAlert: boolean("created_alert").notNull().default(false),
+    activityId: uuid("activity_id"),
+    alertId: uuid("alert_id"),
+    entityType: text("entity_type"),
+    entityId: uuid("entity_id"),
+    audience: text("audience").notNull().default("both"),
+    summary: text("summary").notNull().default(""),
+    ...timestamps,
+  },
+  (t) => [
+    index("automation_runs_tenant_idx").on(t.tenantId, t.firedAt),
+    index("automation_runs_playbook_idx").on(t.tenantId, t.automationId),
+  ],
 );
 
 /** Bulk SMS compose stub. Requires an SMS integration. Nothing texts a client. */
@@ -2412,6 +2441,7 @@ export type EmailSendAccount = typeof emailSendAccounts.$inferSelect;
 export type AgencyBrand = typeof agencyBrand.$inferSelect;
 export type EmailSignature = typeof emailSignatures.$inferSelect;
 export type GuidedAutomation = typeof guidedAutomations.$inferSelect;
+export type AutomationRun = typeof automationRuns.$inferSelect;
 export type BulkSmsDraft = typeof bulkSmsDrafts.$inferSelect;
 export type AgentUiPref = typeof agentUiPrefs.$inferSelect;
 export type CalendarConnection = typeof calendarConnections.$inferSelect;

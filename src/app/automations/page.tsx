@@ -1,58 +1,47 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
-import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { requireSignedIn } from "@/lib/auth/guards";
+import { AUTOMATION_HUB_SECTIONS } from "@/lib/automations/types";
+import { outcomeBadges } from "@/lib/automations/engine";
 import {
-  campaignsReady,
-  connectedCampaignIntegrations,
-  connectedSmsIntegrations,
-  smsReady,
-} from "@/lib/automations/connections";
-import { AUTOMATION_HUB_SECTIONS, SIGNATURE_STATUS_LABEL } from "@/lib/automations/types";
-import {
+  listAutomationRuns,
   listGuidedAutomations,
   listPendingSignatureApprovals,
   listMySignatures,
 } from "@/lib/db/automation-queries";
-import { getSmsSettings } from "@/lib/db/ops-queries";
 import { listCampaignSequences } from "@/lib/db/sequence-queries";
 import { listEmailTemplates } from "@/lib/db/queries";
-import { listCatalogItems } from "@/lib/integrations/catalog-store";
 
 export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
-  const [catalog, sms, templates, automations, pending, mine, sequences] = await Promise.all([
-    listCatalogItems(),
-    getSmsSettings(),
+  const [templates, automations, pending, mine, sequences, runs] = await Promise.all([
     listEmailTemplates(),
-    listGuidedAutomations(),
+    listGuidedAutomations({ isAdmin: session.isAdmin }),
     listPendingSignatureApprovals(),
     session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
     listCampaignSequences(),
+    listAutomationRuns({ isAdmin: session.isAdmin }),
   ]);
-  const campaignOk = campaignsReady(catalog);
-  const smsOk = smsReady(catalog, Boolean(sms?.connected));
-  const campaignConnected = connectedCampaignIntegrations(catalog);
-  const smsConnected = connectedSmsIntegrations(catalog);
   const myLive = mine.filter((row) => row.approvalStatus === "live").length;
   const myPending = mine.filter((row) => row.approvalStatus === "pending").length;
-
   const sequencesOn = sequences.filter((row) => row.enabled).length;
+  const dual = automations.filter((row) => outcomeBadges(row.actionKind).includes("Task")).length;
+  const enEs = templates.filter((row) => row.subjectEn && row.bodyEn && row.subjectEs && row.bodyEs).length;
+
   const status: Record<string, string> = {
-    sequences: `${sequencesOn} of ${sequences.length} sequences on · Task + email stubs`,
-    campaigns: campaignOk
-      ? `${campaignConnected.map((item) => item.name).join(", ")} ready`
-      : "Connect Mailchimp, Constant Contact, or SendGrid",
-    sms: smsOk
-      ? `${smsConnected[0]?.name ?? sms?.provider ?? "SMS"} ready`
-      : "Connect a phone / SMS integration",
+    playbooks: session.isAdmin
+      ? `${automations.length} playbooks · ${runs.length} fires · ${dual} write Tasks`
+      : `${automations.length} visible · ${runs.filter((row) => row.run.createdAlert || row.run.createdTask).length} fires on your book`,
     templates: templates.length
-      ? `${templates.length} templates in the work-email library`
+      ? `${templates.length} templates · ${enEs} EN+ES · none send`
       : "No templates yet — seed the desk",
-    builder: `${automations.length} named rules · prefer in-app notify`,
+    builder: session.isAdmin
+      ? "Admin writes Trigger → Condition → Action"
+      : "Read-only — ask Admin to add a playbook",
+    sequences: `${sequencesOn} of ${sequences.length} sequence stubs on · Tasks only`,
     signatures: session.isAdmin
       ? `${pending.length} waiting on Admin`
       : myPending
@@ -60,15 +49,30 @@ export default async function AutomationsHubPage() {
         : myLive
           ? `${myLive} live`
           : "Draft a signature for Admin review",
+    campaigns: "Not offered — no Mailchimp / SendGrid",
+    sms: "Not offered — no Twilio",
   };
 
   return (
     <AppShell title="Automations">
       <AutomationsModuleNav />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Insurance campaign sequences, guided campaigns, bulk SMS, work-email templates, and a
-        simple Trigger → Condition → Action builder. Agent alerts stay in Alerts — Javy does
-        not want a second email ping. Signatures need Admin before they go live.
+      <p className="mb-2 max-w-3xl text-sm text-muted-foreground">
+        In-desk automations. Playbooks create Tasks and in-app Alerts. Templates stay EN/ES
+        drafts. Paid campaign and SMS vendors are off.
+      </p>
+      <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
+        {session.isAdmin ? (
+          <>
+            <span className="font-semibold text-navy">Admin view.</span> Write playbooks, toggle
+            them, and run a demo fire. Internal pings stay in Alerts / pop-up — nothing emails you.
+          </>
+        ) : (
+          <>
+            <span className="font-semibold text-navy">Agent view.</span> Read the playbooks on
+            your book and the Tasks / Alerts they already fired. You cannot edit rules or connect
+            a vendor.
+          </>
+        )}
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {AUTOMATION_HUB_SECTIONS.map((section) => (
@@ -77,14 +81,7 @@ export default async function AutomationsHubPage() {
             href={section.href}
             className="ff-card block p-4 hover:border-primary/40"
           >
-            <div className="flex items-start justify-between gap-2">
-              <h2 className="text-sm font-semibold text-navy">{section.label}</h2>
-              {section.id === "campaigns" ? (
-                <ConnectionBadge connected={campaignOk} />
-              ) : section.id === "sms" ? (
-                <ConnectionBadge connected={smsOk} />
-              ) : null}
-            </div>
+            <h2 className="text-sm font-semibold text-navy">{section.label}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{section.summary}</p>
             <p className="mt-2 text-xs text-navy">{status[section.id]}</p>
           </Link>

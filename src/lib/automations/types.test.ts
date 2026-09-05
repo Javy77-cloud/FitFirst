@@ -46,6 +46,7 @@ describe("validateGuidedAutomation", () => {
     if (result.ok) {
       expect(result.value.actionKind).toBe("in_app_notify");
       expect(result.value.triggerKind).toBe("closed_won");
+      expect(result.value.visibility).toBe("both");
     }
   });
 
@@ -68,18 +69,19 @@ describe("preferredActionFor", () => {
     expect(preferredActionFor("closed_won")).toBe("in_app_notify");
     expect(preferredActionFor("birthday")).toBe("in_app_notify");
     expect(preferredActionFor("deal_stage_change")).toBe("in_app_notify");
-    expect(preferredActionFor("policy_renewal_window")).toBe("create_task");
+    expect(preferredActionFor("policy_renewal_window")).toBe("task_and_alert");
   });
 });
 
 describe("labels", () => {
   it("keeps Javy-facing copy on the notify action", () => {
-    expect(AUTOMATION_ACTION_LABEL.in_app_notify).toBe("In-app notify");
+    expect(AUTOMATION_ACTION_LABEL.in_app_notify).toBe("In-app alert");
     expect(AUTOMATION_TRIGGER_LABEL.closed_won).toBe("Closed Won");
   });
 
-  it("lists campaign sequences on the automations hub", () => {
-    expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("sequences");
-    expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/sequences");
+  it("lists in-desk playbooks first on the automations hub", () => {
+    expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("playbooks");
+    expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/playbooks");
+    expect(AUTOMATION_ACTION_LABEL.task_and_alert).toBe("Task + in-app alert");
   });
 });

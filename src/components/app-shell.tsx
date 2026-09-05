@@ -9,6 +9,9 @@ import { SupportLauncher } from "@/components/support/help-center";
 import { SupportProvider } from "@/components/support/support-context";
 import { currentDeskSession, getActor } from "@/lib/auth/session";
 import type { Actor } from "@/lib/auth/rbac";
+import { AutomationAlertPopup } from "@/components/automations/alert-popup";
+import { isPlaybookAlertKind } from "@/lib/automations/engine";
+import { recordHref } from "@/lib/desk/record-href";
 import { listUsers, listAlerts } from "@/lib/db/queries";
 
 export async function AppShell({
@@ -37,6 +40,7 @@ export async function AppShell({
     redirect("/enroll-mfa");
   }
   const unread = alertRows.filter((row) => !row.readAt).length;
+  const popupAlert = alertRows.find((row) => !row.readAt && isPlaybookAlertKind(row.kind));
   const users: Actor[] = userRows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -61,6 +65,18 @@ export async function AppShell({
           <DeskHeader title={title} eyebrow={eyebrow} actions={actions ?? columns} unread={unread} />
           <main className="flex-1 p-5">{children}</main>
         </div>
+        <AutomationAlertPopup
+          alert={
+            popupAlert
+              ? {
+                  id: popupAlert.id,
+                  title: popupAlert.title,
+                  body: popupAlert.body,
+                  href: recordHref(popupAlert.entityType, popupAlert.entityId),
+                }
+              : null
+          }
+        />
         <Suspense fallback={null}>
           <SupportLauncher />
         </Suspense>

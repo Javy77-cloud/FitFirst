@@ -715,7 +715,7 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. **0046**–**0047** landed later. AMS wave 2 took **0048**. AMS wave 3 took **0049**. Next free additive migration is **0050**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. **0046**–**0047** landed later. AMS wave 2 took **0048**. AMS wave 3 remapped to **0051**. Next free after this merge is **0053**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
 
 ## AMS wave 2 — book-of-business depth (`cursor/ams-wave2-book-3be9`)
 
@@ -796,4 +796,17 @@ Click path:
 4. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
 5. Settings → IVANS / AL3 still **Not connected**.
 
-Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0052**.
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0053**.
+
+## In-desk automations depth (`cursor/in-desk-automations-cfc4`)
+
+Off `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. Sidebar hex unchanged. No Twilio / SendGrid / Mailchimp / Constant Contact.
+
+- **Playbooks** `/automations/playbooks` — Trigger → Condition → Action that writes a desk Task (`activities`) and/or an in-app Alert. New action `task_and_alert`. Visibility `admin` | `agent` | `both`. Admin writes / toggles / **Run now**. Agents read playbooks they can see plus fired work.
+- **Engine** `src/lib/automations/engine.ts` + `fire.ts`. `send_template_email` holds a draft note and posts an Alert — it never inserts a sent mail job.
+- **Template library** `/automations/templates` — EN/ES preview cards. Does not send. Admin edits in Settings.
+- **Paid campaigns / bulk SMS** pages stay as in-house notices. `paidVendorsAllowed()` is false.
+- **Pop-up** — unread `playbook` / `automation` alerts open an in-desk dialog. Dismiss marks read. Nothing emails Javy.
+- **Seed fires** (Tasks + Alerts only): Elena Closed Won (Alert, Maya); Elena renewal 60 (Task + Alert, Maya); Ana Quote Sent (Alert only, Cov A $321k, do not bind); Marcus Hale renewal 30 (Task + Alert, Javy); Robert Hale birthday (agency-wide Alert).
+- `/tasks` lists open `activities` (kind=task) next to review items so playbook fires show on the existing Tasks table. `/alerts` Open jumps the related record. Chrome unchanged.
+- Incoming `0048_automation_playbooks` remapped to `0052_automation_playbooks` (`guided_automations.visibility` + `automation_runs`).
