@@ -2079,6 +2079,7 @@ export const agentUiPrefs = pgTable(
     navLayout: jsonb("nav_layout").$type<{
       version: number;
       primaryOrder: string[];
+      hiddenPrimaryIds?: string[];
       submenus: Record<string, string[]>;
     } | null>(),
     ...timestamps,

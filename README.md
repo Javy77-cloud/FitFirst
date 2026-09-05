@@ -6,9 +6,9 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/ff-nav-dnd-customize-fe86`** — user-customizable left nav on the live CRM+Quote tip. Starts from **`cursor/live-crm-zoho-tip-sep5c`**, then adds drag-and-drop primary order plus editable submenus persisted on `agent_ui_prefs.nav_layout`.
+**`cursor/ff-nav-hide-items-d507`** — hide + rearrange the left nav on the live CRM+Quote tip. Starts from **`cursor/ff-nav-dnd-customize-fe86`** (drag-and-drop primary order + editable submenus), then lets Javy **hide** any primary module. Settings stays pinned and unhidable.
 
-The previous live tip **`cursor/live-crm-zoho-tip-sep5c`** still has the click-label / chevron-submenu accordion. This slice keeps that behavior and lets Javy rearrange the rail himself.
+The previous live tip **`cursor/live-crm-zoho-tip-sep5c`** still has the click-label / chevron-submenu accordion. The dnd tip **`cursor/ff-nav-dnd-customize-fe86`** can reorder but cannot hide. This slice keeps both and adds hide/show.
 
 **`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
 
@@ -21,31 +21,32 @@ AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/ff-nav-dnd-customize-fe86 && git pull
+git fetch && git checkout cursor/ff-nav-hide-items-d507 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
 npm run db:assign-owner
-npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-imported book
+# skip db:seed — keep the live Zoho-imported book
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the nav customize, sidebar, or owner-fix slices.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` just to pick up hide, nav customize, sidebar, or owner-fix slices.
 
 ### Left nav customize (this slice)
 
-Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom.
+Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom and **cannot be hidden** — that is how login, My desk, and sign-out stay reachable. The FitFirst wordmark still opens Home even if Home is hidden.
 
 1. Click the **label** to open that module. Click the **chevron** to expand its submenu. Only one submenu is open at a time.
-2. **Customize menu** at the bottom of the rail. Drag the grip to reorder primaries. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog.
-3. **Reset to default** restores the factory order and submenus.
-4. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
-5. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
+2. **Customize menu** (gear) at the bottom of the rail. Drag the grip to reorder primaries. Click the **eye** to hide a primary (or show it again). Hidden modules stay in place while you edit and disappear when you click **Done customizing**.
+3. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog.
+4. **Reset to default** restores the factory order, submenus, and visibility.
+5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`, includes `hiddenPrimaryIds`). Survives refresh. Maya’s menu stays hers.
+6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
 
-### Air checkout (no wipe)
+### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/ff-nav-dnd-customize-fe86 && git pull
+git fetch && git checkout cursor/ff-nav-hide-items-d507 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -53,7 +54,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` only adds nullable `agent_ui_prefs.nav_layout`. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` only adds nullable `agent_ui_prefs.nav_layout`. Hide is a JSON field on that same blob — no extra table. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Home custom layouts + corner resize (this slice)
 
