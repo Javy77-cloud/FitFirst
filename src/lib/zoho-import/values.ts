@@ -72,6 +72,20 @@ export function lookupName(value: unknown): string | null {
   return null;
 }
 
+export function lookupEmail(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text.includes("@") ? text : null;
+  }
+  if (typeof value === "object") {
+    const rec = value as Record<string, unknown>;
+    const email = rec.email ?? rec.Email;
+    if (typeof email === "string" && email.trim()) return email.trim();
+  }
+  return null;
+}
+
 export function lookupModule(value: unknown): string | null {
   if (!value || typeof value !== "object") return null;
   const rec = value as Record<string, unknown>;

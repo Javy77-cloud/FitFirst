@@ -67,4 +67,11 @@ export type ImportReport = {
   carriersKept: number;
   carriersAdded: number;
   carriersMergedLines: number;
+  owners: {
+    adminId: string;
+    adminEmail: string;
+    fallbackAssigned: number;
+    mapped: number;
+    nullOwnersFilled: number;
+  };
 };

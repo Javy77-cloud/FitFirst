@@ -6,6 +6,8 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
+**`cursor/ff-zoho-owner-fix-6b9e`** — owner fix on **`cursor/live-ff-zoho-data-1809`**. Zoho import now writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls. No wipe.
+
 **`cursor/live-ff-zoho-data-1809`** — LIVE-TEST CRM+Quote tip (`cursor/live-crm-quote-tip-0836`) plus Zoho JSONL wipe+import (`cursor/zoho-data-import-a792`). Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home table layouts (`0066`), lead sources (`0067`), Home JSONB layouts (`0068`), Zoho external ids (`0069`). AMS waves 10–16 parked. Wipe+import replaces the demo CRM book. Ana is **not** re-seeded. Sidebar stays `#1d4e89`.
 
 ## Run locally (Mac Air and Mac mini)
@@ -18,6 +20,8 @@ npm run db:migrate
 # put JSONL in import/zoho/
 npm run db:wipe-crm
 npm run db:import-zoho
+# already imported and Maya sees empty lists? do not wipe:
+# npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
@@ -39,6 +43,19 @@ Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fi
 On this tip. Javy dual-enters: FitFirst live test + Zoho backup. Wipe demo CRM rows and load a Zoho MCP dump. It does **not** call paid APIs. Login, tenant, Home layouts, and existing FitFirst carriers stay. Ana is not re-seeded after wipe.
 
 One file per module: `Contacts.jsonl`, `Accounts.jsonl`, `Leads.jsonl`, `Deals.jsonl`, `Vendors.jsonl`, `Policies.jsonl`, `Tasks.jsonl`. Each line is a Zoho `getRecords` row (or a `{ data: [...] }` page). Vendors merge into carriers by normalized name — no duplicate carriers; new names are added. The importer prints counts and unmatched Zoho fields. Files/attachments stay out. Settings → Import / Export shows whether those JSONL files are present. First-time empty Postgres still needs one `db:seed` to create login users, then wipe+import. An Air desk that already has **javy** skips seed.
+
+### Air note — empty agent lists after Zoho import
+
+Zoho `Owner` was ignored, so `contacts` / `leads` / `deals` / `policies` landed with `owner_id` NULL. Agent sessions filter `ownerWhere` to their user id (unsigned → `false`), so Maya saw empty lists while Javy (admin) saw the book.
+
+**Fix (no wipe):**
+
+```bash
+git fetch && git checkout cursor/ff-zoho-owner-fix-6b9e && git pull
+npm run db:assign-owner
+```
+
+That UPDATE-only script sets null `owner_id` (and `created_by` / `created_by_user_id` if those columns exist) to **javy@fitfirst.local** / `44444444-4444-4444-8444-444444444401`. New imports map Zoho Owner by email, then name, then that same admin fallback. Re-import is optional; do **not** run `db:wipe-crm` just to fix owners.
 
 ## Pipeline views + status colors (this slice)
 

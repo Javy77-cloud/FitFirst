@@ -13,6 +13,7 @@
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
     "db:wipe-crm": "tsx --env-file=.env scripts/wipe-crm.ts",
     "db:import-zoho": "tsx --env-file=.env scripts/import-zoho.ts",
+    "db:assign-owner": "tsx --env-file=.env scripts/assign-owner.ts",
     "fixtures:pdf": "tsx scripts/generate-pdfs.ts"
   },
   "dependencies": {

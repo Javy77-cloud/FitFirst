@@ -9,6 +9,7 @@ type ZohoScan = {
   missingModules: string[];
   wipeCommand: string;
   importCommand: string;
+  assignOwnerCommand: string;
 };
 
 export function ZohoJsonlImportCard() {
@@ -38,6 +39,7 @@ export function ZohoJsonlImportCard() {
         Dual-enter path for the Air desk. Wipe FitFirst demo CRM rows, keep login + tenant +
         appointed carriers, then import Zoho Contacts, Businesses, Leads, Deals, Vendors, Policies,
         and Tasks. Files stay out of this pass. Ana is not re-seeded after wipe.
+        Import maps Zoho Owner to a FitFirst user and falls back to Javy when it cannot.
       </p>
       <ol className="list-decimal space-y-1 pl-5 text-sm text-navy">
         <li>
@@ -48,6 +50,11 @@ export function ZohoJsonlImportCard() {
         </li>
         <li>
           <code className="text-xs">npm run db:import-zoho</code>
+        </li>
+        <li>
+          Already imported with empty agent lists?{" "}
+          <code className="text-xs">{scan?.assignOwnerCommand ?? "npm run db:assign-owner"}</code>{" "}
+          — UPDATE only, no wipe.
         </li>
         <li>
           <code className="text-xs">npm run dev -- --port 43147</code>
