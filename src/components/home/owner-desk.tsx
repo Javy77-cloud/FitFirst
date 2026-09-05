@@ -138,7 +138,12 @@ export function OwnerDesk({
   const tile = (id: HomeWidgetId) => show(LAYOUT_TO_PRESET[id]);
 
   return (
-    <HomeLayoutProvider scope={{ role: scope.role, agentUserId: scope.agentUserId }}>
+    <HomeLayoutProvider
+      scope={{ role: scope.role, agentUserId: scope.agentUserId }}
+      initialPlacements={prefs.activePlacements}
+      initialResizeTiles={prefs.resizeTiles}
+      customLayoutId={prefs.activeLayoutId}
+    >
       <div className="space-y-4">
         <section className="ff-card overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-border bg-[color:var(--ff-wash)] px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
@@ -176,6 +181,8 @@ export function OwnerDesk({
               hiddenWidgets={prefs.hiddenWidgets}
               bookScope={scope.bookScope}
               canToggleBook={scope.canToggleBook}
+              customLayouts={prefs.customLayouts}
+              activeLayoutId={prefs.activeLayoutId}
             />
           </div>
         </section>

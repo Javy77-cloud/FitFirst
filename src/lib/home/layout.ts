@@ -35,14 +35,42 @@ export const HOME_WIDGET_IDS = [
 ] as const;
 
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number];
-export type WidgetSpan = "1x1" | "1x2" | "2x1" | "2x2";
+export type WidgetSpan =
+  | "1x1"
+  | "1x2"
+  | "1x3"
+  | "2x1"
+  | "2x2"
+  | "2x3"
+  | "3x1"
+  | "3x2"
+  | "4x1"
+  | "4x2";
 
 export type WidgetPlacement = {
   id: HomeWidgetId;
   span: WidgetSpan;
 };
 
-export const WIDGET_SPANS: WidgetSpan[] = ["1x1", "1x2", "2x1", "2x2"];
+export const WIDGET_SPANS: WidgetSpan[] = [
+  "1x1",
+  "1x2",
+  "1x3",
+  "2x1",
+  "2x2",
+  "2x3",
+  "3x1",
+  "3x2",
+  "4x1",
+  "4x2",
+];
+
+/** Pixel floors that match spanClass min-heights (16px root). */
+export const SPAN_ROW_PX: Record<1 | 2 | 3, number> = {
+  1: 160,
+  2: 344,
+  3: 520,
+};
 
 /** Which dashboard-preset / hide-checkbox gate controls each tile. */
 export const LAYOUT_TO_PRESET: Record<HomeWidgetId, PresetWidgetId> = {
@@ -164,14 +192,75 @@ export function isWidgetSpan(value: string): value is WidgetSpan {
   return SPAN_SET.has(value);
 }
 
+export function parseWidgetSpan(span: WidgetSpan): { cols: 1 | 2 | 3 | 4; rows: 1 | 2 | 3 } {
+  const cols = Number(span[0]) as 1 | 2 | 3 | 4;
+  const rows = Number(span[2]) as 1 | 2 | 3;
+  return { cols, rows };
+}
+
 /**
  * Column span + own min-height. No CSS row-span — shared row tracks were
  * stretching stacked neighbors when one tile changed height.
  */
 export function spanClass(span: WidgetSpan): string {
-  const wide = span.startsWith("2") ? "col-span-2" : "col-span-1";
-  const tall = span.endsWith("2") ? "min-h-[21.5rem]" : "min-h-[10rem]";
+  const { cols, rows } = parseWidgetSpan(span);
+  const wide =
+    cols >= 4
+      ? "col-span-2 xl:col-span-4"
+      : cols === 3
+        ? "col-span-2 xl:col-span-3"
+        : cols === 2
+          ? "col-span-2"
+          : "col-span-1";
+  const tall = rows >= 3 ? "min-h-[32.5rem]" : rows === 2 ? "min-h-[21.5rem]" : "min-h-[10rem]";
   return `${wide} ${tall} self-start`;
+}
+
+function clampInt(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n));
+}
+
+/** Snap a dragged size to a preset. Neighbors are not consulted. */
+export function snapWidgetSpan(input: {
+  widthPx: number;
+  heightPx: number;
+  colWidth: number;
+  maxCols: number;
+}): WidgetSpan {
+  const maxCols = clampInt(input.maxCols, 1, 4);
+  const rawCols = input.colWidth > 0 ? input.widthPx / input.colWidth : 1;
+  const cols = clampInt(Math.round(rawCols), 1, maxCols);
+
+  let rows: 1 | 2 | 3 = 1;
+  let best = Number.POSITIVE_INFINITY;
+  for (const candidate of [1, 2, 3] as const) {
+    const delta = Math.abs(input.heightPx - SPAN_ROW_PX[candidate]);
+    if (delta < best) {
+      best = delta;
+      rows = candidate;
+    }
+  }
+
+  const trySpan = (c: number, r: number): WidgetSpan | null => {
+    const next = `${c}x${r}`;
+    return isWidgetSpan(next) ? next : null;
+  };
+
+  const exact = trySpan(cols, rows);
+  if (exact) return exact;
+  for (const r of [rows - 1, rows + 1, 2, 1]) {
+    if (r < 1 || r > 3) continue;
+    const hit = trySpan(cols, r);
+    if (hit) return hit;
+  }
+  for (const c of [cols - 1, cols + 1, Math.min(2, maxCols), 1]) {
+    if (c < 1 || c > maxCols) continue;
+    for (const r of [rows, 2, 1]) {
+      const hit = trySpan(c, r);
+      if (hit) return hit;
+    }
+  }
+  return "1x1";
 }
 
 export function mergeHomeLayout(saved: unknown): WidgetPlacement[] {
