@@ -926,6 +926,8 @@ UX feel-pass:
 
 Skipped: product-site / marketing branches. Side branches were not deleted.
 
+Seed re-run: `seed-lifecycle` deletes Elena `signature_envelopes` before documents (in-desk e-sign sample packets). Carrier appointments upsert on `(tenant, carrier, line)` so parallel db tests do not unique-crash.
+
 Mac Chrome (Air **and** mini):
 
 ```
