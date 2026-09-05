@@ -1034,7 +1034,7 @@ Click path:
 
 Sidebar stays `#1d4e89`. One Pipeline nav row.
 
-## AMS wave 9 — desk depth (`cursor/ams-wave9-depth-de2e`)
+## AMS wave 9 — desk depth (`cursor/ams-wave9-depth-de2e`) — consolidator pickup
 
 Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. No Stripe. Wave 2–8 surfaces stay.
 
