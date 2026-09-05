@@ -194,31 +194,62 @@ export function planWipe(fks: FkRow[]): {
   };
 }
 
-async function countRows(table: string, tenantId: string): Promise<number> {
-  const ident = quoteIdent(table);
-  const hasTenant = await tableHasColumn(table, "tenant_id");
-  const rows = hasTenant
-    ? await sql.unsafe(`SELECT count(*)::int AS n FROM ${ident} WHERE tenant_id = $1`, [tenantId])
-    : await sql.unsafe(`SELECT count(*)::int AS n FROM ${ident}`);
-  return Number((rows[0] as { n: number } | undefined)?.n ?? 0);
-}
-
-async function deleteRows(table: string, tenantId: string): Promise<number> {
-  const ident = quoteIdent(table);
-  const hasTenant = await tableHasColumn(table, "tenant_id");
-  const before = await countRows(table, tenantId);
-  if (hasTenant) {
-    await sql.unsafe(`DELETE FROM ${ident} WHERE tenant_id = $1`, [tenantId]);
-  } else {
-    await sql.unsafe(`DELETE FROM ${ident}`);
+function childrenOf(fks: FkRow[]): Map<string, FkRow[]> {
+  const incoming = new Map<string, FkRow[]>();
+  for (const fk of fks) {
+    if (fk.table_name === fk.foreign_table_name) continue;
+    const list = incoming.get(fk.foreign_table_name) ?? [];
+    list.push(fk);
+    incoming.set(fk.foreign_table_name, list);
   }
-  return before;
+  return incoming;
 }
 
 export async function wipeCrmDemo(tenantId = DEFAULT_TENANT_ID): Promise<WipeResult> {
   const fks = await loadForeignKeys();
-  const plan = planWipe(fks);
+  const incoming = childrenOf(fks);
   const deleted: WipeCounts = {};
+  const hasTenantCache = new Map<string, boolean>();
+
+  async function hasTenant(table: string): Promise<boolean> {
+    const cached = hasTenantCache.get(table);
+    if (cached != null) return cached;
+    const value = await tableHasColumn(table, "tenant_id");
+    hasTenantCache.set(table, value);
+    return value;
+  }
+
+  function withTenant(tableHasTenantCol: boolean, whereSql: string, params: unknown[]): { where: string; params: unknown[] } {
+    if (!tableHasTenantCol || whereSql.includes("tenant_id")) return { where: whereSql, params };
+    return { where: `tenant_id = $1 AND (${whereSql})`, params: [tenantId, ...params] };
+  }
+
+  async function deleteWhere(table: string, whereSql: string, params: unknown[], stack: Set<string>) {
+    if (KEEP_TABLES.has(table)) return;
+    const ident = quoteIdent(table);
+    const nextStack = new Set(stack);
+    nextStack.add(table);
+
+    for (const child of incoming.get(table) ?? []) {
+      const childIdent = quoteIdent(child.table_name);
+      const childCol = quoteIdent(child.column_name);
+      const childWhere = `${childCol} IN (SELECT ${quoteIdent("id")} FROM ${ident} WHERE ${whereSql})`;
+      if (KEEP_TABLES.has(child.table_name) || nextStack.has(child.table_name)) {
+        const scoped = withTenant(await hasTenant(child.table_name), childWhere, params);
+        await sql.unsafe(`UPDATE ${childIdent} SET ${childCol} = NULL WHERE ${scoped.where}`, scoped.params);
+        continue;
+      }
+      const scoped = withTenant(await hasTenant(child.table_name), childWhere, params);
+      await deleteWhere(child.table_name, scoped.where, scoped.params, nextStack);
+    }
+
+    const counted = await sql.unsafe(`SELECT count(*)::int AS n FROM ${ident} WHERE ${whereSql}`, params);
+    const n = Number((counted[0] as { n: number } | undefined)?.n ?? 0);
+    if (n > 0) {
+      await sql.unsafe(`DELETE FROM ${ident} WHERE ${whereSql}`, params);
+      deleted[table] = (deleted[table] ?? 0) + n;
+    }
+  }
 
   const [users] = await sql`SELECT count(*)::int AS n FROM users WHERE tenant_id = ${tenantId}`;
   const [tenants] = await sql`SELECT count(*)::int AS n FROM tenants WHERE id = ${tenantId}`;
@@ -227,32 +258,9 @@ export async function wipeCrmDemo(tenantId = DEFAULT_TENANT_ID): Promise<WipeRes
     await sql`SELECT count(*)::int AS n FROM carrier_appointments WHERE tenant_id = ${tenantId}`;
   const anaBefore = await sql`SELECT 1 FROM contacts WHERE id = ${CONTACT_ID} LIMIT 1`;
 
-  for (const item of plan.nullOut) {
-    const ident = quoteIdent(item.table);
-    const hasTenant = await tableHasColumn(item.table, "tenant_id");
-    const sets = item.columns.map((col) => `${quoteIdent(col)} = NULL`).join(", ");
-    const where = hasTenant ? `WHERE tenant_id = $1` : "";
-    await sql.unsafe(`UPDATE ${ident} SET ${sets} ${where}`, hasTenant ? [tenantId] : []);
-  }
-
-  for (const item of plan.partial) {
-    const ident = quoteIdent(item.table);
-    const hasTenant = await tableHasColumn(item.table, "tenant_id");
-    const pred = item.columns.map((col) => `${quoteIdent(col)} IS NOT NULL`).join(" OR ");
-    const tenantPred = hasTenant ? `tenant_id = $1 AND (${pred})` : pred;
-    const counted = await sql.unsafe(
-      `SELECT count(*)::int AS n FROM ${ident} WHERE ${tenantPred}`,
-      hasTenant ? [tenantId] : [],
-    );
-    const n = Number((counted[0] as { n: number } | undefined)?.n ?? 0);
-    if (n > 0) {
-      await sql.unsafe(`DELETE FROM ${ident} WHERE ${tenantPred}`, hasTenant ? [tenantId] : []);
-      deleted[item.table] = (deleted[item.table] ?? 0) + n;
-    }
-  }
-
-  for (const table of plan.full) {
-    deleted[table] = await deleteRows(table, tenantId);
+  for (const table of WIPE_ROOT_TABLES) {
+    const scoped = (await hasTenant(table)) ? `tenant_id = $1` : "TRUE";
+    await deleteWhere(table, scoped, scoped === "TRUE" ? [] : [tenantId], new Set());
   }
 
   return {
