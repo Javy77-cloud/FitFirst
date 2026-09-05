@@ -6,18 +6,23 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
+**`cursor/ff-deals-merge-pipeline-b3cc`** — Deals and Pipeline are one module. Starts from **`cursor/live-crm-zoho-tip-sep5c`**.
 
-1. **`cursor/ff-zoho-owner-fix-6b9e`** — Zoho import always writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls so Maya’s lists are not empty.
-2. **`cursor/ff-sidebar-accordion-31b5`** (agent `bc-38f9fe06`) — Zoho-like one-open left-nav accordion. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands.
+Deals keeps the name. Pipeline is gone from the left nav. `/pipeline` redirects to `/deals` and keeps the query (`pipeline=p-c`, `view=board`, stage, Life/Health subs). Accordion last-open still opens Work. Stored customize ids named `pipeline` remap to `deals` so a saved layout is not orphaned.
 
-AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip). Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
+On **Deals**:
+
+1. **Filters** — All, plus P&C, Health, Life, Flood, Won-Lost, Archive. Book subfilters (Home / Auto / Flood / Commercial, Life types, Health types) stay on the bar.
+2. **Views** — Table (default — the current deals list), Board, Funnel. Same deals. Same filters.
+3. Sidebar stays `#1d4e89`. No wipe. No stub theater.
+
+AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip). Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-deals-merge-pipeline-b3cc && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -26,7 +31,7 @@ npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-import
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the sidebar or owner-fix slices.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up this slice.
 
 ### Left nav accordion (this slice)
 
@@ -38,10 +43,10 @@ Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home 
 4. **Collapse sidebar** at the bottom of the rail switches to an icon-only narrow rail. Same accordion. Preference is stored next to last-open.
 5. Color stays `#1d4e89`. AMS items already under Records are unchanged — this slice is nav chrome only.
 
-### Air checkout (no wipe)
+### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-deals-merge-pipeline-b3cc && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -50,6 +55,16 @@ npm run dev -- --port 43147
 ```
 
 Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+
+### Deals = Pipeline (this slice)
+
+1. Sign in as **javy@fitfirst.local** / **javy**.
+2. Left nav **Work → Deals**. There is no Pipeline row.
+3. Table is the default. Same list as before — columns, comms, upload.
+4. Filter chips: **All · P&C · Health · Life · Flood · Won-Lost · Archive**. Board | Table | Funnel on the right.
+5. Open Board or Funnel on P&C. Funnel **Quote Sent** opens Table filtered to that stage.
+6. Old `/pipeline?pipeline=p-c` bookmarks land on `/deals?pipeline=p-c`.
+7. Confirm Ana is still unbound, Cov A $321,000. Do not bind her.
 
 ### Home custom layouts + corner resize (this slice)
 
@@ -296,8 +311,8 @@ Tables (all `tenant_id`): `developer_functions`, `developer_function_executions`
 
 ## Test notes (localhost:43147)
 
-1. Sign in as Javy. Open **Pipeline**. Confirm Board | Table | Funnel.
-2. Funnel: each stage has a color chip and a count. Click **Quote Sent** — table filters to that stage. Clear with **Show all stages**.
+1. Sign in as Javy. Open **Deals**. Confirm Table is the default, then Board | Funnel.
+2. Funnel: each stage has a color chip and a count. Click **Quote Sent** — table filters to that stage. Clear filter returns to All / that board.
 3. Board columns and table Stage cells use the same chips. Stage chips under the create-deal form match.
 4. **Policies**: Active / Bound / Pending / Lapse (and others) are colored badges on the list and the policy header.
 5. **Contacts** / **Businesses**: Client vs Former Client badges on the list and the record header.

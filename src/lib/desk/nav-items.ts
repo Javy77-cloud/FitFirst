@@ -1,11 +1,10 @@
 import { SUPPORT_HREF } from "@/lib/desk/quick-actions";
 
-/** Left-nav rows. One Pipeline. One Settings. Support stub stays so we do not drop it. */
+/** Left-nav rows. One Deals module. One Settings. Support stub stays so we do not drop it. */
 export const DESK_NAV_ITEMS = [
   { href: "/get-started", label: "Get Started" },
   { href: "/", label: "Home" },
   { href: "/social", label: "Social" },
-  { href: "/pipeline?pipeline=p-c", label: "Pipeline" },
   { href: "/leads", label: "Leads" },
   { href: "/deals", label: "Deals" },
   { href: "/contacts", label: "Contacts" },

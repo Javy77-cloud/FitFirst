@@ -6,5 +6,8 @@ export function isNavActive(href: string, pathname: string): boolean {
   if (path === "/documents" && (current === "/forms" || current.startsWith("/forms/"))) {
     return true;
   }
+  if (path === "/deals" && (current === "/pipeline" || current.startsWith("/pipeline/"))) {
+    return true;
+  }
   return current === path || current.startsWith(`${path}/`);
 }

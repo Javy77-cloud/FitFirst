@@ -38,6 +38,7 @@ import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { filterByBookScope, type BookScopeOption } from "@/lib/org/book-scope";
 import { resolveBookScope } from "@/lib/org/queries";
 import { bookFamily, isPcSubLine } from "@/lib/desk/policy-line";
+import { dealMatchesStage, isKnownStageToken } from "@/lib/wire/pipeline";
 import {
   fallbackPipelineSlug,
   matchesLifeOrHealthSub,
@@ -596,6 +597,7 @@ export async function listDeals(filter: DealListFilter = {}) {
     if (filter.stage === "open") return OPEN_QUOTE_STAGES.has(stage);
     if (filter.stage === "quote_sent") return QUOTE_SENT_STAGES.has(stage);
     if (filter.stage === "won") return WON_STAGES.has(stage);
+    if (filter.stage && isKnownStageToken(filter.stage)) return dealMatchesStage(deal, filter.stage);
     if (filter.stage && stage !== filter.stage.toLowerCase()) return false;
     if (filter.family && family !== filter.family) return false;
     if (filter.pcSub && filter.pcSub !== "all" && !isPcSubLine(deal.lineOfBusiness, filter.pcSub)) {
@@ -1494,7 +1496,10 @@ export async function listPipelines() {
   }));
 }
 
-export async function getPipelineBoard(slug: string, sub?: { lifeSub?: string; healthSub?: string }) {
+export async function getPipelineBoard(
+  slug: string,
+  sub?: { lifeSub?: string; healthSub?: string; pcSub?: string; stage?: string },
+) {
   const { ensureSeededPipelines } = await import("@/lib/wire/ensure-pipelines");
   const { dealMatchesBoard, switcherBoards } = await import("@/lib/wire/pipeline");
   await ensureSeededPipelines();
@@ -1534,10 +1539,20 @@ export async function getPipelineBoard(slug: string, sub?: { lifeSub?: string; h
     lineSettings,
     cards: cards.filter((row) => {
       if (board.slug === "life" && sub?.lifeSub && sub.lifeSub !== "all") {
-        return matchesLifeOrHealthSub(row.deal.policySubType, sub.lifeSub, lineSettings.lifeOptions);
+        if (!matchesLifeOrHealthSub(row.deal.policySubType, sub.lifeSub, lineSettings.lifeOptions)) {
+          return false;
+        }
       }
       if (board.slug === "health" && sub?.healthSub && sub.healthSub !== "all") {
-        return matchesLifeOrHealthSub(row.deal.policySubType, sub.healthSub, lineSettings.healthOptions);
+        if (!matchesLifeOrHealthSub(row.deal.policySubType, sub.healthSub, lineSettings.healthOptions)) {
+          return false;
+        }
+      }
+      if (sub?.pcSub && sub.pcSub !== "all" && !isPcSubLine(row.deal.lineOfBusiness, sub.pcSub)) {
+        return false;
+      }
+      if (sub?.stage && sub.stage !== "all" && isKnownStageToken(sub.stage)) {
+        return dealMatchesStage(row.deal, sub.stage);
       }
       return true;
     }),

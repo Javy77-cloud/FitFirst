@@ -55,10 +55,10 @@ const STEPS = [
     cta: "Open Harbor Key 360",
   },
   {
-    title: "6. Pipeline switcher is real links",
-    body: "P&C pipeline, Health, Life, Flood, then Won-Lost and Archive as two tabs. Flood is a normal board — no Admin badge. Ana sits on Quote Sent and stays unbound. Closed Won already wrote Elena and Harbor policies. Archive later must not cancel emails hung on won date.",
-    href: "/pipeline?pipeline=p-c",
-    cta: "Open P&C pipeline",
+    title: "6. Deals owns the pipeline filters",
+    body: "Deals is the module. Table is the default view. Board and Funnel sit on the same page. Filters: P&C, Health, Life, Flood, Won-Lost, Archive. Ana sits on Quote Sent and stays unbound. Closed Won already wrote Elena and Harbor policies. Archive later must not cancel emails hung on won date.",
+    href: "/deals?pipeline=p-c",
+    cta: "Open P&C deals",
   },
   {
     title: "7. Ana stays the HO3-only shop",
@@ -151,8 +151,8 @@ export default function GetStartedPage() {
           <Link href="/search?q=Elena" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
             Search Elena
           </Link>
-          <Link href="/pipeline?pipeline=p-c" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-            P&C pipeline
+          <Link href="/deals?pipeline=p-c" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+            P&C deals
           </Link>
           <Link
             href={`/portal/${ELENA_PORTAL_TOKEN}`}

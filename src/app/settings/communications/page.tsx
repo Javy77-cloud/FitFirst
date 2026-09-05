@@ -193,9 +193,9 @@ export default async function CommunicationsSettingsPage() {
             Save communications
           </Button>
           <p className="text-helper text-muted-foreground">
-            Pipeline cards use these values. Calendar still lists the meeting.{" "}
-            <Link href="/pipeline?pipeline=p-c" className="text-primary hover:underline">
-              Open pipeline
+            Deal cards use these values. Calendar still lists the meeting.{" "}
+            <Link href="/deals?view=board&pipeline=p-c" className="text-primary hover:underline">
+              Open Deals board
             </Link>
           </p>
         </section>

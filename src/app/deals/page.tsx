@@ -1,21 +1,26 @@
 import Link from "next/link";
+import { createPipelineDeal } from "@/app/actions/pipeline-admin";
 import { AppShell } from "@/components/app-shell";
-import { buttonVariants } from "@/components/ui/button";
-import { StagePill } from "@/components/fit-badge";
-import { ColumnPicker, Col } from "@/components/column-picker";
-import { SheetTbody } from "@/components/sheet/sheet-table";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
-import { DealRowComms } from "@/components/deal-row-comms";
-import { defaultColumns } from "@/lib/desk/columns";
-import { sourceLabel } from "@/lib/crm/sources";
-import { formatDay, formatMoney } from "@/lib/domain";
-import { formatInDeskEsignList } from "@/lib/esign/in-desk";
-import { BookFilterBar } from "@/components/desk/book-filter-bar";
-import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
-import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
+import { DealStageChips, DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
+import { DealsColumnPicker, DealsTable } from "@/components/deals/deals-table";
+import { PipelineWorkspace } from "@/components/pipeline/workspace";
+import { requireSignedIn } from "@/lib/auth/guards";
+import {
+  listBoundPendingDeals,
+  listDealLookup,
+  listDeals,
+  listUsersById,
+  getPipelineBoard,
+  type DealListFilter,
+} from "@/lib/db/queries";
+import { lineForPipelineSlug } from "@/lib/desk/line-settings";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
+import { parsePipelineView } from "@/lib/wire/pipeline";
+import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 
 export const dynamic = "force-dynamic";
 
@@ -34,28 +39,64 @@ export default async function DealsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await requireSignedIn();
   const params = await searchParams;
+  const pipeline = first(params.pipeline);
+  const view = parsePipelineView(first(params.view));
+  const stage = first(params.stage);
   const filter: DealListFilter = {
-    stage: first(params.stage),
+    stage,
     attention: first(params.attention),
     family: first(params.family),
     pcSub: first(params.pcSub),
     lifeSub: first(params.lifeSub),
     healthSub: first(params.healthSub),
   };
-  const [rows, users, lineSettings, lookup] = await Promise.all([
-    filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
+  const boardSlug = pipeline || "p-c";
+  const selectedPipeline = pipeline || (view === "table" ? undefined : "p-c");
+  const [boardData, listRows, users, lineSettings, lookup] = await Promise.all([
+    getPipelineBoard(boardSlug, {
+      lifeSub: filter.lifeSub,
+      healthSub: filter.healthSub,
+      pcSub: pipeline === "p-c" || !pipeline ? filter.pcSub : undefined,
+      stage: view === "table" && pipeline ? stage : undefined,
+    }),
+    filter.attention === "bound_pending"
+      ? listBoundPendingDeals()
+      : view === "table" && !pipeline
+        ? listDeals(filter)
+        : Promise.resolve(null),
     listUsersById(),
     loadDeskLineSettings(),
     listDealLookup(),
   ]);
+  const boards = boardData?.boards ?? [];
+  const settings = boardData?.lineSettings ?? lineSettings;
+  const tableRows =
+    filter.attention === "bound_pending" || (view === "table" && !pipeline)
+      ? (listRows ?? [])
+      : view === "table" && boardData
+        ? boardData.cards
+        : [];
+  const presented = (boardData?.cards ?? []).map(presentPipelineCard);
+  const board = boardData?.board ?? null;
+  const notice = first(params.notice);
   const hint =
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
-      : filter.stage
-        ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
-        : "Shopping lives on the deal. Quotes attach here. A policy is not created from a quote. Call, SMS, and email from the row write a durable log on the deal.";
-  const notice = first(params.notice);
+      : pipeline === "won-lost"
+        ? "Closed Won and Closed Lost from every shopping board. Archive is its own tab — parking here does not cancel emails hung on won date."
+        : pipeline === "archive"
+          ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
+          : pipeline === "flood"
+            ? "Flood shopping. Same stages as the other boards — add, remove, or reorder as Admin."
+            : view === "funnel"
+              ? "Counts by stage. Click a bar to open the table for that stage."
+              : view === "board"
+                ? "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card."
+                : filter.stage
+                  ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
+                  : "Deals and the pipeline are the same book. Table is the list. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archive. Quotes are not coverage.";
 
   return (
     <AppShell
@@ -65,7 +106,7 @@ export default async function DealsPage({
           New shopping deal
         </Link>
       }
-      columns={<ColumnPicker tableKey="deals" initial={defaultColumns("deals")} />}
+      columns={view === "table" ? <DealsColumnPicker /> : undefined}
     >
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
       {notice === "need-deal" ? (
@@ -78,125 +119,115 @@ export default async function DealsPage({
           Add at least one file on a line.
         </p>
       ) : null}
-      <BookFilterBar
-        action="/deals"
-        settings={lineSettings}
+
+      <DealWorkspaceBar
+        boards={boards.map((item) => ({ slug: item.slug, name: item.name }))}
+        pipeline={selectedPipeline}
+        view={view}
+        stage={stage}
         family={filter.family}
         pcSub={filter.pcSub}
         lifeSub={filter.lifeSub}
         healthSub={filter.healthSub}
-        hidden={{
-          ...(filter.stage ? { stage: filter.stage } : {}),
-          ...(filter.attention ? { attention: filter.attention } : {}),
-        }}
+        attention={filter.attention}
+        settings={settings}
       />
-      <div className="mb-4">
-        <DealDocsUpload deals={lookup} />
-      </div>
-      {filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
-        <p className="mb-3 text-sm">
-          <Link href="/deals" className="text-primary hover:underline">
-            Clear filter
-          </Link>
-        </p>
-      ) : null}
-      <section className="ff-card overflow-x-auto">
-        <ModuleListActions module="deals" recordIds={rows.map(({ deal }) => deal.id)}>
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No deals match this filter. Shopping stays on the deal list — quotes are not
-            policies.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th className="w-8" aria-label="Select" />
-                <Col table="deals" col="title" as="th">Deal</Col>
-                <Col table="deals" col="stage" as="th">Stage</Col>
-                <Col table="deals" col="line" as="th">Line</Col>
-                <Col table="deals" col="subType" as="th">Life / Health type</Col>
-                <Col table="deals" col="state" as="th">State</Col>
-                <Col table="deals" col="city" as="th">City</Col>
-                <Col table="deals" col="zip" as="th">ZIP</Col>
-                <Col table="deals" col="address" as="th">Property address</Col>
-                <Col table="deals" col="shopLines" as="th">Shop lines</Col>
-                <Col table="deals" col="source" as="th">Source</Col>
-                <Col table="deals" col="contact" as="th">Contact</Col>
-                <Col table="deals" col="phone" as="th">Phone</Col>
-                <Col table="deals" col="email" as="th">Email</Col>
-                <Col table="deals" col="assigned" as="th">Assigned</Col>
-                <Col table="deals" col="premium" as="th">Coverage $</Col>
-                <Col table="deals" col="updated" as="th">Updated</Col>
-                <Col table="deals" col="esign" as="th">E-sign</Col>
-                <Col table="deals" col="comms" as="th">Comms</Col>
-              </tr>
-            </thead>
-            <SheetTbody>
-              {rows.map(({ deal, contact, account }) => (
-                <tr key={deal.id}>
-                  <td>
-                    <SelectRowCheckbox id={deal.id} />
-                  </td>
-                  <Col table="deals" col="title">
-                    <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                      {deal.title}
-                    </Link>
-                  </Col>
-                  <Col table="deals" col="stage">
-                    <StagePill stage={deal.pipelineStage} />
-                  </Col>
-                  <Col table="deals" col="line">{deal.lineOfBusiness}</Col>
-                  <Col table="deals" col="subType">{deal.policySubType ?? "—"}</Col>
-                  <Col table="deals" col="state">{deal.state}</Col>
-                  <Col table="deals" col="city">{contact?.city ?? account?.city ?? "—"}</Col>
-                  <Col table="deals" col="zip">{contact?.zip ?? account?.zip ?? "—"}</Col>
-                  <Col table="deals" col="address">
-                    {deal.propertyOneliner ?? contact?.mailingAddress ?? account?.mailingAddress ?? "—"}
-                  </Col>
-                  <Col table="deals" col="shopLines">
-                    {(deal.shopLines ?? []).join(", ") || "—"}
-                  </Col>
-                  <Col table="deals" col="source">{sourceLabel(deal.source)}</Col>
-                  <Col table="deals" col="contact">
-                    {contact ? (
-                      <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                        {contact.lastName}, {contact.firstName}
-                      </Link>
-                    ) : account ? (
-                      <Link href={`/accounts/${account.id}`} className="text-primary hover:underline">
-                        {account.name}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </Col>
-                  <Col table="deals" col="phone">{contact?.phone ?? account?.phone ?? "—"}</Col>
-                  <Col table="deals" col="email">{contact?.email ?? account?.email ?? "—"}</Col>
-                  <Col table="deals" col="assigned">{deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—"}</Col>
-                  <Col table="deals" col="premium" sortValue={deal.coverageAmount}>
-                    {formatMoney(deal.coverageAmount)}
-                  </Col>
-                  <Col table="deals" col="updated">{formatDay(deal.updatedAt)}</Col>
-                  <Col table="deals" col="esign">
-                    {formatInDeskEsignList(deal.esignStatus, deal.esignSignedAt, deal.esignRequestedAt)}
-                  </Col>
-                  <Col table="deals" col="comms">
-                    <DealRowComms
-                      dealId={deal.id}
-                      contactId={contact?.id ?? deal.contactId}
-                      accountId={account?.id ?? deal.accountId}
-                      phone={contact?.phone ?? account?.phone}
-                      email={contact?.email ?? account?.email}
-                    />
-                  </Col>
-                </tr>
+
+      {board && board.kind === "shopping" && (pipeline || view !== "table") ? (
+        <form
+          action={createPipelineDeal}
+          className="mb-4 flex flex-wrap items-end gap-2 rounded-md border border-border bg-card p-3"
+        >
+          <input type="hidden" name="pipelineSlug" value={board.slug} />
+          <input type="hidden" name="lineOfBusiness" value={lineForPipelineSlug(board.slug)} />
+          <Input name="title" required placeholder="New deal title" className="h-8 w-56" />
+          {board.slug === "life" ? (
+            <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+              <option value="">Life type</option>
+              {settings.lifeOptions.map((option) => (
+                <option key={option.slug} value={option.label}>
+                  {option.label}
+                </option>
               ))}
-            </SheetTbody>
-          </table>
-        )}
-        </ModuleListActions>
-      </section>
+            </select>
+          ) : null}
+          {board.slug === "health" ? (
+            <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+              <option value="">Health type</option>
+              {settings.healthOptions.map((option) => (
+                <option key={option.slug} value={option.label}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <select name="stageSlug" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+            {board.stages.map((item) => (
+              <option key={item.slug} value={item.slug}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <Button type="submit" size="sm">
+            Create deal
+          </Button>
+        </form>
+      ) : null}
+
+      {board && pipeline ? (
+        <DealStageChips
+          stages={board.stages}
+          pipeline={board.slug}
+          stage={stage}
+          lifeSub={filter.lifeSub}
+          healthSub={filter.healthSub}
+          pcSub={filter.pcSub}
+          family={filter.family}
+          attention={filter.attention}
+        />
+      ) : null}
+
+      {view === "table" ? (
+        <>
+          {pipeline || filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
+            <p className="mb-3 text-sm">
+              <Link href="/deals" className="text-primary hover:underline">
+                Clear filter
+              </Link>
+            </p>
+          ) : null}
+          <div className="mb-4">
+            <DealDocsUpload deals={lookup} />
+          </div>
+          <DealsTable rows={tableRows} users={users} />
+        </>
+      ) : board ? (
+        <PipelineWorkspace
+          canEditStages={session.isAdmin}
+          board={{
+            id: board.id,
+            slug: board.slug,
+            name: board.name,
+            kind: board.kind,
+            seeded: board.seeded,
+            stages: board.stages.map((item) => ({
+              id: item.id,
+              slug: item.slug,
+              name: item.name,
+              sortOrder: item.sortOrder,
+              color: item.color,
+              seeded: item.seeded,
+            })),
+          }}
+          cards={presented}
+          view={view}
+          stageFilter={stage}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No pipeline boards yet. Table still lists every deal on this book.
+        </p>
+      )}
     </AppShell>
   );
 }

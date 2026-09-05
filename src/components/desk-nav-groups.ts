@@ -44,7 +44,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/get-started", label: "Get Started", icon: ListChecks },
       { href: "/social", label: "Social", icon: Users, match: "/social" },
-      { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban, match: "/pipeline" },
       { href: "/leads", label: "Leads", icon: Users, match: "/leads" },
       { href: "/deals", label: "Deals", icon: ClipboardList, match: "/deals" },
       { href: "/quotes", label: "Quotes", icon: ClipboardList, match: "/quotes" },
@@ -114,6 +113,9 @@ export function pathIsActive(pathname: string, item: NavItem): boolean {
   const match = item.match ?? item.href.split("?")[0];
   if (match === "/" || item.exact) return pathname === match;
   if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/"))) {
+    return true;
+  }
+  if (match === "/deals" && (pathname === "/pipeline" || pathname.startsWith("/pipeline/"))) {
     return true;
   }
   return pathname === match || pathname.startsWith(`${match}/`);

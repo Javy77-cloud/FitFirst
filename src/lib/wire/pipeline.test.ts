@@ -19,7 +19,7 @@ describe("pipeline switcher", () => {
   it("labels the personal-lines board P&C pipeline, not P-C", () => {
     const pc = SEEDED_PIPELINES.find((board) => board.slug === "p-c");
     expect(pc?.name).toBe("P&C pipeline");
-    expect(pipelineTabLabel(pc!)).toBe("P&C pipeline");
+    expect(pipelineTabLabel(pc!)).toBe("P&C");
     expect(pipelinePageTitle(pc!)).toBe("P&C pipeline");
   });
 
@@ -117,16 +117,18 @@ describe("column / card field picker", () => {
 });
 
 describe("pipeline views", () => {
-  it("parses Board | Table | Funnel and keeps Board as the default", () => {
-    expect(parsePipelineView(undefined)).toBe("board");
+  it("parses Board | Table | Funnel and keeps Table as the Deals default", () => {
+    expect(parsePipelineView(undefined)).toBe("table");
     expect(parsePipelineView("table")).toBe("table");
     expect(parsePipelineView("funnel")).toBe("funnel");
-    expect(parsePipelineView("kanban")).toBe("board");
-    expect(pipelineHref("p-c")).toBe("/pipeline?pipeline=p-c");
-    expect(pipelineHref("p-c", "table")).toBe("/pipeline?pipeline=p-c&view=table");
-    expect(pipelineHref("p-c", "funnel")).toBe("/pipeline?pipeline=p-c&view=funnel");
+    expect(parsePipelineView("board")).toBe("board");
+    expect(parsePipelineView("kanban")).toBe("table");
+    expect(pipelineHref("p-c")).toBe("/deals?pipeline=p-c");
+    expect(pipelineHref("p-c", "table")).toBe("/deals?pipeline=p-c");
+    expect(pipelineHref("p-c", "funnel")).toBe("/deals?pipeline=p-c&view=funnel");
+    expect(pipelineHref("p-c", "board")).toBe("/deals?pipeline=p-c&view=board");
     expect(pipelineHref("p-c", "table", "quote_sent")).toBe(
-      "/pipeline?pipeline=p-c&view=table&stage=quote_sent",
+      "/deals?pipeline=p-c&stage=quote_sent",
     );
   });
 

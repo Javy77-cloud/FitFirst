@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { navHrefPath, navItemIsActive } from "./nav-active";
 
 describe("navHrefPath", () => {
-  it("strips the query so Pipeline still matches", () => {
+  it("strips the query so leftover Pipeline hrefs still parse", () => {
     expect(navHrefPath("/pipeline?pipeline=p-c")).toBe("/pipeline");
+    expect(navHrefPath("/deals?pipeline=p-c")).toBe("/deals");
     expect(navHrefPath("/leads")).toBe("/leads");
   });
 });
@@ -15,10 +16,11 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/pipeline", "/")).toBe(false);
   });
 
-  it("highlights Pipeline from the query href and nested paths", () => {
-    expect(navItemIsActive("/pipeline", "/pipeline?pipeline=p-c")).toBe(true);
-    expect(navItemIsActive("/pipeline", "/pipeline")).toBe(true);
-    expect(navItemIsActive("/deals", "/pipeline?pipeline=p-c")).toBe(false);
+  it("highlights Deals for the live href and leftover /pipeline paths", () => {
+    expect(navItemIsActive("/deals", "/deals")).toBe(true);
+    expect(navItemIsActive("/deals", "/deals?pipeline=p-c")).toBe(true);
+    expect(navItemIsActive("/pipeline", "/deals")).toBe(true);
+    expect(navItemIsActive("/leads", "/deals")).toBe(false);
   });
 
   it("highlights list rows on their record pages", () => {

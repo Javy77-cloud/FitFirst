@@ -57,8 +57,8 @@ export async function createPipelineDeal(formData: FormData) {
     state: "FL",
     ownerId: session.userId,
   });
-  revalidatePath("/pipeline");
-  redirect(`/pipeline?pipeline=${encodeURIComponent(pipelineSlug)}`);
+  revalidatePath("/deals");
+  redirect(`/deals?pipeline=${encodeURIComponent(pipelineSlug)}`);
 }
 
 export async function addPipelineStage(formData: FormData) {
@@ -92,7 +92,7 @@ export async function addPipelineStage(formData: FormData) {
     color: defaultStageColor(Number(n ?? 0), slug),
     seeded: false,
   });
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
 }
 
 export async function relabelPipelineStage(formData: FormData) {
@@ -104,7 +104,7 @@ export async function relabelPipelineStage(formData: FormData) {
     .update(pipelineStages)
     .set({ name })
     .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
 }
 
 export async function deletePipelineStage(formData: FormData) {
@@ -143,7 +143,7 @@ export async function deletePipelineStage(formData: FormData) {
   await db
     .delete(pipelineStages)
     .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
 }
 
 export async function reorderPipelineStage(formData: FormData) {
@@ -171,7 +171,7 @@ export async function reorderPipelineStage(formData: FormData) {
   if (!swap) return;
   await db.update(pipelineStages).set({ sortOrder: swap.sortOrder }).where(eq(pipelineStages.id, stage.id));
   await db.update(pipelineStages).set({ sortOrder: stage.sortOrder }).where(eq(pipelineStages.id, swap.id));
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
 }
 
 export async function saveCommissionRate(formData: FormData) {

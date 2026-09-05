@@ -123,21 +123,42 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
 
 export type PipelineViewId = "board" | "table" | "funnel";
 
+/** Deals owns the workspace. Table is the default (the list Javy already uses). */
 export function parsePipelineView(raw?: string | null): PipelineViewId {
-  if (raw === "table" || raw === "funnel") return raw;
-  return "board";
+  if (raw === "board" || raw === "funnel") return raw;
+  return "table";
+}
+
+export function dealsHref(opts: {
+  pipeline?: string | null;
+  view?: string | null;
+  stage?: string | null;
+  lifeSub?: string | null;
+  healthSub?: string | null;
+  family?: string | null;
+  pcSub?: string | null;
+  attention?: string | null;
+} = {}) {
+  const params = new URLSearchParams();
+  if (opts.pipeline && opts.pipeline !== "all") params.set("pipeline", opts.pipeline);
+  const parsed = parsePipelineView(opts.view);
+  if (parsed !== "table") params.set("view", parsed);
+  if (opts.stage) params.set("stage", opts.stage);
+  if (opts.lifeSub) params.set("lifeSub", opts.lifeSub);
+  if (opts.healthSub) params.set("healthSub", opts.healthSub);
+  if (opts.family) params.set("family", opts.family);
+  if (opts.pcSub) params.set("pcSub", opts.pcSub);
+  if (opts.attention) params.set("attention", opts.attention);
+  const qs = params.toString();
+  return qs ? `/deals?${qs}` : "/deals";
 }
 
 export function pipelineHref(slug: string, view?: string, stage?: string) {
-  const params = new URLSearchParams();
-  params.set("pipeline", slug);
-  const parsed = parsePipelineView(view);
-  if (parsed !== "board") params.set("view", parsed);
-  if (stage) params.set("stage", stage);
-  return `/pipeline?${params.toString()}`;
+  return dealsHref({ pipeline: slug, view, stage });
 }
 
 export function pipelineTabLabel(board: { slug: string; name: string }) {
+  if (board.slug === "p-c") return "P&C";
   return board.name;
 }
 

@@ -91,7 +91,7 @@ export async function setPipelineStage(formData: FormData) {
     .update(deals)
     .set({ pipelineStage: stage, updatedAt: new Date() })
     .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, dealId)));
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
   revalidatePath(`/deals/${dealId}`);
 }
 

@@ -11,7 +11,8 @@ describe("isNavActive", () => {
   it("does not treat Home as a prefix of every route", () => {
     expect(isNavActive("/", "/")).toBe(true);
     expect(isNavActive("/", "/contacts")).toBe(false);
-    expect(isNavActive("/pipeline?pipeline=p-c", "/pipeline")).toBe(true);
+    expect(isNavActive("/deals", "/deals")).toBe(true);
+    expect(isNavActive("/deals", "/pipeline")).toBe(true);
     expect(isNavActive("/settings", "/settings/phone")).toBe(true);
   });
 

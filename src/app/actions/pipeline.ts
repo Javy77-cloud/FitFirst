@@ -76,7 +76,7 @@ export async function moveDealToStage(input: {
     accountId: deal.accountId,
     createTask: shouldCreateStageTask(patch.pipelineStageSlug),
   });
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
   revalidatePath(`/deals/${dealId}`);
 }
 
@@ -92,5 +92,5 @@ export async function archiveWonDeal(formData: FormData) {
   formData.set("pipelineSlug", "archive");
   formData.set("stageSlug", "archive");
   await moveDealOnBoard(formData);
-  redirect("/pipeline?pipeline=archive");
+  redirect("/deals?pipeline=archive");
 }

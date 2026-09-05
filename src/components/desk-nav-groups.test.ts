@@ -57,6 +57,18 @@ describe("grouped desk nav", () => {
     expect(labels).not.toContain("Search");
   });
 
+  it("treats leftover /pipeline routes as the Deals row so accordion prefs are not orphaned", () => {
+    const work = NAV_GROUPS.find((group) => group.id === "work");
+    const deals = work?.items.find((item) => item.label === "Deals");
+    expect(deals).toBeTruthy();
+    expect(pathIsActive("/deals", deals!)).toBe(true);
+    expect(pathIsActive("/deals/abc", deals!)).toBe(true);
+    expect(pathIsActive("/pipeline", deals!)).toBe(true);
+    expect(pathIsActive("/pipeline/abc", deals!)).toBe(true);
+    expect(groupIdForPath("/pipeline")).toBe("work");
+    expect(groupIdForPath("/pipeline?pipeline=p-c".split("?")[0])).toBe("work");
+  });
+
   it("keeps Phone and Inbox under Desk, and the rows Javy liked", () => {
     const desk = NAV_GROUPS.find((group) => group.id === "desk");
     const work = NAV_GROUPS.find((group) => group.id === "work");
@@ -71,7 +83,9 @@ describe("grouped desk nav", () => {
     expect(work?.items.some((item) => item.label === "Work queue")).toBe(true);
     expect(records?.items.some((item) => item.label === "Carriers")).toBe(true);
     expect(records?.items.some((item) => item.label === "Documents")).toBe(true);
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
+    expect(work?.items.some((item) => item.label === "Deals")).toBe(true);
+    expect(work?.items.find((item) => item.label === "Deals")?.href).toBe("/deals");
     expect(PINNED_HOME.label).toBe("Home");
   });
 });
