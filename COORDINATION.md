@@ -905,6 +905,16 @@ Off `cursor/feel-pass-consolidate-sep5b-6195`. Javy can try Facebook / Instagram
 - Incoming `0064_social_byo` remapped to `0065_social_byo` — credential / token columns on `integration_connections`. No FitFirst vendor keys in `.env`.
 - Ana unbound / Cov A **$321,000**. Sidebar `#1d4e89`.
 
+## Home custom layouts + corner resize (`cursor/home-custom-layout-resize-0cb4`)
+
+Feel-pass desk fix on `cursor/feel-pass-consolidate-sep5b-6195`. Additive only. Did not bind Ana. Did not touch language / license lead-offer rules or `domain.ts` / `OWNER_*` exports.
+
+- Home **Layout** dropdown (same outline control as Book): three presets plus **Custom layouts**. Name the current board, switch it later, **Rename current layout…**. Rows live on `user_dashboard_prefs.custom_layouts` + `active_layout_id` (per user / tenant). Incoming `0064_home_custom_layouts` remapped to `0068_home_custom_layouts_jsonb` (after `a094` table `0066`).
+- Widget settings → **Resize tiles** (`resize_tiles`). Corner handle on each Home card; pull to stretch / shrink that tile only. Preset chips stay: 1×1 / 1×2 / 1×3 / 2×1 / 2×2 / 3×1 / 3×2 / 4×1 / 4×2.
+- Quotes still never create a Policy. Ana HO3 stays shopping / unbound / Cov A **$321,000**.
+
+Click path: Home → Layout → Save as custom layout… → name it → Widget settings → Resize tiles → pull a tile corner. Lead-offer board: Montana licensed producers row still language + state.
+
 ## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
 
 Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s). Fast-forwarded `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations / template / fill UUID 404s instead of 500s). Both tip names point at this same commit.
@@ -1162,14 +1172,13 @@ Merged feel-pass fixes:
 | `cursor/fp-quotes-chrome-ddac` | Quotes **Actions** menu + expand arrows. No migration. Quotes still do not create a Policy. |
 | `cursor/macros-platform-settings-1dae` | Platform Settings macros on `desk_macros`. Preferred over `fp-macros-platform-6af6`. Kept as `0064_platform_macros`. |
 | `cursor/social-byo-connect-4bd5` | Agency-owned social OAuth. `fp-social-byo-1028` was not on remote. Incoming `0064_social_byo` remapped to `0065_social_byo`. |
-| `cursor/fp-home-layouts-resize-a094` | Named Home layouts + Resize tiles (`bc-b1c4792e`). Incoming `0064_home_custom_layouts` remapped to `0066_home_custom_layouts`. Real `user_home_layouts` table. |
+| `cursor/fp-home-layouts-resize-a094` | Named Home layouts table (`bc-b1c4792e`). Incoming `0064_home_custom_layouts` remapped to `0066_home_custom_layouts`. `user_home_layouts` stays (unused by the live Home chrome). |
 | `cursor/fp-lead-sources-ed87` | One insurance-industry source picklist on Lead / Deal / Contact (`bc-0c631135`). Incoming `0064_record_sources` remapped to `0067_record_sources`. |
-
-**Leftover (not merged):** `cursor/home-custom-layout-resize-0cb4` from `bc-2fe67478` is a second Home-layouts take (named boards as JSONB on `user_dashboard_prefs.custom_layouts`, `active_layout_id` text). Same feature as `a094`, different schema. Merging both would fork Home prefs. Agent was still in background verify when this tip shipped. Revisit only if `a094` is dropped.
+| `cursor/home-custom-layout-resize-0cb4` | Must-merge Home chrome (`bc-2fe67478`). Named boards on `user_dashboard_prefs.custom_layouts` + corner-drag resize. Incoming `0064_home_custom_layouts` remapped to `0068_home_custom_layouts_jsonb`. |
 
 Feel-desk hygiene on this tip:
 
-- Additive migrations only. Nothing dropped. Next free is **0068**.
+- Additive migrations only. Nothing dropped. Next free is **0069**.
 - Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Quotes never create a Policy.
 - One Pipeline nav row. One Settings entry. Accounts (not People). Sidebar `#1d4e89` — never `#d6e8f8`.
 - `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.

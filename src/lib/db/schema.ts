@@ -2242,7 +2242,18 @@ export const userDashboardPrefs = pgTable(
     preset: text("preset").notNull().default("my_production"),
     hiddenWidgets: jsonb("hidden_widgets").$type<string[]>().notNull().default([]),
     bookScope: text("book_scope").notNull().default("agency"),
-    activeLayoutId: uuid("active_layout_id"),
+    customLayouts: jsonb("custom_layouts")
+      .$type<
+        {
+          id: string;
+          name: string;
+          placements: { id: string; span: string; cols?: number; heightPx?: number }[];
+          hiddenWidgets: string[];
+        }[]
+      >()
+      .notNull()
+      .default([]),
+    activeLayoutId: text("active_layout_id"),
     resizeTiles: boolean("resize_tiles").notNull().default(false),
     ...timestamps,
   },

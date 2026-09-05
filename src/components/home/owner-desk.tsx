@@ -140,9 +140,9 @@ export function OwnerDesk({
   return (
     <HomeLayoutProvider
       scope={{ role: scope.role, agentUserId: scope.agentUserId }}
-      initialPlacements={prefs.activePlacements}
-      initialResizeTiles={prefs.resizeTiles}
-      customLayoutId={prefs.activeLayoutId}
+      customLayouts={prefs.customLayouts}
+      activeLayoutId={prefs.activeLayoutId}
+      resizeTiles={prefs.resizeTiles}
     >
       <div className="space-y-4">
         <section className="ff-card overflow-hidden">
@@ -183,6 +183,7 @@ export function OwnerDesk({
               canToggleBook={scope.canToggleBook}
               customLayouts={prefs.customLayouts}
               activeLayoutId={prefs.activeLayoutId}
+              resizeTiles={prefs.resizeTiles}
             />
           </div>
         </section>

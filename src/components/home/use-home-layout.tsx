@@ -1,83 +1,93 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { saveHomeResizeTiles, saveHomeTilePlacements } from "@/app/actions/home-dashboard";
+import { persistCustomLayoutPlacements } from "@/app/actions/home-dashboard";
+import { placementsForLayout } from "@/lib/home/custom-layouts";
 import {
   DEFAULT_HOME_LAYOUT,
   homeLayoutStorageKey,
   mergeHomeLayout,
   moveWidget,
+  setWidgetSize,
   setWidgetSpan,
   type HomeWidgetId,
+  type NamedHomeLayout,
   type WidgetPlacement,
   type WidgetSpan,
 } from "@/lib/home/layout";
 
 type HomeLayoutApi = {
   layout: WidgetPlacement[];
+  resizeTiles: boolean;
+  activeLayoutId: string | null;
   setSpan: (id: HomeWidgetId, span: WidgetSpan) => void;
+  setSize: (id: HomeWidgetId, size: { cols: number; heightPx: number; span?: WidgetSpan }) => void;
+  previewSize: (id: HomeWidgetId, size: { cols: number; heightPx: number; span?: WidgetSpan }) => void;
+  commit: () => void;
   move: (fromId: string, toId: string) => void;
   reset: () => void;
-  resizeTiles: boolean;
-  setResizeTiles: (on: boolean) => void;
 };
 
 const HomeLayoutContext = createContext<HomeLayoutApi | null>(null);
 
 export function HomeLayoutProvider({
   scope,
-  initialPlacements = null,
-  initialResizeTiles = false,
-  customLayoutId = null,
+  customLayouts = [],
+  activeLayoutId = null,
+  resizeTiles = false,
   children,
 }: {
   scope: { role: string; agentUserId?: string | null };
-  initialPlacements?: WidgetPlacement[] | null;
-  initialResizeTiles?: boolean;
-  customLayoutId?: string | null;
+  customLayouts?: NamedHomeLayout[];
+  activeLayoutId?: string | null;
+  resizeTiles?: boolean;
   children: ReactNode;
 }) {
-  const key = homeLayoutStorageKey(scope);
-  const [layout, setLayout] = useState<WidgetPlacement[]>(
-    initialPlacements ? mergeHomeLayout(initialPlacements) : DEFAULT_HOME_LAYOUT,
+  const bookKey = homeLayoutStorageKey(scope);
+  const key = activeLayoutId ? `${bookKey}:custom:${activeLayoutId}` : bookKey;
+  const [layout, setLayout] = useState<WidgetPlacement[]>(() =>
+    mergeHomeLayout(placementsForLayout(customLayouts, activeLayoutId)),
   );
-  const [resizeTiles, setResizeTilesState] = useState(Boolean(initialResizeTiles));
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
   const persistTimer = useRef<number | null>(null);
-  const placementsRef = useRef(initialPlacements);
-  placementsRef.current = initialPlacements;
-  const serverBoard = customLayoutId
-    ? `${customLayoutId}:${(initialPlacements ?? []).map((row) => `${row.id}:${row.span}`).join("|")}`
-    : "";
 
   useEffect(() => {
-    setResizeTilesState(Boolean(initialResizeTiles));
-  }, [initialResizeTiles]);
-
-  useEffect(() => {
-    if (customLayoutId && placementsRef.current) {
-      setLayout(mergeHomeLayout(placementsRef.current));
-      return;
-    }
     try {
       const raw = window.localStorage.getItem(key);
-      setLayout(mergeHomeLayout(raw ? JSON.parse(raw) : null));
+      if (raw) {
+        setLayout(mergeHomeLayout(JSON.parse(raw)));
+        return;
+      }
     } catch {
-      setLayout(DEFAULT_HOME_LAYOUT);
+      /* ignore */
     }
-  }, [key, customLayoutId, serverBoard]);
+    setLayout(mergeHomeLayout(placementsForLayout(customLayouts, activeLayoutId)));
+  }, [key, activeLayoutId, customLayouts]);
 
-  const persistServer = useCallback(
+  const writeLocal = useCallback(
     (next: WidgetPlacement[]) => {
-      if (!customLayoutId) return;
+      try {
+        window.localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        /* ignore quota / private mode */
+      }
+    },
+    [key],
+  );
+
+  const scheduleServer = useCallback(
+    (next: WidgetPlacement[]) => {
+      if (!activeLayoutId) return;
       if (persistTimer.current) window.clearTimeout(persistTimer.current);
       persistTimer.current = window.setTimeout(() => {
         const form = new FormData();
-        form.set("layoutId", customLayoutId);
+        form.set("layoutId", activeLayoutId);
         form.set("placements", JSON.stringify(next));
-        void saveHomeTilePlacements(form);
-      }, 400);
+        void persistCustomLayoutPlacements(form);
+      }, 350);
     },
-    [customLayoutId],
+    [activeLayoutId],
   );
 
   useEffect(() => {
@@ -87,33 +97,28 @@ export function HomeLayoutProvider({
   }, []);
 
   const persist = useCallback(
-    (next: WidgetPlacement[]) => {
+    (next: WidgetPlacement[], durable = true) => {
       setLayout(next);
-      try {
-        window.localStorage.setItem(key, JSON.stringify(next));
-      } catch {
-        /* ignore quota / private mode */
-      }
-      persistServer(next);
+      if (!durable) return;
+      writeLocal(next);
+      scheduleServer(next);
     },
-    [key, persistServer],
+    [scheduleServer, writeLocal],
   );
 
   const value = useMemo<HomeLayoutApi>(
     () => ({
       layout,
+      resizeTiles,
+      activeLayoutId,
       setSpan: (id, span) => persist(setWidgetSpan(layout, id, span)),
+      setSize: (id, size) => persist(setWidgetSize(layout, id, size)),
+      previewSize: (id, size) => persist(setWidgetSize(layout, id, size), false),
+      commit: () => persist(layoutRef.current),
       move: (fromId, toId) => persist(moveWidget(layout, fromId, toId)),
       reset: () => persist(DEFAULT_HOME_LAYOUT),
-      resizeTiles,
-      setResizeTiles: (on) => {
-        setResizeTilesState(on);
-        const form = new FormData();
-        form.set("resizeTiles", on ? "1" : "0");
-        void saveHomeResizeTiles(form);
-      },
     }),
-    [layout, persist, resizeTiles],
+    [activeLayoutId, layout, persist, resizeTiles],
   );
 
   return <HomeLayoutContext.Provider value={value}>{children}</HomeLayoutContext.Provider>;

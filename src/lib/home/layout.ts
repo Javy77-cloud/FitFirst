@@ -35,41 +35,27 @@ export const HOME_WIDGET_IDS = [
 ] as const;
 
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number];
-export type WidgetSpan =
-  | "1x1"
-  | "1x2"
-  | "1x3"
-  | "2x1"
-  | "2x2"
-  | "2x3"
-  | "3x1"
-  | "3x2"
-  | "4x1"
-  | "4x2";
+export type WidgetSpan = "1x1" | "1x2" | "1x3" | "2x1" | "2x2" | "3x1" | "3x2" | "4x1" | "4x2";
 
 export type WidgetPlacement = {
   id: HomeWidgetId;
   span: WidgetSpan;
+  /** Visual column count from corner resize (1–4). Independent of neighbors. */
+  cols?: number;
+  /** Pixel height from corner resize. Independent of neighbors. */
+  heightPx?: number;
 };
 
-export const WIDGET_SPANS: WidgetSpan[] = [
-  "1x1",
-  "1x2",
-  "1x3",
-  "2x1",
-  "2x2",
-  "2x3",
-  "3x1",
-  "3x2",
-  "4x1",
-  "4x2",
-];
+export const WIDGET_SPANS: WidgetSpan[] = ["1x1", "1x2", "1x3", "2x1", "2x2", "3x1", "3x2", "4x1", "4x2"];
 
-/** Pixel floors that match spanClass min-heights (16px root). */
-export const SPAN_ROW_PX: Record<1 | 2 | 3, number> = {
-  1: 160,
-  2: 344,
-  3: 520,
+export const MIN_TILE_HEIGHT = 128;
+export const MAX_TILE_HEIGHT = 720;
+
+export type NamedHomeLayout = {
+  id: string;
+  name: string;
+  placements: WidgetPlacement[];
+  hiddenWidgets: string[];
 };
 
 /** Which dashboard-preset / hide-checkbox gate controls each tile. */
@@ -192,10 +178,31 @@ export function isWidgetSpan(value: string): value is WidgetSpan {
   return SPAN_SET.has(value);
 }
 
-export function parseWidgetSpan(span: WidgetSpan): { cols: 1 | 2 | 3 | 4; rows: 1 | 2 | 3 } {
-  const cols = Number(span[0]) as 1 | 2 | 3 | 4;
-  const rows = Number(span[2]) as 1 | 2 | 3;
-  return { cols, rows };
+export function spanCols(span: WidgetSpan): number {
+  if (span.startsWith("4")) return 4;
+  if (span.startsWith("3")) return 3;
+  if (span.startsWith("2")) return 2;
+  return 1;
+}
+
+export function spanRows(span: WidgetSpan): number {
+  if (span.endsWith("3")) return 3;
+  if (span.endsWith("2")) return 2;
+  return 1;
+}
+
+export function spanMinHeight(span: WidgetSpan): string {
+  const rows = spanRows(span);
+  if (rows >= 3) return "min-h-[33rem]";
+  if (rows === 2) return "min-h-[21.5rem]";
+  return "min-h-[10rem]";
+}
+
+export function colSpanClass(cols: number): string {
+  if (cols >= 4) return "col-span-2 xl:col-span-4";
+  if (cols === 3) return "col-span-2 xl:col-span-3";
+  if (cols === 2) return "col-span-2";
+  return "col-span-1";
 }
 
 /**
@@ -203,64 +210,40 @@ export function parseWidgetSpan(span: WidgetSpan): { cols: 1 | 2 | 3 | 4; rows: 
  * stretching stacked neighbors when one tile changed height.
  */
 export function spanClass(span: WidgetSpan): string {
-  const { cols, rows } = parseWidgetSpan(span);
-  const wide =
-    cols >= 4
-      ? "col-span-2 xl:col-span-4"
-      : cols === 3
-        ? "col-span-2 xl:col-span-3"
-        : cols === 2
-          ? "col-span-2"
-          : "col-span-1";
-  const tall = rows >= 3 ? "min-h-[32.5rem]" : rows === 2 ? "min-h-[21.5rem]" : "min-h-[10rem]";
-  return `${wide} ${tall} self-start`;
+  return `${colSpanClass(spanCols(span))} ${spanMinHeight(span)} self-start`;
 }
 
-function clampInt(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, n));
+export function clampTileHeight(value: number): number {
+  return Math.min(MAX_TILE_HEIGHT, Math.max(MIN_TILE_HEIGHT, Math.round(value)));
 }
 
-/** Snap a dragged size to a preset. Neighbors are not consulted. */
-export function snapWidgetSpan(input: {
-  widthPx: number;
-  heightPx: number;
-  colWidth: number;
-  maxCols: number;
-}): WidgetSpan {
-  const maxCols = clampInt(input.maxCols, 1, 4);
-  const rawCols = input.colWidth > 0 ? input.widthPx / input.colWidth : 1;
-  const cols = clampInt(Math.round(rawCols), 1, maxCols);
+export function clampTileCols(value: number): number {
+  return Math.min(4, Math.max(1, Math.round(value)));
+}
 
-  let rows: 1 | 2 | 3 = 1;
-  let best = Number.POSITIVE_INFINITY;
-  for (const candidate of [1, 2, 3] as const) {
-    const delta = Math.abs(input.heightPx - SPAN_ROW_PX[candidate]);
-    if (delta < best) {
-      best = delta;
-      rows = candidate;
-    }
-  }
+export function nearestSpan(cols: number, heightPx: number): WidgetSpan {
+  const col = clampTileCols(cols);
+  const row = heightPx >= 480 ? 3 : heightPx >= 280 ? 2 : 1;
+  const key = `${col}x${row}`;
+  if (isWidgetSpan(key)) return key;
+  if (row === 3 && isWidgetSpan(`${col}x2`)) return `${col}x2` as WidgetSpan;
+  return isWidgetSpan(`${col}x1`) ? (`${col}x1` as WidgetSpan) : "1x1";
+}
 
-  const trySpan = (c: number, r: number): WidgetSpan | null => {
-    const next = `${c}x${r}`;
-    return isWidgetSpan(next) ? next : null;
-  };
+export function tileGridClass(item: Pick<WidgetPlacement, "span" | "cols" | "heightPx">): string {
+  const cols = item.cols ? clampTileCols(item.cols) : spanCols(item.span);
+  const height = item.heightPx ? "" : spanMinHeight(item.span);
+  return `${colSpanClass(cols)} ${height} self-start`.trim();
+}
 
-  const exact = trySpan(cols, rows);
-  if (exact) return exact;
-  for (const r of [rows - 1, rows + 1, 2, 1]) {
-    if (r < 1 || r > 3) continue;
-    const hit = trySpan(cols, r);
-    if (hit) return hit;
-  }
-  for (const c of [cols - 1, cols + 1, Math.min(2, maxCols), 1]) {
-    if (c < 1 || c > maxCols) continue;
-    for (const r of [rows, 2, 1]) {
-      const hit = trySpan(c, r);
-      if (hit) return hit;
-    }
-  }
-  return "1x1";
+export function parseHeightPx(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return clampTileHeight(value);
+}
+
+export function parseCols(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return clampTileCols(value);
 }
 
 export function mergeHomeLayout(saved: unknown): WidgetPlacement[] {
@@ -276,7 +259,14 @@ export function mergeHomeLayout(saved: unknown): WidgetPlacement[] {
     if (typeof span !== "string" || !SPAN_SET.has(span)) continue;
     if (seen.has(id as HomeWidgetId)) continue;
     seen.add(id as HomeWidgetId);
-    next.push({ id: id as HomeWidgetId, span: span as WidgetSpan });
+    const heightPx = parseHeightPx((row as { heightPx?: unknown }).heightPx);
+    const cols = parseCols((row as { cols?: unknown }).cols);
+    next.push({
+      id: id as HomeWidgetId,
+      span: span as WidgetSpan,
+      ...(cols ? { cols } : {}),
+      ...(heightPx ? { heightPx } : {}),
+    });
   }
 
   for (const fallback of DEFAULT_HOME_LAYOUT) {
@@ -299,5 +289,17 @@ export function moveWidget(layout: WidgetPlacement[], fromId: string, toId: stri
 
 /** Resize only this tile. Neighbors keep their stored w/h. */
 export function setWidgetSpan(layout: WidgetPlacement[], id: string, span: WidgetSpan): WidgetPlacement[] {
-  return layout.map((item) => (item.id === id ? { ...item, span } : item));
+  return layout.map((item) => (item.id === id ? { id: item.id, span } : item));
+}
+
+/** Corner-resize only this tile. Neighbors keep their stored w/h. */
+export function setWidgetSize(
+  layout: WidgetPlacement[],
+  id: string,
+  size: { cols: number; heightPx: number; span?: WidgetSpan },
+): WidgetPlacement[] {
+  const cols = clampTileCols(size.cols);
+  const heightPx = clampTileHeight(size.heightPx);
+  const span = size.span ?? nearestSpan(cols, heightPx);
+  return layout.map((item) => (item.id === id ? { id: item.id, span, cols, heightPx } : item));
 }

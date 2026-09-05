@@ -6,9 +6,11 @@ import {
   homeLayoutStorageKey,
   mergeHomeLayout,
   moveWidget,
+  nearestSpan,
+  setWidgetSize,
   setWidgetSpan,
-  snapWidgetSpan,
   spanClass,
+  tileGridClass,
 } from "./layout";
 import { HOME_WIDGET_IDS as PRESET_IDS } from "./presets";
 
@@ -45,6 +47,9 @@ describe("home widget layout", () => {
     expect(setWidgetSpan(moved, "ana", "1x2").find((row) => row.id === "ana")?.span).toBe("1x2");
     expect(spanClass("2x1")).toContain("col-span-2");
     expect(spanClass("2x2")).not.toContain("row-span");
+    expect(spanClass("3x1")).toContain("xl:col-span-3");
+    expect(spanClass("4x1")).toContain("xl:col-span-4");
+    expect(spanClass("1x3")).toContain("min-h-[33rem]");
   });
 
   it("covers every batch4 preset widget with at least one tile", () => {
@@ -89,40 +94,38 @@ describe("home widget layout", () => {
     expect(social.find((row) => row.id === "social-facebook")?.span).toBe(
       DEFAULT_HOME_LAYOUT.find((row) => row.id === "social-facebook")?.span,
     );
-
-    const extra = setWidgetSpan(DEFAULT_HOME_LAYOUT, "ana", "3x2");
-    expect(extra.find((row) => row.id === "ana")?.span).toBe("3x2");
-    expect(extra.find((row) => row.id === "attention")).toEqual(
-      DEFAULT_HOME_LAYOUT.find((row) => row.id === "attention"),
-    );
-    expect(spanClass("3x2")).toContain("xl:col-span-3");
-    expect(spanClass("4x1")).toContain("xl:col-span-4");
-    expect(spanClass("1x3")).toContain("min-h-[32.5rem]");
-    expect(spanClass("3x2")).not.toContain("row-span");
   });
 
-  it("snaps a corner drag to an independent preset", () => {
-    expect(
-      snapWidgetSpan({ widthPx: 180, heightPx: 150, colWidth: 200, maxCols: 4 }),
-    ).toBe("1x1");
-    expect(
-      snapWidgetSpan({ widthPx: 420, heightPx: 170, colWidth: 200, maxCols: 4 }),
-    ).toBe("2x1");
-    expect(
-      snapWidgetSpan({ widthPx: 190, heightPx: 340, colWidth: 200, maxCols: 4 }),
-    ).toBe("1x2");
-    expect(
-      snapWidgetSpan({ widthPx: 620, heightPx: 350, colWidth: 200, maxCols: 4 }),
-    ).toBe("3x2");
-    expect(
-      snapWidgetSpan({ widthPx: 800, heightPx: 170, colWidth: 200, maxCols: 4 }),
-    ).toBe("4x1");
-    expect(
-      snapWidgetSpan({ widthPx: 800, heightPx: 170, colWidth: 200, maxCols: 2 }),
-    ).toBe("2x1");
-    expect(
-      snapWidgetSpan({ widthPx: 620, heightPx: 520, colWidth: 200, maxCols: 4 }),
-    ).toBe("3x2");
+  it("keeps custom corner size on A without changing B", () => {
+    const next = setWidgetSize(DEFAULT_HOME_LAYOUT, "ana", { cols: 3, heightPx: 360 });
+    const ana = next.find((row) => row.id === "ana");
+    expect(ana).toMatchObject({ id: "ana", cols: 3, heightPx: 360, span: "3x2" });
+    expect(tileGridClass(ana!)).toContain("xl:col-span-3");
+    expect(nearestSpan(4, 140)).toBe("4x1");
+    expect(nearestSpan(1, 500)).toBe("1x3");
+    for (const row of DEFAULT_HOME_LAYOUT) {
+      if (row.id === "ana") continue;
+      expect(next.find((item) => item.id === row.id)).toEqual(row);
+    }
+  });
+
+  it("merges stored corner sizes and drops junk dimensions", () => {
+    const merged = mergeHomeLayout([
+      { id: "ana", span: "3x1", cols: 3, heightPx: 220 },
+      { id: "alerts", span: "2x1", cols: 99, heightPx: -4 },
+    ]);
+    expect(merged.find((row) => row.id === "ana")).toEqual({
+      id: "ana",
+      span: "3x1",
+      cols: 3,
+      heightPx: 220,
+    });
+    expect(merged.find((row) => row.id === "alerts")).toEqual({
+      id: "alerts",
+      span: "2x1",
+      cols: 4,
+      heightPx: 128,
+    });
   });
 
   it("covers every batch4 preset widget with at least one tile", () => {

@@ -32,8 +32,8 @@ import {
   type HomeWidgetId,
 } from "@/lib/home/presets";
 import { parseLeadOfferKind, parseLeadOfferStatus, type LeadOfferKind, type LeadOfferStatus } from "@/lib/home/lead-offers";
-import { parseStoredHomeLayout, type HomeCustomLayout } from "@/lib/home/custom-layouts";
-import type { WidgetPlacement } from "@/lib/home/layout";
+import { parseNamedHomeLayouts } from "@/lib/home/custom-layouts";
+import type { NamedHomeLayout } from "@/lib/home/layout";
 import { currentOwnerHomeScope, type OwnerHomeScope } from "@/lib/home/scope";
 import { filterByBookScope, type BookScopeOption } from "@/lib/org/book-scope";
 import { resolveBookScope } from "@/lib/org/queries";
@@ -99,7 +99,6 @@ import {
   leadOfferClaims,
   leadOffers,
   userDashboardPrefs,
-  userHomeLayouts,
 } from "./schema";
 import { attachQuotePdfs } from "@/lib/quotes/board";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
@@ -1700,10 +1699,9 @@ export type HomeDashboardPrefs = {
   preset: DashboardPreset;
   hiddenWidgets: HomeWidgetId[];
   bookScope: BookScope;
-  resizeTiles: boolean;
+  customLayouts: NamedHomeLayout[];
   activeLayoutId: string | null;
-  customLayouts: HomeCustomLayout[];
-  activePlacements: WidgetPlacement[] | null;
+  resizeTiles: boolean;
 };
 
 export type HomeContestView = {
@@ -1749,47 +1747,32 @@ export type HomeAgentOption = { id: string; name: string; role: string };
 
 export async function loadHomeDashboardPrefs(userId: string | null): Promise<HomeDashboardPrefs> {
   const fallbackPreset = parseDashboardPreset("my_production");
-  const empty: HomeDashboardPrefs = {
-    preset: fallbackPreset,
-    hiddenWidgets: hiddenForPreset(fallbackPreset),
-    bookScope: "agency",
-    resizeTiles: false,
-    activeLayoutId: null,
-    customLayouts: [],
-    activePlacements: null,
-  };
-  if (!userId) return empty;
+  if (!userId) {
+    return {
+      preset: fallbackPreset,
+      hiddenWidgets: hiddenForPreset(fallbackPreset),
+      bookScope: "agency",
+      customLayouts: [],
+      activeLayoutId: null,
+      resizeTiles: false,
+    };
+  }
   const [row] = await db
     .select()
     .from(userDashboardPrefs)
     .where(and(eq(userDashboardPrefs.tenantId, tenant()), eq(userDashboardPrefs.userId, userId)));
-  const layoutRows = await db
-    .select()
-    .from(userHomeLayouts)
-    .where(and(eq(userHomeLayouts.tenantId, tenant()), eq(userHomeLayouts.userId, userId)))
-    .orderBy(asc(userHomeLayouts.createdAt));
-  const customLayouts = layoutRows.map((layout) =>
-    parseStoredHomeLayout({
-      id: layout.id,
-      name: layout.name,
-      placements: layout.placements,
-      hiddenWidgets: layout.hiddenWidgets,
-    }),
-  );
   const preset = parseDashboardPreset(row?.preset);
-  const active = customLayouts.find((layout) => layout.id === row?.activeLayoutId) ?? null;
+  const customLayouts = parseNamedHomeLayouts(row?.customLayouts);
+  const activeLayoutId = row?.activeLayoutId && customLayouts.some((item) => item.id === row.activeLayoutId)
+    ? row.activeLayoutId
+    : null;
   return {
     preset,
-    hiddenWidgets: active
-      ? active.hiddenWidgets
-      : row
-        ? parseHiddenWidgets(row.hiddenWidgets)
-        : hiddenForPreset(preset),
+    hiddenWidgets: row ? parseHiddenWidgets(row.hiddenWidgets) : hiddenForPreset(preset),
     bookScope: parseBookScope(row?.bookScope),
-    resizeTiles: Boolean(row?.resizeTiles),
-    activeLayoutId: active?.id ?? null,
     customLayouts,
-    activePlacements: active?.placements ?? null,
+    activeLayoutId,
+    resizeTiles: Boolean(row?.resizeTiles),
   };
 }
 

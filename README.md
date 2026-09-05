@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home layouts (`0066` from `fp-home-layouts-resize-a094`), lead sources (`0067` from `fp-lead-sources-ed87` / `bc-0c631135`). Leftover: `home-custom-layout-resize-0cb4` (`bc-2fe67478`) — competing JSONB Home layouts, not merged. AMS waves 10–16 parked. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`.
+**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home table layouts (`0066`), lead sources (`0067` from `fp-lead-sources-ed87`), Home JSONB layouts (`0068` from `home-custom-layout-resize-0cb4`). AMS waves 10–16 parked. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`.
 
 ## Run locally (Mac Air and Mac mini)
 
@@ -21,6 +21,13 @@ npm run dev -- --port 43147
 
 Then Chrome [http://localhost:43147](http://localhost:43147).
 
+### Home custom layouts + corner resize (this slice)
+
+1. Home (signed in as **javy@fitfirst.local** / **javy**).
+2. **Layout** (same outline dropdown as Book) → pick a preset, or **Save as custom layout…**, name it, then pick it later. **Rename current layout…** while a custom layout is active.
+3. **Widget settings** → check **Resize tiles** → pull the bottom-right corner of any card. Neighbors keep their size. Preset chips still work.
+4. Management lead offers still show language / state (Montana licensed producers). Do not bind Ana. Cov A **$321,000**.
+
 First-time only: `cp .env.example .env`. Postgres on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`). `docker compose up -d db` if you need the local database.
 
 Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
@@ -31,7 +38,7 @@ Overnight feel-pass: grouped left nav, named list filters, header column sliders
 
 Typography: full desk scale-up on a **16px** root. Tailwind `text-sm`/`base`/`lg`/`xl` sit one step larger (15 / 17 / 20 / 22px). Helper **15px**, caption **14px**, `--ff-muted` **#3f4e5c**. Buttons/inputs default **h-9**. Nav items **15px** on a `w-60` rail. Tables **16px**. Leftover 10–13px classes remap through the shared tokens.
 
-Home tiles: drag the grip to reorder. Size chips stay (**1×1 / 1×2 / 1×3 / 2×1 / 2×2 / 2×3 / 3×1 / 3×2 / 4×1 / 4×2**). Widget settings → **Resize tiles** adds a corner handle so one tile can stretch/shrink; neighbors keep their stored size. Built-in Layout presets stay. **Custom layouts** in the Layout dropdown name the current board and persist on `user_home_layouts` (per user / tenant). Rename later from that menu. `localStorage` `ff-home-layout:v1:<book>` is still the working board for built-in presets. **Reset tile layout** is in Widget settings. Line-of-business donut stays 68px.
+Home tiles: drag the grip to reorder. **Layout** dropdown keeps the three presets and adds **Custom layouts** — name the current board, switch it later, rename it later. Named layouts live on `user_dashboard_prefs.custom_layouts` (per user / tenant). Widget settings → **Resize tiles** shows a corner handle on each card; pull it to stretch or shrink that tile only. Preset sizes stay as chips (**1×1 / 1×2 / 1×3 / 2×1 / 2×2 / 3×1 / 3×2 / 4×1 / 4×2**). Working sizes also cache in `localStorage` as `ff-home-layout:v1:<book>` (and `:custom:<id>` when a named layout is active). **Reset tile layout** is in Widget settings. Line-of-business donut stays 68px. Language / license lead offers are unchanged.
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, offices + territories, Social/GBP BYO connect, carrier portal login admin, login/session/MFA.
 
