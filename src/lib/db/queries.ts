@@ -534,7 +534,7 @@ export async function listLeads() {
   const rows = await db
     .select()
     .from(leads)
-    .where(and(eq(leads.tenantId, tenant()), scope))
+    .where(and(eq(leads.tenantId, tenant()), scope, isNull(leads.archivedAt), isNull(leads.mergedIntoId)))
     .orderBy(desc(leads.createdAt));
   const relatedDeals = await db
     .select()
@@ -587,6 +587,7 @@ export async function listDeals(filter: DealListFilter = {}) {
     if (seen.has(deal.id)) return false;
     seen.add(deal.id);
     if (!canViewOwned(session, deal.ownerId)) return false;
+    if (deal.archivedAt) return false;
     const family = bookFamily(deal.lineOfBusiness);
     if (family === "life" && !lineOptions.writeLife) return false;
     if (family === "health" && !lineOptions.writeHealth) return false;
@@ -636,7 +637,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
   const rows = await db
     .select()
     .from(contacts)
-    .where(and(eq(contacts.tenantId, tenant()), scope))
+    .where(and(eq(contacts.tenantId, tenant()), scope, isNull(contacts.archivedAt), isNull(contacts.mergedIntoId)))
     .orderBy(asc(contacts.lastName));
   const allPolicies = await db
     .select()

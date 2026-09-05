@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
+**`cursor/ff-selection-actions-dae2`** — selection Actions menu on CRM lists, on top of **`cursor/live-crm-zoho-tip-sep5c`**. Live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
 
 1. **`cursor/ff-zoho-owner-fix-6b9e`** — Zoho import always writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls so Maya’s lists are not empty.
 2. **`cursor/ff-sidebar-accordion-31b5`** (agent `bc-38f9fe06`) — Zoho-like one-open left-nav accordion. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands.
@@ -17,16 +17,32 @@ AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-selection-actions-dae2 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
 npm run db:assign-owner
-npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-imported book
+# skip seed — keep the live Zoho-imported book
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the sidebar or owner-fix slices.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` just to pick up this slice.
+
+### Selection Actions (this slice)
+
+Tick one or more rows on Leads, Contacts, Deals, Policies, Businesses, Carriers, Tasks, or Campaigns. **Actions** appears on the list bar:
+
+- **Duplicate** — copies Leads, Contacts, Deals, Businesses, Tasks, Campaigns. Policies and Carriers stay off (bind / shared book).
+- **Merge** — 2+ Leads or Contacts opens the existing merge review (first two if you pick more).
+- **Email / SMS** — compose queues the in-desk outbound job + activity. Disabled when the selected rows have no address.
+- **Call** — disabled. Connect later is not a live trunk.
+- **Print** — browser print of the current sheet (sidebar/header hidden).
+- **Run macro** — Settings macros already wired on the list.
+- **Archive** — Leads, Contacts, Deals leave the list (`archived_at`). Not a wipe.
+- **Delete** — Tasks only. Other modules say to Archive or Merge.
+- **Convert** on Leads (starts a shop). **Bind** on Deals opens the existing bind path, or the bound policy when one exists.
+
+Ana Dib stays locked. No fake “would send” clicks.
 
 ### Left nav accordion (this slice)
 
@@ -41,7 +57,7 @@ Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home 
 ### Air checkout (no wipe)
 
 ```bash
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-selection-actions-dae2 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:

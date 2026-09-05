@@ -1,10 +1,13 @@
 import { AppShell } from "@/components/app-shell";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { formatMoney } from "@/lib/domain";
 import { listCarriers } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { RecordLink } from "@/components/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -44,9 +47,27 @@ export default async function CarriersPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
+        <ModuleListActions
+          module="carriers"
+          recordIds={[...new Set(rows.map(({ carrier }) => carrier.id))]}
+          records={[
+            ...new Map(
+              rows.map(({ carrier }) => [
+                carrier.id,
+                {
+                  id: carrier.id,
+                  label: carrier.name,
+                  email: carrier.underwriterEmail ?? carrier.accountManagerEmail,
+                  phone: carrier.agentPhone ?? carrier.customerServicePhone ?? carrier.underwriterPhone,
+                },
+              ]),
+            ).values(),
+          ]}
+        >
         <ColumnTable
           moduleId="carriers"
           columns={[
+            { id: "pick", label: "", locked: true },
             { id: "carrier", label: "Carrier", locked: true },
             { id: "portal", label: "Portal" },
             { id: "covA", label: "Cov A" },
@@ -57,9 +78,10 @@ export default async function CarriersPage({
           rows={rows.map(({ carrier, rule }) => ({
             key: `${carrier.id}-${rule?.id ?? "none"}`,
             cells: {
+              pick: <SelectRowCheckbox id={carrier.id} />,
               carrier: (
                 <div className="font-medium">
-                  {carrier.name}
+                  <RecordLink href={`/carriers/${carrier.id}`}>{carrier.name}</RecordLink>
                   <div className="text-base text-muted-foreground">
                     {(carrier.writtenLines ?? []).join(", ")}
                   </div>
@@ -90,6 +112,7 @@ export default async function CarriersPage({
             },
           }))}
         />
+        </ModuleListActions>
       </section>
     </AppShell>
   );

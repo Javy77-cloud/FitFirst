@@ -35,7 +35,7 @@ export function DeskHeader({
 }) {
   const { openSupport } = useSupport();
   return (
-    <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-5 py-3">
+    <header className="ff-no-print flex flex-wrap items-center gap-3 border-b border-border bg-card px-5 py-3">
       <div className="min-w-0 shrink-0">
         <div className="text-caption uppercase tracking-wide text-muted-foreground">
           {eyebrow ?? "Personal lines worksheet"}

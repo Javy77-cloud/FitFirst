@@ -80,7 +80,7 @@ export function BindPath({
   }
 
   return (
-    <form action={bindDeal} className="ff-card space-y-3 p-4">
+    <form action={bindDeal} id="bind" className="ff-card space-y-3 p-4">
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="bindTarget" value={target} />
       <div>

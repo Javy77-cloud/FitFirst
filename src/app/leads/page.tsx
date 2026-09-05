@@ -123,7 +123,19 @@ export default async function LeadsPage({
         </div>
 
         <section className="ff-card overflow-hidden">
-          <ModuleListActions module="leads" recordIds={rows.map((lead) => lead.id)}>
+          <ModuleListActions
+            module="leads"
+            recordIds={rows.map((lead) => lead.id)}
+            records={rows.map((lead) => ({
+              id: lead.id,
+              label: `${lead.lastName}, ${lead.firstName}`,
+              email: lead.email,
+              phone: lead.phone,
+              convertedDealId: lead.convertedDealId,
+              archivedAt: lead.archivedAt,
+              leadId: lead.id,
+            }))}
+          >
             <ColumnTable
               moduleId="leads"
               columns={LEADS_LIST_COLUMNS}

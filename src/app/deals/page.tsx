@@ -101,7 +101,22 @@ export default async function DealsPage({
         </p>
       ) : null}
       <section className="ff-card overflow-x-auto">
-        <ModuleListActions module="deals" recordIds={rows.map(({ deal }) => deal.id)}>
+        <ModuleListActions
+          module="deals"
+          recordIds={rows.map(({ deal }) => deal.id)}
+          records={rows.map(({ deal, contact, account }) => ({
+            id: deal.id,
+            label: deal.title,
+            email: contact?.email ?? account?.email,
+            phone: contact?.phone ?? account?.phone,
+            boundAt: deal.boundAt,
+            archivedAt: deal.archivedAt,
+            dealId: deal.id,
+            contactId: contact?.id ?? deal.contactId,
+            accountId: account?.id ?? deal.accountId,
+            leadId: deal.leadId,
+          }))}
+        >
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
             No deals match this filter. Shopping stays on the deal list — quotes are not

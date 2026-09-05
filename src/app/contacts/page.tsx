@@ -84,7 +84,19 @@ export default async function ContactsPage({
           </Button>
         </form>
         <section className="ff-card overflow-hidden">
-          <ModuleListActions module="contacts" recordIds={rows.map((c) => c.id)}>
+          <ModuleListActions
+            module="contacts"
+            recordIds={rows.map((c) => c.id)}
+            records={rows.map((c) => ({
+              id: c.id,
+              label: `${c.lastName}, ${c.firstName}`,
+              email: c.email,
+              phone: c.phone,
+              archivedAt: c.archivedAt,
+              contactId: c.id,
+              accountId: c.accountId,
+            }))}
+          >
           <ColumnTable
             moduleId="contacts"
             columns={CONTACTS_LIST_COLUMNS}
