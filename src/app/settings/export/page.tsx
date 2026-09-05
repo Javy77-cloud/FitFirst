@@ -55,8 +55,11 @@ export default async function AdminExportPage() {
   return (
     <SettingsShell title="Export" current="export">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Download the book as CSV, or pull the same rows from <code className="font-mono text-xs">/api/v1</code>{" "}
-        with a bearer token. Encrypted SSN / EIN / DL values stay off the file. Ana Dib stays shopping — she
+        Open API CSV with a bearer token. For Admin CSV import plus the full entity pack, use{" "}
+        <a href="/settings/import-export" className="text-primary hover:underline">
+          Import / Export
+        </a>
+        . Encrypted SSN / EIN / DL values stay off the file. Ana Dib stays shopping — she
         appears as a contact with zero policies.
       </p>
 
