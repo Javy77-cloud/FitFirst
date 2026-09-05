@@ -3,6 +3,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -140,6 +141,7 @@ export async function addShopLine(formData: FormData) {
     .where(eq(deals.id, dealId));
   await ensureQuoteSheet(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}?tab=quote-sheet&line=${lineRaw}`);
 }
 
 export async function fillQuoteSheet(formData: FormData) {

@@ -12,12 +12,15 @@ import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
-import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { MarkMappingWrong } from "@/components/deal/mark-mapping-wrong";
 import { DeskDetails } from "@/components/desk-details";
-import { SUPER_COPY_LABEL, buildCopySheetText } from "@/lib/quote-sheet/super-copy";
-import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { SheetDrop } from "@/components/deal/sheet-drop";
+import {
+  CANCEL_EDIT_LABEL,
+  SAVE_SHEET_LABEL,
+  editSheetLabel,
+} from "@/lib/quote-sheet/toolbar";
+import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { cn } from "@/lib/utils";
 
 export function QuoteSheetForm({
@@ -28,6 +31,8 @@ export function QuoteSheetForm({
   contact,
   riskId,
   printable = false,
+  sourceDocCount = 0,
+  startEditing = false,
   carriers = [],
 }: {
   dealId: string;
@@ -37,20 +42,23 @@ export function QuoteSheetForm({
   contact?: Contact | null;
   riskId?: string;
   printable?: boolean;
+  sourceDocCount?: number;
+  startEditing?: boolean;
   carriers?: { id: string; name: string }[];
 }) {
-  const [showMore, setShowMore] = useState(false);
-  const groups = groupFields(line);
   const counts = sheetCounts(sheet.values);
+  const blankSheet = counts.confirmed === 0 && counts.check === 0;
+  const [editing, setEditing] = useState(startEditing && !printable);
+  const [formKey, setFormKey] = useState(0);
+  const groups = groupFields(line);
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
-  const copyText = buildCopySheetText({
-    line,
-    dealId,
-    dealTitle,
-    values: sheet.values,
-    contactName,
-    contactDob: contact?.dateOfBirth ?? null,
-  });
+  const locked = printable || !editing;
+  const editLabel = editSheetLabel(blankSheet);
+
+  function cancelEdit() {
+    setEditing(false);
+    setFormKey((key) => key + 1);
+  }
 
   return (
     <div className="space-y-4">
@@ -58,10 +66,11 @@ export function QuoteSheetForm({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Master sheet · this line only
+              Quote Sheet · this line only
             </p>
             <h2 className="text-lg font-semibold text-navy">
               {SHOP_LINE_LABELS[line]} Quote Sheet
+              {dealTitle ? <span className="sr-only"> for {dealTitle}</span> : null}
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Yellow = missing. Blue = CHECK (use the value). People and DOB stay on the
@@ -80,16 +89,43 @@ export function QuoteSheetForm({
             <span className="rounded-sm bg-fit-green-bg px-2 py-0.5 text-fit-green">
               {counts.confirmed} confirmed
             </span>
-            {printable ? null : <CopySheetButton text={copyText} />}
           </div>
         </div>
+
+        {printable ? null : editing ? (
+          <div className="mt-4 rounded-md border border-primary/30 bg-fit-check-bg/40 px-3 py-3">
+            <p className="text-sm font-semibold text-navy">Editing the whole sheet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Type or correct any field — yellow missing, blue CHECK, or a blank sheet. No PDF
+              required. Save writes this Quote Sheet so you do not retype it later.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-md border-2 border-primary bg-primary/5 px-4 py-4">
+            <p className="text-base font-semibold text-navy">
+              {blankSheet ? "Enter this Quote Sheet by hand" : "Correct any field on this sheet"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {sourceDocCount === 0
+                ? "No source docs on this deal. Fill the sheet yourself — upload a dec later if you want Fill from source docs."
+                : "Unlock every field to type over yellow missing or blue CHECK rows. Fill from source docs stays available."}
+            </p>
+            <Button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="mt-3 h-14 min-w-52 px-8 text-lg font-semibold"
+            >
+              {editLabel}
+            </Button>
+          </div>
+        )}
       </div>
 
       {printable || !riskId ? null : (
         <SheetDrop dealId={dealId} riskId={riskId} line={line} />
       )}
 
-      <form action={printable ? undefined : saveQuoteSheet} className="space-y-4">
+      <form key={formKey} action={printable ? undefined : saveQuoteSheet} className="space-y-4">
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
 
@@ -98,7 +134,7 @@ export function QuoteSheetForm({
           key={group.group}
           title={group.group}
           summary={sheetGroupSummary(group.fields, sheet.values)}
-          open={printable || sheetGroupNeedsAttention(group.fields, sheet.values)}
+          open={printable || editing || sheetGroupNeedsAttention(group.fields, sheet.values)}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 print:break-inside-avoid">
             {group.fields.map((field) => {
@@ -117,7 +153,9 @@ export function QuoteSheetForm({
                     label={field.label}
                     cell={cell}
                     input={field.input}
-                    readOnly={printable}
+                    readOnly={locked}
+                    editing={editing && !printable}
+                    printable={printable}
                     carriers={carriers}
                   />
                 </div>
@@ -129,28 +167,24 @@ export function QuoteSheetForm({
 
       {printable ? null : (
         <div className="flex flex-wrap items-center gap-2 print:hidden">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMore((v) => !v)}
-          >
-            {showMore ? "Hide extra fields" : "Show inspections and notes"}
-          </Button>
-          <CopySheetButton text={copyText} />
-          <Button type="submit" size="sm" variant="secondary">
-            Save Quote Sheet
-          </Button>
-          <p className="text-[11px] text-muted-foreground">
-            Saving a correction after ingest writes the Fill Feedback log. Mark paste wrong when a
-            carrier field was mapped incorrectly.
-          </p>
-          <Link
-            href={`/api/deals/${dealId}/quote-sheets/${line}/super-copy`}
-            className="inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[0.8rem] font-medium"
-          >
-            Super-Copy JSON
-          </Link>
+          {editing ? (
+            <>
+              <Button type="submit" className="h-11 min-w-40 px-6 text-base font-semibold">
+                {SAVE_SHEET_LABEL}
+              </Button>
+              <Button type="button" variant="outline" className="h-11 px-5" onClick={cancelEdit}>
+                {CANCEL_EDIT_LABEL}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              className="h-11 min-w-40 px-6 text-base font-semibold"
+              onClick={() => setEditing(true)}
+            >
+              {editLabel}
+            </Button>
+          )}
           <Link
             href={`/deals/${dealId}/quote-sheet/${line}/print`}
             className="text-xs text-primary hover:underline"
@@ -158,11 +192,6 @@ export function QuoteSheetForm({
             Print
           </Link>
         </div>
-      )}
-      {printable ? null : (
-        <p className="text-[11px] text-muted-foreground print:hidden">
-          Copy sheet ({SUPER_COPY_LABEL}). Portal paste is you or a bot — no carrier login here.
-        </p>
       )}
       </form>
     </div>
@@ -187,6 +216,8 @@ function SheetField({
   cell,
   input = "text",
   readOnly,
+  editing,
+  printable,
   carriers = [],
 }: {
   dealId: string;
@@ -196,6 +227,8 @@ function SheetField({
   cell: QuoteSheetFieldValue;
   input?: "text" | "number" | "textarea";
   readOnly?: boolean;
+  editing?: boolean;
+  printable?: boolean;
   carriers?: { id: string; name: string }[];
 }) {
   const tone =
@@ -218,7 +251,7 @@ function SheetField({
           ) : null}
         </Label>
         <div className="flex flex-wrap items-center justify-end gap-1">
-          {cell.status === "check" && !readOnly ? (
+          {cell.status === "check" && !printable ? (
             <Button
               type="submit"
               formAction={confirmQuoteSheetField}
@@ -230,7 +263,7 @@ function SheetField({
               Confirm
             </Button>
           ) : null}
-          {cell.value.trim() && !readOnly && cell.source !== "javy" ? (
+          {cell.value.trim() && editing && cell.source !== "javy" ? (
             <Button
               type="submit"
               formAction={markPasteFieldWrong}
@@ -242,7 +275,7 @@ function SheetField({
               Mark paste wrong
             </Button>
           ) : null}
-          {readOnly ? null : (
+          {editing ? (
             <MarkMappingWrong
               dealId={dealId}
               line={line}
@@ -251,7 +284,7 @@ function SheetField({
               extractedValue={cell.value}
               carriers={carriers}
             />
-          )}
+          ) : null}
         </div>
       </div>
       {input === "textarea" ? (
@@ -261,7 +294,7 @@ function SheetField({
           defaultValue={cell.value}
           readOnly={readOnly}
           rows={3}
-          className={cn("mt-0 text-sm", toneClass(tone))}
+          className={cn("mt-0 text-sm", toneClass(tone), editing && "ring-1 ring-primary/30")}
         />
       ) : sheetAddressFill(fieldKey) ? (
         <AddressAutofill
@@ -270,7 +303,7 @@ function SheetField({
           defaultValue={cell.value}
           readOnly={readOnly}
           fill={sheetAddressFill(fieldKey) ?? undefined}
-          className={cn("h-8", toneClass(tone))}
+          className={cn("h-8", toneClass(tone), editing && "ring-1 ring-primary/30")}
         />
       ) : (
         <Input
@@ -279,7 +312,7 @@ function SheetField({
           type={input}
           defaultValue={cell.value}
           readOnly={readOnly}
-          className={cn("h-8", toneClass(tone))}
+          className={cn("h-8", toneClass(tone), editing && "ring-1 ring-primary/30")}
         />
       )}
       {tag ? <p className="mt-0.5 text-[10px] text-muted-foreground">{tag}</p> : null}
