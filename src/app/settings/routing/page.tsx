@@ -48,7 +48,7 @@ export default async function LeadRoutingSettingsPage({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold text-navy">{rule.name}</h2>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-helper text-muted-foreground">
                       Priority {rule.sortOrder}
                       {rule.enabled ? "" : " · Off"}
                       {" · "}
@@ -80,7 +80,7 @@ export default async function LeadRoutingSettingsPage({
                     </form>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-helper text-muted-foreground">
                   Booked now:{" "}
                   {ctx.producers
                     .filter((row) => names.has(row.id) || row.role === "admin")

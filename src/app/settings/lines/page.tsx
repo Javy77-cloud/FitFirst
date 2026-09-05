@@ -29,7 +29,7 @@ function OptionList({
     <section className="ff-card space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold text-navy">{title}</h2>
-        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+        <p className="mt-1 text-helper text-muted-foreground">{hint}</p>
       </div>
       {options.length === 0 ? (
         <p className="text-sm text-muted-foreground">No options. Add one below.</p>
@@ -54,7 +54,7 @@ function OptionList({
         <form action={addLineSubfilter} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="book" value={book} />
           <div className="min-w-48 flex-1">
-            <label className="text-xs text-muted-foreground" htmlFor={`${book}-label`}>
+            <label className="text-helper text-muted-foreground" htmlFor={`${book}-label`}>
               Add {book === "life" ? "Life" : "Health"} option
             </label>
             <Input
@@ -98,7 +98,7 @@ export default async function LinesSettingsPage() {
             <input type="checkbox" name="writeLife" value="true" defaultChecked={settings.writeLife} className="mt-1" />
             <span>
               <span className="font-medium text-navy">Write Life</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-helper text-muted-foreground">
                 Life pipeline, nav, and Life book filters. Off for P&amp;C-only desks.
               </span>
             </span>
@@ -113,7 +113,7 @@ export default async function LinesSettingsPage() {
             />
             <span>
               <span className="font-medium text-navy">Write Health</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-helper text-muted-foreground">
                 Health pipeline, nav, and Health book filters. Off when you do not write health.
               </span>
             </span>
@@ -128,7 +128,7 @@ export default async function LinesSettingsPage() {
             />
             <span>
               <span className="font-medium text-navy">Show selling-agency picklists</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-helper text-muted-foreground">
                 Default is hidden. Turn on only if this desk places through more than one selling
                 agency (AFA, First Connect, Agentero, Agility, BackNine).
               </span>

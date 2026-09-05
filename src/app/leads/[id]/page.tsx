@@ -87,7 +87,7 @@ export default async function LeadDetailPage({
       {session.isAdmin && !lead.ownerId && isInboundSocialSource(lead.source) ? (
         <div className="mb-4 ff-card p-4">
           <h2 className="text-sm font-semibold text-navy">Award this inbound</h2>
-          <p className="mb-2 text-xs text-muted-foreground">
+          <p className="mb-2 text-helper text-muted-foreground">
             Agency-level social / inbound. Awarding assigns the Lead and pings that agent.
           </p>
           <AwardLeadForm leadId={lead.id} agents={agents} next={`/leads/${lead.id}`} />
@@ -110,7 +110,7 @@ export default async function LeadDetailPage({
             <Button type="submit" size="sm" variant="outline">
               Convert to deal
             </Button>
-            <p className="w-full text-[11px] text-muted-foreground">
+            <p className="w-full text-helper text-muted-foreground">
               Convert when ready to shop. Source docs and the master-sheet approve gate live on
               the Deal — not here.
             </p>

@@ -23,7 +23,7 @@ export function PremiumChangeSummary({
 
   return (
     <section className={cn("ff-card p-4", className)}>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      <div className="text-caption uppercase tracking-wide text-muted-foreground">
         Premium change
       </div>
       <div className="mt-1 flex flex-wrap items-end gap-3">

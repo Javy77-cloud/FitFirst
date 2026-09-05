@@ -161,7 +161,7 @@ export function DocumentsPanel({
                   </td>
                   <td>
                     {field.appliedToRisk ? (
-                      <span className="text-[11px] text-fit-green">On worksheet</span>
+                      <span className="text-caption text-fit-green">On worksheet</span>
                     ) : (
                       <form action={acceptExtractedField}>
                         <input type="hidden" name="fieldId" value={field.id} />

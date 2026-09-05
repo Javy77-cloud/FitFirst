@@ -28,7 +28,7 @@ export function DealFiles({
 
       <section className="ff-card p-4">
         <h3 className="text-sm font-semibold text-navy">Source files</h3>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-helper text-muted-foreground">
           Decs, wind mits, 4-points, and photos stay here. They are never the copy packet.
         </p>
         {docs.length === 0 ? (
@@ -54,7 +54,7 @@ export function DealFiles({
           </table>
         )}
         <details className="mt-3">
-          <summary className="cursor-pointer text-xs text-muted-foreground">Demo files</summary>
+          <summary className="cursor-pointer text-helper text-muted-foreground">Demo files</summary>
           <div className="mt-2 flex flex-wrap gap-2">
             <form action={attachSampleMelbourneDec}>
               <input type="hidden" name="dealId" value={dealId} />
@@ -84,7 +84,7 @@ export function DealFiles({
 
       <section className="ff-card p-4">
         <h3 className="mb-1 text-sm font-semibold text-navy">Fill jobs</h3>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-helper text-muted-foreground">
           Text/PDF maps every labeled field. Photo OCR is a sibling hook — a photo does not block
           the text path.
         </p>

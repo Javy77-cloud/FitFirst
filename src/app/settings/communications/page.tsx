@@ -91,7 +91,7 @@ export default async function CommunicationsSettingsPage() {
                 <ConnectionBadge connected={connected > 0} />
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{channel.body}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-helper text-muted-foreground">
                 {connected} of {related.length} providers connected
               </p>
             </Link>
@@ -107,7 +107,7 @@ export default async function CommunicationsSettingsPage() {
       <form action={saveCommunicationsSettings} className="mt-6 grid gap-4 xl:grid-cols-2 xl:items-start">
         <section className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">Meeting rooms</h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             {session.isAdmin
               ? "Paste the room links the desk should open. Preferred provider is used first."
               : "Admin connects the rooms. You can still open whatever link is saved."}
@@ -170,7 +170,7 @@ export default async function CommunicationsSettingsPage() {
               disabled={!session.isAdmin}
             />
             {!session.isAdmin ? (
-              <p className="mt-1 text-[11px] text-muted-foreground">Only Admin can edit the agency office.</p>
+              <p className="mt-1 text-helper text-muted-foreground">Only Admin can edit the agency office.</p>
             ) : null}
           </div>
           <div>
@@ -181,14 +181,14 @@ export default async function CommunicationsSettingsPage() {
               className="mt-1 h-8"
               placeholder="Suite 112 · same building"
             />
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 text-helper text-muted-foreground">
               Added to In-Office meetings for {session.name}. Agents edit only this line.
             </p>
           </div>
           <Button type="submit" size="sm">
             Save communications
           </Button>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Pipeline cards use these values. Calendar still lists the meeting.{" "}
             <Link href="/pipeline?pipeline=p-c" className="text-primary hover:underline">
               Open pipeline

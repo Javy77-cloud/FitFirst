@@ -56,7 +56,7 @@ export default async function TerritoriesSettingsPage({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold text-navy">{territory.name}</h2>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-helper text-muted-foreground">
                       {territory.geoLabel || "No geo label"} · {formatStateList(territory.states)}
                       {territory.counties.length ? ` · ${territory.counties.join(", ")}` : ""}
                     </p>
@@ -68,10 +68,10 @@ export default async function TerritoriesSettingsPage({
                     Edit
                   </Link>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-helper text-muted-foreground">
                   Offices: {linked.join(", ") || "none linked"}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-helper text-muted-foreground">
                   Direct agents: {people.map((person) => person.name).join(" · ") || "none"}
                 </p>
               </li>
@@ -85,7 +85,7 @@ export default async function TerritoriesSettingsPage({
           <h2 className="text-sm font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add territory"}
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">
             Linked offices are optional. Home can filter this territory even when offices sit in
             different states.
           </p>
@@ -133,7 +133,7 @@ export default async function TerritoriesSettingsPage({
           </div>
           <StatePicker selected={editing?.states ?? []} />
           <fieldset>
-            <legend className="text-xs text-muted-foreground">Linked offices (optional)</legend>
+            <legend className="text-helper text-muted-foreground">Linked offices (optional)</legend>
             {officeRows.length === 0 ? (
               <p className="mt-1 text-sm text-muted-foreground">
                 Add an office first under{" "}
@@ -155,7 +155,7 @@ export default async function TerritoriesSettingsPage({
                         className="size-3.5 accent-primary"
                       />
                       {office.name}
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-helper text-muted-foreground">
                         {formatStateList(office.states)}
                       </span>
                     </label>

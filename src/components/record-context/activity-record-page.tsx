@@ -65,19 +65,19 @@ export async function ActivityRecordPage({
                 <h2 className="text-base font-semibold text-navy">Overview</h2>
                 <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-[11px] uppercase text-muted-foreground">Due / start</dt>
+                    <dt className="text-caption uppercase text-muted-foreground">Due / start</dt>
                     <dd>{formatDay(activity.dueAt ?? activity.startAt)}</dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] uppercase text-muted-foreground">End</dt>
+                    <dt className="text-caption uppercase text-muted-foreground">End</dt>
                     <dd>{formatDay(activity.endAt)}</dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] uppercase text-muted-foreground">Status</dt>
+                    <dt className="text-caption uppercase text-muted-foreground">Status</dt>
                     <dd className="capitalize">{activity.status.replaceAll("_", " ")}</dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] uppercase text-muted-foreground">Related to</dt>
+                    <dt className="text-caption uppercase text-muted-foreground">Related to</dt>
                     <dd className="space-x-2">
                       {contact ? (
                         <RecordLink href={`/contacts/${contact.id}`}>
@@ -101,7 +101,7 @@ export async function ActivityRecordPage({
                   </div>
                 </dl>
                 <div className="mt-4">
-                  <div className="text-[11px] uppercase text-muted-foreground">Description</div>
+                  <div className="text-caption uppercase text-muted-foreground">Description</div>
                   <p className="mt-1 whitespace-pre-wrap text-base text-muted-foreground">
                     {activity.notes ?? "No notes."}
                   </p>
@@ -109,15 +109,15 @@ export async function ActivityRecordPage({
                 <form action={updateDeskActivity} className="mt-4 space-y-2 border-t border-border pt-3">
                   <input type="hidden" name="activityId" value={activity.id} />
                   <h3 className="text-sm font-semibold text-navy">Edit</h3>
-                  <label className="block text-xs text-muted-foreground">
+                  <label className="block text-helper text-muted-foreground">
                     Title
                     <Input name="title" required defaultValue={activity.title} className="mt-1 h-8" />
                   </label>
-                  <label className="block text-xs text-muted-foreground">
+                  <label className="block text-helper text-muted-foreground">
                     Notes
                     <Input name="notes" defaultValue={activity.notes ?? ""} className="mt-1 h-8" />
                   </label>
-                  <label className="block text-xs text-muted-foreground">
+                  <label className="block text-helper text-muted-foreground">
                     Due
                     <Input
                       name="dueAt"
@@ -147,7 +147,7 @@ export async function ActivityRecordPage({
                           {event.eventType} · {event.kind}
                         </div>
                         <p className="text-base text-muted-foreground">{event.body}</p>
-                        <div className="text-[11px] text-muted-foreground">{formatDay(event.occurredAt)}</div>
+                        <div className="text-helper text-muted-foreground">{formatDay(event.occurredAt)}</div>
                       </li>
                     ))}
                   </ul>
@@ -184,15 +184,15 @@ export async function ActivityRecordPage({
             </div>
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-[11px] uppercase text-muted-foreground">Due</dt>
+                <dt className="text-caption uppercase text-muted-foreground">Due</dt>
                 <dd>{formatDay(task.dueDate)}</dd>
               </div>
               <div>
-                <dt className="text-[11px] uppercase text-muted-foreground">Status</dt>
+                <dt className="text-caption uppercase text-muted-foreground">Status</dt>
                 <dd>{task.status}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-[11px] uppercase text-muted-foreground">Related to</dt>
+                <dt className="text-caption uppercase text-muted-foreground">Related to</dt>
                 <dd className="space-x-2">
                   {contact ? (
                     <RecordLink href={`/contacts/${contact.id}`}>
@@ -214,11 +214,11 @@ export async function ActivityRecordPage({
             <form action={updateReviewTask} className="mt-4 space-y-2 border-t border-border pt-3">
               <input type="hidden" name="taskId" value={task.id} />
               <h3 className="text-sm font-semibold text-navy">Edit</h3>
-              <label className="block text-xs text-muted-foreground">
+              <label className="block text-helper text-muted-foreground">
                 Title
                 <Input name="title" required defaultValue={task.title} className="mt-1 h-8" />
               </label>
-              <label className="block text-xs text-muted-foreground">
+              <label className="block text-helper text-muted-foreground">
                 Status
                 <select
                   name="status"
@@ -229,7 +229,7 @@ export async function ActivityRecordPage({
                   <option value="done">done</option>
                 </select>
               </label>
-              <label className="block text-xs text-muted-foreground">
+              <label className="block text-helper text-muted-foreground">
                 Due
                 <Input
                   name="dueDate"

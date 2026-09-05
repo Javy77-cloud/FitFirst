@@ -71,7 +71,7 @@ export default async function SocialSettingsPage({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-navy">Google Business Profile policy</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-helper text-muted-foreground">
               Javy’s rule: Admin approval before agents can monitor GBP. Connecting the listing is
               not enough — turn the toggle on after you trust the plug.
             </p>
@@ -90,7 +90,7 @@ export default async function SocialSettingsPage({
               />
               <span>
                 Allow agents to monitor GBP
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-helper text-muted-foreground">
                   Until this is on, agents see a locked card and cannot open GBP inquiries as Leads.
                 </span>
               </span>
@@ -122,7 +122,7 @@ export default async function SocialSettingsPage({
       <section className="mt-5 ff-card space-y-3 p-4">
         <div>
           <h2 className="text-sm font-semibold text-navy">Who owns each connected stub</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">
             Agent-owned inbound creates a Lead and pings that agent. Agency (unassigned) goes to
             the Admin award pool. Home bulletin reads the same offers.
           </p>
@@ -134,7 +134,7 @@ export default async function SocialSettingsPage({
               <li key={`owner-${item.id}`} className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-medium text-navy">{item.name}</div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-helper text-muted-foreground">
                     {item.connected
                       ? ownerName
                         ? `${ownerName}'s connected account`

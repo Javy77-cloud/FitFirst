@@ -13,7 +13,7 @@ export function BookScopeFilter({
   return (
     <form method="get" action="/" className="flex flex-col gap-1 sm:items-end">
       {attention ? <input type="hidden" name="attention" value={attention} /> : null}
-      <label htmlFor="book" className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <label htmlFor="book" className="text-caption uppercase tracking-wide text-muted-foreground">
         Admin data filter
       </label>
       <div className="flex items-center gap-2">

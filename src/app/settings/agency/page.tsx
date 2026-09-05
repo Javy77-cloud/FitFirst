@@ -55,7 +55,7 @@ export default async function AgencySettingsPage() {
             className="ff-card block p-4 hover:border-primary/40"
           >
             <div className="text-sm font-semibold text-navy">Offices</div>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-helper text-muted-foreground">
               Name, state(s), address, optional timezone. Agents can sit in more than one desk.
             </p>
           </Link>
@@ -64,7 +64,7 @@ export default async function AgencySettingsPage() {
             className="ff-card block p-4 hover:border-primary/40"
           >
             <div className="text-sm font-semibold text-navy">Territories</div>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-helper text-muted-foreground">
               States, counties, or a freeform geo label. Link offices. Filter Home by book.
             </p>
           </Link>
@@ -146,7 +146,7 @@ export default async function AgencySettingsPage() {
         <div className="space-y-4">
         <section className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">Home widgets</h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Optionally pin agency production on every agent dashboard. Does not change the blue/orange desk colors.
           </p>
           <form action={saveShowCompanyWidgets} className="space-y-2">
@@ -176,7 +176,7 @@ export default async function AgencySettingsPage() {
                 className="size-14 rounded-md border border-border bg-card object-contain p-1"
               />
             ) : (
-              <div className="flex size-14 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+              <div className="flex size-14 items-center justify-center rounded-md border border-dashed border-border text-helper text-muted-foreground">
                 No file
               </div>
             )}

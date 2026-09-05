@@ -57,15 +57,15 @@ export default async function PeopleAgentsPage({
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="ff-card px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">On the desk</div>
+          <div className="text-caption uppercase tracking-wide text-muted-foreground">On the desk</div>
           <div className="text-xl font-semibold text-navy">{people.length}</div>
         </div>
         <div className="ff-card px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Active</div>
+          <div className="text-caption uppercase tracking-wide text-muted-foreground">Active</div>
           <div className="text-xl font-semibold text-fit-green">{active}</div>
         </div>
         <div className="ff-card px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Frozen</div>
+          <div className="text-caption uppercase tracking-wide text-muted-foreground">Frozen</div>
           <div className="text-xl font-semibold text-fit-yellow">{frozen}</div>
         </div>
       </div>
@@ -95,14 +95,14 @@ export default async function PeopleAgentsPage({
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-navy">Everyone</h2>
-          <p className="text-xs text-muted-foreground">Status, privileges, and a producer scorecard per person.</p>
+          <p className="text-helper text-muted-foreground">Status, privileges, and a producer scorecard per person.</p>
         </div>
         {people.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No desk users yet. Create an agent below.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-[color:var(--ff-wash)] text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-[color:var(--ff-wash)] text-caption uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2 font-medium">Name</th>
                   <th className="px-4 py-2 font-medium">Login</th>
@@ -122,9 +122,9 @@ export default async function PeopleAgentsPage({
                   <tr key={person.id}>
                     <td className="px-4 py-3">
                       <div className="font-medium text-navy">{person.name}</div>
-                      <div className="text-xs text-muted-foreground">{person.email}</div>
+                      <div className="text-helper text-muted-foreground">{person.email}</div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-3 text-helper text-muted-foreground">
                       {person.username ?? "—"}
                       {person.mustSetPassword ? (
                         <div className="mt-1 text-fit-flag">Waiting on first password</div>
@@ -138,14 +138,14 @@ export default async function PeopleAgentsPage({
                         {ACCESS_STATUS_LABEL[person.status]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-3 text-helper text-muted-foreground">
                       {mfaStatusLabel(person)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-3 text-helper text-muted-foreground">
                       {person.officeLabel || "—"}
                       {person.territoryLabel ? ` · ${person.territoryLabel}` : ""}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-3 text-helper text-muted-foreground">
                       {person.canAccessModules ? "Modules" : "No modules"}
                       {" · "}
                       {person.canSeeAgencyWidgets ? "Agency widgets" : "Own book"}
@@ -176,7 +176,7 @@ export default async function PeopleAgentsPage({
                               open.kind === "mfa_reset" ? "mfa_reset" : "password_reset",
                               open.stubToken,
                             )}
-                            className="text-[11px] text-primary hover:underline"
+                            className="text-caption text-primary hover:underline"
                           >
                             Open last stub link
                           </a>
@@ -199,7 +199,7 @@ export default async function PeopleAgentsPage({
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Create agent</h2>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-helper text-muted-foreground">
           You set the username or email. They pick the password on the invite stub — nothing emails.
         </p>
         <form action={createAgent} className="grid gap-3 sm:grid-cols-2">

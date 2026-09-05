@@ -18,7 +18,7 @@ export function DeskAgentSwitcherForm({
       {compact ? null : (
         <label
           htmlFor={instanceId}
-          className="block text-[10px] uppercase tracking-wide text-sidebar-foreground/60"
+          className="block text-caption uppercase tracking-wide text-sidebar-foreground/75"
         >
           Desk agent
         </label>

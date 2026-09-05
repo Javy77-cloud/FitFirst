@@ -36,7 +36,7 @@ export function DeskSidebar({
       <div className="border-b border-sidebar-border px-4 py-4">
         <Link href="/" className="block">
           <div className="text-lg font-semibold tracking-tight text-white">FitFirst</div>
-          <div className="text-[11px] text-sidebar-foreground/70">
+          <div className="text-caption text-sidebar-foreground/80">
             Owner desk · filter-first P&amp;C
           </div>
         </Link>
@@ -62,7 +62,7 @@ export function DeskSidebar({
                 type="button"
                 aria-expanded={open}
                 onClick={() => setOpenId(group.id)}
-                className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/70 hover:text-white"
+                className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-caption font-semibold uppercase tracking-wide text-sidebar-foreground/80 hover:text-white"
               >
                 {group.label}
                 <ChevronDown className={cn("size-3.5 transition", open ? "rotate-180" : "")} />
@@ -108,7 +108,7 @@ export function DeskSidebar({
       </nav>
       <div className="space-y-3 border-t border-sidebar-border px-3 py-3">
         {users.length > 0 && actor.id ? <ActorSwitcher actor={actor} users={users} /> : null}
-        <div className="flex gap-2 px-1 text-[11px] text-sidebar-foreground/70">
+        <div className="flex gap-2 px-1 text-caption text-sidebar-foreground/80">
           <Link href="/login" className="hover:text-white hover:underline">
             {signedIn ? "Switch user" : "Sign in"}
           </Link>

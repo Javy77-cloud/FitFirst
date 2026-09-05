@@ -48,7 +48,7 @@ export default async function EmailTriggersPage() {
 
       <section className="mb-4 ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Send from</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-helper text-muted-foreground">
           Google, Outlook, Yahoo, Zoho Mail, or IMAP. If the work-email slice is merged, those
           connections win. Otherwise this catalog is the stub.
         </p>
@@ -56,7 +56,7 @@ export default async function EmailTriggersPage() {
           {accounts.map((account) => (
             <div key={account.provider} className="rounded-md border border-border bg-card p-3">
               <div className="text-sm font-medium">{account.label}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="mt-1 text-helper text-muted-foreground">
                 {account.connected ? account.accountEmail ?? "connected" : "disconnected"}
               </div>
               {!account.connected ? (
@@ -67,7 +67,7 @@ export default async function EmailTriggersPage() {
                   </Button>
                 </form>
               ) : (
-                <p className="mt-2 text-[11px] text-fit-green">Demo connected</p>
+                <p className="mt-2 text-helper text-fit-green">Demo connected</p>
               )}
             </div>
           ))}
@@ -89,7 +89,7 @@ export default async function EmailTriggersPage() {
               <input type="hidden" name="id" value={trigger.id} />
               <div className="lg:col-span-3">
                 <div className="text-sm font-semibold text-navy">{trigger.name}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-helper text-muted-foreground">
                   {(trigger.eventKind ?? trigger.kind) === "closed_won"
                     ? "Anchor: Closed Won date"
                     : "Anchor: policy expiration"}
@@ -169,7 +169,7 @@ export default async function EmailTriggersPage() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-muted-foreground">Now: {template.name}</p>
+                <p className="mt-1 text-helper text-muted-foreground">Now: {template.name}</p>
               </div>
               <div>
                 <Label className="text-xs">Send from</Label>

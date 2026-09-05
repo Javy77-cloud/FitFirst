@@ -34,7 +34,7 @@ export function AttentionFilters({
             key={chip.label}
             href={href}
             className={cn(
-              "rounded-md px-2 py-1 text-[11px] font-semibold",
+              "rounded-md px-2 py-1 text-caption font-semibold",
               active ? "bg-primary text-primary-foreground" : "bg-secondary text-navy hover:bg-secondary/80",
             )}
           >

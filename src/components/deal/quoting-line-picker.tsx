@@ -15,7 +15,7 @@ export function QuotingLinePicker({
   return (
     <section className="rounded-md border border-primary/30 bg-card p-3">
       <h3 className="text-sm font-semibold text-navy">Choose the quoting line</h3>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-helper text-muted-foreground">
         {sourceDocCount > 0
           ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Choose the line before Fill master sheet can run.`
           : "Drop a dec, 4-point, or wind mit, then choose the quoting line. HO3 fills the homeowners master sheet and prepares Auto + commercial worksheets."}

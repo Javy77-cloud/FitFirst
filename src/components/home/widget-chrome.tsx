@@ -50,7 +50,7 @@ export function WidgetChrome({
           value={span}
           onMouseDown={(event) => event.stopPropagation()}
           onChange={(event) => onSpan(event.target.value as WidgetSpan)}
-          className="h-6 rounded-sm border border-border bg-card/95 px-1 text-[10px] font-medium text-muted-foreground"
+          className="h-7 rounded-sm border border-border bg-card/95 px-1 text-caption font-medium text-navy"
         >
           {WIDGET_SPANS.map((value) => (
             <option key={value} value={value}>

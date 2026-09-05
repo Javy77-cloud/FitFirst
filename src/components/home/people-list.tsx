@@ -14,8 +14,8 @@ export function PeopleList({
 }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
-      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
+      <div className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
+      {hint ? <p className="text-helper text-muted-foreground">{hint}</p> : null}
       {rows.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">{empty}</p>
       ) : (

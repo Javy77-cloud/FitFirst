@@ -26,7 +26,7 @@ export function QuoteHandoff({
 
   if (!unlocked) {
     return (
-      <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border px-3 py-2 text-helper text-muted-foreground">
         Send to Fill stays locked until you approve the {formLabel} master sheet. No per-agent
         bot. Copy master sheet / Send to Fill unlock after the two-step confirm.
       </div>
@@ -82,7 +82,7 @@ export function QuoteHandoff({
   return (
     <div className="rounded-md border border-border bg-card p-3">
       <p className="text-sm font-semibold text-navy">5 · {FILL_HANDOFF_TITLE}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{FILL_HANDOFF_HINT}</p>
+      <p className="mt-1 text-helper text-muted-foreground">{FILL_HANDOFF_HINT}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={copySheet}>
           {COPY_SHEET_LABEL}
@@ -97,7 +97,7 @@ export function QuoteHandoff({
           Fill demo
         </a>
       </div>
-      {note ? <p className="mt-2 text-xs text-muted-foreground">{note}</p> : null}
+      {note ? <p className="mt-2 text-helper text-muted-foreground">{note}</p> : null}
     </div>
   );
 }

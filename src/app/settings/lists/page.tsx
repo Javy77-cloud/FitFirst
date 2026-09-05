@@ -68,7 +68,7 @@ export default async function GlobalListsPage() {
 
       <section className="ff-card mb-4 p-4">
         <h2 className="text-sm font-semibold text-navy">Carriers</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-helper text-muted-foreground">
           Writing companies already on the book. Open a carrier to edit NAIC, AM Best, and appetite.
         </p>
         <ul className="mt-3 columns-1 gap-x-6 text-sm sm:columns-2">
@@ -115,7 +115,7 @@ function ListCard({
     <section className="ff-card space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold text-navy">{title}</h2>
-        <p className="text-xs text-muted-foreground">{rows.length} values</p>
+        <p className="text-helper text-muted-foreground">{rows.length} values</p>
       </div>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No values yet.</p>
@@ -126,7 +126,7 @@ function ListCard({
               <span>
                 <span className="text-navy">{row.label}</span>
                 {row.family ? (
-                  <span className="ml-2 text-[11px] text-muted-foreground">{row.family}</span>
+                  <span className="ml-2 text-helper text-muted-foreground">{row.family}</span>
                 ) : null}
               </span>
               {canEdit ? (

@@ -12,7 +12,7 @@ export function HitLostCards({ report }: { report: HitLostReport }) {
     <section className="ff-card overflow-hidden">
       <div className="border-b border-border bg-[color:var(--ff-wash)] px-4 py-3">
         <h3 className="text-sm font-semibold text-navy">Hit ratio and lost business</h3>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           Admin only. Bound ÷ quoted. Ana Dib&apos;s $321,000 shop stays unbound and counts as a miss.
           Lost reasons come from the declined-quote picklist — not an LLM.
         </p>
@@ -100,7 +100,7 @@ export function HitLostCards({ report }: { report: HitLostReport }) {
               ))}
             </ul>
           )}
-          <p className="mt-3 text-[11px] text-muted-foreground">
+          <p className="mt-3 text-helper text-muted-foreground">
             Open the{" "}
             <Link href="/quotes" className="text-primary hover:underline">
               Quotes board
@@ -130,12 +130,12 @@ function Stat({
 }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-caption uppercase tracking-wide text-muted-foreground">
         <Icon className="size-3" />
         {label}
       </div>
       <div className="mt-1 text-xl font-semibold text-navy">{value}</div>
-      <p className="text-[11px] text-muted-foreground">{hint}</p>
+      <p className="text-helper text-muted-foreground">{hint}</p>
     </div>
   );
 }

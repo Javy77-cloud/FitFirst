@@ -34,12 +34,12 @@ export default async function SmsSettingsPage({
           </span>
         </p>
         {settings?.connected ? (
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">
             Provider {settings.provider} · from {settings.displayFrom ?? "not-provisioned"} · last
             result {settings.lastConnectStatus ?? "—"}.
           </p>
         ) : (
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">
             Agencies will plug Twilio (or another provider) later. Nothing leaves this app today.
           </p>
         )}

@@ -11,7 +11,7 @@ export function ActorSwitcher({
 }) {
   return (
     <form action="/api/session" method="post" className="space-y-1.5">
-      <label htmlFor="ff-actor" className="block text-[10px] uppercase tracking-wide text-sidebar-foreground/50">
+      <label htmlFor="ff-actor" className="block text-caption uppercase tracking-wide text-sidebar-foreground/75">
         Acting as
       </label>
       <select
@@ -20,7 +20,7 @@ export function ActorSwitcher({
         name="userId"
         defaultValue={actor.id}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        className="w-full rounded-md border border-sidebar-border bg-sidebar-accent/40 px-2 py-1 text-[12px] text-sidebar-foreground"
+        className="w-full rounded-md border border-sidebar-border bg-sidebar-accent/40 px-2 py-1 text-caption text-sidebar-foreground"
       >
         {users.map((user) => (
           <option key={user.id} value={user.id}>
@@ -28,14 +28,14 @@ export function ActorSwitcher({
           </option>
         ))}
       </select>
-      <div className="text-[11px] text-sidebar-foreground/80">
+      <div className="text-caption text-sidebar-foreground/90">
         {actor.name}
         {" · "}
         {actor.role === "admin" ? "Admin · full desk" : "Agent · own book"}
       </div>
       <button
         type="submit"
-        className="w-full rounded-md border border-sidebar-border px-2 py-1 text-[11px] text-sidebar-foreground/90 hover:bg-sidebar-accent"
+        className="w-full rounded-md border border-sidebar-border px-2 py-1 text-caption text-sidebar-foreground/90 hover:bg-sidebar-accent"
       >
         Switch role
       </button>

@@ -110,7 +110,7 @@ export function OwnerDesk({
       <section className="ff-card overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-border bg-[color:var(--ff-wash)] px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="text-caption uppercase tracking-[0.14em] text-muted-foreground">
               {scope.role === "agent" ? "Agent home" : "Owner home"}
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-navy">
@@ -133,7 +133,7 @@ export function OwnerDesk({
                 attention={attentionValue}
               />
             ) : null}
-            <div className="rounded-md border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
+            <div className="rounded-md border border-border bg-card px-3 py-2 text-helper text-muted-foreground">
               <div className="font-medium text-navy">{scope.label}</div>
               <div>
                 {scope.canToggleBook ? "Admin toggle" : "Agent book"} · desk clock {asOf}
@@ -309,7 +309,7 @@ export function OwnerDesk({
       {show("company") ? (
         <section className="ff-card p-4">
           <h3 className="text-sm font-semibold text-navy">Agency this month</h3>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Company widget on agent desks when Admin turns it on. Ana&apos;s shop is still not written premium.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -332,7 +332,7 @@ export function OwnerDesk({
         <div className="grid gap-3 lg:grid-cols-2">
           <section className="ff-card p-3" aria-label="Policy type">
             <Header title="Policies by line of business" href="/policies?status=in_force" action="Policies" />
-            <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
+            <p className="mb-2 mt-1 text-helper text-muted-foreground">
               In-force premium by policy type. Quotes are not written.
             </p>
             <MixDonut
@@ -342,7 +342,7 @@ export function OwnerDesk({
           </section>
           <section className="ff-card p-3">
             <Header title="Carrier by business share" href="/policies?status=in_force" action="Policies" />
-            <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
+            <p className="mb-2 mt-1 text-helper text-muted-foreground">
               Top writing companies on this book. Compact share bars.
             </p>
             <MixBars compact slices={snapshot.carrierMix} empty="No in-force carriers yet." />
@@ -355,7 +355,7 @@ export function OwnerDesk({
           <section className="ff-card overflow-hidden">
             <div className="border-b border-border px-4 py-3">
               <h3 className="text-sm font-semibold text-navy">Production leaderboard</h3>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-helper text-muted-foreground">
                 Top 10 this month and last month. Agency ranking is visible so producers can see who is winning.
               </p>
             </div>
@@ -386,7 +386,7 @@ export function OwnerDesk({
               <Cake className="size-3.5 text-primary" />
               Birthdays
             </h3>
-            <p className="mb-3 text-[11px] text-muted-foreground">From Contact date of birth. Scoped to this book.</p>
+            <p className="mb-3 text-helper text-muted-foreground">From Contact date of birth. Scoped to this book.</p>
             <div className="space-y-4">
               <PeopleList title="Today" rows={snapshot.birthdays.today} empty="No birthdays today." />
               <PeopleList title="Next week" rows={snapshot.birthdays.nextWeek} empty="Nobody in the next seven days." />
@@ -397,7 +397,7 @@ export function OwnerDesk({
         {show("turning65") ? (
           <section className="ff-card p-4">
             <h3 className="text-sm font-semibold text-navy">Turning 65</h3>
-            <p className="mb-3 text-[11px] text-muted-foreground">
+            <p className="mb-3 text-helper text-muted-foreground">
               Life / Medicare prep. Contacts who turn 65 next month or next year.
             </p>
             <div className="space-y-4">
@@ -423,17 +423,17 @@ export function OwnerDesk({
             <Header title="Renewals" href="/policies?renewal=60" action="Open list" />
             <div className="mt-3 grid grid-cols-2 gap-3">
               <Link href="/policies?renewal=30" className="rounded-md border border-border bg-secondary/70 px-3 py-3 hover:border-primary">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">In 30 days</div>
+                <div className="text-caption uppercase tracking-wide text-muted-foreground">In 30 days</div>
                 <div className="text-lg font-semibold text-navy">{fmt(snapshot.renewals30.count)}</div>
                 <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals30.premium)}</div>
               </Link>
               <Link href="/policies?renewal=60" className="rounded-md border border-border bg-secondary/70 px-3 py-3 hover:border-primary">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">In 60 days</div>
+                <div className="text-caption uppercase tracking-wide text-muted-foreground">In 60 days</div>
                 <div className="text-lg font-semibold text-navy">{fmt(snapshot.renewals60.count)}</div>
                 <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals60.premium)}</div>
               </Link>
             </div>
-            <p className="mt-3 text-[11px] text-muted-foreground">
+            <p className="mt-3 text-helper text-muted-foreground">
               30-day names sit inside the 60-day window. Counts are in-force terms only.
             </p>
           </section>
@@ -444,9 +444,9 @@ export function OwnerDesk({
             <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-navy">Needs attention</h3>
-                <p className="text-[11px] text-muted-foreground">Overdue, this week, this month, next month</p>
+                <p className="text-helper text-muted-foreground">Overdue, this week, this month, next month</p>
               </div>
-              <Link href="/work-queue" className="text-[12px] font-medium text-primary hover:underline">
+              <Link href="/work-queue" className="text-sm font-medium text-primary hover:underline">
                 Work queue
               </Link>
             </div>
@@ -470,7 +470,7 @@ export function OwnerDesk({
                         <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fit-flag" />
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-navy">{item.title}</div>
-                          <div className="text-[12px] text-muted-foreground">
+                          <div className="text-helper text-muted-foreground">
                             {item.detail} · due {item.dueAt.toISOString().slice(0, 10)} · {item.priority} · {item.status}
                           </div>
                         </div>
@@ -532,7 +532,7 @@ export function OwnerDesk({
                       ) : (
                         <div className="text-sm font-medium">{alert.title}</div>
                       )}
-                      <p className="text-xs text-muted-foreground">{alert.body}</p>
+                      <p className="text-helper text-muted-foreground">{alert.body}</p>
                     </div>
                     <form action={markAlertRead}>
                       <input type="hidden" name="alertId" value={alert.id} />
@@ -593,7 +593,7 @@ function Header({ title, href, action }: { title: string; href: string; action: 
   return (
     <div className="flex items-center justify-between gap-3">
       <h3 className="text-sm font-semibold text-navy">{title}</h3>
-      <Link href={href} className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline">
+      <Link href={href} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
         {action}
         <ArrowUpRight className="size-3" />
       </Link>
@@ -624,10 +624,10 @@ function KpiLink({
         </div>
         <ArrowUpRight className="size-3.5 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
       </div>
-      <div className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-2 text-caption uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="truncate text-xl font-semibold tabular-nums text-navy">{value}</div>
-      <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>
-      {extra ? <div className="mt-1 text-[12px]">{extra}</div> : null}
+      <div className="mt-0.5 text-helper text-muted-foreground">{hint}</div>
+      {extra ? <div className="mt-1 text-sm">{extra}</div> : null}
     </Link>
   );
 }
@@ -635,9 +635,9 @@ function KpiLink({
 function StatCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
     <div className="ff-card p-3">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-caption uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="truncate text-xl font-semibold tabular-nums text-navy">{value}</div>
-      <div className="text-[11px] text-muted-foreground">{hint}</div>
+      <div className="text-helper text-muted-foreground">{hint}</div>
     </div>
   );
 }
@@ -645,7 +645,7 @@ function StatCard({ label, value, hint }: { label: string; value: string; hint: 
 function StripLink({ href, label, value }: { href: string; label: string; value: string }) {
   return (
     <Link href={href} className="rounded-md border border-border bg-card px-3 py-2 hover:border-primary">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="text-lg font-semibold tabular-nums text-navy">{value}</div>
     </Link>
   );
@@ -660,7 +660,7 @@ function LeaderTable({
 }) {
   return (
     <div className="px-4 py-3">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
+      <div className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
       {rows.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">No writings in this month.</p>
       ) : (

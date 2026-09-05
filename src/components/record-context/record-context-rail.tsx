@@ -128,7 +128,7 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
                     <Link href={policy.href} className="text-sm font-medium text-primary hover:underline">
                       {policy.number}
                     </Link>
-                    <span className="text-[11px] uppercase text-muted-foreground">{policy.status}</span>
+                    <span className="text-caption uppercase text-muted-foreground">{policy.status}</span>
                   </li>
                 ))}
               </ul>
@@ -154,7 +154,7 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
                     >
                       <span className="font-medium text-navy">{kindLabel(group.kind)}</span>
                       <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <span className="rounded-sm bg-card px-1.5 text-[11px] font-semibold">{group.items.length}</span>
+                        <span className="rounded-sm bg-card px-1.5 text-caption font-semibold">{group.items.length}</span>
                         <ChevronDown className={cn("size-3.5 transition", open && "rotate-180")} />
                       </span>
                     </button>
@@ -169,7 +169,7 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
                                 {item.title}
                               </Link>
                               {item.when && item.when !== "—" ? (
-                                <div className="text-[11px] text-muted-foreground">{item.when}</div>
+                                <div className="text-helper text-muted-foreground">{item.when}</div>
                               ) : null}
                             </li>
                           ))
@@ -205,7 +205,7 @@ function PersonCard({ person }: { person: RailPerson | null }) {
           {initials(person.label)}
         </div>
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{person.kindLabel}</div>
+          <div className="text-caption uppercase tracking-wide text-muted-foreground">{person.kindLabel}</div>
           <Link href={person.href} className="text-base font-semibold text-primary hover:underline">
             {person.label}
           </Link>
@@ -276,7 +276,7 @@ function Conversations({ conversations }: { conversations: RecordContextPayload[
         <li key={item.id} className="px-3 py-3">
           <div className="text-sm font-medium text-navy">{item.title}</div>
           <p className="mt-0.5 text-base text-muted-foreground">{item.body}</p>
-          <div className="mt-1 text-[11px] text-muted-foreground">{item.when}</div>
+          <div className="mt-1 text-helper text-muted-foreground">{item.when}</div>
         </li>
       ))}
     </ul>

@@ -35,7 +35,7 @@ export function MarkMappingWrong({
   const locked = dealId === DEAL_ID && fieldKey === "coverage_a";
 
   if (locked) {
-    return <span className="text-[10px] text-muted-foreground">Ana Cov A locked</span>;
+    return <span className="text-helper text-muted-foreground">Ana Cov A locked</span>;
   }
 
   return (

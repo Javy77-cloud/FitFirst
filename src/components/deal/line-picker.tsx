@@ -77,7 +77,7 @@ export function LinePicker({
                   )}
                 >
                   <span>{line.label}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{line.code}</span>
+                  <span className="font-mono text-helper text-muted-foreground">{line.code}</span>
                 </button>
               </li>
             ))

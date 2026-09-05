@@ -37,7 +37,7 @@ export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
     <form action={uploadDealDocuments} className="ff-card space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold text-navy">Upload documents onto a deal</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-helper text-muted-foreground">
           Pick the Deal first — person or business name, lookup from existing shops. Each line is
           a doc type plus a file. Add another line for more. Multi-file on a line is fine.
         </p>
@@ -78,7 +78,7 @@ export function DealDocsUpload({ deals }: { deals: DealLookupRow[] }) {
             a Deal is selected.
           </p>
         ) : (
-          <p className="mt-1 text-xs text-muted-foreground">Required before files are stored.</p>
+          <p className="mt-1 text-helper text-muted-foreground">Required before files are stored.</p>
         )}
         {suggestions.length > 0 && dealName.trim() && !match ? (
           <ul className="mt-2 space-y-1">

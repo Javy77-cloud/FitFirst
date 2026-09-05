@@ -56,7 +56,7 @@ export default async function SecuritySettingsPage({
             : "Not enrolled — the desk stays gated until you finish a method."}
         </p>
         {user.mfaDemoBypass && mfaDemoBypassEnabled() ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Demo bypass is on for this seed login. Set <code>FF_MFA_DEMO_BYPASS=0</code> to prompt
             for a TOTP code after password. Seed secret: <code>{SEED_TOTP_SECRET}</code>
           </p>

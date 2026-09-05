@@ -24,7 +24,7 @@ export function SourceVsSheet({
     <div className="grid gap-3 lg:grid-cols-2">
       <section className="rounded-md border border-border p-3">
         <h4 className="text-sm font-semibold text-navy">Source docs (stay on the deal)</h4>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-helper text-muted-foreground">
           Super-Copy reads the filled Quote Sheet, never these PDFs.
         </p>
         {sourceDocs.length === 0 ? (
@@ -34,7 +34,7 @@ export function SourceVsSheet({
             {sourceDocs.map((doc) => (
               <li key={doc.id}>
                 <span className="font-medium">{doc.filename}</span>
-                <span className="ml-2 text-[11px] uppercase text-muted-foreground">
+                <span className="ml-2 text-caption uppercase text-muted-foreground">
                   {doc.docType.replaceAll("_", " ")} · {doc.status.replaceAll("_", " ")}
                 </span>
               </li>
@@ -42,7 +42,7 @@ export function SourceVsSheet({
           </ul>
         )}
         {fields.length === 0 ? (
-          <p className="mt-3 text-xs text-muted-foreground">Nothing extracted yet.</p>
+          <p className="mt-3 text-helper text-muted-foreground">Nothing extracted yet.</p>
         ) : (
           <ul className="mt-3 max-h-56 space-y-1 overflow-auto text-xs">
             {fields.slice(0, 24).map((field) => (
@@ -56,7 +56,7 @@ export function SourceVsSheet({
       </section>
       <section className="rounded-md border border-border p-3">
         <h4 className="text-sm font-semibold text-navy">Master sheet cells</h4>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-helper text-muted-foreground">
           {filled.length} filled · yellow missing · blue CHECK. Uncertain stays CHECK — we do not
           invent Cov A from Zillow.
         </p>

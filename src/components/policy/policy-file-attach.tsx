@@ -30,7 +30,7 @@ export function PolicyFileAttach({
     <section className="space-y-3">
       <div>
         <h3 className="text-sm font-semibold text-navy">Attachments</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           Attach issued files here. This is not Save policy — drop one or more, add another row if
           you need a second category. Replace keeps the prior copy on the version timeline.
         </p>

@@ -117,7 +117,7 @@ export function SupportLauncher() {
                   if (item.id !== "howto") setArticleId(null);
                 }}
                 className={cn(
-                  "h-8 rounded-md px-2.5 text-xs font-medium",
+                  "h-8 rounded-md px-2.5 text-sm font-medium",
                   tab === item.id ? "bg-navy text-white" : "text-navy hover:bg-muted",
                 )}
               >
@@ -133,7 +133,7 @@ export function SupportLauncher() {
                   <button
                     type="button"
                     onClick={() => setArticleId(null)}
-                    className="mb-2 text-xs text-primary hover:underline"
+                    className="mb-2 text-sm text-primary hover:underline"
                   >
                     All how-to
                   </button>

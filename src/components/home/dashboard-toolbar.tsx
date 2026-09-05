@@ -37,7 +37,7 @@ export function DashboardToolbar({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-caption font-semibold uppercase tracking-wide text-muted-foreground">
           <LayoutGrid className="size-3" />
           Layout
         </span>
@@ -58,7 +58,7 @@ export function DashboardToolbar({
       <div className="flex flex-wrap items-center gap-1.5">
         {canToggleBook ? (
           <>
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">
               Book
             </span>
             {(["my_book", "agency"] as const).map((id) => (
@@ -91,7 +91,7 @@ export function DashboardToolbar({
               <ul className="grid max-h-72 gap-1.5 overflow-auto pr-1 sm:grid-cols-2">
                 {HOME_WIDGET_IDS.map((id) => (
                   <li key={id}>
-                    <label className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-[12px]">
+                    <label className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-sm">
                       <input
                         type="checkbox"
                         name={`show_${id}`}

@@ -24,7 +24,7 @@ export function ContestBoard({
             <Trophy className="size-3.5 text-fit-flag" />
             Reward board
           </h3>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Agency-wide standings. Quotes — including Ana&apos;s $321k HO3 — do not score.
           </p>
         </div>
@@ -34,8 +34,8 @@ export function ContestBoard({
       ) : (
         <div className="px-4 py-3">
           <div className="text-sm font-semibold text-navy">{contest.title}</div>
-          <p className="mt-1 text-[12px] text-muted-foreground">{contest.rules}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">{contest.rules}</p>
+          <p className="mt-1 text-helper text-muted-foreground">
             {contest.startsAt.toISOString().slice(0, 10)} → {contest.endsAt.toISOString().slice(0, 10)} ·{" "}
             {contest.metric === "policy_count" ? "Policy count" : "Total premium"}
           </p>
@@ -62,7 +62,7 @@ export function ContestBoard({
       )}
       {isAdmin ? (
         <form action={postContest} className="space-y-2 border-t border-border px-4 py-3">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">
             Post a contest
           </div>
           <div className="grid gap-2 sm:grid-cols-2">

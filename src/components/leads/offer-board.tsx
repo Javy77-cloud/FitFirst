@@ -14,7 +14,7 @@ export function UnassignedOfferBoard({
     <section className="ff-card overflow-hidden" data-lead-offers="unassigned">
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-navy">Unassigned inbound</h3>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           Agency social / inbound Leads. Award to any agent. Home bulletin reads the same offer
           list.
         </p>
@@ -34,7 +34,7 @@ export function UnassignedOfferBoard({
                 <Link href={`/leads/${offer.leadId}`} className="text-sm font-medium text-primary hover:underline">
                   {offer.leadName}
                 </Link>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <p className="text-caption uppercase tracking-wide text-muted-foreground">
                   {offer.platform ?? offer.source}
                   {offer.leadPhone ? ` · ${offer.leadPhone}` : ""}
                 </p>

@@ -57,20 +57,20 @@ export function QuoteSheetForm({
       <div className="ff-card p-4 print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-caption uppercase tracking-wide text-muted-foreground">
               Master sheet · this line only
             </p>
             <h2 className="text-lg font-semibold text-navy">
               {SHOP_LINE_LABELS[line]} Quote Sheet
             </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-helper text-muted-foreground">
               Yellow = missing. Blue = CHECK (use the value). People and DOB stay on the
               Contact
               {contactName ? ` · ${contactName}` : ""}
               {contact?.dateOfBirth ? ` · DOB ${contact.dateOfBirth}` : ""}.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-[11px]">
+          <div className="flex flex-wrap gap-2 text-caption">
             <span className="rounded-sm bg-fit-yellow-bg px-2 py-0.5 text-fit-yellow">
               {counts.missing} missing
             </span>
@@ -141,7 +141,7 @@ export function QuoteSheetForm({
           <Button type="submit" size="sm" variant="secondary">
             Save Quote Sheet
           </Button>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Saving a correction after ingest writes the Fill Feedback log. Mark paste wrong when a
             carrier field was mapped incorrectly.
           </p>
@@ -160,7 +160,7 @@ export function QuoteSheetForm({
         </div>
       )}
       {printable ? null : (
-        <p className="text-[11px] text-muted-foreground print:hidden">
+        <p className="text-helper text-muted-foreground print:hidden">
           Copy sheet ({SUPER_COPY_LABEL}). Portal paste is you or a bot — no carrier login here.
         </p>
       )}
@@ -282,7 +282,7 @@ function SheetField({
           className={cn("h-8", toneClass(tone))}
         />
       )}
-      {tag ? <p className="mt-0.5 text-[10px] text-muted-foreground">{tag}</p> : null}
+      {tag ? <p className="mt-0.5 text-helper text-muted-foreground">{tag}</p> : null}
     </div>
   );
 }

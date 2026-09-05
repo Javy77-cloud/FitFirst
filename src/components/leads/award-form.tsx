@@ -11,13 +11,13 @@ export function AwardLeadForm({
   next: string;
 }) {
   if (agents.length === 0) {
-    return <p className="text-xs text-muted-foreground">No agents to award to.</p>;
+    return <p className="text-helper text-muted-foreground">No agents to award to.</p>;
   }
   return (
     <form action={awardLeadOffer} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="leadId" value={leadId} />
       <input type="hidden" name="next" value={next} />
-      <label className="text-xs text-muted-foreground">
+      <label className="text-helper text-muted-foreground">
         Award to
         <select
           name="agentId"

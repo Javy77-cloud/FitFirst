@@ -37,7 +37,7 @@ export default async function ProfileSettingsPage({
         <div>
           <Label className="text-xs">Email</Label>
           <Input value={user.email} readOnly className="mt-1 h-8 bg-secondary" />
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">
             {session.isAdmin ? "Admin · all book" : "Agent · own book"}
           </p>
         </div>

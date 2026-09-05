@@ -63,9 +63,9 @@ export default async function AdminExportPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         {files.map((file) => (
           <section key={file.key} className="ff-card flex flex-col p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{file.title}</div>
+            <div className="text-caption uppercase tracking-wide text-muted-foreground">{file.title}</div>
             <div className="mt-1 text-2xl font-semibold text-navy">{file.count}</div>
-            <p className="mt-2 flex-1 text-xs text-muted-foreground">{file.hint}</p>
+            <p className="mt-2 flex-1 text-helper text-muted-foreground">{file.hint}</p>
             <a
               href={file.href}
               className="mt-3 inline-flex h-8 items-center justify-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
@@ -105,7 +105,7 @@ curl -s http://127.0.0.1:43147/api/v1/contacts?q=Elena \\
 curl -s http://127.0.0.1:43147/api/v1/export/policies.csv \\
   -H "Authorization: Bearer ${demoToken}" -o policies.csv`}
         </pre>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           <code className="font-mono">POST /api/v1/auth/token</code> issues another hashed Admin bearer. Tokens
           live in <code className="font-mono">api_tokens</code>. Agents only see their own book.
         </p>

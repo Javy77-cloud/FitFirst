@@ -85,7 +85,7 @@ export function BindPath({
       <input type="hidden" name="bindTarget" value={target} />
       <div>
         <h2 className="text-sm font-semibold text-navy">Closed Won · one-click bind</h2>
-        <p className="mt-1 text-xs text-muted-foreground">{copy.whatHappens}</p>
+        <p className="mt-1 text-helper text-muted-foreground">{copy.whatHappens}</p>
       </div>
       <fieldset className="grid gap-2 sm:grid-cols-2">
         <legend className="sr-only">Bind path</legend>
@@ -104,7 +104,7 @@ export function BindPath({
             onChange={() => setTarget("contact")}
           />
           <span className="font-semibold text-navy">Personal · Contact + Policy</span>
-          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+          <span className="mt-0.5 block text-helper text-muted-foreground">
             Creates or reuses a Contact, then one {lineLabel} Policy.
           </span>
         </label>
@@ -123,7 +123,7 @@ export function BindPath({
             onChange={() => setTarget("account")}
           />
           <span className="font-semibold text-navy">Commercial · Business + Policy</span>
-          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+          <span className="mt-0.5 block text-helper text-muted-foreground">
             Creates or reuses a Business, then one {lineLabel} Policy.
           </span>
         </label>

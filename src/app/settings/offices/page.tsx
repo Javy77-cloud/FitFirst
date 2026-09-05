@@ -46,7 +46,7 @@ export default async function OfficesSettingsPage({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold text-navy">{office.name}</h2>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-helper text-muted-foreground">
                       {formatStateList(office.states)}
                       {office.timezone ? ` · ${office.timezone}` : " · timezone not set"}
                     </p>
@@ -59,7 +59,7 @@ export default async function OfficesSettingsPage({
                   </Link>
                 </div>
                 <p className="text-sm text-navy">{office.address || "No street address"}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-helper text-muted-foreground">
                   {people.length === 0
                     ? "No agents assigned."
                     : people
@@ -80,7 +80,7 @@ export default async function OfficesSettingsPage({
           <h2 className="text-sm font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add office"}
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-helper text-muted-foreground">
             Name, state(s), address, optional timezone. Check every agent who works this desk.
           </p>
         </div>
@@ -187,7 +187,7 @@ export default async function OfficesSettingsPage({
                   <tr key={row.userId}>
                     <td>
                       <div className="font-medium text-navy">{row.name}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-helper text-muted-foreground">
                         {row.role === "admin" ? "Admin" : "Agent"} · {row.email}
                       </div>
                     </td>
@@ -200,7 +200,7 @@ export default async function OfficesSettingsPage({
             </table>
           </div>
         )}
-        <p className="px-4 py-3 text-xs text-muted-foreground">
+        <p className="px-4 py-3 text-helper text-muted-foreground">
           Territory membership is edited under{" "}
           <Link href="/settings/territories" className="text-primary hover:underline">
             Territories

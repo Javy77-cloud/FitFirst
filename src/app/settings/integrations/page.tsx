@@ -67,7 +67,7 @@ export default async function IntegrationsCatalogPage({
               <h2 className="text-sm font-semibold text-navy">
                 {INTEGRATION_CATEGORY_LABEL[group.category]}
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-helper text-muted-foreground">
                 {INTEGRATION_CATEGORY_BLURB[group.category]}
               </p>
             </div>

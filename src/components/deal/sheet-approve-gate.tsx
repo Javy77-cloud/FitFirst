@@ -61,7 +61,7 @@ export function SheetApproveGate({
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
       <p className="text-sm font-semibold text-navy">Visual approval required</p>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-helper text-muted-foreground">
         Glance the {formLabel} master sheet. Yellow is missing. Blue is CHECK. Confirm, then
         answer “are you sure?” Send to Fill stays locked until both steps.
       </p>

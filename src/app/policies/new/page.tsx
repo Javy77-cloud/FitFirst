@@ -21,7 +21,7 @@ export default function NewPolicyPage() {
             Open deals
           </Link>
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           Ana Dib stays Quote Sent / unbound, Cov A $321,000. Do not bind her from this stub.
         </p>
       </section>

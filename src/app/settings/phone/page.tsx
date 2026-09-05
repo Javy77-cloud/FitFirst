@@ -93,7 +93,7 @@ export default async function PhoneSettingsPage({
               placeholder="Agency pays. Do not paste auth tokens."
             />
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Status: {settings?.connected ? "connected (stub)" : "not connected"}
             {settings?.lastConnectStatus ? ` · last ${settings.lastConnectStatus}` : ""}
           </p>

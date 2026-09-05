@@ -90,7 +90,7 @@ export default async function DealsPage({
         <DealDocsUpload deals={lookup} />
       </div>
       {filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
-        <p className="mb-3 text-[12px]">
+        <p className="mb-3 text-sm">
           <Link href="/deals" className="text-primary hover:underline">
             Clear filter
           </Link>

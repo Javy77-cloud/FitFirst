@@ -23,7 +23,7 @@ export function SheetDrop({
     <div className="ff-card space-y-3 p-4 print:hidden">
       <div>
         <h3 className="text-sm font-semibold text-navy">Upload once — dec, wind mit, or 4-point</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           PDF, photo, or text. We attach it, fill every blank the page contains, then gap-fill
           leftover blanks from public records with source tags. The uploaded page wins. Matching
           values copy onto Deal blanks (never overwrite what you typed).

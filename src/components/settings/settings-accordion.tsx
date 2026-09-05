@@ -40,15 +40,15 @@ const SECTIONS = [
         <p>FitFirst Insurance Group · Florida P&amp;C. Single-tenant owner desk.</p>
         <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-[11px] uppercase text-muted-foreground">Legal name</dt>
+            <dt className="text-caption uppercase text-muted-foreground">Legal name</dt>
             <dd>FitFirst Insurance Group</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase text-muted-foreground">State</dt>
+            <dt className="text-caption uppercase text-muted-foreground">State</dt>
             <dd>Florida</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase text-muted-foreground">Desk mode</dt>
+            <dt className="text-caption uppercase text-muted-foreground">Desk mode</dt>
             <dd>Filter-first shopping · quotes are not coverage</dd>
           </div>
         </dl>

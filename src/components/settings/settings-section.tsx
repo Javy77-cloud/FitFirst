@@ -30,14 +30,14 @@ export function SettingsSection({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-sm font-semibold text-navy">{title}</h2>
             {badge ? (
-              <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+              <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-caption font-semibold uppercase text-muted-foreground">
                 {badge}
               </span>
             ) : null}
           </div>
-          {summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
+          {summary ? <p className="text-helper text-muted-foreground">{summary}</p> : null}
         </div>
-        <span className="text-xs text-muted-foreground">{open ? "Collapse" : "Expand"}</span>
+        <span className="text-helper text-muted-foreground">{open ? "Collapse" : "Expand"}</span>
       </button>
       {open ? <div className="border-t border-border px-4 py-4">{children}</div> : null}
     </section>

@@ -11,7 +11,7 @@ export function RenewalRiskBoard({ rows }: { rows: RenewalRiskAccount[] }) {
           <ShieldAlert className="size-3.5 text-fit-flag" />
           Renewal-risk flags
         </h3>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           Rule-based. Flags households before the 45–75 day rate-increase window using days to
           renewal, premium change if known, monoline, lapse history, and no contact 60 days. Not
           AI.
@@ -30,7 +30,7 @@ export function RenewalRiskBoard({ rows }: { rows: RenewalRiskAccount[] }) {
                 <Link href={row.href} className="text-sm font-semibold text-navy hover:underline">
                   {row.name}
                 </Link>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-helper text-muted-foreground">
                   {row.daysToRenewal != null ? `${row.daysToRenewal} days` : "No expiration"}
                   {row.policyNumber ? ` · ${row.policyNumber}` : ""}
                   {row.risk.beforeRateIncreaseWindow

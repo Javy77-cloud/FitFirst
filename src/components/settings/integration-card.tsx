@@ -30,17 +30,17 @@ export function IntegrationCard({
             <div className="flex flex-wrap items-center gap-1.5">
               <h3 className="text-sm font-semibold text-navy">{item.name}</h3>
               {item.optional ? (
-                <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-caption font-semibold uppercase text-muted-foreground">
                   Optional
                 </span>
               ) : null}
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">{item.blurb}</p>
+            <p className="mt-0.5 text-helper text-muted-foreground">{item.blurb}</p>
           </div>
         </div>
         <ConnectionBadge connected={item.connected} />
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{item.byoNote}</p>
+      <p className="mt-2 text-helper text-muted-foreground">{item.byoNote}</p>
       {item.connected && item.accountLabel ? (
         <p className="mt-1 text-xs text-navy">
           {item.accountLabel}
@@ -67,7 +67,7 @@ export function IntegrationCard({
             </form>
           )
         ) : (
-          <p className="text-xs text-muted-foreground">Admin connects this. Agency pays the vendor.</p>
+          <p className="text-helper text-muted-foreground">Admin connects this. Agency pays the vendor.</p>
         )}
       </div>
     </article>

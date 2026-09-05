@@ -30,7 +30,11 @@
   --ff-wash: #f3eee6;
   --ff-canvas: #f7f3ec;
   --ff-ink: #1c2430;
-  --ff-muted: #5c6b7a;
+  /* Darker than #5c6b7a so helper/caption grey holds on paper. */
+  --ff-muted: #3f4e5c;
+  --ff-type-body: 1rem;
+  --ff-type-helper: 0.875rem;
+  --ff-type-caption: 0.8125rem;
   --ff-card: #fffcf7;
   --ff-border: #e2d6c6;
   --ff-green: #1f7a4d;
@@ -132,6 +136,8 @@
   --color-navy: var(--ff-navy);
   --color-navy-mid: var(--ff-navy-mid);
   --color-ink: var(--ff-ink);
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.4;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -144,10 +150,11 @@
   }
   html {
     @apply font-sans;
-    font-size: 15px;
+    font-size: 16px;
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-size: var(--ff-type-body);
   }
   a {
     text-underline-offset: 0.15em;
@@ -159,6 +166,27 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--ff-shadow);
+}
+
+/* Shared type scale — helper/caption stay ≥13px and inherit the darker muted token. */
+.text-helper {
+  font-size: var(--ff-type-helper);
+  line-height: 1.45;
+}
+.text-caption {
+  font-size: var(--ff-type-caption);
+  line-height: 1.4;
+}
+
+/*
+  Leftover 10–12px + muted-foreground (process notes, cross-sell, captions).
+  Higher specificity than a single Tailwind arbitrary size class.
+*/
+.text-muted-foreground[class*="text-[10px]"],
+.text-muted-foreground[class*="text-[11px]"],
+.text-muted-foreground[class*="text-[12px]"] {
+  font-size: var(--ff-type-helper);
+  line-height: 1.45;
 }
 
 .write-vertical {
@@ -277,8 +305,8 @@
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 [data-ff-density="compact"] {
-  --ff-density: 0.8125rem;
-  font-size: 14px;
+  --ff-density: 0.875rem;
+  font-size: 15px;
 }
 [data-ff-density="compact"] .ff-table th,
 [data-ff-density="compact"] .ff-table td {

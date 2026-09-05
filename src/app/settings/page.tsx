@@ -46,7 +46,7 @@ export default async function SettingsPage() {
       >
         <div>
           <div className="text-sm font-semibold text-navy">Automations hub</div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Campaigns, bulk SMS, templates, guided builder, and signature approval — one nav row,
             not buried only here.
           </p>
@@ -59,7 +59,7 @@ export default async function SettingsPage() {
         >
           <div>
             <div className="text-sm font-semibold text-navy">Integrations catalog</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-helper text-muted-foreground">
               Gmail, Outlook, Mailchimp, Twilio, Zoom, DocuSign — Connect stub, agency pays. No Zoho.
             </p>
           </div>
@@ -72,7 +72,7 @@ export default async function SettingsPage() {
           >
             <div>
               <div className="text-sm font-semibold text-navy">Export</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-helper text-muted-foreground">
                 CSV of contacts, policies, and commissions. Same rows as <code>/api/v1</code>.
               </p>
             </div>
@@ -84,7 +84,7 @@ export default async function SettingsPage() {
         >
           <div>
             <div className="text-sm font-semibold text-navy">Social / GBP</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-helper text-muted-foreground">
               Facebook, Instagram, X, LinkedIn, Google Business Profile. GBP needs Admin approval
               before agents monitor.
             </p>
@@ -98,7 +98,7 @@ export default async function SettingsPage() {
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-2 px-1">
             <h2 className="text-base font-semibold text-navy">Admin settings</h2>
-            <span className="text-xs text-muted-foreground">You can edit these</span>
+            <span className="text-helper text-muted-foreground">You can edit these</span>
           </div>
 
           <SettingsSection
@@ -201,7 +201,7 @@ export default async function SettingsPage() {
                 </Link>
               </p>
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground">Only an admin can connect a trunk.</p>
+              <p className="mt-2 text-helper text-muted-foreground">Only an admin can connect a trunk.</p>
             )}
           </SettingsSection>
 
@@ -310,7 +310,7 @@ export default async function SettingsPage() {
                 {triggers.map((trigger) => (
                   <li key={trigger.id} className="rounded-md border border-dashed border-border px-3 py-2 text-sm">
                     <div className="font-medium text-navy">{trigger.name}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-helper text-muted-foreground">
                       {trigger.kind} · +{trigger.delayDays} day · hang off {trigger.hangOff}
                     </div>
                   </li>
@@ -327,7 +327,7 @@ export default async function SettingsPage() {
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-2 px-1">
             <h2 className="text-base font-semibold text-navy">Agent settings</h2>
-            <span className="text-xs text-muted-foreground">This login only</span>
+            <span className="text-helper text-muted-foreground">This login only</span>
           </div>
 
           <SettingsSection

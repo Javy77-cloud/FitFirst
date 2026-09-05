@@ -33,7 +33,7 @@ export function HomeNewMenu() {
         {CREATE_MENU.map((group, index) => (
           <DropdownMenuGroup key={group.id}>
             {index > 0 ? <DropdownMenuSeparator className="bg-[var(--ff-border)]" /> : null}
-            <DropdownMenuLabel className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--ff-terracotta)]">
+            <DropdownMenuLabel className="px-2 pt-1.5 pb-0.5 text-caption font-semibold uppercase tracking-wide text-[var(--ff-terracotta)]">
               {group.label}
             </DropdownMenuLabel>
             {group.items.map((item) => (

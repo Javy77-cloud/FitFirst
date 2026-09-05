@@ -71,7 +71,7 @@ function MarketTable({
                 <td className="font-medium">
                   {row.carrierName}
                   {row.learnedDecline ? (
-                    <div className="text-[11px] text-fit-red">Learned from decline log</div>
+                    <div className="text-helper text-fit-red">Learned from decline log</div>
                   ) : null}
                 </td>
                 <td>

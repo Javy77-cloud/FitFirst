@@ -56,7 +56,7 @@ export function QuoteCompareBoard({
       <section className="ff-card overflow-x-auto p-0">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-navy">Select quotes</h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Tick two or more. Diffs and the plain-English note update as you pick.
           </p>
         </div>
@@ -87,7 +87,7 @@ export function QuoteCompareBoard({
                 <td className="font-medium">
                   {row.carrierName}
                   {row.source === "attempt" ? (
-                    <div className="text-[11px] text-muted-foreground">From attempt log</div>
+                    <div className="text-helper text-muted-foreground">From attempt log</div>
                   ) : null}
                 </td>
                 <td>{formatMoney(row.premium)}</td>
@@ -105,7 +105,7 @@ export function QuoteCompareBoard({
       <section className="ff-card overflow-x-auto p-0">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-navy">Differences</h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             Highlighted rows differ across the quotes you selected.
           </p>
         </div>
@@ -146,7 +146,7 @@ export function QuoteCompareBoard({
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Branded PDF proposal</h2>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-helper text-muted-foreground">
           Agency letterhead, the selected quotes, the diffs, and the plain-English note. Stored on
           this deal. Not a policy.
         </p>
@@ -170,13 +170,13 @@ export function QuoteCompareBoard({
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-xs text-muted-foreground">No proposal PDF on this deal yet.</p>
+          <p className="mt-3 text-helper text-muted-foreground">No proposal PDF on this deal yet.</p>
         )}
       </section>
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Video proposal</h2>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-helper text-muted-foreground">
           Record or upload a walkthrough on your own host (Drive, Vimeo, YouTube, Zoom cloud). Paste
           the link here. FitFirst does not record video and does not call Loom.
         </p>

@@ -22,7 +22,7 @@ export function CrossSellPanel({ rows }: { rows: CrossSellRow[] }) {
     <section className="ff-card overflow-hidden">
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-base font-semibold text-navy">Cross-sell</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-helper text-muted-foreground">
           Pick a sellable line, then see who already has in-force coverage but not that product.
           Quotes do not count. No scores.
         </p>
@@ -56,7 +56,7 @@ export function CrossSellPanel({ rows }: { rows: CrossSellRow[] }) {
               <Link href={row.href} className="font-medium text-primary hover:underline">
                 {row.name}
               </Link>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-helper text-muted-foreground">
                 Has {row.has.map((k) => HOME_LINE_LABEL[k]).join(", ")}
               </span>
             </li>

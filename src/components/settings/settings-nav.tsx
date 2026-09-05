@@ -21,10 +21,10 @@ export function SettingsNav({ current }: { current: SettingsNavId }) {
       className="ff-card w-full shrink-0 overflow-hidden lg:sticky lg:top-4 lg:w-60"
     >
       <div className="border-b border-border px-3 py-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">
           Settings
         </div>
-        <p className="text-xs text-muted-foreground">Parent groups, then the page.</p>
+        <p className="text-helper text-muted-foreground">Parent groups, then the page.</p>
       </div>
       <ul className="p-1.5">
         {SETTINGS_NAV.map((group) => {
@@ -48,7 +48,7 @@ export function SettingsNav({ current }: { current: SettingsNavId }) {
                   <span className="block truncate">{group.label}</span>
                   <span
                     className={cn(
-                      "block truncate text-[11px]",
+                      "block truncate text-caption",
                       group.id === current ? "text-primary-foreground/80" : "text-muted-foreground",
                     )}
                   >
@@ -61,7 +61,7 @@ export function SettingsNav({ current }: { current: SettingsNavId }) {
                     aria-expanded={expanded}
                     aria-label={`${expanded ? "Collapse" : "Expand"} ${group.label}`}
                     onClick={() => setOpen((prev) => ({ ...prev, [group.id]: !expanded }))}
-                    className="rounded-md px-2 text-xs text-muted-foreground hover:bg-secondary"
+                    className="rounded-md px-2 text-helper text-muted-foreground hover:bg-secondary"
                   >
                     {expanded ? "–" : "+"}
                   </button>
