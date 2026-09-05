@@ -13,6 +13,7 @@ import {
   deals,
   documents,
   leads,
+  signatureEnvelopes,
   locations,
   policies,
   quoteSheets,
@@ -609,6 +610,8 @@ export async function seedLifecycleDemo() {
     ELENA_DEAL_ID,
   );
 
+  await db.delete(signatureEnvelopes).where(eq(signatureEnvelopes.dealId, ELENA_DEAL_ID));
+  await db.delete(signatureEnvelopes).where(eq(signatureEnvelopes.policyId, ELENA_POLICY_ID));
   await db.delete(documents).where(eq(documents.dealId, ELENA_DEAL_ID));
   await db.insert(documents).values([
     {

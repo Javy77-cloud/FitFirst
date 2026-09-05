@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   APPOINTMENT_LINES,
@@ -359,22 +359,37 @@ export async function seed() {
   }
 
   await db.delete(carrierAppointments).where(eq(carrierAppointments.tenantId, TENANT_ID));
-  await db.insert(carrierAppointments).values(
-    (Object.keys(CARRIER_IDS) as CarrierKey[]).flatMap((key) => {
-      const agency = HOME_SELLING_AGENCY[key];
-      return APPOINTMENT_LINES.map((writtenLine) => ({
-        tenantId: TENANT_ID,
-        carrierId: CARRIER_IDS[key],
-        writtenLine,
-        appointed: writtenLine === "HO",
-        sellingAgency: agency,
-        notes:
-          writtenLine === "HO"
-            ? "First-wave Home appointment. Seeded appointed=true for existing shop carriers."
-            : "Explicit not-appointed. Do not treat a missing row as paper.",
-      }));
-    }),
-  );
+  await db
+    .insert(carrierAppointments)
+    .values(
+      (Object.keys(CARRIER_IDS) as CarrierKey[]).flatMap((key) => {
+        const agency = HOME_SELLING_AGENCY[key];
+        return APPOINTMENT_LINES.map((writtenLine) => ({
+          tenantId: TENANT_ID,
+          carrierId: CARRIER_IDS[key],
+          writtenLine,
+          appointed: writtenLine === "HO",
+          sellingAgency: agency,
+          notes:
+            writtenLine === "HO"
+              ? "First-wave Home appointment. Seeded appointed=true for existing shop carriers."
+              : "Explicit not-appointed. Do not treat a missing row as paper.",
+        }));
+      }),
+    )
+    .onConflictDoUpdate({
+      target: [
+        carrierAppointments.tenantId,
+        carrierAppointments.carrierId,
+        carrierAppointments.writtenLine,
+      ],
+      set: {
+        appointed: sql`excluded.appointed`,
+        sellingAgency: sql`excluded.selling_agency`,
+        notes: sql`excluded.notes`,
+        updatedAt: new Date(),
+      },
+    });
 
   await db.delete(appetiteRules).where(eq(appetiteRules.tenantId, TENANT_ID));
   await db.insert(appetiteRules).values(
