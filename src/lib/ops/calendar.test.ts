@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   activitiesOnDay,
   activityOnDay,
+  CALENDAR_TOOLBAR_ROWS,
   filterCalendarActivities,
   formatWhen,
   isActivityKind,
@@ -49,6 +50,14 @@ const meeting = {
 };
 
 describe("calendar helpers", () => {
+  it("locks Javy’s three calendar toolbar rows", () => {
+    expect(CALENDAR_TOOLBAR_ROWS).toEqual([
+      ["Add event", "Add company meeting", "Add training"],
+      ["Month", "Week", "Day"],
+      ["Task", "Meeting", "Call", "Email", "SMS"],
+    ]);
+  });
+
   it("builds a 6x7 month grid starting Sunday", () => {
     const cells = monthCells(new Date(2026, 8, 2));
     expect(cells).toHaveLength(42);

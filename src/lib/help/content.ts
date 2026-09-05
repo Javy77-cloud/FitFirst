@@ -55,8 +55,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: "Calendar",
     summary: "In-desk month, week, and day. Nothing syncs off this computer.",
     body: [
-      "Line 1 is Month / Week / Day. Line 2 is Task / Meeting / Call / Email / SMS.",
-      "Add event on the right, or tap + on a day. Drag an item to move it.",
+      "Row 1 is Add event / Add company meeting / Add training. Company meeting and training stay Admin.",
+      "Row 2 is Month / Week / Day. Row 3 is Task / Meeting / Call / Email / SMS.",
+      "Add event or a type on row 3, or double-click a day or hour. Drag an item to move it.",
       "Deal and lead items also show on that record’s Quick Communications board.",
     ],
   },
