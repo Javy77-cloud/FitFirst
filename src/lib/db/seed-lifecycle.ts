@@ -1,6 +1,6 @@
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { writeSsn } from "@/lib/pii/write";
 import { db } from "./index";
 import {
@@ -718,7 +718,17 @@ export async function seedLifecycleDemo() {
       slot: "policy_file",
       status: "uploaded",
     },
-  ]);
+  ]).onConflictDoUpdate({
+    target: documents.id,
+    set: {
+      filename: sql`excluded.filename`,
+      mimeType: sql`excluded.mime_type`,
+      storagePath: sql`excluded.storage_path`,
+      docType: sql`excluded.doc_type`,
+      slot: sql`excluded.slot`,
+      status: sql`excluded.status`,
+    },
+  });
 
   await db
     .insert(clientHistory)

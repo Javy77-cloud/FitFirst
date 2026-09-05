@@ -14,7 +14,6 @@ import {
   HARBOR_POLICY_ID,
   TENANT_ID,
 } from "@/lib/fixtures/ids";
-import { sql } from "@/lib/db";
 import {
   claims,
   clientHistory,
@@ -53,7 +52,7 @@ describe("seeded book + policy workflow", () => {
     await db.delete(policyEvents).where(eq(policyEvents.policyId, TEMP_POLICY_ID));
     await db.delete(clientHistory).where(eq(clientHistory.policyId, TEMP_POLICY_ID));
     await db.delete(policies).where(eq(policies.id, TEMP_POLICY_ID));
-    await sql.end({ timeout: 5 });
+    // Leave the shared postgres.js pool open — other db tests reuse it.
   });
 
   it("leaves Ana unbound and keeps Elena’s Melbourne HO3 Active", async () => {

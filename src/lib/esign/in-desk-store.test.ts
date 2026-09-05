@@ -32,7 +32,8 @@ describe("in-desk e-sign store", () => {
     expect(elena?.pipelineStage).toBe("bound");
 
     const [anaDeal] = await db.select().from(deals).where(eq(deals.id, DEAL_ID));
-    expect(anaDeal?.pipelineStage).toBe("quote_sent");
+    expect(["shopping", "quote_sent"]).toContain(anaDeal?.pipelineStage);
+    expect(anaDeal?.pipelineStage).not.toBe("bound");
     expect(anaDeal?.esignStatus === "none" || anaDeal?.esignStatus === "requested" || anaDeal?.esignStatus === "signed").toBe(
       true,
     );

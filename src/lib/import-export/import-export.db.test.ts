@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { CONTACT_ID } from "@/lib/fixtures/ids";
-import { db, sql } from "@/lib/db";
+import { db } from "@/lib/db";
 import { contacts, leads, policies } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { seed } from "@/lib/db/seed";
@@ -14,10 +14,6 @@ const actor = { id: "44444444-4444-4444-8444-444444444401", name: "Javy Rivera",
 describe("import-export against seed", () => {
   beforeAll(async () => {
     await seed();
-  });
-
-  afterAll(async () => {
-    await sql.end({ timeout: 5 });
   });
 
   it("exports the six required packs and keeps Ana off the policy file", async () => {
