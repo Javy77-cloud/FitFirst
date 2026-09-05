@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { AppShell } from "@/components/app-shell";
 import { RiskForm } from "@/components/deal/risk-form";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { currentDeskSession } from "@/lib/auth/session";
 import { getDealWorkspace, listDealLookup } from "@/lib/db/queries";
 import { isUuid } from "@/lib/ids";
@@ -23,8 +22,7 @@ export default async function MasterRiskSettingsPage({
   const workspace = dealId && session.isAdmin ? await getDealWorkspace(dealId) : null;
 
   return (
-    <AppShell title="Master risk">
-      <SettingsSubnav current="master-risk" />
+    <SettingsShell title="Master risk" current="master-risk">
       {!session.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Master risk is an Admin background appetite tool. It is not on the agent Deal. Agents
@@ -84,6 +82,6 @@ export default async function MasterRiskSettingsPage({
       ) : session.isAdmin ? (
         <p className="text-sm text-muted-foreground">Choose a deal to edit its appetite worksheet.</p>
       ) : null}
-    </AppShell>
+    </SettingsShell>
   );
 }

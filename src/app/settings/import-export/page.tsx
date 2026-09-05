@@ -3,6 +3,7 @@ import { ImportExportHub } from "@/components/settings/import-export-hub";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { listJobs } from "@/lib/import-export/jobs";
+import { EXPORT_HREF, IMPORT_HREF } from "@/lib/settings/import-export";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,12 @@ export default async function ImportExportPage() {
         with a dry-run preview. Create vs update matches email, policy number, or carrier code. Import never
         deletes. Ana Dib stays shopping — no Policy from her shop, Cov A stays $321,000. No paid migration
         vendor. Open API CSV still lives on{" "}
-        <Link href="/settings/export" className="text-primary hover:underline">
+        <Link href={EXPORT_HREF} className="text-primary hover:underline">
           Export
+        </Link>
+        . CSV upload stub is on{" "}
+        <Link href={IMPORT_HREF} className="text-primary hover:underline">
+          Import
         </Link>
         .
       </p>

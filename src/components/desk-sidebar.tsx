@@ -72,13 +72,9 @@ export function DeskSidebar({
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const settingsSection = search.get("section");
-                    const active =
-                      group.id === "settings"
-                        ? pathname.startsWith(item.match ?? "/settings") &&
-                          (item.href.includes("section=")
-                            ? item.href.includes(`section=${settingsSection ?? "phone"}`)
-                            : pathname.startsWith(item.match ?? item.href))
-                        : pathIsActive(pathname, item);
+                    const active = item.href.includes("section=")
+                      ? pathname === "/settings" && settingsSection === "phone" && item.href.includes("section=phone")
+                      : pathIsActive(pathname, item);
                     return (
                       <Link
                         key={item.href}

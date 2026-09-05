@@ -22,6 +22,7 @@ export type NavItem = {
   label: string;
   icon: typeof Home;
   match?: string;
+  exact?: boolean;
 };
 
 export type NavGroup = {
@@ -90,12 +91,7 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "settings",
     label: "Settings",
     items: [
-      { href: "/settings?section=phone", label: "Phone", icon: Phone, match: "/settings" },
-      { href: "/settings?section=agency", label: "Agency", icon: Settings, match: "/settings" },
-      { href: "/settings/offices", label: "Offices", icon: Building2, match: "/settings/offices" },
-      { href: "/settings/territories", label: "Territories", icon: Building2, match: "/settings/territories" },
-      { href: "/settings/social", label: "Social / GBP", icon: Users, match: "/settings/social" },
-      { href: "/settings?section=notifications", label: "Notifications", icon: Bell, match: "/settings" },
+      { href: "/settings", label: "Settings", icon: Settings, match: "/settings" },
     ],
   },
 ];
@@ -104,12 +100,13 @@ export const FLAT_NAV = [PINNED_HOME, ...NAV_GROUPS.flatMap((group) => group.ite
 
 export function pathIsActive(pathname: string, item: NavItem): boolean {
   const match = item.match ?? item.href.split("?")[0];
-  if (match === "/") return pathname === "/";
+  if (match === "/" || item.exact) return pathname === match;
   return pathname === match || pathname.startsWith(`${match}/`);
 }
 
 export function groupIdForPath(pathname: string): string {
   if (pathIsActive(pathname, PINNED_HOME)) return "";
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) return "settings";
   for (const group of NAV_GROUPS) {
     if (group.items.some((item) => pathIsActive(pathname, item))) return group.id;
   }

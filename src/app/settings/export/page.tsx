@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { IMPORT_EXPORT_HUB_HREF, IMPORT_HREF } from "@/lib/settings/import-export";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { listApiActivities, listApiCommissions, listApiContacts, listApiDeals, listApiPolicies } from "@/lib/api/v1/queries";
@@ -54,13 +56,24 @@ export default async function AdminExportPage() {
 
   return (
     <SettingsShell title="Export" current="export">
+      <p className="mb-3 text-sm">
+        <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">
+          Import / Export hub
+        </Link>
+        <span className="text-muted-foreground"> · </span>
+        <Link href={IMPORT_HREF} className="text-primary hover:underline">
+          Import stub
+        </Link>
+      </p>
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Open API CSV with a bearer token. For Admin CSV import plus the full entity pack, use{" "}
-        <a href="/settings/import-export" className="text-primary hover:underline">
-          Import / Export
-        </a>
+        Download the book as CSV, or pull the same rows from <code className="font-mono text-xs">/api/v1</code>{" "}
+        with a bearer token. For Admin CSV import plus the full entity pack, use the{" "}
+        <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">
+          Import / Export hub
+        </Link>
         . Encrypted SSN / EIN / DL values stay off the file. Ana Dib stays shopping — she
-        appears as a contact with zero policies.
+        appears as a contact with zero policies. Businesses, carriers, leads, documents, and quote sheets
+        sit on the hub as placeholders until those packs merge.
       </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">

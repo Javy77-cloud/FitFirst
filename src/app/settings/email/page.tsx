@@ -11,7 +11,7 @@ export default async function EmailSettingsPage() {
   const inboxes = items.filter((item) => item.category === "email");
 
   return (
-    <SettingsShell title="Email">
+    <SettingsShell title="Email" current="email">
       <p className="mb-4 text-sm text-muted-foreground">
         Client mail goes through the agency inbox. Connect Google, Outlook, or Zoho Mail as a
         demo toggle. Agency pays the vendor. Templates and signatures stay under Brand / lists.

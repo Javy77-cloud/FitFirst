@@ -57,7 +57,11 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/developer")).toBe(true);
     expect(isAdminOnlyPath("/settings/developer/functions")).toBe(true);
     expect(isAdminOnlyPath("/settings/developer/api-keys")).toBe(true);
+    expect(isAdminOnlyPath("/settings/developer-hub")).toBe(true);
+    expect(isAdminOnlyPath("/settings/developer-hub/macros")).toBe(true);
     expect(isAdminOnlyPath("/settings/import-export")).toBe(true);
+    expect(isAdminOnlyPath("/settings/import")).toBe(true);
+    expect(isAdminOnlyPath("/settings/import?pack=contacts")).toBe(true);
     expect(isAdminOnlyPath("/logs/fill-learning")).toBe(true);
     expect(isAdminOnlyPath("/compliance")).toBe(true);
     expect(isAdminOnlyPath("/carriers/logs")).toBe(false);
