@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { visiblePolicyTypeSlices } from "./mix-donut";
+import { MIX_DONUT_PX, visiblePolicyTypeSlices } from "./mix-donut";
 
 describe("policy type donut slices", () => {
   it("keeps in-force types and drops empty buckets", () => {
@@ -18,5 +18,10 @@ describe("policy type donut slices", () => {
       { key: "AUTO", label: "Auto", count: 0, premium: 0 },
     ]);
     expect(shown).toEqual([]);
+  });
+
+  it("keeps the donut at a fixed compact pixel size so type scale cannot inflate it", () => {
+    expect(MIX_DONUT_PX).toBeLessThanOrEqual(72);
+    expect(MIX_DONUT_PX).toBeGreaterThanOrEqual(56);
   });
 });

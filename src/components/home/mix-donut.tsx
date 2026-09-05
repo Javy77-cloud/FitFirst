@@ -2,6 +2,9 @@ import { formatMoney } from "@/lib/domain";
 import type { MixSlice } from "@/lib/home/aggregate";
 import { chartColor } from "@/lib/home/chart-colors";
 
+/** Fixed px — do not use rem/`size-*` or the desk type scale inflates the chart. */
+export const MIX_DONUT_PX = 68;
+
 /** In-force slices only. Zero-premium types (and quotes) stay off the donut. */
 export function visiblePolicyTypeSlices(slices: MixSlice[]): MixSlice[] {
   return slices.filter((slice) => slice.premium > 0 && slice.count > 0);
@@ -22,7 +25,7 @@ export function MixDonut({
     return <p className="px-1 py-3 text-sm text-muted-foreground">{empty}</p>;
   }
 
-  const radius = 42;
+  const radius = 38;
   const circ = 2 * Math.PI * radius;
   let offset = 0;
   const arcs = shown.map((slice, index) => {
@@ -39,10 +42,13 @@ export function MixDonut({
   });
 
   return (
-    <div className="mt-1 flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+    <div className="mt-1 flex items-center gap-3">
       <svg
         viewBox="0 0 120 120"
-        className="size-36 shrink-0"
+        width={MIX_DONUT_PX}
+        height={MIX_DONUT_PX}
+        className="shrink-0"
+        style={{ width: MIX_DONUT_PX, height: MIX_DONUT_PX, maxWidth: MIX_DONUT_PX }}
         role="img"
         aria-label="In-force premium by policy type"
       >
@@ -52,7 +58,7 @@ export function MixDonut({
           r={radius}
           fill="none"
           stroke="var(--ff-border)"
-          strokeWidth="18"
+          strokeWidth="14"
         />
         {arcs.map((arc) => (
           <circle
@@ -62,7 +68,7 @@ export function MixDonut({
             r={radius}
             fill="none"
             stroke={arc.color}
-            strokeWidth="18"
+            strokeWidth="14"
             strokeDasharray={arc.dash}
             strokeDashoffset={-arc.offset}
             transform="rotate(-90 60 60)"
@@ -70,24 +76,24 @@ export function MixDonut({
         ))}
         <text
           x="60"
-          y="56"
+          y="57"
           textAnchor="middle"
           className="fill-navy"
-          style={{ fontSize: 16, fontWeight: 600 }}
+          style={{ fontSize: 22, fontWeight: 600 }}
         >
           {totalCount}
         </text>
         <text
           x="60"
-          y="72"
+          y="73"
           textAnchor="middle"
           className="fill-[color:var(--ff-muted)]"
-          style={{ fontSize: 8 }}
+          style={{ fontSize: 13 }}
         >
           in force
         </text>
       </svg>
-      <ul className="min-w-0 w-full space-y-1.5 text-xs">
+      <ul className="min-w-0 flex-1 space-y-1 text-caption">
         {arcs.map((arc) => (
           <li key={arc.slice.key} className="flex items-center justify-between gap-3">
             <span className="flex min-w-0 items-center gap-1.5">
