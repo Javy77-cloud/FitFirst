@@ -223,7 +223,7 @@ export function DeskSidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-screen shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex",
+        "ff-no-print sticky top-0 hidden h-screen shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex",
         narrow ? "w-14" : "w-60",
       )}
     >

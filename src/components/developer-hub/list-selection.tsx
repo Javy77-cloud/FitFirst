@@ -1,10 +1,9 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { clickDeskButton, runDeskMacro } from "@/app/actions/developer-hub";
-import { Button } from "@/components/ui/button";
+import { SelectionActionsMenu } from "@/components/lists/selection-actions-menu";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
-import type { DevHubModule } from "@/lib/developer-hub/types";
+import type { CrmListModule, SelectionRecord } from "@/lib/lists/selection-actions";
 
 type MacroOption = { id: string; name: string; kind?: string };
 type ButtonOption = {
@@ -72,133 +71,60 @@ export function ListMassBar({
   macros,
   buttons = [],
   recordIds = [],
-  showFollowUp = false,
+  records = [],
 }: {
-  module: DevHubModule;
+  module: CrmListModule;
   macros: MacroOption[];
   buttons?: ButtonOption[];
   recordIds?: string[];
+  records?: SelectionRecord[];
   showFollowUp?: boolean;
 }) {
   const { selected, clear } = useSelection();
-  const standardMacros = showFollowUp ? macros.filter((macro) => macro.kind !== "follow_up") : macros;
-  const followUpMacros = macros.filter((macro) => macro.kind === "follow_up");
-  const [macroId, setMacroId] = useState(standardMacros[0]?.id ?? "");
-  const [followUpId, setFollowUpId] = useState(followUpMacros[0]?.id ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [widget, setWidget] = useState<{ name: string; url: string | null } | null>(null);
-
-  async function runSelected(id: string, emptyMessage: string) {
-    if (!id || selected.length === 0) {
-      setMessage(emptyMessage);
-      return;
-    }
-    setBusy(true);
-    const form = new FormData();
-    form.set("macroId", id);
-    form.set("module", module);
-    for (const recordId of selected) form.append("recordId", recordId);
-    const result = await runDeskMacro(form);
-    setMessage(result.summary);
-    setBusy(false);
-    if (result.ok) clear();
-  }
-
-  async function runMacro() {
-    await runSelected(macroId, "Select one or more rows, then run a macro.");
-  }
-
-  async function runFollowUp() {
-    await runSelected(followUpId, "Select one or more rows, then run a follow-up macro.");
-  }
-
-  async function runButton(buttonId: string) {
-    if (selected.length === 0) {
-      setMessage("Select one or more rows for a mass-action button.");
-      return;
-    }
-    setBusy(true);
-    const notes: string[] = [];
-    for (const id of selected) {
-      const form = new FormData();
-      form.set("buttonId", buttonId);
-      form.set("recordId", id);
-      const result = await clickDeskButton(form);
-      if (result.kind === "url" && result.url) window.open(result.url, "_blank", "noopener,noreferrer");
-      if (result.kind === "widget") {
-        setWidget({ name: result.widgetName ?? "Widget", url: result.widgetUrl ?? null });
-      }
-      notes.push(result.message);
-    }
-    setMessage(notes[0] ?? "Done.");
-    setBusy(false);
-  }
+  const resolvedRecords = records.length
+    ? records
+    : recordIds.map((id) => ({ id, label: id }));
 
   return (
-    <div className="mb-3 space-y-2">
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+    <div className="mb-3 space-y-2 print:hidden">
+      <div
+        className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2"
+        data-testid="list-selection-bar"
+      >
         {recordIds.length ? <SelectAllCheckbox ids={recordIds} /> : null}
-        <span className="text-xs text-muted-foreground">{selected.length} selected</span>
-        {standardMacros.length ? (
-          <>
-            <select
-              value={macroId}
-              onChange={(event) => setMacroId(event.target.value)}
-              className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-            >
-              {standardMacros.map((macro) => (
-                <option key={macro.id} value={macro.id}>
-                  {macro.name}
-                </option>
-              ))}
-            </select>
-            <Button type="button" size="sm" onClick={() => void runMacro()} disabled={busy}>
-              Run Macro
-            </Button>
-          </>
-        ) : (
-          <a href="/settings/developer-hub/macros" className="text-xs text-primary hover:underline">
-            No macros for this list — open Settings → Macros
-          </a>
-        )}
-        {showFollowUp ? (
-          followUpMacros.length ? (
-            <>
-              <select
-                value={followUpId}
-                onChange={(event) => setFollowUpId(event.target.value)}
-                className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-              >
-                {followUpMacros.map((macro) => (
-                  <option key={macro.id} value={macro.id}>
-                    {macro.name}
-                  </option>
-                ))}
-              </select>
-              <Button type="button" size="sm" variant="outline" onClick={() => void runFollowUp()} disabled={busy}>
-                Run Follow-up Macro
-              </Button>
-            </>
-          ) : (
-            <a href="/settings/developer-hub/macros" className="text-xs text-primary hover:underline">
-              No follow-up macros — define one in Settings
-            </a>
-          )
-        ) : null}
-        {buttons.map((button) => (
-          <Button
-            key={button.id}
+        <span className="text-xs text-muted-foreground">
+          {selected.length === 0
+            ? "Select rows for Actions"
+            : `${selected.length} selected`}
+        </span>
+        <SelectionActionsMenu
+          module={module}
+          selected={selected}
+          records={resolvedRecords}
+          macros={macros}
+          buttons={buttons}
+          busy={busy}
+          onBusy={setBusy}
+          onMessage={setMessage}
+          onWidget={setWidget}
+          onClear={clear}
+        />
+        {selected.length ? (
+          <button
             type="button"
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={() => void runButton(button.id)}
+            className="text-xs text-muted-foreground hover:text-primary hover:underline"
+            onClick={clear}
           >
-            {button.label}
-          </Button>
-        ))}
-        <a href="/settings/developer-hub/macros" className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline">
+            Clear
+          </button>
+        ) : null}
+        <a
+          href="/settings/developer-hub/macros"
+          className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline"
+        >
           Settings · Macros
         </a>
       </div>

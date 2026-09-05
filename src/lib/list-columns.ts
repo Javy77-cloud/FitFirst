@@ -145,6 +145,7 @@ export const POLICIES_LIST_COLUMNS: ListColumn[] = [
 ];
 
 export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
+  { id: "pick", label: "", locked: true },
   { id: "carrier", label: "Carrier", locked: true },
   { id: "portal", label: "Portal" },
   { id: "covA", label: "Cov A" },

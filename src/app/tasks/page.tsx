@@ -55,7 +55,15 @@ export default async function TasksPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
-        <ModuleListActions module="tasks" recordIds={tasks.map((task) => task.id)}>
+        <ModuleListActions
+          module="tasks"
+          recordIds={tasks.map((task) => task.id)}
+          records={tasks.map((task) => ({
+            id: task.id,
+            label: task.title,
+            taskSource: task.source,
+          }))}
+        >
         <DeskColumnTable
           moduleId="tasks"
           columns={TASKS_LIST_COLUMNS}

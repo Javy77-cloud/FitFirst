@@ -6,13 +6,14 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep5d`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-crm-zoho-tip-sep5c`**, then folds finished live-desk fixes:
+**`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
 3. **`cursor/ff-nav-dnd-customize-fe86`** — drag-and-drop left nav. Primary order + editable submenus persist on `agent_ui_prefs.nav_layout`. Default rail stays stub-free.
+4. **`cursor/ff-selection-actions-dae2`** — tick rows for Duplicate / Merge / Email / SMS / Print / Run macro / Archive / Delete. Call and hard-delete stay off.
 
-Skipped for the next tip: AMS waves 10–16, selection actions, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
+Skipped for the next tip: AMS waves 10–16, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
@@ -30,7 +31,7 @@ Social stays under Home as a BYO connect wall (Settings → Social). Phone stays
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep5d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -40,6 +41,22 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` on a live book.
+
+### Selection Actions (this slice)
+
+Tick one or more rows on Leads, Contacts, Deals, Policies, Businesses, Carriers, Tasks, or Campaigns. **Actions** appears on the list bar:
+
+- **Duplicate** — copies Leads, Contacts, Deals, Businesses, Tasks, Campaigns. Policies and Carriers stay off (bind / shared book).
+- **Merge** — 2+ Leads or Contacts opens the existing merge review (first two if you pick more).
+- **Email / SMS** — compose queues the in-desk outbound job + activity. Disabled when the selected rows have no address.
+- **Call** — disabled. Connect later is not a live trunk.
+- **Print** — browser print of the current sheet (sidebar/header hidden).
+- **Run macro** — Settings macros already wired on the list.
+- **Archive** — Leads, Contacts, Deals leave the list (`archived_at`). Not a wipe.
+- **Delete** — Tasks only. Other modules say to Archive or Merge.
+- **Convert** on Leads (starts a shop). **Bind** on Deals opens the existing bind path, or the bound policy when one exists.
+
+Ana Dib stays locked. No fake “would send” clicks.
 
 ### Left nav customize (this slice)
 
@@ -54,7 +71,7 @@ Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Busi
 ### Air checkout (no wipe)
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep5d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:

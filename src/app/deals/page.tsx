@@ -99,7 +99,22 @@ export default async function DealsPage({
         </p>
       ) : null}
       <section className="ff-card overflow-x-auto">
-        <ModuleListActions module="deals" recordIds={rows.map(({ deal }) => deal.id)}>
+        <ModuleListActions
+          module="deals"
+          recordIds={rows.map(({ deal }) => deal.id)}
+          records={rows.map(({ deal, contact, account }) => ({
+            id: deal.id,
+            label: deal.title,
+            email: contact?.email ?? account?.email,
+            phone: contact?.phone ?? account?.phone,
+            boundAt: deal.boundAt,
+            archivedAt: deal.archivedAt,
+            dealId: deal.id,
+            contactId: contact?.id ?? deal.contactId,
+            accountId: account?.id ?? deal.accountId,
+            leadId: deal.leadId,
+          }))}
+        >
           <DeskColumnTable
             moduleId="deals"
             columns={DEALS_LIST_COLUMNS}

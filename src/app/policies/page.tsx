@@ -107,7 +107,20 @@ export default async function PoliciesPage({
         </p>
       ) : null}
       <section className="ff-card overflow-hidden">
-        <ModuleListActions module="policies" recordIds={rows.map(({ policy }) => policy.id)}>
+        <ModuleListActions
+          module="policies"
+          recordIds={rows.map(({ policy }) => policy.id)}
+          records={rows.map(({ policy, contact, account }) => ({
+            id: policy.id,
+            label: policy.policyNumber,
+            email: contact?.email ?? account?.email,
+            phone: contact?.phone ?? account?.phone,
+            policyId: policy.id,
+            contactId: contact?.id ?? policy.contactId,
+            accountId: account?.id ?? policy.accountId,
+            dealId: policy.dealId,
+          }))}
+        >
         <DeskColumnTable
           moduleId="policies"
           columns={POLICIES_LIST_COLUMNS}

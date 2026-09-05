@@ -143,7 +143,14 @@ export default async function CampaignsPage({
               No campaigns yet. Compose a draft and pick an audience by tag or pipeline stage.
             </p>
           ) : (
-            <ModuleListActions module="campaigns" recordIds={rows.map((row) => row.id)}>
+            <ModuleListActions
+              module="campaigns"
+              recordIds={rows.map((row) => row.id)}
+              records={rows.map((row) => ({
+                id: row.id,
+                label: row.name,
+              }))}
+            >
             <table className="ff-table">
               <thead>
                 <tr>

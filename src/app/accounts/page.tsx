@@ -39,7 +39,17 @@ export default async function AccountsPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
-        <ModuleListActions module="businesses" recordIds={rows.map((account) => account.id)}>
+        <ModuleListActions
+          module="businesses"
+          recordIds={rows.map((account) => account.id)}
+          records={rows.map((account) => ({
+            id: account.id,
+            label: account.name,
+            email: account.email,
+            phone: account.phone,
+            accountId: account.id,
+          }))}
+        >
         <DeskColumnTable
           moduleId="businesses"
           columns={ACCOUNTS_LIST_COLUMNS}

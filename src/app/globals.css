@@ -407,3 +407,9 @@
   background: var(--ff-check-bg);
   border-color: color-mix(in srgb, var(--ff-check) 55%, var(--ff-border));
 }
+
+@media print {
+  .ff-no-print {
+    display: none !important;
+  }
+}
