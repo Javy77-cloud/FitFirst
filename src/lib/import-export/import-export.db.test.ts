@@ -39,7 +39,8 @@ describe("import-export against seed", () => {
   });
 
   it("creates a lead on commit and never writes a Policy for Ana", async () => {
-    const leadCsv = `first_name,last_name,email,source,status\nImport,Probe,import.probe@desk.local,csv,new\n`;
+    const email = `import.probe.${Date.now()}@desk.local`;
+    const leadCsv = `first_name,last_name,email,source,status\nImport,Probe,${email},csv,new\n`;
     const preview = await previewImport("leads", leadCsv);
     expect(preview.rows[0]?.action).toBe("create");
     const committed = await commitImport("leads", leadCsv, actor, "leads-probe.csv");
@@ -47,7 +48,7 @@ describe("import-export against seed", () => {
     const [lead] = await db
       .select()
       .from(leads)
-      .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.email, "import.probe@desk.local")));
+      .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.email, email)));
     expect(lead?.firstName).toBe("Import");
 
     const anaPolicy = `policy_number,line_of_business,effective_date,expiration_date,contact_email,status\nHO-DIB-IMPORT,HO,2026-01-01,2027-01-01,ana.dib@desk.local,active\n`;
