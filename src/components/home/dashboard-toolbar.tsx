@@ -25,6 +25,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -173,41 +174,43 @@ function LayoutDropdown({
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Custom layouts</DropdownMenuLabel>
-          {customLayouts.length === 0 ? (
-            <div className="px-1.5 py-1 text-xs text-muted-foreground">None saved yet for this user.</div>
-          ) : (
-            customLayouts.map((row) => (
-              <DropdownMenuItem
-                key={row.id}
-                onClick={() => pickCustom(row.id)}
-                className="justify-between"
-              >
-                <span className="min-w-0 truncate">{row.name}</span>
-                {activeLayoutId === row.id ? <Check className="size-3.5 text-primary" /> : null}
-              </DropdownMenuItem>
-            ))
-          )}
-          <DropdownMenuItem
-            onClick={() => {
-              setDraftName("");
-              setSaveOpen(true);
-            }}
-          >
-            Save as custom layout…
-          </DropdownMenuItem>
-          {activeLayoutId ? (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Custom layouts</DropdownMenuLabel>
+            {customLayouts.length === 0 ? (
+              <div className="px-1.5 py-1 text-xs text-muted-foreground">None saved yet for this user.</div>
+            ) : (
+              customLayouts.map((row) => (
+                <DropdownMenuItem
+                  key={row.id}
+                  onClick={() => pickCustom(row.id)}
+                  className="justify-between"
+                >
+                  <span className="min-w-0 truncate">{row.name}</span>
+                  {activeLayoutId === row.id ? <Check className="size-3.5 text-primary" /> : null}
+                </DropdownMenuItem>
+              ))
+            )}
             <DropdownMenuItem
               onClick={() => {
-                const current = customLayouts.find((row) => row.id === activeLayoutId);
-                setDraftName(current?.name ?? "");
-                setRenameId(activeLayoutId);
+                setDraftName("");
+                setSaveOpen(true);
               }}
             >
-              <Pencil className="size-3" />
-              Rename current layout…
+              Save as custom layout…
             </DropdownMenuItem>
-          ) : null}
+            {activeLayoutId ? (
+              <DropdownMenuItem
+                onClick={() => {
+                  const current = customLayouts.find((row) => row.id === activeLayoutId);
+                  setDraftName(current?.name ?? "");
+                  setRenameId(activeLayoutId);
+                }}
+              >
+                <Pencil className="size-3" />
+                Rename current layout…
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
