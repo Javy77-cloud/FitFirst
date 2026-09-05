@@ -28,6 +28,7 @@ function revalidate(ids: ReturnType<typeof related>) {
   if (ids.policyId) revalidatePath(`/policies/${ids.policyId}`);
   if (ids.dealId) revalidatePath(`/deals/${ids.dealId}`);
   if (ids.leadId) revalidatePath(`/leads/${ids.leadId}`);
+  revalidatePath("/quotes");
 }
 
 /** Log an outbound email through the existing template stub. No SendGrid. */

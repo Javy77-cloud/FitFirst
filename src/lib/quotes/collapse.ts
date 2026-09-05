@@ -8,6 +8,15 @@ export function shopSectionOpen(
   return shop.quotedCount > 0 || shop.declinedCount > 0 || shop.boundCount > 0;
 }
 
+/** Quote cards start collapsed so identity + actions stay the scan. Focused shop opens quoted/bound. */
+export function quoteCardDefaultOpen(
+  row: { status: string },
+  focusedDeal = false,
+): boolean {
+  if (!focusedDeal) return false;
+  return row.status === "quoted" || row.status === "bound";
+}
+
 export function sheetGroupNeedsAttention(
   fields: Array<{ key: string }>,
   values: Record<string, SheetCell | undefined> | null,

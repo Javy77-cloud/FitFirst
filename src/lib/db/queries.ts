@@ -97,6 +97,7 @@ import {
   leadOffers,
   userDashboardPrefs,
 } from "./schema";
+import { attachQuotePdfs } from "@/lib/quotes/board";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
 import {
   hitFromBusiness,
@@ -1925,30 +1926,57 @@ export async function getMergeReview(id: string) {
 
 export async function listQuoteTrackingShops(dealId?: string) {
   if (dealId && !isUuid(dealId)) return [];
-  const logRows = await db
-    .select({ log: quoteAttemptLogs, deal: deals, carrier: carriers })
-    .from(quoteAttemptLogs)
-    .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
-    .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
-    .where(
-      dealId
-        ? and(eq(quoteAttemptLogs.tenantId, tenant()), eq(quoteAttemptLogs.dealId, dealId))
-        : eq(quoteAttemptLogs.tenantId, tenant()),
-    );
-  const quoteRows = await db
-    .select({ quote: quotes, deal: deals, carrier: carriers })
-    .from(quotes)
-    .innerJoin(deals, eq(quotes.dealId, deals.id))
-    .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
-    .where(
-      dealId ? and(eq(quotes.tenantId, tenant()), eq(quotes.dealId, dealId)) : eq(quotes.tenantId, tenant()),
-    );
-  const policyRows = await db
-    .select()
-    .from(policies)
-    .where(eq(policies.tenantId, tenant()));
+  const scope = dealId
+    ? and(eq(quoteAttemptLogs.tenantId, tenant()), eq(quoteAttemptLogs.dealId, dealId))
+    : eq(quoteAttemptLogs.tenantId, tenant());
+  const quoteScope = dealId
+    ? and(eq(quotes.tenantId, tenant()), eq(quotes.dealId, dealId))
+    : eq(quotes.tenantId, tenant());
 
-  const attempts = logRows.map(({ log, deal, carrier }) => ({
+  const [logRows, quoteRows, policyRows, pdfRows] = await Promise.all([
+    db
+      .select({ log: quoteAttemptLogs, deal: deals, carrier: carriers, contact: contacts, lead: leads })
+      .from(quoteAttemptLogs)
+      .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
+      .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+      .leftJoin(contacts, eq(deals.contactId, contacts.id))
+      .leftJoin(leads, eq(deals.leadId, leads.id))
+      .where(scope),
+    db
+      .select({ quote: quotes, deal: deals, carrier: carriers, contact: contacts, lead: leads })
+      .from(quotes)
+      .innerJoin(deals, eq(quotes.dealId, deals.id))
+      .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
+      .leftJoin(contacts, eq(deals.contactId, contacts.id))
+      .leftJoin(leads, eq(deals.leadId, leads.id))
+      .where(quoteScope),
+    db.select().from(policies).where(eq(policies.tenantId, tenant())),
+    db
+      .select({
+        id: documents.id,
+        dealId: documents.dealId,
+        filename: documents.filename,
+        docType: documents.docType,
+        slot: documents.slot,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.tenantId, tenant()),
+          dealId ? eq(documents.dealId, dealId) : undefined,
+          or(eq(documents.slot, "quote_pdf"), eq(documents.docType, "quote_pdf"), eq(documents.docType, "quote")),
+        ),
+      ),
+  ]);
+
+  const party = (contact: { id: string; email: string | null; phone: string | null } | null, lead: { email: string | null; phone: string | null } | null, accountId: string | null) => ({
+    contactId: contact?.id ?? null,
+    accountId,
+    email: contact?.email ?? lead?.email ?? null,
+    phone: contact?.phone ?? lead?.phone ?? null,
+  });
+
+  const attempts = logRows.map(({ log, deal, carrier, contact, lead }) => ({
     id: log.id,
     dealId: deal.id,
     dealTitle: deal.title,
@@ -1962,9 +1990,12 @@ export async function listQuoteTrackingShops(dealId?: string) {
     quoteNumber: log.quoteNumber,
     attemptedAt: log.attemptedAt,
     why: log.why,
-    quoteId: log.id,
+    quoteId: null,
+    lostReason: log.lostReason,
+    coverageA: log.snapCoverageA ?? log.covATried,
+    ...party(contact, lead, deal.accountId ?? null),
   }));
-  const comparison = quoteRows.map(({ quote, deal, carrier }) => ({
+  const comparison = quoteRows.map(({ quote, deal, carrier, contact, lead }) => ({
     id: quote.id,
     dealId: deal.id,
     dealTitle: deal.title,
@@ -1978,11 +2009,17 @@ export async function listQuoteTrackingShops(dealId?: string) {
     createdAt: quote.createdAt,
     notes: quote.notes,
     quoteAttemptLogId: quote.quoteAttemptLogId,
+    lostReason: quote.lostReason,
+    coverageA: quote.coverageA,
+    aopDeductible: quote.aopDeductible,
+    hurricaneDeductible: quote.hurricaneDeductible,
+    coverageGaps: quote.coverageGaps ?? [],
+    ...party(contact, lead, deal.accountId ?? null),
   }));
   const bound = policyRows
     .filter((p) => p.dealId && p.carrierId)
     .map((p) => ({ dealId: p.dealId!, carrierId: p.carrierId!, policyId: p.id }));
-  return groupTrackingShops(buildTrackingRows(attempts, bound, comparison));
+  return attachQuotePdfs(groupTrackingShops(buildTrackingRows(attempts, bound, comparison)), pdfRows);
 }
 
 export async function historyForContact(contactId: string) {

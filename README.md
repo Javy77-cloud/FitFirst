@@ -32,3 +32,13 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 ```bash
 npm test
 ```
+
+### Quotes list — collapse / actions (this branch)
+
+1. Log in as **javy@fitfirst.local** / **javy**.
+2. Open **Quotes**. Confirm the module is still in the left nav (Javy: stay).
+3. Each quote is a card. Collapsed cards still show **carrier, premium, status, quote #**.
+4. Click **Expand** / **Collapse** on a card. Full detail (why, deductibles, Cov A, gaps) only appears when expanded.
+5. Action buttons stay visible on every card whether it is open or closed: Compare, Open PDF / No PDF, Email stub, SMS stub, Mark lost, Open deal. Bound rows show **Hit — policy**.
+6. Use the **Bulk** bar: Select all, Compare selected, Expand all, Collapse all. Tick two quotes on Ana’s shop and Compare selected.
+7. Ana Dib HO3 stays shopping / unbound at Cov A **$321,000**. Do not bind.

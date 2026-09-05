@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { sheetGroupNeedsAttention, sheetGroupSummary, shopSectionOpen } from "./collapse";
+import {
+  quoteCardDefaultOpen,
+  sheetGroupNeedsAttention,
+  sheetGroupSummary,
+  shopSectionOpen,
+} from "./collapse";
 
 describe("quote section collapse", () => {
   it("keeps a focused shop open and folds skip-only shops on the board", () => {
     expect(shopSectionOpen({ quotedCount: 0, declinedCount: 0, boundCount: 0 }, true)).toBe(true);
     expect(shopSectionOpen({ quotedCount: 0, declinedCount: 0, boundCount: 0 })).toBe(false);
     expect(shopSectionOpen({ quotedCount: 1, declinedCount: 3, boundCount: 0 })).toBe(true);
+    expect(quoteCardDefaultOpen({ status: "quoted" })).toBe(false);
+    expect(quoteCardDefaultOpen({ status: "quoted" }, true)).toBe(true);
+    expect(quoteCardDefaultOpen({ status: "skip" }, true)).toBe(false);
   });
 
   it("opens sheet groups that still have blanks or CHECK", () => {
