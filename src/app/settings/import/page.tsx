@@ -25,7 +25,9 @@ export default async function ImportSettingsPage({
         copy dumps into <code>import/zoho/</code>, then{" "}
         <code>npm run db:wipe-crm</code> and <code>npm run db:import-zoho</code>. That wipe
         keeps users, tenant, and carriers. Ana is not re-seeded. File bytes stay out of this
-        pass.
+        pass. If lists are empty for Maya after an older import, run{" "}
+        <code>npm run db:assign-owner</code> — it only fills null <code>owner_id</code> on
+        contacts, leads, deals, and policies. Do not wipe.
       </p>
       <p className="mb-4 text-sm">
         <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">

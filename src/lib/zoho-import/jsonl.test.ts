@@ -49,6 +49,25 @@ describe("Zoho field maps", () => {
     expect(mapped.phone).toBe("321-245-1780");
     expect(mapped.dateOfBirth).toBe("1962-07-19");
     expect(mapped.unmatched).toContain("Spouse");
+    expect(mapped.owner.email).toBeNull();
+  });
+
+  it("extracts Zoho Owner without listing it as unmatched", () => {
+    const mapped = mapContact(
+      {
+        id: "c1",
+        First_Name: "Mario",
+        Last_Name: "Garcia",
+        Owner: { name: "Maya Chen", id: "z-maya", email: "maya@fitfirst.local" },
+      },
+      "c1",
+    );
+    expect(mapped.owner).toEqual({
+      zohoId: "z-maya",
+      name: "Maya Chen",
+      email: "maya@fitfirst.local",
+    });
+    expect(mapped.unmatched).not.toContain("Owner");
   });
 
   it("links deals to contact/business lookups and maps stages", () => {

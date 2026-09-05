@@ -1,3 +1,4 @@
+import { extractZohoOwner, type ZohoOwnerRef } from "./owners";
 import type { ZohoModule, ZohoRecord } from "./types";
 import {
   asBool,
@@ -34,6 +35,8 @@ export type MappedContact = {
   smsOptOut: boolean;
   tenureStart: Date | null;
   accountZohoId: string | null;
+  owner: ZohoOwnerRef;
+  createdBy: ZohoOwnerRef;
   unmatched: string[];
 };
 
@@ -84,6 +87,8 @@ export type MappedLead = {
   insuranceTypeDesired: string | null;
   preferredLanguage: string | null;
   convertedDealZohoId: string | null;
+  owner: ZohoOwnerRef;
+  createdBy: ZohoOwnerRef;
   unmatched: string[];
 };
 
@@ -102,6 +107,8 @@ export type MappedDeal = {
   contactZohoId: string | null;
   accountZohoId: string | null;
   wonAt: Date | null;
+  owner: ZohoOwnerRef;
+  createdBy: ZohoOwnerRef;
   unmatched: string[];
 };
 
@@ -148,6 +155,8 @@ export type MappedPolicy = {
   commission4Pct: string | null;
   numberOfInsured: number | null;
   oepStart: Date | null;
+  owner: ZohoOwnerRef;
+  createdBy: ZohoOwnerRef;
   unmatched: string[];
 };
 
@@ -414,6 +423,8 @@ export function mapContact(record: ZohoRecord, zohoId: string): MappedContact {
     smsOptOut: asBool(record.SMS_Opt_Out) ?? asBool(record.Phone_Opt_Out) ?? false,
     tenureStart: asDate(record.Client_Since),
     accountZohoId: lookupId(record.Account_Name),
+    owner: extractZohoOwner(record),
+    createdBy: extractZohoOwner(record, "Created_By"),
     unmatched: unmatchedOf(record, CONTACT_MAPPED),
   };
 }
@@ -475,6 +486,8 @@ export function mapLead(record: ZohoRecord, zohoId: string): MappedLead {
     insuranceTypeDesired: firstText(record, ["Product_Interest", "Existing_Coverage_Type"]),
     preferredLanguage: firstText(record, ["Preferred_Language"]),
     convertedDealZohoId: lookupId(record.Converted_Deal),
+    owner: extractZohoOwner(record),
+    createdBy: extractZohoOwner(record, "Created_By"),
     unmatched: unmatchedOf(record, LEAD_MAPPED),
   };
 }
@@ -500,6 +513,8 @@ export function mapDeal(record: ZohoRecord, zohoId: string): MappedDeal {
     contactZohoId: lookupId(record.Contact_Name),
     accountZohoId: lookupId(record.Account_Name),
     wonAt: asDate(record.Won_Date),
+    owner: extractZohoOwner(record),
+    createdBy: extractZohoOwner(record, "Created_By"),
     unmatched: unmatchedOf(record, DEAL_MAPPED),
   };
 }
@@ -563,6 +578,8 @@ export function mapPolicy(record: ZohoRecord, zohoId: string): MappedPolicy | { 
     commission4Pct: asNumber(record.Commission4) != null ? String(asNumber(record.Commission4)) : null,
     numberOfInsured: asNumber(record.Number_of_Insured),
     oepStart: asDate(record.Open_Enrollment_Start),
+    owner: extractZohoOwner(record),
+    createdBy: extractZohoOwner(record, "Created_By"),
     unmatched: unmatchedOf(record, POLICY_MAPPED),
   };
 }

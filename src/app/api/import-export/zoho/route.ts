@@ -19,5 +19,6 @@ export async function GET() {
     missingModules: scan.missingModules,
     wipeCommand: "npm run db:wipe-crm",
     importCommand: "npm run db:import-zoho",
+    assignOwnerCommand: "npm run db:assign-owner",
   });
 }

@@ -15,6 +15,14 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { writeEin } from "@/lib/pii/write";
 import { defaultImportDir, readModuleRecords, scanImportFolder } from "./jsonl";
 import { mapAccount, mapContact, mapDeal, mapLead, mapPolicy, mapTask, mapVendor } from "./maps";
+import {
+  assignNullOwners,
+  loadTenantUsers,
+  resolveOwnerId,
+  resolveTenantAdmin,
+  type TenantUserRef,
+  type ZohoOwnerRef,
+} from "./owners";
 import type {
   ImportError,
   ImportReport,
@@ -40,6 +48,15 @@ function emptyCounts(module: ZohoModule, fitfirst: string): ModuleImportCounts {
   return { module, fitfirst, read: 0, created: 0, updated: 0, skipped: 0, errors: 0 };
 }
 
+function matchesAdmin(owner: ZohoOwnerRef, admin: TenantUserRef): boolean {
+  const email = owner.email?.trim().toLowerCase();
+  const name = owner.name?.trim().toLowerCase();
+  return (
+    (email != null && email === admin.email.trim().toLowerCase()) ||
+    (name != null && name === admin.name.trim().toLowerCase())
+  );
+}
+
 function lineToken(value: string): string {
   const text = value.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
   if (/\bAUTO\b/.test(text)) return "AUTO";
@@ -59,6 +76,21 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
   const errors: ImportError[] = [];
   const counts: ModuleImportCounts[] = [];
   const fileFor = (module: ZohoModule) => scan.files.find((file) => file.module === module);
+  const admin = await resolveTenantAdmin(tenantId);
+  const directory = await loadTenantUsers(tenantId);
+  let ownersMapped = 0;
+  let ownersFallback = 0;
+
+  const ownerIdFor = (owner: ZohoOwnerRef | null | undefined) => {
+    const id = resolveOwnerId(owner, directory, admin.id);
+    if (owner?.email || owner?.name) {
+      if (id !== admin.id || matchesAdmin(owner, admin)) ownersMapped += 1;
+      else ownersFallback += 1;
+    } else {
+      ownersFallback += 1;
+    }
+    return id;
+  };
 
   const existingCarriers = await db.select().from(carriers).where(eq(carriers.tenantId, tenantId));
   const carrierByNorm = new Map(existingCarriers.map((row) => [normalizeCarrierName(row.name), row]));
@@ -204,6 +236,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         emailOptOut: mapped.emailOptOut,
         smsOptOut: mapped.smsOptOut,
         tenureStart: mapped.tenureStart,
+        ownerId: ownerIdFor(mapped.owner),
         zohoId,
         sourceId: zohoId,
         updatedAt: new Date(),
@@ -332,6 +365,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         dateOfBirth: mapped.dateOfBirth,
         insuranceTypeDesired: mapped.insuranceTypeDesired,
         preferredLanguage: mapped.preferredLanguage,
+        ownerId: ownerIdFor(mapped.owner),
         zohoId,
         sourceId: zohoId,
         updatedAt: new Date(),
@@ -382,6 +416,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         contactId: mapped.contactZohoId ? (contactByZoho.get(mapped.contactZohoId) ?? null) : null,
         accountId: mapped.accountZohoId ? (accountByZoho.get(mapped.accountZohoId) ?? null) : null,
         wonAt: mapped.wonAt,
+        ownerId: ownerIdFor(mapped.owner),
         zohoId,
         sourceId: zohoId,
         updatedAt: new Date(),
@@ -469,6 +504,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         commission4Pct: mapped.commission4Pct,
         numberOfInsured: mapped.numberOfInsured,
         oepStart: mapped.oepStart,
+        ownerId: ownerIdFor(mapped.owner),
         zohoId,
         sourceId: zohoId,
         updatedAt: new Date(),
@@ -535,6 +571,8 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
   counts.push(taskCounts);
 
   await recomputePolicyCounts(tenantId, [...contactByZoho.values()], [...accountByZoho.values()]);
+  const assigned = await assignNullOwners(tenantId, admin);
+  const nullOwnersFilled = assigned.tables.reduce((sum, row) => sum + row.ownerUpdated, 0);
 
   const unmatched: UnmatchedField[] = [...unmatchedBag.entries()]
     .map(([key, count]) => {
@@ -551,6 +589,13 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
     carriersKept,
     carriersAdded,
     carriersMergedLines,
+    owners: {
+      adminId: admin.id,
+      adminEmail: admin.email,
+      fallbackAssigned: ownersFallback,
+      mapped: ownersMapped,
+      nullOwnersFilled,
+    },
   };
 }
 
@@ -618,6 +663,7 @@ export function formatImportReport(report: ImportReport): string {
   const lines = [
     `Zoho JSONL import from ${report.folder}`,
     `  carriers kept=${report.carriersKept} added=${report.carriersAdded} lines_merged=${report.carriersMergedLines}`,
+    `  owners: mapped=${report.owners.mapped} fallback_admin=${report.owners.fallbackAssigned} null_filled=${report.owners.nullOwnersFilled} admin=${report.owners.adminEmail}`,
     "  counts:",
   ];
   for (const row of report.counts) {
