@@ -1,11 +1,13 @@
 import { saveGbpAgentMonitor, saveSocialAccountOwner } from "@/app/actions/social";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
-import { IntegrationCard } from "@/components/settings/integration-card";
+import { SocialByoCard } from "@/components/social/social-byo-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { currentDeskSession } from "@/lib/auth/session";
 import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
 import { listUsers } from "@/lib/db/queries";
+import { MAPS_FREE_LINK_NOTE, socialByoSpec } from "@/lib/social/byo";
+import { isSocialPlatformId } from "@/lib/social/platforms";
 import { loadGbpMonitorPolicy } from "@/lib/social/store";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +32,9 @@ export default async function SocialSettingsPage({
   return (
     <SettingsShell title="Social / GBP" current="social">
       <p className="mb-3 text-sm text-muted-foreground">
-        Bring-your-own social accounts. FitFirst does not subscribe to Meta, X, LinkedIn, or Google.
-        Connect is a stub so later OAuth can land here. Pulse numbers are demo seeds after connect.
+        Bring-your-own social accounts. Paste the agency’s free developer app (Meta, Google, LinkedIn)
+        and try OAuth. FitFirst does not subscribe to Meta, X, LinkedIn, or Google and does not buy
+        ads. Pulse numbers stay demo seeds after connect. {MAPS_FREE_LINK_NOTE}
       </p>
       {notice === "gbp-agents-on" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
@@ -58,6 +61,48 @@ export default async function SocialSettingsPage({
       {notice === "gbp-agents-off" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Agents see GBP locked until you allow monitoring again.
+        </p>
+      ) : null}
+      {notice === "credentials-saved" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          Agency app credentials saved for{" "}
+          {typeof query.provider === "string" && isSocialPlatformId(query.provider)
+            ? socialByoSpec(query.provider).product
+            : "that platform"}
+          . Secret is encrypted. Click Connect to open the vendor OAuth dialog.
+        </p>
+      ) : null}
+      {notice === "credentials-cleared" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Agency app keys cleared. Desk demo connect (if any) stays until you Disconnect.
+        </p>
+      ) : null}
+      {notice === "needs-credentials" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Paste the agency App ID / Client ID and secret first. FitFirst has no vendor keys to lend.
+        </p>
+      ) : null}
+      {notice === "paid-wall" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          {typeof query.provider === "string" && isSocialPlatformId(query.provider)
+            ? socialByoSpec(query.provider).wallBody
+            : "That vendor requires a paid API. FitFirst does not buy it."}
+        </p>
+      ) : null}
+      {notice === "oauth-wall" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          OAuth stopped at the vendor wall
+          {typeof query.provider === "string" && isSocialPlatformId(query.provider)
+            ? ` (${socialByoSpec(query.provider).vendor})`
+            : ""}
+          . Check the card for the error. Common causes: redirect URI not added, app still in review,
+          or a paid product.
+        </p>
+      ) : null}
+      {notice === "byo-connected" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          {typeof query.provider === "string" ? query.provider : "Account"} connected with the
+          agency’s app. Inbox sync stays stubbed. Pulse numbers stay demo seeds.
         </p>
       ) : null}
       {!session.isAdmin ? (
@@ -110,7 +155,7 @@ export default async function SocialSettingsPage({
 
       <div className="grid gap-3 md:grid-cols-2">
         {social.map((item) => (
-          <IntegrationCard
+          <SocialByoCard
             key={item.id}
             item={item}
             canEdit={session.isAdmin}

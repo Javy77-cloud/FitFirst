@@ -2181,7 +2181,7 @@ export const esignSettings = pgTable(
   (t) => [uniqueIndex("esign_settings_tenant_idx").on(t.tenantId)],
 );
 
-/** BYO connector catalog. Stub only — no OAuth, no vendor keys. */
+/** BYO connector catalog. Social rows may hold agency OAuth app credentials. */
 export const integrationConnections = pgTable(
   "integration_connections",
   {
@@ -2198,6 +2198,15 @@ export const integrationConnections = pgTable(
     connectedAt: timestamp("connected_at", { withTimezone: true }),
     /** Social stub owner. Null = agency / unassigned inbound. */
     ownerUserId: uuid("owner_user_id"),
+    /** Agency-owned OAuth app. FitFirst never supplies Meta / X / LinkedIn keys. */
+    clientId: text("client_id"),
+    clientSecretEnc: text("client_secret_enc"),
+    clientSecretIv: text("client_secret_iv"),
+    oauthState: text("oauth_state"),
+    connectMode: text("connect_mode"),
+    lastOauthError: text("last_oauth_error"),
+    accessTokenEnc: text("access_token_enc"),
+    accessTokenIv: text("access_token_iv"),
     ...timestamps,
   },
   (t) => [

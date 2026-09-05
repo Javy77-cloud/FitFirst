@@ -88,7 +88,7 @@ export function PulseTile({
         </>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Connect stub in Settings → Social. FitFirst builds the plug; the agency connects the account.
+          Connect in Settings → Social. Paste the agency’s free developer app, or mark a desk demo.
         </p>
       )}
     </article>

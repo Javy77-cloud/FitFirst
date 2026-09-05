@@ -28,7 +28,7 @@ export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   email: "Agency inbox. Google, Outlook, or Zoho Mail — FitFirst does not host mail.",
   calendar: "Desk calendar stays here. Google, Outlook, and Zoho Calendar are demo plugs.",
   social:
-    "Facebook, Instagram, and Google Business Profile. GBP stays Admin-gated. FitFirst does not buy ads or API seats.",
+    "Facebook, Instagram, X, LinkedIn, and Google Business Profile. Paste the agency’s free developer app and try OAuth. FitFirst does not buy ads or API seats. Maps stay free public search links.",
   phone_sms: "Call log and SMS. Twilio, RingCentral, or Lightspeed Voice. Nothing dials from this build.",
   esign: "In-desk stub on Deal or Policy. Finish-line DocuSign / Dropbox Sign stay parked. No envelope leaves the desk.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
@@ -171,7 +171,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "Facebook",
     initials: "Fb",
     blurb: "Page inbox and lead forms. Inquiries land on Leads.",
-    byoNote: "Agency Facebook Page. OAuth does not open Meta. No ad spend.",
+    byoNote: "Agency Facebook Page. Bring your own free Meta app. FitFirst does not buy ads.",
     tone: "facebook",
   },
   {
@@ -180,7 +180,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "Instagram",
     initials: "Ig",
     blurb: "DMs and comment asks for a quote. Same social → Lead path.",
-    byoNote: "Agency Instagram. Connect is a demo toggle. Nothing syncs from Meta.",
+    byoNote: "Agency Instagram. Same Meta app as Facebook, or its own. Nothing posts from FitFirst.",
     tone: "instagram",
   },
   {
@@ -189,7 +189,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "Google Business Profile",
     initials: "Gb",
     blurb: "Listing messages and views. Agents monitor only after Admin allows it.",
-    byoNote: "Agency Google Business Profile. Admin approval required before agents monitor.",
+    byoNote: "Agency Google Cloud OAuth client. GBP API verification is Google’s wall. Maps stay free links.",
     tone: "gbp",
     adminGated: true,
   },
@@ -199,7 +199,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "X (Twitter)",
     initials: "X",
     blurb: "Mentions and DMs that ask for coverage. Pulse is demo numbers after connect.",
-    byoNote: "Agency X account. No live Twitter API.",
+    byoNote: "Agency X account. X API is a paid vendor product. FitFirst does not buy it.",
     tone: "x",
     optional: true,
   },
@@ -209,7 +209,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "LinkedIn",
     initials: "Li",
     blurb: "Company-page messages for commercial shops. Inquiries become Leads.",
-    byoNote: "Agency LinkedIn Page. No Sales Navigator seat from FitFirst.",
+    byoNote: "Agency LinkedIn app. Sign In is free; page inbox stays a partner / paid wall.",
     tone: "linkedin",
     optional: true,
   },
@@ -352,7 +352,7 @@ export const CONNECT_HUB_SECTIONS = [
   {
     id: "social",
     title: "Facebook, Instagram, GBP",
-    blurb: "Social plugs and Google Business Profile. GBP stays Admin-gated.",
+    blurb: "BYO social apps. Try OAuth with the agency’s free developer credentials. GBP stays Admin-gated.",
     providerIds: ["facebook", "instagram", "google_business_profile"] as const,
   },
   {

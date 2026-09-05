@@ -59,7 +59,8 @@ export default async function SettingsPage({
             <div className="text-sm font-semibold text-navy">Integrations</div>
             <p className="text-helper text-muted-foreground">
               Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign,
-              EZLynx / QuoteRush. Connect / Disconnect is a demo toggle. Agency pays the vendor.
+              EZLynx / QuoteRush. Social is BYO OAuth with the agency’s free developer app. Other
+              cards stay a demo toggle. Agency pays the vendor.
             </p>
           </div>
           <ConnectionBadge connected={catalogConnected} />
@@ -84,8 +85,8 @@ export default async function SettingsPage({
           <div>
             <div className="text-sm font-semibold text-navy">Social / GBP</div>
             <p className="text-helper text-muted-foreground">
-              Facebook, Instagram, X, LinkedIn, Google Business Profile. GBP needs Admin approval
-              before agents monitor.
+              Facebook, Instagram, X, LinkedIn, Google Business Profile. Paste agency app
+              credentials and try OAuth. GBP needs Admin approval before agents monitor.
             </p>
           </div>
           <ConnectionBadge connected={catalog.some((item) => item.category === "social" && item.connected)} />

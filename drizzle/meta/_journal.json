@@ -449,6 +449,13 @@
       "when": 1788564000000,
       "tag": "0063_ams_wave9",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1788570000000,
+      "tag": "0064_social_byo",
+      "breakpoints": true
     }
   ]
 }

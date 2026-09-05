@@ -53,9 +53,11 @@ export default async function SocialPulsePage({
       }
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Followers, engagement, and views for connected stubs. An inquiry on an agent&apos;s
-        connected account creates a Lead and pings that agent. Agency inbound stays unassigned
-        until Admin awards it. GBP stays Admin-gated.
+        Followers, engagement, and views for connected accounts (demo seeds, or BYO OAuth on
+        Settings → Social). An inquiry on an agent&apos;s connected account creates a Lead and
+        pings that agent. Agency inbound stays unassigned until Admin awards it. GBP stays
+        Admin-gated. Admin connects with the agency&apos;s own Meta / Google / LinkedIn app —
+        FitFirst does not buy those APIs.
       </p>
       {notice === "gbp-locked" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">

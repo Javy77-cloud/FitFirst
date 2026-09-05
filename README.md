@@ -6,13 +6,13 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass Air tip. Includes AMS wave 8/9, `cursor/error-sweep-sep5-31ef` (Reviews 500 fix), and `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations UUID 404s). Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
+**`cursor/social-byo-connect-4bd5`** — social BYO connect on the Sep 5b feel-pass tip. Agency pastes their own Meta / Google / LinkedIn app and tries OAuth. X stays a paid-API wall. Maps stay free public search links. Ana unbound. Sidebar `#1d4e89`.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/feel-pass-consolidate-sep5b-6195 && git pull
+git fetch && git checkout cursor/social-byo-connect-4bd5 && git pull
 npm install
 npm run db:migrate
 npm run db:seed
@@ -33,7 +33,7 @@ Typography: full desk scale-up on a **16px** root. Tailwind `text-sm`/`base`/`lg
 
 Home tiles: drag the grip to reorder, size menu **1×1 / 1×2 / 2×1 / 2×2**, stored in `localStorage` as `ff-home-layout:v1:<book>`. **Reset tile layout** is on the Home header. Line-of-business donut stays 68px.
 
-Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
+Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, offices + territories, Social/GBP BYO connect, carrier portal login admin, login/session/MFA.
 
 **Automations** is in-desk only. Playbooks fire Tasks and in-app Alerts (renewal 60/30, Closed Won, Quote Sent, birthday). Template library is EN/ES preview — nothing sends. No Twilio / SendGrid / paid campaign vendors. Admin writes playbooks; agents see their book. Internal pings stay in Alerts / pop-up.
 
@@ -41,7 +41,22 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 AMS desk: file endorsement / cancel / non-renew on the Policy with a clear outcome. Renewal compare shows dollar and percent premium change. Work queue lists flags, notes, assignee, and in-app pings (addressed to the assignee). Claims log is a three-column FNOL board. Commissions split pending (still owed) vs paid. Missing-data gauges link to the Quote Sheet cell.
 
-**Integrations** (`/settings/integrations`): same chrome as the catalog. Demo Connect / Disconnect for Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign, and EZLynx / QuoteRush. Status is **Connected (demo)** or **Not connected**. Copy is **Agency pays the vendor.** No OAuth, API keys, Stripe, or Twilio. GBP gate stays on Settings → Social. Linked from Settings.
+**Integrations** (`/settings/integrations`): same chrome as the catalog. Social / GBP is BYO OAuth (see below). Other cards stay Demo Connect / Disconnect for Google, Outlook, Zoho Mail/Calendar, SMS, e-sign, and EZLynx / QuoteRush. Copy is **Agency pays the vendor.** No Stripe or Twilio. GBP gate stays on Settings → Social. Linked from Settings.
+
+## Social BYO connect (this slice)
+
+Javy can try connecting Facebook / Instagram / GBP / LinkedIn **without FitFirst buying** Meta, X, or Google APIs. Admin pastes the agency’s own free developer app on **Settings → Social** or the Social section of **Settings → Integrations**.
+
+| Platform | What works | What is stubbed |
+| --- | --- | --- |
+| **Facebook** | Paste Meta App ID + App Secret. **Connect with Facebook** opens Meta’s real OAuth dialog. Callback exchanges the code with the agency secret. Status **Connected (BYO)**. | Page inbox sync, lead-form pull, ads / Marketing API. Pulse stays demo seeds. |
+| **Instagram** | Same Meta app (or its own). Real OAuth. Can reuse Facebook credentials if IG fields are empty. | DM / comment ingest. Nothing posts. |
+| **Google Business Profile** | Paste Google Cloud OAuth client. **Connect with Google** opens Google OAuth (`business.manage`). Userinfo label if Google returns it. Admin GBP monitor gate unchanged. | Listing replies / views API. Google verification is their wall. **Maps stay free public search links** (property address → Google Maps / Zillow / FEMA). Not a Maps Platform seat. |
+| **LinkedIn** | Paste LinkedIn app. **Connect with LinkedIn** runs free Sign In (OpenID). | Company-page inbox and Community Management (partner / paid). |
+| **X (Twitter)** | Credentials can be saved. **Connect** stops at the paid-API wall. | Mentions / DMs. FitFirst does not buy X API. |
+| **Desk demo** | **Mark connected (desk demo)** still flips pulse seeds (Priya Instagram lead path) without any vendor app. | Same as before — no OAuth. |
+
+Redirect URI to add on the agency app: `{desk origin}/api/social/oauth/callback` (local: `http://127.0.0.1:43147/api/social/oauth/callback`). Secrets encrypt at rest. FitFirst never ships Meta / X / LinkedIn keys.
 
 Settings is Setup-style **card groups** (Agency & People, Desk & Phone, Integrations / Connect, Automations & Developer, Security, Import / Export, Billing stub) — not one endless left rail. Phone and agency stay under the Admin Settings group. Automations and Developer Hub share **one** Setup card. Macros appear once (`/automations/macros`); `/settings/developer-hub/*` stays as live aliases. Import / Export (`/settings/import-export`) lists contacts, businesses, policies, carriers, leads, deals, plus activities, document metadata, commissions, and quote-sheet stubs. CSV import is a placeholder (`/settings/import`) until that slice merges. Deep links (`/settings/phone`, `/settings?section=phone`) still work.
 

@@ -887,6 +887,24 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 - `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
 - Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.
 
+## Social BYO connect (`cursor/social-byo-connect-4bd5`)
+
+Off `cursor/feel-pass-consolidate-sep5b-6195`. Javy can try Facebook / Instagram / GBP / LinkedIn connect without FitFirst buying Meta, X, or Google APIs.
+
+- Settings → Social and Settings → Integrations (social section) paste agency App ID / Client Secret (encrypted). **Connect with Facebook / Instagram / Google / LinkedIn** builds a real authorize URL from those credentials and redirects. Callback `/api/social/oauth/callback` exchanges the code with the agency secret or shows the vendor wall.
+- **Works:** Meta Login (FB + IG, IG can reuse the Facebook app), Google OAuth + userinfo, LinkedIn Sign In (OpenID). Status **Connected (BYO)**. Desk demo Connect still flips pulse seeds.
+- **Stubbed / wall:** X API (paid — Connect does not open X). LinkedIn page inbox / Community Management. GBP listing API after Google verification. Inbox sync and ads. Pulse numbers stay demo. Maps stay free public search links (Google Maps / Zillow / FEMA) — not a catalog vendor and not Maps Platform.
+- Migration `0064_social_byo` adds credential / token columns on `integration_connections`. No FitFirst vendor keys in `.env`.
+- Ana unbound / Cov A **$321,000**. Sidebar `#1d4e89`.
+
+```
+git fetch && git checkout cursor/social-byo-connect-4bd5 && git pull
+npm run db:migrate && npm run db:seed
+npm run dev -- --port 43147
+```
+
+Then Chrome Settings → Social as **javy@fitfirst.local** / **javy**. Do not bind Ana.
+
 ## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
 
 Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s). Fast-forwarded `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations / template / fill UUID 404s instead of 500s). Both tip names point at this same commit.

@@ -18,6 +18,14 @@ import { inquiryById, SOCIAL_INQUIRY_SEEDS } from "@/lib/social/seeds";
 import { loadGbpMonitorPolicy } from "@/lib/social/store";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { isIntegrationProviderId } from "@/lib/integrations/catalog";
+import { cookies } from "next/headers";
+import { isPaidWallPlatform, SOCIAL_OAUTH_COOKIE, socialReturnPath } from "@/lib/social/byo";
+import {
+  clearSocialByoApp,
+  prepareSocialAuthorize,
+  saveSocialByoApp,
+} from "@/lib/social/byo-store";
+import { deskPublicOrigin } from "@/lib/social/origin";
 
 function refreshSocial() {
   revalidatePath("/");
@@ -170,4 +178,69 @@ export async function saveSocialAccountOwner(formData: FormData) {
   }
   refreshSocial();
   redirect("/settings/social?notice=owner-saved");
+}
+
+export async function saveSocialByoCredentials(formData: FormData) {
+  await assertAdmin();
+  const raw = String(formData.get("provider") ?? "");
+  const dest = socialReturnPath(String(formData.get("next") ?? ""));
+  if (!isSocialPlatformId(raw)) {
+    redirect(`${dest}?notice=unknown-provider`);
+  }
+  const clientId = String(formData.get("clientId") ?? "").trim();
+  const clientSecret = String(formData.get("clientSecret") ?? "");
+  const accountLabel = String(formData.get("accountLabel") ?? "").trim();
+  if (!clientId) {
+    redirect(`${dest}?notice=needs-credentials&provider=${raw}`);
+  }
+  await saveSocialByoApp({
+    provider: raw,
+    clientId,
+    clientSecret,
+    accountLabel: accountLabel || null,
+  });
+  refreshSocial();
+  redirect(`${dest}?notice=credentials-saved&provider=${raw}`);
+}
+
+export async function startSocialByoOAuth(formData: FormData) {
+  await assertAdmin();
+  const raw = String(formData.get("provider") ?? "");
+  const dest = socialReturnPath(String(formData.get("next") ?? ""));
+  if (!isSocialPlatformId(raw)) {
+    redirect(`${dest}?notice=unknown-provider`);
+  }
+  if (isPaidWallPlatform(raw)) {
+    redirect(`${dest}?notice=paid-wall&provider=${raw}`);
+  }
+  const origin = await deskPublicOrigin();
+  const prepared = await prepareSocialAuthorize({
+    provider: raw,
+    origin,
+    returnTo: dest,
+  });
+  if (!prepared.ok) {
+    const notice = prepared.reason === "paid_wall" ? "paid-wall" : "needs-credentials";
+    redirect(`${dest}?notice=${notice}&provider=${raw}`);
+  }
+  const jar = await cookies();
+  jar.set(SOCIAL_OAUTH_COOKIE, prepared.state, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 10 * 60,
+  });
+  redirect(prepared.url);
+}
+
+export async function clearSocialByoCredentials(formData: FormData) {
+  await assertAdmin();
+  const raw = String(formData.get("provider") ?? "");
+  const dest = socialReturnPath(String(formData.get("next") ?? ""));
+  if (!isSocialPlatformId(raw)) {
+    redirect(`${dest}?notice=unknown-provider`);
+  }
+  await clearSocialByoApp(raw);
+  refreshSocial();
+  redirect(`${dest}?notice=credentials-cleared&provider=${raw}#${raw}`);
 }

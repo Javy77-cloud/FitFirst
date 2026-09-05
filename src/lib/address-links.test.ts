@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   femaFloodMapUrl,
   formatPropertyAddress,
+  googleMapsSearchUrl,
   propertyAddressLinks,
   zillowHomesUrl,
 } from "./address-links";
@@ -32,9 +33,16 @@ describe("property address public links", () => {
     );
   });
 
-  it("returns both public links for Ana and nothing when the street is empty", () => {
+  it("builds a free Google Maps search URL with no API key", () => {
+    expect(googleMapsSearchUrl(formatted)).toBe(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatted)}`,
+    );
+  });
+
+  it("returns public Maps / Zillow / FEMA links for Ana and nothing when the street is empty", () => {
     const links = propertyAddressLinks(ana);
     expect(links?.formatted).toBe(formatted);
+    expect(links?.maps).toContain("google.com/maps/search/");
     expect(links?.zillow).toContain("zillow.com/homes/");
     expect(links?.femaFlood).toContain("msc.fema.gov/portal/search?AddressQuery=");
     expect(propertyAddressLinks({ address1: "  ", city: "Palm Bay", state: "FL" })).toBeNull();
