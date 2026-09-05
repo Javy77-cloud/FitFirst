@@ -8,6 +8,7 @@ describe("desk nav chrome", () => {
     expect(labels.filter((label) => label === "Settings")).toHaveLength(1);
     expect(labels).toContain("Support");
     expect(DESK_NAV_ITEMS.filter((item) => item.href === "/settings")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Automations")).toHaveLength(1);
     expect(DESK_NAV_ITEMS.some((item) => item.href === "/support")).toBe(true);
   });
 

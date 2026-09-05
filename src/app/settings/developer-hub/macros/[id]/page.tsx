@@ -30,7 +30,7 @@ export default async function EditMacroPage({
   return (
     <SettingsShell
       title={macro.name}
-      current="dev-macros"
+      current="macros"
       actions={
         <form action={deleteDeskMacro}>
           <input type="hidden" name="id" value={macro.id} />

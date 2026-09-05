@@ -63,7 +63,7 @@ export function AutomationsModuleNav() {
               href: section.href,
               label: section.label,
             })),
-            { href: "/settings/developer", label: "Developer Hub" },
+            { href: "/settings/developer-hub", label: "Developer Hub" },
           ]}
         />
       </div>

@@ -75,7 +75,7 @@ export default async function AutomationsHubPage() {
         In-desk automations. Playbooks create Tasks and in-app Alerts. Templates stay EN/ES
         drafts. Paid campaign and SMS vendors are off. Developer tools (Functions, Macros,
         Buttons, Client Scripts, Webhooks, API Keys, Connections) live here too — same records as
-        Settings → Developer Hub. Ana Dib is never auto-updated.
+        Settings → Automations & Developer. Ana Dib is never auto-updated.
       </p>
       <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
         {session.isAdmin ? (

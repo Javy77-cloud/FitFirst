@@ -905,14 +905,15 @@ AMS:
 CRM / Quote / function:
 - `cursor/quote-sheet-fill-appetite-6178`
 - `cursor/quote-sheet-edit-master-risk-6051`
-- `cursor/in-desk-automations-cfc4` → `0052_automation_playbooks`
+- `cursor/in-desk-automations-cfc4` (`513dbba`) → `0052_automation_playbooks` — **ancestor of this tip**
+- `cursor/automations-hub-4d87` (`7805e58`) — **ancestor of this tip** (not re-merged; already on the automations line)
 - `cursor/connect-stubs-hub-1028`
 - `cursor/in-desk-esign-stub-fdce` → `0053_in_desk_esign`
 - `cursor/crm-depth-api-wall-7faa` → `0059_comms_outbound_jobs` (this-session desk branch)
 
 Developer / Settings:
 - `cursor/developer-hub-core-a882` → `0054_developer_hub`
-- `cursor/automations-dev-tools-de23` (bc-60c542ef power-user fill) → `0055_developer_hub`
+- `cursor/automations-dev-tools-de23` (`6132ab1`, bc-60c542ef power-user fill, **+6274 / −33 vs wave5**, 76 files) → `0055_developer_hub` — **must-include ancestor of this tip**
 - `cursor/dev-hub-macros-buttons-649d` → `0056_dev_hub_macros_buttons`
 - `cursor/settings-ia-cards-2ba0`
 - `cursor/import-export-hub-41c4` → `0057_import_export_jobs`
@@ -927,6 +928,8 @@ UX feel-pass:
 - `cursor/policy-detail-info-433d`
 
 Skipped: product-site / marketing branches. Side branches were not deleted.
+
+Settings IA: **one** Setup card **Automations & Developer** (`automations-dev`). Macros once at `/automations/macros`. `/settings/developer-hub/*` remains an alias, not a second Settings card. Left-nav still one Settings + one Automations.
 
 Seed re-run: `seed()` is mutexed so parallel db tests do not unique-crash. `seed-lifecycle` deletes Elena `signature_envelopes` before documents (in-desk e-sign sample packets). Carrier appointments upsert on `(tenant, carrier, line)`.
 

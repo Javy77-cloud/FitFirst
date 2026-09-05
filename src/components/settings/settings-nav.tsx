@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SettingsGroupIcon } from "@/components/settings/settings-group-icon";
 import {
   SETTINGS_NAV,
+  settingsChildFor,
   settingsGroupFor,
   type SettingsNavId,
 } from "@/lib/settings/nav";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 export function SettingsNav({ current }: { current: SettingsNavId }) {
   const activeGroup = settingsGroupFor(current);
+  const activeChild = settingsChildFor(current);
 
   return (
     <nav
@@ -51,7 +53,7 @@ export function SettingsNav({ current }: { current: SettingsNavId }) {
                 {groupActive ? (
                   <ul className="mt-1.5 space-y-0.5 border-t border-border/70 pt-1.5">
                     {group.children.map((child) => {
-                      const childActive = current === child.id;
+                      const childActive = activeChild === child.id;
                       return (
                         <li key={`${group.id}-${child.id}-${child.href}`}>
                           <Link

@@ -26,6 +26,8 @@ export const SETTINGS_NAV_IDS = [
   "triggers",
   "developer",
   "automations",
+  "playbooks",
+  "sequences",
   "agency",
   "offices",
   "territories",
@@ -145,34 +147,19 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   {
     id: "automations-dev",
     href: "/automations",
-    label: "Automations",
-    hint: "Campaigns, templates, triggers",
-    blurb: "Automations hub is live: campaigns, SMS, templates, and the trigger library. Developer Hub is its own Setup card.",
+    label: "Automations & Developer",
+    hint: "Playbooks, macros, developer tools",
+    blurb: "One Setup card for the Automations hub and Developer Hub. Macros live once at /automations/macros — same desk_macros rows as the Developer Hub alias pages.",
     icon: "automations",
     children: [
-      { id: "automations", href: "/automations", label: "Automations hub", hint: "Campaigns · SMS · builder" },
-      { id: "templates", href: "/settings/email-templates", label: "Email templates", hint: "Client mail" },
-      { id: "triggers", href: "/settings/email-triggers", label: "Triggers", hint: "Won-date jobs" },
-    ],
-  },
-  {
-    id: "developer-hub",
-    href: "/settings/developer-hub",
-    label: "Developer Hub",
-    hint: "Functions, macros, buttons, scripts",
-    blurb: "Macros, custom buttons, client scripts, widgets, plus functions, API, webhooks, and connections.",
-    icon: "developer",
-    badge: "Admin",
-    children: [
-      { id: "developer-hub", href: "/settings/developer-hub", label: "Overview", hint: "Hub home" },
-      { id: "dev-functions", href: "/settings/developer-hub/functions", label: "Functions", hint: "Server functions" },
-      { id: "dev-api", href: "/settings/developer-hub/api", label: "API", hint: "REST stubs" },
-      { id: "dev-webhooks", href: "/settings/developer-hub/webhooks", label: "Webhooks", hint: "Outbound hooks" },
-      { id: "dev-connections", href: "/settings/developer-hub/connections", label: "Connections", hint: "OAuth stubs" },
-      { id: "dev-macros", href: "/settings/developer-hub/macros", label: "Macros", hint: "Manual run" },
-      { id: "dev-buttons", href: "/settings/developer-hub/custom-buttons", label: "Custom Buttons", hint: "Links & buttons" },
-      { id: "dev-scripts", href: "/settings/developer-hub/client-scripts", label: "Client Scripts", hint: "Form events" },
-      { id: "dev-widgets", href: "/settings/developer-hub/widgets", label: "Widgets", hint: "Embed stubs" },
+      { id: "automations", href: "/automations", label: "Automations hub", hint: "Playbooks · sequences · tools" },
+      { id: "playbooks", href: "/automations/playbooks", label: "Playbooks", hint: "Tasks + Alerts" },
+      { id: "sequences", href: "/automations/sequences", label: "Sequences", hint: "Nurture stubs" },
+      { id: "templates", href: "/automations/templates", label: "Templates", hint: "EN/ES preview" },
+      { id: "triggers", href: "/settings/email-triggers", label: "Email triggers", hint: "Won-date jobs" },
+      { id: "macros", href: "/automations/macros", label: "Macros", hint: "Manual run" },
+      { id: "functions", href: "/automations/functions", label: "Functions", hint: "Test + REST" },
+      { id: "developer-hub", href: "/settings/developer-hub", label: "Developer Hub", hint: "API · webhooks · widgets" },
     ],
   },
   {
@@ -217,8 +204,10 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   },
 ];
 
-const DEVELOPER_HUB_ALIASES = new Set<SettingsNavId>([
+/** Old Developer Hub group ids + /settings/developer* pages fold into Automations & Developer. */
+const AUTOMATIONS_DEVELOPER_ALIASES = new Set<SettingsNavId>([
   "developer",
+  "developer-hub",
   "functions",
   "api-keys",
   "webhooks",
@@ -227,10 +216,38 @@ const DEVELOPER_HUB_ALIASES = new Set<SettingsNavId>([
   "custom-buttons",
   "client-scripts",
   "widgets",
+  "dev-functions",
+  "dev-api",
+  "dev-webhooks",
+  "dev-connections",
+  "dev-macros",
+  "dev-buttons",
+  "dev-scripts",
+  "dev-widgets",
+  "playbooks",
+  "sequences",
 ]);
 
+const SETTINGS_CHILD_ALIASES: Partial<Record<SettingsNavId, SettingsNavId>> = {
+  developer: "developer-hub",
+  "dev-macros": "macros",
+  "dev-functions": "functions",
+  "dev-api": "developer-hub",
+  "dev-webhooks": "developer-hub",
+  "dev-connections": "developer-hub",
+  "dev-buttons": "developer-hub",
+  "dev-scripts": "developer-hub",
+  "dev-widgets": "developer-hub",
+  "api-keys": "developer-hub",
+  webhooks: "developer-hub",
+  connections: "developer-hub",
+  "custom-buttons": "developer-hub",
+  "client-scripts": "developer-hub",
+  widgets: "developer-hub",
+};
+
 export function settingsGroupFor(current: SettingsNavId): SettingsNavId {
-  if (DEVELOPER_HUB_ALIASES.has(current)) return "developer-hub";
+  if (AUTOMATIONS_DEVELOPER_ALIASES.has(current)) return "automations-dev";
   if (current === "overview") return "overview";
   if (current === "people") return "agency-people";
   if (current === "account") return "security";
@@ -239,6 +256,11 @@ export function settingsGroupFor(current: SettingsNavId): SettingsNavId {
     (item) => item.id === current || item.children.some((child) => child.id === current),
   );
   return group?.id ?? "overview";
+}
+
+/** Highlight the one visible child when an alias page is open (macros, not a second Macros row). */
+export function settingsChildFor(current: SettingsNavId): SettingsNavId {
+  return SETTINGS_CHILD_ALIASES[current] ?? current;
 }
 
 export const SETTINGS_KNOWN_HREFS = [
@@ -264,6 +286,11 @@ export const SETTINGS_KNOWN_HREFS = [
   "/settings/social",
   "/settings/esign",
   "/automations",
+  "/automations/playbooks",
+  "/automations/sequences",
+  "/automations/templates",
+  "/automations/macros",
+  "/automations/functions",
   "/settings/email-templates",
   "/settings/email-triggers",
   "/settings/developer-hub",

@@ -25,9 +25,9 @@ export default async function DeveloperHubPage() {
   return (
     <SettingsShell title="Developer Hub" current="developer-hub">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Functions, API, Webhooks, and Connections share this hub name with the sibling core
-        branch. This desk owns Macros (manual only), Custom Buttons, Client Scripts, and Widget
-        stubs. Macros never schedule or auto-fire.
+        Same records as Automations. Settings lists this hub once under Automations & Developer —
+        macros stay at /automations/macros. This page is the alias for API, webhooks, widgets,
+        buttons, and scripts. Macros never schedule or auto-fire.
       </p>
       <div className="mb-6 grid gap-3 md:grid-cols-2">
         {DEV_HUB_SECTIONS.map((section) => (

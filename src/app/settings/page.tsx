@@ -41,7 +41,7 @@ export default async function SettingsPage({
     <SettingsShell title="Settings" current="overview">
       <p className="mb-4 text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Admin settings change the agency. Agent settings change only this desk. Open a Setup card — Agency & People, Desk & Phone, Connect, Automations, Developer Hub, Security, Import / Export, or Billing."
+          ? "Admin settings change the agency. Agent settings change only this desk. Open a Setup card — Agency & People, Desk & Phone, Connect, Automations & Developer, Security, Import / Export, or Billing."
           : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
       <div className="mb-6">
@@ -50,18 +50,6 @@ export default async function SettingsPage({
       <div className="mb-4" id="settings-sections">
         <SettingsAccordion initial={section} />
       </div>
-      <Link
-        href="/automations"
-        className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
-      >
-        <div>
-          <div className="text-sm font-semibold text-navy">Automations hub</div>
-          <p className="text-helper text-muted-foreground">
-            Playbooks, macros, functions, webhooks, templates, guided builder, and signature
-            approval — one nav row, not buried only here.
-          </p>
-        </div>
-      </Link>
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
         <Link
           href="/settings/integrations"

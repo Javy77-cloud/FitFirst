@@ -3,6 +3,7 @@ import {
   SETTINGS_KNOWN_HREFS,
   SETTINGS_NAV,
   SETTINGS_NAV_IDS,
+  settingsChildFor,
   settingsGroupFor,
 } from "./nav";
 
@@ -13,7 +14,6 @@ describe("settings IA cards", () => {
       "desk-phone",
       "connect",
       "automations-dev",
-      "developer-hub",
       "security",
       "import-export",
       "billing",
@@ -61,42 +61,45 @@ describe("settings IA cards", () => {
     expect(settingsGroupFor("carrier-download")).toBe("connect");
   });
 
-  it("keeps Developer Hub as one Settings group on live hub routes", () => {
-    expect(settingsGroupFor("dev-macros")).toBe("developer-hub");
-    expect(settingsGroupFor("dev-buttons")).toBe("developer-hub");
-    expect(settingsGroupFor("dev-scripts")).toBe("developer-hub");
-    expect(settingsGroupFor("dev-widgets")).toBe("developer-hub");
-    expect(settingsGroupFor("dev-functions")).toBe("developer-hub");
-    expect(settingsGroupFor("functions")).toBe("developer-hub");
-    expect(settingsGroupFor("api-keys")).toBe("developer-hub");
-    expect(settingsGroupFor("macros")).toBe("developer-hub");
-    expect(settingsGroupFor("developer")).toBe("developer-hub");
-    const hub = SETTINGS_NAV.find((group) => group.id === "developer-hub");
-    expect(hub?.label).toBe("Developer Hub");
-    expect(hub?.href).toBe("/settings/developer-hub");
-    expect(SETTINGS_NAV.filter((group) => group.label === "Developer Hub")).toHaveLength(1);
+  it("keeps Developer Hub + Automations macros on one Setup card", () => {
+    expect(settingsGroupFor("dev-macros")).toBe("automations-dev");
+    expect(settingsGroupFor("dev-buttons")).toBe("automations-dev");
+    expect(settingsGroupFor("dev-scripts")).toBe("automations-dev");
+    expect(settingsGroupFor("dev-widgets")).toBe("automations-dev");
+    expect(settingsGroupFor("dev-functions")).toBe("automations-dev");
+    expect(settingsGroupFor("functions")).toBe("automations-dev");
+    expect(settingsGroupFor("api-keys")).toBe("automations-dev");
+    expect(settingsGroupFor("macros")).toBe("automations-dev");
+    expect(settingsGroupFor("developer")).toBe("automations-dev");
+    expect(settingsGroupFor("developer-hub")).toBe("automations-dev");
+    expect(settingsChildFor("dev-macros")).toBe("macros");
+    expect(settingsChildFor("developer")).toBe("developer-hub");
+    const hub = SETTINGS_NAV.find((group) => group.id === "automations-dev");
+    expect(hub?.label).toBe("Automations & Developer");
+    expect(hub?.href).toBe("/automations");
+    expect(SETTINGS_NAV.filter((group) => /automations|developer/i.test(group.label))).toHaveLength(1);
+    expect(SETTINGS_NAV.filter((group) => group.label === "Developer Hub")).toHaveLength(0);
+    expect(hub?.children.filter((child) => child.label === "Macros")).toHaveLength(1);
+    expect(hub?.children.find((child) => child.id === "macros")?.href).toBe("/automations/macros");
     expect(hub?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining([
-        "dev-functions",
-        "dev-macros",
-        "dev-buttons",
-        "dev-scripts",
-        "dev-widgets",
-      ]),
+      expect.arrayContaining(["automations", "macros", "functions", "developer-hub"]),
     );
-    expect(hub?.children.every((child) => child.href.startsWith("/settings/developer-hub"))).toBe(true);
+    expect(hub?.children.filter((child) => child.href.includes("macros"))).toHaveLength(1);
   });
 
   it("keeps Automations on live hub paths without a second Developer Hub group", () => {
     const hub = SETTINGS_NAV.find((group) => group.id === "automations-dev");
     expect(hub?.href).toBe("/automations");
     expect(hub?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["automations", "templates", "triggers"]),
+      expect.arrayContaining(["automations", "templates", "triggers", "playbooks"]),
     );
     expect(hub?.children.some((child) => child.id === "developer")).toBe(false);
     expect(hub?.children.every((child) => child.href !== "/settings/developer")).toBe(true);
     expect(settingsGroupFor("templates")).toBe("automations-dev");
     expect(settingsGroupFor("triggers")).toBe("automations-dev");
+    const allChildren = SETTINGS_NAV.flatMap((group) => group.children);
+    expect(allChildren.filter((child) => child.label === "Macros")).toHaveLength(1);
+    expect(allChildren.filter((child) => child.id === "macros" || child.id === "dev-macros")).toHaveLength(1);
   });
 
   it("puts Import / Export on its own Admin group", () => {

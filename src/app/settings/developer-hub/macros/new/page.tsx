@@ -9,7 +9,7 @@ export default async function NewMacroPage() {
   await requireAdminPage();
   const templates = await listEmailTemplates();
   return (
-    <SettingsShell title="New macro" current="dev-macros">
+    <SettingsShell title="New macro" current="macros">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Macros do not schedule. Agents run them from a list or a record.
       </p>

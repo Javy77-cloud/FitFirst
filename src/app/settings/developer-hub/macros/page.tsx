@@ -21,7 +21,7 @@ export default async function MacrosPage({
   return (
     <SettingsShell
       title="Macros"
-      current="dev-macros"
+      current="macros"
       actions={
         <Link href="/settings/developer-hub/macros/new" className={cn(buttonVariants())}>
           New macro
