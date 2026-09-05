@@ -17,6 +17,7 @@ type ButtonOption = {
 const SelectionContext = createContext<{
   selected: string[];
   toggle: (id: string) => void;
+  setAll: (ids: string[]) => void;
   clear: () => void;
 } | null>(null);
 
@@ -27,6 +28,7 @@ export function ListSelectionProvider({ children }: { children: ReactNode }) {
       selected,
       toggle: (id: string) =>
         setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])),
+      setAll: (ids: string[]) => setSelected(ids),
       clear: () => setSelected([]),
     }),
     [selected],
@@ -52,14 +54,29 @@ export function SelectRowCheckbox({ id }: { id: string }) {
   );
 }
 
+export function SelectAllCheckbox({ ids }: { ids: string[] }) {
+  const { selected, setAll, clear } = useSelection();
+  const allOn = ids.length > 0 && ids.every((id) => selected.includes(id));
+  return (
+    <input
+      type="checkbox"
+      checked={allOn}
+      onChange={() => (allOn ? clear() : setAll(ids))}
+      aria-label="Select all rows"
+    />
+  );
+}
+
 export function ListMassBar({
   module,
   macros,
   buttons,
+  recordIds = [],
 }: {
   module: DevHubModule;
   macros: MacroOption[];
   buttons: ButtonOption[];
+  recordIds?: string[];
 }) {
   const { selected, clear } = useSelection();
   const [macroId, setMacroId] = useState(macros[0]?.id ?? "");
@@ -105,11 +122,10 @@ export function ListMassBar({
     setBusy(false);
   }
 
-  if (macros.length === 0 && buttons.length === 0) return null;
-
   return (
     <div className="mb-3 space-y-2">
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+        {recordIds.length ? <SelectAllCheckbox ids={recordIds} /> : null}
         <span className="text-xs text-muted-foreground">
           {selected.length} selected
         </span>
@@ -130,7 +146,11 @@ export function ListMassBar({
               Run Macro
             </Button>
           </>
-        ) : null}
+        ) : (
+          <a href="/automations/macros" className="text-xs text-primary hover:underline">
+            No macros for this list — open Automations → Macros
+          </a>
+        )}
         {buttons.map((button) => (
           <Button
             key={button.id}
@@ -143,6 +163,9 @@ export function ListMassBar({
             {button.label}
           </Button>
         ))}
+        <a href="/automations/macros" className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline">
+          Automations · Macros
+        </a>
       </div>
       {message ? <p className="text-sm text-navy">{message}</p> : null}
       {widget ? <WidgetHost name={widget.name} url={widget.url} onClose={() => setWidget(null)} /> : null}

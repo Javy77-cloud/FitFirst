@@ -103,6 +103,18 @@ export const AUTOMATION_HUB_SECTIONS = [
     label: "Email signatures",
     summary: "Agents draft. Admin approves before a signature goes live.",
   },
+  {
+    id: "macros",
+    href: "/automations/macros",
+    label: "Macros",
+    summary: "Manual, user-run only — not workflows. Check rows on a list, then Run Macro.",
+  },
+  {
+    id: "custom-buttons",
+    href: "/automations/custom-buttons",
+    label: "Custom Buttons",
+    summary: "Links & Buttons on list, detail, and mass-action bars. Same library as Developer Hub.",
+  },
 ] as const;
 
 export function isAutomationTrigger(value: string): value is AutomationTrigger {

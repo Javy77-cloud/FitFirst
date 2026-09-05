@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { matchesField, pickFilterParams } from "@/lib/saved-filters";
@@ -67,9 +69,11 @@ export default async function ContactsPage({
           </Button>
         </form>
         <section className="ff-card overflow-hidden">
+          <ModuleListActions module="contacts" recordIds={rows.map((c) => c.id)}>
           <ColumnTable
             moduleId="contacts"
             columns={[
+              { id: "pick", label: "", locked: true },
               { id: "name", label: "Name", locked: true },
               { id: "status", label: "Status" },
               { id: "lifetime", label: "Lifetime" },
@@ -79,6 +83,7 @@ export default async function ContactsPage({
             rows={rows.map((c) => ({
               key: c.id,
               cells: {
+                pick: <SelectRowCheckbox id={c.id} />,
                 name: (
                   <span className="font-medium">
                     <RecordLink href={`/contacts/${c.id}`}>
@@ -92,6 +97,7 @@ export default async function ContactsPage({
               },
             }))}
           />
+          </ModuleListActions>
         </section>
       </div>
     </AppShell>

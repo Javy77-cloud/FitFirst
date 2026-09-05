@@ -9,6 +9,8 @@ import { DealRowComms } from "@/components/deal-row-comms";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
@@ -97,6 +99,7 @@ export default async function DealsPage({
         </p>
       ) : null}
       <section className="ff-card overflow-x-auto">
+        <ModuleListActions module="deals" recordIds={rows.map(({ deal }) => deal.id)}>
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
             No deals match this filter. Shopping stays on the deal list — quotes are not
@@ -106,6 +109,7 @@ export default async function DealsPage({
           <table className="ff-table">
             <thead>
               <tr>
+                <th className="w-8" aria-label="Select" />
                 <Col table="deals" col="title" as="th">Deal</Col>
                 <Col table="deals" col="stage" as="th">Stage</Col>
                 <Col table="deals" col="line" as="th">Line</Col>
@@ -127,6 +131,9 @@ export default async function DealsPage({
             <SheetTbody>
               {rows.map(({ deal, contact, account }) => (
                 <tr key={deal.id}>
+                  <td>
+                    <SelectRowCheckbox id={deal.id} />
+                  </td>
                   <Col table="deals" col="title">
                     <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
                       {deal.title}
@@ -180,6 +187,7 @@ export default async function DealsPage({
             </SheetTbody>
           </table>
         )}
+        </ModuleListActions>
       </section>
     </AppShell>
   );

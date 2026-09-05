@@ -82,4 +82,13 @@ describe("labels", () => {
     expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("sequences");
     expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/sequences");
   });
+
+  it("exposes Macros and Custom Buttons from Automations, not only Settings", () => {
+    const ids = AUTOMATION_HUB_SECTIONS.map((section) => section.id);
+    const hrefs = AUTOMATION_HUB_SECTIONS.map((section) => section.href);
+    expect(ids).toContain("macros");
+    expect(ids).toContain("custom-buttons");
+    expect(hrefs).toContain("/automations/macros");
+    expect(hrefs).toContain("/automations/custom-buttons");
+  });
 });

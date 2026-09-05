@@ -2,6 +2,8 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listReviewTasks } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
@@ -50,9 +52,11 @@ export default async function TasksPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
+        <ModuleListActions module="tasks" recordIds={tasks.map((task) => task.id)}>
         <ColumnTable
           moduleId="tasks"
           columns={[
+            { id: "pick", label: "", locked: true },
             { id: "task", label: "Task", locked: true },
             { id: "due", label: "Due" },
             { id: "status", label: "Status" },
@@ -61,6 +65,7 @@ export default async function TasksPage({
           rows={tasks.map((task) => ({
             key: task.id,
             cells: {
+              pick: <SelectRowCheckbox id={task.id} />,
               task: (
                 <Link href={`/tasks/${task.id}`} className="font-medium text-primary hover:underline">
                   {task.title}
@@ -71,6 +76,7 @@ export default async function TasksPage({
             },
           }))}
         />
+        </ModuleListActions>
       </section>
     </AppShell>
   );

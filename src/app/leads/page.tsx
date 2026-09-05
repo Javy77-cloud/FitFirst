@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
-import { listEnabledMacrosFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { ColumnTable } from "@/components/lists/column-table";
-import { ListMassBar, ListSelectionProvider, SelectRowCheckbox } from "@/components/developer-hub/list-selection";
+import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
+import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LEAD_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
@@ -25,11 +25,7 @@ export default async function LeadsPage({
 }) {
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "source"]);
-  const [all, macros, buttons] = await Promise.all([
-    listLeads(),
-    listEnabledMacrosFor("leads"),
-    listVisibleButtons({ module: "leads", placement: ["list", "mass_action"] }),
-  ]);
+  const all = await listLeads();
   const rows = all.filter(
     (lead) => matchesField(lead.status, filter.status) && matchesField(lead.source, filter.source),
   );
@@ -120,19 +116,7 @@ export default async function LeadsPage({
         </div>
 
         <section className="ff-card overflow-hidden">
-          <ListSelectionProvider>
-            <div className="px-3 pt-3">
-              <ListMassBar
-                module="leads"
-                macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
-                buttons={buttons.map((button) => ({
-                  id: button.id,
-                  label: button.label,
-                  actionKind: button.actionKind,
-                  functionApiName: button.functionApiName,
-                }))}
-              />
-            </div>
+          <ModuleListActions module="leads" recordIds={rows.map((lead) => lead.id)}>
             <ColumnTable
               moduleId="leads"
               columns={[
@@ -173,7 +157,7 @@ export default async function LeadsPage({
                 },
               }))}
             />
-          </ListSelectionProvider>
+          </ModuleListActions>
         </section>
       </div>
     </AppShell>

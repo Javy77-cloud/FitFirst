@@ -18,21 +18,25 @@ import {
 import { getSmsSettings } from "@/lib/db/ops-queries";
 import { listCampaignSequences } from "@/lib/db/sequence-queries";
 import { listEmailTemplates } from "@/lib/db/queries";
+import { listDeskButtons, listDeskMacros } from "@/lib/db/developer-hub-queries";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 
 export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
-  const [catalog, sms, templates, automations, pending, mine, sequences] = await Promise.all([
-    listCatalogItems(),
-    getSmsSettings(),
-    listEmailTemplates(),
-    listGuidedAutomations(),
-    listPendingSignatureApprovals(),
-    session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
-    listCampaignSequences(),
-  ]);
+  const [catalog, sms, templates, automations, pending, mine, sequences, macros, buttons] =
+    await Promise.all([
+      listCatalogItems(),
+      getSmsSettings(),
+      listEmailTemplates(),
+      listGuidedAutomations(),
+      listPendingSignatureApprovals(),
+      session.userId ? listMySignatures(session.userId) : Promise.resolve([]),
+      listCampaignSequences(),
+      listDeskMacros(),
+      listDeskButtons(),
+    ]);
   const campaignOk = campaignsReady(catalog);
   const smsOk = smsReady(catalog, Boolean(sms?.connected));
   const campaignConnected = connectedCampaignIntegrations(catalog);
@@ -60,15 +64,18 @@ export default async function AutomationsHubPage() {
         : myLive
           ? `${myLive} live`
           : "Draft a signature for Admin review",
+    macros: `${macros.filter((row) => row.enabled).length} of ${macros.length} on · Run from list checkboxes`,
+    "custom-buttons": `${buttons.filter((row) => row.enabled).length} of ${buttons.length} on · list / detail / mass action`,
   };
 
   return (
     <AppShell title="Automations">
       <AutomationsModuleNav />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Insurance campaign sequences, guided campaigns, bulk SMS, work-email templates, and a
-        simple Trigger → Condition → Action builder. Agent alerts stay in Alerts — Javy does
-        not want a second email ping. Signatures need Admin before they go live.
+        Insurance campaign sequences, guided campaigns, bulk SMS, work-email templates, a
+        simple Trigger → Condition → Action builder, plus Macros and Custom Buttons (same
+        library as Settings → Developer Hub). Macros never auto-fire. Agent alerts stay in
+        Alerts. Signatures need Admin before they go live.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {AUTOMATION_HUB_SECTIONS.map((section) => (
