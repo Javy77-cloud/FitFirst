@@ -26,8 +26,8 @@ export const CREATE_MENU: CreateMenuGroup[] = [
     ],
   },
   {
-    id: "pipeline",
-    label: "Pipeline",
+    id: "deals",
+    label: "Deals",
     items: [{ id: "deal", label: "Deal (shopping)", href: "/deals/new" }],
   },
   {

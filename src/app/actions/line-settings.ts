@@ -26,7 +26,7 @@ async function assertAdmin() {
 function refresh() {
   revalidatePath("/settings");
   revalidatePath("/settings/lines");
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
   revalidatePath("/policies");
   revalidatePath("/deals");
   revalidatePath("/deals/new");

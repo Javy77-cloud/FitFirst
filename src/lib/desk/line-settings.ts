@@ -190,7 +190,7 @@ export function filterLineMix<T extends { key: string }>(
 
 export function deskNavExtras(settings: Pick<DeskLineSettings, "writeLife" | "writeHealth">) {
   const extras: Array<{ href: string; label: string }> = [];
-  if (settings.writeLife) extras.push({ href: "/pipeline?pipeline=life", label: "Life" });
-  if (settings.writeHealth) extras.push({ href: "/pipeline?pipeline=health", label: "Health" });
+  if (settings.writeLife) extras.push({ href: "/deals?pipeline=life", label: "Life" });
+  if (settings.writeHealth) extras.push({ href: "/deals?pipeline=health", label: "Health" });
   return extras;
 }

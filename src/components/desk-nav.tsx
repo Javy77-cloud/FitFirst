@@ -15,7 +15,6 @@ import {
   Timer,
   Layers,
   Phone,
-  Kanban,
   ListChecks,
   Share2,
   Shield,
@@ -30,7 +29,6 @@ import { navItemIsActive } from "@/lib/desk/nav-active";
 const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = {
   Home,
   Social: Share2,
-  Pipeline: Kanban,
   Leads: Users,
   Deals: ClipboardList,
   Contacts: Contact,

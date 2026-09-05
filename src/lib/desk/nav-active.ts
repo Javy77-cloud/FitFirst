@@ -2,6 +2,7 @@
 const PREFIX_ALIASES: Record<string, string[]> = {
   "/accounts": ["/businesses"],
   "/documents": ["/forms"],
+  "/deals": ["/pipeline"],
 };
 
 export function navHrefPath(href: string): string {

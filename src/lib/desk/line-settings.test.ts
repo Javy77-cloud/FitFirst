@@ -66,7 +66,7 @@ describe("LOB hide toggles", () => {
   it("can hide one book and keep the other", () => {
     expect(visiblePolicyBooks(lifeOnly).map((row) => row.id)).toEqual(["all", "pc", "life"]);
     expect(visiblePolicyBooks(healthOnly).map((row) => row.id)).toEqual(["all", "pc", "health"]);
-    expect(deskNavExtras(lifeOnly)).toEqual([{ href: "/pipeline?pipeline=life", label: "Life" }]);
+    expect(deskNavExtras(lifeOnly)).toEqual([{ href: "/deals?pipeline=life", label: "Life" }]);
     expect(fallbackPipelineSlug("health", lifeOnly)).toBe("p-c");
     expect(fallbackPipelineSlug("life", lifeOnly)).toBe("life");
     expect(filterLineMix([{ key: "HO" }, { key: "LIFE" }, { key: "HEALTH" }], lifeOnly)).toEqual([

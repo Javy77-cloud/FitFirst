@@ -9,7 +9,6 @@ import {
   FileStack,
   FileWarning,
   Home,
-  Kanban,
   ListChecks,
   Phone,
   Settings,
@@ -33,13 +32,6 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
   { id: "social", href: "/social", label: "Social", icon: Users, match: "/social" },
   { id: "leads", href: "/leads", label: "Leads", icon: Users, match: "/leads" },
   { id: "deals", href: "/deals", label: "Deals", icon: ClipboardList, match: "/deals" },
-  {
-    id: "pipeline",
-    href: "/pipeline?pipeline=p-c",
-    label: "Pipeline",
-    icon: Kanban,
-    match: "/pipeline",
-  },
   { id: "quotes", href: "/quotes", label: "Quotes", icon: ClipboardList, match: "/quotes" },
   { id: "contacts", href: "/contacts", label: "Contacts", icon: Contact, match: "/contacts" },
   { id: "business", href: "/accounts", label: "Business", icon: Briefcase, match: "/accounts" },
@@ -138,6 +130,9 @@ export function navLinkIsActive(pathname: string, item: Pick<NavLinkDef, "href" 
     return true;
   }
   if (match === "/documents" && (pathname === "/forms" || pathname.startsWith("/forms/"))) {
+    return true;
+  }
+  if (match === "/deals" && (pathname === "/pipeline" || pathname.startsWith("/pipeline/"))) {
     return true;
   }
   return pathname === match || pathname.startsWith(`${match}/`);

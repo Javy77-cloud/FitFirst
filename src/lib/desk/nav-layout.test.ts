@@ -23,7 +23,6 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
-      "pipeline",
       "contacts",
       "business",
       "policies",
@@ -36,7 +35,6 @@ describe("nav layout defaults", () => {
       "Home",
       "Leads",
       "Deals",
-      "Pipeline",
       "Contacts",
       "Business",
       "Policies",
@@ -54,7 +52,6 @@ describe("nav layout defaults", () => {
       "/",
       "/leads",
       "/deals",
-      "/pipeline?pipeline=p-c",
       "/contacts",
       "/accounts",
       "/policies",
@@ -76,7 +73,8 @@ describe("nav layout defaults", () => {
 
   it("keeps one Pipeline and one Settings", () => {
     const labels = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.label);
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
+    expect(labels.filter((label) => label === "Deals")).toHaveLength(1);
     expect(labels.filter((label) => label === "Settings")).toHaveLength(1);
   });
 });
@@ -101,6 +99,14 @@ describe("normalizeNavLayout", () => {
     });
     expect(dropped.submenus.home).toEqual(["social"]);
     expect(dropped.submenus.calendar).toEqual(["phone", "alerts"]);
+    const remapped = normalizeNavLayout({
+      version: 1,
+      primaryOrder: ["home", "pipeline", "leads"],
+      submenus: { pipeline: ["quotes"], deals: ["quotes"] },
+    });
+    expect(remapped.primaryOrder).toContain("deals");
+    expect(remapped.primaryOrder).not.toContain("pipeline");
+    expect(remapped.submenus.deals).toEqual(["quotes"]);
   });
 
   it("parses bad JSON as the default layout", () => {
@@ -158,6 +164,8 @@ describe("primaryIdForPath", () => {
     expect(primaryIdForPath("/settings/import-export")).toBe("settings");
     expect(primaryIdForPath("/notifications")).toBe("calendar");
     expect(primaryIdForPath("/alerts")).toBe("calendar");
+    expect(primaryIdForPath("/pipeline")).toBe("deals");
+    expect(primaryIdForPath("/deals")).toBe("deals");
   });
 
   it("honors a custom submenu placement", () => {

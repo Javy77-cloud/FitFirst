@@ -8,11 +8,11 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name on create and on Deals upload typeaheads **Contacts + Businesses** as you type. Contains match, case-insensitive, on name / email / phone. Null-safe for Zoho-imported blanks (empty first/last, missing email or phone). No submit click. Pipeline create uses the same picker. Does **not** wipe the book.
 
-Try: Deals → New shopping deal, or Pipeline → Deal name. Type `javy` (or a phone / email). Javy Rivera and other book names appear live. Pick one to link the shop. Same field on Deals upload finds the person/business, then the shop.
+Try: Deals → New shopping deal, or Deals Board → Deal name. Type `javy` (or a phone / email). Javy Rivera and other book names appear live. Pick one to link the shop. Same field on Deals upload finds the person/business, then the shop.
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions. Still includes:
+**`cursor/live-ff-tip-sep5d2`** — follow tip on **`cursor/live-ff-tip-sep5d`**. Same live CRM+Quote desk, plus selection Actions and Deals = Pipeline. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
@@ -20,8 +20,9 @@ Try: Deals → New shopping deal, or Pipeline → Deal name. Type `javy` (or a p
 4. **`cursor/ff-selection-actions-dae2`** — tick rows for Duplicate / Merge / Email / SMS / Print / Run macro / Archive / Delete. Call and hard-delete stay off.
 5. **`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name typeaheads Contacts + Businesses as you type (name / email / phone). Pipeline create and Deals upload use the same picker.
 6. **`cursor/ff-deal-upload-half-88fe`** — Deal Documents upload is half width; the right half is a live shop desk (person, email/call, sheet status, collect-next, open activities).
+7. **`cursor/ff-deals-merge-pipeline-b3cc`** — Deals and Pipeline are one module. Pipeline is gone from the left nav. `/pipeline` redirects to `/deals` and keeps the query. Table / Board / Funnel share the same filters (P&C, Health, Life, Flood, Won-Lost, Archive). Stored customize ids named `pipeline` remap to `deals`.
 
-Skipped for the next tip: AMS waves 10–16, Deals/Pipeline merge, live search.
+Skipped for the next tip: AMS waves 10–16, live search.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
@@ -68,7 +69,7 @@ Ana Dib stays locked. No fake “would send” clicks.
 
 ### Left nav customize (this slice)
 
-Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom.
+Primary rail: **Home**, **Leads**, **Deals**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom. Pipeline is Deals — there is no second rail row.
 
 1. Click the **label** to open that module. Click the **chevron** to expand its submenu. Only one submenu is open at a time.
 2. **Customize menu** at the bottom of the rail. Drag the grip to reorder primaries, or use the up/down arrows. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog. Get Started, Inbox, and Support are not addable.
@@ -76,7 +77,7 @@ Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Busi
 4. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
 5. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
 
-### Air checkout (no wipe)
+### Air checkout (no wipe, skip seed)
 
 ```bash
 git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
@@ -91,7 +92,17 @@ Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `
 
 ### Manage columns (this slice)
 
-The sliders icon on the last table header is **Manage columns**. Same shared `ColumnTable` on Leads, Deals, Pipeline (table), Contacts, Businesses, Policies, Carriers, Tasks, Quotes, Claims, Glance, Reviews, Merge, Commissions, and Work queue. Toggles write `desk_column_prefs` per user / tenant / table and cache in `localStorage`. Locked columns (select, name, Deal title, e-sign) stay on. Pipeline **board** still uses Deal details for card fields; the table view uses Manage columns. Sidebar stays `#1d4e89`.
+The sliders icon on the last table header is **Manage columns**. Same shared `ColumnTable` on Leads, Deals (table view), Contacts, Businesses, Policies, Carriers, Tasks, Quotes, Claims, Glance, Reviews, Merge, Commissions, and Work queue. Toggles write `desk_column_prefs` per user / tenant / table and cache in `localStorage`. Locked columns (select, name, Deal title, e-sign) stay on. Deals **board** still uses Deal details for card fields; the table view uses Manage columns. Sidebar stays `#1d4e89`.
+
+### Deals = Pipeline (this slice)
+
+1. Sign in as **javy@fitfirst.local** / **javy**.
+2. Left nav **Deals**. There is no Pipeline row.
+3. Table is the default. Same list as before — columns, comms, upload.
+4. Filter chips: **All · P&C · Health · Life · Flood · Won-Lost · Archive**. Board | Table | Funnel on the right.
+5. Open Board or Funnel on P&C. Funnel **Quote Sent** opens Table filtered to that stage.
+6. Old `/pipeline?pipeline=p-c` bookmarks land on `/deals?pipeline=p-c`.
+7. Confirm Ana is still unbound, Cov A $321,000. Do not bind her.
 
 ### Home custom layouts + corner resize (this slice)
 
@@ -359,8 +370,8 @@ Tables (all `tenant_id`): `developer_functions`, `developer_function_executions`
 
 ## Test notes (localhost:43147)
 
-1. Sign in as Javy. Open **Pipeline**. Confirm Board | Table | Funnel.
-2. Funnel: each stage has a color chip and a count. Click **Quote Sent** — table filters to that stage. Clear with **Show all stages**.
+1. Sign in as Javy. Open **Deals**. Confirm Table is the default, then Board | Funnel.
+2. Funnel: each stage has a color chip and a count. Click **Quote Sent** — table filters to that stage. Clear filter returns to All / that board.
 3. Board columns and table Stage cells use the same chips. Stage chips under the create-deal form match.
 4. **Policies**: Active / Bound / Pending / Lapse (and others) are colored badges on the list and the policy header.
 5. **Contacts** / **Businesses**: Client vs Former Client badges on the list and the record header.

@@ -33,7 +33,6 @@ describe("primary desk nav", () => {
       "home",
       "leads",
       "deals",
-      "pipeline",
       "contacts",
       "business",
       "policies",
@@ -59,7 +58,7 @@ describe("primary desk nav", () => {
     expect(labels).not.toContain("Search");
   });
 
-  it("keeps Phone and Alerts under Calendar, without demo stubs", () => {
+  it("keeps Phone and Alerts under Calendar, without demo stubs or Pipeline", () => {
     const calendar = NAV_GROUPS.find((group) => group.id === "calendar");
     const home = NAV_GROUPS.find((group) => group.id === "home");
     const deals = NAV_GROUPS.find((group) => group.id === "deals");
@@ -72,12 +71,15 @@ describe("primary desk nav", () => {
     expect(labels).not.toContain("Get Started");
     expect(labels).not.toContain("Inbox");
     expect(labels).not.toContain("Support");
+    expect(labels).not.toContain("Pipeline");
     expect(calendar?.items.find((item) => item.label === "Alerts")?.href).toBe("/notifications");
     const alerts = calendar?.items.find((item) => item.label === "Alerts");
     expect(pathIsActive("/notifications", alerts!)).toBe(true);
     expect(pathIsActive("/alerts", alerts!)).toBe(true);
     expect(deals?.items.some((item) => item.label === "Quotes")).toBe(true);
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(pathIsActive("/deals", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
+    expect(pathIsActive("/pipeline", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
+    expect(groupIdForPath("/pipeline")).toBe("deals");
     expect(PINNED_HOME.label).toBe("Home");
   });
 });

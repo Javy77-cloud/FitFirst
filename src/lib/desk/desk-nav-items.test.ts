@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { DESK_NAV_ITEMS } from "./nav-items";
 
 describe("desk nav chrome", () => {
-  it("keeps one Pipeline row and one Settings row, without stub-only rows", () => {
+  it("keeps one Deals row, no Pipeline row, and no stub-only rows", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
+    expect(labels.filter((label) => label === "Deals")).toHaveLength(1);
+    expect(DESK_NAV_ITEMS.some((item) => item.href === "/deals")).toBe(true);
     expect(labels.filter((label) => label === "Settings")).toHaveLength(1);
     expect(labels).not.toContain("Support");
     expect(labels).not.toContain("Get Started");
@@ -31,7 +33,7 @@ describe("desk nav chrome", () => {
     expect(labels).toContain("Glance");
     expect(hrefs).toContain("/scorecards");
     expect(hrefs).toContain("/glance");
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
   });
 
   it("adds Book health, Renewals, and Certificates without a second Pipeline", () => {
@@ -43,7 +45,7 @@ describe("desk nav chrome", () => {
     expect(hrefs).toContain("/book-health");
     expect(hrefs).toContain("/renewals");
     expect(hrefs).toContain("/certificates");
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
   });
 
   it("adds Suspense and Notices without a second Pipeline or Alerts row", () => {
@@ -53,7 +55,7 @@ describe("desk nav chrome", () => {
     expect(labels).toContain("Notices");
     expect(hrefs).toContain("/suspense");
     expect(hrefs).toContain("/notices");
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(hrefs).not.toContain("/alerts");
   });
 
@@ -62,7 +64,7 @@ describe("desk nav chrome", () => {
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Endorsements");
     expect(hrefs).toContain("/endorsements");
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(hrefs).not.toContain("/alerts");
   });
 
@@ -75,7 +77,7 @@ describe("desk nav chrome", () => {
     expect(hrefs).toContain("/service-timeline");
     expect(hrefs).toContain("/inspections");
     expect(hrefs).toContain("/installments");
-    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(hrefs).not.toContain("/alerts");
   });
 

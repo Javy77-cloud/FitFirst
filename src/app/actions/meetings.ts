@@ -160,7 +160,7 @@ export async function scheduleDealMeeting(formData: FormData) {
     createTask: true,
   });
 
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
   revalidatePath("/deals");
   revalidatePath(`/deals/${deal.id}`);
   revalidatePath("/calendar");
@@ -210,5 +210,5 @@ export async function saveCommunicationsSettings(formData: FormData) {
 
   revalidatePath("/settings");
   revalidatePath("/settings/communications");
-  revalidatePath("/pipeline");
+  revalidatePath("/deals");
 }

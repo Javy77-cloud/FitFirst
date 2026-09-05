@@ -1,8 +1,7 @@
-/** Left-nav rows. One Pipeline. One Settings. Stub-only rows (Get Started, Support, Inbox) are gone. */
+/** Left-nav rows. One Deals module. One Settings. Stub-only rows (Get Started, Support, Inbox) are gone. */
 export const DESK_NAV_ITEMS = [
   { href: "/", label: "Home" },
   { href: "/social", label: "Social" },
-  { href: "/pipeline?pipeline=p-c", label: "Pipeline" },
   { href: "/leads", label: "Leads" },
   { href: "/deals", label: "Deals" },
   { href: "/contacts", label: "Contacts" },

@@ -12,7 +12,6 @@ import {
   Calendar,
   Home,
   Phone,
-  Kanban,
   ListChecks,
   Share2,
   Shield,
@@ -25,7 +24,6 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Home", icon: Home },
   { href: "/social", label: "Social", icon: Share2 },
-  { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/deals", label: "Deals", icon: ClipboardList },
   { href: "/contacts", label: "Contacts", icon: Contact },

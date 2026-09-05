@@ -1,4 +1,5 @@
 import { getNavLink, NAV_LINK_CATALOG, navLinkIsActive, type NavLinkDef } from "@/lib/desk/nav-catalog";
+import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 export const NAV_LAYOUT_VERSION = 1 as const;
 
@@ -7,7 +8,6 @@ export const DEFAULT_PRIMARY_ORDER = [
   "home",
   "leads",
   "deals",
-  "pipeline",
   "contacts",
   "business",
   "policies",
@@ -22,7 +22,6 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   home: ["social", "scorecards", "glance"],
   leads: [],
   deals: ["quotes"],
-  pipeline: [],
   contacts: ["merge"],
   business: [],
   policies: [
@@ -99,7 +98,7 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
   if (!raw || typeof raw !== "object") return fallback;
   const parsed = raw as Partial<StoredNavLayout>;
   const savedOrder = Array.isArray(parsed.primaryOrder)
-    ? parsed.primaryOrder.filter((id): id is string => typeof id === "string")
+    ? remapNavIds(parsed.primaryOrder.filter((id): id is string => typeof id === "string"))
     : [];
   const knownSaved = uniqueKnown(
     savedOrder.filter((id) => (DEFAULT_PRIMARY_ORDER as readonly string[]).includes(id)),
@@ -109,7 +108,13 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
 
   const savedSubs =
     parsed.submenus && typeof parsed.submenus === "object" && !Array.isArray(parsed.submenus)
-      ? parsed.submenus
+      ? remapNavSubmenus(
+          Object.fromEntries(
+            Object.entries(parsed.submenus).filter((entry): entry is [string, string[]] =>
+              Array.isArray(entry[1]),
+            ),
+          ),
+        )
       : {};
   const submenus: Record<string, string[]> = {};
   for (const id of [...primaryOrder, ...PINNED_PRIMARY_IDS]) {

@@ -619,7 +619,7 @@ export async function deleteDeskWidget(formData: FormData) {
 function modulePaths(module: DevHubModule, id: string): string[] {
   if (module === "leads") return [`/leads/${id}`, "/leads"];
   if (module === "contacts") return [`/contacts/${id}`, "/contacts"];
-  if (module === "deals") return [`/deals/${id}`, "/deals", "/pipeline"];
+  if (module === "deals") return [`/deals/${id}`, "/deals"];
   if (module === "policies") return [`/policies/${id}`, "/policies"];
   if (module === "businesses") return [`/accounts/${id}`, "/accounts"];
   if (module === "campaigns") return [`/campaigns/${id}`, "/campaigns"];

@@ -1,20 +1,26 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
-import { StagePill } from "@/components/fit-badge";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
-import { DealRowComms } from "@/components/deal-row-comms";
-import { sourceLabel } from "@/lib/crm/sources";
-import { formatDay, formatMoney } from "@/lib/domain";
-import { formatInDeskEsignList } from "@/lib/esign/in-desk";
-import { BookFilterBar } from "@/components/desk/book-filter-bar";
-import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
-import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { DeskColumnTable } from "@/components/lists/desk-column-table";
-import { DEALS_LIST_COLUMNS } from "@/lib/list-columns";
-import { listBoundPendingDeals, listDealLookup, listDeals, listPartyTypeahead, listUsersById, type DealListFilter } from "@/lib/db/queries";
+import { DealStageChips, DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
+import { DealsTable } from "@/components/deals/deals-table";
+import { PipelineCreateDealForm } from "@/components/pipeline/create-deal-form";
+import { PipelineWorkspace } from "@/components/pipeline/workspace";
+import { requireSignedIn } from "@/lib/auth/guards";
+import {
+  getPipelineBoard,
+  listBoundPendingDeals,
+  listDealLookup,
+  listDeals,
+  listPartyTypeahead,
+  listUsersById,
+  type DealListFilter,
+} from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
+import { lineForPipelineSlug } from "@/lib/desk/line-settings";
 import { cn } from "@/lib/utils";
+import { parsePipelineView } from "@/lib/wire/pipeline";
+import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 
 export const dynamic = "force-dynamic";
 
@@ -33,29 +39,65 @@ export default async function DealsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await requireSignedIn();
   const params = await searchParams;
+  const pipeline = first(params.pipeline);
+  const view = parsePipelineView(first(params.view));
+  const stage = first(params.stage);
   const filter: DealListFilter = {
-    stage: first(params.stage),
+    stage,
     attention: first(params.attention),
     family: first(params.family),
     pcSub: first(params.pcSub),
     lifeSub: first(params.lifeSub),
     healthSub: first(params.healthSub),
   };
-  const [rows, users, lineSettings, lookup, parties] = await Promise.all([
-    filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
+  const boardSlug = pipeline || "p-c";
+  const selectedPipeline = pipeline || (view === "table" ? undefined : "p-c");
+  const [boardData, listRows, users, lineSettings, lookup, parties] = await Promise.all([
+    getPipelineBoard(boardSlug, {
+      lifeSub: filter.lifeSub,
+      healthSub: filter.healthSub,
+      pcSub: pipeline === "p-c" || !pipeline ? filter.pcSub : undefined,
+      stage: view === "table" && pipeline ? stage : undefined,
+    }),
+    filter.attention === "bound_pending"
+      ? listBoundPendingDeals()
+      : view === "table" && !pipeline
+        ? listDeals(filter)
+        : Promise.resolve(null),
     listUsersById(),
     loadDeskLineSettings(),
     listDealLookup(),
     listPartyTypeahead(),
   ]);
+  const boards = boardData?.boards ?? [];
+  const settings = boardData?.lineSettings ?? lineSettings;
+  const tableRows =
+    filter.attention === "bound_pending" || (view === "table" && !pipeline)
+      ? (listRows ?? [])
+      : view === "table" && boardData
+        ? boardData.cards
+        : [];
+  const presented = (boardData?.cards ?? []).map(presentPipelineCard);
+  const board = boardData?.board ?? null;
+  const notice = first(params.notice);
   const hint =
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
-      : filter.stage
-        ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
-        : "Shopping lives on the deal. Quotes attach here. A policy is not created from a quote. Call, SMS, and email from the row write a durable log on the deal.";
-  const notice = first(params.notice);
+      : pipeline === "won-lost"
+        ? "Closed Won and Closed Lost from every shopping board. Archive is its own tab — parking here does not cancel emails hung on won date."
+        : pipeline === "archive"
+          ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
+          : pipeline === "flood"
+            ? "Flood shopping. Same stages as the other boards — add, remove, or reorder as Admin."
+            : view === "funnel"
+              ? "Counts by stage. Click a bar to open the table for that stage."
+              : view === "board"
+                ? "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card."
+                : filter.stage
+                  ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
+                  : "Deals and the pipeline are the same book. Table is the list. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archive. Quotes are not coverage.";
 
   return (
     <AppShell
@@ -77,98 +119,91 @@ export default async function DealsPage({
           Add at least one file on a line.
         </p>
       ) : null}
-      <BookFilterBar
-        action="/deals"
-        settings={lineSettings}
+
+      <DealWorkspaceBar
+        boards={boards.map((item) => ({ slug: item.slug, name: item.name }))}
+        pipeline={selectedPipeline}
+        view={view}
+        stage={stage}
         family={filter.family}
         pcSub={filter.pcSub}
         lifeSub={filter.lifeSub}
         healthSub={filter.healthSub}
-        hidden={{
-          ...(filter.stage ? { stage: filter.stage } : {}),
-          ...(filter.attention ? { attention: filter.attention } : {}),
-        }}
+        attention={filter.attention}
+        settings={settings}
       />
-      <div className="mb-4">
-        <DealDocsUpload deals={lookup} parties={parties} />
-      </div>
-      {filter.stage || filter.attention || filter.family || filter.lifeSub || filter.healthSub || filter.pcSub ? (
-        <p className="mb-3 text-sm">
-          <Link href="/deals" className="text-primary hover:underline">
-            Clear filter
-          </Link>
-        </p>
+
+      {board && board.kind === "shopping" && (pipeline || view !== "table") ? (
+        <PipelineCreateDealForm
+          parties={parties}
+          pipelineSlug={board.slug}
+          lineOfBusiness={lineForPipelineSlug(board.slug)}
+          lifeOptions={settings.lifeOptions}
+          healthOptions={settings.healthOptions}
+          stages={board.stages}
+        />
       ) : null}
-      <section className="ff-card overflow-x-auto">
-        <ModuleListActions
-          module="deals"
-          recordIds={rows.map(({ deal }) => deal.id)}
-          records={rows.map(({ deal, contact, account }) => ({
-            id: deal.id,
-            label: deal.title,
-            email: contact?.email ?? account?.email,
-            phone: contact?.phone ?? account?.phone,
-            boundAt: deal.boundAt,
-            archivedAt: deal.archivedAt,
-            dealId: deal.id,
-            contactId: contact?.id ?? deal.contactId,
-            accountId: account?.id ?? deal.accountId,
-            leadId: deal.leadId,
-          }))}
-        >
-          <DeskColumnTable
-            moduleId="deals"
-            columns={DEALS_LIST_COLUMNS}
-            empty="No deals match this filter. Shopping stays on the deal list — quotes are not policies."
-            rows={rows.map(({ deal, contact, account }) => ({
-              key: deal.id,
-              cells: {
-                pick: <SelectRowCheckbox id={deal.id} />,
-                title: (
-                  <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                    {deal.title}
-                  </Link>
-                ),
-                stage: <StagePill stage={deal.pipelineStage} />,
-                line: deal.lineOfBusiness,
-                subType: deal.policySubType ?? "—",
-                state: deal.state,
-                city: contact?.city ?? account?.city ?? "—",
-                zip: contact?.zip ?? account?.zip ?? "—",
-                address: deal.propertyOneliner ?? contact?.mailingAddress ?? account?.mailingAddress ?? "—",
-                shopLines: (deal.shopLines ?? []).join(", ") || "—",
-                source: sourceLabel(deal.source),
-                contact: contact ? (
-                  <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                    {contact.lastName}, {contact.firstName}
-                  </Link>
-                ) : account ? (
-                  <Link href={`/accounts/${account.id}`} className="text-primary hover:underline">
-                    {account.name}
-                  </Link>
-                ) : (
-                  "—"
-                ),
-                phone: contact?.phone ?? account?.phone ?? "—",
-                email: contact?.email ?? account?.email ?? "—",
-                assigned: deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—",
-                premium: formatMoney(deal.coverageAmount),
-                updated: formatDay(deal.updatedAt),
-                esign: formatInDeskEsignList(deal.esignStatus, deal.esignSignedAt, deal.esignRequestedAt),
-                comms: (
-                  <DealRowComms
-                    dealId={deal.id}
-                    contactId={contact?.id ?? deal.contactId}
-                    accountId={account?.id ?? deal.accountId}
-                    phone={contact?.phone ?? account?.phone}
-                    email={contact?.email ?? account?.email}
-                  />
-                ),
-              },
-            }))}
-          />
-        </ModuleListActions>
-      </section>
+
+      {board && pipeline ? (
+        <DealStageChips
+          stages={board.stages}
+          pipeline={board.slug}
+          stage={stage}
+          lifeSub={filter.lifeSub}
+          healthSub={filter.healthSub}
+          pcSub={filter.pcSub}
+          family={filter.family}
+          attention={filter.attention}
+        />
+      ) : null}
+
+      {view === "table" ? (
+        <>
+          {pipeline ||
+          filter.stage ||
+          filter.attention ||
+          filter.family ||
+          filter.lifeSub ||
+          filter.healthSub ||
+          filter.pcSub ? (
+            <p className="mb-3 text-sm">
+              <Link href="/deals" className="text-primary hover:underline">
+                Clear filter
+              </Link>
+            </p>
+          ) : null}
+          <div className="mb-4">
+            <DealDocsUpload deals={lookup} parties={parties} />
+          </div>
+          <DealsTable rows={tableRows} users={users} />
+        </>
+      ) : board ? (
+        <PipelineWorkspace
+          canEditStages={session.isAdmin}
+          board={{
+            id: board.id,
+            slug: board.slug,
+            name: board.name,
+            kind: board.kind,
+            seeded: board.seeded,
+            stages: board.stages.map((item) => ({
+              id: item.id,
+              slug: item.slug,
+              name: item.name,
+              sortOrder: item.sortOrder,
+              color: item.color,
+              seeded: item.seeded,
+            })),
+          }}
+          cards={presented}
+          view={view}
+          stageFilter={stage}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No pipeline boards yet. Table still lists every deal on this book.
+        </p>
+      )}
     </AppShell>
   );
 }

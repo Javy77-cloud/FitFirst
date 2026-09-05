@@ -30,6 +30,8 @@ describe("sidebar accordion", () => {
     expect(resolveOpenSection("/leads", "settings")).toBe("leads");
     expect(resolveOpenSection("/settings/phone", "contacts")).toBe("settings");
     expect(resolveOpenSection("/notifications", "policies")).toBe("calendar");
+    expect(resolveOpenSection("/pipeline", "contacts")).toBe("deals");
+    expect(resolveOpenSection("/deals", "contacts")).toBe("deals");
   });
 
   it("parses last-open and rail prefs from localStorage JSON", () => {

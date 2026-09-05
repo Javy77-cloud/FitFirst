@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { CREATE_MENU } from "./create-menu";
 
 describe("home create menu", () => {
-  it("groups people, pipeline, activities, and FNOL — not a flat list", () => {
+  it("groups people, deals, activities, and FNOL — not a flat list", () => {
     expect(CREATE_MENU.map((group) => group.id)).toEqual([
       "people",
-      "pipeline",
+      "deals",
       "activities",
       "records",
     ]);
@@ -14,7 +14,7 @@ describe("home create menu", () => {
       "contact",
       "business",
     ]);
-    expect(CREATE_MENU.find((g) => g.id === "pipeline")?.items.map((i) => i.href)).toEqual([
+    expect(CREATE_MENU.find((g) => g.id === "deals")?.items.map((i) => i.href)).toEqual([
       "/deals/new",
     ]);
   });
