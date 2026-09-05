@@ -16,7 +16,7 @@ export function StatusBadge({
     <span
       data-status-color={color ?? "slate"}
       className={cn(
-        "inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tracking-wide",
+        "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-semibold tracking-wide",
         uppercase && "uppercase",
         statusColorClass(color),
         className,

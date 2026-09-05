@@ -73,14 +73,14 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export const STATUS_COLOR_CLASS: Record<StatusColorKey, string> = {
-  blue: "bg-[#d7e6f6] text-[#163a68]",
-  teal: "bg-[#d7efe8] text-[#0f5c52]",
-  amber: "bg-[#fff4d1] text-[#8a6500]",
-  violet: "bg-[#e8e0f5] text-[#4c1d95]",
-  green: "bg-[#e4f5ec] text-[#1f7a4d]",
-  rose: "bg-[#fde8e6] text-[#9f1239]",
-  slate: "bg-[#e8eef4] text-[#334155]",
-  orange: "bg-[#ffedd5] text-[#b4532a]",
+  blue: "border-[#9bb8d6] bg-[#d7e6f6] text-[#163a68]",
+  teal: "border-[#8ec4b8] bg-[#d7efe8] text-[#0f5c52]",
+  amber: "border-[#e0c56a] bg-[#fff4d1] text-[#8a6500]",
+  violet: "border-[#c4b5e8] bg-[#e8e0f5] text-[#4c1d95]",
+  green: "border-[#9dceb3] bg-[#e4f5ec] text-[#1f7a4d]",
+  rose: "border-[#e8b4af] bg-[#fde8e6] text-[#9f1239]",
+  slate: "border-[#c5d0db] bg-[#e8eef4] text-[#334155]",
+  orange: "border-[#e8c3a4] bg-[#ffedd5] text-[#b4532a]",
 };
 
 export const STATUS_BAR_CLASS: Record<StatusColorKey, string> = {
