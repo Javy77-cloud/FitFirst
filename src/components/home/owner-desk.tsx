@@ -49,11 +49,36 @@ import type { BookScopeOption } from "@/lib/org/book-scope";
 import { BookScopeFilter } from "./book-scope-filter";
 import { HomeBoard } from "./home-board";
 import { HomeLayoutProvider } from "./use-home-layout";
-import { LAYOUT_TO_PRESET, type HomeWidgetId } from "@/lib/home/layout";
+import { LAYOUT_TO_PRESET, SOCIAL_LAYOUT_TO_PLATFORM, type HomeWidgetId } from "@/lib/home/layout";
 import type { HomeWidgetId as PresetWidgetId } from "@/lib/home/presets";
+import { PulseTile } from "@/components/social/pulse-cards";
+import type { SocialPulseSnapshot } from "@/lib/social/pulse";
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
+}
+
+const SOCIAL_TILE_IDS = [
+  "social-facebook",
+  "social-instagram",
+  "social-x",
+  "social-linkedin",
+  "social-gbp",
+] as const;
+
+function socialTiles(
+  pulse: SocialPulseSnapshot | null | undefined,
+  visible: (id: HomeWidgetId) => boolean,
+): Partial<Record<HomeWidgetId, ReactNode>> {
+  const next: Partial<Record<HomeWidgetId, ReactNode>> = {};
+  SOCIAL_TILE_IDS.forEach((id, index) => {
+    if (!visible(id)) return;
+    const platform = SOCIAL_LAYOUT_TO_PLATFORM[id];
+    const card = pulse?.cards.find((row) => row.id === platform);
+    if (!card) return;
+    next[id] = <PulseTile card={card} index={index} framed={false} compact />;
+  });
+  return next;
 }
 
 export function OwnerDesk({
@@ -78,6 +103,7 @@ export function OwnerDesk({
   attentionValue,
   hitLost,
   renewalRisk = [],
+  socialPulse,
 }: {
   snapshot: OwnerHomeSnapshot;
   scope: OwnerHomeScope;
@@ -100,6 +126,7 @@ export function OwnerDesk({
   attentionValue?: string;
   hitLost?: HitLostReport | null;
   renewalRisk?: RenewalRiskAccount[];
+  socialPulse?: SocialPulseSnapshot | null;
 }) {
   void tables;
   const asOf = snapshot.asOf.toLocaleString("en-US", {
@@ -677,6 +704,7 @@ export function OwnerDesk({
                   ),
                 }
               : {}),
+            ...socialTiles(socialPulse, tile),
             ...(tile("recent-deals")
               ? {
                   "recent-deals": (

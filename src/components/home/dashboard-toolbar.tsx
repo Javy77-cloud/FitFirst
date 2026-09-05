@@ -70,10 +70,10 @@ export function DashboardToolbar({
             </span>
             <SectionDropdown
               ariaLabel="Book scope"
-              value={bookScope === "my_book" ? "My book" : "Agency-wide"}
+              value={bookScope === "my_book" ? "My Book" : "Agency Book"}
               options={[
-                { id: "my_book", label: "My book", active: bookScope === "my_book" },
-                { id: "agency", label: "Agency-wide", active: bookScope === "agency" },
+                { id: "my_book", label: "My Book", active: bookScope === "my_book" },
+                { id: "agency", label: "Agency Book", active: bookScope === "agency" },
               ]}
               onSelect={(id) => {
                 const form = new FormData();

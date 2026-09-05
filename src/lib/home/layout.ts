@@ -1,4 +1,5 @@
 import type { HomeWidgetId as PresetWidgetId } from "./presets";
+import type { SocialPlatformId } from "@/lib/social/platforms";
 
 export const HOME_WIDGET_IDS = [
   "kpi-accounts",
@@ -26,6 +27,11 @@ export const HOME_WIDGET_IDS = [
   "ana",
   "alerts",
   "recent-deals",
+  "social-facebook",
+  "social-instagram",
+  "social-x",
+  "social-linkedin",
+  "social-gbp",
 ] as const;
 
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number];
@@ -65,6 +71,19 @@ export const LAYOUT_TO_PRESET: Record<HomeWidgetId, PresetWidgetId> = {
   ana: "ana",
   alerts: "alerts",
   "recent-deals": "recent_deals",
+  "social-facebook": "social",
+  "social-instagram": "social",
+  "social-x": "social",
+  "social-linkedin": "social",
+  "social-gbp": "social",
+};
+
+export const SOCIAL_LAYOUT_TO_PLATFORM: Partial<Record<HomeWidgetId, SocialPlatformId>> = {
+  "social-facebook": "facebook",
+  "social-instagram": "instagram",
+  "social-x": "x",
+  "social-linkedin": "linkedin",
+  "social-gbp": "google_business_profile",
 };
 
 export const LAYOUT_WIDGET_LABEL: Record<HomeWidgetId, string> = {
@@ -93,6 +112,11 @@ export const LAYOUT_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   ana: "Ana Dib shop",
   alerts: "In-app alerts",
   "recent-deals": "Recent deals",
+  "social-facebook": "Facebook",
+  "social-instagram": "Instagram",
+  "social-x": "X",
+  "social-linkedin": "LinkedIn",
+  "social-gbp": "Google Business Profile",
 };
 
 export const DEFAULT_HOME_LAYOUT: WidgetPlacement[] = [
@@ -121,6 +145,11 @@ export const DEFAULT_HOME_LAYOUT: WidgetPlacement[] = [
   { id: "ana", span: "2x1" },
   { id: "alerts", span: "2x1" },
   { id: "recent-deals", span: "2x1" },
+  { id: "social-facebook", span: "1x1" },
+  { id: "social-instagram", span: "1x1" },
+  { id: "social-x", span: "1x1" },
+  { id: "social-linkedin", span: "1x1" },
+  { id: "social-gbp", span: "1x1" },
 ];
 
 const ID_SET = new Set<string>(HOME_WIDGET_IDS);

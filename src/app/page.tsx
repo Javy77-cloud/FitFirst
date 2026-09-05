@@ -7,7 +7,6 @@ import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { parseAttentionWindow } from "@/lib/home/attention-window";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadSocialPulse } from "@/lib/social/store";
-import { HomeSocialPulse } from "@/components/social/home-pulse";
 import { loadRenewalRiskAccounts } from "@/lib/renewal-risk/load";
 
 export const dynamic = "force-dynamic";
@@ -68,10 +67,8 @@ export default async function HomePage({
         attentionValue={params.attention}
         hitLost={hitLost}
         renewalRisk={renewalRisk}
+        socialPulse={socialPulse}
       />
-      <div className="mt-4">
-        <HomeSocialPulse pulse={socialPulse} />
-      </div>
     </AppShell>
   );
 }

@@ -54,6 +54,8 @@ describe("home widget layout", () => {
     expect(HOME_WIDGET_IDS).toContain("line-mix");
     expect(HOME_WIDGET_IDS).toContain("contest");
     expect(HOME_WIDGET_IDS).toContain("lead-offers");
+    expect(HOME_WIDGET_IDS).toContain("social-instagram");
+    expect(HOME_WIDGET_IDS).toContain("social-facebook");
   });
 
   /**
@@ -79,6 +81,12 @@ describe("home widget layout", () => {
     expect(stacked.find((row) => row.id === "attention")?.span).toBe("1x2");
     expect(stacked.find((row) => row.id === "renewals")?.span).toBe(
       before.find((row) => row.id === "renewals")?.span,
+    );
+
+    const social = setWidgetSpan(DEFAULT_HOME_LAYOUT, "social-instagram", "2x2");
+    expect(social.find((row) => row.id === "social-instagram")?.span).toBe("2x2");
+    expect(social.find((row) => row.id === "social-facebook")?.span).toBe(
+      DEFAULT_HOME_LAYOUT.find((row) => row.id === "social-facebook")?.span,
     );
   });
 });

@@ -198,56 +198,8 @@ export function LeadOfferBoard({
         </ul>
       )}
       {isAdmin ? (
-        <div className="space-y-4 border-t border-border px-4 py-3">
+        <div className="border-t border-border px-4 py-3">
           <form action={postLeadOffer} className="space-y-2">
-            <input type="hidden" name="kind" value="referral" />
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Post a language / license offer
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Label htmlFor="offer-title" className="text-xs">
-                  Title
-                </Label>
-                <Input
-                  id="offer-title"
-                  name="title"
-                  required
-                  className="mt-1 h-8"
-                  placeholder="Lead in Montana — anyone licensed?"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="offer-details" className="text-xs">
-                  Details
-                </Label>
-                <Textarea
-                  id="offer-details"
-                  name="details"
-                  required
-                  rows={2}
-                  className="mt-1"
-                  placeholder="I have a lead that speaks French — anyone want it?"
-                />
-              </div>
-              <div>
-                <Label htmlFor="offer-language" className="text-xs">
-                  Language
-                </Label>
-                <Input id="offer-language" name="language" className="mt-1 h-8" placeholder="French" />
-              </div>
-              <div>
-                <Label htmlFor="offer-state" className="text-xs">
-                  State
-                </Label>
-                <Input id="offer-state" name="state" className="mt-1 h-8" placeholder="MT" />
-              </div>
-            </div>
-            <Button type="submit" size="sm">
-              Post offer
-            </Button>
-          </form>
-          <form action={postLeadOffer} className="space-y-2 border-t border-border pt-3">
             <input type="hidden" name="kind" value="inbound_email" />
             <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Share inbound email
