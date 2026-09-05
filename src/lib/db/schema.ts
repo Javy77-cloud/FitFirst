@@ -2541,8 +2541,37 @@ export const portalRequests = pgTable(
   ],
 );
 
+/** Admin Import / Export hub jobs. Never used to delete book rows. */
+export const importExportJobs = pgTable(
+  "import_export_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name").notNull(),
+    actorEmail: text("actor_email"),
+    entity: text("entity").notNull(),
+    action: text("action").notNull(),
+    status: text("status").notNull().default("ok"),
+    filename: text("filename"),
+    rowsOk: integer("rows_ok").notNull().default(0),
+    rowsError: integer("rows_error").notNull().default(0),
+    rowsCreate: integer("rows_create").notNull().default(0),
+    rowsUpdate: integer("rows_update").notNull().default(0),
+    rowsSkip: integer("rows_skip").notNull().default(0),
+    errorCsv: text("error_csv"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("import_export_jobs_tenant_idx").on(t.tenantId, t.createdAt),
+    index("import_export_jobs_entity_idx").on(t.tenantId, t.entity, t.createdAt),
+  ],
+);
+
 export type PortalToken = typeof portalTokens.$inferSelect;
 export type PortalRequest = typeof portalRequests.$inferSelect;
+export type ImportExportJob = typeof importExportJobs.$inferSelect;
 
 /** Endorsement / cancel / non-renew request pipeline. Filing updates the Policy. */
 export const policyServiceRequests = pgTable(

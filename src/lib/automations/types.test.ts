@@ -108,9 +108,9 @@ describe("labels", () => {
   it("exposes Macros and Custom Buttons from Automations, not only Settings", () => {
     const ids = AUTOMATION_HUB_SECTIONS.map((section) => section.id);
     const hrefs = AUTOMATION_HUB_SECTIONS.map((section) => section.href);
-    expect(ids).toContain("macros");
-    expect(ids).toContain("custom-buttons");
+    expect(ids.filter((id) => id === "macros")).toHaveLength(1);
+    expect(ids).toContain("buttons");
     expect(hrefs).toContain("/automations/macros");
-    expect(hrefs).toContain("/automations/custom-buttons");
+    expect(hrefs).toContain("/automations/buttons");
   });
 });

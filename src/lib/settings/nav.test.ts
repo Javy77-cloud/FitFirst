@@ -44,12 +44,13 @@ describe("settings nav", () => {
     );
   });
 
-  it("nests Export and Lead routing under Brand / Agency", () => {
+  it("nests Export, Import / Export, and Lead routing under Brand / Agency", () => {
     expect(settingsGroupFor("export")).toBe("agency");
+    expect(settingsGroupFor("import-export")).toBe("agency");
     expect(settingsGroupFor("routing")).toBe("agency");
     const agency = SETTINGS_NAV.find((group) => group.id === "agency");
     expect(agency?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["agency", "offices", "territories", "routing", "export"]),
+      expect.arrayContaining(["agency", "offices", "territories", "routing", "export", "import-export"]),
     );
   });
 });

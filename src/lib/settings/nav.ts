@@ -27,6 +27,7 @@ export const SETTINGS_NAV_IDS = [
   "recovery",
   "compliance",
   "export",
+  "import-export",
   "developer",
   "functions",
   "api-keys",
@@ -147,7 +148,8 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "territories", href: "/settings/territories", label: "Territories", hint: "Geo books" },
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },
-      { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
+      { id: "export", href: "/settings/export", label: "Export", hint: "Open API CSV" },
+      { id: "import-export", href: "/settings/import-export", label: "Import / Export", hint: "Agency data packs" },
     ],
   },
   {

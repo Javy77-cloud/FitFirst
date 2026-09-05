@@ -81,13 +81,14 @@ export default async function SettingsPage() {
         </Link>
         {session.isAdmin ? (
           <Link
-            href="/settings/export"
+            href="/settings/import-export"
             className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
           >
             <div>
-              <div className="text-sm font-semibold text-navy">Export</div>
+              <div className="text-sm font-semibold text-navy">Agency data / Import Export</div>
               <p className="text-helper text-muted-foreground">
-                CSV of contacts, policies, and commissions. Same rows as <code>/api/v1</code>.
+                Leads, Contacts, Businesses, Deals, Policies, Carriers — export, template, and CSV
+                import. Open API CSV still on Export.
               </p>
             </div>
           </Link>

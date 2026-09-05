@@ -57,6 +57,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/developer")).toBe(true);
     expect(isAdminOnlyPath("/settings/developer/functions")).toBe(true);
     expect(isAdminOnlyPath("/settings/developer/api-keys")).toBe(true);
+    expect(isAdminOnlyPath("/settings/import-export")).toBe(true);
     expect(isAdminOnlyPath("/logs/fill-learning")).toBe(true);
     expect(isAdminOnlyPath("/compliance")).toBe(true);
     expect(isAdminOnlyPath("/carriers/logs")).toBe(false);
