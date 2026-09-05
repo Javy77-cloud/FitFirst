@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
-import { getPolicyWorkspace } from "@/lib/db/queries";
+import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
+import { getLatestInDeskEnvelope, getPolicyWorkspace } from "@/lib/db/queries";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
@@ -20,13 +21,20 @@ export const dynamic = "force-dynamic";
 
 export default async function PolicyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ notice?: string }>;
 }) {
   const { id } = await params;
+  const { notice } = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
   const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
+  const envelope = await getLatestInDeskEnvelope({ policyId: policy.id });
+  const partyName = contact
+    ? `${contact.firstName} ${contact.lastName}`
+    : account?.name ?? policy.policyNumber;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
   const context = await loadRecordContext({
     contactId: contact?.id,
@@ -118,6 +126,22 @@ export default async function PolicyDetailPage({
           </table>
         )}
       </section>
+
+      <div className="mt-4">
+        <InDeskEsignPanel
+          recordKind="policy"
+          recordId={policy.id}
+          riskId={policy.riskId}
+          partyName={partyName}
+          status={policy.esignStatus}
+          requestedAt={policy.esignRequestedAt}
+          signedAt={policy.esignSignedAt}
+          signerName={policy.esignSignerName}
+          docs={files}
+          envelope={envelope}
+          notice={notice}
+        />
+      </div>
 
       <div className="mt-4">
         <ActivityTimeline

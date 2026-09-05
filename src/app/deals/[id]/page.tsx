@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { bindDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
+import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
-import { getDealWorkspace, listRecordActivities } from "@/lib/db/queries";
+import { getDealWorkspace, getLatestInDeskEnvelope, listRecordActivities } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { HealthStrip } from "@/components/completeness/health-strip";
@@ -30,10 +31,10 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string; notice?: string }>;
 }) {
   const { id } = await params;
-  const { tab, riskTab } = await searchParams;
+  const { tab, riskTab, notice } = await searchParams;
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -58,6 +59,10 @@ export default async function DealPage({
     accountId: deal.accountId,
   });
   const isAna = deal.id === DEAL_ID;
+  const envelope = await getLatestInDeskEnvelope({ dealId: deal.id });
+  const partyName =
+    deal.primaryNamedInsured ??
+    (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
   const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
   const health = quoteSheet
     ? reportFromSheet(sheetLine, quoteSheet.values)
@@ -145,7 +150,22 @@ export default async function DealPage({
                     id: "documents",
                     label: "Documents",
                     content: (
-                      <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                      <div className="space-y-4">
+                        <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                        <InDeskEsignPanel
+                          recordKind="deal"
+                          recordId={deal.id}
+                          riskId={risk.id}
+                          partyName={partyName}
+                          status={deal.esignStatus}
+                          requestedAt={deal.esignRequestedAt}
+                          signedAt={deal.esignSignedAt}
+                          signerName={deal.esignSignerName}
+                          docs={docs}
+                          envelope={envelope}
+                          notice={notice}
+                        />
+                      </div>
                     ),
                   },
                   {

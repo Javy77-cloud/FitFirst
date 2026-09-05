@@ -40,6 +40,8 @@ describe("client portal stubs", () => {
     expect(isPublicPath("/portal/elena-ruiz-2026")).toBe(true);
     expect(isPublicPath("/portal/harbor-key-2026/coi")).toBe(true);
     expect(isPublicPath("/api/portal/elena-ruiz-2026/files/abc")).toBe(true);
+    expect(isPublicPath("/sign/idesk-demo")).toBe(true);
+    expect(isPublicPath("/api/sign/idesk-demo/file")).toBe(true);
     expect(isPublicPath("/policies")).toBe(false);
   });
 

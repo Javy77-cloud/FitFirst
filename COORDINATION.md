@@ -716,3 +716,13 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 ## WAVE3 leftover
 
 DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+
+## In-desk e-sign stub (`cursor/in-desk-esign-stub-fdce`)
+
+Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Dark sidebar tokens stay `#1d4e89`. Chrome Fill folder not rewritten. Mac Chrome unblock rules kept: Col-based lists compile, no vendor SDK.
+
+- Deal Documents + Policy issued-files: upload/select a PDF packet, request signature, client or agent demo draws/types a name, mark Signed in-app.
+- Status + timestamp stored on `deals` / `policies` (`esign_status`, `esign_requested_at`, `esign_signed_at`) and shown on those lists.
+- Banner copy is **In-desk stub — not DocuSign**. `/sign/[token]` is public. Finish-line DocuSign / Dropbox Sign stay `not_implemented`.
+- Migration `0048_in_desk_esign`.
+

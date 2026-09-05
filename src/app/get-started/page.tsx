@@ -90,6 +90,12 @@ const STEPS = [
     href: "/portal",
     cta: "Open client portal",
   },
+  {
+    title: "12. In-desk e-sign stub (not DocuSign)",
+    body: "On Elena’s Deal Documents tab or HO3 policy: create a sample PDF packet, request signature, then draw or type the name (agent demo or client link). Status + timestamp land on the record and the Deals / Policies lists. Label stays “In-desk stub — not DocuSign.” Ana stays Quote Sent / unbound at Cov A $321,000 — do not bind.",
+    href: `/deals/${ELENA_DEAL_ID}?tab=documents`,
+    cta: "Open Elena deal documents",
+  },
 ];
 
 export default function GetStartedPage() {

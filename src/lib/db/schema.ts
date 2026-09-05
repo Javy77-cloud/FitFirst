@@ -476,6 +476,12 @@ export const deals = pgTable(
     quotingUnlocked: boolean("quoting_unlocked").notNull().default(false),
     /** Pasted record/upload link for a video proposal. No Loom API. */
     videoProposalUrl: text("video_proposal_url"),
+    /** In-desk e-sign stub only. Finish-line DocuSign stays parked. */
+    esignStatus: text("esign_status").notNull().default("none"),
+    esignRequestedAt: timestamp("esign_requested_at", { withTimezone: true }),
+    esignSignedAt: timestamp("esign_signed_at", { withTimezone: true }),
+    esignSignerName: text("esign_signer_name"),
+    esignDocumentId: uuid("esign_document_id"),
     ...timestamps,
   },
   (t) => [
@@ -664,6 +670,12 @@ export const policies = pgTable(
     commission4: numeric("commission4", { precision: 12, scale: 2 }),
     premiumFrequency: text("premium_frequency"),
     numberOfInsured: integer("number_of_insured"),
+    /** In-desk e-sign stub only. Finish-line DocuSign stays parked. */
+    esignStatus: text("esign_status").notNull().default("none"),
+    esignRequestedAt: timestamp("esign_requested_at", { withTimezone: true }),
+    esignSignedAt: timestamp("esign_signed_at", { withTimezone: true }),
+    esignSignerName: text("esign_signer_name"),
+    esignDocumentId: uuid("esign_document_id"),
     ...timestamps,
   },
   (t) => [
@@ -2333,17 +2345,29 @@ export const signatureEnvelopes = pgTable(
     documentId: uuid("document_id")
       .notNull()
       .references(() => documents.id),
+    dealId: uuid("deal_id"),
+    policyId: uuid("policy_id"),
     provider: text("provider").notNull().default("docusign"),
+    mode: text("mode").notNull().default("vendor"),
     status: text("status").notNull().default("draft"),
     signerName: text("signer_name"),
     signerEmail: text("signer_email"),
     subject: text("subject"),
     lastProviderResult: text("last_provider_result"),
+    signatureKind: text("signature_kind"),
+    signatureData: text("signature_data"),
+    signedByRole: text("signed_by_role"),
+    publicToken: text("public_token"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     signedAt: timestamp("signed_at", { withTimezone: true }),
     ...timestamps,
   },
-  (t) => [index("signature_envelopes_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("signature_envelopes_tenant_idx").on(t.tenantId),
+    index("signature_envelopes_deal_idx").on(t.tenantId, t.dealId),
+    index("signature_envelopes_policy_idx").on(t.tenantId, t.policyId),
+    uniqueIndex("signature_envelopes_token_uidx").on(t.publicToken),
+  ],
 );
 
 export type Lead = typeof leads.$inferSelect;

@@ -44,6 +44,9 @@ describe("agency connector stubs", () => {
     expect(sendEnvelope("zoho_sign", { documentId: "doc-1" }).status).toBe(
       "not_implemented",
     );
+    expect(sendEnvelope("docusign", { documentId: "doc-1" }).message).not.toMatch(
+      /sent|envelope created/i,
+    );
     expect(connectTelephonyProvider("twilio").status).toBe("not_implemented");
     expect(placeDeskCall().status).toBe("not_implemented");
   });

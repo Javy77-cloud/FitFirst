@@ -28,7 +28,7 @@ export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   calendar: "Desk calendar stays in FitFirst. Google and Outlook sync are stubs.",
   phone_sms: "Call log and SMS. Twilio, RingCentral, or Lightspeed Voice. Nothing dials from this build.",
   video: "Meeting links on the calendar. Zoom or Google Meet — agency account.",
-  esign: "Send a packet for signature. DocuSign or Dropbox Sign. No envelope leaves the desk today.",
+  esign: "In-desk stub on Deal or Policy. Finish-line DocuSign / Dropbox Sign stay parked. No envelope leaves the desk.",
   social:
     "Agency Facebook, Instagram, X, LinkedIn, and Google Business Profile. Connect is a stub. FitFirst does not buy ads or API seats.",
 };
@@ -179,8 +179,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "esign",
     name: "DocuSign",
     initials: "Ds",
-    blurb: "Send a dec or application packet for signature.",
-    byoNote: "Agency DocuSign plan. Envelope send stays not_implemented.",
+    blurb: "Finish-line vendor. Use the in-desk stub on Deal or Policy today.",
+    byoNote: "Agency DocuSign plan. Envelope send stays not_implemented. No paid SDK in this desk.",
   },
   {
     id: "dropbox_sign",
