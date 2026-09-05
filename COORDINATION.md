@@ -715,7 +715,7 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 
 ## Developer Hub core (`cursor/developer-hub-core-a882`)
 
-Admin Settings → Developer Hub. Additive `0048_developer_hub`. Tables all carry `tenant_id`. No live Zoho writes. Ana untouched.
+Admin Settings → Developer Hub. Incoming `0048_developer_hub` remapped to `0054_developer_hub`. Tables all carry `tenant_id`. No live Zoho writes. Ana untouched.
 
 Working: Functions CRUD + allowlisted JSON runner + execution log; org API keys (hashed, shown once); outbound webhook queue + localhost Send test; inbound Signals POST + Alert; Connections CRUD with encrypted-at-rest client secret stub. OAuth expose / Authorize is a wall. Macros / Custom Buttons / Client Scripts / Widgets are placeholder routes for sibling bots.
 
