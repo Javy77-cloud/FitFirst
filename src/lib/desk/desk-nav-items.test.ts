@@ -42,6 +42,17 @@ describe("desk nav chrome", () => {
     expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
   });
 
+  it("adds Suspense and Notices without a second Pipeline or Alerts row", () => {
+    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    expect(labels).toContain("Suspense");
+    expect(labels).toContain("Notices");
+    expect(hrefs).toContain("/suspense");
+    expect(hrefs).toContain("/notices");
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(hrefs).not.toContain("/alerts");
+  });
+
   it("uses Documents instead of Forms on the left nav", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);

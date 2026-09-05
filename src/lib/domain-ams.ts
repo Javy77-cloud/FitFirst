@@ -436,6 +436,53 @@ export type SuspenseDocKey = (typeof SUSPENSE_DOC_KEYS)[number];
 export const LOSS_RUN_STUB_DISCLAIMER =
   "Desk claims summary stub — not a carrier loss run. Handle the claim on the carrier website.";
 
+export const NOTICE_KINDS = ["cancellation", "non_renewal", "reinstatement"] as const;
+export type NoticeKind = (typeof NOTICE_KINDS)[number];
+
+export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
+  cancellation: "Cancellation notice",
+  non_renewal: "Non-renewal notice",
+  reinstatement: "Reinstatement notice",
+};
+
+export const NOTICE_STATUSES = ["drafted", "mailed", "withdrawn"] as const;
+export type NoticeStatus = (typeof NOTICE_STATUSES)[number];
+
+export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
+  drafted: "Drafted",
+  mailed: "Mailed",
+  withdrawn: "Withdrawn",
+};
+
+export function isNoticeKind(value: string): value is NoticeKind {
+  return (NOTICE_KINDS as readonly string[]).includes(value);
+}
+
+export function isNoticeStatus(value: string): value is NoticeStatus {
+  return (NOTICE_STATUSES as readonly string[]).includes(value);
+}
+
+export function noticeKindLabel(kind: string): string {
+  return isNoticeKind(kind) ? NOTICE_KIND_LABELS[kind] : kind.replaceAll("_", " ");
+}
+
+export function noticeStatusLabel(status: string): string {
+  return isNoticeStatus(status) ? NOTICE_STATUS_LABELS[status] : status.replaceAll("_", " ");
+}
+
+export const NOTICE_NEXT_STEPS: Record<NoticeStatus, string> = {
+  drafted: "Desk draft only. Mail when the carrier notice is ready. Does not cancel the Policy.",
+  mailed: "Logged as mailed. Policy status stays as-is until a service request is filed.",
+  withdrawn: "Withdrawn. Policy unchanged.",
+};
+
+export function noticeNextStep(status: string): string {
+  return isNoticeStatus(status) ? NOTICE_NEXT_STEPS[status] : "";
+}
+
+export const NOTICE_DIARY_DISCLAIMER =
+  "Notice diary only. Mailing a notice does not file a cancellation, non-renewal, or reinstatement on the Policy.";
+
 export function isInterestKind(value: string): value is InterestKind {
   return (INTEREST_KINDS as readonly string[]).includes(value);
 }

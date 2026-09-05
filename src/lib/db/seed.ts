@@ -540,4 +540,6 @@ export async function seed() {
   await seedAmsWave4();
   const { seedAmsWave5 } = await import("./seed-ams-wave5");
   await seedAmsWave5();
+  const { seedAmsWave6 } = await import("./seed-ams-wave6");
+  await seedAmsWave6();
 }

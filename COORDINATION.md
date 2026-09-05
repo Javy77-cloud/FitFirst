@@ -777,3 +777,22 @@ Click path:
 5. Settings → IVANS / AL3 still **Not connected**.
 
 Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0051**.
+
+## AMS wave 6 — desk depth (`cursor/ams-wave6-depth-1040`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. Wave 2–5 surfaces stay.
+
+Additive `0051_ams_wave6` on existing tables plus one notice diary:
+
+- `certificate_requests` / `issued_certificates` — `waiver_of_subrogation`, `primary_noncontributory`. Palm Bay issued stub has both. Holder directory is `/certificates/holders`.
+- Agency suspense board `/suspense` reads open `review_tasks` (`servicing_id_card` / `servicing_aor`). Complete marks the task collected. Dec stays a manual collect.
+- `policy_notices` — cancellation / non-renew / reinstatement diary (`drafted` / `mailed` / `withdrawn`). Mail does **not** call `filePolicyChange`. Hale seed is a drafted non-renew.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open. Term history prior + current. Loss-run CSV. CSR endorsement **in progress**. Do not file. Do not bind Ana.
+2. Policy **HP-FL-88421** — auto ID + AOR suspense. Drafted non-renew notice. Producer endorsement **requested**. Do not file or mail.
+3. `/suspense` — Elena AOR + Hale ID/AOR. `/certificates/holders` — Brevard open, Palm Bay issued with waiver + PNC.
+4. `/notices` — Hale drafted non-renew. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0052**.

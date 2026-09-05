@@ -608,3 +608,10 @@ export const AMS_WAVE5_IDS = {
   haleAorLog: "a0501111-a050-4050-8050-a05011111110",
 } as const;
 
+/** AMS wave 6. Off wave5 a050… and Ana / Elena owner blocks. */
+export const AMS_WAVE6_IDS = {
+  haleNonRenewNotice: "a0511111-a051-4051-8051-a05111111101",
+  haleNoticeActivity: "a0511111-a051-4051-8051-a05111111102",
+  haleNoticeLog: "a0511111-a051-4051-8051-a05111111103",
+} as const;
+

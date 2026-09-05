@@ -68,6 +68,12 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/scorecards", "/glance")).toBe(false);
   });
 
+  it("highlights Certificates on the holder directory", () => {
+    expect(navItemIsActive("/certificates", "/certificates")).toBe(true);
+    expect(navItemIsActive("/certificates/holders", "/certificates")).toBe(true);
+    expect(navItemIsActive("/suspense", "/certificates")).toBe(false);
+  });
+
   it("highlights Automations on hub and section pages", () => {
     expect(navItemIsActive("/automations", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);

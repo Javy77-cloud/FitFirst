@@ -909,6 +909,17 @@ export {
   termRoleLabel,
   SUSPENSE_DOC_KEYS,
   LOSS_RUN_STUB_DISCLAIMER,
+  NOTICE_KINDS,
+  NOTICE_KIND_LABELS,
+  NOTICE_STATUSES,
+  NOTICE_STATUS_LABELS,
+  isNoticeKind,
+  isNoticeStatus,
+  noticeKindLabel,
+  noticeStatusLabel,
+  NOTICE_NEXT_STEPS,
+  noticeNextStep,
+  NOTICE_DIARY_DISCLAIMER,
 } from "./domain-ams";
 export type {
   AppointmentLine,
@@ -946,6 +957,8 @@ export type {
   WorkDesk,
   TermRole,
   SuspenseDocKey,
+  NoticeKind,
+  NoticeStatus,
 } from "./domain-ams";
 
 export {

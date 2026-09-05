@@ -2,9 +2,16 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { isWorkDesk, SERVICING_TASK_KINDS, servicingTaskKind } from "@/lib/domain-ams";
+import {
+  isWorkDesk,
+  SERVICING_TASK_KINDS,
+  servicingDocKeyFromTaskKind,
+  servicingTaskKind,
+} from "@/lib/domain-ams";
 import { isUuid } from "@/lib/ids";
-import { pendingSuspenseKeys } from "./suspense";
+import { isSuspenseDocKey, pendingSuspenseKeys } from "./suspense";
+import { rollupCertificateHolders } from "./certificate-holders";
+import { filterSuspenseBoard, sortSuspenseBoard, type SuspenseBoardRow } from "./suspense-board";
 import { DESK_AS_OF } from "@/lib/home/as-of";
 import { db } from "@/lib/db";
 import {
@@ -18,6 +25,7 @@ import {
   issuedCertificates,
   policies,
   policyAdditionalInterests,
+  policyNotices,
   policyServiceRequests,
   policyTerms,
   reviewTasks,
@@ -211,7 +219,7 @@ export async function loadPolicyServicing(policyId: string) {
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
   if (!policy) return null;
   await ensureServicingSuspense(policyId);
-  const [files, requests, nextTask, interests, packetTaskRows, terms] = await Promise.all([
+  const [files, requests, nextTask, interests, packetTaskRows, terms, notices] = await Promise.all([
     db
       .select({ docType: documents.docType, slot: documents.slot })
       .from(documents)
@@ -242,6 +250,7 @@ export async function loadPolicyServicing(policyId: string) {
       .select()
       .from(policyTerms)
       .where(and(eq(policyTerms.tenantId, tenant()), eq(policyTerms.policyId, policyId))),
+    listPolicyNotices(policyId),
   ]);
   const packetTasks: PacketTask[] = packetTaskRows.map((row) => ({
     id: row.id,
@@ -254,6 +263,7 @@ export async function loadPolicyServicing(policyId: string) {
     requests: requests.map((row) => row.request),
     interests,
     terms,
+    notices: notices.map((row) => row.notice),
     nextTask,
     packetTasks,
     packetByKey: packetTasksByKey(packetTasks),
@@ -323,6 +333,15 @@ export async function loadBookHealth() {
     viewerName: session.name || "Desk",
     openServiceRequests: Number(openRequests[0]?.n ?? 0),
     openCoiRequests: Number(openCoi[0]?.n ?? 0),
+    openSuspense: (await loadSuspenseBoard()).rows.length,
+    openNotices: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(policyNotices)
+          .where(and(eq(policyNotices.tenantId, tenant()), eq(policyNotices.status, "drafted")))
+      )[0]?.n ?? 0,
+    ),
   };
 }
 
@@ -432,5 +451,132 @@ export async function loadCarrierDownloadDesk() {
       lastAttemptAt: row.lastAttemptAt,
       lastError: row.lastError,
     })),
+  );
+}
+
+export async function listPolicyNotices(policyId?: string) {
+  const clauses = [eq(policyNotices.tenantId, tenant())];
+  if (policyId) {
+    if (!isUuid(policyId)) return [];
+    clauses.push(eq(policyNotices.policyId, policyId));
+  }
+  return db
+    .select({
+      notice: policyNotices,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(policyNotices)
+    .innerJoin(policies, eq(policyNotices.policyId, policies.id))
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(desc(policyNotices.createdAt));
+}
+
+export async function getPolicyNotice(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      notice: policyNotices,
+      policy: policies,
+    })
+    .from(policyNotices)
+    .innerJoin(policies, eq(policyNotices.policyId, policies.id))
+    .where(and(eq(policyNotices.tenantId, tenant()), eq(policyNotices.id, id)));
+  return row ?? null;
+}
+
+export async function loadSuspenseBoard(docKey?: string) {
+  const taskRows = await db
+    .select({
+      task: reviewTasks,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(reviewTasks)
+    .innerJoin(policies, eq(reviewTasks.policyId, policies.id))
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(
+      and(
+        eq(reviewTasks.tenantId, tenant()),
+        eq(reviewTasks.status, "open"),
+        inArray(reviewTasks.kind, [
+          SERVICING_TASK_KINDS.id_card,
+          SERVICING_TASK_KINDS.aor,
+        ]),
+      ),
+    )
+    .orderBy(asc(reviewTasks.dueDate));
+  const rows: SuspenseBoardRow[] = [];
+  for (const { task, policy, contact, account } of taskRows) {
+    const key = servicingDocKeyFromTaskKind(task.kind);
+    if (!key || !isSuspenseDocKey(key)) continue;
+    rows.push({
+      taskId: task.id,
+      policyId: policy.id,
+      policyNumber: policy.policyNumber,
+      partyName: partyName(contact, account),
+      docKey: key,
+      title: task.title,
+      dueDate: task.dueDate,
+      status: task.status,
+    });
+  }
+  return {
+    docKey: docKey && isSuspenseDocKey(docKey) ? docKey : null,
+    rows: sortSuspenseBoard(filterSuspenseBoard(rows, docKey)),
+  };
+}
+
+export async function listCertificateHolders() {
+  const interests = await db
+    .select({
+      interest: policyAdditionalInterests,
+      policy: policies,
+      account: accounts,
+    })
+    .from(policyAdditionalInterests)
+    .innerJoin(policies, eq(policyAdditionalInterests.policyId, policies.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(
+      and(
+        eq(policyAdditionalInterests.tenantId, tenant()),
+        inArray(policyAdditionalInterests.kind, ["additional_interest", "certificate_holder"]),
+      ),
+    );
+  const requests = await db
+    .select()
+    .from(certificateRequests)
+    .where(eq(certificateRequests.tenantId, tenant()));
+  const issued = await db
+    .select()
+    .from(issuedCertificates)
+    .where(eq(issuedCertificates.tenantId, tenant()));
+  return rollupCertificateHolders(
+    interests.map(({ interest, policy, account }) => ({
+      name: interest.name,
+      kind: interest.kind,
+      policyId: policy.id,
+      policyNumber: policy.policyNumber,
+      accountName: account?.name ?? null,
+    })),
+    [
+      ...requests.map((row) => ({
+        holderName: row.holderName,
+        status: row.status,
+        waiverOfSubrogation: row.waiverOfSubrogation,
+        primaryNoncontributory: row.primaryNoncontributory,
+      })),
+      ...issued.map((row) => ({
+        holderName: row.holderName,
+        status: row.status === "issued" ? "issued" : row.status,
+        waiverOfSubrogation: row.waiverOfSubrogation,
+        primaryNoncontributory: row.primaryNoncontributory,
+      })),
+    ],
   );
 }

@@ -14,6 +14,8 @@ export const DESK_NAV_ITEMS = [
   { href: "/book-health", label: "Book health" },
   { href: "/renewals", label: "Renewals" },
   { href: "/certificates", label: "Certificates" },
+  { href: "/suspense", label: "Suspense" },
+  { href: "/notices", label: "Notices" },
   { href: "/documents", label: "Documents" },
   { href: "/quotes", label: "Quotes" },
   { href: "/merge", label: "Merge" },

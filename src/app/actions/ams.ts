@@ -15,6 +15,7 @@ import {
   certificateRequests,
   issuedCertificates,
   policyAdditionalInterests,
+  policyNotices,
   policyServiceRequests,
   reviewTasks,
   tenants,
@@ -36,6 +37,8 @@ import {
   validateInterestDraft,
 } from "@/lib/ams/additional-interests";
 import { additionalInsuredFromInterest } from "@/lib/ams/coi-requests";
+import { parseCertificateFlags } from "@/lib/ams/certificate-holders";
+import { nextNoticeStatus, noticeKindLine, validateNoticeDraft } from "@/lib/ams/notices";
 import { isWorkDesk } from "@/lib/domain-ams";
 import { packetTaskTitle } from "@/lib/ams/packet-tasks";
 import {
@@ -43,7 +46,12 @@ import {
   servicingTaskKind,
   type ServicingDocKey,
 } from "@/lib/domain-ams";
-import { getCertificateRequest, getServiceRequest, loadPolicyServicing } from "@/lib/ams/queries";
+import {
+  getCertificateRequest,
+  getPolicyNotice,
+  getServiceRequest,
+  loadPolicyServicing,
+} from "@/lib/ams/queries";
 import {
   matchingIssuedCertificate,
   nextCertificateRequestStatus,
@@ -128,6 +136,10 @@ function refreshPolicy(policyId: string, extras: string[] = []) {
   revalidatePath("/service-requests");
   revalidatePath("/book-health");
   revalidatePath("/renewals");
+  revalidatePath("/suspense");
+  revalidatePath("/notices");
+  revalidatePath("/certificates");
+  revalidatePath("/certificates/holders");
   revalidatePath("/");
   for (const path of extras) revalidatePath(path);
 }
@@ -293,6 +305,10 @@ export async function createCertificateRequest(formData: FormData) {
     additionalInsured: str(formData, "additionalInsured"),
     specialWording: str(formData, "specialWording"),
   });
+  const flags = parseCertificateFlags({
+    waiverOfSubrogation: str(formData, "waiverOfSubrogation"),
+    primaryNoncontributory: str(formData, "primaryNoncontributory"),
+  });
   const returnTo = str(formData, "returnTo") || `/accounts/${accountId}`;
   if (!isUuid(accountId)) bounce("/certificates", "Business is required.");
   if (!parsed.ok) bounce(returnTo, parsed.error);
@@ -352,6 +368,8 @@ export async function createCertificateRequest(formData: FormData) {
     interestId,
     additionalInsured,
     specialWording: parsed.specialWording,
+    waiverOfSubrogation: flags.waiverOfSubrogation,
+    primaryNoncontributory: flags.primaryNoncontributory,
   });
   await writeServicingLog({
     title: `COI requested · ${parsed.holderName}`,
@@ -363,6 +381,7 @@ export async function createCertificateRequest(formData: FormData) {
     policyId,
   });
   revalidatePath("/certificates");
+  revalidatePath("/certificates/holders");
   revalidatePath(`/accounts/${accountId}`);
   revalidatePath(`/businesses/${accountId}`);
   revalidatePath("/book-health");
@@ -454,6 +473,8 @@ export async function advanceCertificateRequest(formData: FormData) {
       additionalInsured: loaded.request.additionalInsured,
       specialWording: loaded.request.specialWording,
       interestId: loaded.request.interestId,
+      waiverOfSubrogation: loaded.request.waiverOfSubrogation,
+      primaryNoncontributory: loaded.request.primaryNoncontributory,
     })
     .returning();
 
@@ -717,5 +738,118 @@ export async function deleteAdditionalInterest(formData: FormData) {
   });
   refreshPolicy(policyId);
   bounce(`/policies/${policyId}`, undefined, "interest_removed");
+}
+
+export async function completeSuspenseTask(formData: FormData) {
+  const taskId = str(formData, "taskId");
+  const returnTo = str(formData, "returnTo") || "/suspense";
+  if (!isUuid(taskId)) bounce(returnTo, "Suspense task not found.");
+  const [task] = await db
+    .select()
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, taskId)));
+  if (!task || !task.policyId) bounce(returnTo, "Suspense task not found.");
+  if (task.status !== "open") bounce(returnTo, undefined, "already_closed");
+  await db
+    .update(reviewTasks)
+    .set({ status: "completed" })
+    .where(eq(reviewTasks.id, task.id));
+  if (task.title) {
+    await db
+      .update(activities)
+      .set({ status: "completed", updatedAt: new Date() })
+      .where(
+        and(
+          eq(activities.tenantId, DEFAULT_TENANT_ID),
+          eq(activities.policyId, task.policyId),
+          eq(activities.kind, "task"),
+          eq(activities.status, "open"),
+          eq(activities.title, task.title),
+        ),
+      );
+  }
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(task.policyId);
+  await writeServicingLog({
+    title: `Closed suspense · ${task.title}`,
+    body: `${task.title} marked collected in-app. Policy stays in force. Missing file is still a packet slot, not a cancel.`,
+    eventType: "suspense_closed",
+    policyId: task.policyId,
+    contactId: workspace?.policy.contactId ?? task.contactId,
+    accountId: workspace?.policy.accountId ?? task.accountId,
+    dealId: workspace?.policy.dealId ?? task.dealId,
+  });
+  refreshPolicy(task.policyId, ["/suspense", "/tasks"]);
+  bounce(returnTo.includes("/policies/") ? `/policies/${task.policyId}` : "/suspense", undefined, "suspense_closed");
+}
+
+export async function createPolicyNotice(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  if (!isUuid(policyId)) bounce("/notices", "Policy is required.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(`/policies/${policyId}`, "Policy not found.");
+  const parsed = validateNoticeDraft({
+    kind: str(formData, "kind"),
+    reason: str(formData, "reason"),
+    effectiveOn: parseIsoDate(str(formData, "effectiveOn")),
+    notes: str(formData, "notes"),
+  });
+  if (!parsed.ok) bounce(`/policies/${policyId}`, parsed.error);
+  await db.insert(policyNotices).values({
+    tenantId: DEFAULT_TENANT_ID,
+    policyId,
+    kind: parsed.kind,
+    status: "drafted",
+    reason: parsed.reason,
+    effectiveOn: parsed.effectiveOn,
+    notes: parsed.notes,
+  });
+  await writeServicingLog({
+    title: noticeKindLine(parsed.kind, workspace.policy.policyNumber),
+    body: `${noticeKindLine(parsed.kind, workspace.policy.policyNumber)}. Draft only. Does not file or change Policy status.`,
+    eventType: "notice_drafted",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/notices"]);
+  bounce(`/policies/${policyId}`, undefined, "notice_drafted");
+}
+
+export async function advancePolicyNotice(formData: FormData) {
+  const noticeId = str(formData, "noticeId");
+  const action = str(formData, "action") === "withdraw" ? "withdraw" : "mail";
+  const returnTo = str(formData, "returnTo") || "/notices";
+  const loaded = await getPolicyNotice(noticeId);
+  if (!loaded) bounce(returnTo, "Notice not found.");
+  const next = nextNoticeStatus(
+    loaded.notice.status as "drafted" | "mailed" | "withdrawn",
+    action,
+  );
+  if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.notice.status} notice.`);
+  await db
+    .update(policyNotices)
+    .set({
+      status: next,
+      mailedAt: next === "mailed" ? new Date() : loaded.notice.mailedAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(policyNotices.id, loaded.notice.id));
+  await writeServicingLog({
+    title: `${noticeKindLine(loaded.notice.kind, loaded.policy.policyNumber)} · ${next}`,
+    body:
+      next === "mailed"
+        ? `Logged as mailed. ${loaded.policy.policyNumber} status is unchanged. File a service request if the carrier confirms.`
+        : `Notice withdrawn. ${loaded.policy.policyNumber} unchanged.`,
+    eventType: next === "mailed" ? "notice_mailed" : "notice_withdrawn",
+    policyId: loaded.policy.id,
+    contactId: loaded.policy.contactId,
+    accountId: loaded.policy.accountId,
+    dealId: loaded.policy.dealId,
+  });
+  refreshPolicy(loaded.policy.id, ["/notices"]);
+  bounce(returnTo.includes("/policies/") ? `/policies/${loaded.policy.id}` : "/notices", undefined, next);
 }
 

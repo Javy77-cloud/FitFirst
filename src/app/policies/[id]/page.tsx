@@ -15,6 +15,7 @@ import { getPolicyWorkspace } from "@/lib/db/queries";
 import { loadPolicyServicing } from "@/lib/ams/queries";
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { LossRunPanel } from "@/components/ams/loss-run-panel";
+import { NoticePanel } from "@/components/ams/notice-panel";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
 import { SuspensePanel } from "@/components/ams/suspense-panel";
@@ -86,6 +87,12 @@ export default async function PolicyDetailPage({
         <Link href="/book-health" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
           Book health
         </Link>
+        <Link href="/suspense" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Suspense board
+        </Link>
+        <Link href="/notices" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Notices
+        </Link>
         <Link
           href={`/claims/new?policy=${policy.id}${contact ? `&contact=${contact.id}` : ""}`}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -106,7 +113,9 @@ export default async function PolicyDetailPage({
           packetByKey={servicing.packetByKey}
         />
       ) : null}
-      {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} /> : null}
+      {servicing ? (
+        <SuspensePanel packetTasks={servicing.packetTasks} policyId={policy.id} />
+      ) : null}
       {canHoldInterests(policy) ? (
         <AdditionalInterestPanel
           policyId={policy.id}
@@ -117,6 +126,7 @@ export default async function PolicyDetailPage({
       ) : null}
       <TermHistoryPanel policyId={policy.id} terms={terms} />
       <LossRunPanel policyId={policy.id} claims={policyClaims.map((row) => row.claim)} />
+      <NoticePanel policyId={policy.id} notices={servicing?.notices ?? []} error={error} />
       <ServiceRequestPanel
         policyId={policy.id}
         status={policy.status}

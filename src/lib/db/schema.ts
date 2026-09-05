@@ -1516,6 +1516,8 @@ export const issuedCertificates = pgTable(
     additionalInsured: text("additional_insured"),
     specialWording: text("special_wording"),
     interestId: uuid("interest_id"),
+    waiverOfSubrogation: boolean("waiver_of_subrogation").notNull().default(false),
+    primaryNoncontributory: boolean("primary_noncontributory").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
 );
@@ -2542,6 +2544,8 @@ export const certificateRequests = pgTable(
     interestId: uuid("interest_id"),
     additionalInsured: text("additional_insured"),
     specialWording: text("special_wording"),
+    waiverOfSubrogation: boolean("waiver_of_subrogation").notNull().default(false),
+    primaryNoncontributory: boolean("primary_noncontributory").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -2593,7 +2597,31 @@ export const policyAdditionalInterests = pgTable(
   ],
 );
 
+/** Desk cancel / non-renew / reinstatement notice diary. Does not file the Policy. */
+export const policyNotices = pgTable(
+  "policy_notices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("drafted"),
+    reason: text("reason").notNull(),
+    mailedAt: timestamp("mailed_at", { withTimezone: true }),
+    effectiveOn: timestamp("effective_on", { withTimezone: true }).notNull(),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("policy_notices_tenant_idx").on(t.tenantId, t.status),
+    index("policy_notices_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
 export type PolicyServiceRequest = typeof policyServiceRequests.$inferSelect;
 export type CertificateRequest = typeof certificateRequests.$inferSelect;
 export type CarrierDownloadConnection = typeof carrierDownloadConnections.$inferSelect;
 export type PolicyAdditionalInterest = typeof policyAdditionalInterests.$inferSelect;
+export type PolicyNotice = typeof policyNotices.$inferSelect;

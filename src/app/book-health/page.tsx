@@ -16,17 +16,27 @@ export default async function BookHealthPage() {
         Ana Dib is not on this book.
       </p>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Stat label="Agency active / in force" value={health.counts.active} href="/policies?status=in_force" />
         <Stat label="Agency lapsed / cancelled" value={health.counts.lapsed} href="/policies?attention=lapse" />
         <Stat label="Open service requests" value={health.openServiceRequests} href="/service-requests" />
         <Stat label="Open COI requests" value={health.openCoiRequests} href="/certificates" />
+        <Stat label="Open suspense" value={health.openSuspense} href="/suspense" />
+        <Stat label="Drafted notices" value={health.openNotices} href="/notices" />
       </div>
 
       <p className="mb-4 text-sm">
         Viewing {health.scope === "agency" ? "agency book" : `${health.viewerName}'s producer book`}.{" "}
         <Link href="/renewals" className="text-primary hover:underline">
           Upcoming renewals
+        </Link>
+        {" · "}
+        <Link href="/suspense" className="text-primary hover:underline">
+          Suspense board
+        </Link>
+        {" · "}
+        <Link href="/notices" className="text-primary hover:underline">
+          Notice diary
         </Link>
         {" · "}
         <Link href="/settings/carrier-download" className="text-primary hover:underline">
