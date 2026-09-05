@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { StatusBadge } from "@/components/status-badge";
+import { clientStatusColor, displayStatusLabel } from "@/lib/desk/status-colors";
 
 export function RecordLink({
   href,
@@ -15,17 +17,9 @@ export function RecordLink({
 }
 
 export function ClientStatusPill({ status }: { status: string }) {
-  const label =
-    status === "client" ? "Client" : status === "former_client" ? "Former Client" : "Not a client";
-  const cls =
-    status === "client"
-      ? "bg-fit-green-bg text-fit-green"
-      : status === "former_client"
-        ? "bg-fit-yellow-bg text-fit-yellow"
-        : "bg-muted text-muted-foreground";
   return (
-    <span className={`inline-flex rounded-sm px-1.5 py-0.5 text-[11px] font-semibold ${cls}`}>
-      {label}
-    </span>
+    <StatusBadge color={clientStatusColor(status)} uppercase={false}>
+      {displayStatusLabel(status)}
+    </StatusBadge>
   );
 }

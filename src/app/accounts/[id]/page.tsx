@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { CertificateRequestForm } from "@/components/ams/certificate-request-form";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
 import { isCertifiableLine, isInForceStatus } from "@/lib/domain";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { getAccountWorkspace } from "@/lib/db/queries";
@@ -152,7 +153,9 @@ export default async function AccountDetailPage({
                   <td>
                     <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
                   </td>
-                  <td className="uppercase">{policy.status}</td>
+                  <td>
+                    <PolicyStatusBadge status={policy.status} />
+                  </td>
                   <td>{carrier?.name ?? "—"}</td>
                   <td>{formatMoney(policy.premium)}</td>
                 </tr>

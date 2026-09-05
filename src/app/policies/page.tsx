@@ -7,6 +7,7 @@ import { listPolicies, type PolicyListFilter } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
@@ -128,7 +129,7 @@ export default async function PoliciesPage({
                   <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
                 </span>
               ),
-              status: <span className="uppercase">{policy.status}</span>,
+              status: <PolicyStatusBadge status={policy.status} />,
               party: contact ? (
                 <RecordLink href={`/contacts/${contact.id}`}>
                   {contact.lastName}, {contact.firstName}

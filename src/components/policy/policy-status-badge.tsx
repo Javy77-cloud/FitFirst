@@ -1,11 +1,6 @@
-import { policyStatusClass } from "@/lib/desk/policy-family";
+import { StatusBadge } from "@/components/status-badge";
+import { displayStatusLabel, policyStatusColor } from "@/lib/desk/status-colors";
 
 export function PolicyStatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-sm px-1.5 py-0.5 text-caption font-semibold uppercase tracking-wide ${policyStatusClass(status)}`}
-    >
-      {status.replaceAll("_", " ")}
-    </span>
-  );
+  return <StatusBadge color={policyStatusColor(status)}>{displayStatusLabel(status)}</StatusBadge>;
 }

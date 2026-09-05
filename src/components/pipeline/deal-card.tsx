@@ -16,10 +16,12 @@ import type { PipelineCardView } from "@/lib/wire/pipeline-cards";
 export function PipelineDealCard({
   deal,
   stageName,
+  stageColor,
   showArchive,
 }: {
   deal: PipelineCardView;
   stageName?: string;
+  stageColor?: string | null;
   showArchive?: boolean;
 }) {
   const line =
@@ -58,7 +60,7 @@ export function PipelineDealCard({
         {deal.carrier ?? "—"}
       </FieldSlot>
       <FieldSlot id="stage" className="mt-1">
-        <StagePill stage={stageName ?? deal.pipelineStage} />
+        <StagePill stage={stageName ?? deal.pipelineStage} color={stageColor} />
       </FieldSlot>
       <FieldSlot id="address" className="mt-1 text-[11px]">
         <LinkedValue value={deal.address} />

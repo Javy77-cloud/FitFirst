@@ -59,6 +59,7 @@ import type { QuoteSheetFieldValue } from "../domain";
 import { FORM_TEMPLATE_SEEDS } from "../forms/catalog";
 import { emptySheetValues } from "../lifecycle/quote-sheet";
 import { activityLogBody } from "../lifecycle/activity";
+import { defaultStageColor } from "../desk/status-colors";
 import { SEEDED_PIPELINES } from "../wire/pipeline";
 import { scheduleWonClientEmails } from "../wire/email-jobs";
 import { buildCertificateDraft, nextCertificateNumber } from "../certificates/issue";
@@ -95,6 +96,7 @@ export async function seedWireDesk() {
         name: stage.name,
         slug: stage.slug,
         sortOrder,
+        color: defaultStageColor(sortOrder, stage.slug),
         seeded: board.seeded,
       })),
     );

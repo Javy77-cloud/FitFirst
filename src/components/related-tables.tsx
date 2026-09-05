@@ -1,5 +1,6 @@
 import { Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { toNumber } from "@/lib/commissions/math";
@@ -63,8 +64,8 @@ export function RelatedPolicies({
                     </div>
                   ) : null}
                 </Col>
-                <Col table="related-policies" col="status" className="uppercase">
-                  {policy.status}
+                <Col table="related-policies" col="status">
+                  <PolicyStatusBadge status={policy.status} />
                 </Col>
                 <Col table="related-policies" col="carrier">{carrier?.name ?? "—"}</Col>
                 <Col table="related-policies" col="premium" sortValue={policy.premium}>

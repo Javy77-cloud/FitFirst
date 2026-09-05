@@ -841,3 +841,7 @@ Fills `/automations` with power-user tools. Shares the same table names as Setti
 ## Developer Hub macros / buttons (`cursor/dev-hub-macros-buttons-649d`)
 
 List-page **Run Macro** on Leads / Contacts / Deals. Coverage A client-script warning on Master risk is `showError` only when empty — Ana Cov A **$321,000** is never overwritten. Incoming `0048_dev_hub_macros_buttons` remapped to `0056_dev_hub_macros_buttons`. One Macros card on Automations.
+
+## Import / Export hub (`cursor/import-export-hub-41c4`)
+
+Admin CRM + AMS CSV packs at `/settings/import-export`. Incoming `0048_import_export_jobs` remapped to `0057_import_export_jobs`. Ana fixture is not in the export packs.

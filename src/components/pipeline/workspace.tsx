@@ -1,20 +1,24 @@
 "use client";
 
 import { PipelineFieldPicker } from "@/components/pipeline/field-picker";
+import { PipelineFunnelView } from "@/components/pipeline/funnel-view";
 import { PipelineKanban } from "@/components/pipeline/kanban";
 import { PipelineStageEditor } from "@/components/pipeline/stage-editor";
 import { PipelineTableView } from "@/components/pipeline/table-view";
+import type { PipelineViewId } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineWorkspace({
   board,
   cards,
-  tableView,
+  view,
+  stageFilter,
   canEditStages = false,
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
-  tableView: boolean;
+  view: PipelineViewId;
+  stageFilter?: string | null;
   canEditStages?: boolean;
 }) {
   const hint =
@@ -24,7 +28,9 @@ export function PipelineWorkspace({
         ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
         : board.slug === "flood"
           ? "Flood shopping board. Same columns as the other lines — add, remove, or reorder stages here."
-          : "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card.";
+          : view === "funnel"
+            ? "Counts by stage. Click a bar to open the table for that stage."
+            : "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card.";
 
   return (
     <div className="space-y-3" data-ff-pipe>
@@ -33,8 +39,10 @@ export function PipelineWorkspace({
         <PipelineFieldPicker />
       </div>
       {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
-      {tableView ? (
-        <PipelineTableView board={board} cards={cards} />
+      {view === "table" ? (
+        <PipelineTableView board={board} cards={cards} stageFilter={stageFilter} />
+      ) : view === "funnel" ? (
+        <PipelineFunnelView board={board} cards={cards} />
       ) : (
         <PipelineKanban board={board} cards={cards} />
       )}

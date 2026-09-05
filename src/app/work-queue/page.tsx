@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
@@ -99,7 +100,7 @@ export default async function WorkQueuePage({
                   {policy.policyNumber}
                 </Link>
               ),
-              status: <span className="uppercase">{policy.status}</span>,
+              status: <PolicyStatusBadge status={policy.status} />,
               party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
               expires: policy.expirationDate.toISOString().slice(0, 10),
             },

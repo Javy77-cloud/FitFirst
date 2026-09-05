@@ -19,7 +19,7 @@ Open [http://localhost:43147](http://localhost:43147).
 
 Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
 
-## What this branch keeps
+## Pipeline views + status colors (this slice)
 
 Overnight feel-pass: grouped left nav, named list filters, header column sliders, RecordContextRail, Start Shop, in-desk calendar, quick comms, Choose files, floating Support, settings accordion, widget resize chrome, Ask a teammate, HTML 404s.
 
@@ -135,3 +135,12 @@ curl -s -X POST http://127.0.0.1:43147/api/dev/functions/echo_payload/execute \
 ```
 
 Tables (all `tenant_id`): `developer_functions`, `developer_function_executions`, `developer_org_api_keys`, `developer_webhooks`, `developer_webhook_deliveries`, `developer_inbound_hooks`, `developer_inbound_payloads`, `developer_connections`.
+
+## Test notes (localhost:43147)
+
+1. Sign in as Javy. Open **Pipeline**. Confirm Board | Table | Funnel.
+2. Funnel: each stage has a color chip and a count. Click **Quote Sent** — table filters to that stage. Clear with **Show all stages**.
+3. Board columns and table Stage cells use the same chips. Stage chips under the create-deal form match.
+4. **Policies**: Active / Bound / Pending / Lapse (and others) are colored badges on the list and the policy header.
+5. **Contacts** / **Businesses**: Client vs Former Client badges on the list and the record header.
+6. Confirm Ana is still unbound, Cov A $321,000. Do not bind her.

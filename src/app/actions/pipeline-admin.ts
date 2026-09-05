@@ -7,6 +7,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, pipelineStages, pipelines } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
+import { defaultStageColor } from "@/lib/desk/status-colors";
 import { dealStageForPipeline } from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
@@ -88,6 +89,7 @@ export async function addPipelineStage(formData: FormData) {
     name,
     slug,
     sortOrder: Number(n ?? 0),
+    color: defaultStageColor(Number(n ?? 0), slug),
     seeded: false,
   });
   revalidatePath("/pipeline");

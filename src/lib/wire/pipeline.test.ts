@@ -6,6 +6,9 @@ import {
   defaultPipelineFieldIds,
   isAdminPipelineBadge,
   parsePipelineFields,
+  parsePipelineView,
+  pipelineFunnelRows,
+  pipelineHref,
   pipelinePageTitle,
   pipelineTabLabel,
   switcherBoards,
@@ -100,5 +103,40 @@ describe("column / card field picker", () => {
     expect(parsePipelineFields("")).toEqual(defaultPipelineFieldIds());
     expect(parsePipelineFields("insured,phone")).toEqual(["title", "insured", "phone"]);
     expect(parsePipelineFields("nope,email")).toEqual(["title", "email"]);
+  });
+});
+
+describe("pipeline views", () => {
+  it("parses Board | Table | Funnel and keeps Board as the default", () => {
+    expect(parsePipelineView(undefined)).toBe("board");
+    expect(parsePipelineView("table")).toBe("table");
+    expect(parsePipelineView("funnel")).toBe("funnel");
+    expect(parsePipelineView("kanban")).toBe("board");
+    expect(pipelineHref("p-c")).toBe("/pipeline?pipeline=p-c");
+    expect(pipelineHref("p-c", "table")).toBe("/pipeline?pipeline=p-c&view=table");
+    expect(pipelineHref("p-c", "funnel")).toBe("/pipeline?pipeline=p-c&view=funnel");
+    expect(pipelineHref("p-c", "table", "quote_sent")).toBe(
+      "/pipeline?pipeline=p-c&view=table&stage=quote_sent",
+    );
+  });
+
+  it("summarizes stage counts for the funnel and click-through", () => {
+    const rows = pipelineFunnelRows(
+      [
+        { slug: "gather", name: "Gather Info", color: "blue" },
+        { slug: "quote_sent", name: "Quote Sent", color: "violet" },
+        { slug: "closed_won", name: "Closed Won", color: "green" },
+      ],
+      [
+        { pipelineStage: "shopping", pipelineStageSlug: "gather", archivedAt: null },
+        { pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent", archivedAt: null },
+        { pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent", archivedAt: null },
+      ],
+    );
+    expect(rows.map((row) => ({ slug: row.slug, count: row.count }))).toEqual([
+      { slug: "gather", count: 1 },
+      { slug: "quote_sent", count: 2 },
+      { slug: "closed_won", count: 0 },
+    ]);
   });
 });

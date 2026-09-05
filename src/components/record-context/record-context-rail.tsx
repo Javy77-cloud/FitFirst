@@ -9,6 +9,7 @@ import {
   type RecordContextPayload,
 } from "@/lib/record-context-types";
 import { ACTIVITY_KIND_LABEL, type ActivityKind } from "@/lib/domain";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { cn } from "@/lib/utils";
 
 function initials(label: string): string {
@@ -128,7 +129,7 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
                     <Link href={policy.href} className="text-sm font-medium text-primary hover:underline">
                       {policy.number}
                     </Link>
-                    <span className="text-caption uppercase text-muted-foreground">{policy.status}</span>
+                    <PolicyStatusBadge status={policy.status} />
                   </li>
                 ))}
               </ul>

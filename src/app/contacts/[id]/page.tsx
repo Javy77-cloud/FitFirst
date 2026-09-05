@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { LocationsList } from "@/components/desk-ams-panels";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getContactWorkspace } from "@/lib/db/queries";
@@ -130,7 +131,9 @@ export default async function ContactDetailPage({
                   <td>
                     <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
                   </td>
-                  <td className="uppercase">{policy.status}</td>
+                  <td>
+                    <PolicyStatusBadge status={policy.status} />
+                  </td>
                   <td>{carrier?.name ?? "—"}</td>
                   <td>{formatMoney(policy.premium)}</td>
                   <td>

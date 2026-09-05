@@ -67,6 +67,7 @@ export type PipelineStageView = {
   slug: string;
   name: string;
   sortOrder: number;
+  color: string;
   seeded: boolean;
 };
 

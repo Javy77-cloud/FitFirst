@@ -22,6 +22,7 @@ import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
+import { defaultStageColor } from "@/lib/desk/status-colors";
 import { db } from "@/lib/db";
 import { ensurePipelineStages, refreshPartyCounts } from "@/lib/db/queries";
 import {
@@ -428,6 +429,7 @@ export async function createPipelineStage(formData: FormData) {
     slug,
     name: label,
     sortOrder,
+    color: defaultStageColor(sortOrder, slug),
     seeded: false,
   });
   revalidateCrm();

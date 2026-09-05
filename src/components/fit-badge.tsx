@@ -1,5 +1,7 @@
+import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import type { FitBand } from "@/lib/domain";
+import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 
 const copy: Record<FitBand, string> = {
   green: "In appetite",
@@ -33,11 +35,13 @@ const STAGE_LABEL: Record<string, string> = {
   lost: "Lost",
 };
 
-export function StagePill({ stage }: { stage: string }) {
+export function StagePill({
+  stage,
+  color,
+}: {
+  stage: string;
+  color?: string | null;
+}) {
   const label = STAGE_LABEL[stage] ?? stage.replaceAll("_", " ");
-  return (
-    <span className="inline-flex rounded-sm bg-secondary px-1.5 py-0.5 text-caption font-semibold uppercase tracking-wide text-navy">
-      {label}
-    </span>
-  );
+  return <StatusBadge color={stageColorFromNameOrSlug(stage, color)}>{label}</StatusBadge>;
 }
