@@ -19,6 +19,26 @@ describe("settings nav", () => {
     expect(settingsGroupFor("compliance")).toBe("compliance");
   });
 
+  it("nests Developer Hub tools under one group", () => {
+    expect(settingsGroupFor("functions")).toBe("developer");
+    expect(settingsGroupFor("api-keys")).toBe("developer");
+    expect(settingsGroupFor("webhooks")).toBe("developer");
+    expect(settingsGroupFor("connections")).toBe("developer");
+    expect(settingsGroupFor("macros")).toBe("developer");
+    const hub = SETTINGS_NAV.find((group) => group.id === "developer");
+    expect(hub?.children.map((child) => child.id)).toEqual([
+      "developer",
+      "functions",
+      "api-keys",
+      "webhooks",
+      "connections",
+      "macros",
+      "custom-buttons",
+      "client-scripts",
+      "widgets",
+    ]);
+  });
+
   it("nests Export and Lead routing under Brand / Agency", () => {
     expect(settingsGroupFor("export")).toBe("agency");
     expect(settingsGroupFor("routing")).toBe("agency");

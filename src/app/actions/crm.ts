@@ -17,6 +17,7 @@ import {
   type ShopLine,
 } from "@/lib/domain";
 import { persistFile } from "@/app/actions/documents";
+import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
@@ -398,6 +399,12 @@ export async function updateDealStage(formData: FormData) {
     .update(deals)
     .set({ pipelineStage: stage, updatedAt: new Date() })
     .where(eq(deals.id, dealId));
+  await emitDeskEvent("deal.stage_changed", {
+    entityType: "deal",
+    entityId: dealId,
+    from: deal.pipelineStage,
+    to: stage,
+  });
   revalidateCrm([`/deals/${dealId}`]);
 }
 
@@ -597,6 +604,11 @@ export async function createContact(formData: FormData) {
       ...writeSsn(str(formData, "ssn") || null),
     })
     .returning();
+  await emitDeskEvent("record.created", {
+    entityType: "contact",
+    entityId: row.id,
+    name: `${row.firstName} ${row.lastName}`.trim(),
+  });
   revalidatePath("/contacts");
   redirect(`/contacts/${row.id}`);
 }
@@ -926,6 +938,14 @@ export async function bindDeal(formData: FormData) {
       status: "queued",
     });
   }
+
+  await emitDeskEvent("policy.bound", {
+    entityType: "policy",
+    entityId: policy.id,
+    dealId,
+    policyNumber: policy.policyNumber,
+    lineOfBusiness: policy.lineOfBusiness,
+  });
 
   revalidatePath("/");
   revalidatePath("/policies");

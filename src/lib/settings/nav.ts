@@ -26,6 +26,15 @@ export const SETTINGS_NAV_IDS = [
   "recovery",
   "compliance",
   "export",
+  "developer",
+  "functions",
+  "api-keys",
+  "webhooks",
+  "connections",
+  "macros",
+  "custom-buttons",
+  "client-scripts",
+  "widgets",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -117,6 +126,23 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },
       { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
+    ],
+  },
+  {
+    id: "developer",
+    href: "/settings/developer",
+    label: "Developer Hub",
+    hint: "Functions · keys · webhooks",
+    children: [
+      { id: "developer", href: "/settings/developer", label: "Overview", hint: "What each tool does" },
+      { id: "functions", href: "/settings/developer/functions", label: "Functions", hint: "Custom code stubs" },
+      { id: "api-keys", href: "/settings/developer/api-keys", label: "API Keys", hint: "Org REST keys" },
+      { id: "webhooks", href: "/settings/developer/webhooks", label: "Webhooks", hint: "Out + inbound" },
+      { id: "connections", href: "/settings/developer/connections", label: "Connections", hint: "Named OAuth stubs" },
+      { id: "macros", href: "/settings/developer/macros", label: "Macros", hint: "Sibling bot" },
+      { id: "custom-buttons", href: "/settings/developer/buttons", label: "Custom Buttons", hint: "Sibling bot" },
+      { id: "client-scripts", href: "/settings/developer/client-scripts", label: "Client Scripts", hint: "Sibling bot" },
+      { id: "widgets", href: "/settings/developer/widgets", label: "Widgets", hint: "Sibling bot" },
     ],
   },
   {

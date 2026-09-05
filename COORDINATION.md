@@ -713,6 +713,14 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 - ID card: branded stub from the in-force policy; download uses the issued `policy_file` / `policy_id` document via `/api/portal/[token]/files/[id]`.
 - Desk: stub link on Elena Contact, Harbor Business, and those Policies. Work queue has a Client portal requests section.
 
+## Developer Hub core (`cursor/developer-hub-core-a882`)
+
+Admin Settings → Developer Hub. Additive `0048_developer_hub`. Tables all carry `tenant_id`. No live Zoho writes. Ana untouched.
+
+Working: Functions CRUD + allowlisted JSON runner + execution log; org API keys (hashed, shown once); outbound webhook queue + localhost Send test; inbound Signals POST + Alert; Connections CRUD with encrypted-at-rest client secret stub. OAuth expose / Authorize is a wall. Macros / Custom Buttons / Client Scripts / Widgets are placeholder routes for sibling bots.
+
+Seed: `echo_payload`, Deal stage ping → `http://127.0.0.1:43147/api/dev/webhooks/inbound/desk-echo`, Google Calendar connection, demo org key `ffk_devhub_demo`.
+
 ## WAVE3 leftover
 
 DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
