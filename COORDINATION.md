@@ -887,6 +887,34 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 - `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
 - Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.
 
+## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
+
+Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`).
+
+`cursor/ams-wave7-depth-da3a` not merged: Records already lists Suspense / Notices / Endorsements; `/claims/diary` is already reserved in the record-id 404 gate. da3a nav would regress Accounts → People, restore sidebar Search, and split Settings into multiple left-nav rows.
+
+Feel-desk hygiene on this tip:
+- No duplicate re-exports in `domain.ts`; AMS constants re-export once from `domain-ams`.
+- No duplicate `OWNER_*` in `ids.ts`.
+- `seed.ts` imports every symbol it uses. Ana helpers come from `@/lib/quote-sheet/ana-home`. Deals always write `pipelineId`. Never insert `pipeline_stages` without `pipeline_id`.
+- Additive migrations only. Wave 8 incoming `0053` remapped to `0062`; wave 9 is `0063`. Nothing dropped.
+- Drizzle `alias` stays on `pg-core`. `getActor` / `isAdmin` still go through `currentDeskSession`.
+- One Pipeline nav row. One Settings entry. Accounts (not People). Sidebar `#1d4e89` — never `#d6e8f8`.
+- Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Quotes never create a Policy.
+
+Mac Chrome (Air **and** mini):
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/feel-pass-consolidate-sep5b-6195 && git pull
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+
 ## Feel-pass consolidate Sep 5 (`cursor/feel-pass-consolidate-sep5-fed3`)
 
 One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. Wave 6/7 `0051`/`0052` remapped to **0060–0061**. No migration dropped. `0055_developer_hub` (power-user superset after `0054`) wraps shared FK adds in `DO $$ … EXCEPTION WHEN duplicate_object` so `db:migrate` can apply both files.
@@ -946,7 +974,7 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+Superseded for Air retest by **`cursor/feel-pass-consolidate-sep5b-6195`**. Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
 
 ## AMS wave 6 — desk depth (`cursor/ams-wave6-depth-1040`)
 

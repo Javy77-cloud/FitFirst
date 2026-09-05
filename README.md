@@ -6,13 +6,13 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/feel-pass-consolidate-sep5-fed3`** — one Mac Chrome desk for Air + mini. Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5).
+**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass tip for Air + mini. Fast-forward of AMS wave 9 (includes remapped wave 8) onto `cursor/feel-pass-consolidate-sep5-fed3`. Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/feel-pass-consolidate-sep5-fed3 && git pull
+git fetch && git checkout cursor/feel-pass-consolidate-sep5b-6195 && git pull
 npm install
 npm run db:migrate
 npm run db:seed
@@ -120,7 +120,7 @@ Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 
 
 Incoming `0053_ams_wave8` remapped to `0062_ams_wave8` on this tip.
 
-## AMS wave 9 (this branch)
+## AMS wave 9 (kept)
 
 Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 2–8 surfaces stay.
 
