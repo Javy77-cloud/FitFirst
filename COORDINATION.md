@@ -713,6 +713,18 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 - ID card: branded stub from the in-force policy; download uses the issued `policy_file` / `policy_id` document via `/api/portal/[token]/files/[id]`.
 - Desk: stub link on Elena Contact, Harbor Business, and those Policies. Work queue has a Client portal requests section.
 
+## Connect stubs hub (`cursor/connect-stubs-hub-1028`)
+
+Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Dark sidebar stays. No live OAuth, API keys, Stripe, or Twilio.
+
+- Settings → **Connect** (`/settings/integrations`) is the BYO hub. Cards: Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign (DocuSign / Dropbox Sign), rater (EZLynx / QuoteRush).
+- Each card: Connect / Disconnect demo toggle, **Agency pays the vendor.**, status **Connected (demo)** vs **Not connected**.
+- Admin-gated: GBP (plus the existing monitor checkbox), SMS, e-sign, raters. Agents see status only.
+- Zoho Mail/Calendar are inbox/calendar plugs — not a Zoho CRM sync. Raters do not call EZLynx or QuoteRush.
+- Settings overview links to Connect. Optional campaigns / video / Yahoo stay under “Also on this desk.”
+
+Do not bind Ana.
+
 ## WAVE3 leftover
 
 DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

@@ -28,7 +28,7 @@ const CHANNELS: {
     id: "email",
     href: "/settings/email",
     title: "Email",
-    body: "Gmail, Outlook, or Yahoo inbox. Templates and signatures stay under Brand / lists.",
+    body: "Google, Outlook, or Zoho Mail inbox. Templates and signatures stay under Brand / lists.",
     categories: ["email"],
   },
   {
@@ -100,7 +100,7 @@ export default async function CommunicationsSettingsPage() {
       </div>
       <p className="mt-4 text-sm">
         <Link href="/settings/integrations" className="text-primary hover:underline">
-          Open the Integrations catalog
+          Open Connect
         </Link>
       </p>
 

@@ -64,7 +64,7 @@ export default async function SocialPulsePage({
       ) : null}
       {notice === "platform-disconnected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          That platform is not connected. Ask Admin to click Connect stub.
+          That platform is not connected. Ask Admin to flip Connect on Settings → Connect.
         </p>
       ) : null}
       {notice === "no-new-inquiries" ? (

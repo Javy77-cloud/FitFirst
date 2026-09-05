@@ -29,6 +29,8 @@ Home tiles: drag the grip to reorder, size menu **1×1 / 1×2 / 2×1 / 2×2**, s
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, Automations hub, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
 
+**Connect** (`/settings/integrations`): demo toggles for Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign, and EZLynx / QuoteRush. Status is **Connected (demo)** or **Not connected**. Copy is **Agency pays the vendor.** No OAuth, API keys, Stripe, or Twilio. GBP and rater/SMS/e-sign cards are Admin-gated. Linked from Settings.
+
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
 ## Tests

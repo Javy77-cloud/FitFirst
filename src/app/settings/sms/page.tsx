@@ -61,7 +61,7 @@ export default async function SmsSettingsPage({
             Back to campaigns
           </Link>
           <Link href="/settings/integrations" className="text-sm text-primary hover:underline">
-            Integrations catalog
+            Open Connect
           </Link>
         </div>
       </section>

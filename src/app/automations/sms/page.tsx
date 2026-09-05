@@ -46,7 +46,7 @@ export default async function AutomationsSmsPage({
         <ConnectEmpty
           title="Connect an SMS integration"
           body="Bulk SMS stays guided and empty until Admin marks a phone / SMS vendor connected. Agency pays the vendor. Nothing texts a client from this desk."
-          href="/settings/integrations#phone_sms"
+          href="/settings/integrations#sms"
           cta="Connect SMS integration"
           adminOnly
           isAdmin={session.isAdmin}

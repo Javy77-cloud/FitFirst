@@ -9,7 +9,11 @@ import {
 } from "@/lib/db/schema";
 import { listSendAccounts } from "@/lib/templates/connectors";
 import {
+  CONNECT_HUB_SECTIONS,
+  INTEGRATION_CATEGORIES,
   INTEGRATION_PROVIDERS,
+  isFeaturedConnectId,
+  type ConnectHubSectionId,
   type IntegrationCategory,
   type IntegrationProvider,
   type IntegrationProviderId,
@@ -27,6 +31,7 @@ type LegacyFlags = {
   gmail: boolean;
   outlook: boolean;
   yahoo: boolean;
+  zohoMail: boolean;
   googleCalendar: boolean;
   twilioPhone: boolean;
   twilioSms: boolean;
@@ -37,6 +42,7 @@ async function loadLegacyFlags(): Promise<LegacyFlags> {
     gmail: false,
     outlook: false,
     yahoo: false,
+    zohoMail: false,
     googleCalendar: false,
     twilioPhone: false,
     twilioSms: false,
@@ -63,6 +69,7 @@ async function loadLegacyFlags(): Promise<LegacyFlags> {
       gmail: accounts.some((row) => row.provider === "google" && row.connected),
       outlook: accounts.some((row) => row.provider === "outlook" && row.connected),
       yahoo: accounts.some((row) => row.provider === "yahoo" && row.connected),
+      zohoMail: accounts.some((row) => row.provider === "zoho_mail" && row.connected),
       googleCalendar: Boolean(calendar[0]?.connected),
       twilioPhone: Boolean(phone[0]?.connected && phone[0].provider === "twilio"),
       twilioSms: Boolean(sms[0]?.connected && sms[0].provider === "twilio"),
@@ -76,6 +83,7 @@ function legacyConnected(id: IntegrationProviderId, flags: LegacyFlags): boolean
   if (id === "gmail") return flags.gmail;
   if (id === "outlook") return flags.outlook;
   if (id === "yahoo") return flags.yahoo;
+  if (id === "zoho_mail") return flags.zohoMail;
   if (id === "google_calendar") return flags.googleCalendar;
   if (id === "twilio") return flags.twilioPhone || flags.twilioSms;
   return false;
@@ -92,10 +100,14 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
     stored = [];
   }
   const flags = await loadLegacyFlags();
-  const byProvider = new Map(stored.map((row) => [row.provider, row]));
+  const byProvider = new Map(
+    stored.map((row) => [`${row.category}:${row.provider}`, row] as const),
+  );
+  const byProviderOnly = new Map(stored.map((row) => [row.provider, row]));
 
   return INTEGRATION_PROVIDERS.map((provider) => {
-    const row = byProvider.get(provider.id);
+    const row =
+      byProvider.get(`${provider.category}:${provider.id}`) ?? byProviderOnly.get(provider.id);
     const connected = Boolean(row?.connected) || legacyConnected(provider.id, flags);
     return {
       ...provider,
@@ -111,19 +123,39 @@ export async function listCatalogByCategory(): Promise<
   { category: IntegrationCategory; items: CatalogItem[] }[]
 > {
   const items = await listCatalogItems();
-  const order: IntegrationCategory[] = [
-    "email",
-    "campaigns",
-    "calendar",
-    "phone_sms",
-    "video",
-    "esign",
-    "social",
-  ];
-  return order.map((category) => ({
+  return INTEGRATION_CATEGORIES.map((category) => ({
     category,
     items: items.filter((item) => item.category === category),
+  })).filter((group) => group.items.length > 0);
+}
+
+export type ConnectHubSection = {
+  id: ConnectHubSectionId;
+  title: string;
+  blurb: string;
+  items: CatalogItem[];
+};
+
+export async function listConnectHub(): Promise<{
+  featured: ConnectHubSection[];
+  more: CatalogItem[];
+  items: CatalogItem[];
+}> {
+  const items = await listCatalogItems();
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const featured = CONNECT_HUB_SECTIONS.map((section) => ({
+    id: section.id,
+    title: section.title,
+    blurb: section.blurb,
+    items: section.providerIds
+      .map((id) => byId.get(id))
+      .filter((item): item is CatalogItem => Boolean(item)),
   }));
+  return {
+    featured,
+    more: items.filter((item) => !isFeaturedConnectId(item.id)),
+    items,
+  };
 }
 
 export async function upsertCatalogConnection(input: {

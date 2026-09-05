@@ -18,6 +18,7 @@ function item(
     initials: "X",
     blurb: "",
     byoNote: "",
+    tone: "campaign",
     connected,
     accountLabel: connected ? "stub" : null,
     lastConnectStatus: connected ? "not_implemented" : null,

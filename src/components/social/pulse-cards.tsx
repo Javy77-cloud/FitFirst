@@ -91,7 +91,7 @@ export function PulseCards({
             </>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">
-              Connect stub in Settings → Social. FitFirst builds the plug; the agency connects the account.
+              Connect in Settings → Connect. FitFirst builds the plug; the agency pays the vendor.
             </p>
           )}
         </article>

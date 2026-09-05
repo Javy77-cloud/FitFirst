@@ -103,7 +103,7 @@ export function SettingsSubnav({
 }) {
   const items = [
     { href: "/settings", id: "hub" as const, label: "Overview", adminOnly: false },
-    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · communications", adminOnly: true },
+    { href: "/settings/integrations", id: "integrations" as const, label: "Admin · Connect", adminOnly: true },
     { href: "/settings/agency", id: "agency" as const, label: "Admin · agency", adminOnly: true },
     { href: "/settings/lines", id: "lines" as const, label: "Admin · lines", adminOnly: true },
     { href: "/settings/lists", id: "lists" as const, label: "Admin · lists", adminOnly: true },
