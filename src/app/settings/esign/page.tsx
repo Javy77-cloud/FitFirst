@@ -33,14 +33,14 @@ export default async function EsignSettingsPage({
         </p>
       ) : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          In-desk stub lives on Deal and Policy. Finish-line DocuSign stays parked. FitFirst does
-          not store vendor keys or send vendor envelopes from Settings. Pick a BYO provider only
-          as a reminder — signed apps still return on the Deal.
+          In-desk signing lives on Deal and Policy. DocuSign and Dropbox Sign are not wired —
+          FitFirst does not store vendor keys or send vendor envelopes. Pick a preferred provider
+          as a reminder. Signed apps still return on the Deal.
         </p>
       )}
       {notice === "esign-stub" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Saved as a stub. No vendor was called.
+          Preference saved. No vendor was called.
         </p>
       ) : null}
       {notice === "esign-disconnected" ? (
@@ -84,12 +84,12 @@ export default async function EsignSettingsPage({
             />
           </div>
           <p className="text-helper text-muted-foreground">
-            Status: {settings?.connected ? "connected (stub)" : "not connected"}
+            Status: {settings?.connected ? "preferred vendor saved" : "not connected"}
             {settings?.lastConnectStatus ? ` · last ${settings.lastConnectStatus}` : ""}
           </p>
           {session.isAdmin ? (
             <Button type="submit" size="sm">
-              Save e-sign stub
+              Save e-sign preference
             </Button>
           ) : null}
         </fieldset>
@@ -97,7 +97,7 @@ export default async function EsignSettingsPage({
       {session.isAdmin && settings?.connected ? (
         <form action={disconnectEsignStub} className="mt-3">
           <Button type="submit" size="sm" variant="outline">
-            Disconnect stub
+            Disconnect
           </Button>
         </form>
       ) : null}

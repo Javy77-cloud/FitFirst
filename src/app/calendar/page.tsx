@@ -41,7 +41,7 @@ export default async function CalendarPage({
       <p className="mb-3 text-sm text-muted-foreground">
         {session.isAgent
           ? "Your tasks, calls, personal meetings, and company / training invites. Open a company event to join the video. Google Calendar connect is Admin."
-          : "Desk month, week, and day. Admins add Company meeting or Training with a video link and invite Whole agency, Office, Territory, or Management. Personal Video / In-Home / In-Office meetings stay. Google Calendar stays a stub."}
+          : "Desk month, week, and day. Admins add Company meeting or Training with a video link and invite Whole agency, Office, Territory, or Management. Personal Video / In-Home / In-Office meetings stay. Connect Google Calendar from Settings when the agency is ready."}
       </p>
       <DeskCalendar
         events={events}

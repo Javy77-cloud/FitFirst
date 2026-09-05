@@ -32,9 +32,8 @@ export default async function SocialSettingsPage({
   return (
     <SettingsShell title="Social / GBP" current="social">
       <p className="mb-3 text-sm text-muted-foreground">
-        Bring-your-own social accounts. Paste the agency’s free developer app (Meta, Google, LinkedIn)
-        and try OAuth. FitFirst does not subscribe to Meta, X, LinkedIn, or Google and does not buy
-        ads. Pulse numbers stay demo seeds after connect. {MAPS_FREE_LINK_NOTE}
+        Bring-your-own social accounts. Paste the agency’s developer app (Meta, Google, LinkedIn)
+        and try OAuth. FitFirst does not subscribe to those APIs or buy ads. {MAPS_FREE_LINK_NOTE}
       </p>
       {notice === "gbp-agents-on" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
@@ -43,8 +42,8 @@ export default async function SocialSettingsPage({
       ) : null}
       {notice === "connected" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          {typeof query.provider === "string" ? query.provider : "Provider"} marked connected. No
-          OAuth ran.
+          {typeof query.provider === "string" ? query.provider : "Provider"} is not live until
+          OAuth completes.
         </p>
       ) : null}
       {notice === "disconnected" ? (
@@ -54,8 +53,8 @@ export default async function SocialSettingsPage({
       ) : null}
       {notice === "owner-saved" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          Account owner saved. Inbound on that stub creates a Lead for that agent (or the award
-          pool if Agency).
+          Account owner saved. Inbound on that account creates a Lead for that agent (or the
+          award pool if Agency).
         </p>
       ) : null}
       {notice === "gbp-agents-off" ? (
@@ -74,7 +73,7 @@ export default async function SocialSettingsPage({
       ) : null}
       {notice === "credentials-cleared" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Agency app keys cleared. Desk demo connect (if any) stays until you Disconnect.
+          Agency app keys cleared. Disconnect the account if it was already connected.
         </p>
       ) : null}
       {notice === "needs-credentials" ? (
@@ -102,7 +101,7 @@ export default async function SocialSettingsPage({
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           {typeof query.provider === "string" ? query.provider : "Account"} connected with the
-          agency’s app. Inbox sync stays stubbed. Pulse numbers stay demo seeds.
+          agency’s app. Inbox sync waits on the vendor API.
         </p>
       ) : null}
       {!session.isAdmin ? (
@@ -166,7 +165,7 @@ export default async function SocialSettingsPage({
 
       <section className="mt-5 ff-card space-y-3 p-4">
         <div>
-          <h2 className="text-sm font-semibold text-navy">Who owns each connected stub</h2>
+          <h2 className="text-sm font-semibold text-navy">Who owns each connected account</h2>
           <p className="mt-1 text-helper text-muted-foreground">
             Agent-owned inbound creates a Lead and pings that agent. Agency (unassigned) goes to
             the Admin award pool. Home bulletin reads the same offers.

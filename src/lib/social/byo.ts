@@ -56,7 +56,7 @@ export const SOCIAL_BYO_SPECS: Record<SocialPlatformId, SocialByoSpec> = {
     wallTitle: "Meta OAuth wall",
     wallBody:
       "Meta will refuse the grant if the App ID is wrong, the redirect URI is missing, or a permission still needs App Review. FitFirst does not buy Ads or Marketing API and does not own a Meta app.",
-    stubbed: "Page inbox sync, lead-form pull, and ads stay stubbed. Pulse numbers stay demo seeds.",
+    stubbed: "Page inbox sync, lead-form pull, and ads wait on the vendor API.",
   },
   instagram: {
     id: "instagram",
@@ -81,7 +81,7 @@ export const SOCIAL_BYO_SPECS: Record<SocialPlatformId, SocialByoSpec> = {
     wallTitle: "Instagram OAuth wall",
     wallBody:
       "Instagram Graph needs a Meta app plus a linked Professional account. FitFirst does not buy Instagram API or ads seats.",
-    stubbed: "DM / comment ingest stays the desk inquiry stub. Nothing posts to Instagram.",
+    stubbed: "DM / comment ingest waits on the vendor API. Nothing posts to Instagram.",
   },
   google_business_profile: {
     id: "google_business_profile",
@@ -101,7 +101,7 @@ export const SOCIAL_BYO_SPECS: Record<SocialPlatformId, SocialByoSpec> = {
     wallTitle: "Google / GBP wall",
     wallBody:
       "Google Sign-In can succeed on a free Cloud project. The Business Profile API itself often needs verification. FitFirst does not buy Maps Platform or GBP seats.",
-    stubbed: "Listing views, replies, and GBP messages stay demo seeds. Maps stay free public search links.",
+    stubbed: "Listing views, replies, and GBP messages wait on the vendor API. Maps stay free public search links.",
   },
   linkedin: {
     id: "linkedin",
@@ -246,7 +246,7 @@ export function socialConnectStatusLabel(status: SocialConnectStatus): string {
     case "connected_byo":
       return "Connected (BYO)";
     case "connected_demo":
-      return "Connected (demo)";
+      return "Not connected";
     case "credentials_saved":
       return "Credentials saved";
     case "paid_wall":

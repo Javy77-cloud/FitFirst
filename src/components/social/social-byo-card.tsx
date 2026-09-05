@@ -187,15 +187,7 @@ export function SocialByoCard({
                   Disconnect
                 </Button>
               </form>
-            ) : (
-              <form action={connectCatalogStub}>
-                <input type="hidden" name="provider" value={item.id} />
-                <input type="hidden" name="next" value={returnTo} />
-                <Button type="submit" size="sm" variant="ghost">
-                  Mark connected (desk demo)
-                </Button>
-              </form>
-            )}
+            ) : null}
           </div>
           <p className="text-caption text-muted-foreground">{spec.stubbed}</p>
         </div>

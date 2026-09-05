@@ -6,27 +6,36 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
+**`cursor/ff-remove-stubs-6086`** — live customer desk on **`cursor/live-crm-zoho-tip-sep5c`**. No nav-DnD branch was on remote (`cursor/ff-nav-dnd-customize-*` missing), so this slice starts from the accordion tip.
 
-1. **`cursor/ff-zoho-owner-fix-6b9e`** — Zoho import always writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls so Maya’s lists are not empty.
-2. **`cursor/ff-sidebar-accordion-31b5`** (agent `bc-38f9fe06`) — Zoho-like one-open left-nav accordion. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands.
+Demo theater is off: Get Started, Inbox, and Support are out of the left nav. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar is `#1d4e89`.
 
-AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip). Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
+### Nav items removed (for a later nav-DnD merge)
+
+| Removed | Was | Why |
+| --- | --- | --- |
+| Get Started | `/get-started` (Work accordion) | Demo seed checklist. Bookmarks redirect to Home. |
+| Inbox | `/inbox` (Desk accordion + header Mail) | No mailbox. Header Mail now opens Settings → Email. |
+| Support | `/support` (flat nav + coming-soon dialog) | Coming-soon stub. In-app help panel stays. |
+
+Social stays in Work as a BYO connect wall (Settings → Social). Phone stays as a call log.
+
+AMS waves 10–16 stay parked. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. Do **not** wipe or seed a live book.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-remove-stubs-6086 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
 npm run db:assign-owner
-npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-imported book
+# skip db:seed — keep the live Zoho-imported book
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the sidebar or owner-fix slices.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` on a live book.
 
 ### Left nav accordion (this slice)
 
@@ -41,7 +50,7 @@ Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home 
 ### Air checkout (no wipe)
 
 ```bash
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/ff-remove-stubs-6086 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:

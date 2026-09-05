@@ -36,7 +36,7 @@ export default async function ProducerScorecardPage({
             </Link>
           </>
         ) : null}
-        . Ana Dib HO3 stays unbound at $321,000 — not on this premium.
+        . Quotes are not written premium.
       </p>
 
       <div className="mb-4">

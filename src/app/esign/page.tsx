@@ -2,7 +2,7 @@ import Link from "next/link";
 import { markEnvelopeSigned } from "@/app/actions/esign";
 import { AppShell } from "@/components/app-shell";
 import { InDeskEsignBanner } from "@/components/esign/in-desk-banner";
-import { Notice, StubBanner } from "@/components/ops/stub-banner";
+import { Notice } from "@/components/ops/stub-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { listDocumentsWithExtracted, listEnvelopes } from "@/lib/db/ops-queries";
 import { SendForSignature } from "@/components/ops/entity-upload";
@@ -35,16 +35,15 @@ export default async function EsignPage({
     >
       <Notice code={notice} />
       <InDeskEsignBanner>
-        Request a signature on a Deal or Policy. The client or an agent demo draws or types a
-        name. Status and timestamp stay on that record. Finish-line DocuSign stays parked.
+        Request a signature on a Deal or Policy. The client or an agent draws or types a name.
+        Status and timestamp stay on that record. DocuSign is not wired.
       </InDeskEsignBanner>
 
       <section className="ff-card mb-4 overflow-hidden p-4">
         <h2 className="mb-2 text-sm font-semibold text-navy">In-desk envelopes</h2>
         {inDesk.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            None yet. Open Elena&apos;s deal Documents tab or her HO3 policy, then Request
-            signature.
+            None yet. Open a Deal Documents tab or a Policy, then Request signature.
           </p>
         ) : (
           <table className="ff-table">
@@ -89,7 +88,7 @@ export default async function EsignPage({
                         href={inDeskSignHref(envelope.publicToken, "agent_demo")}
                         className={cn(buttonVariants({ size: "xs", variant: "outline" }))}
                       >
-                        Open stub
+                        Open to sign
                       </Link>
                     ) : null}
                   </td>
@@ -100,10 +99,9 @@ export default async function EsignPage({
         )}
       </section>
 
-      <StubBanner>
-        Parked vendor interface (DocuSign / Dropbox Sign BYO). Send still returns not_implemented.
-        No credentials. No outbound call. Use the in-desk stub above.
-      </StubBanner>
+      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
+        DocuSign and Dropbox Sign are not wired. Use in-desk signing on a Deal or Policy.
+      </p>
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="ff-card overflow-hidden p-4">
           <h2 className="mb-2 text-sm font-semibold text-navy">Parked vendor send</h2>

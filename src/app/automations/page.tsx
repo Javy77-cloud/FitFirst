@@ -44,7 +44,7 @@ export default async function AutomationsHubPage() {
       : `${automations.length} visible · ${runs.filter((row) => row.run.createdAlert || row.run.createdTask).length} fires on your book`,
     templates: templates.length
       ? `${templates.length} templates · ${enEs} EN+ES · none send`
-      : "No templates yet — seed the desk",
+      : "No templates yet",
     builder: session.isAdmin
       ? "Admin writes Trigger → Condition → Action"
       : "Read-only — ask Admin to add a playbook",
@@ -75,13 +75,13 @@ export default async function AutomationsHubPage() {
         In-desk automations. Playbooks create Tasks and in-app Alerts. Templates stay EN/ES
         drafts. Paid campaign and SMS vendors are off. Developer tools (Functions, Macros,
         Buttons, Client Scripts, Webhooks, API Keys, Connections) live here too — same records as
-        Settings → Automations & Developer. Ana Dib is never auto-updated.
+        Settings → Automations & Developer.
       </p>
       <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
         {session.isAdmin ? (
           <>
             <span className="font-semibold text-navy">Admin view.</span> Write playbooks, toggle
-            them, and run a demo fire. Internal pings stay in Alerts / pop-up — nothing emails you.
+            them, and run a fire. Internal pings stay in Alerts / pop-up — nothing emails you.
           </>
         ) : (
           <>

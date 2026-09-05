@@ -35,13 +35,13 @@ export default async function PhoneSettingsPage({
         </p>
       ) : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Agency-paid trunk later. FitFirst does not buy numbers, store Twilio keys, or place PSTN
-          calls. The stub remembers which provider you intend so the call log can show line status.
+          Connect Twilio or a BYO trunk when the agency is ready. FitFirst does not buy numbers,
+          store keys, or place PSTN calls. The call log on Phone still records outcomes.
         </p>
       )}
       {notice === "telephony-stub" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Saved as a stub. No vendor was called.
+          Preference saved. No vendor was called.
         </p>
       ) : null}
       {notice === "telephony-disconnected" ? (
@@ -94,7 +94,7 @@ export default async function PhoneSettingsPage({
             />
           </div>
           <p className="text-helper text-muted-foreground">
-            Status: {settings?.connected ? "connected (stub)" : "not connected"}
+            Status: {settings?.connected ? "preferred line saved" : "not connected"}
             {settings?.lastConnectStatus ? ` · last ${settings.lastConnectStatus}` : ""}
           </p>
           {session.isAdmin ? (
@@ -109,7 +109,7 @@ export default async function PhoneSettingsPage({
       {session.isAdmin && settings?.connected ? (
         <form action={disconnectTelephonyStub} className="mt-3">
           <Button type="submit" size="sm" variant="outline">
-            Disconnect stub
+            Disconnect
           </Button>
         </form>
       ) : null}

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { stubSendCampaign, upsertCampaign } from "@/app/actions/campaigns";
+import { upsertCampaign } from "@/app/actions/campaigns";
 import { AppShell } from "@/components/app-shell";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
-import { Notice, StubBanner } from "@/components/ops/stub-banner";
+import { Notice } from "@/components/ops/stub-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,9 +33,9 @@ export default async function CampaignDetailPage({
     <AppShell title={campaign.name}>
       <RecordModuleMacros module="campaigns" recordId={campaign.id} />
       <Notice code={notice} />
-      <StubBanner>
-        Sending does not email anyone. FitFirst writes a “would send” log row per recipient.
-      </StubBanner>
+      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
+        Draft only. Connect work email under Settings before a campaign can leave the desk.
+      </p>
       <div className="mb-3 text-sm">
         <Link href="/campaigns" className="text-primary hover:underline">
           ← All campaigns
@@ -105,12 +105,9 @@ export default async function CampaignDetailPage({
                 ))}
               </ul>
             )}
-            <form action={stubSendCampaign} className="mt-3">
-              <input type="hidden" name="id" value={campaign.id} />
-              <Button type="submit" size="sm">
-                Send (log “would send”)
-              </Button>
-            </form>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Send is not wired. Connect Gmail or Outlook in Settings → Email.
+            </p>
           </div>
           <div className="ff-card overflow-hidden p-4">
             <h2 className="mb-2 text-sm font-semibold text-navy">Send log</h2>

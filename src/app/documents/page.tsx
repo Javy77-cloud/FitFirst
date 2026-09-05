@@ -5,7 +5,6 @@ import { FolderTools } from "@/components/documents/folder-tools";
 import { FolderTree } from "@/components/documents/folder-tree";
 import { LibraryTabs } from "@/components/documents/library-tabs";
 import { LibraryUpload } from "@/components/documents/library-upload";
-import { StubBanner } from "@/components/ops/stub-banner";
 import { buttonVariants } from "@/components/ui/button";
 import {
   folderFileCounts,
@@ -77,19 +76,25 @@ export default async function DocumentsPage({
         </Link>
       }
     >
-      <StubBanner>
-        Documents has two areas: Forms (ACORD, cancellation, AOR — fillable) and Library (marketing,
-        carrier flyers, appetite guides, misc). Folders nest. Scan &amp; suggest is a stub, not live OCR.
-      </StubBanner>
+      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
+        Forms (ACORD, cancellation, AOR) and Library (marketing, carrier flyers, appetite
+        guides). Folders nest. Scan &amp; suggest is not live OCR.
+      </p>
 
       {notice === "bad-move" ? (
-        <StubBanner>That move would nest a folder inside itself. Pick another destination.</StubBanner>
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          That move would nest a folder inside itself. Pick another destination.
+        </p>
       ) : null}
       {notice === "scan-suggested" ? (
-        <StubBanner>Scan &amp; suggest filled demo fields. Edit anything that looks wrong.</StubBanner>
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Suggested fields applied. Edit anything that looks wrong.
+        </p>
       ) : null}
       {notice === "uploaded" ? (
-        <StubBanner>Files stored in this library. Type and name are on the list below.</StubBanner>
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Files stored in this library.
+        </p>
       ) : null}
 
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -28,46 +28,45 @@ function formatWhen(iso: string) {
 }
 
 export default async function InboxPage() {
-  const [stubs, accounts] = await Promise.all([listInboxStubs(), listSendAccounts()]);
+  const [rows, accounts] = await Promise.all([listInboxStubs(), listSendAccounts()]);
   const connected = inboxWorkEmailConnected(accounts);
 
   return (
     <AppShell
       title="Inbox"
-      eyebrow="Envoys"
       actions={
         <Link href="/settings/email" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-          Email settings
+          Connect work email
         </Link>
       }
     >
-      <section className="mb-4 rounded-md border border-dashed border-border bg-fit-flag-bg/50 px-4 py-3">
+      <section className="mb-4 rounded-md border border-dashed border-border px-4 py-3">
         <h2 className="text-base font-semibold text-navy">
-          {connected ? "Work email marked for later" : "Connect work email later"}
+          {connected ? "Work email marked" : "Connect your work email"}
         </h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          Envoys is the inbound message desk. FitFirst does not host a mailbox. Connect Gmail,
-          Outlook, or IMAP in Settings when the agency is ready. Seeded inbound stubs stay visible
-          so the queue is not empty.
+          FitFirst does not host a mailbox. Bring Gmail, Outlook, or IMAP under Settings → Email
+          when the agency is ready. Threads logged on a Contact still appear below.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Status: {connected ? "connected (stub)" : "not connected"}
+          Status: {connected ? "connected" : "not connected"}
         </p>
       </section>
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-3">
-          <h2 className="text-base font-semibold text-navy">Inbound queue</h2>
+          <h2 className="text-base font-semibold text-navy">Inbound on the book</h2>
           <p className="text-sm text-muted-foreground">
-            Received threads from the activity log plus unassigned inbound-email offers.
+            Email and text already written to the activity log, plus unassigned inbound offers.
           </p>
         </div>
-        {stubs.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            No inbound stubs yet. Seed the desk or log an email on a Contact to see it here.
+            No inbound on this book yet. Log an email on a Contact, or connect work email in
+            Settings.
           </p>
         ) : (
           <ul className="divide-y divide-border">
-            {stubs.map((row) => (
+            {rows.map((row) => (
               <li key={row.id} className="px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <div className="text-sm font-medium text-navy">{row.subject}</div>

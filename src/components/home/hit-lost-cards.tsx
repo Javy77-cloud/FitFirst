@@ -13,8 +13,8 @@ export function HitLostCards({ report, embedded = false }: { report: HitLostRepo
       <div className="border-b border-border bg-[color:var(--ff-wash)] px-4 py-3">
         <h3 className="text-sm font-semibold text-navy">Hit ratio and lost business</h3>
         <p className="text-helper text-muted-foreground">
-          Admin only. Bound ÷ quoted. Ana Dib&apos;s $321,000 shop stays unbound and counts as a miss.
-          Lost reasons come from the declined-quote picklist — not an LLM.
+          Admin only. Bound ÷ quoted. Unbound shops count as a miss. Lost reasons come from the
+          declined-quote picklist.
         </p>
       </div>
       <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-4">

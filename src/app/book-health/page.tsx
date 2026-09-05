@@ -20,7 +20,7 @@ export default async function BookHealthPage({
         Agency book is every in-force Policy. Producer book is the same rows grouped by owner.
         Use a producer filter to see that book’s missing packets. Lapse risk, monoline gaps, and
         missing decs reuse the servicing gauges. Missing docs are actionable servicing slots —
-        dec, ID card, AOR. Quotes are not policies. Ana Dib is not on this book.
+        dec, ID card, AOR. Quotes are not policies.
       </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

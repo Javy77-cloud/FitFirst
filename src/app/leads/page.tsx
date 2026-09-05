@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createLead } from "@/app/actions/crm";
 import { ChooseFiles } from "@/components/choose-files";
 import { StartShopForm } from "@/components/leads/start-shop-form";
-import { dropLeadPacket, dropSampleDecPacket, stubEmailLead, stubSocialLead } from "@/app/actions/lifecycle";
+import { dropLeadPacket } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
@@ -60,21 +60,11 @@ export default async function LeadsPage({
         ]}
       />
       <div className="mb-4 flex flex-wrap gap-2">
-        <form action={dropSampleDecPacket}>
-          <Button type="submit" size="sm" variant="outline">
-            Drop Melbourne dec (matches Elena)
+        <Link href="/leads/new">
+          <Button type="button" size="sm" variant="outline">
+            New lead
           </Button>
-        </form>
-        <form action={stubEmailLead}>
-          <Button type="submit" size="sm" variant="outline">
-            Stub email lead
-          </Button>
-        </form>
-        <form action={stubSocialLead}>
-          <Button type="submit" size="sm" variant="outline">
-            Stub social lead
-          </Button>
-        </form>
+        </Link>
       </div>
       <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-4">
@@ -112,8 +102,7 @@ export default async function LeadsPage({
           <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
             <h2 className="text-base font-semibold text-navy">Drop a dec packet</h2>
             <p className="text-base text-muted-foreground">
-              PDF or text. Named insured + phone or email matches an existing lead. Empty file
-              uses the Melbourne sample.
+              PDF or text. Named insured + phone or email matches an existing lead.
             </p>
             <ChooseFiles name="file" />
             <Button type="submit" size="sm">

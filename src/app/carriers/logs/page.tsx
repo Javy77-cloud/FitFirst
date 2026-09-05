@@ -24,9 +24,8 @@ export default async function CarrierLogsPage() {
       <LogsTabs current="appetite" />
       <p className="mb-3 text-sm text-muted-foreground">
         Parked under Carriers. Separate from quotes. Each row stores the result and a house
-        snapshot so the next shop can skip a lookalike decline. Ana Dib stays unbound at Cov A
-        $321,000 — these rows are skips, not binds. Fill Learning (dec → master sheet mapping)
-        is the sibling log.
+        snapshot so the next shop can skip a lookalike decline. These rows are skips, not binds.
+        Fill Learning (dec → master sheet mapping) is the sibling log.
       </p>
       <section className="ff-card overflow-x-auto">
         {rows.length === 0 ? (

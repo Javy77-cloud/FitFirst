@@ -1,8 +1,5 @@
 "use client";
 
-import { attachSampleMelbourneDec, attachSamplePhotoDec } from "@/app/actions/quote-sheet";
-import { uploadSampleDocument } from "@/app/actions/documents";
-import { Button } from "@/components/ui/button";
 import { SheetDrop } from "@/components/deal/sheet-drop";
 import type { Document, ExtractedFieldRow, ExtractionJob } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
@@ -53,33 +50,6 @@ export function DealFiles({
             </tbody>
           </table>
         )}
-        <details className="mt-3">
-          <summary className="cursor-pointer text-helper text-muted-foreground">Demo files</summary>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <form action={attachSampleMelbourneDec}>
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="riskId" value={riskId} />
-              <Button type="submit" variant="outline" size="sm">
-                Melbourne dec
-              </Button>
-            </form>
-            <form action={uploadSampleDocument}>
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="riskId" value={riskId} />
-              <input type="hidden" name="sample" value="clean" />
-              <Button type="submit" variant="outline" size="sm">
-                Ana sample dec
-              </Button>
-            </form>
-            <form action={attachSamplePhotoDec}>
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="riskId" value={riskId} />
-              <Button type="submit" variant="outline" size="sm">
-                Photo-a-dec
-              </Button>
-            </form>
-          </div>
-        </details>
       </section>
 
       <section className="ff-card p-4">

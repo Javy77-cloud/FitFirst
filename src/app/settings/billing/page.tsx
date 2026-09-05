@@ -26,7 +26,7 @@ export default async function BillingSettingsPage() {
           >
             <div className="text-sm font-semibold text-navy">Import / Export</div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Contacts, businesses, policies, and related packs. CSV import is a stub.
+              Contacts, businesses, policies, and related packs. Zoho JSONL is the live import.
             </p>
           </Link>
         ) : null}

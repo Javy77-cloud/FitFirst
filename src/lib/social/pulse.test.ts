@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { buildSocialPulse } from "./pulse";
-import { SOCIAL_PULSE_SEEDS } from "./seeds";
 
 const items = [
   {
@@ -8,14 +7,14 @@ const items = [
     name: "Facebook",
     initials: "Fb",
     connected: true,
-    accountLabel: "FitFirst Insurance · Facebook Page stub",
+    accountLabel: "FitFirst Insurance · Facebook Page",
   },
   {
     id: "instagram" as const,
     name: "Instagram",
     initials: "Ig",
     connected: true,
-    accountLabel: "@fitfirst.insurance · Instagram stub",
+    accountLabel: "@fitfirst.insurance",
   },
   {
     id: "x" as const,
@@ -36,40 +35,32 @@ const items = [
     name: "Google Business Profile",
     initials: "Gb",
     connected: true,
-    accountLabel: "FitFirst Insurance · Palm Bay GBP stub",
+    accountLabel: "FitFirst Insurance · Palm Bay GBP",
   },
 ];
 
 describe("social pulse", () => {
-  it("shows demo numbers only for connected stubs the viewer may see", () => {
+  it("never invents follower counts or seed inquiries", () => {
     const admin = buildSocialPulse({ items, role: "admin", allowAgentsMonitorGbp: false });
-    expect(admin.connectedVisible).toBe(3);
     expect(admin.gbpLocked).toBe(false);
-    const fb = admin.cards.find((card) => card.id === "facebook");
-    expect(fb?.metrics?.followers).toBe(SOCIAL_PULSE_SEEDS.facebook.followers);
-    expect(fb?.metrics?.views).toBe(12600);
-    expect(admin.inquiries.map((row) => row.platform).sort()).toEqual([
-      "facebook",
-      "google_business_profile",
-      "instagram",
-    ]);
+    expect(admin.cards.every((card) => card.metrics === null)).toBe(true);
+    expect(admin.inquiries).toEqual([]);
+    expect(admin.connectedVisible).toBe(0);
 
     const agent = buildSocialPulse({ items, role: "agent", allowAgentsMonitorGbp: false });
     expect(agent.gbpLocked).toBe(true);
-    expect(agent.connectedVisible).toBe(2);
     const gbp = agent.cards.find((card) => card.id === "google_business_profile");
     expect(gbp?.locked).toBe(true);
     expect(gbp?.metrics).toBeNull();
-    expect(agent.inquiries.some((row) => row.platform === "google_business_profile")).toBe(false);
-    expect(agent.inquiries.some((row) => row.id === "inq-instagram-priya")).toBe(true);
+    expect(agent.inquiries).toEqual([]);
   });
 
-  it("unlocks GBP pulse for agents after Admin enables monitoring", () => {
+  it("unlocks GBP for agents after Admin enables monitoring", () => {
     const agent = buildSocialPulse({ items, role: "agent", allowAgentsMonitorGbp: true });
     const gbp = agent.cards.find((card) => card.id === "google_business_profile");
     expect(gbp?.locked).toBe(false);
-    expect(gbp?.metrics?.views).toBe(SOCIAL_PULSE_SEEDS.google_business_profile.views);
-    expect(agent.inquiries.some((row) => row.id === "inq-gbp-denise")).toBe(true);
+    expect(gbp?.metrics).toBeNull();
+    expect(agent.inquiries).toEqual([]);
   });
 
   it("keeps disconnected platforms empty — no invented live sync", () => {

@@ -35,23 +35,21 @@ export default async function IntegrationsCatalogPage({
   return (
     <SettingsShell title="Integrations" current="integrations">
       <p className="mb-3 text-sm text-muted-foreground">
-        Connectable providers the agency already pays. {AGENCY_PAYS_VENDOR} FitFirst does not bill
-        Google, Outlook, Zoho, SMS, e-sign, or a rater. Social / GBP uses agency-pasted developer
-        apps and real OAuth up to the vendor wall. Other catalog cards stay a demo toggle — no
-        Stripe, no Twilio. {MAPS_FREE_LINK_NOTE}
+        Bring-your-own providers the agency already pays. {AGENCY_PAYS_VENDOR} Social / GBP
+        accepts the agency’s developer app and real OAuth up to the vendor wall. Email, SMS,
+        Twilio, IVANS, Stripe, and rater seats stay not connected until those OAuth paths are
+        wired. {MAPS_FREE_LINK_NOTE}
       </p>
       <div className="mb-4 rounded-md border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm">
         <div className="font-medium text-navy">Bring your own · agency pays</div>
         <p className="mt-0.5 text-muted-foreground">
-          {connectedCount} of {total} marked connected. Status is{" "}
-          <ConnectionBadge connected={false} className="align-middle" /> until an admin clicks
-          Connect, then <ConnectionBadge connected className="align-middle" />. Nothing leaves this
-          desk.
+          {connectedCount} of {total} social accounts connected. Other catalog cards stay{" "}
+          <ConnectionBadge connected={false} className="align-middle" /> until OAuth is wired.
         </p>
       </div>
       {notice === "connected" ? (
-        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          {provider ?? "Provider"} marked connected (demo). No OAuth ran.
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          {provider ?? "Provider"} is not live. OAuth is not wired for that catalog card.
         </p>
       ) : null}
       {notice === "disconnected" ? (
@@ -86,7 +84,7 @@ export default async function IntegrationsCatalogPage({
       ) : null}
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          {provider ?? "Account"} connected with the agency’s app. Inbox sync stays stubbed.
+          {provider ?? "Account"} connected with the agency’s app. Inbox sync waits on the vendor API.
         </p>
       ) : null}
       {!session.isAdmin ? (

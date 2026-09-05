@@ -12,7 +12,7 @@ export default async function AutomationsSmsPage() {
       <AutomationsModuleNav />
       <InHouseOnly
         title="No Twilio or bulk text vendors"
-        body="FitFirst does not buy numbers or send SMS. Chase inspections and renewals with an in-desk playbook — Task plus Alert, not a blast. Connect/Disconnect on Settings → Integrations stay demo toggles."
+        body="FitFirst does not buy numbers or send SMS. Chase inspections and renewals with an in-desk playbook — Task plus Alert, not a blast. Connect Twilio under Settings when the agency is ready."
       />
     </AppShell>
   );

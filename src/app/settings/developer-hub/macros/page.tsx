@@ -31,7 +31,7 @@ export default async function MacrosPage({
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Platform macros for every broker run surface. Pick target modules, actions (field update,
         task create, email stub, stage move), name, and enable. Same <code>desk_macros</code> table
-        as Automations — not a second Settings list. Ana Dib is never updated.
+        as Automations — not a second Settings list.
       </p>
       <HubNotice notice={notice} />
       <section className="ff-card overflow-hidden">

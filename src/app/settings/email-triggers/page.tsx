@@ -1,4 +1,4 @@
-import { connectDemoInbox, runDueEmailJobs, saveEmailTrigger } from "@/app/actions/templates";
+import { runDueEmailJobs, saveEmailTrigger } from "@/app/actions/templates";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { EmailActivityList } from "@/components/templates/email-activity";
 import { Button } from "@/components/ui/button";
@@ -49,8 +49,8 @@ export default async function EmailTriggersPage() {
       <section className="mb-4 ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Send from</h2>
         <p className="mt-1 text-helper text-muted-foreground">
-          Google, Outlook, Yahoo, Zoho Mail, or IMAP. If the work-email slice is merged, those
-          connections win. Otherwise this catalog is the stub.
+          Google, Outlook, Yahoo, Zoho Mail, or IMAP. Connect a mailbox under Settings → Email
+          when the agency is ready.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {accounts.map((account) => (
@@ -59,16 +59,9 @@ export default async function EmailTriggersPage() {
               <div className="mt-1 text-helper text-muted-foreground">
                 {account.connected ? account.accountEmail ?? "connected" : "disconnected"}
               </div>
-              {!account.connected ? (
-                <form action={connectDemoInbox} className="mt-2">
-                  <input type="hidden" name="provider" value={account.provider} />
-                  <Button type="submit" size="xs" variant="outline">
-                    Connect demo
-                  </Button>
-                </form>
-              ) : (
-                <p className="mt-2 text-helper text-fit-green">Demo connected</p>
-              )}
+              <p className="mt-2 text-helper text-muted-foreground">
+                {account.connected ? "Marked connected" : "Not connected"}
+              </p>
             </div>
           ))}
         </div>
@@ -77,7 +70,7 @@ export default async function EmailTriggersPage() {
       <div className="space-y-4">
         {triggers.length === 0 ? (
           <p className="ff-card px-4 py-6 text-sm text-muted-foreground">
-            No triggers seeded. Run <code>npm run db:seed</code>.
+            No email triggers yet. Add one here.
           </p>
         ) : (
           triggers.map(({ trigger, template }) => (

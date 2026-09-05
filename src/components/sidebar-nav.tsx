@@ -11,7 +11,6 @@ import {
   FileStack,
   Calendar,
   Home,
-  Inbox,
   Phone,
   Kanban,
   ListChecks,
@@ -24,7 +23,6 @@ import { isNavActive } from "@/lib/desk/nav";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/get-started", label: "Get Started", icon: ListChecks },
   { href: "/", label: "Home", icon: Home },
   { href: "/social", label: "Social", icon: Share2 },
   { href: "/pipeline?pipeline=p-c", label: "Pipeline", icon: Kanban },
@@ -44,7 +42,6 @@ const NAV = [
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/notifications", label: "Alerts", icon: Bell },
   { href: "/phone", label: "Phone", icon: Phone },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/settings", label: "Settings", icon: ClipboardList },
 ];
 

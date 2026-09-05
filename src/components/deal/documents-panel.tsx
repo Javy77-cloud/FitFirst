@@ -4,7 +4,6 @@ import {
   acceptExtractedField,
   extractExisting,
   uploadDocument,
-  uploadSampleDocument,
 } from "@/app/actions/documents";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { ChooseFiles } from "@/components/choose-files";
@@ -79,24 +78,6 @@ export function DocumentsPanel({
             </Button>
           </form>
 
-          <div className="mb-3 flex flex-wrap gap-2">
-            <form action={uploadSampleDocument}>
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="riskId" value={riskId} />
-              <input type="hidden" name="sample" value="clean" />
-              <Button type="submit" variant="outline" size="sm">
-                Sample clean dec
-              </Button>
-            </form>
-            <form action={uploadSampleDocument}>
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="riskId" value={riskId} />
-              <input type="hidden" name="sample" value="messy" />
-              <Button type="submit" variant="outline" size="sm">
-                Sample handwritten wind mit
-              </Button>
-            </form>
-          </div>
           <DocTable docs={sourceDocs} dealId={dealId} empty="No source documents yet." />
         </section>
 

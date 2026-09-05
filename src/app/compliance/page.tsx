@@ -29,8 +29,7 @@ export default async function CompliancePage() {
       <LogsTabs current="compliance" />
       <p className="mb-3 text-sm text-muted-foreground">
         Append-only E&O trail for client email, SMS, calls, meetings, document views, PII reveals,
-        and policy changes. Gap flags stay in Alerts. Nothing emails Javy. Ana Dib stays Quote Sent
-        / unbound at Cov A $321,000.
+        and policy changes. Gap flags stay in Alerts. Nothing emails the producer.
       </p>
 
       <section className="mb-4 grid gap-3 sm:grid-cols-3">

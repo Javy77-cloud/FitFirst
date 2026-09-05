@@ -1,8 +1,5 @@
-import { SUPPORT_HREF } from "@/lib/desk/quick-actions";
-
-/** Left-nav rows. One Pipeline. One Settings. Support stub stays so we do not drop it. */
+/** Left-nav rows. One Pipeline. One Settings. Stub-only rows (Get Started, Support, Inbox) are gone. */
 export const DESK_NAV_ITEMS = [
-  { href: "/get-started", label: "Get Started" },
   { href: "/", label: "Home" },
   { href: "/social", label: "Social" },
   { href: "/pipeline?pipeline=p-c", label: "Pipeline" },
@@ -33,6 +30,5 @@ export const DESK_NAV_ITEMS = [
   { href: "/calendar", label: "Calendar" },
   { href: "/carriers", label: "Carriers" },
   { href: "/phone", label: "Phone" },
-  { href: SUPPORT_HREF, label: "Support" },
   { href: "/settings", label: "Settings" },
 ] as const;

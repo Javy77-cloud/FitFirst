@@ -135,8 +135,8 @@ export default async function CommissionsPage({
     <AppShell title="Commissions">
       <p className="mb-3 text-base text-muted-foreground">
         {session.isAdmin
-          ? "Agency earnings by policy. Pending vs paid. Filter Life, Health, or P&C, then a subtype. Ana Dib stays shopping — $0 here, no bind."
-          : "Your commissions only. Pending vs paid. Filter Life, Health, or P&C, then a subtype to find a row. Ana Dib stays shopping — $0 / unbound."}
+          ? "Agency earnings by policy. Pending vs paid. Filter Life, Health, or P&C, then a subtype."
+          : "Your commissions only. Pending vs paid. Filter Life, Health, or P&C, then a subtype to find a row."}
       </p>
       <CommissionStatusTabs
         status={status}

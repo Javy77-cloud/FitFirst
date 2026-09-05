@@ -24,7 +24,7 @@ function first(value: string | string[] | undefined): string | undefined {
 }
 
 const STAGE_HINT: Record<string, string> = {
-  open: "Open quotes — shopping, quoting, comparing. Ana's HO3 lives here.",
+  open: "Open quotes — shopping, quoting, comparing.",
   quote_sent: "Quote sent. Still not coverage.",
   won: "Closed won / bound this book. Issue may still be outstanding.",
 };

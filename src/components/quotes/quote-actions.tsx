@@ -88,10 +88,10 @@ export function QuoteActionsMenu({ row }: { row: TrackingRow }) {
               <DropdownMenuItem disabled>No PDF</DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={() => emailFormRef.current?.requestSubmit()}>
-              Email stub
+              Log email
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => smsFormRef.current?.requestSubmit()}>
-              SMS stub
+              Log SMS
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
