@@ -1,4 +1,5 @@
 import { addDriver, addVehicle, deleteDriver, deleteVehicle } from "@/app/actions/auto-schedule";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { CopyScheduleButton } from "@/components/auto/copy-schedule-button";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,13 +145,13 @@ export function AutoSchedulePanel({
                   </td>
                   {editable ? (
                     <td className="text-right">
-                      <form action={deleteVehicle}>
+                      <HardDeleteForm action={deleteVehicle} subject="this vehicle">
                         {hidden}
                         <input type="hidden" name="vehicleId" value={vehicle.id} />
                         <Button type="submit" variant="ghost" size="xs">
                           Remove
                         </Button>
-                      </form>
+                      </HardDeleteForm>
                     </td>
                   ) : null}
                 </tr>
@@ -211,13 +212,13 @@ export function AutoSchedulePanel({
                   </td>
                   {editable ? (
                     <td className="text-right">
-                      <form action={deleteDriver}>
+                      <HardDeleteForm action={deleteDriver} subject="this driver">
                         {hidden}
                         <input type="hidden" name="driverId" value={driver.id} />
                         <Button type="submit" variant="ghost" size="xs">
                           Remove
                         </Button>
-                      </form>
+                      </HardDeleteForm>
                     </td>
                   ) : null}
                 </tr>

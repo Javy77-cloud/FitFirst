@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { removeDeveloperConnection, saveDeveloperConnection } from "@/app/actions/developer-hub";
 import { OauthWall } from "@/components/developer-hub/oauth-wall";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,12 +109,12 @@ export default async function DeveloperConnectionDetailPage({
         </Button>
       </form>
 
-      <form action={removeDeveloperConnection} className="mt-4">
+      <HardDeleteForm action={removeDeveloperConnection} subject="this connector" className="mt-4">
         <input type="hidden" name="id" value={row.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete connector
         </Button>
-      </form>
+      </HardDeleteForm>
       <p className="mt-3 text-sm">
         <Link href="/settings/developer/connections" className="text-primary hover:underline">
           All connections

@@ -60,6 +60,7 @@ const DUPLICATE_OK: CrmListModule[] = [
 ];
 const MERGE_OK: CrmListModule[] = ["leads", "contacts"];
 const ARCHIVE_OK: CrmListModule[] = ["leads", "contacts", "deals"];
+const DELETE_OK: CrmListModule[] = ["leads", "tasks"];
 
 function present(value: string | null | undefined): boolean {
   return Boolean(value && value.trim());
@@ -230,12 +231,28 @@ export function listSelectionActions(input: {
     actions.push(withReason("archive", "Archive", true));
   }
 
-  if (module !== "tasks") {
-    actions.push(
-      withReason("delete", "Delete", false, "Hard delete is off on the live book — Archive or Merge."),
-    );
+  if (!DELETE_OK.includes(module)) {
+    const reason =
+      module === "policies"
+        ? "Policies stay for retention — lapse or cancel on the file. Not wiped."
+        : module === "carriers"
+          ? "Carriers stay on the appetite book."
+          : module === "businesses"
+            ? "Businesses stay on the book — Archive is not wired; not wiped."
+            : "Hard delete is off on the live book — Archive or Merge.";
+    actions.push(withReason("delete", "Delete", false, reason));
   } else if (count === 0) {
-    actions.push(withReason("delete", "Delete", false, "Select tasks to delete.", { variant: "destructive" }));
+    actions.push(
+      withReason(
+        "delete",
+        "Delete",
+        false,
+        module === "leads" ? "Select leads to delete." : "Select tasks to delete.",
+        { variant: "destructive" },
+      ),
+    );
+  } else if (locked) {
+    actions.push(withReason("delete", "Delete", false, locked, { variant: "destructive" }));
   } else {
     actions.push(withReason("delete", "Delete", true, undefined, { variant: "destructive" }));
   }

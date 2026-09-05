@@ -8,6 +8,7 @@ import { FunctionForm } from "@/components/developer-hub/function-form";
 import { OauthWall } from "@/components/developer-hub/oauth-wall";
 import { StatusChip } from "@/components/developer-hub/status-chip";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,12 +128,12 @@ export default async function DeveloperFunctionDetailPage({
         )}
       </section>
 
-      <form action={removeDeveloperFunction} className="mt-4">
+      <HardDeleteForm action={removeDeveloperFunction} subject="this function" className="mt-4">
         <input type="hidden" name="id" value={fn.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete function
         </Button>
-      </form>
+      </HardDeleteForm>
       <p className="mt-3 text-sm">
         <Link href="/settings/developer/functions" className="text-primary hover:underline">
           All functions

@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
 import { AutomationsNotice } from "@/components/automations/notice";
 import { OauthWall } from "@/components/developer-hub/oauth-wall";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,12 +99,12 @@ export default async function ConnectionDetailPage({
           Save connection
         </Button>
       </form>
-      <form action={removeDeveloperConnection} className="mt-4">
+      <HardDeleteForm action={removeDeveloperConnection} subject="this connection" className="mt-4">
         <input type="hidden" name="id" value={row.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete connection
         </Button>
-      </form>
+      </HardDeleteForm>
     </AppShell>
   );
 }

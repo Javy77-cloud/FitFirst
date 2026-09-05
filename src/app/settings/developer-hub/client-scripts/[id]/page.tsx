@@ -3,6 +3,7 @@ import { deleteDeskScript } from "@/app/actions/developer-hub";
 import { HubNotice } from "@/components/developer-hub/hub-notice";
 import { ScriptForm } from "@/components/developer-hub/script-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { getDeskScript } from "@/lib/db/developer-hub-queries";
@@ -27,12 +28,12 @@ export default async function EditClientScriptPage({
       title={script.name}
       current="dev-scripts"
       actions={
-        <form action={deleteDeskScript}>
+        <HardDeleteForm action={deleteDeskScript} subject="this script">
           <input type="hidden" name="id" value={script.id} />
           <Button type="submit" size="sm" variant="outline">
             Delete
           </Button>
-        </form>
+        </HardDeleteForm>
       }
     >
       <HubNotice notice={notice} />

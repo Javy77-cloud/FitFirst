@@ -1,4 +1,5 @@
 import { deleteTask, updateTask } from "@/app/actions/alerts";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,12 +54,12 @@ export function TaskRowEditor({
           </Button>
         </form>
       </details>
-      <form action={deleteTask}>
+      <HardDeleteForm action={deleteTask} subject="this task">
         <input type="hidden" name="taskId" value={task.id} />
         <Button type="submit" size="xs" variant="destructive">
           Delete
         </Button>
-      </form>
+      </HardDeleteForm>
       {task.status === "open" ? <CompleteTaskForm taskId={task.id} /> : null}
     </div>
   );

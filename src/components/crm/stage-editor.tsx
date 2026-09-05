@@ -1,4 +1,5 @@
 import { createPipelineStage, deletePipelineStage, relabelPipelineStage } from "@/app/actions/crm";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,12 +27,12 @@ export function StageEditor({ stages }: { stages: PipelineStageRow[] }) {
             {stage.seeded ? (
               <span className="text-[11px] text-muted-foreground">Locked</span>
             ) : (
-              <form action={deletePipelineStage}>
+              <HardDeleteForm action={deletePipelineStage} subject="this stage">
                 <input type="hidden" name="stageId" value={stage.id} />
                 <Button type="submit" size="xs" variant="destructive">
                   Delete
                 </Button>
-              </form>
+              </HardDeleteForm>
             )}
           </li>
         ))}

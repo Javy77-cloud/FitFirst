@@ -4,6 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Leads Actions Delete + shared menu width (this slice)
+
+**`cursor/ff-leads-actions-delete-fb86`** — off **`cursor/live-ff-tip-sep5e`**. No migration. No seed. No wipe.
+
+1. **Leads selection Actions** includes **Delete** (same list menu as Tasks). Double-confirm, then the lead row is removed. Linked shops stay (deal `lead_id` is cleared). Ana stays locked.
+2. **Actions dropdown** is `w-max` / `min-w-max` with no wrap on items, so every option sits on one line. Shared `DropdownMenu` + `SelectionActionsMenu` — every module list, not only Leads.
+3. **Hard delete always asks twice** (`Are you sure you want to delete …?` then a permanent-delete confirm). Archive stays a single confirm.
+4. **Policies / carriers / businesses / contacts / deals** do not get list Delete. Policies stay for retention (lapse or cancel on the file). Prefer Archive on people + deals.
+
+### Air checkout (skip seed)
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/ff-leads-actions-delete-fb86 && git pull
+npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+npm run dev -- --port 43147
+```
+
+Do **not** run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. This slice adds no table.
+
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Leads → tick a row → **Actions** → **Delete** (two confirms). Open Actions on Contacts / Policies and confirm the menu is wide enough that labels do not wrap. Policies still have no Delete.
+
 ## Live typeahead search (this slice)
 
 **`cursor/ff-live-typeahead-search-d2d4`** — top chrome search fills as you type (200ms debounce). No Search click. Contains-match across **contacts, leads, deals, businesses, policies, and carriers**. Arrow keys + Enter open a hit; “See all results” still goes to `/search`.
@@ -19,7 +44,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
 3. **`cursor/ff-nav-dnd-customize-fe86`** — drag-and-drop left nav. Primary order + editable submenus persist on `agent_ui_prefs.nav_layout`. Default rail stays stub-free.
-4. **`cursor/ff-selection-actions-dae2`** — tick rows for Duplicate / Merge / Email / SMS / Print / Run macro / Archive / Delete. Call and hard-delete stay off.
+4. **`cursor/ff-selection-actions-dae2`** — tick rows for Duplicate / Merge / Email / SMS / Print / Run macro / Archive / Delete. Call stays off. Leads + Tasks hard-delete (double confirm) is on **`cursor/ff-leads-actions-delete-fb86`**.
 5. **`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name typeaheads Contacts + Businesses as you type (name / email / phone). Pipeline create and Deals upload use the same picker.
 6. **`cursor/ff-deal-upload-half-88fe`** — Deal Documents upload is half width; the right half is a live shop desk (person, email/call, sheet status, collect-next, open activities).
 7. **`cursor/ff-deals-merge-pipeline-b3cc`** — Deals and Pipeline are one module. Pipeline is gone from the left nav. `/pipeline` redirects to `/deals` and keeps the query. Table / Board / Funnel share the same filters (P&C, Health, Life, Flood, Won-Lost, Archive). Stored customize ids named `pipeline` remap to `deals`.
@@ -66,7 +91,7 @@ Tick one or more rows on Leads, Contacts, Deals, Policies, Businesses, Carriers,
 - **Print** — browser print of the current sheet (sidebar/header hidden).
 - **Run macro** — Settings macros already wired on the list.
 - **Archive** — Leads, Contacts, Deals leave the list (`archived_at`). Not a wipe.
-- **Delete** — Tasks only. Other modules say to Archive or Merge.
+- **Delete** — Leads and Tasks, after two confirms. Policies stay for retention (no list wipe). Contacts / Deals / Businesses / Carriers stay Archive-or-off.
 - **Convert** on Leads (starts a shop). **Bind** on Deals opens the existing bind path, or the bound policy when one exists.
 
 Ana Dib stays locked. No fake “would send” clicks.
@@ -85,7 +110,7 @@ Primary rail: **Home**, **Leads**, **Deals**, **Contacts**, **Business**, **Poli
 ### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep5e && git pull
+git fetch && git checkout cursor/ff-leads-actions-delete-fb86 && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -93,7 +118,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. Live typeahead search adds no table — `db:migrate` only if this desk is behind (nullable `agent_ui_prefs.nav_layout` / `0070_nav_layout`). Hide is a JSON field (`hiddenPrimaryIds`) on that same blob. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. This delete/UX slice adds no table. Live typeahead search also adds no table — `db:migrate` only if this desk is behind (nullable `agent_ui_prefs.nav_layout` / `0070_nav_layout`). Hide is a JSON field (`hiddenPrimaryIds`) on that same blob. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Manage columns (this slice)
 

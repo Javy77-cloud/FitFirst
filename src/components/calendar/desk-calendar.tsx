@@ -8,6 +8,7 @@ import {
   rescheduleDeskActivity,
   updateDeskActivity,
 } from "@/app/actions/activities-desk";
+import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import {
   CompanyMeetingForm,
   type InviteCatalogOption,
@@ -760,6 +761,7 @@ function CalendarEditor({
                 variant="outline"
                 className="mr-auto text-destructive"
                 onClick={async () => {
+                  if (!confirmHardDelete("this event")) return;
                   const form = new FormData();
                   form.set("activityId", event.id);
                   await deleteDeskActivity(form);

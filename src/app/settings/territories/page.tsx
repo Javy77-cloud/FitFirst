@@ -3,6 +3,7 @@ import { deleteTerritory, saveTerritory } from "@/app/actions/offices";
 import { AgentAssign } from "@/components/org/agent-assign";
 import { StatePicker } from "@/components/org/state-picker";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -184,12 +185,12 @@ export default async function TerritoriesSettingsPage({
           </div>
         </form>
         {editing ? (
-          <form action={deleteTerritory}>
+          <HardDeleteForm action={deleteTerritory} subject="this territory">
             <input type="hidden" name="id" value={editing.id} />
             <button type="submit" className="text-xs text-destructive hover:underline">
               Delete this territory
             </button>
-          </form>
+          </HardDeleteForm>
         ) : null}
       </section>
     </SettingsShell>

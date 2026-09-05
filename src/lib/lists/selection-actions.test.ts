@@ -82,7 +82,14 @@ describe("listSelectionActions", () => {
     expect(call?.reason).toMatch(/No live phone line/);
   });
 
-  it("keeps hard delete off except tasks, and archive on people + deals", () => {
+  it("enables hard delete on leads and tasks, keeps it off on retained book rows", () => {
+    const lead = listSelectionActions({
+      module: "leads",
+      selected: [rec({ id: "a" })],
+    });
+    expect(lead.find((item) => item.id === "delete")?.enabled).toBe(true);
+    expect(lead.find((item) => item.id === "archive")?.enabled).toBe(true);
+
     const contact = listSelectionActions({
       module: "contacts",
       selected: [rec({ id: "c1" })],
@@ -96,6 +103,8 @@ describe("listSelectionActions", () => {
     });
     expect(policy.find((item) => item.id === "duplicate")?.enabled).toBe(false);
     expect(policy.find((item) => item.id === "archive")?.enabled).toBe(false);
+    expect(policy.find((item) => item.id === "delete")?.enabled).toBe(false);
+    expect(policy.find((item) => item.id === "delete")?.reason).toMatch(/retention/);
 
     const task = listSelectionActions({
       module: "tasks",
@@ -112,6 +121,7 @@ describe("listSelectionActions", () => {
     });
     expect(actions.find((item) => item.id === "merge")?.enabled).toBe(false);
     expect(actions.find((item) => item.id === "archive")?.enabled).toBe(false);
+    expect(actions.find((item) => item.id === "delete")?.enabled).toBe(false);
     expect(actions.find((item) => item.id === "merge")?.reason).toMatch(/Ana Dib/);
 
     const deal = listSelectionActions({

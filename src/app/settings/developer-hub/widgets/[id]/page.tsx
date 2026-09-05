@@ -4,6 +4,7 @@ import { HubNotice } from "@/components/developer-hub/hub-notice";
 import { WidgetForm } from "@/components/developer-hub/widget-form";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { getDeskWidget } from "@/lib/db/developer-hub-queries";
@@ -28,12 +29,12 @@ export default async function EditWidgetPage({
       title={widget.name}
       current="dev-widgets"
       actions={
-        <form action={deleteDeskWidget}>
+        <HardDeleteForm action={deleteDeskWidget} subject="this widget">
           <input type="hidden" name="id" value={widget.id} />
           <Button type="submit" size="sm" variant="outline">
             Delete
           </Button>
-        </form>
+        </HardDeleteForm>
       }
     >
       <HubNotice notice={notice} />

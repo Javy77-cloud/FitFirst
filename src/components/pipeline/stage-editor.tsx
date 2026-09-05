@@ -6,6 +6,7 @@ import {
   relabelPipelineStage,
   reorderPipelineStage,
 } from "@/app/actions/pipeline-admin";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,12 +70,12 @@ export function PipelineStageEditor({
               </button>
             </form>
             {canDelete ? (
-              <form action={deletePipelineStage}>
+              <HardDeleteForm action={deletePipelineStage} subject="this stage">
                 <input type="hidden" name="stageId" value={stage.id} />
                 <button type="submit" className="text-xs text-destructive hover:underline">
                   Remove
                 </button>
-              </form>
+              </HardDeleteForm>
             ) : (
               <span className="text-[11px] text-muted-foreground">Need one stage</span>
             )}
