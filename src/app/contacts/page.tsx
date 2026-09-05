@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { CONTACTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
@@ -85,7 +85,7 @@ export default async function ContactsPage({
         </form>
         <section className="ff-card overflow-hidden">
           <ModuleListActions module="contacts" recordIds={rows.map((c) => c.id)}>
-          <ColumnTable
+          <DeskColumnTable
             moduleId="contacts"
             columns={CONTACTS_LIST_COLUMNS}
             empty="Empty book. Bind a deal or add an existing client."

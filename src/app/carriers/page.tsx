@@ -1,7 +1,8 @@
 import { AppShell } from "@/components/app-shell";
 import { formatMoney } from "@/lib/domain";
 import { listCarriers } from "@/lib/db/queries";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { CARRIERS_LIST_COLUMNS } from "@/lib/list-columns";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
@@ -44,15 +45,9 @@ export default async function CarriersPage({
         ]}
       />
       <section className="ff-card overflow-hidden">
-        <ColumnTable
+        <DeskColumnTable
           moduleId="carriers"
-          columns={[
-            { id: "carrier", label: "Carrier", locked: true },
-            { id: "portal", label: "Portal" },
-            { id: "covA", label: "Cov A" },
-            { id: "rules", label: "Roof / coast / mobile" },
-            { id: "dontWrite", label: "Don't write" },
-          ]}
+          columns={CARRIERS_LIST_COLUMNS}
           empty="No carriers match this filter."
           rows={rows.map(({ carrier, rule }) => ({
             key: `${carrier.id}-${rule?.id ?? "none"}`,

@@ -3,7 +3,8 @@ import { ModuleListActions } from "@/components/developer-hub/module-list-action
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { listAccounts } from "@/lib/db/queries";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { ACCOUNTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { matchesField, pickFilterParams } from "@/lib/saved-filters";
@@ -39,15 +40,9 @@ export default async function AccountsPage({
       />
       <section className="ff-card overflow-hidden">
         <ModuleListActions module="businesses" recordIds={rows.map((account) => account.id)}>
-        <ColumnTable
+        <DeskColumnTable
           moduleId="businesses"
-          columns={[
-            { id: "pick", label: "", locked: true },
-            { id: "business", label: "Business", locked: true },
-            { id: "status", label: "Status" },
-            { id: "lifetime", label: "Lifetime" },
-            { id: "inForce", label: "In-force" },
-          ]}
+          columns={ACCOUNTS_LIST_COLUMNS}
           empty="No businesses yet. Bind a commercial deal as a Business, or open the Elena Ruiz personal path — she is linked to Ruiz Tile LLC with zero commercial policies."
           rows={rows.map((account) => ({
             key: account.id,

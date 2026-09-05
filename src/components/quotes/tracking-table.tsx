@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ColumnTable } from "@/components/lists/column-table";
+import { QUOTES_LIST_COLUMNS } from "@/lib/list-columns";
 import { TrackingStatusBadge } from "@/components/quotes/status-badge";
 import { formatMoney } from "@/lib/domain";
 import { cheapestQuotedSummary, type TrackingShop } from "@/lib/quotes/tracking";
@@ -14,16 +15,7 @@ export function TrackingTable({
   return (
     <ColumnTable
       moduleId="quotes"
-      columns={[
-        { id: "rank", label: "Rank" },
-        { id: "carrier", label: "Carrier", locked: true },
-        { id: "line", label: "Line" },
-        { id: "status", label: "Status" },
-        { id: "premium", label: "Premium" },
-        { id: "quoteNumber", label: "Quote #" },
-        { id: "date", label: "Date" },
-        { id: "links", label: "Links" },
-      ]}
+      columns={QUOTES_LIST_COLUMNS}
       empty="No shops recorded on this deal. Filter markets first, then log the attempt. This board does not call a rater."
       rows={shop.rows.map((row) => ({
         key: row.id,

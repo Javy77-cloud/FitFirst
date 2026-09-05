@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { CommissionStatusPill } from "@/components/commissions/status-pill";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
+import { COMMISSIONS_LIST_COLUMNS } from "@/lib/list-columns";
 
 export type CommissionDeskRow = {
   id: string;
@@ -41,63 +43,41 @@ export function CommissionDeskTable({
   showProducer?: boolean;
   empty: string;
 }) {
-  if (rows.length === 0) {
-    return <p className="px-4 py-6 text-base text-muted-foreground">{empty}</p>;
-  }
+  const columns = showProducer
+    ? COMMISSIONS_LIST_COLUMNS
+    : COMMISSIONS_LIST_COLUMNS.filter((column) => column.id !== "producer");
 
   return (
-    <div className="overflow-x-auto">
-      <table className="ff-table">
-        <thead>
-          <tr>
-            <th>Policy</th>
-            <th>Type</th>
-            <th>Subtype</th>
-            {showProducer ? <th>Producer</th> : null}
-            <th>Status</th>
-            <th>Amount</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>
-                {row.policyId ? (
-                  <RecordLink href={`/policies/${row.policyId}`}>
-                    {row.policyNumber ?? "Policy"}
-                  </RecordLink>
-                ) : (
-                  (row.policyNumber ?? "—")
-                )}
-              </td>
-              <td>{bookLabel(row)}</td>
-              <td>{subtypeLabel(row)}</td>
-              {showProducer ? (
-                <td>
-                  {row.agentId ? (
-                    <Link
-                      href={`/commissions/agents/${row.agentId}`}
-                      className="text-primary hover:underline"
-                    >
-                      {row.agentName}
-                    </Link>
-                  ) : (
-                    row.agentName
-                  )}
-                </td>
-              ) : null}
-              <td>
-                <CommissionStatusPill status={row.status} />
-              </td>
-              <td>{formatMoney(row.amount)}</td>
-              <td className="text-xs text-muted-foreground">
-                {row.status === "paid" ? formatDay(row.paidDate) : formatDay(row.dueDate)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DeskColumnTable
+      moduleId={showProducer ? "commissions-admin" : "commissions"}
+      columns={columns}
+      empty={empty}
+      rows={rows.map((row) => ({
+        key: row.id,
+        cells: {
+          policy: row.policyId ? (
+            <RecordLink href={`/policies/${row.policyId}`}>{row.policyNumber ?? "Policy"}</RecordLink>
+          ) : (
+            (row.policyNumber ?? "—")
+          ),
+          type: bookLabel(row),
+          subtype: subtypeLabel(row),
+          producer: row.agentId ? (
+            <Link href={`/commissions/agents/${row.agentId}`} className="text-primary hover:underline">
+              {row.agentName}
+            </Link>
+          ) : (
+            row.agentName
+          ),
+          status: <CommissionStatusPill status={row.status} />,
+          amount: formatMoney(row.amount),
+          date: (
+            <span className="text-xs text-muted-foreground">
+              {row.status === "paid" ? formatDay(row.paidDate) : formatDay(row.dueDate)}
+            </span>
+          ),
+        },
+      }))}
+    />
   );
 }

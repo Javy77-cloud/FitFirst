@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import {
+  WORK_QUEUE_ATTENTION_COLUMNS,
+  WORK_QUEUE_FLAGS_COLUMNS,
+  WORK_QUEUE_POLICIES_COLUMNS,
+} from "@/lib/list-columns";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { WorkFlagPills, WorkStatusPill } from "@/components/work-queue/flag-pills";
@@ -81,16 +86,9 @@ export default async function WorkQueuePage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Flagged work
         </div>
-        <ColumnTable
+        <DeskColumnTable
           moduleId="work-queue-flags"
-          columns={[
-            { id: "policy", label: "Policy", locked: true },
-            { id: "assignee", label: "Assignee" },
-            { id: "status", label: "Work status" },
-            { id: "flags", label: "Flags" },
-            { id: "note", label: "Latest note" },
-            { id: "ping", label: "In-app ping" },
-          ]}
+          columns={WORK_QUEUE_FLAGS_COLUMNS}
           empty="No flagged files. Open a Policy and assign, flag, or ping from Work on this file."
           rows={flagged.map((row) => ({
             key: row.item.id,
@@ -122,13 +120,9 @@ export default async function WorkQueuePage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Needs attention
         </div>
-        <ColumnTable
+        <DeskColumnTable
           moduleId="work-queue-attention"
-          columns={[
-            { id: "kind", label: "Kind" },
-            { id: "item", label: "Item", locked: true },
-            { id: "detail", label: "Detail" },
-          ]}
+          columns={WORK_QUEUE_ATTENTION_COLUMNS}
           empty="Queue is clear."
           rows={attention.map((item) => ({
             key: item.id,
@@ -149,14 +143,9 @@ export default async function WorkQueuePage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Bound / pending / lapse
         </div>
-        <ColumnTable
+        <DeskColumnTable
           moduleId="work-queue-policies"
-          columns={[
-            { id: "policy", label: "Policy", locked: true },
-            { id: "status", label: "Status" },
-            { id: "party", label: "Party" },
-            { id: "expires", label: "Expires" },
-          ]}
+          columns={WORK_QUEUE_POLICIES_COLUMNS}
           empty="Nothing waiting on the book."
           rows={open.map(({ policy, contact, account }) => ({
             key: policy.id,

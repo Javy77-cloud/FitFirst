@@ -36,7 +36,7 @@ export function PipelineWorkspace({
     <div className="space-y-3" data-ff-pipe>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{hint}</p>
-        <PipelineFieldPicker />
+        {view === "table" ? null : <PipelineFieldPicker />}
       </div>
       {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
       {view === "table" ? (

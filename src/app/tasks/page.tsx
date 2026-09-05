@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listDeskTaskRows } from "@/lib/db/queries";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { TASKS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
@@ -55,14 +56,9 @@ export default async function TasksPage({
       />
       <section className="ff-card overflow-hidden">
         <ModuleListActions module="tasks" recordIds={tasks.map((task) => task.id)}>
-        <ColumnTable
+        <DeskColumnTable
           moduleId="tasks"
-          columns={[
-            { id: "pick", label: "", locked: true },
-            { id: "task", label: "Task", locked: true },
-            { id: "due", label: "Due" },
-            { id: "status", label: "Status" },
-          ]}
+          columns={TASKS_LIST_COLUMNS}
           empty="No open tasks."
           rows={tasks.map((task) => ({
             key: task.id,

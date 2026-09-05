@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Col } from "@/components/column-picker";
-import { SheetTbody } from "@/components/sheet/sheet-table";
 import { ClaimStatusBadge } from "@/components/claims/status-badge";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { claimCauseLabel, claimChannelLabel } from "@/lib/claims";
 import { formatDate } from "@/lib/domain";
+import { CLAIMS_LIST_COLUMNS } from "@/lib/list-columns";
 
 export type ClaimListRow = {
   id: string;
@@ -29,64 +29,48 @@ export function ClaimList({
   empty: string;
   showPolicy?: boolean;
 }) {
-  if (rows.length === 0) {
-    return <p className="px-4 py-6 text-base text-muted-foreground">{empty}</p>;
-  }
+  const columns = showPolicy
+    ? CLAIMS_LIST_COLUMNS
+    : CLAIMS_LIST_COLUMNS.filter((column) => column.id !== "policy");
 
   return (
-    <table className="ff-table">
-      <thead>
-        <tr>
-          <Col table="claim-rows" col="reported" as="th">Reported</Col>
-          {showPolicy ? <Col table="claim-rows" col="policy" as="th">Policy</Col> : null}
-          <Col table="claim-rows" col="why" as="th">Why</Col>
-          <Col table="claim-rows" col="how" as="th">How</Col>
-          <Col table="claim-rows" col="carrier" as="th">Carrier #</Col>
-          <Col table="claim-rows" col="status" as="th">Status</Col>
-        </tr>
-      </thead>
-      <SheetTbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <Col table="claim-rows" col="reported" sortValue={row.dateReported.toISOString()}>
+    <DeskColumnTable
+      moduleId={showPolicy ? "claims" : "claim-rows"}
+      columns={columns}
+      empty={empty}
+      rows={rows.map((row) => ({
+        key: row.id,
+        cells: {
+          reported: (
+            <>
               <Link href={`/claims/${row.id}`} className="font-medium text-primary hover:underline">
                 {formatDate(row.dateReported)}
               </Link>
-              <div className="text-base text-muted-foreground">
-                Loss {formatDate(row.dateOfLoss)}
-              </div>
-            </Col>
-            {showPolicy ? (
-              <Col table="claim-rows" col="policy">
-                {row.policyId ? (
-                  <Link href={`/policies/${row.policyId}`} className="text-primary hover:underline">
-                    {row.policyNumber ?? "Policy"}
-                  </Link>
-                ) : row.contactId ? (
-                  <Link href={`/contacts/${row.contactId}`} className="text-primary hover:underline">
-                    {row.contactName ?? "Contact"}
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </Col>
-            ) : null}
-            <Col table="claim-rows" col="why">
+              <div className="text-base text-muted-foreground">Loss {formatDate(row.dateOfLoss)}</div>
+            </>
+          ),
+          policy: row.policyId ? (
+            <Link href={`/policies/${row.policyId}`} className="text-primary hover:underline">
+              {row.policyNumber ?? "Policy"}
+            </Link>
+          ) : row.contactId ? (
+            <Link href={`/contacts/${row.contactId}`} className="text-primary hover:underline">
+              {row.contactName ?? "Contact"}
+            </Link>
+          ) : (
+            "—"
+          ),
+          why: (
+            <>
               <div className="font-medium">{claimCauseLabel(row.causeType)}</div>
-              <div className="text-base text-muted-foreground">
-                {row.description || "No short text"}
-              </div>
-            </Col>
-            <Col table="claim-rows" col="how">{claimChannelLabel(row.reportedHow)}</Col>
-            <Col table="claim-rows" col="carrier" className="font-mono text-xs">
-              {row.carrierClaimNumber || "—"}
-            </Col>
-            <Col table="claim-rows" col="status" sortValue={row.status}>
-              <ClaimStatusBadge status={row.status} />
-            </Col>
-          </tr>
-        ))}
-      </SheetTbody>
-    </table>
+              <div className="text-base text-muted-foreground">{row.description || "No short text"}</div>
+            </>
+          ),
+          how: claimChannelLabel(row.reportedHow),
+          carrier: <span className="font-mono text-xs">{row.carrierClaimNumber || "—"}</span>,
+          status: <ClaimStatusBadge status={row.status} />,
+        },
+      }))}
+    />
   );
 }

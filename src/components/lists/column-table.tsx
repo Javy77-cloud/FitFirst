@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { fetchListColumnPrefs, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -13,9 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  allColumnIds,
   columnMenuLabel,
   defaultVisibleIds,
   loadVisibleColumns,
+  mergeVisibleColumns,
   saveVisibleColumns,
   shownColumns,
   toggleColumnVisibility,
@@ -36,20 +39,44 @@ export function ColumnTable({
   columns,
   rows,
   empty,
+  initialVisible,
 }: {
   moduleId: string;
   columns: ListColumn[];
   rows: ColumnRow[];
   empty?: ReactNode;
+  /** Server-loaded desk_column_prefs for this user / module. */
+  initialVisible?: string[];
 }) {
-  const [visible, setVisible] = useState(() => defaultVisibleIds(columns));
+  const [visible, setVisible] = useState(() =>
+    initialVisible
+      ? mergeVisibleColumns(columns, initialVisible)
+      : defaultVisibleIds(columns),
+  );
   const colKey = columns.map((column) => column.id).join(",");
+  const initialKey = initialVisible?.join(",") ?? "";
 
   useEffect(() => {
+    if (initialVisible) {
+      const merged = mergeVisibleColumns(columns, initialVisible);
+      setVisible(merged);
+      saveVisibleColumns(moduleId, merged);
+      return;
+    }
     setVisible(loadVisibleColumns(moduleId, columns));
+    let cancelled = false;
+    void fetchListColumnPrefs(moduleId).then((stored) => {
+      if (cancelled || !stored) return;
+      const merged = mergeVisibleColumns(columns, stored);
+      setVisible(merged);
+      saveVisibleColumns(moduleId, merged);
+    });
+    return () => {
+      cancelled = true;
+    };
     // column defs are stable per module; colKey tracks id list only
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleId, colKey]);
+  }, [moduleId, colKey, initialKey]);
 
   const shown = useMemo(() => shownColumns(columns, visible), [columns, visible]);
   const visibleSet = useMemo(() => new Set(visible), [visible]);
@@ -57,6 +84,7 @@ export function ColumnTable({
   function persist(next: string[]) {
     setVisible(next);
     saveVisibleColumns(moduleId, next);
+    void saveListColumnPrefs(moduleId, next);
   }
 
   function toggle(id: string) {
@@ -64,7 +92,7 @@ export function ColumnTable({
   }
 
   function reset() {
-    persist(defaultVisibleIds(columns));
+    persist(allColumnIds(columns));
   }
 
   function cellHidden(id: string) {

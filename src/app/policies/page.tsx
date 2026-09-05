@@ -4,7 +4,8 @@ import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { listPolicies, type PolicyListFilter } from "@/lib/db/queries";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { POLICIES_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
@@ -107,18 +108,9 @@ export default async function PoliciesPage({
       ) : null}
       <section className="ff-card overflow-hidden">
         <ModuleListActions module="policies" recordIds={rows.map(({ policy }) => policy.id)}>
-        <ColumnTable
+        <DeskColumnTable
           moduleId="policies"
-          columns={[
-            { id: "pick", label: "", locked: true },
-            { id: "policy", label: "Policy", locked: true },
-            { id: "status", label: "Status" },
-            { id: "party", label: "Party" },
-            { id: "carrier", label: "Carrier" },
-            { id: "premium", label: "Premium" },
-            { id: "expires", label: "Expires" },
-            { id: "esign", label: "E-sign", locked: true },
-          ]}
+          columns={POLICIES_LIST_COLUMNS}
           empty="No policies match. Bind a shopping deal when a market is actually written."
           rows={rows.map(({ policy, contact, account, carrier }) => ({
             key: policy.id,

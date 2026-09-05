@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
-import { ColumnTable } from "@/components/lists/column-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { LEADS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
@@ -124,7 +124,7 @@ export default async function LeadsPage({
 
         <section className="ff-card overflow-hidden">
           <ModuleListActions module="leads" recordIds={rows.map((lead) => lead.id)}>
-            <ColumnTable
+            <DeskColumnTable
               moduleId="leads"
               columns={LEADS_LIST_COLUMNS}
               empty={

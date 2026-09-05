@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { Col } from "@/components/column-picker";
-import { SheetTbody } from "@/components/sheet/sheet-table";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { listOpenMergeCandidates } from "@/lib/db/queries";
@@ -10,6 +9,7 @@ import { db } from "@/lib/db";
 import { contacts, leads } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { MERGE_LIST_COLUMNS } from "@/lib/list-columns";
 import { scanForDuplicates } from "@/app/actions/merge";
 import { cn } from "@/lib/utils";
 
@@ -59,65 +59,56 @@ export default async function MergeQueuePage() {
       </p>
 
       <section className="ff-card overflow-hidden">
-        {candidates.length === 0 ? (
-          <div className="px-5 py-10 text-base text-muted-foreground">
-            <p className="font-medium text-navy">No open matches.</p>
-            <p className="mt-1">
-              Seed includes Rosa Keene as an obvious email pair. If you already merged her, rescan
-              after adding another duplicate.
-            </p>
-          </div>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <Col table="merge" col="pair" as="th">Pair</Col>
-                <Col table="merge" col="type" as="th">Type</Col>
-                <Col table="merge" col="reason" as="th">Why they match</Col>
-                <Col table="merge" col="action" as="th">Review</Col>
-              </tr>
-            </thead>
-            <SheetTbody>
-              {candidates.map((row) => {
-                const names = row.entityType === "lead" ? leadNames : contactNames;
-                const left = names.get(row.leftId) ?? "Record";
-                const right = names.get(row.rightId) ?? "Record";
-                const reasons = (row.matchReasons ?? []).map(
-                  (r) => MATCH_REASON_LABELS[r as MatchReason] ?? r,
-                );
-                return (
-                  <tr key={row.id}>
-                    <Col table="merge" col="pair" className="font-medium" sortValue={`${left} ${right}`}>
-                      {left}
-                      <span className="mx-1.5 text-muted-foreground">·</span>
-                      {right}
-                    </Col>
-                    <Col table="merge" col="type" className="capitalize">
-                      {row.entityType}
-                    </Col>
-                    <Col table="merge" col="reason" sortValue={reasons.join(", ")}>
-                      <div className="flex flex-wrap gap-1">
-                        {reasons.map((reason) => (
-                          <Badge key={reason} variant="secondary">
-                            {reason}
-                          </Badge>
-                        ))}
-                      </div>
-                    </Col>
-                    <Col table="merge" col="action" className="text-right">
-                      <Link
-                        href={`/merge/${row.id}`}
-                        className={cn(buttonVariants({ size: "sm" }))}
-                      >
-                        Review
-                      </Link>
-                    </Col>
-                  </tr>
-                );
-              })}
-            </SheetTbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="merge"
+          columns={MERGE_LIST_COLUMNS}
+          empty={
+            <div>
+              <p className="font-medium text-navy">No open matches.</p>
+              <p className="mt-1">
+                Seed includes Rosa Keene as an obvious email pair. If you already merged her, rescan
+                after adding another duplicate.
+              </p>
+            </div>
+          }
+          rows={candidates.map((row) => {
+            const names = row.entityType === "lead" ? leadNames : contactNames;
+            const left = names.get(row.leftId) ?? "Record";
+            const right = names.get(row.rightId) ?? "Record";
+            const reasons = (row.matchReasons ?? []).map(
+              (r) => MATCH_REASON_LABELS[r as MatchReason] ?? r,
+            );
+            return {
+              key: row.id,
+              cells: {
+                pair: (
+                  <span className="font-medium">
+                    {left}
+                    <span className="mx-1.5 text-muted-foreground">·</span>
+                    {right}
+                  </span>
+                ),
+                type: <span className="capitalize">{row.entityType}</span>,
+                reason: (
+                  <div className="flex flex-wrap gap-1">
+                    {reasons.map((reason) => (
+                      <Badge key={reason} variant="secondary">
+                        {reason}
+                      </Badge>
+                    ))}
+                  </div>
+                ),
+                action: (
+                  <div className="text-right">
+                    <Link href={`/merge/${row.id}`} className={cn(buttonVariants({ size: "sm" }))}>
+                      Review
+                    </Link>
+                  </div>
+                ),
+              },
+            };
+          })}
+        />
       </section>
     </AppShell>
   );

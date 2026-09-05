@@ -6,27 +6,29 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
+**`cursor/live-ff-tip-sep5d`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-crm-zoho-tip-sep5c`**, then folds finished live-desk fixes:
 
-1. **`cursor/ff-zoho-owner-fix-6b9e`** — Zoho import always writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls so Maya’s lists are not empty.
-2. **`cursor/ff-sidebar-accordion-31b5`** (agent `bc-38f9fe06`) — Zoho-like one-open left-nav accordion. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands.
+1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`). Nav DnD parent is **not** on this tip.
+2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
 
-AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip). Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
+Skipped for the next tip: AMS waves 10–16, nav DnD, selection actions, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
+
+Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5d && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
 npm run db:assign-owner
-npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-imported book
+# skip db:seed — keep the live Zoho-imported book
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the sidebar or owner-fix slices.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` on a live book.
 
 ### Left nav accordion (this slice)
 
@@ -41,7 +43,7 @@ Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home 
 ### Air checkout (no wipe)
 
 ```bash
-git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5d && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -49,7 +51,11 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` only if this desk has not already applied the current journal (Manage columns uses `desk_column_prefs`, already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+
+### Manage columns (this slice)
+
+The sliders icon on the last table header is **Manage columns**. Same shared `ColumnTable` on Leads, Deals, Pipeline (table), Contacts, Businesses, Policies, Carriers, Tasks, Quotes, Claims, Glance, Reviews, Merge, Commissions, and Work queue. Toggles write `desk_column_prefs` per user / tenant / table and cache in `localStorage`. Locked columns (select, name, Deal title, e-sign) stay on. Pipeline **board** still uses Deal details for card fields; the table view uses Manage columns. Sidebar stays `#1d4e89`.
 
 ### Home custom layouts + corner resize (this slice)
 

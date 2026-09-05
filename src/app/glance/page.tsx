@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { ColumnPicker, Col } from "@/components/column-picker";
 import { GlanceTabs } from "@/components/glance/glance-tabs";
-import { SheetTbody } from "@/components/sheet/sheet-table";
-import { defaultColumns } from "@/lib/desk/columns";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { loadGlance } from "@/lib/glance/load";
 import { GLANCE_TAB_HINT, GLANCE_TAB_LABEL } from "@/lib/glance/tabs";
+import { GLANCE_LIST_COLUMNS } from "@/lib/list-columns";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +25,7 @@ export default async function GlancePage({
   const { session, tab, rows, counts } = await loadGlance(params.tab);
 
   return (
-    <AppShell
-      title="Glance"
-      columns={<ColumnPicker tableKey="glance" initial={defaultColumns("glance")} />}
-    >
+    <AppShell title="Glance">
       <p className="mb-3 text-sm text-muted-foreground">
         One lifecycle board. Tabs filter records that already exist — Deals, tasks, claims, and
         Policies. {session.isAdmin ? "Admin sees the whole book." : "You see your book only."} Ana
@@ -51,62 +47,33 @@ export default async function GlancePage({
             {GLANCE_TAB_LABEL[tab]} · {rows.length}
           </h2>
         </div>
-        {rows.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">{EMPTY[tab]}</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <Col table="glance" col="record" as="th">
-                  Record
-                </Col>
-                <Col table="glance" col="kind" as="th">
-                  Kind
-                </Col>
-                <Col table="glance" col="status" as="th">
-                  Status
-                </Col>
-                <Col table="glance" col="party" as="th">
-                  Party
-                </Col>
-                <Col table="glance" col="owner" as="th">
-                  Assigned
-                </Col>
-                <Col table="glance" col="when" as="th">
-                  Date
-                </Col>
-                <Col table="glance" col="detail" as="th">
-                  Detail
-                </Col>
-              </tr>
-            </thead>
-            <SheetTbody>
-              {rows.map((row) => (
-                <tr key={`${row.tab}-${row.id}`}>
-                  <Col table="glance" col="record">
-                    <Link href={row.href} className="font-medium text-primary hover:underline">
-                      {row.title}
-                    </Link>
-                  </Col>
-                  <Col table="glance" col="kind" className="capitalize">
-                    {row.kind}
-                  </Col>
-                  <Col table="glance" col="status" className="capitalize">
-                    {row.status}
-                  </Col>
-                  <Col table="glance" col="party">{row.party}</Col>
-                  <Col table="glance" col="owner">{row.ownerName ?? "—"}</Col>
-                  <Col table="glance" col="when">{formatDay(row.when)}</Col>
-                  <Col table="glance" col="detail" className="text-xs text-muted-foreground">
-                    {row.premium != null && row.tab === "renewals"
-                      ? `${formatMoney(row.premium)} · ${row.detail}`
-                      : row.detail || "—"}
-                  </Col>
-                </tr>
-              ))}
-            </SheetTbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="glance"
+          columns={GLANCE_LIST_COLUMNS}
+          empty={EMPTY[tab]}
+          rows={rows.map((row) => ({
+            key: `${row.tab}-${row.id}`,
+            cells: {
+              record: (
+                <Link href={row.href} className="font-medium text-primary hover:underline">
+                  {row.title}
+                </Link>
+              ),
+              kind: <span className="capitalize">{row.kind}</span>,
+              status: <span className="capitalize">{row.status}</span>,
+              party: row.party,
+              owner: row.ownerName ?? "—",
+              when: formatDay(row.when),
+              detail: (
+                <span className="text-xs text-muted-foreground">
+                  {row.premium != null && row.tab === "renewals"
+                    ? `${formatMoney(row.premium)} · ${row.detail}`
+                    : row.detail || "—"}
+                </span>
+              ),
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );
