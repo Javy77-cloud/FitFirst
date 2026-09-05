@@ -12,6 +12,7 @@ import { isUuid } from "@/lib/ids";
 import { isSuspenseDocKey, pendingSuspenseKeys } from "./suspense";
 import { rollupCertificateHolders } from "./certificate-holders";
 import { filterSuspenseBoard, sortSuspenseBoard, type SuspenseBoardRow } from "./suspense-board";
+import { ageSuspenseRow, filterSuspenseByAge } from "./suspense-aging";
 import { DESK_AS_OF } from "@/lib/home/as-of";
 import { db } from "@/lib/db";
 import {
@@ -20,10 +21,13 @@ import {
   carrierDownloadConnections,
   carriers,
   certificateRequests,
+  claims,
   contacts,
   documents,
   issuedCertificates,
   policies,
+  claimDiary,
+  endorsementDrafts,
   policyAdditionalInterests,
   policyNotices,
   policyServiceRequests,
@@ -31,7 +35,13 @@ import {
   reviewTasks,
   users,
 } from "@/lib/db/schema";
-import { bookHealthCounts, missingDocRows, producerBookRows, type OwnedBookPolicy } from "./book-health";
+import {
+  bookHealthCounts,
+  filterOwnedBook,
+  missingDocRows,
+  producerBookRows,
+  type OwnedBookPolicy,
+} from "./book-health";
 import { buildServicingChecklist, type ServicingFile, type ServicingTask } from "./checklist";
 import { packetTaskTitle, packetTasksByKey, type PacketTask } from "./packet-tasks";
 
@@ -219,7 +229,7 @@ export async function loadPolicyServicing(policyId: string) {
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
   if (!policy) return null;
   await ensureServicingSuspense(policyId);
-  const [files, requests, nextTask, interests, packetTaskRows, terms, notices] = await Promise.all([
+  const [files, requests, nextTask, interests, packetTaskRows, terms, notices, drafts] = await Promise.all([
     db
       .select({ docType: documents.docType, slot: documents.slot })
       .from(documents)
@@ -251,6 +261,7 @@ export async function loadPolicyServicing(policyId: string) {
       .from(policyTerms)
       .where(and(eq(policyTerms.tenantId, tenant()), eq(policyTerms.policyId, policyId))),
     listPolicyNotices(policyId),
+    listEndorsementDrafts(policyId),
   ]);
   const packetTasks: PacketTask[] = packetTaskRows.map((row) => ({
     id: row.id,
@@ -264,6 +275,7 @@ export async function loadPolicyServicing(policyId: string) {
     interests,
     terms,
     notices: notices.map((row) => row.notice),
+    drafts: drafts.map((row) => row.draft),
     nextTask,
     packetTasks,
     packetByKey: packetTasksByKey(packetTasks),
@@ -275,7 +287,7 @@ export async function loadPolicyServicing(policyId: string) {
   };
 }
 
-export async function loadBookHealth() {
+export async function loadBookHealth(ownerId?: string) {
   const rows = await scopedPolicies();
   const policyIds = rows.map(({ policy }) => policy.id);
   const files = policyIds.length
@@ -305,8 +317,14 @@ export async function loadBookHealth() {
     ownerId: policy.ownerId,
     ownerName: ownerName || "Unassigned",
   }));
+  const selectedOwner =
+    ownerId && (ownerId === "unassigned" || book.some((row) => row.ownerId === ownerId))
+      ? ownerId
+      : null;
+  const scopedBook = filterOwnedBook(book, selectedOwner);
   const counts = bookHealthCounts(book);
-  const missing = missingDocRows(book, filesByPolicy);
+  const agencyMissing = missingDocRows(book, filesByPolicy);
+  const missing = selectedOwner ? missingDocRows(scopedBook, filesByPolicy) : agencyMissing;
   const rollup = producerBookRows(book, filesByPolicy);
   const openRequests = await db
     .select({ n: sql<number>`count(*)` })
@@ -327,13 +345,35 @@ export async function loadBookHealth() {
   return {
     counts,
     missing,
+    agencyMissingCount: agencyMissing.length,
     producers: rollup.producers,
     agency: rollup.agency,
     scope: session.isAdmin ? "agency" : "producer",
     viewerName: session.name || "Desk",
+    ownerId: selectedOwner,
+    ownerName:
+      selectedOwner === "unassigned"
+        ? "Unassigned"
+        : rollup.producers.find((row) => row.ownerId === selectedOwner)?.ownerName ?? null,
     openServiceRequests: Number(openRequests[0]?.n ?? 0),
     openCoiRequests: Number(openCoi[0]?.n ?? 0),
     openSuspense: (await loadSuspenseBoard()).rows.length,
+    openClaimDiary: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(claimDiary)
+          .where(and(eq(claimDiary.tenantId, tenant()), eq(claimDiary.status, "open")))
+      )[0]?.n ?? 0,
+    ),
+    openEndorsementDrafts: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(endorsementDrafts)
+          .where(and(eq(endorsementDrafts.tenantId, tenant()), eq(endorsementDrafts.status, "drafted")))
+      )[0]?.n ?? 0,
+    ),
     openNotices: Number(
       (
         await db
@@ -488,7 +528,7 @@ export async function getPolicyNotice(id: string) {
   return row ?? null;
 }
 
-export async function loadSuspenseBoard(docKey?: string) {
+export async function loadSuspenseBoard(docKey?: string, age?: string) {
   const taskRows = await db
     .select({
       task: reviewTasks,
@@ -524,12 +564,90 @@ export async function loadSuspenseBoard(docKey?: string) {
       title: task.title,
       dueDate: task.dueDate,
       status: task.status,
+      openedAt: task.createdAt,
     });
   }
+  const aged = sortSuspenseBoard(filterSuspenseBoard(rows, docKey)).map((row) =>
+    ageSuspenseRow(row, DESK_AS_OF),
+  );
   return {
     docKey: docKey && isSuspenseDocKey(docKey) ? docKey : null,
-    rows: sortSuspenseBoard(filterSuspenseBoard(rows, docKey)),
+    age: age && age.length ? age : null,
+    rows: filterSuspenseByAge(aged, age),
   };
+}
+
+export async function listClaimDiary(claimId?: string, status?: string) {
+  const clauses = [eq(claimDiary.tenantId, tenant())];
+  if (claimId) {
+    if (!isUuid(claimId)) return [];
+    clauses.push(eq(claimDiary.claimId, claimId));
+  }
+  if (status === "open" || status === "completed") {
+    clauses.push(eq(claimDiary.status, status));
+  }
+  return db
+    .select({
+      entry: claimDiary,
+      claim: claims,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(claimDiary)
+    .innerJoin(claims, eq(claimDiary.claimId, claims.id))
+    .leftJoin(policies, eq(claimDiary.policyId, policies.id))
+    .leftJoin(contacts, eq(claims.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(asc(claimDiary.dueAt), desc(claimDiary.createdAt));
+}
+
+export async function getClaimDiaryEntry(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      entry: claimDiary,
+      claim: claims,
+    })
+    .from(claimDiary)
+    .innerJoin(claims, eq(claimDiary.claimId, claims.id))
+    .where(and(eq(claimDiary.tenantId, tenant()), eq(claimDiary.id, id)));
+  return row ?? null;
+}
+
+export async function listEndorsementDrafts(policyId?: string) {
+  const clauses = [eq(endorsementDrafts.tenantId, tenant())];
+  if (policyId) {
+    if (!isUuid(policyId)) return [];
+    clauses.push(eq(endorsementDrafts.policyId, policyId));
+  }
+  return db
+    .select({
+      draft: endorsementDrafts,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(endorsementDrafts)
+    .innerJoin(policies, eq(endorsementDrafts.policyId, policies.id))
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(desc(endorsementDrafts.createdAt));
+}
+
+export async function getEndorsementDraft(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      draft: endorsementDrafts,
+      policy: policies,
+    })
+    .from(endorsementDrafts)
+    .innerJoin(policies, eq(endorsementDrafts.policyId, policies.id))
+    .where(and(eq(endorsementDrafts.tenantId, tenant()), eq(endorsementDrafts.id, id)));
+  return row ?? null;
 }
 
 export async function listCertificateHolders() {

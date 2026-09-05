@@ -16,6 +16,7 @@ export const DESK_NAV_ITEMS = [
   { href: "/certificates", label: "Certificates" },
   { href: "/suspense", label: "Suspense" },
   { href: "/notices", label: "Notices" },
+  { href: "/endorsements", label: "Endorsements" },
   { href: "/documents", label: "Documents" },
   { href: "/quotes", label: "Quotes" },
   { href: "/merge", label: "Merge" },

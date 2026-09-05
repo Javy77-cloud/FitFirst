@@ -10,6 +10,7 @@ export type SuspenseBoardRow = {
   title: string;
   dueDate: Date | null;
   status: string;
+  openedAt?: Date | null;
 };
 
 export function filterSuspenseBoard(

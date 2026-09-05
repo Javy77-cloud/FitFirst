@@ -80,6 +80,15 @@ export function missingDocRows(
   return rows;
 }
 
+export function filterOwnedBook(
+  policies: OwnedBookPolicy[],
+  ownerId?: string | null,
+): OwnedBookPolicy[] {
+  if (!ownerId) return policies;
+  if (ownerId === "unassigned") return policies.filter((policy) => !policy.ownerId);
+  return policies.filter((policy) => policy.ownerId === ownerId);
+}
+
 export function producerBookRows(
   policies: OwnedBookPolicy[],
   filesByPolicy: Map<string, ServicingFile[]>,

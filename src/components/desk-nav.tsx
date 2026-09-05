@@ -43,6 +43,7 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Certificates: FileStack,
   Suspense: Timer,
   Notices: FileWarning,
+  Endorsements: FileStack,
   Documents: FileStack,
   Quotes: ClipboardList,
   Merge: Users,

@@ -90,6 +90,8 @@ export const CLAIM_ACTIVITY_TYPES = [
   "status_changed",
   "fields_updated",
   "producer_notified",
+  "diary_added",
+  "diary_completed",
 ] as const;
 export type ClaimActivityType = (typeof CLAIM_ACTIVITY_TYPES)[number];
 
@@ -482,6 +484,125 @@ export function noticeNextStep(status: string): string {
 
 export const NOTICE_DIARY_DISCLAIMER =
   "Notice diary only. Mailing a notice does not file a cancellation, non-renewal, or reinstatement on the Policy.";
+
+export const CLAIM_DIARY_KINDS = [
+  "follow_up",
+  "insured_call",
+  "carrier_status",
+  "docs_requested",
+  "diary_note",
+] as const;
+export type ClaimDiaryKind = (typeof CLAIM_DIARY_KINDS)[number];
+
+export const CLAIM_DIARY_KIND_LABELS: Record<ClaimDiaryKind, string> = {
+  follow_up: "Follow-up",
+  insured_call: "Call insured",
+  carrier_status: "Carrier status check",
+  docs_requested: "Docs requested",
+  diary_note: "Diary note",
+};
+
+export const CLAIM_DIARY_STATUSES = ["open", "completed"] as const;
+export type ClaimDiaryStatus = (typeof CLAIM_DIARY_STATUSES)[number];
+
+export const CLAIM_DIARY_STATUS_LABELS: Record<ClaimDiaryStatus, string> = {
+  open: "Open",
+  completed: "Completed",
+};
+
+export function isClaimDiaryKind(value: string): value is ClaimDiaryKind {
+  return (CLAIM_DIARY_KINDS as readonly string[]).includes(value);
+}
+
+export function isClaimDiaryStatus(value: string): value is ClaimDiaryStatus {
+  return (CLAIM_DIARY_STATUSES as readonly string[]).includes(value);
+}
+
+export function claimDiaryKindLabel(kind: string): string {
+  return isClaimDiaryKind(kind) ? CLAIM_DIARY_KIND_LABELS[kind] : kind.replaceAll("_", " ");
+}
+
+export function claimDiaryStatusLabel(status: string): string {
+  return isClaimDiaryStatus(status)
+    ? CLAIM_DIARY_STATUS_LABELS[status]
+    : status.replaceAll("_", " ");
+}
+
+export const CLAIM_DIARY_DISCLAIMER =
+  "Claim diary only. Completing a follow-up does not file FNOL, change claim status, or talk to a carrier API.";
+
+export const ENDORSEMENT_FORM_CODES = [
+  "mortgagee",
+  "coverage_change",
+  "additional_interest",
+  "other",
+] as const;
+export type EndorsementFormCode = (typeof ENDORSEMENT_FORM_CODES)[number];
+
+export const ENDORSEMENT_FORM_LABELS: Record<EndorsementFormCode, string> = {
+  mortgagee: "Mortgagee / additional interest wording",
+  coverage_change: "Coverage change wording",
+  additional_interest: "Additional insured wording",
+  other: "Other endorsement wording",
+};
+
+export const ENDORSEMENT_DRAFT_STATUSES = ["drafted", "ready", "withdrawn"] as const;
+export type EndorsementDraftStatus = (typeof ENDORSEMENT_DRAFT_STATUSES)[number];
+
+export const ENDORSEMENT_DRAFT_STATUS_LABELS: Record<EndorsementDraftStatus, string> = {
+  drafted: "Drafted",
+  ready: "Ready to file",
+  withdrawn: "Withdrawn",
+};
+
+export function isEndorsementFormCode(value: string): value is EndorsementFormCode {
+  return (ENDORSEMENT_FORM_CODES as readonly string[]).includes(value);
+}
+
+export function isEndorsementDraftStatus(value: string): value is EndorsementDraftStatus {
+  return (ENDORSEMENT_DRAFT_STATUSES as readonly string[]).includes(value);
+}
+
+export function endorsementFormLabel(code: string): string {
+  return isEndorsementFormCode(code) ? ENDORSEMENT_FORM_LABELS[code] : code.replaceAll("_", " ");
+}
+
+export function endorsementDraftStatusLabel(status: string): string {
+  return isEndorsementDraftStatus(status)
+    ? ENDORSEMENT_DRAFT_STATUS_LABELS[status]
+    : status.replaceAll("_", " ");
+}
+
+export const ENDORSEMENT_DRAFT_NEXT_STEPS: Record<EndorsementDraftStatus, string> = {
+  drafted: "Desk wording only. Mark ready when the packet is complete. Does not file.",
+  ready: "Wording is ready. File still happens on the service request — this stub does not change the Policy.",
+  withdrawn: "Withdrawn. Policy unchanged.",
+};
+
+export function endorsementDraftNextStep(status: string): string {
+  return isEndorsementDraftStatus(status) ? ENDORSEMENT_DRAFT_NEXT_STEPS[status] : "";
+}
+
+export const ENDORSEMENT_DRAFT_DISCLAIMER =
+  "Endorsement draft stub only. Marking ready does not file the change and does not update the Policy.";
+
+export const SUSPENSE_AGE_BUCKETS = ["current", "watch", "aging", "stale"] as const;
+export type SuspenseAgeBucket = (typeof SUSPENSE_AGE_BUCKETS)[number];
+
+export const SUSPENSE_AGE_LABELS: Record<SuspenseAgeBucket, string> = {
+  current: "Current (0–7 days open)",
+  watch: "Watch (8–14 days open)",
+  aging: "Aging (15–29 days open)",
+  stale: "Stale (30+ days open)",
+};
+
+export function isSuspenseAgeBucket(value: string): value is SuspenseAgeBucket {
+  return (SUSPENSE_AGE_BUCKETS as readonly string[]).includes(value);
+}
+
+export function suspenseAgeLabel(bucket: string): string {
+  return isSuspenseAgeBucket(bucket) ? SUSPENSE_AGE_LABELS[bucket] : bucket.replaceAll("_", " ");
+}
 
 export function isInterestKind(value: string): value is InterestKind {
   return (INTEREST_KINDS as readonly string[]).includes(value);

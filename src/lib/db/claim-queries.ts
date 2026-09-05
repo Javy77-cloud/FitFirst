@@ -6,6 +6,7 @@ import {
   accounts,
   claimActivity,
   claimAttachments,
+  claimDiary,
   claimNotes,
   claims,
   contacts,
@@ -67,7 +68,7 @@ export async function getClaimWorkspace(id: string) {
     .where(and(eq(claims.tenantId, tenant()), eq(claims.id, id)));
   if (!row) return null;
 
-  const [notes, files, activity] = await Promise.all([
+  const [notes, files, activity, diary] = await Promise.all([
     db
       .select()
       .from(claimNotes)
@@ -83,6 +84,11 @@ export async function getClaimWorkspace(id: string) {
       .from(claimActivity)
       .where(and(eq(claimActivity.tenantId, tenant()), eq(claimActivity.claimId, id)))
       .orderBy(desc(claimActivity.createdAt)),
+    db
+      .select()
+      .from(claimDiary)
+      .where(and(eq(claimDiary.tenantId, tenant()), eq(claimDiary.claimId, id)))
+      .orderBy(desc(claimDiary.createdAt)),
   ]);
 
   return {
@@ -94,6 +100,7 @@ export async function getClaimWorkspace(id: string) {
     notes,
     files,
     activity,
+    diary,
   };
 }
 

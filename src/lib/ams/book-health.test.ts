@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookHealthCounts, missingDocRows, producerBookRows } from "./book-health";
+import { bookHealthCounts, filterOwnedBook, missingDocRows, producerBookRows } from "./book-health";
 
 describe("book health", () => {
   it("counts active vs lapsed and ignores shopping quotes", () => {
@@ -103,5 +103,34 @@ describe("book health", () => {
     expect(producers[0].missingCount).toBe(1);
     expect(producers[1].counts.active).toBe(1);
     expect(producers[1].missingCount).toBe(1);
+  });
+
+  it("filters the book to one producer without dropping agency rollup helpers", () => {
+    const book = [
+      {
+        id: "elena",
+        policyNumber: "HO3-ELENA-2026",
+        status: "active",
+        lineOfBusiness: "HO3",
+        expirationDate: "2027-09-01",
+        partyName: "Ruiz, Elena",
+        ownerId: "maya",
+        ownerName: "Maya Chen",
+      },
+      {
+        id: "hale",
+        policyNumber: "HP-FL-88421",
+        status: "active",
+        lineOfBusiness: "HO3",
+        expirationDate: "2026-10-01",
+        partyName: "Hale, Jordan",
+        ownerId: "javy",
+        ownerName: "Javy Rivera",
+      },
+    ];
+    expect(filterOwnedBook(book, "maya").map((row) => row.policyNumber)).toEqual(["HO3-ELENA-2026"]);
+    expect(filterOwnedBook(book, "javy")).toHaveLength(1);
+    expect(filterOwnedBook(book).map((row) => row.id)).toEqual(["elena", "hale"]);
+    expect(filterOwnedBook(book, "unassigned")).toHaveLength(0);
   });
 });

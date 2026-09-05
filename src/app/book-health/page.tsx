@@ -5,15 +5,21 @@ import { loadBookHealth } from "@/lib/ams/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookHealthPage() {
-  const health = await loadBookHealth();
+export default async function BookHealthPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const owner = typeof params.owner === "string" ? params.owner : undefined;
+  const health = await loadBookHealth(owner);
 
   return (
     <AppShell title="Book health">
       <p className="mb-4 text-base text-muted-foreground">
         Agency book is every in-force Policy. Producer book is the same rows grouped by owner.
-        Missing docs are actionable servicing slots — dec, ID card, AOR. Quotes are not policies.
-        Ana Dib is not on this book.
+        Use a producer filter to see that book’s missing packets. Missing docs are actionable
+        servicing slots — dec, ID card, AOR. Quotes are not policies. Ana Dib is not on this book.
       </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -24,9 +30,27 @@ export default async function BookHealthPage() {
         <Stat label="Open suspense" value={health.openSuspense} href="/suspense" />
         <Stat label="Drafted notices" value={health.openNotices} href="/notices" />
       </div>
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <Stat label="Open claim diary" value={health.openClaimDiary} href="/claims/diary" />
+        <Stat label="Drafted endorsements" value={health.openEndorsementDrafts} href="/endorsements" />
+      </div>
 
       <p className="mb-4 text-sm">
-        Viewing {health.scope === "agency" ? "agency book" : `${health.viewerName}'s producer book`}.{" "}
+        Viewing{" "}
+        {health.ownerName
+          ? `${health.ownerName}'s producer book`
+          : health.scope === "agency"
+            ? "agency book"
+            : `${health.viewerName}'s producer book`}
+        .{" "}
+        {health.ownerId ? (
+          <>
+            <Link href="/book-health" className="text-primary hover:underline">
+              Clear producer filter
+            </Link>
+            {" · "}
+          </>
+        ) : null}
         <Link href="/renewals" className="text-primary hover:underline">
           Upcoming renewals
         </Link>
@@ -37,6 +61,14 @@ export default async function BookHealthPage() {
         {" · "}
         <Link href="/notices" className="text-primary hover:underline">
           Notice diary
+        </Link>
+        {" · "}
+        <Link href="/endorsements" className="text-primary hover:underline">
+          Endorsement drafts
+        </Link>
+        {" · "}
+        <Link href="/claims/diary" className="text-primary hover:underline">
+          Claim diary
         </Link>
         {" · "}
         <Link href="/settings/carrier-download" className="text-primary hover:underline">
@@ -61,20 +93,34 @@ export default async function BookHealthPage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="font-medium">Agency</td>
+              <tr className={!health.ownerId ? "bg-[var(--ff-check-bg)]" : undefined}>
+                <td className="font-medium">
+                  <Link href="/book-health" className="text-primary hover:underline">
+                    Agency
+                  </Link>
+                </td>
                 <td>{health.agency.active}</td>
                 <td>{health.agency.lapsed}</td>
-                <td>{health.missing.length}</td>
+                <td>{health.agencyMissingCount}</td>
               </tr>
-              {health.producers.map((row) => (
-                <tr key={row.ownerId ?? "unassigned"}>
-                  <td>{row.ownerName}</td>
-                  <td>{row.counts.active}</td>
-                  <td>{row.counts.lapsed}</td>
-                  <td>{row.missingCount}</td>
-                </tr>
-              ))}
+              {health.producers.map((row) => {
+                const selected = (row.ownerId ?? "unassigned") === health.ownerId;
+                return (
+                  <tr key={row.ownerId ?? "unassigned"} className={selected ? "bg-[var(--ff-check-bg)]" : undefined}>
+                    <td>
+                      <Link
+                        href={`/book-health?owner=${row.ownerId ?? "unassigned"}`}
+                        className="text-primary hover:underline"
+                      >
+                        {row.ownerName}
+                      </Link>
+                    </td>
+                    <td>{row.counts.active}</td>
+                    <td>{row.counts.lapsed}</td>
+                    <td>{row.missingCount}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -83,10 +129,13 @@ export default async function BookHealthPage() {
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Missing servicing docs
+          {health.ownerName ? ` · ${health.ownerName}` : ""}
         </div>
         {health.missing.length === 0 ? (
           <p className="px-4 py-6 text-base text-muted-foreground">
-            Every in-force Policy has a dec, ID card, and AOR packet on file.
+            {health.ownerName
+              ? `Every in-force Policy on ${health.ownerName}'s book has a dec, ID card, and AOR packet on file.`
+              : "Every in-force Policy has a dec, ID card, and AOR packet on file."}
           </p>
         ) : (
           <table className="ff-table">

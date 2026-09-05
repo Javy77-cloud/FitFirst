@@ -14,6 +14,7 @@ import {
   carrierDownloadConnections,
   certificateRequests,
   issuedCertificates,
+  endorsementDrafts,
   policyAdditionalInterests,
   policyNotices,
   policyServiceRequests,
@@ -39,6 +40,12 @@ import {
 import { additionalInsuredFromInterest } from "@/lib/ams/coi-requests";
 import { parseCertificateFlags } from "@/lib/ams/certificate-holders";
 import { nextNoticeStatus, noticeKindLine, validateNoticeDraft } from "@/lib/ams/notices";
+import {
+  endorsementDraftLine,
+  nextEndorsementDraftStatus,
+  validateEndorsementDraft,
+  type EndorsementDraftAction,
+} from "@/lib/ams/endorsement-drafts";
 import { isWorkDesk } from "@/lib/domain-ams";
 import { packetTaskTitle } from "@/lib/ams/packet-tasks";
 import {
@@ -48,6 +55,7 @@ import {
 } from "@/lib/domain-ams";
 import {
   getCertificateRequest,
+  getEndorsementDraft,
   getPolicyNotice,
   getServiceRequest,
   loadPolicyServicing,
@@ -138,6 +146,8 @@ function refreshPolicy(policyId: string, extras: string[] = []) {
   revalidatePath("/renewals");
   revalidatePath("/suspense");
   revalidatePath("/notices");
+  revalidatePath("/endorsements");
+  revalidatePath("/claims/diary");
   revalidatePath("/certificates");
   revalidatePath("/certificates/holders");
   revalidatePath("/");
@@ -851,5 +861,77 @@ export async function advancePolicyNotice(formData: FormData) {
   });
   refreshPolicy(loaded.policy.id, ["/notices"]);
   bounce(returnTo.includes("/policies/") ? `/policies/${loaded.policy.id}` : "/notices", undefined, next);
+}
+
+export async function createEndorsementDraft(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  if (!isUuid(policyId)) bounce("/endorsements", "Policy is required.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(`/policies/${policyId}`, "Policy not found.");
+  const parsed = validateEndorsementDraft({
+    formCode: str(formData, "formCode"),
+    wording: str(formData, "wording"),
+    effectiveOn: parseIsoDate(str(formData, "effectiveOn")),
+    notes: str(formData, "notes"),
+  });
+  if (!parsed.ok) bounce(`/policies/${policyId}`, parsed.error);
+  const requestId = str(formData, "serviceRequestId");
+  await db.insert(endorsementDrafts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    policyId,
+    serviceRequestId: isUuid(requestId) ? requestId : null,
+    status: "drafted",
+    formCode: parsed.formCode,
+    wording: parsed.wording,
+    effectiveOn: parsed.effectiveOn,
+    notes: parsed.notes,
+  });
+  await writeServicingLog({
+    title: endorsementDraftLine(parsed.formCode, workspace.policy.policyNumber),
+    body: `${endorsementDraftLine(parsed.formCode, workspace.policy.policyNumber)}. Draft wording only. Does not file.`,
+    eventType: "endorsement_drafted",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/endorsements", "/service-requests"]);
+  bounce(`/policies/${policyId}`, undefined, "endorsement_drafted");
+}
+
+export async function advanceEndorsementDraft(formData: FormData) {
+  const draftId = str(formData, "draftId");
+  const action = (str(formData, "action") === "withdraw" ? "withdraw" : "ready") as EndorsementDraftAction;
+  const returnTo = str(formData, "returnTo") || "/endorsements";
+  const loaded = await getEndorsementDraft(draftId);
+  if (!loaded) bounce(returnTo, "Endorsement draft not found.");
+  const next = nextEndorsementDraftStatus(
+    loaded.draft.status as "drafted" | "ready" | "withdrawn",
+    action,
+  );
+  if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.draft.status} draft.`);
+  await db
+    .update(endorsementDrafts)
+    .set({ status: next, updatedAt: new Date() })
+    .where(eq(endorsementDrafts.id, loaded.draft.id));
+  await writeServicingLog({
+    title: `${endorsementDraftLine(loaded.draft.formCode, loaded.policy.policyNumber)} · ${next}`,
+    body:
+      next === "ready"
+        ? `Wording marked ready. ${loaded.policy.policyNumber} is unchanged. File still happens on the service request.`
+        : `Endorsement draft withdrawn. ${loaded.policy.policyNumber} unchanged.`,
+    eventType: next === "ready" ? "endorsement_draft_ready" : "endorsement_draft_withdrawn",
+    policyId: loaded.policy.id,
+    contactId: loaded.policy.contactId,
+    accountId: loaded.policy.accountId,
+    dealId: loaded.policy.dealId,
+  });
+  refreshPolicy(loaded.policy.id, ["/endorsements", "/service-requests"]);
+  bounce(
+    returnTo.includes("/policies/") ? `/policies/${loaded.policy.id}` : "/endorsements",
+    undefined,
+    next,
+  );
 }
 

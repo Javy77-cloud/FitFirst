@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Contact,
   FileStack,
+  FileWarning,
   Home,
   Inbox,
   Kanban,
@@ -14,6 +15,7 @@ import {
   Search,
   Settings,
   Shield,
+  Timer,
   Users,
 } from "lucide-react";
 
@@ -66,6 +68,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/renewals", label: "Renewals", icon: ClipboardList, match: "/renewals" },
       { href: "/certificates", label: "Certificates", icon: FileStack, match: "/certificates" },
       { href: "/service-requests", label: "Service", icon: ListChecks, match: "/service-requests" },
+      { href: "/suspense", label: "Suspense", icon: Timer, match: "/suspense" },
+      { href: "/notices", label: "Notices", icon: FileWarning, match: "/notices" },
+      { href: "/endorsements", label: "Endorsements", icon: FileStack, match: "/endorsements" },
       { href: "/documents", label: "Documents", icon: FileStack, match: "/documents" },
       { href: "/forms", label: "Forms", icon: FileStack, match: "/forms" },
       { href: "/merge", label: "Merge", icon: Users, match: "/merge" },

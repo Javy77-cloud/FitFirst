@@ -796,3 +796,23 @@ Click path:
 4. `/notices` — Hale drafted non-renew. Settings → IVANS / AL3 still **Not connected**.
 
 Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0052**.
+
+## AMS wave 7 — desk depth (`cursor/ams-wave7-depth-34d6`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. Wave 2–6 surfaces stay.
+
+Additive `0052_ams_wave7`:
+
+- `claim_diary` — follow-up / insured call / carrier status / docs requested / note. Open → completed. Completing does **not** change claim status or file FNOL. Board is `/claims/diary`. Elena wind inquiry has an open docs row.
+- `endorsement_drafts` — wording stub (`drafted` / `ready` / `withdrawn`) optionally tied to a service request. Ready / withdraw does **not** call `filePolicyChange`. Elena seed is a drafted mortgagee stub on the in-progress CSR endorsement.
+- Agency suspense board ages days-open vs the desk clock (`current` 0–7 / `watch` 8–14 / `aging` 15–29 / `stale` 30+). `/suspense?age=stale` is Hale ID.
+- `/book-health?owner=` filters missing packets by producer. Agency totals stay. Click the producer name.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open (watch). Term history prior + current. Loss-run CSV. CSR endorsement **in progress** plus drafted mortgagee wording. Do not file. Do not bind Ana.
+2. Policy **HP-FL-88421** — auto ID (stale) + AOR (aging) suspense. Drafted non-renew notice. Producer endorsement **requested**. Do not file or mail.
+3. `/claims` → Elena wind inquiry → open docs diary. `/claims/diary` lists it. Completing does not file FNOL.
+4. `/endorsements` — Elena drafted mortgagee stub. `/book-health?owner=` filters missing docs. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0053**.
