@@ -99,7 +99,7 @@ Function first. Same Policies. No redesign. IVANS stays **Not connected**.
 - **Agency suspense board** (`/suspense`) — rollup of open AOR / ID-card auto-tasks. Mark collected from the board or the Policy. Dec stays a manual collect.
 - **Cancel / non-renew notice diary** (`/notices`) — draft → mailed / withdrawn. **Does not file** and does not change Policy status. Hale has a drafted non-renew.
 
-## AMS wave 7 (this branch)
+## AMS wave 7 (kept)
 
 Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 2–6 surfaces stay.
 
@@ -107,6 +107,8 @@ Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 
 - **Endorsement draft stubs** (`/endorsements`) — wording draft → ready / withdrawn. **Does not file** and does not change the Policy. Elena’s in-progress CSR endorsement has a drafted mortgagee stub.
 - **Suspense aging** — days-open buckets on `/suspense` (current / watch / aging / stale) from the desk clock. Elena AOR is watch; Hale AOR is aging; Hale ID is stale.
 - **Producer book filters** — click a producer on `/book-health?owner=` to filter missing packets. Agency totals stay.
+
+Wave 6/7 SQL remapped to `0060_ams_wave6` and `0061_ams_wave7` on this tip.
 
 ## Localhost :43147 notes
 
