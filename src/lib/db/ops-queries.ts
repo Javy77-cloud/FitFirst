@@ -29,6 +29,7 @@ export async function listActivities(kind?: string) {
 }
 
 export async function getActivity(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(activities)
@@ -37,6 +38,7 @@ export async function getActivity(id: string) {
 }
 
 export async function listActivityLogs(activityId: string) {
+  if (!isUuid(activityId)) return [];
   return db
     .select()
     .from(activityLogs)
@@ -112,6 +114,7 @@ export async function listFolders() {
 }
 
 export async function getFolder(id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select()
     .from(documentFolders)
@@ -142,19 +145,20 @@ export async function listLibraryFolders(library: string) {
 }
 
 export async function listLibraryDocuments(library: string, folderId: string | null) {
+  const safeFolder = folderId && isUuid(folderId) ? folderId : null;
   const filters = [
     eq(documents.tenantId, tenant()),
     eq(documents.library, library),
-    folderId ? eq(documents.folderId, folderId) : isNull(documents.folderId),
-    folderId ? undefined : isNull(documents.dealId),
-    folderId ? undefined : isNull(documents.contactId),
-    folderId ? undefined : isNull(documents.policyId),
+    safeFolder ? eq(documents.folderId, safeFolder) : isNull(documents.folderId),
+    safeFolder ? undefined : isNull(documents.dealId),
+    safeFolder ? undefined : isNull(documents.contactId),
+    safeFolder ? undefined : isNull(documents.policyId),
   ];
   return db.select().from(documents).where(and(...filters)).orderBy(desc(documents.createdAt));
 }
 
 export async function listDocumentsInFolder(folderId: string | null) {
-  if (!folderId) {
+  if (!folderId || !isUuid(folderId)) {
     return db
       .select()
       .from(documents)

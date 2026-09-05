@@ -11,6 +11,15 @@ export { SEEDED_DESK_AGENTS };
 
 const tenant = () => DEFAULT_TENANT_ID;
 
+export function deskAgentsToInsert<T extends { id: string; slug: string }>(
+  existing: Array<{ id: string; slug: string }>,
+  seeds: readonly T[],
+): T[] {
+  const haveId = new Set(existing.map((row) => row.id));
+  const haveSlug = new Set(existing.map((row) => row.slug));
+  return seeds.filter((row) => !haveId.has(row.id) && !haveSlug.has(row.slug));
+}
+
 export async function listDeskAgents(): Promise<DeskAgent[]> {
   return db
     .select()
@@ -21,18 +30,20 @@ export async function listDeskAgents(): Promise<DeskAgent[]> {
 
 export async function ensureDeskAgents(): Promise<DeskAgent[]> {
   const existing = await listDeskAgents();
-  const have = new Set(existing.map((row) => row.slug));
-  const missing = SEEDED_DESK_AGENTS.filter((row) => !have.has(row.slug));
+  const missing = deskAgentsToInsert(existing, SEEDED_DESK_AGENTS);
   if (missing.length > 0) {
-    await db.insert(deskAgents).values(
-      missing.map((row) => ({
-        id: row.id,
-        tenantId: tenant(),
-        slug: row.slug,
-        displayName: row.displayName,
-        role: row.role,
-      })),
-    );
+    await db
+      .insert(deskAgents)
+      .values(
+        missing.map((row) => ({
+          id: row.id,
+          tenantId: tenant(),
+          slug: row.slug,
+          displayName: row.displayName,
+          role: row.role,
+        })),
+      )
+      .onConflictDoNothing();
   }
   return listDeskAgents();
 }

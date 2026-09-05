@@ -6,13 +6,13 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass tip for Air + mini. Fast-forward of AMS wave 9 (includes remapped wave 8) onto `cursor/feel-pass-consolidate-sep5-fed3`. Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
+**`cursor/error-sweep-sep5-31ef`** — Sep 5 desk error sweep on `cursor/feel-pass-consolidate-sep5b-6195` (AMS wave 8/9). Merged branch list is in `COORDINATION.md`.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/feel-pass-consolidate-sep5b-6195 && git pull
+git fetch && git checkout cursor/error-sweep-sep5-31ef && git pull
 npm install
 npm run db:migrate
 npm run db:seed
