@@ -10,10 +10,12 @@ export function QuoteSheetPanel({
   dealId,
   values,
   line = "home",
+  unlocked = false,
 }: {
   dealId: string;
   values: Record<string, QuoteSheetFieldValue> | null;
   line?: string;
+  unlocked?: boolean;
 }) {
   const sheet = values ?? {};
   const groups = groupHomeFields();
@@ -25,9 +27,9 @@ export function QuoteSheetPanel({
           <div>
             <h3 className="text-base font-semibold text-navy">Quote Sheet</h3>
             <p className="mt-1 text-base text-muted-foreground">
-              Master shopping worksheet. Yellow is missing — type it. Blue is CHECK — glance,
-              then Confirm. Super-Copy, Send to Fill, and Forms Fill all read this same{" "}
-              <code>quote_sheets</code> record — never the raw PDFs.
+              Master shopping worksheet. Yellow is missing. Blue is CHECK. Super-Copy, Send to
+              Fill, and Forms Fill all read this same <code>quote_sheets</code> record — never the
+              raw PDFs.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -51,17 +53,11 @@ export function QuoteSheetPanel({
             </Link>
           </div>
         </div>
-        <SheetHandoffButtons dealId={dealId} line={line} />
+        <SheetHandoffButtons dealId={dealId} line={line} unlocked={unlocked} />
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
-          <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 font-semibold text-fit-yellow">
-            Yellow = missing
-          </span>
-          <span className="rounded-sm bg-fit-check-bg px-1.5 py-0.5 font-semibold text-fit-check">
-            Blue = CHECK
-          </span>
-          <span className="rounded-sm bg-fit-green-bg px-1.5 py-0.5 font-semibold text-fit-green">
-            Confirmed
-          </span>
+          <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 text-fit-yellow">Missing</span>
+          <span className="rounded-sm bg-fit-check-bg px-1.5 py-0.5 text-fit-check">CHECK</span>
+          <span className="rounded-sm bg-fit-green-bg px-1.5 py-0.5 text-fit-green">Confirmed</span>
         </div>
       </section>
 
@@ -95,8 +91,8 @@ export function QuoteSheetPanel({
                   >
                     <td className="font-medium">{field.label}</td>
                     <td>{cell?.value || "—"}</td>
-                    <td className="text-caption font-semibold uppercase">
-                      {status === "check" ? "CHECK" : status}
+                    <td className="uppercase text-[11px]">
+                      {status}
                       {cell?.source && cell.source !== "blank" ? ` · ${cell.source}` : ""}
                     </td>
                   </tr>

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
-import { sheetCounts, sourceTag as sheetSourceTag } from "@/lib/quote-sheet/apply";
+import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { MarkMappingWrong } from "@/components/deal/mark-mapping-wrong";
@@ -64,8 +64,8 @@ export function QuoteSheetForm({
               {SHOP_LINE_LABELS[line]} Quote Sheet
             </h2>
             <p className="mt-1 text-helper text-muted-foreground">
-              Yellow = missing — type it. Blue = CHECK — glance the value, then Confirm.
-              People and DOB stay on the Contact
+              Yellow = missing. Blue = CHECK (use the value). People and DOB stay on the
+              Contact
               {contactName ? ` · ${contactName}` : ""}
               {contact?.dateOfBirth ? ` · DOB ${contact.dateOfBirth}` : ""}.
             </p>
@@ -170,10 +170,13 @@ export function QuoteSheetForm({
 }
 
 function sourceTag(cell: QuoteSheetFieldValue) {
-  return (
-    sheetSourceTag(cell) ??
-    (cell.source === "agent" ? "You typed" : cell.source === "seed" ? "Seed" : cell.sourceLabel ?? null)
-  );
+  if (cell.source === "javy") return "Javy-tested";
+  if (cell.sourceLabel) return cell.sourceLabel;
+  if (cell.source === "extracted") return "Uploaded dec";
+  if (cell.source === "public") return "Public records";
+  if (cell.source === "agent") return "You typed";
+  if (cell.source === "seed") return "Seed";
+  return null;
 }
 
 function SheetField({
@@ -209,18 +212,10 @@ function SheetField({
         <Label htmlFor={fieldKey} className="text-xs">
           {label}
           {cell.status === "check" ? (
-            <span className="ml-1 rounded-sm bg-fit-check-bg px-1 font-semibold text-fit-check">
-              CHECK
-            </span>
-          ) : cell.status === "missing" || cell.value.trim() === "" ? (
-            <span className="ml-1 rounded-sm bg-fit-yellow-bg px-1 font-semibold text-fit-yellow">
-              missing
-            </span>
+            <span className="ml-1 font-normal text-fit-check">CHECK</span>
           ) : cell.source === "javy" ? (
             <span className="ml-1 font-normal text-fit-green">Javy-tested</span>
-          ) : (
-            <span className="ml-1 font-normal text-fit-green">confirmed</span>
-          )}
+          ) : null}
         </Label>
         <div className="flex flex-wrap items-center justify-end gap-1">
           {cell.status === "check" && !readOnly ? (
@@ -288,11 +283,6 @@ function SheetField({
         />
       )}
       {tag ? <p className="mt-0.5 text-helper text-muted-foreground">{tag}</p> : null}
-      {tone === "check" ? (
-        <p className="mt-0.5 text-helper text-fit-check">Glance this value. Confirm or correct it.</p>
-      ) : tone === "missing" ? (
-        <p className="mt-0.5 text-helper text-fit-yellow">Blank — type it or fill from a source doc.</p>
-      ) : null}
     </div>
   );
 }

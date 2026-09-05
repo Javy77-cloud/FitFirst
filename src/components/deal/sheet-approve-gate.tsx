@@ -60,11 +60,10 @@ export function SheetApproveGate({
     <form onSubmit={onSubmit} className="rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3">
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
-      <p className="text-sm font-semibold text-navy">Two-step approval required</p>
+      <p className="text-sm font-semibold text-navy">Visual approval required</p>
       <p className="mt-1 text-helper text-muted-foreground">
-        Glance the {formLabel} master sheet. Yellow is missing. Blue is CHECK. Tick the review,
-        then confirm “are you sure?” Send to Fill and shop stay locked until both steps. Quotes
-        are not policies.
+        Glance the {formLabel} master sheet. Yellow is missing. Blue is CHECK. Confirm, then
+        answer “are you sure?” Send to Fill stays locked until both steps.
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input

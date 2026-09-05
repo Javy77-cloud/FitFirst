@@ -2,9 +2,9 @@ import { cn } from "@/lib/utils";
 import type { FitBand } from "@/lib/domain";
 
 const copy: Record<FitBand, string> = {
-  green: "Shop",
-  yellow: "Caution",
-  red: "Don't write",
+  green: "In appetite",
+  yellow: "Stretch / override",
+  red: "Skip",
 };
 
 export function FitBadge({ band, className }: { band: FitBand; className?: string }) {

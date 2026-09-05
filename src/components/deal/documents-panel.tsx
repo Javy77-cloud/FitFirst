@@ -35,9 +35,8 @@ export function DocumentsPanel({
         <section className="ff-card p-4">
           <h3 className="mb-1 text-base font-semibold text-navy">Source documents</h3>
           <p className="mb-3 text-base text-muted-foreground">
-            Dec pages, wind mit, 4-point, photos, and inspections stay on the deal. They feed
-            the Quote Sheet (yellow missing / blue CHECK). Scanned PDFs with no text layer fall
-            back to in-desk OCR. They are not issued policies.
+            Dec pages, wind mit, 4-point, and inspections stay on the deal. They feed the Quote
+            Sheet. They are not issued policies.
           </p>
 
           <form action={uploadDocument} className="mb-3 space-y-2 rounded-md border border-border p-3">
