@@ -12,6 +12,7 @@ import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
+import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { routeLeadNow } from "@/app/actions/lead-routing";
@@ -84,7 +85,7 @@ export default async function LeadDetailPage({
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <span className="uppercase text-muted-foreground">{lead.status}</span>
         {deal ? <StagePill stage={deal.pipelineStage} /> : null}
-        <span className="text-muted-foreground">{lead.source ?? "manual"}</span>
+        <span className="text-muted-foreground">{sourceLabel(lead.source ?? "manual")}</span>
         <span className="text-muted-foreground">
           {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
         </span>

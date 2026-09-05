@@ -196,6 +196,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
       lineOfBusiness: dealLine,
       state: copy.dealState,
       primaryNamedInsured: copy.primaryNamedInsured,
+      source: copy.source,
     })
     .returning();
 
@@ -272,7 +273,7 @@ export async function createDeal(formData: FormData) {
     city: str(formData, "city") || null,
     state: str(formData, "state") || null,
     zip: str(formData, "zip") || null,
-    source: "manual",
+    source: str(formData, "source") || "manual",
   });
   if (lead.convertedDealId) {
     revalidatePath("/deals");
@@ -301,6 +302,7 @@ export async function createDeal(formData: FormData) {
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
+      source: lead.source ?? (str(formData, "source") || "manual"),
       policySubType,
       state: str(formData, "state") || "FL",
       ownerId: actor.id,
@@ -378,6 +380,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       pipelineStageSlug: "gather",
       shopLines: shopLinesFromLine(line),
       lineOfBusiness: line,
+      source: "dec_drop",
       state: str(formData, "state") || "FL",
       primaryNamedInsured: `${firstName} ${lastName}`.trim(),
     })
@@ -655,6 +658,7 @@ export async function createContact(formData: FormData) {
       lifeNotes: str(formData, "lifeNotes") || null,
       healthNotes: str(formData, "healthNotes") || null,
       notes: str(formData, "notes") || null,
+      source: str(formData, "source") || "manual",
       ...writeSsn(str(formData, "ssn") || null),
     })
     .returning();
@@ -786,6 +790,7 @@ export async function bindDeal(formData: FormData) {
           phone: filled.phone,
           email: filled.email,
           dateOfBirth: filled.dateOfBirth,
+          source: existing.source || deal.source || lead?.source || null,
           updatedAt: new Date(),
         })
         .where(eq(contacts.id, existing.id));
@@ -795,6 +800,7 @@ export async function bindDeal(formData: FormData) {
         .values({
           tenantId: DEFAULT_TENANT_ID,
           ...copied,
+          source: deal.source || lead?.source || null,
           tenureStart: new Date(),
         })
         .returning();

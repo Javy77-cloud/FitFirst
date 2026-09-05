@@ -1089,7 +1089,11 @@ Click path:
 3. `/inspections` — Elena roof scheduled; Hale wind mit requested. Completing does not file.
 4. `/installments` — Elena October scheduled; Hale August past due. Settings → IVANS / AL3 still **Not connected**.
 
-Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0064**.
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0068**. Incoming `0064_record_sources` remapped to `0067_record_sources` on the live CRM+Quote tip.
+
+## Lead / Deal / Contact sources (`cursor/fp-lead-sources-ed87`)
+
+Feel-pass FIX off `cursor/feel-pass-consolidate-sep5b-6195`. One catalog: `src/lib/crm/sources.ts`. Insurance-industry values (referral, Google, Facebook, Instagram, website, call-in, walk-in, partner, AOR, cross-sell, renewal, direct mail, radio/TV, event, Other, …) plus desk-intake values already on seeded rows. Lead, Deal, and Contact picklists all read that list. Convert / bind / import copy the same `source` field. Incoming `0064_record_sources` remapped to `0067_record_sources`. Ana stays shopping / unbound / Cov A **$321,000**, source **book**. Do not bind.
 
 ## Desk error sweep follow (`cursor/error-sweep-sep5-follow-31ef`)
 
@@ -1144,3 +1148,39 @@ Owner: feel-pass fix. Additive on `cursor/feel-pass-consolidate-sep5b-6195`. Reu
 3. **Leads** — tick a non-Ana row (Elena is fine). **Run Macro** uses *Stamp lead notes*. **Run Follow-up Macro** uses *Mark contacted + follow-up*. Open that lead: both buttons on the record.
 4. **Tasks** — tick a row or open a task record. **Run Macro** (*Keep task open + confirm*). Works on review tasks and activity tasks.
 5. Optional: Businesses / Campaigns / Quotes bulk **Run Macro**. Deals **Move shop to quoting** skips Ana. Do not bind Ana.
+
+## LIVE-TEST CRM+Quote tip (`cursor/live-crm-quote-tip-0836`)
+
+Cursor plan only. CRM+Quote focus for Javy’s Air live use. Base: `cursor/feel-pass-consolidate-sep5b-6195`. Did **not** merge AMS waves 10–16 (parked). Did not bind Ana.
+
+Merged feel-pass fixes:
+
+| Branch | What landed |
+| --- | --- |
+| `cursor/notif-bell-board-1e01` | Scrollable Home/shell bell + `/notifications` board. Preferred over `fp-notif-bell-f713`. No migration. |
+| `cursor/fp-columns-fix-c59b` | Leads / Contacts manage-columns menu no longer crashes. No migration. |
+| `cursor/fp-quotes-chrome-ddac` | Quotes **Actions** menu + expand arrows. No migration. Quotes still do not create a Policy. |
+| `cursor/macros-platform-settings-1dae` | Platform Settings macros on `desk_macros`. Preferred over `fp-macros-platform-6af6`. Kept as `0064_platform_macros`. |
+| `cursor/social-byo-connect-4bd5` | Agency-owned social OAuth. `fp-social-byo-1028` was not on remote. Incoming `0064_social_byo` remapped to `0065_social_byo`. |
+| `cursor/fp-home-layouts-resize-a094` | Named Home layouts + Resize tiles. Preferred over `home-custom-layout-resize-0cb4`. Incoming `0064_home_custom_layouts` remapped to `0066_home_custom_layouts`. |
+| `cursor/fp-lead-sources-ed87` | One insurance-industry source picklist on Lead / Deal / Contact. Incoming `0064_record_sources` remapped to `0067_record_sources`. |
+
+Feel-desk hygiene on this tip:
+
+- Additive migrations only. Nothing dropped. Next free is **0068**.
+- Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Quotes never create a Policy.
+- One Pipeline nav row. One Settings entry. Accounts (not People). Sidebar `#1d4e89` — never `#d6e8f8`.
+- `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.
+
+Mac Chrome (Air **and** mini):
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-crm-quote-tip-0836 && git pull
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.

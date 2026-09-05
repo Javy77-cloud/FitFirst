@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros, social BYO, Home layouts, lead sources. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`.
+**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home layouts (`0066`), lead sources (`0067`). AMS waves 10–16 parked. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`. Merged branch list is in `COORDINATION.md`.
 
 ## Run locally (Mac Air and Mac mini)
 
@@ -77,7 +77,11 @@ Calendar chrome is three rows: **Add event | Add company meeting | Add training*
 
 Nav cleanup: left-nav group is **Accounts** (Contacts + Businesses — not “People”). Sidebar Search is gone; Smart Search stays in the top bar. **Phone** (`/phone`) is a BYO-later setup stub with a dialer that logs outcomes on activities. **Inbox** (`/inbox`, eyebrow Envoys) is a work-email-later stub that shows seeded inbound queue rows.
 
-**Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
+**Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Source is **Book of business**. Do not bind.
+
+## Lead / Deal / Contact source
+
+One catalog in `src/lib/crm/sources.ts` — Referral, Google, Facebook, Instagram, Website, Call-in, Walk-in, Partner, AOR, Cross-sell, Renewal, Direct mail, Radio / TV, Event, Other, plus desk-intake values already on seeded rows. Lead, Deal, and Contact picklists all read that list. Convert and bind copy the same value. Do not fork a second source list.
 
 ## AMS wave 2 (kept)
 

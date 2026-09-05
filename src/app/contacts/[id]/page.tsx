@@ -12,7 +12,11 @@ import { loadRecordContext } from "@/lib/record-context";
 import { AccountGlance } from "@/components/crm/account-glance";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { OptOutForm } from "@/components/crm/opt-out-form";
+import { SourceSelect } from "@/components/crm/source-select";
 import { RecordComms } from "@/components/record-comms";
+import { updateContactRecord } from "@/app/actions/record-edit";
+import { sourceLabel } from "@/lib/crm/sources";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +63,7 @@ export default async function ContactDetailPage({
         <span className="text-muted-foreground">
           {contact.phone ?? contact.email ?? "No phone or email"}
         </span>
+        <span className="text-muted-foreground">Source · {sourceLabel(contact.source)}</span>
       </div>
 
       <RecordDetailLayout
@@ -97,7 +102,18 @@ export default async function ContactDetailPage({
               <dt className="text-muted-foreground">Life / health</dt>
               <dd>{[contact.lifeNotes, contact.healthNotes].filter(Boolean).join(" · ") || "—"}</dd>
             </div>
+            <div>
+              <dt className="text-muted-foreground">Source</dt>
+              <dd>{sourceLabel(contact.source)}</dd>
+            </div>
           </dl>
+          <form action={updateContactRecord} className="mt-3 max-w-xs space-y-2">
+            <input type="hidden" name="contactId" value={contact.id} />
+            <SourceSelect defaultValue={contact.source} allowEmpty emptyLabel="No source" />
+            <Button type="submit" size="sm" variant="outline">
+              Save source
+            </Button>
+          </form>
         </section>
         <section className="ff-card p-4 text-sm">
           <h2 className="text-base font-semibold text-navy">Linked businesses</h2>

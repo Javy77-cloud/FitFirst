@@ -50,7 +50,8 @@ describe("lead → deal convert copy", () => {
     expect(copy.sheetValues.named_insured.value).toBe("Elena M Ruiz");
     expect(copy.sheetValues.address1.value).toBe("412 Harbor Isle Dr");
     expect(copy.notes).toContain("Melbourne HO drop");
-    expect(copy.notes).toContain("Source: dec_drop");
+    expect(copy.source).toBe("dec_drop");
+    expect(copy.notes).toContain("Source: Dec drop");
     expect(copy.notes).toContain("Language: es");
     expect(copy.notes).toContain("elena.ruiz@example.com");
   });

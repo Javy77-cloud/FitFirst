@@ -74,6 +74,7 @@ export async function seedOwnerBook() {
       zip: "32796",
       tenureStart: new Date("2026-09-01T16:00:00.000Z"),
       policyCount: 1,
+      source: "book",
       notes: "Owner-book contact demo for TR-GL-22019. Not the commercial marina LLC walk fixture.",
     },
     {
@@ -118,6 +119,7 @@ export async function seedOwnerBook() {
       state: "FL",
       zip: "32903",
       policyCount: 0,
+      source: "referral",
       notes: "Auto quote sent. Not bound.",
     },
     {
@@ -132,6 +134,7 @@ export async function seedOwnerBook() {
       state: "FL",
       zip: "32922",
       policyCount: 0,
+      source: "book",
       notes: "HO3 bound this month. Pending policy REYES-HO3-PENDING is waiting on the carrier issue packet.",
     },
   ];
@@ -153,6 +156,7 @@ export async function seedOwnerBook() {
           zip: row.zip,
           tenureStart: row.tenureStart ?? null,
           policyCount: row.policyCount,
+          source: row.source,
           notes: row.notes,
           updatedAt: new Date(),
         },
@@ -221,6 +225,7 @@ export async function seedOwnerBook() {
       lineOfBusiness: "GL",
       state: "FL",
       boundAt: new Date("2026-09-01T16:00:00.000Z"),
+      source: "book",
       notes: "Owner-book Closed Won. Policy TR-GL-22019. Not the commercial marina LLC walk fixture.",
     },
     {
@@ -232,6 +237,7 @@ export async function seedOwnerBook() {
       pipelineStage: "quote_sent",
       lineOfBusiness: "AUTO",
       state: "FL",
+      source: "referral",
       notes: "Quote sent. Not coverage.",
     },
     {
@@ -244,6 +250,7 @@ export async function seedOwnerBook() {
       lineOfBusiness: "HO",
       state: "FL",
       boundAt: new Date("2026-09-02T18:00:00.000Z"),
+      source: "book",
       notes: "Bound 2026-09-02. Pending policy REYES-HO3-PENDING is attached — waiting on the carrier issue packet.",
     },
   ];
@@ -263,6 +270,7 @@ export async function seedOwnerBook() {
           state: row.state,
           boundAt: row.boundAt ?? null,
           notes: row.notes,
+          source: row.source,
           updatedAt: new Date(),
         },
       });

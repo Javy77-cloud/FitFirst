@@ -1,24 +1,7 @@
 import { LINES, type LineOfBusiness } from "@/lib/domain";
+import { normalizeRecordSource } from "@/lib/crm/sources";
 
-export const LEAD_SOURCES = [
-  "referral",
-  "website",
-  "phone",
-  "walk_in",
-  "email",
-  "social",
-  "book",
-  "manual",
-  "dropped_dec",
-  "dec_drop",
-  "email_stub",
-  "social_stub",
-  "facebook",
-  "instagram",
-  "x",
-  "linkedin",
-  "google_business_profile",
-] as const;
+export { LEAD_SOURCES, sourceLabel } from "@/lib/crm/sources";
 
 export const LEAD_LANGUAGES = [
   { value: "en", label: "English" },
@@ -66,7 +49,7 @@ export function leadValuesFromForm(form: FormData): LeadFormValues {
     state: emptyToNull(String(form.get("state") ?? "")),
     zip: emptyToNull(String(form.get("zip") ?? "")),
     insuranceTypeDesired: insuranceTypeFromForm(String(form.get("insuranceTypeDesired") ?? "")),
-    source: emptyToNull(String(form.get("source") ?? "")) ?? "manual",
+    source: normalizeRecordSource(String(form.get("source") ?? "")),
     preferredLanguage: emptyToNull(String(form.get("preferredLanguage") ?? "")),
     notes: emptyToNull(String(form.get("notes") ?? "")),
   };

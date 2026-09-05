@@ -7,6 +7,7 @@ import { SheetTbody } from "@/components/sheet/sheet-table";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { DealRowComms } from "@/components/deal-row-comms";
 import { defaultColumns } from "@/lib/desk/columns";
+import { sourceLabel } from "@/lib/crm/sources";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
@@ -120,6 +121,7 @@ export default async function DealsPage({
                 <Col table="deals" col="zip" as="th">ZIP</Col>
                 <Col table="deals" col="address" as="th">Property address</Col>
                 <Col table="deals" col="shopLines" as="th">Shop lines</Col>
+                <Col table="deals" col="source" as="th">Source</Col>
                 <Col table="deals" col="contact" as="th">Contact</Col>
                 <Col table="deals" col="phone" as="th">Phone</Col>
                 <Col table="deals" col="email" as="th">Email</Col>
@@ -155,6 +157,7 @@ export default async function DealsPage({
                   <Col table="deals" col="shopLines">
                     {(deal.shopLines ?? []).join(", ") || "—"}
                   </Col>
+                  <Col table="deals" col="source">{sourceLabel(deal.source)}</Col>
                   <Col table="deals" col="contact">
                     {contact ? (
                       <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">

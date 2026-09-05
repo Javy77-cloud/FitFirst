@@ -55,7 +55,7 @@ describe("list column visibility", () => {
 
     const contactsVisible = defaultVisibleIds(CONTACTS_LIST_COLUMNS);
     const afterLifetime = toggleColumnVisibility(CONTACTS_LIST_COLUMNS, contactsVisible, "lifetime");
-    expect(afterLifetime).toEqual(["pick", "name", "status", "inForce"]);
+    expect(afterLifetime).toEqual(["pick", "name", "status", "source", "inForce"]);
     expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])).toEqual([
       "pick",
       "name",

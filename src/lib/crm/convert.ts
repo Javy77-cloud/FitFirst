@@ -1,5 +1,6 @@
 import { LINES, LOB_TO_SHOP_LINE, type ShopLine } from "@/lib/domain";
 import { namedInsuredFromLead } from "@/lib/crm/lead-fields";
+import { sourceLabel } from "@/lib/crm/sources";
 import { fillSheetFromLead, leadOntoRisk, type LeadCopyFields } from "@/lib/desk/copy-once";
 
 export type ConvertLead = LeadCopyFields & {
@@ -30,7 +31,7 @@ export function resolveConvertLine(requested: string | null | undefined, leadLin
 export function dealNotesFromLead(lead: ConvertLead): string | null {
   const parts = [
     lead.notes?.trim() || "",
-    lead.source ? `Source: ${lead.source}` : "",
+    lead.source ? `Source: ${sourceLabel(lead.source)}` : "",
     lead.preferredLanguage ? `Language: ${lead.preferredLanguage}` : "",
     lead.email ? `Email: ${lead.email}` : "",
     lead.phone ? `Phone: ${lead.phone}` : "",
@@ -53,6 +54,7 @@ export function convertFieldCopy(lead: ConvertLead, line: string, state: string)
     pipelineSlug: pipelineSlugForLine(line),
     title: dealTitleFromLead(lead, line),
     notes: dealNotesFromLead(lead),
+    source: lead.source ?? null,
     primaryNamedInsured: namedInsuredFromLead(lead),
     risk: leadOntoRisk(lead, dealState),
     sheetValues: fillSheetFromLead(lead),

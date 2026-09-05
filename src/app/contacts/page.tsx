@@ -10,8 +10,10 @@ import { CONTACTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
+import { SourceSelect } from "@/components/crm/source-select";
+import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { CLIENT_STATUSES } from "@/lib/domain";
-import { matchesField, pickFilterParams } from "@/lib/saved-filters";
+import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +22,12 @@ export default async function ContactsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["status"]);
+  const filter = pickFilterParams(await searchParams, ["status", "source"]);
   const all = await listContacts();
-  const rows = all.filter((contact) => matchesField(contact.clientStatus, filter.status));
+  const rows = all.filter(
+    (contact) =>
+      matchesField(contact.clientStatus, filter.status) && matchesField(contact.source, filter.source),
+  );
   return (
     <AppShell title="Contacts">
       <p className="mb-3 text-base text-muted-foreground">
@@ -39,6 +44,14 @@ export default async function ContactsPage({
               value,
               label: value.replaceAll("_", " "),
             })),
+          },
+          {
+            key: "source",
+            label: "Source",
+            options: uniqueOptions(
+              all.map((contact) => contact.source),
+              sourceFilterOptions(),
+            ),
           },
         ]}
       />
@@ -65,6 +78,7 @@ export default async function ContactsPage({
             <Label className="text-xs">Health notes (CRM only)</Label>
             <Input name="healthNotes" className="mt-1 h-8" />
           </div>
+          <SourceSelect defaultValue="referral" />
           <Button type="submit" size="sm">
             Save contact
           </Button>
@@ -87,6 +101,7 @@ export default async function ContactsPage({
                   </span>
                 ),
                 status: <ClientStatusPill status={c.clientStatus} />,
+                source: sourceLabel(c.source),
                 lifetime: c.policyCount,
                 inForce: c.activePolicyCount,
               },

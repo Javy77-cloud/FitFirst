@@ -90,6 +90,7 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true },
   { id: "name", label: "Name", locked: true },
   { id: "status", label: "Status" },
+  { id: "source", label: "Source" },
   { id: "lifetime", label: "Lifetime" },
   { id: "inForce", label: "In-force" },
 ];

@@ -1,9 +1,10 @@
 import { AddressAutofill } from "@/components/address-autofill";
 import { LineSelect } from "@/components/crm/line-select";
+import { SourceSelect } from "@/components/crm/source-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LEAD_LANGUAGES, LEAD_SOURCES } from "@/lib/crm/lead-fields";
+import { LEAD_LANGUAGES } from "@/lib/crm/lead-fields";
 
 export type LeadFieldDefaults = {
   firstName?: string | null;
@@ -29,8 +30,6 @@ export function LeadFormFields({
   lead?: LeadFieldDefaults;
   requireName?: boolean;
 }) {
-  const source = lead?.source ?? "manual";
-  const knownSource = (LEAD_SOURCES as readonly string[]).includes(source);
   const language = lead?.preferredLanguage ?? "en";
   const knownLanguage = LEAD_LANGUAGES.some((lang) => lang.value === language);
 
@@ -129,24 +128,7 @@ export function LeadFormFields({
           defaultValue={lead?.insuranceTypeDesired ?? "HO"}
         />
       </div>
-      <div>
-        <Label htmlFor="source" className="text-xs">
-          Source
-        </Label>
-        <select
-          id="source"
-          name="source"
-          defaultValue={source}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        >
-          {LEAD_SOURCES.map((value) => (
-            <option key={value} value={value}>
-              {value.replaceAll("_", " ")}
-            </option>
-          ))}
-          {!knownSource ? <option value={source}>{source.replaceAll("_", " ")}</option> : null}
-        </select>
-      </div>
+      <SourceSelect defaultValue={lead?.source ?? "manual"} />
       <div>
         <Label htmlFor="preferredLanguage" className="text-xs">
           Preferred language

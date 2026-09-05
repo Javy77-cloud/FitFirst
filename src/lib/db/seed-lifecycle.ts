@@ -185,6 +185,7 @@ export async function seedLifecycleDemo() {
       policyCount: 1,
       activePolicyCount: 1,
       ...writeSsn("000-00-4444"),
+      source: "dropped_dec",
       notes:
         "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
     })
@@ -203,6 +204,7 @@ export async function seedLifecycleDemo() {
         policyCount: 1,
         activePolicyCount: 1,
         ...writeSsn("000-00-4444"),
+        source: "dropped_dec",
         notes:
           "Created at bind from the Melbourne HO3 deal. Fields copied from the lead + risk. Linked to Ruiz Tile LLC without moving personal policies onto the business.",
         updatedAt: new Date(),
@@ -301,6 +303,7 @@ export async function seedLifecycleDemo() {
       notes:
         "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
       videoProposalUrl: "https://fitfirst.example/video/ruiz-melbourne-ho3",
+      source: "dropped_dec",
       boundAt: new Date("2026-09-01T15:00:00.000Z"),
     })
     .onConflictDoUpdate({
@@ -317,6 +320,7 @@ export async function seedLifecycleDemo() {
         notes:
           "Personal HO click-through. Source docs + issued quote PDFs on the deal. Bound 2026-09-01 — one HO3 policy after accept, not from the quotes.",
         videoProposalUrl: "https://fitfirst.example/video/ruiz-melbourne-ho3",
+        source: "dropped_dec",
         boundAt: new Date("2026-09-01T15:00:00.000Z"),
         updatedAt: new Date(),
       },

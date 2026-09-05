@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
+import { normalizeRecordSource } from "@/lib/crm/sources";
 import { db } from "@/lib/db";
-import { accounts, contacts, leads } from "@/lib/db/schema";
+import { accounts, contacts, deals, leads } from "@/lib/db/schema";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { replaceEin, replaceSsn } from "@/lib/pii/write";
 
@@ -39,6 +40,7 @@ export async function updateContactRecord(formData: FormData) {
         ssnIv: existing.ssnIv,
         ssnLast4: existing.ssnLast4,
       }),
+      source: normalizeRecordSource(str(formData, "source"), existing.source),
       ...(str(formData, "saveOptOuts") === "1"
         ? {
             emailOptOut: formData.get("emailOptOut") === "on",
@@ -120,4 +122,23 @@ export async function updateLeadRecord(formData: FormData) {
     })
     .where(eq(leads.id, id));
   revalidatePath(`/leads/${id}`);
+}
+
+export async function updateDealRecord(formData: FormData) {
+  const id = str(formData, "dealId");
+  if (!id) return;
+  const [existing] = await db
+    .select()
+    .from(deals)
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, id)));
+  if (!existing) return;
+  await db
+    .update(deals)
+    .set({
+      source: normalizeRecordSource(str(formData, "source"), existing.source),
+      updatedAt: new Date(),
+    })
+    .where(eq(deals.id, id));
+  revalidatePath(`/deals/${id}`);
+  revalidatePath("/deals");
 }

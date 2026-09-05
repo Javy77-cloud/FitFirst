@@ -140,6 +140,7 @@ async function seedUnlocked() {
         phone: "(321) 555-0144",
         email: "ana.dib@desk.local",
         status: "converted",
+        source: "book",
         convertedDealId: DEAL_ID,
         notes: `HO3 shop ${fixture.shopDate}. ${fixture.risk.coverageANote} ${fixture.insured.namedInsuredNote}`,
         updatedAt: new Date(),
@@ -161,6 +162,7 @@ async function seedUnlocked() {
       zip: fixture.risk.zip,
       policyCount: 0,
       activePolicyCount: 0,
+      source: "book",
       notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -176,6 +178,7 @@ async function seedUnlocked() {
         zip: fixture.risk.zip,
         policyCount: 0,
         activePolicyCount: 0,
+        source: "book",
         notes: `Primary named insured. Secondary: ${fixture.insured.namedInsured}. ${fixture.insured.namedInsuredNote} Contact exists for the shop; no policy was created from these quotes.`,
         updatedAt: new Date(),
       },
@@ -200,6 +203,7 @@ async function seedUnlocked() {
       currentCarrier: null,
       accountKind: "personal",
       pipelineId: PIPELINE_PC_ID,
+      source: "book",
       notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
     })
     .onConflictDoUpdate({
@@ -218,6 +222,7 @@ async function seedUnlocked() {
         propertyOneliner: anaPropertyOneliner(fixture.risk),
         currentCarrier: null,
         accountKind: "personal",
+        source: "book",
         notes: `${fixture.shopDate} shop: ${fixture.outcome.marketsRun} markets, ${fixture.outcome.bindableAt321k} bindable at $${fixture.risk.coverageA.toLocaleString("en-US")}. ${fixture.risk.occupancyNote}. Construction ${fixture.risk.constructionNote}. ${fixture.risk.roofCoveringNote}. ${fixture.risk.coverageANote} No policy from these quotes.`,
         updatedAt: new Date(),
       },

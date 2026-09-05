@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { bindDeal } from "@/app/actions/crm";
+import { updateDealRecord } from "@/app/actions/record-edit";
+import { SourceSelect } from "@/components/crm/source-select";
+import { sourceLabel } from "@/lib/crm/sources";
 import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
@@ -146,6 +149,7 @@ export default async function DealPage({
       />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <StagePill stage={deal.pipelineStage} />
+        <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
         <span>{deal.lineOfBusiness}</span>
         <span className="text-muted-foreground">{deal.state}</span>
         {lead ? (
@@ -177,6 +181,16 @@ export default async function DealPage({
           bind this shop. Quotes are not coverage.
         </div>
       ) : null}
+
+      <form action={updateDealRecord} className="mb-4 flex max-w-sm flex-wrap items-end gap-2">
+        <input type="hidden" name="dealId" value={deal.id} />
+        <div className="min-w-[12rem] flex-1">
+          <SourceSelect defaultValue={deal.source ?? lead?.source} />
+        </div>
+        <Button type="submit" size="sm" variant="outline">
+          Save source
+        </Button>
+      </form>
 
       {health ? (
         <>
