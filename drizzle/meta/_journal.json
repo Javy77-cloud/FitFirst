@@ -351,6 +351,13 @@
       "when": 1788557000000,
       "tag": "0049_ams_wave4",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1788558000000,
+      "tag": "0050_ams_wave5",
+      "breakpoints": true
     }
   ]
 }

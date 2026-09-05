@@ -26,8 +26,36 @@ export function validateCertificateRequest(input: {
   holderName: string;
   holderAddress: string;
   jobLocation?: string | null;
-}): { ok: true; holderName: string; holderAddress: string; jobLocation: string | null } | { ok: false; error: string } {
-  return parseHolderInput(input);
+  additionalInsured?: string | null;
+  specialWording?: string | null;
+}):
+  | {
+      ok: true;
+      holderName: string;
+      holderAddress: string;
+      jobLocation: string | null;
+      additionalInsured: string | null;
+      specialWording: string | null;
+    }
+  | { ok: false; error: string } {
+  const parsed = parseHolderInput(input);
+  if (!parsed.ok) return parsed;
+  return {
+    ...parsed,
+    additionalInsured: input.additionalInsured?.trim() || null,
+    specialWording: input.specialWording?.trim() || null,
+  };
+}
+
+export function additionalInsuredFromInterest(interest: {
+  kind: string;
+  name: string;
+} | null): string | null {
+  if (!interest) return null;
+  if (interest.kind === "additional_interest" || interest.kind === "certificate_holder") {
+    return interest.name;
+  }
+  return null;
 }
 
 export function matchingIssuedCertificate<T extends { holderName: string; status: string }>(

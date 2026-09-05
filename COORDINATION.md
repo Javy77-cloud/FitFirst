@@ -755,3 +755,25 @@ Click path:
 4. **Claims** `/claims` — FNOL pipeline + carrier-site disclaimer. Detail uses the existing intake record + timeline. No carrier API.
 
 Sidebar stays `#1d4e89`. One Pipeline nav row. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.
+
+## AMS wave 5 — desk depth (`cursor/ams-wave5-depth-9dbf`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD.
+
+Additive `0050_ams_wave5` on existing tables (no second certificate table):
+
+- `certificate_requests` / `issued_certificates` — `interest_id`, `additional_insured`, `special_wording`. Holder can pick an existing AI or add the holder onto the Policy as additional insured. Issue still writes the desk stub.
+- `policy_service_requests.work_desk` — `producer` | `csr` (default CSR). Queue filter only.
+- Suspense auto-opens `review_tasks` for missing **ID cards** and **AOR** when the Policy is opened. Dec stays a manual collect.
+- Policy term history reads existing `policy_terms` (`prior` / `current` / `proposed`). Compare page unchanged.
+- Loss-run CSV is a desk claims summary stub at `/api/policies/:id/loss-runs.csv`. Not a carrier download.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open (wave 4). Term history shows prior 2025–26 ($2,640) and current 2026–27 ($2,840). Loss-run CSV lists the wind inquiry. Endorsement stays **in progress** on the **CSR** desk.
+2. Policy **HP-FL-88421** — auto ID + AOR suspense tasks. Endorsement stays **requested** on the **Producer** desk. Do not file.
+3. Harbor **GL-HARBOR-2026** — additional insureds **Brevard County Parks** (open COI) and **Palm Bay Marina Dockage** (issued stub now shows AI + wording). `/certificates` picker reuses those names.
+4. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
+5. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0051**.

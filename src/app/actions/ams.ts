@@ -30,7 +30,13 @@ import {
   validateServiceRequestFields,
   type ServiceRequestAction,
 } from "@/lib/ams/service-requests";
-import { isPersonalLinesPolicy, validateInterestDraft } from "@/lib/ams/additional-interests";
+import {
+  allowedInterestKinds,
+  canHoldInterests,
+  validateInterestDraft,
+} from "@/lib/ams/additional-interests";
+import { additionalInsuredFromInterest } from "@/lib/ams/coi-requests";
+import { isWorkDesk } from "@/lib/domain-ams";
 import { packetTaskTitle } from "@/lib/ams/packet-tasks";
 import {
   SERVICING_DOC_KEYS,
@@ -159,6 +165,7 @@ export async function createServiceRequest(formData: FormData) {
       premium: str(formData, "premium") || null,
       requestedBy: actor.id,
       requestedByName: actor.name,
+      workDesk: isWorkDesk(str(formData, "workDesk")) ? str(formData, "workDesk") : "csr",
     })
     .returning();
   const loaded = await getServiceRequest(row.id);
@@ -283,15 +290,58 @@ export async function createCertificateRequest(formData: FormData) {
     holderName: str(formData, "holderName"),
     holderAddress: str(formData, "holderAddress"),
     jobLocation: str(formData, "jobLocation"),
+    additionalInsured: str(formData, "additionalInsured"),
+    specialWording: str(formData, "specialWording"),
   });
   const returnTo = str(formData, "returnTo") || `/accounts/${accountId}`;
   if (!isUuid(accountId)) bounce("/certificates", "Business is required.");
   if (!parsed.ok) bounce(returnTo, parsed.error);
   const actor = await actorName();
+  const policyId = isUuid(str(formData, "policyId")) ? str(formData, "policyId") : null;
+  let interestId = isUuid(str(formData, "interestId")) ? str(formData, "interestId") : null;
+  let additionalInsured = parsed.additionalInsured;
+  if (interestId) {
+    const [interest] = await db
+      .select()
+      .from(policyAdditionalInterests)
+      .where(
+        and(
+          eq(policyAdditionalInterests.tenantId, DEFAULT_TENANT_ID),
+          eq(policyAdditionalInterests.id, interestId),
+        ),
+      );
+    if (!interest) {
+      bounce(returnTo, "That additional interest is not on file.");
+    }
+    additionalInsured =
+      additionalInsured || additionalInsuredFromInterest(interest);
+  } else if (str(formData, "addAsAi") === "1" && policyId) {
+    const { getPolicyWorkspace } = await import("@/lib/db/queries");
+    const workspace = await getPolicyWorkspace(policyId);
+    if (workspace && canHoldInterests(workspace.policy)) {
+      const kinds = allowedInterestKinds(workspace.policy);
+      const kind = kinds.includes("certificate_holder")
+        ? "certificate_holder"
+        : kinds[0] ?? "additional_interest";
+      const [created] = await db
+        .insert(policyAdditionalInterests)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          policyId,
+          kind,
+          name: parsed.holderName,
+          address: parsed.holderAddress,
+          notes: "Added from COI request. Does not file an endorsement.",
+        })
+        .returning();
+      interestId = created.id;
+      additionalInsured = additionalInsured || created.name;
+    }
+  }
   await db.insert(certificateRequests).values({
     tenantId: DEFAULT_TENANT_ID,
     accountId,
-    policyId: isUuid(str(formData, "policyId")) ? str(formData, "policyId") : null,
+    policyId,
     holderName: parsed.holderName,
     holderAddress: parsed.holderAddress,
     jobLocation: parsed.jobLocation,
@@ -299,13 +349,18 @@ export async function createCertificateRequest(formData: FormData) {
     status: "requested",
     requestedBy: actor.id,
     requestedByName: actor.name,
+    interestId,
+    additionalInsured,
+    specialWording: parsed.specialWording,
   });
   await writeServicingLog({
     title: `COI requested · ${parsed.holderName}`,
-    body: `Certificate stub requested for ${parsed.holderName}. Not a licensed ACORD product. Not issued yet.`,
+    body: additionalInsured
+      ? `Certificate stub requested for ${parsed.holderName}. Additional insured: ${additionalInsured}. Not a licensed ACORD product. Not issued yet.`
+      : `Certificate stub requested for ${parsed.holderName}. Not a licensed ACORD product. Not issued yet.`,
     eventType: "coi_requested",
     accountId,
-    policyId: isUuid(str(formData, "policyId")) ? str(formData, "policyId") : null,
+    policyId,
   });
   revalidatePath("/certificates");
   revalidatePath(`/accounts/${accountId}`);
@@ -396,6 +451,9 @@ export async function advanceCertificateRequest(formData: FormData) {
       producerName: tenant?.name ?? "FitFirst",
       issuedAt,
       status: "issued",
+      additionalInsured: loaded.request.additionalInsured,
+      specialWording: loaded.request.specialWording,
+      interestId: loaded.request.interestId,
     })
     .returning();
 
@@ -580,8 +638,9 @@ export async function saveAdditionalInterest(formData: FormData) {
   const { getPolicyWorkspace } = await import("@/lib/db/queries");
   const workspace = await getPolicyWorkspace(policyId);
   if (!workspace) bounce(`/policies/${policyId}`, "Policy not found.");
-  if (!isPersonalLinesPolicy(workspace.policy)) {
-    bounce(`/policies/${policyId}`, "Mortgagee / additional interest is for personal-lines Policies.");
+  const kinds = allowedInterestKinds(workspace.policy);
+  if (!canHoldInterests(workspace.policy) || kinds.length === 0) {
+    bounce(`/policies/${policyId}`, "Additional interest is for personal-lines or certifiable commercial Policies.");
   }
   const parsed = validateInterestDraft({
     kind: str(formData, "kind"),
@@ -595,6 +654,9 @@ export async function saveAdditionalInterest(formData: FormData) {
     notes: str(formData, "notes"),
   });
   if (!parsed.ok) bounce(`/policies/${policyId}`, parsed.error);
+  if (!kinds.includes(parsed.kind)) {
+    bounce(`/policies/${policyId}`, "That interest type is not used on this Policy.");
+  }
   const [row] = await db
     .insert(policyAdditionalInterests)
     .values({

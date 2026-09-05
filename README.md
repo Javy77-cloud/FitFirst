@@ -41,7 +41,7 @@ In-house servicing on Policies that already exist. No IVANS, no rater, no Stripe
 - **Certificates** (`/certificates`) — COI request queue. Issue still prints a desk stub. **Not a licensed ACORD product.**
 - **IVANS / AL3** (`/settings/carrier-download`) — empty importer. Status stays **Not connected**. Attempt import returns `needs carrier download / IVANS later`. No fake carrier fees.
 
-## AMS wave 4 (this branch)
+## AMS wave 4 (kept)
 
 Function-first depth on the same Policies. No redesign. Build stops at the API wall.
 
@@ -53,16 +53,28 @@ Function-first depth on the same Policies. No redesign. Build stops at the API w
 
 Try: Elena `HO3-ELENA-2026` still has dec + ID, missing AOR (collect task open), mortgagee **First Community Bank ISAOA**, endorsement **in progress**. Hale `HP-FL-88421` endorsement stays **requested**. Do not file those to “prove” a cancel. Do not bind Ana.
 
+## AMS wave 5 (this branch)
+
+Same Policies. No redesign. Stubs stop at the API wall.
+
+- **Certificate holder / additional insured** — commercial Policy list plus COI picker. Issue still prints the desk stub; the stub now shows AI + special wording. Not ACORD.
+- **Suspense / follow-ups** — missing AOR or ID cards auto-open an in-app Task when the Policy is opened. Hale empty packet is the seed proof. Dec stays a manual collect.
+- **Producer vs CSR** — service requests carry a work desk. Elena is CSR; Hale is Producer. Filter on `/service-requests`.
+- **Policy term history** — prior / current / proposed on the Policy. Elena has a prior 2025–26 term. Compare page unchanged.
+- **Loss-run CSV stub** — desk claims summary download on the Policy. Elena wind inquiry is on the export. Not a carrier loss run.
+
 ## Localhost :43147 notes
 
 After `npm run db:migrate && npm run db:seed` and `npm run dev`:
 
 1. Sign in as **javy@fitfirst.local** / **javy**.
-2. Open Elena Policy — checklist AOR missing + task, mortgagee list, service request **In progress**.
-3. `/service-requests` — Elena in progress, Hale requested.
-4. `/book-health` — agency + producer rollups; Elena AOR in missing docs.
-5. `/claims` — FNOL pipeline and “Handle the claim on the carrier website.”
-6. Settings → IVANS / AL3 still **Not connected**.
+2. Open Elena Policy — AOR suspense still open, prior + current terms, loss-run CSV, CSR endorsement **in progress**. Do not file. Do not bind Ana.
+3. Open Hale Policy — ID + AOR suspense auto-opened, producer endorsement **requested**. Do not file or cancel.
+4. Harbor Policy / `/certificates` — Brevard AI on the open request; Palm Bay issued stub shows additional insured + wording.
+5. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
+6. `/book-health` — agency + producer rollups; Elena AOR and Hale packet still in missing docs.
+7. `/claims` — FNOL pipeline and “Handle the claim on the carrier website.”
+8. Settings → IVANS / AL3 still **Not connected**.
 
 ## Tests
 

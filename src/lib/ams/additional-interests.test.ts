@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  allowedInterestKinds,
+  canHoldInterests,
+  formatHolderAddress,
   formatInterestLine,
   isPersonalLinesPolicy,
   validateInterestDraft,
@@ -19,6 +22,22 @@ describe("additional interests", () => {
     expect(
       isPersonalLinesPolicy({ contactId: "c1", lineOfBusiness: "GL" }),
     ).toBe(false);
+  });
+
+  it("lets Harbor GL hold certificate-holder / additional insured, not a mortgagee", () => {
+    const harbor = { contactId: null, accountId: "a1", lineOfBusiness: "GL" };
+    expect(canHoldInterests(harbor)).toBe(true);
+    expect(allowedInterestKinds(harbor)).toEqual([
+      "additional_interest",
+      "certificate_holder",
+      "loss_payee",
+    ]);
+    expect(allowedInterestKinds({ contactId: "c1", lineOfBusiness: "HO3" })).toContain(
+      "mortgagee",
+    );
+    expect(formatHolderAddress({ address: "1 Dock", city: "Palm Bay", state: "FL", zip: "32907" })).toBe(
+      "1 Dock\nPalm Bay, FL 32907",
+    );
   });
 
   it("requires kind + name and formats the list line", () => {

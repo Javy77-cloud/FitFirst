@@ -2,8 +2,9 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { SERVICING_TASK_KINDS } from "@/lib/domain-ams";
+import { isWorkDesk, SERVICING_TASK_KINDS, servicingTaskKind } from "@/lib/domain-ams";
 import { isUuid } from "@/lib/ids";
+import { pendingSuspenseKeys } from "./suspense";
 import { DESK_AS_OF } from "@/lib/home/as-of";
 import { db } from "@/lib/db";
 import {
@@ -24,7 +25,7 @@ import {
 } from "@/lib/db/schema";
 import { bookHealthCounts, missingDocRows, producerBookRows, type OwnedBookPolicy } from "./book-health";
 import { buildServicingChecklist, type ServicingFile, type ServicingTask } from "./checklist";
-import { packetTasksByKey, type PacketTask } from "./packet-tasks";
+import { packetTaskTitle, packetTasksByKey, type PacketTask } from "./packet-tasks";
 
 const policyOwner = alias(users, "policy_owner");
 import {
@@ -67,11 +68,14 @@ async function scopedPolicies() {
   return rows.filter(({ policy }) => policy.ownerId === session.userId);
 }
 
-export async function listServiceRequests(policyId?: string) {
+export async function listServiceRequests(policyId?: string, workDesk?: string) {
   const clauses = [eq(policyServiceRequests.tenantId, tenant())];
   if (policyId) {
     if (!isUuid(policyId)) return [];
     clauses.push(eq(policyServiceRequests.policyId, policyId));
+  }
+  if (workDesk && isWorkDesk(workDesk)) {
+    clauses.push(eq(policyServiceRequests.workDesk, workDesk));
   }
   return db
     .select({
@@ -133,6 +137,72 @@ export async function nextServiceTask(policyId: string): Promise<ServicingTask |
   return { id: activity.id, title: activity.title, dueDate: activity.dueAt };
 }
 
+export async function listAccountInterests(accountId: string) {
+  if (!isUuid(accountId)) return [];
+  return db
+    .select({
+      interest: policyAdditionalInterests,
+      policy: policies,
+    })
+    .from(policyAdditionalInterests)
+    .innerJoin(policies, eq(policyAdditionalInterests.policyId, policies.id))
+    .where(
+      and(eq(policyAdditionalInterests.tenantId, tenant()), eq(policies.accountId, accountId)),
+    )
+    .orderBy(asc(policyAdditionalInterests.name));
+}
+
+export async function ensureServicingSuspense(policyId: string) {
+  if (!isUuid(policyId)) return [];
+  const [policy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
+  if (!policy) return [];
+  const [files, taskRows] = await Promise.all([
+    db
+      .select({ docType: documents.docType, slot: documents.slot })
+      .from(documents)
+      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId))),
+    db
+      .select()
+      .from(reviewTasks)
+      .where(
+        and(
+          eq(reviewTasks.tenantId, tenant()),
+          eq(reviewTasks.policyId, policyId),
+          inArray(reviewTasks.kind, [...Object.values(SERVICING_TASK_KINDS)]),
+        ),
+      ),
+  ]);
+  const pending = pendingSuspenseKeys(
+    files,
+    taskRows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      status: row.status,
+    })),
+  );
+  if (pending.length === 0) return [];
+  const due = new Date();
+  due.setUTCDate(due.getUTCDate() + 7);
+  await db.insert(reviewTasks).values(
+    pending.map((key) => ({
+      tenantId: tenant(),
+      policyId,
+      contactId: policy.contactId,
+      accountId: policy.accountId,
+      dealId: policy.dealId,
+      kind: servicingTaskKind(key),
+      title: packetTaskTitle(key, policy.policyNumber),
+      dueDate: due,
+      status: "open" as const,
+    })),
+  );
+  return pending;
+}
+
 export async function loadPolicyServicing(policyId: string) {
   if (!isUuid(policyId)) return null;
   const [policy] = await db
@@ -140,7 +210,8 @@ export async function loadPolicyServicing(policyId: string) {
     .from(policies)
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
   if (!policy) return null;
-  const [files, requests, nextTask, interests, packetTaskRows] = await Promise.all([
+  await ensureServicingSuspense(policyId);
+  const [files, requests, nextTask, interests, packetTaskRows, terms] = await Promise.all([
     db
       .select({ docType: documents.docType, slot: documents.slot })
       .from(documents)
@@ -167,6 +238,10 @@ export async function loadPolicyServicing(policyId: string) {
           inArray(reviewTasks.kind, [...Object.values(SERVICING_TASK_KINDS)]),
         ),
       ),
+    db
+      .select()
+      .from(policyTerms)
+      .where(and(eq(policyTerms.tenantId, tenant()), eq(policyTerms.policyId, policyId))),
   ]);
   const packetTasks: PacketTask[] = packetTaskRows.map((row) => ({
     id: row.id,
@@ -178,6 +253,7 @@ export async function loadPolicyServicing(policyId: string) {
     policy,
     requests: requests.map((row) => row.request),
     interests,
+    terms,
     nextTask,
     packetTasks,
     packetByKey: packetTasksByKey(packetTasks),

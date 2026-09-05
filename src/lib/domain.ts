@@ -897,6 +897,18 @@ export {
   SERVICE_REQUEST_TASK_KIND,
   servicingTaskKind,
   servicingDocKeyFromTaskKind,
+  PERSONAL_INTEREST_KINDS,
+  COMMERCIAL_INTEREST_KINDS,
+  WORK_DESKS,
+  WORK_DESK_LABELS,
+  isWorkDesk,
+  workDeskLabel,
+  TERM_ROLES,
+  TERM_ROLE_LABELS,
+  isTermRole,
+  termRoleLabel,
+  SUSPENSE_DOC_KEYS,
+  LOSS_RUN_STUB_DISCLAIMER,
 } from "./domain-ams";
 export type {
   AppointmentLine,
@@ -931,6 +943,9 @@ export type {
   ServicingDocKey,
   CarrierDownloadProvider,
   InterestKind,
+  WorkDesk,
+  TermRole,
+  SuspenseDocKey,
 } from "./domain-ams";
 
 export {

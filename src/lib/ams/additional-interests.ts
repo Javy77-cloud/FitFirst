@@ -1,8 +1,12 @@
 import {
+  appointmentLine,
+  COMMERCIAL_INTEREST_KINDS,
   INTEREST_KINDS,
   interestKindLabel,
+  isCertifiableLine,
   isInterestKind,
   isPersonalLinesCode,
+  PERSONAL_INTEREST_KINDS,
   type InterestKind,
 } from "@/lib/domain-ams";
 
@@ -23,6 +27,36 @@ export function isPersonalLinesPolicy(policy: {
   lineOfBusiness: string;
 }): boolean {
   return Boolean(policy.contactId) && isPersonalLinesCode(policy.lineOfBusiness);
+}
+
+export function canHoldInterests(policy: {
+  contactId?: string | null;
+  accountId?: string | null;
+  lineOfBusiness: string;
+}): boolean {
+  if (isPersonalLinesPolicy(policy)) return true;
+  return Boolean(policy.accountId) && isCertifiableLine(appointmentLine(policy.lineOfBusiness));
+}
+
+export function allowedInterestKinds(policy: {
+  contactId?: string | null;
+  accountId?: string | null;
+  lineOfBusiness: string;
+}): readonly InterestKind[] {
+  if (isPersonalLinesPolicy(policy)) return PERSONAL_INTEREST_KINDS;
+  if (canHoldInterests(policy)) return COMMERCIAL_INTEREST_KINDS;
+  return [];
+}
+
+export function formatHolderAddress(row: {
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}): string {
+  const cityState = [row.city, row.state].filter(Boolean).join(", ");
+  const line2 = [cityState, row.zip].filter(Boolean).join(" ");
+  return [row.address, line2].filter(Boolean).join("\n");
 }
 
 export function missingInterestFields(input: InterestDraft): string[] {

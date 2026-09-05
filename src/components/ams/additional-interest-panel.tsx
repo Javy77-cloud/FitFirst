@@ -6,22 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatInterestLine, INTEREST_KINDS, interestKindLabel } from "@/lib/ams/additional-interests";
+import {
+  formatInterestLine,
+  INTEREST_KINDS,
+  interestKindLabel,
+} from "@/lib/ams/additional-interests";
+import type { InterestKind } from "@/lib/domain-ams";
 import type { PolicyAdditionalInterest } from "@/lib/db/schema";
 
 export function AdditionalInterestPanel({
   policyId,
   interests,
+  kinds = INTEREST_KINDS,
+  variant = "personal",
 }: {
   policyId: string;
   interests: PolicyAdditionalInterest[];
+  kinds?: readonly InterestKind[];
+  variant?: "personal" | "commercial";
 }) {
+  const commercial = variant === "commercial";
   return (
     <section className="ff-card mb-4 p-4">
-      <h2 className="text-base font-semibold text-navy">Mortgagee / additional interest</h2>
+      <h2 className="text-base font-semibold text-navy">
+        {commercial ? "Certificate holder / additional insured" : "Mortgagee / additional interest"}
+      </h2>
       <p className="mt-1 text-base text-muted-foreground">
-        Personal-lines list on this Policy. Adding a name does not file an endorsement — queue that
-        in the service request pipeline.
+        {commercial
+          ? "Holders and additional insureds on this commercial Policy. Adding a name does not issue a COI and does not file an endorsement."
+          : "Personal-lines list on this Policy. Adding a name does not file an endorsement — queue that in the service request pipeline."}
       </p>
       {interests.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No mortgagee or additional interest on file.</p>
@@ -66,7 +79,7 @@ export function AdditionalInterestPanel({
               defaultValue="mortgagee"
               className="mt-1 h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
             >
-              {INTEREST_KINDS.map((kind) => (
+              {kinds.map((kind) => (
                 <option key={kind} value={kind}>
                   {interestKindLabel(kind)}
                 </option>

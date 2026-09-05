@@ -1513,6 +1513,9 @@ export const issuedCertificates = pgTable(
     producerName: text("producer_name"),
     issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
     status: text("status").notNull().default("issued"),
+    additionalInsured: text("additional_insured"),
+    specialWording: text("special_wording"),
+    interestId: uuid("interest_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
 );
@@ -2507,11 +2510,13 @@ export const policyServiceRequests = pgTable(
     requestedByName: text("requested_by_name"),
     filedEventId: uuid("filed_event_id"),
     filedAt: timestamp("filed_at", { withTimezone: true }),
+    workDesk: text("work_desk").notNull().default("csr"),
     ...timestamps,
   },
   (t) => [
     index("policy_service_requests_tenant_idx").on(t.tenantId, t.status),
     index("policy_service_requests_policy_idx").on(t.tenantId, t.policyId),
+    index("policy_service_requests_work_desk_idx").on(t.tenantId, t.workDesk),
   ],
 );
 
@@ -2534,11 +2539,15 @@ export const certificateRequests = pgTable(
     requestedBy: uuid("requested_by"),
     requestedByName: text("requested_by_name"),
     issuedAt: timestamp("issued_at", { withTimezone: true }),
+    interestId: uuid("interest_id"),
+    additionalInsured: text("additional_insured"),
+    specialWording: text("special_wording"),
     ...timestamps,
   },
   (t) => [
     index("certificate_requests_tenant_idx").on(t.tenantId, t.status),
     index("certificate_requests_account_idx").on(t.tenantId, t.accountId),
+    index("certificate_requests_interest_idx").on(t.tenantId, t.interestId),
   ],
 );
 

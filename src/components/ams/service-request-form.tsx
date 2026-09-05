@@ -82,6 +82,17 @@ export function ServiceRequestForm({
         </p>
       )}
       <div>
+        <Label className="text-xs">Work desk</Label>
+        <select
+          name="workDesk"
+          defaultValue="csr"
+          className="mt-1 h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
+        >
+          <option value="csr">CSR — servicing / endorsements</option>
+          <option value="producer">Producer — sales follow-up</option>
+        </select>
+      </div>
+      <div>
         <Label className="text-xs">What the insured asked for</Label>
         <Textarea
           name="summary"

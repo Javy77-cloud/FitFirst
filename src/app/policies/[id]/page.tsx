@@ -14,9 +14,13 @@ import { formatDay, formatMoney } from "@/lib/domain";
 import { getPolicyWorkspace } from "@/lib/db/queries";
 import { loadPolicyServicing } from "@/lib/ams/queries";
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
+import { LossRunPanel } from "@/components/ams/loss-run-panel";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
-import { isPersonalLinesPolicy } from "@/lib/ams/additional-interests";
+import { SuspensePanel } from "@/components/ams/suspense-panel";
+import { TermHistoryPanel } from "@/components/ams/term-history-panel";
+import { allowedInterestKinds, canHoldInterests, isPersonalLinesPolicy } from "@/lib/ams/additional-interests";
+import { listClaimsForPolicy } from "@/lib/db/claim-queries";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
@@ -35,8 +39,11 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const servicing = await loadPolicyServicing(id);
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs } =
+  const [servicing, policyClaims] = await Promise.all([
+    loadPolicyServicing(id),
+    listClaimsForPolicy(id),
+  ]);
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms } =
     workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
   const notice = typeof query.notice === "string" ? query.notice : typeof query.filed === "string" ? query.filed : undefined;
@@ -99,9 +106,17 @@ export default async function PolicyDetailPage({
           packetByKey={servicing.packetByKey}
         />
       ) : null}
-      {isPersonalLinesPolicy(policy) ? (
-        <AdditionalInterestPanel policyId={policy.id} interests={servicing?.interests ?? []} />
+      {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} /> : null}
+      {canHoldInterests(policy) ? (
+        <AdditionalInterestPanel
+          policyId={policy.id}
+          interests={servicing?.interests ?? []}
+          kinds={allowedInterestKinds(policy)}
+          variant={isPersonalLinesPolicy(policy) ? "personal" : "commercial"}
+        />
       ) : null}
+      <TermHistoryPanel policyId={policy.id} terms={terms} />
+      <LossRunPanel policyId={policy.id} claims={policyClaims.map((row) => row.claim)} />
       <ServiceRequestPanel
         policyId={policy.id}
         status={policy.status}

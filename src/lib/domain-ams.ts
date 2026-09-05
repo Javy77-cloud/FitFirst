@@ -375,14 +375,66 @@ export function serviceRequestNextStep(status: string): string {
   return isServiceRequestStatus(status) ? SERVICE_REQUEST_NEXT_STEPS[status] : "";
 }
 
-export const INTEREST_KINDS = ["mortgagee", "additional_interest", "loss_payee"] as const;
+export const INTEREST_KINDS = [
+  "mortgagee",
+  "additional_interest",
+  "loss_payee",
+  "certificate_holder",
+] as const;
 export type InterestKind = (typeof INTEREST_KINDS)[number];
 
 export const INTEREST_KIND_LABELS: Record<InterestKind, string> = {
   mortgagee: "Mortgagee",
   additional_interest: "Additional interest",
   loss_payee: "Loss payee",
+  certificate_holder: "Certificate holder",
 };
+
+export const PERSONAL_INTEREST_KINDS = ["mortgagee", "additional_interest", "loss_payee"] as const;
+export const COMMERCIAL_INTEREST_KINDS = [
+  "additional_interest",
+  "certificate_holder",
+  "loss_payee",
+] as const;
+
+export const WORK_DESKS = ["producer", "csr"] as const;
+export type WorkDesk = (typeof WORK_DESKS)[number];
+
+export const WORK_DESK_LABELS: Record<WorkDesk, string> = {
+  producer: "Producer",
+  csr: "CSR",
+};
+
+export function isWorkDesk(value: string): value is WorkDesk {
+  return (WORK_DESKS as readonly string[]).includes(value);
+}
+
+export function workDeskLabel(value: string): string {
+  return isWorkDesk(value) ? WORK_DESK_LABELS[value] : value.replaceAll("_", " ");
+}
+
+export const TERM_ROLES = ["prior", "current", "proposed"] as const;
+export type TermRole = (typeof TERM_ROLES)[number];
+
+export const TERM_ROLE_LABELS: Record<TermRole, string> = {
+  prior: "Prior term",
+  current: "Current term",
+  proposed: "Proposed renewal",
+};
+
+export function isTermRole(value: string): value is TermRole {
+  return (TERM_ROLES as readonly string[]).includes(value);
+}
+
+export function termRoleLabel(role: string): string {
+  return isTermRole(role) ? TERM_ROLE_LABELS[role] : role.replaceAll("_", " ");
+}
+
+export const SUSPENSE_DOC_KEYS = ["id_card", "aor"] as const;
+export type SuspenseDocKey = (typeof SUSPENSE_DOC_KEYS)[number];
+
+export const LOSS_RUN_STUB_DISCLAIMER =
+  "Desk claims summary stub — not a carrier loss run. Handle the claim on the carrier website.";
 
 export function isInterestKind(value: string): value is InterestKind {
   return (INTEREST_KINDS as readonly string[]).includes(value);

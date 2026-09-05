@@ -594,3 +594,17 @@ export const AMS_WAVE4_IDS = {
   haleServiceTask: "a0491111-a049-4049-8049-a04911111106",
 } as const;
 
+/** AMS wave 5. Off wave4 a049… and Ana / Elena owner blocks. */
+export const AMS_WAVE5_IDS = {
+  harborBrevardAi: "a0501111-a050-4050-8050-a05011111101",
+  harborPalmBayAi: "a0501111-a050-4050-8050-a05011111102",
+  haleIdCardTask: "a0501111-a050-4050-8050-a05011111103",
+  haleAorTask: "a0501111-a050-4050-8050-a05011111104",
+  haleIdCardActivity: "a0501111-a050-4050-8050-a05011111105",
+  haleIdCardLog: "a0501111-a050-4050-8050-a05011111106",
+  elenaPriorTerm: "a0501111-a050-4050-8050-a05011111107",
+  elenaCurrentTerm: "a0501111-a050-4050-8050-a05011111108",
+  haleAorActivity: "a0501111-a050-4050-8050-a05011111109",
+  haleAorLog: "a0501111-a050-4050-8050-a05011111110",
+} as const;
+

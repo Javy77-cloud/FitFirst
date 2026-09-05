@@ -7,6 +7,7 @@ import { isCertifiableLine, isInForceStatus } from "@/lib/domain";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { getAccountWorkspace } from "@/lib/db/queries";
+import { listAccountInterests } from "@/lib/ams/queries";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
@@ -39,6 +40,10 @@ export default async function AccountDetailPage({
     dealId: deals[0]?.id,
     policyId: policies[0]?.policy.id,
   });
+  const accountInterests = await listAccountInterests(account.id);
+  const certPolicy = policies.find(
+    ({ policy }) => isInForceStatus(policy.status) && isCertifiableLine(policy.lineOfBusiness),
+  );
 
   return (
     <AppShell title={account.name}>
@@ -115,11 +120,10 @@ export default async function AccountDetailPage({
         </p>
         <CertificateRequestForm
           accountId={account.id}
+          policyId={certPolicy?.policy.id}
           returnTo={`/accounts/${account.id}`}
-          canRequest={policies.some(
-            ({ policy }) =>
-              isInForceStatus(policy.status) && isCertifiableLine(policy.lineOfBusiness),
-          )}
+          canRequest={Boolean(certPolicy)}
+          interests={accountInterests.map(({ interest }) => interest)}
         />
       </section>
 

@@ -3,7 +3,7 @@ import { ServiceRequestForm } from "@/components/ams/service-request-form";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
 import { serviceKindLabel, serviceRequestNextStepCopy } from "@/lib/ams/service-requests";
-import { isServiceRequestStatus, serviceRequestStatusLabel } from "@/lib/domain-ams";
+import { isServiceRequestStatus, serviceRequestStatusLabel, workDeskLabel } from "@/lib/domain-ams";
 import type { PolicyServiceRequest } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
 import { reasonLabel } from "@/lib/policy/reasons";
@@ -69,6 +69,7 @@ export function ServiceRequestPanel({
                   </span>
                   <span className="text-sm text-muted-foreground">
                     effective {formatDay(row.effectiveDate)}
+                    {row.workDesk ? ` · ${workDeskLabel(row.workDesk)}` : ""}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">

@@ -124,6 +124,31 @@ export function CertificateStub({
         </section>
       </div>
 
+      {certificate.additionalInsured || certificate.specialWording ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <section className="rounded-md border border-border p-3">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Additional insured
+            </h2>
+            {certificate.additionalInsured ? (
+              <p className="mt-1 font-medium text-navy">{certificate.additionalInsured}</p>
+            ) : (
+              <p className="mt-1 text-muted-foreground">Holder only — no separate AI named.</p>
+            )}
+          </section>
+          <section className="rounded-md border border-border p-3">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Special wording
+            </h2>
+            {certificate.specialWording ? (
+              <p className="mt-1 whitespace-pre-line">{certificate.specialWording}</p>
+            ) : (
+              <p className="mt-1 text-muted-foreground">None listed on this stub.</p>
+            )}
+          </section>
+        </div>
+      ) : null}
+
       <footer className="mt-4 border-t border-border pt-3 text-base text-muted-foreground">
         <p>
           If any of the described policies are cancelled before the expiration date, notice may be

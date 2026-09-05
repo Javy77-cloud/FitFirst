@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
 import { ACORD_STUB_DISCLAIMER } from "@/lib/ams/coi-requests";
 import { certificateRequestStatusLabel } from "@/lib/domain-ams";
-import { listCertificateQueue } from "@/lib/ams/queries";
-import { HARBOR_ACCOUNT_ID } from "@/lib/fixtures/ids";
+import { listAccountInterests, listCertificateQueue } from "@/lib/ams/queries";
+import { HARBOR_ACCOUNT_ID, HARBOR_POLICY_ID } from "@/lib/fixtures/ids";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,10 @@ export default async function CertificatesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const { requests, issued } = await listCertificateQueue();
+  const [{ requests, issued }, harborInterests] = await Promise.all([
+    listCertificateQueue(),
+    listAccountInterests(HARBOR_ACCOUNT_ID),
+  ]);
   const error = typeof params.error === "string" ? params.error : undefined;
   const notice = typeof params.notice === "string" ? params.notice : undefined;
 
@@ -43,9 +46,11 @@ export default async function CertificatesPage({
           </p>
           <CertificateRequestForm
             accountId={HARBOR_ACCOUNT_ID}
+            policyId={HARBOR_POLICY_ID}
             returnTo="/certificates"
             canRequest
             error={error}
+            interests={harborInterests.map(({ interest }) => interest)}
           />
         </section>
         <section className="ff-card overflow-hidden">
@@ -66,6 +71,9 @@ export default async function CertificatesPage({
                     <div className="text-sm text-muted-foreground">
                       <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
                       {request.jobLocation ? ` · ${request.jobLocation}` : ""}
+                      {request.additionalInsured
+                        ? ` · AI ${request.additionalInsured}`
+                        : ""}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <form action={advanceCertificateRequest}>

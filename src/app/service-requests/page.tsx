@@ -4,7 +4,7 @@ import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
 import { serviceKindLabel, serviceRequestNextStepCopy } from "@/lib/ams/service-requests";
-import { isServiceRequestStatus, serviceRequestStatusLabel } from "@/lib/domain-ams";
+import { isServiceRequestStatus, serviceRequestStatusLabel, workDeskLabel } from "@/lib/domain-ams";
 import { listServiceRequests } from "@/lib/ams/queries";
 import { reasonLabel } from "@/lib/policy/reasons";
 import type { PolicyChangeKind } from "@/lib/policy/status";
@@ -17,7 +17,8 @@ export default async function ServiceRequestsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const rows = await listServiceRequests();
+  const desk = typeof params.desk === "string" ? params.desk : undefined;
+  const rows = await listServiceRequests(undefined, desk);
   const error = typeof params.error === "string" ? params.error : undefined;
 
   return (
@@ -25,8 +26,14 @@ export default async function ServiceRequestsPage({
       <p className="mb-4 text-base text-muted-foreground">
         Endorsement, cancellation, and non-renewal queue. Status chips show the next desk step.
         Filing updates the existing Policy and writes the activity log. Quotes never become
-        Policies. Elena and Hale stay in force until you file.
+        Policies. Elena and Hale stay in force until you file. Split the queue by producer vs
+        CSR without changing status.
       </p>
+      <div className="mb-4 flex flex-wrap gap-2 text-sm">
+        <RecordLink href="/service-requests">All desks</RecordLink>
+        <RecordLink href="/service-requests?desk=csr">CSR</RecordLink>
+        <RecordLink href="/service-requests?desk=producer">Producer</RecordLink>
+      </div>
       {error ? (
         <p className="mb-3 text-sm text-destructive" role="alert">
           {error}
@@ -45,6 +52,7 @@ export default async function ServiceRequestsPage({
                 <th>Kind</th>
                 <th>Status</th>
                 <th>Next step</th>
+                <th>Desk</th>
                 <th>Party</th>
                 <th>Effective</th>
                 <th></th>
@@ -72,6 +80,7 @@ export default async function ServiceRequestsPage({
                         ? serviceRequestNextStepCopy(request.status)
                         : "—"}
                     </td>
+                    <td>{workDeskLabel(request.workDesk)}</td>
                     <td>
                       {contact
                         ? `${contact.lastName}, ${contact.firstName}`
