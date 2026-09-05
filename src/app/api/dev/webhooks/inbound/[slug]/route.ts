@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { acceptInboundSignal } from "@/lib/developer-hub/store";
-import { slugifyApiName } from "@/lib/developer-hub/types";
+import { slugifyInboundSlug } from "@/lib/developer-hub/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export async function POST(
   context: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await context.params;
-  const clean = slugifyApiName(slug);
+  const clean = slugifyInboundSlug(slug);
   let payload: unknown = {};
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isLocalDeliveryUrl } from "./events";
 import { prefixFromSecret, hashOrgApiKey } from "./keys";
-import { slugifyApiName } from "./types";
+import { slugifyApiName, slugifyInboundSlug } from "./types";
 
 describe("isLocalDeliveryUrl", () => {
   it("allows localhost HTTP and rejects remote hosts", () => {
@@ -26,5 +26,10 @@ describe("slugifyApiName", () => {
   it("normalizes names to apiName slugs", () => {
     expect(slugifyApiName("Echo payload")).toBe("echo_payload");
     expect(slugifyApiName("")).toBe("untitled");
+  });
+
+  it("keeps hyphens on inbound slugs", () => {
+    expect(slugifyInboundSlug("desk-echo")).toBe("desk-echo");
+    expect(slugifyInboundSlug("Desk Echo")).toBe("desk-echo");
   });
 });

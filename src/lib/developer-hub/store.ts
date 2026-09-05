@@ -19,14 +19,15 @@ import {
 } from "@/lib/db/schema";
 import { encryptSecret, isMaskedSecretInput } from "@/lib/secrets/vault";
 import { attemptWebhookDelivery } from "./events";
-import { generateOrgApiKey, hashOrgApiKey, prefixFromSecret } from "./keys";
-import { parseJsonInput, runFunctionBody } from "./runner";
+import { generateOrgApiKey, hashOrgApiKey } from "./keys";
+import { runFunctionBody } from "./runner";
 import {
   isConnectionKind,
   isFunctionCategory,
   isFunctionLanguage,
   isWebhookEvent,
   slugifyApiName,
+  slugifyInboundSlug,
   slugifyLinkName,
   type FunctionCategory,
 } from "./types";
@@ -376,7 +377,7 @@ export async function getInboundHookBySlug(slug: string) {
 
 export async function createInboundHook(name: string, slug: string) {
   const label = name.trim();
-  const clean = slugifyApiName(slug || label);
+  const clean = slugifyInboundSlug(slug || label);
   if (!label) throw new Error("Name is required.");
   const [row] = await db
     .insert(developerInboundHooks)

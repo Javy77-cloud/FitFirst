@@ -113,3 +113,14 @@ export function slugifyApiName(raw: string): string {
 export function slugifyLinkName(raw: string): string {
   return slugifyApiName(raw);
 }
+
+/** Inbound path slugs keep hyphens (`desk-echo`). */
+export function slugifyInboundSlug(raw: string): string {
+  const slug = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  return slug || "signal";
+}
