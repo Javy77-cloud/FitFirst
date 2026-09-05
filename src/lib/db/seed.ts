@@ -88,7 +88,24 @@ export async function seedIfEmpty() {
   return { seeded: true };
 }
 
+/** One writer at a time — db tests share Postgres and used to unique-crash when seed() overlapped. */
+let seedLock: Promise<void> = Promise.resolve();
+
 export async function seed() {
+  let unlock = () => {};
+  const previous = seedLock;
+  seedLock = new Promise<void>((resolve) => {
+    unlock = resolve;
+  });
+  await previous;
+  try {
+    await seedUnlocked();
+  } finally {
+    unlock();
+  }
+}
+
+async function seedUnlocked() {
   await db
     .insert(tenants)
     .values({
