@@ -421,7 +421,7 @@ export function OwnerDesk({
                     <div className="p-4">
                       <h3 className="text-sm font-semibold text-navy">Agency this month</h3>
                       <p className="text-[11px] text-muted-foreground">
-                        Company widget on agent desks when Admin turns it on. Ana&apos;s shop is still not written
+                        Company widget on agent desks when Admin turns it on. Quotes are not written
                         premium.
                       </p>
                       <div className="mt-3 grid gap-2 sm:grid-cols-3">
