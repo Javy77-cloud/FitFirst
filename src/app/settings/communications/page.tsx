@@ -28,7 +28,7 @@ const CHANNELS: {
     id: "email",
     href: "/settings/email",
     title: "Email",
-    body: "Gmail, Outlook, or Yahoo inbox. Templates and signatures stay under Brand / lists.",
+    body: "Google, Outlook, or Zoho Mail inbox. Templates and signatures stay under Brand / lists.",
     categories: ["email"],
   },
   {

@@ -72,9 +72,10 @@ export default async function SettingsPage() {
           className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
         >
           <div>
-            <div className="text-sm font-semibold text-navy">Integrations catalog</div>
+            <div className="text-sm font-semibold text-navy">Integrations</div>
             <p className="text-helper text-muted-foreground">
-              Gmail, Outlook, Mailchimp, Twilio, Zoom, DocuSign — Connect stub, agency pays. No Zoho.
+              Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign,
+              EZLynx / QuoteRush. Connect / Disconnect is a demo toggle. Agency pays the vendor.
             </p>
           </div>
           <ConnectionBadge connected={catalogConnected} />

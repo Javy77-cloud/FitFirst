@@ -4,6 +4,7 @@ import { SETTINGS_NAV, SETTINGS_NAV_IDS, settingsGroupFor } from "./nav";
 describe("settings nav", () => {
   it("nests Social and Developer Hub under Integrations", () => {
     const integrations = SETTINGS_NAV.find((group) => group.id === "integrations");
+    expect(integrations?.label).toBe("Integrations");
     expect(integrations?.children.map((child) => child.id)).toEqual(
       expect.arrayContaining(["integrations", "carrier-download", "social", "developer"]),
     );

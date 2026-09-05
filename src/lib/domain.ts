@@ -376,6 +376,7 @@ export const INTEGRATION_CATEGORIES = [
   "phone_sms",
   "video",
   "esign",
+  "rater",
   "social",
 ] as const;
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
@@ -389,14 +390,16 @@ export type IntegrationCatalogItem = {
 
 /** Agency BYO catalog. FitFirst is plug-only — the agency pays. No FitFirst Twilio subscribe. */
 export const INTEGRATION_CATALOG: readonly IntegrationCatalogItem[] = [
-  { category: "email", provider: "google", label: "Gmail / Google Workspace" },
-  { category: "email", provider: "outlook", label: "Microsoft Outlook / 365" },
+  { category: "email", provider: "google", label: "Google" },
+  { category: "email", provider: "outlook", label: "Outlook" },
+  { category: "email", provider: "zoho_mail", label: "Zoho Mail" },
   { category: "email", provider: "yahoo", label: "Yahoo" },
   { category: "email_campaigns", provider: "mailchimp", label: "Mailchimp" },
   { category: "email_campaigns", provider: "constant_contact", label: "Constant Contact" },
   { category: "email_campaigns", provider: "sendgrid", label: "SendGrid (transactional)" },
   { category: "calendar", provider: "google", label: "Google Calendar" },
   { category: "calendar", provider: "outlook", label: "Outlook Calendar" },
+  { category: "calendar", provider: "zoho_calendar", label: "Zoho Calendar" },
   { category: "phone_sms", provider: "twilio", label: "Twilio" },
   { category: "phone_sms", provider: "ringcentral", label: "RingCentral" },
   { category: "phone_sms", provider: "lightspeed_voice", label: "Lightspeed Voice" },
@@ -405,6 +408,8 @@ export const INTEGRATION_CATALOG: readonly IntegrationCatalogItem[] = [
   { category: "video", provider: "meet", label: "Google Meet" },
   { category: "esign", provider: "docusign", label: "DocuSign" },
   { category: "esign", provider: "dropbox_sign", label: "Dropbox Sign" },
+  { category: "rater", provider: "ezlynx", label: "EZLynx" },
+  { category: "rater", provider: "quoterush", label: "QuoteRush" },
   { category: "social", provider: "facebook", label: "Facebook" },
   { category: "social", provider: "instagram", label: "Instagram" },
   { category: "social", provider: "x", label: "X (Twitter)" },

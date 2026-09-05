@@ -42,6 +42,7 @@ async function syncLegacyConnect(id: ReturnType<typeof getIntegrationProvider>["
   if (id === "gmail") await markSendAccountDemoConnected("google");
   if (id === "outlook") await markSendAccountDemoConnected("outlook");
   if (id === "yahoo") await markSendAccountDemoConnected("yahoo");
+  if (id === "zoho_mail") await markSendAccountDemoConnected("zoho_mail");
 
   if (id === "google_calendar") {
     const stub = completeGoogleOAuthStub(stubAccountLabel(id));

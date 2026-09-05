@@ -1,6 +1,7 @@
 import { connectCatalogStub, disconnectCatalogStub } from "@/app/actions/integrations";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { Button } from "@/components/ui/button";
+import { AGENCY_PAYS_VENDOR } from "@/lib/integrations/catalog";
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
 
 export function IntegrationCard({
@@ -40,7 +41,8 @@ export function IntegrationCard({
         </div>
         <ConnectionBadge connected={item.connected} />
       </div>
-      <p className="mt-2 text-helper text-muted-foreground">{item.byoNote}</p>
+      <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
+      <p className="text-helper text-muted-foreground">{item.byoNote}</p>
       {item.connected && item.accountLabel ? (
         <p className="mt-1 text-xs text-navy">
           {item.accountLabel}
@@ -62,12 +64,14 @@ export function IntegrationCard({
               <input type="hidden" name="provider" value={item.id} />
               <input type="hidden" name="next" value={returnTo} />
               <Button type="submit" size="sm">
-                Connect stub
+                Connect
               </Button>
             </form>
           )
         ) : (
-          <p className="text-helper text-muted-foreground">Admin connects this. Agency pays the vendor.</p>
+          <p className="text-helper text-muted-foreground">
+            Admin connects this. {AGENCY_PAYS_VENDOR}
+          </p>
         )}
       </div>
     </article>

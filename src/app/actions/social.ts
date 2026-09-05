@@ -54,7 +54,9 @@ export async function saveGbpAgentMonitor(formData: FormData) {
     });
   }
   refreshSocial();
-  redirect(`/settings/social?notice=${allow ? "gbp-agents-on" : "gbp-agents-off"}`);
+  const next = String(formData.get("next") ?? "");
+  const dest = next === "/settings/integrations" ? "/settings/integrations" : "/settings/social";
+  redirect(`${dest}?notice=${allow ? "gbp-agents-on" : "gbp-agents-off"}`);
 }
 
 export async function openSocialInquiryAsLead(formData: FormData) {

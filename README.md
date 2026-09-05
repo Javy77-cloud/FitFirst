@@ -35,6 +35,8 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 AMS desk: file endorsement / cancel / non-renew on the Policy with a clear outcome. Renewal compare shows dollar and percent premium change. Work queue lists flags, notes, assignee, and in-app pings (addressed to the assignee). Claims log is a three-column FNOL board. Commissions split pending (still owed) vs paid. Missing-data gauges link to the Quote Sheet cell.
 
+**Integrations** (`/settings/integrations`): same chrome as the catalog. Demo Connect / Disconnect for Google, Outlook, Zoho Mail/Calendar, Facebook / Instagram / GBP, SMS, e-sign, and EZLynx / QuoteRush. Status is **Connected (demo)** or **Not connected**. Copy is **Agency pays the vendor.** No OAuth, API keys, Stripe, or Twilio. GBP gate stays on Settings → Social. Linked from Settings.
+
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
 ## AMS wave 2 (kept)

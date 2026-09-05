@@ -1,4 +1,7 @@
+import { connectionStatusLabel } from "@/lib/integrations/catalog";
 import { cn } from "@/lib/utils";
+
+export { connectionStatusLabel };
 
 export function ConnectionBadge({
   connected,
@@ -17,7 +20,7 @@ export function ConnectionBadge({
         className,
       )}
     >
-      {connected ? "Connected (stub)" : "Not connected"}
+      {connectionStatusLabel(connected)}
     </span>
   );
 }

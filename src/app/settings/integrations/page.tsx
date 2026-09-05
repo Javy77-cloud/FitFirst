@@ -3,6 +3,7 @@ import { IntegrationCard } from "@/components/settings/integration-card";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { currentDeskSession } from "@/lib/auth/session";
 import {
+  AGENCY_PAYS_VENDOR,
   INTEGRATION_CATEGORY_BLURB,
   INTEGRATION_CATEGORY_LABEL,
 } from "@/lib/integrations/catalog";
@@ -31,22 +32,22 @@ export default async function IntegrationsCatalogPage({
   return (
     <SettingsShell title="Integrations" current="integrations">
       <p className="mb-3 text-sm text-muted-foreground">
-        Connectable providers the agency already pays. FitFirst does not bill Gmail, Twilio, Zoom,
-        or anyone else. Connect is a stub so later OAuth can land on this settings shape — no
-        vendor keys, no live token exchange.
+        Connectable providers the agency already pays. {AGENCY_PAYS_VENDOR} FitFirst does not bill
+        Google, Outlook, Zoho, SMS, e-sign, or a rater. Connect / Disconnect is a demo toggle — no
+        OAuth, no API keys, no Stripe, no Twilio.
       </p>
       <div className="mb-4 rounded-md border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm">
         <div className="font-medium text-navy">Bring your own · agency pays</div>
         <p className="mt-0.5 text-muted-foreground">
           {connectedCount} of {total} marked connected. Status is{" "}
           <ConnectionBadge connected={false} className="align-middle" /> until an admin clicks
-          Connect stub, then <ConnectionBadge connected className="align-middle" />. Nothing
-          leaves this desk.
+          Connect, then <ConnectionBadge connected className="align-middle" />. Nothing leaves this
+          desk.
         </p>
       </div>
       {notice === "connected" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          {provider ?? "Provider"} marked connected. No OAuth ran.
+          {provider ?? "Provider"} marked connected (demo). No OAuth ran.
         </p>
       ) : null}
       {notice === "disconnected" ? (
@@ -56,7 +57,8 @@ export default async function IntegrationsCatalogPage({
       ) : null}
       {!session.isAdmin ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Connecting a vendor is Admin-only. Agents can see what the agency plugged in.
+          Connecting a vendor is Admin-only. Agents can see what the agency plugged in. GBP stays
+          locked on Social until Admin allows monitoring.
         </p>
       ) : null}
 

@@ -864,3 +864,15 @@ Side branch off `cursor/fitfirst-type-readability-e960`. Additive only. No new m
 - Claims log is Inquiry / Referred / Closed with Add FNOL. Claim detail uses the FNOL record.
 - Commissions pending vs paid cards filter the sheet. Payable/held stay pending. Mark paid does not change Policy status.
 - Sheet health blockers link to `?tab=quote-sheet&field=` and `#sheet-field-*`.
+
+## Connect stubs hub (`cursor/connect-stubs-hub-1028`)
+
+Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Dark sidebar stays. No live OAuth, API keys, Stripe, or Twilio.
+
+- Settings → **Integrations** keeps the existing catalog chrome. Cards now include Zoho Mail/Calendar and rater (EZLynx / QuoteRush) plus the existing Google, Outlook, social/GBP, SMS, and e-sign stubs.
+- Each card: Connect / Disconnect demo toggle, **Agency pays the vendor.**, status **Connected (demo)** vs **Not connected**.
+- Connecting stays Admin-only. GBP monitor gate stays on Settings → Social.
+- Zoho Mail/Calendar are inbox/calendar plugs — not a Zoho CRM sync. Raters do not call EZLynx or QuoteRush.
+- Settings overview still links to `/settings/integrations`. No visual redesign.
+
+Do not bind Ana.

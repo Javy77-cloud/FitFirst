@@ -13,8 +13,8 @@ export default async function EmailSettingsPage() {
   return (
     <SettingsShell title="Email">
       <p className="mb-4 text-sm text-muted-foreground">
-        Client mail goes through the agency inbox. Connect Gmail, Outlook, or Yahoo as a stub.
-        Templates and signatures are written once for the agency.
+        Client mail goes through the agency inbox. Connect Google, Outlook, or Zoho Mail as a
+        demo toggle. Agency pays the vendor. Templates and signatures stay under Brand / lists.
       </p>
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/settings/email-templates" className="text-primary hover:underline">
