@@ -32,6 +32,13 @@ export type CalendarActivity = {
 export const CALENDAR_VIEWS = ["month", "week", "day"] as const;
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
 
+/** Javy calendar chrome — three rows, exact labels. */
+export const CALENDAR_TOOLBAR_ROWS = [
+  ["Add event", "Add company meeting", "Add training"],
+  ["Month", "Week", "Day"],
+  ["Task", "Meeting", "Call", "Email", "SMS"],
+] as const;
+
 export function isCalendarView(value: string | null | undefined): value is CalendarView {
   return value === "month" || value === "week" || value === "day";
 }

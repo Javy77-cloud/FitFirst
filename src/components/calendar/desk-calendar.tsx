@@ -24,6 +24,8 @@ import {
   activitiesOnDay,
   addDays,
   addMonths,
+  CALENDAR_TOOLBAR_ROWS,
+  CALENDAR_VIEWS,
   dayHours,
   eventHeightPx,
   eventToneColor,
@@ -175,6 +177,65 @@ export function DeskCalendar({
 
   return (
     <div className="space-y-3">
+      <nav aria-label="Calendar toolbar" className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="add">
+          <Button type="button" size="sm" onClick={() => openNew()}>
+            {CALENDAR_TOOLBAR_ROWS[0][0]}
+          </Button>
+          {isAdmin ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-fit-flag text-white hover:bg-fit-flag/90"
+                onClick={() => {
+                  setDraftStart("");
+                  setEditing("company");
+                }}
+              >
+                {CALENDAR_TOOLBAR_ROWS[0][1]}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setDraftStart("");
+                  setEditing("training");
+                }}
+              >
+                {CALENDAR_TOOLBAR_ROWS[0][2]}
+              </Button>
+            </>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="view">
+          {CALENDAR_VIEWS.map((v, index) => (
+            <Button
+              key={v}
+              type="button"
+              size="sm"
+              variant={view === v ? "default" : "outline"}
+              onClick={() => go(v, anchor)}
+            >
+              {CALENDAR_TOOLBAR_ROWS[1][index]}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="kind">
+          {KINDS.map((kind, index) => (
+            <Button
+              key={kind}
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => openNew(undefined, kind)}
+            >
+              {CALENDAR_TOOLBAR_ROWS[2][index]}
+            </Button>
+          ))}
+        </div>
+      </nav>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1">
           <Button
@@ -202,72 +263,23 @@ export function DeskCalendar({
           </Button>
           <h2 className="ml-2 text-sm font-semibold text-navy">{title}</h2>
         </div>
-        <div className="flex flex-wrap gap-1">
-          {(["month", "week", "day"] as const).map((v) => (
-            <Button
-              key={v}
-              type="button"
-              size="sm"
-              variant={view === v ? "default" : "outline"}
-              onClick={() => go(v, anchor)}
-            >
-              {v[0].toUpperCase() + v.slice(1)}
-            </Button>
-          ))}
-          <Button type="button" size="sm" onClick={() => openNew()}>
-            + Add event
-          </Button>
-          {isAdmin ? (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                className="bg-fit-flag text-white hover:bg-fit-flag/90"
-                onClick={() => {
-                  setDraftStart("");
-                  setEditing("company");
-                }}
-              >
-                + Company meeting
-              </Button>
-              <Button type="button" size="sm" onClick={() => {
-                setDraftStart("");
-                setEditing("training");
-              }}>
-                + Training
-              </Button>
-            </>
-          ) : null}
+        <div className="flex flex-wrap gap-2" aria-label="Show activity types">
           {KINDS.map((kind) => (
-            <Button
-              key={kind}
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => openNew(undefined, kind)}
-            >
-              + {kind[0].toUpperCase() + kind.slice(1)}
-            </Button>
+            <label key={kind} className="flex items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={kinds.includes(kind)}
+                onChange={() => toggleKind(kind)}
+              />
+              <span
+                className="rounded-sm px-1.5 py-0.5 font-semibold uppercase text-white"
+                style={{ background: ACTIVITY_COLORS[kind] }}
+              >
+                {kind}
+              </span>
+            </label>
           ))}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {KINDS.map((kind) => (
-          <label key={kind} className="flex items-center gap-1.5 text-xs">
-            <input
-              type="checkbox"
-              checked={kinds.includes(kind)}
-              onChange={() => toggleKind(kind)}
-            />
-            <span
-              className="rounded-sm px-1.5 py-0.5 font-semibold uppercase text-white"
-              style={{ background: ACTIVITY_COLORS[kind] }}
-            >
-              {kind}
-            </span>
-          </label>
-        ))}
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <p className="text-xs text-muted-foreground">
