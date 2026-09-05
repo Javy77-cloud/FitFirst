@@ -2,6 +2,7 @@ import { shopInAppetiteAction } from "@/app/actions/quotes";
 import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import type { CarrierMatch } from "@/lib/appetite/match";
+import { appointmentLabel, isAppointedMatch } from "@/lib/appetite/present";
 
 export function MarketsPanel({
   dealId,
@@ -15,6 +16,7 @@ export function MarketsPanel({
   const greens = matches.filter((m) => m.band === "green");
   const yellows = matches.filter((m) => m.band === "yellow");
   const reds = matches.filter((m) => m.band === "red");
+  const appointed = matches.filter((m) => isAppointedMatch(m)).length;
 
   return (
     <div className="space-y-4">
@@ -22,9 +24,9 @@ export function MarketsPanel({
         <div>
           <h3 className="text-base font-semibold text-navy">Filter first, then rank</h3>
           <p className="text-base text-muted-foreground">
-            {greens.length} green · {yellows.length} yellow · {reds.length} red. Red markets are
-            not submitted. Yellow needs an override. Portal adapters are empty — no carrier
-            logins.
+            {greens.length} green · {yellows.length} yellow · {reds.length} red · {appointed}{" "}
+            appointed. Red markets are not submitted. Yellow needs an override. Portal adapters
+            are empty — no carrier logins.
           </p>
         </div>
         <form action={shopInAppetiteAction}>
@@ -60,6 +62,7 @@ function MarketTable({
           <thead>
             <tr>
               <th>Carrier</th>
+              <th>Appointment</th>
               <th>Fit</th>
               <th>Score</th>
               <th>Why</th>
@@ -74,6 +77,7 @@ function MarketTable({
                     <div className="text-helper text-fit-red">Learned from decline log</div>
                   ) : null}
                 </td>
+                <td>{appointmentLabel(row)}</td>
                 <td>
                   <FitBadge band={row.band} />
                 </td>

@@ -10,6 +10,7 @@ import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { RiskForm } from "@/components/deal/risk-form";
+import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
 import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
 import type { ShopLine } from "@/lib/domain";
+import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
+import { sheetForLine } from "@/lib/quoting/sheet-for-line";
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +47,10 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string; notice?: string; field?: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string; notice?: string; field?: string; line?: string }>;
 }) {
   const { id } = await params;
-  const { tab, riskTab, notice, field } = await searchParams;
+  const { tab, riskTab, notice, field, line: lineHint } = await searchParams;
   const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
@@ -62,6 +65,8 @@ export default async function DealPage({
     contact,
     account,
     quoteSheet,
+    sheets,
+    jobs,
     boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
@@ -83,10 +88,12 @@ export default async function DealPage({
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
-  const sheetLine = (quoteSheet?.line as ShopLine | undefined) ?? "home";
-  const health = quoteSheet
-    ? reportFromSheet(sheetLine, quoteSheet.values)
-    : null;
+  const sheetLine =
+    (lineHint as ShopLine | undefined) ?? (quoteSheet?.line as ShopLine | undefined) ?? "home";
+  const activeSheet = sheetForLine(sheets, sheetLine) ?? quoteSheet ?? null;
+  const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
+  const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
+  const unlocked = quotingUnlockedForDeal(deal);
 
   return (
     <AppShell
@@ -185,7 +192,13 @@ export default async function DealPage({
                     label: "Documents",
                     content: (
                       <div className="space-y-4">
-                        <DocumentsPanel dealId={deal.id} riskId={risk.id} docs={docs} fields={fields} />
+                        <DocumentsPanel
+                          dealId={deal.id}
+                          riskId={risk.id}
+                          docs={docs}
+                          fields={fields}
+                          jobs={jobs}
+                        />
                         <InDeskEsignPanel
                           recordKind="deal"
                           recordId={deal.id}
@@ -205,26 +218,42 @@ export default async function DealPage({
                   {
                     id: "quote-sheet",
                     label: "Quote Sheet",
-                    content: quoteSheet ? (
-                      <div className="space-y-3">
-                        <form action={fillQuoteSheetBlanks}>
-                          <input type="hidden" name="dealId" value={deal.id} />
-                          <input type="hidden" name="line" value={sheetLine} />
-                          <Button type="submit" size="sm">
-                            Fill blanks from source docs
-                          </Button>
-                        </form>
-                        <QuoteSheetForm
+                    content: (
+                      <div className="space-y-4">
+                        {quoteSheet ? (
+                          <>
+                            <form action={fillQuoteSheetBlanks}>
+                              <input type="hidden" name="dealId" value={deal.id} />
+                              <input type="hidden" name="line" value={sheetLine} />
+                              <Button type="submit" size="sm">
+                                Fill blanks from source docs
+                              </Button>
+                            </form>
+                            <QuoteSheetForm
+                              dealId={deal.id}
+                              dealTitle={deal.title}
+                              line={sheetLine}
+                              sheet={quoteSheet}
+                              contact={contact}
+                              riskId={risk.id}
+                            />
+                          </>
+                        ) : (
+                          <QuoteSheetPanel
+                            dealId={deal.id}
+                            values={activeSheet?.values ?? null}
+                            line={sheetLine}
+                            unlocked={unlocked}
+                          />
+                        )}
+                        <SheetApproveGate
                           dealId={deal.id}
-                          dealTitle={deal.title}
                           line={sheetLine}
-                          sheet={quoteSheet}
-                          contact={contact}
-                          riskId={risk.id}
+                          formLabel={quotingForm?.label ?? "HO3"}
+                          unlocked={unlocked}
+                          approvedBy={deal.sheetApprovedBy}
                         />
                       </div>
-                    ) : (
-                      <QuoteSheetPanel dealId={deal.id} values={null} line={sheetLine} />
                     ),
                   },
                   {
@@ -247,7 +276,9 @@ export default async function DealPage({
                   {
                     id: "markets",
                     label: "Markets",
-                    content: <MarketsPanel dealId={deal.id} matches={matches} />,
+                    content: (
+                      <MarketsPanel dealId={deal.id} matches={matches} unlocked={unlocked} />
+                    ),
                   },
                   {
                     id: "quotes",

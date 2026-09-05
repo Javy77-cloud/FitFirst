@@ -11,10 +11,12 @@ export function QuoteSheetPanel({
   dealId,
   values,
   line = "home",
+  unlocked = false,
 }: {
   dealId: string;
   values: Record<string, QuoteSheetFieldValue> | null;
   line?: string;
+  unlocked?: boolean;
 }) {
   const sheet = values ?? {};
   const groups = groupHomeFields();
@@ -52,7 +54,7 @@ export function QuoteSheetPanel({
             </Link>
           </div>
         </div>
-        <SheetHandoffButtons dealId={dealId} line={line} />
+        <SheetHandoffButtons dealId={dealId} line={line} unlocked={unlocked} />
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
           <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 text-fit-yellow">Missing</span>
           <span className="rounded-sm bg-fit-check-bg px-1.5 py-0.5 text-fit-check">CHECK</span>

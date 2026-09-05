@@ -4,10 +4,22 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FILL_MESSAGE_SOURCE, FILL_MESSAGE_TYPE, FILL_STORAGE_KEY } from "@/lib/wire/sheet-packet";
 
-export function SheetHandoffButtons({ dealId, line }: { dealId: string; line: string }) {
+export function SheetHandoffButtons({
+  dealId,
+  line,
+  unlocked = true,
+}: {
+  dealId: string;
+  line: string;
+  unlocked?: boolean;
+}) {
   const [note, setNote] = useState<string | null>(null);
 
   async function sendToFill() {
+    if (!unlocked) {
+      setNote("Approve the master sheet first. Send to Fill stays locked.");
+      return;
+    }
     const res = await fetch(`/api/deals/${dealId}/quote-sheets/${line}/fill`);
     if (!res.ok) {
       setNote("Quote Sheet record is missing.");
@@ -21,6 +33,10 @@ export function SheetHandoffButtons({ dealId, line }: { dealId: string; line: st
   }
 
   async function copySheet() {
+    if (!unlocked) {
+      setNote("Approve the master sheet first. Copy sheet stays locked.");
+      return;
+    }
     const res = await fetch(`/api/deals/${dealId}/quote-sheets/${line}/super-copy`);
     if (!res.ok) {
       setNote("Quote Sheet record is missing.");
@@ -33,10 +49,10 @@ export function SheetHandoffButtons({ dealId, line }: { dealId: string; line: st
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
-      <Button type="button" size="sm" variant="secondary" onClick={copySheet}>
+      <Button type="button" size="sm" variant="secondary" onClick={copySheet} disabled={!unlocked}>
         Copy sheet
       </Button>
-      <Button type="button" size="sm" variant="secondary" onClick={sendToFill}>
+      <Button type="button" size="sm" variant="secondary" onClick={sendToFill} disabled={!unlocked}>
         Send to Fill
       </Button>
       <a href="/fill-demo" className="text-xs text-primary hover:underline">

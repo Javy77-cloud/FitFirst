@@ -26,7 +26,7 @@ import {
 } from "@/lib/extraction/extract";
 import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
 import { inferShopLine, isQuoteAttachment, sourceDocFillsHome } from "@/lib/ingest/identity";
-import { ImageOcrNotImplementedError, textFromUpload } from "@/lib/extraction/pdf";
+import { ImageOcrNotImplementedError, pdfTextLooksEmpty, textFromUpload } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
   MELBOURNE_DEC_TEXT,
@@ -332,15 +332,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
     try {
       const text = await textFromUpload(buffer, doc.mimeType, doc.filename);
-      if (!text.trim()) {
-        await db.insert(extractionJobs).values({
-          tenantId: DEFAULT_TENANT_ID,
+      if (!text.trim() || pdfTextLooksEmpty(text)) {
+        values = await fillSheetFromPhoto({
           dealId,
-          documentId: doc.id,
-          quoteSheetId: sheet.id,
-          engine: "pdf_text",
-          status: "failed",
-          message: `${doc.filename} has no readable text. Try a text export or the sample dec / 4-point / wind mit.`,
+          line,
+          doc,
+          sheetId: sheet.id,
+          buffer,
+          values,
         });
         continue;
       }
