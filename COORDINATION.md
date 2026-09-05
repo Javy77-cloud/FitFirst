@@ -713,6 +713,16 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 - ID card: branded stub from the in-force policy; download uses the issued `policy_file` / `policy_id` document via `/api/portal/[token]/files/[id]`.
 - Desk: stub link on Elena Contact, Harbor Business, and those Policies. Work queue has a Client portal requests section.
 
+## Nav cleanup + Phone / Inbox stubs (`cursor/nav-phone-inbox-stubs-8078`)
+
+Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue sidebar unchanged. One Pipeline row.
+
+- Left-nav group **People** → **Accounts**. Children stay Contacts (`/contacts`) and Businesses (`/accounts`). Contact and Business modules were not deleted.
+- Sidebar **Search** removed. Top-bar Smart Search is the only search.
+- `/phone` — connect-later wall (BYO line later, no Twilio buy) + dialer stub. Outcome + notes write `activities` / `activity_logs` via `saveCallOutcome`. Existing call log (`listCallLog`) stays on the page. `/settings/phone` is unchanged.
+- `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
+- Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.
+
 ## WAVE3 leftover
 
 DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).

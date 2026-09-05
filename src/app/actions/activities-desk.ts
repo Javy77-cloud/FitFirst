@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, activityLogs, alerts, calendarInvites } from "@/lib/db/schema";
+import { canCloseCall } from "@/lib/activities/rules";
 import {
   activityLogBody,
   assertRelatedRecord,
@@ -21,6 +22,13 @@ function when(form: FormData, key: string) {
   if (!raw) return null;
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function optionalInt(form: FormData, key: string) {
+  const raw = str(form, key);
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
 }
 
 function relatedFromForm(form: FormData, requireRelated: boolean) {
@@ -61,6 +69,11 @@ export async function logDeskActivity(formData: FormData) {
   const related = relatedFromForm(formData, requireRelated);
   const eventType = kind === "call" || kind === "email" || kind === "sms" ? "logged" : "created";
   const status = kind === "call" ? "completed" : str(formData, "status") || "open";
+  const outcome = str(formData, "outcome") || null;
+  const durationSeconds = optionalInt(formData, "durationSeconds");
+  const phoneNumber = str(formData, "phone") || str(formData, "phoneNumber") || null;
+  const direction =
+    str(formData, "direction") || (kind === "call" ? "outbound" : kind === "email" || kind === "sms" ? "outbound" : null);
 
   const [activity] = await db
     .insert(activities)
@@ -74,6 +87,10 @@ export async function logDeskActivity(formData: FormData) {
       startAt: when(formData, "startAt") ?? when(formData, "dueAt"),
       endAt: when(formData, "endAt"),
       assignee: str(formData, "assignee") || null,
+      outcome,
+      durationSeconds,
+      phoneNumber,
+      direction,
       ...related,
     })
     .returning();
@@ -83,14 +100,18 @@ export async function logDeskActivity(formData: FormData) {
     activityId: activity.id,
     kind,
     eventType,
-    body: activityLogBody(kind, eventType, title),
+    body: activityLogBody(kind, eventType, title, { durationSeconds, outcome }),
     contactId: related.contactId,
     accountId: related.accountId,
     policyId: related.policyId,
     dealId: related.dealId,
+    leadId: related.leadId,
+    direction,
+    durationSeconds,
   });
 
   revalidateRelated(related);
+  if (kind === "call") revalidatePath("/phone");
 }
 
 export async function completeDeskActivity(formData: FormData) {
@@ -101,9 +122,19 @@ export async function completeDeskActivity(formData: FormData) {
     .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
   if (!activity) return;
 
+  const outcome = str(formData, "outcome") || activity.outcome;
+  const notes = str(formData, "notes") || activity.notes;
+  const durationSeconds = optionalInt(formData, "durationSeconds") ?? activity.durationSeconds;
+
   await db
     .update(activities)
-    .set({ status: "completed", updatedAt: new Date() })
+    .set({
+      status: "completed",
+      notes,
+      outcome,
+      durationSeconds,
+      updatedAt: new Date(),
+    })
     .where(eq(activities.id, id));
 
   await db.insert(activityLogs).values({
@@ -111,11 +142,13 @@ export async function completeDeskActivity(formData: FormData) {
     activityId: activity.id,
     kind: activity.kind,
     eventType: "completed",
-    body: activityLogBody(activity.kind, "completed", activity.title),
+    body: activityLogBody(activity.kind, "completed", activity.title, { durationSeconds, outcome }),
     contactId: activity.contactId,
     accountId: activity.accountId,
     policyId: activity.policyId,
     dealId: activity.dealId,
+    leadId: activity.leadId,
+    durationSeconds,
   });
 
   revalidateRelated(activity);
@@ -235,6 +268,13 @@ export async function deleteDeskActivity(formData: FormData) {
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */
 export async function saveCallOutcome(formData: FormData) {
   const id = str(formData, "id") || str(formData, "activityId");
+  if (!id) {
+    const close = canCloseCall({
+      outcome: str(formData, "outcome"),
+      notes: str(formData, "notes"),
+    });
+    if (!close.ok) throw new Error(close.reason);
+  }
   if (id) {
     formData.set("activityId", id);
     await completeDeskActivity(formData);
@@ -242,8 +282,9 @@ export async function saveCallOutcome(formData: FormData) {
     formData.set("kind", "call");
     await logDeskActivity(formData);
   }
+  revalidatePath("/phone");
   const returnTo =
     str(formData, "returnTo") ||
-    (str(formData, "contactId") ? `/contacts/${str(formData, "contactId")}` : "/tasks");
+    (str(formData, "contactId") ? `/contacts/${str(formData, "contactId")}` : "/phone");
   return { returnTo, contactId: str(formData, "contactId") || null, policyId: str(formData, "policyId") || null };
 }

@@ -11,7 +11,6 @@ import {
   Kanban,
   ListChecks,
   Phone,
-  Search,
   Settings,
   Shield,
   Users,
@@ -50,8 +49,8 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: "people",
-    label: "People",
+    id: "accounts",
+    label: "Accounts",
     items: [
       { href: "/contacts", label: "Contacts", icon: Contact, match: "/contacts" },
       { href: "/accounts", label: "Businesses", icon: Briefcase, match: "/accounts" },
@@ -79,7 +78,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
       { href: "/inbox", label: "Inbox", icon: Inbox, match: "/inbox" },
       { href: "/alerts", label: "Alerts", icon: Bell, match: "/alerts" },
-      { href: "/search", label: "Search", icon: Search, match: "/search" },
     ],
   },
   {

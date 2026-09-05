@@ -38,6 +38,7 @@ export const MODULE_PATH_PREFIXES = [
   "/search",
   "/carriers",
   "/phone",
+  "/inbox",
   "/campaigns",
   "/reviews",
   "/esign",

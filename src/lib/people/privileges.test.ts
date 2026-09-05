@@ -16,6 +16,8 @@ describe("agent privilege defaults", () => {
   it("treats CRM and pipeline as modules, not Home or My desk", () => {
     expect(isModulePath("/pipeline")).toBe(true);
     expect(isModulePath("/leads/abc")).toBe(true);
+    expect(isModulePath("/inbox")).toBe(true);
+    expect(isModulePath("/phone")).toBe(true);
     expect(isModulePath("/")).toBe(false);
     expect(isModulePath("/alerts")).toBe(false);
     expect(isModulePath("/settings/my-desk")).toBe(false);

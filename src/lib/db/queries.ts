@@ -108,6 +108,12 @@ import {
   rankHits,
   type SearchHit,
 } from "@/lib/wire/search";
+import {
+  inboxStubFromActivity,
+  inboxStubFromLeadOffer,
+  sortInboxStubs,
+  type InboxStub,
+} from "@/lib/desk/inbox";
 
 export type TimelineItem = {
   id: string;
@@ -390,6 +396,44 @@ export async function listCallLog() {
     .leftJoin(accounts, eq(activities.accountId, accounts.id))
     .where(and(eq(activities.tenantId, tenant()), eq(activities.kind, "call"), scope))
     .orderBy(desc(activities.startAt), desc(activities.updatedAt));
+}
+
+export async function listInboxStubs(): Promise<InboxStub[]> {
+  const [logRows, offerRows] = await Promise.all([
+    db
+      .select({
+        id: activityLogs.id,
+        kind: activityLogs.kind,
+        fromAddress: activityLogs.fromAddress,
+        subject: activityLogs.subject,
+        body: activityLogs.body,
+        occurredAt: activityLogs.occurredAt,
+        contactId: activityLogs.contactId,
+        accountId: activityLogs.accountId,
+        policyId: activityLogs.policyId,
+        dealId: activityLogs.dealId,
+        leadId: activityLogs.leadId,
+      })
+      .from(activityLogs)
+      .where(
+        and(
+          eq(activityLogs.tenantId, tenant()),
+          eq(activityLogs.direction, "inbound"),
+          or(eq(activityLogs.kind, "email"), eq(activityLogs.kind, "sms")),
+        ),
+      )
+      .orderBy(desc(activityLogs.occurredAt)),
+    db
+      .select()
+      .from(leadOffers)
+      .where(and(eq(leadOffers.tenantId, tenant()), eq(leadOffers.kind, "inbound_email")))
+      .orderBy(desc(leadOffers.createdAt)),
+  ]);
+
+  return sortInboxStubs([
+    ...logRows.map(inboxStubFromActivity),
+    ...offerRows.map(inboxStubFromLeadOffer),
+  ]);
 }
 
 export async function getTelephonySettings() {

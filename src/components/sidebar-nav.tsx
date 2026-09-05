@@ -11,10 +11,10 @@ import {
   FileStack,
   Calendar,
   Home,
+  Inbox,
   Phone,
   Kanban,
   ListChecks,
-  Search,
   Share2,
   Shield,
   Users,
@@ -41,10 +41,10 @@ const NAV = [
   { href: "/commissions", label: "Commissions", icon: Wallet },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/search", label: "Search", icon: Search },
   { href: "/carriers", label: "Carriers", icon: Building2 },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/phone", label: "Phone", icon: Phone },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/settings", label: "Settings", icon: ClipboardList },
 ];
 

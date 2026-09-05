@@ -25,6 +25,8 @@ Overnight feel-pass: grouped left nav, named list filters, header column sliders
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, Automations hub, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
 
+Nav cleanup: left-nav group is **Accounts** (Contacts + Businesses — not “People”). Sidebar Search is gone; Smart Search stays in the top bar. **Phone** (`/phone`) is a BYO-later setup stub with a dialer that logs outcomes on activities. **Inbox** (`/inbox`, eyebrow Envoys) is a work-email-later stub that shows seeded inbound queue rows.
+
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
 ## Tests
