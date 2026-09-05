@@ -1,6 +1,11 @@
 import type { PolicyChangeKind } from "@/lib/policy/status";
 import { applyPolicyChange, type PolicySnapshot } from "@/lib/policy/workflow";
 import {
+  CANCELLATION_REASONS,
+  ENDORSEMENT_REASONS,
+  NON_RENEWAL_REASONS,
+} from "@/lib/policy/reasons";
+import {
   isServiceRequestStatus,
   type ServiceRequestStatus,
 } from "@/lib/domain-ams";
@@ -74,4 +79,57 @@ export function serviceKindLabel(kind: string): string {
   if (kind === "cancellation") return "Cancellation";
   if (kind === "non_renewal") return "Non-renewal";
   return kind.replaceAll("_", " ");
+}
+
+export type ServiceRequestFields = {
+  kind: PolicyChangeKind;
+  reason: string;
+  effectiveDate: Date | null;
+  summary: string | null;
+  coverageA: number | null;
+  premium: string | null;
+};
+
+export function reasonsForKind(kind: PolicyChangeKind) {
+  if (kind === "endorsement") return ENDORSEMENT_REASONS;
+  if (kind === "cancellation") return CANCELLATION_REASONS;
+  return NON_RENEWAL_REASONS;
+}
+
+export function requiredFieldsForKind(kind: PolicyChangeKind): string[] {
+  const fields = ["kind", "reason", "effectiveDate"];
+  if (kind === "cancellation" || kind === "non_renewal") fields.push("summary");
+  if (kind === "endorsement") fields.push("reason_match");
+  return fields;
+}
+
+export function validateServiceRequestFields(
+  input: ServiceRequestFields,
+): { ok: true } | { ok: false; error: string } {
+  if (!input.kind) return { ok: false, error: "Choose a change type." };
+  if (!input.effectiveDate) return { ok: false, error: "A valid effective date is required." };
+  const allowed = new Set<string>(reasonsForKind(input.kind).map((row) => row.value));
+  if (!input.reason) return { ok: false, error: "Reason is required." };
+  if (!allowed.has(input.reason)) {
+    return { ok: false, error: `Reason is not valid for a ${serviceKindLabel(input.kind).toLowerCase()}.` };
+  }
+  if ((input.kind === "cancellation" || input.kind === "non_renewal") && !input.summary?.trim()) {
+    return {
+      ok: false,
+      error:
+        "Cancellation and non-renewal need a summary. Filing is manual — Hale stays in force until you file.",
+    };
+  }
+  if (input.kind === "endorsement" && input.reason === "coverage_change" && input.coverageA == null) {
+    return { ok: false, error: "Coverage A is required for a coverage-change endorsement." };
+  }
+  return { ok: true };
+}
+
+export function workStatusForKind(kind: PolicyChangeKind): "endorsement_pending" | "waiting_on_carrier" {
+  return kind === "endorsement" ? "endorsement_pending" : "waiting_on_carrier";
+}
+
+export function workFlagForKind(kind: PolicyChangeKind): "endorsement_required" | "lapse_warning" {
+  return kind === "endorsement" ? "endorsement_required" : "lapse_warning";
 }

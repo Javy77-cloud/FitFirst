@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DESK_AS_OF } from "@/lib/home/as-of";
 import {
+  bucketRenewalRows,
   buildRenewalRow,
   isUpcomingRenewal,
+  renewalBand,
   renewalFollowupBody,
   sortRenewalRows,
 } from "./renewals";
@@ -68,5 +70,37 @@ describe("renewal pipeline", () => {
     ]);
     expect(renewalFollowupBody(hale).toLowerCase()).toContain("in-desk only — no email");
     expect(renewalFollowupBody(hale)).toContain("HP-FL-88421");
+  });
+
+  it("buckets Hale into 30 and Nair into 90", () => {
+    expect(renewalBand(28)).toBe("30");
+    expect(renewalBand(45)).toBe("60");
+    expect(renewalBand(73)).toBe("90");
+    const hale = buildRenewalRow({
+      id: "h",
+      policyNumber: "HP-FL-88421",
+      status: "active",
+      lineOfBusiness: "HO3",
+      expirationDate: "2026-10-01",
+      premium: "2184.00",
+      partyName: "Hale, Jordan",
+      carrierName: "Heritage",
+    });
+    const nair = buildRenewalRow({
+      id: "n",
+      policyNumber: "PA-FL-22910",
+      status: "active",
+      lineOfBusiness: "AUTO",
+      expirationDate: "2026-11-15",
+      premium: "1428.00",
+      partyName: "Nair, Priya",
+      carrierName: "QBE",
+    });
+    expect(hale && nair).toBeTruthy();
+    if (!hale || !nair) return;
+    const buckets = bucketRenewalRows([hale, nair]);
+    expect(buckets.due30.map((row) => row.policyNumber)).toEqual(["HP-FL-88421"]);
+    expect(buckets.due60).toEqual([]);
+    expect(buckets.due90.map((row) => row.policyNumber)).toEqual(["PA-FL-22910"]);
   });
 });

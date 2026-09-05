@@ -31,17 +31,18 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
-## AMS wave 2 (this branch)
+## AMS wave 3 (this branch)
 
 In-house servicing on Policies that already exist. No IVANS, no rater, no Stripe / Twilio / DocuSign.
 
-- **Policy 360** — servicing checklist (dec, ID cards, AOR, renewal date, next task) plus an endorsement / cancel / non-renew **request → start → file** pipeline. Filing updates the Policy and writes the activity log.
-- **Book health** (`/book-health`) — active vs lapsed counts and missing servicing docs.
-- **Renewals** (`/renewals`) — upcoming expirations, current vs proposed premium, in-app Task + Alert follow-up.
-- **Certificates** (`/certificates`) — COI request queue. Issue still prints a desk stub. **Not a licensed ACORD product.**
-- **IVANS / AL3** (`/settings/carrier-download`) — empty importer. Status stays **Not connected**. Attempt import returns `needs carrier download / IVANS later`. No fake carrier fees.
+- **Servicing checklist** on Policy — renewal docs due, inspection, mortgagee, ID cards. Complete / incomplete toggles write in-desk Tasks.
+- **Endorsement / cancel / non-renew** — required fields, work-queue items, durable activity log. Filing is manual. Hale stays Active; Harbor’s cancel seed is **withdrawn**.
+- **Renewals** (`/renewals`) — 90 / 60 / 30 desk queue tied to expiration. Follow-up is Task + Alert only (no email).
+- **Book health** (`/book-health`) — agency vs producer rollups for lapse risk, monoline gaps, missing dec.
+- **Claims / FNOL** on Policy — intake form + timeline. No carrier API.
+- **IVANS / AL3** stays a stub: **Not connected**.
 
-Try: bind is already on Elena `HO3-ELENA-2026` (dec + ID, missing AOR, endorsement in progress). Hale `HP-FL-88421` is in the 30-day renewal window with a compare. Harbor Key has an open COI request for Brevard County Parks. Do not bind Ana.
+Try: Elena `HO3-ELENA-2026` (ID cards complete, mortgagee open with task, wind FNOL inquiry). Hale `HP-FL-88421` in the 30-day bucket (renewal docs incomplete, endorsement requested — not cancelled). Harbor Key has a withdrawn cancel plus an open COI. **Do not bind Ana.**
 
 ## Tests
 

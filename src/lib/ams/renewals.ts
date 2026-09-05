@@ -83,6 +83,35 @@ export function sortRenewalRows(rows: RenewalRow[]): RenewalRow[] {
   );
 }
 
+export type RenewalBand = "30" | "60" | "90" | "later" | "overdue";
+
+export function renewalBand(daysUntil: number): RenewalBand {
+  if (daysUntil < 0) return "overdue";
+  if (daysUntil <= 30) return "30";
+  if (daysUntil <= 60) return "60";
+  if (daysUntil <= 90) return "90";
+  return "later";
+}
+
+export type RenewalBuckets<T extends { daysUntil: number }> = {
+  due30: T[];
+  due60: T[];
+  due90: T[];
+};
+
+export function bucketRenewalRows<T extends { daysUntil: number }>(rows: T[]): RenewalBuckets<T> {
+  const due30: T[] = [];
+  const due60: T[] = [];
+  const due90: T[] = [];
+  for (const row of rows) {
+    const band = renewalBand(row.daysUntil);
+    if (band === "30" || band === "overdue") due30.push(row);
+    else if (band === "60") due60.push(row);
+    else if (band === "90") due90.push(row);
+  }
+  return { due30, due60, due90 };
+}
+
 export function renewalFollowupTitle(policyNumber: string): string {
   return `Renewal follow-up · ${policyNumber}`;
 }

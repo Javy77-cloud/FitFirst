@@ -11,21 +11,64 @@ export default async function BookHealthPage() {
   return (
     <AppShell title="Book health">
       <p className="mb-4 text-base text-muted-foreground">
-        In-force vs off-book counts from Policies that already exist. Missing docs are
-        actionable servicing slots — dec, ID card, AOR. Quotes are not policies. Ana Dib is
-        not on this book.
+        Agency vs producer rollups on Policies that already exist. Lapse risk, monoline
+        gaps, and missing decs reuse the servicing gauges. Quotes are not policies. Ana Dib
+        is not on this book.
       </p>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Stat label="Active / in force" value={health.counts.active} href="/policies?status=in_force" />
-        <Stat label="Lapsed / cancelled / non-renewed" value={health.counts.lapsed} href="/policies?attention=lapse" />
-        <Stat label="Open service requests" value={health.openServiceRequests} href="/service-requests" />
-        <Stat label="Open COI requests" value={health.openCoiRequests} href="/certificates" />
+        <Stat label="Lapsed / cancelled" value={health.counts.lapsed} href="/policies?attention=lapse" />
+        <Stat label="Lapse risk flags" value={health.agency.lapseRisk} href="/renewals" />
+        <Stat label="Monoline gaps" value={health.agency.monoline} href="/book-health#monoline" />
+        <Stat label="Missing dec" value={health.missingDec.length} href="/book-health#missing-dec" />
       </div>
+
+      <section className="ff-card mb-4 overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
+          Agency vs producer
+        </div>
+        <table className="ff-table">
+          <thead>
+            <tr>
+              <th>Book</th>
+              <th>Active</th>
+              <th>Lapsed</th>
+              <th>Lapse risk</th>
+              <th>Monoline</th>
+              <th>Missing dec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="font-medium">
+              <td>{health.agency.ownerName}</td>
+              <td>{health.agency.active}</td>
+              <td>{health.agency.lapsed}</td>
+              <td>{health.agency.lapseRisk}</td>
+              <td>{health.agency.monoline}</td>
+              <td>{health.agency.missingDec}</td>
+            </tr>
+            {health.producers.map((row) => (
+              <tr key={row.ownerId ?? row.ownerName}>
+                <td>{row.ownerName}</td>
+                <td>{row.active}</td>
+                <td>{row.lapsed}</td>
+                <td>{row.lapseRisk}</td>
+                <td>{row.monoline}</td>
+                <td>{row.missingDec}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
 
       <p className="mb-4 text-sm">
         <Link href="/renewals" className="text-primary hover:underline">
-          Upcoming renewals
+          90 / 60 / 30 renewals
+        </Link>
+        {" · "}
+        <Link href="/service-requests" className="text-primary hover:underline">
+          Service requests
         </Link>
         {" · "}
         <Link href="/settings/carrier-download" className="text-primary hover:underline">
@@ -33,7 +76,79 @@ export default async function BookHealthPage() {
         </Link>
       </p>
 
-      <section className="ff-card overflow-hidden">
+      <section id="lapse-risk" className="ff-card mb-4 overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
+          Lapse risk
+        </div>
+        {health.lapseRisk.length === 0 ? (
+          <p className="px-4 py-6 text-base text-muted-foreground">
+            No in-force Policies are flagged for lapse risk.
+          </p>
+        ) : (
+          <table className="ff-table">
+            <thead>
+              <tr>
+                <th>Policy</th>
+                <th>Party</th>
+                <th>Producer</th>
+                <th>Days</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {health.lapseRisk.map((row) => (
+                <tr key={row.policyId}>
+                  <td className="font-medium">
+                    <RecordLink href={`/policies/${row.policyId}`}>{row.policyNumber}</RecordLink>
+                  </td>
+                  <td>{row.partyName}</td>
+                  <td>{row.ownerName}</td>
+                  <td>{row.daysToRenewal ?? "—"}</td>
+                  <td>
+                    {row.score} · {row.label}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section id="monoline" className="ff-card mb-4 overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
+          Monoline gaps
+        </div>
+        {health.monoline.length === 0 ? (
+          <p className="px-4 py-6 text-base text-muted-foreground">
+            Every in-force household already has more than one line.
+          </p>
+        ) : (
+          <table className="ff-table">
+            <thead>
+              <tr>
+                <th>Party</th>
+                <th>Only line</th>
+                <th>Policy</th>
+                <th>Producer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {health.monoline.map((row) => (
+                <tr key={row.partyKey}>
+                  <td>{row.partyName}</td>
+                  <td>{row.line}</td>
+                  <td>
+                    <RecordLink href={`/policies/${row.policyId}`}>{row.policyNumber}</RecordLink>
+                  </td>
+                  <td>{row.ownerName}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section id="missing-dec" className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Missing servicing docs
         </div>

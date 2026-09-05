@@ -14,7 +14,7 @@ import {
 } from "@/lib/policy/reasons";
 import { serviceKindLabel } from "@/lib/ams/service-requests";
 import { serviceRequestStatusLabel } from "@/lib/domain-ams";
-import type { PolicyServiceRequest } from "@/lib/db/schema";
+import type { PolicyServiceRequest, PolicyServiceRequestEvent } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
 
 function todayIso() {
@@ -27,6 +27,7 @@ export function ServiceRequestPanel({
   coverageA,
   premium,
   requests,
+  events = [],
   error,
   notice,
 }: {
@@ -35,6 +36,7 @@ export function ServiceRequestPanel({
   coverageA: number | null;
   premium: string | null;
   requests: PolicyServiceRequest[];
+  events?: PolicyServiceRequestEvent[];
   error?: string;
   notice?: string;
 }) {
@@ -50,8 +52,10 @@ export function ServiceRequestPanel({
     <section className="ff-card mb-4 p-4">
       <h2 className="text-base font-semibold text-navy">Service request pipeline</h2>
       <p className="mt-1 text-base text-muted-foreground">
-        Request an endorsement, cancellation, or non-renewal. Filing updates this Policy and
-        writes the activity log. Does not open a Deal and does not create a new Policy.
+        Request an endorsement, cancellation, or non-renewal. Required: type, reason, and
+        effective date. Cancel / non-renew also need a summary. Filing is manual — Hale and
+        every other in-force Policy stay on the book until you file. Writes a work-queue
+        item and a durable activity log.
       </p>
       {error ? (
         <p className="mt-2 text-sm text-destructive" role="alert">
@@ -134,20 +138,34 @@ export function ServiceRequestPanel({
             </div>
           </div>
           <div>
-            <Label className="text-xs">Reason</Label>
+            <Label className="text-xs">Reason (must match the request type)</Label>
             <select
               name="reason"
               required
               className="mt-1 h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
               defaultValue="coverage_change"
             >
-              {[...ENDORSEMENT_REASONS, ...CANCELLATION_REASONS, ...NON_RENEWAL_REASONS]
-                .filter((row, index, list) => list.findIndex((item) => item.value === row.value) === index)
-                .map((row) => (
-                  <option key={row.value} value={row.value}>
+              <optgroup label="Endorsement">
+                {ENDORSEMENT_REASONS.map((row) => (
+                  <option key={`e-${row.value}`} value={row.value}>
                     {row.label}
                   </option>
                 ))}
+              </optgroup>
+              <optgroup label="Cancellation">
+                {CANCELLATION_REASONS.map((row) => (
+                  <option key={`c-${row.value}`} value={row.value}>
+                    {row.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Non-renewal">
+                {NON_RENEWAL_REASONS.map((row) => (
+                  <option key={`n-${row.value}`} value={row.value}>
+                    {row.label}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -161,8 +179,13 @@ export function ServiceRequestPanel({
             </div>
           </div>
           <div>
-            <Label className="text-xs">What the insured asked for</Label>
-            <Textarea name="summary" rows={2} className="mt-1" />
+            <Label className="text-xs">Summary (required to cancel or non-renew)</Label>
+            <Textarea
+              name="summary"
+              rows={2}
+              className="mt-1"
+              placeholder="What the insured or carrier asked for. Needed before a cancel or non-renew can queue."
+            />
           </div>
           <Button type="submit" size="sm">
             Queue request
@@ -184,6 +207,23 @@ export function ServiceRequestPanel({
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {events.length > 0 ? (
+        <div className="mt-4 border-t border-border pt-3">
+          <h3 className="text-sm font-semibold text-navy">Service activity log</h3>
+          <ol className="mt-2 space-y-2">
+            {events.map((event) => (
+              <li key={event.id} className="text-sm">
+                <span className="uppercase text-muted-foreground">{event.action}</span>
+                {" · "}
+                <span>{formatDay(event.occurredAt)}</span>
+                {event.actorName ? ` · ${event.actorName}` : ""}
+                <div className="text-muted-foreground">{event.body}</div>
+              </li>
+            ))}
+          </ol>
+        </div>
       ) : null}
     </section>
   );

@@ -352,6 +352,36 @@ export const SERVICING_DOC_LABELS: Record<ServicingDocKey, string> = {
   aor: "AOR packet",
 };
 
+export const SERVICING_CHECK_KEYS = ["renewal_docs", "inspection", "mortgagee", "id_cards"] as const;
+export type ServicingCheckKey = (typeof SERVICING_CHECK_KEYS)[number];
+
+export const SERVICING_CHECK_LABELS: Record<ServicingCheckKey, string> = {
+  renewal_docs: "Renewal docs due",
+  inspection: "Inspection",
+  mortgagee: "Mortgagee",
+  id_cards: "ID cards",
+};
+
+export const SERVICING_CHECK_STATUSES = ["complete", "incomplete"] as const;
+export type ServicingCheckStatus = (typeof SERVICING_CHECK_STATUSES)[number];
+
+export function isServicingCheckKey(value: string): value is ServicingCheckKey {
+  return (SERVICING_CHECK_KEYS as readonly string[]).includes(value);
+}
+
+export function isServicingCheckStatus(value: string): value is ServicingCheckStatus {
+  return (SERVICING_CHECK_STATUSES as readonly string[]).includes(value);
+}
+
+export const SERVICE_REQUEST_EVENT_ACTIONS = [
+  "requested",
+  "started",
+  "filed",
+  "withdrawn",
+  "note",
+] as const;
+export type ServiceRequestEventAction = (typeof SERVICE_REQUEST_EVENT_ACTIONS)[number];
+
 export const CARRIER_DOWNLOAD_PROVIDERS = ["ivans", "al3"] as const;
 export type CarrierDownloadProvider = (typeof CARRIER_DOWNLOAD_PROVIDERS)[number];
 

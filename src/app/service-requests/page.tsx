@@ -21,8 +21,9 @@ export default async function ServiceRequestsPage({
   return (
     <AppShell title="Service requests">
       <p className="mb-4 text-base text-muted-foreground">
-        Endorsement, cancellation, and non-renewal requests. Filing updates the existing
-        Policy and writes the activity log. Quotes never become Policies.
+        Endorsement, cancellation, and non-renewal work queue. Filing updates the existing
+        Policy, writes the durable activity log, and is never automatic — Hale stays in
+        force until you file. Quotes never become Policies.
       </p>
       {error ? (
         <p className="mb-3 text-sm text-destructive" role="alert">

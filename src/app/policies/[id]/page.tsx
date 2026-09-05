@@ -15,6 +15,8 @@ import { getPolicyWorkspace } from "@/lib/db/queries";
 import { loadPolicyServicing } from "@/lib/ams/queries";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
+import { PolicyClaimsPanel } from "@/components/ams/policy-claims-panel";
+import { currentDeskSession } from "@/lib/auth/session";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
@@ -33,7 +35,7 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const servicing = await loadPolicyServicing(id);
+  const [servicing, session] = await Promise.all([loadPolicyServicing(id), currentDeskSession()]);
   const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs } =
     workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
@@ -84,15 +86,46 @@ export default async function PolicyDetailPage({
           <div>
       {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
-      {servicing ? <ServicingChecklistCard checklist={servicing.checklist} /> : null}
+      {servicing ? (
+        <ServicingChecklistCard policyId={policy.id} checklist={servicing.checklist} />
+      ) : null}
       <ServiceRequestPanel
         policyId={policy.id}
         status={policy.status}
         coverageA={policy.coverageA}
         premium={policy.premium}
         requests={servicing?.requests ?? []}
+        events={servicing?.events ?? []}
         error={error}
         notice={notice}
+      />
+      <PolicyClaimsPanel
+        policyId={policy.id}
+        contactId={contact?.id}
+        policyNumber={policy.policyNumber}
+        partyName={
+          contact
+            ? `${contact.lastName}, ${contact.firstName}`
+            : account?.name ?? "Insured"
+        }
+        postedBy={session.name || "Javy"}
+        claims={(servicing?.claims ?? []).map(({ claim, contact: claimContact }) => ({
+          id: claim.id,
+          status: claim.status,
+          causeType: claim.causeType ?? "other",
+          description: claim.description,
+          reportedHow: claim.reportedHow ?? "phone",
+          dateReported: claim.dateReported ?? claim.createdAt,
+          dateOfLoss: claim.dateOfLoss,
+          carrierClaimNumber: claim.carrierClaimNumber,
+          policyId: claim.policyId,
+          policyNumber: policy.policyNumber,
+          contactId: claim.contactId,
+          contactName: claimContact
+            ? `${claimContact.lastName}, ${claimContact.firstName}`
+            : null,
+        }))}
+        activity={servicing?.claimActivity ?? []}
       />
 
       <section className="ff-card p-4">
