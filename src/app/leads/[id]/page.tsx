@@ -17,7 +17,10 @@ import { AwardLeadForm } from "@/components/leads/award-form";
 import { routeLeadNow } from "@/app/actions/lead-routing";
 import { latestRoutingLog } from "@/lib/leads/apply-routing";
 import { currentDeskSession } from "@/lib/auth/session";
+import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
+import { RecordDeveloperActions } from "@/components/developer-hub/record-actions";
 import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
+import { listEnabledMacrosFor, listEnabledScriptsFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
 import type { LineOfBusiness } from "@/lib/domain";
@@ -32,15 +35,19 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, templates, asks, users, session, agents, routingLog] = await Promise.all([
-    getLead(id),
-    listEmailTemplates(),
-    listRecordAsks("lead", id),
-    listDeskUsers(),
-    currentDeskSession(),
-    listAwardableAgents(),
-    latestRoutingLog(id),
-  ]);
+  const [row, templates, asks, users, session, agents, routingLog, macros, buttons, scripts] =
+    await Promise.all([
+      getLead(id),
+      listEmailTemplates(),
+      listRecordAsks("lead", id),
+      listDeskUsers(),
+      currentDeskSession(),
+      listAwardableAgents(),
+      latestRoutingLog(id),
+      listEnabledMacrosFor("leads"),
+      listVisibleButtons({ module: "leads", placement: "detail" }),
+      listEnabledScriptsFor("leads", "edit"),
+    ]);
   if (!row) notFound();
   const { lead, deal, timeline } = row;
   const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
@@ -50,6 +57,24 @@ export default async function LeadDetailPage({
 
   return (
     <AppShell title={formatPersonName(lead)}>
+      <RecordDeveloperActions
+        module="leads"
+        recordId={lead.id}
+        macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
+        buttons={buttons.map((button) => ({
+          id: button.id,
+          label: button.label,
+          actionKind: button.actionKind,
+        }))}
+      />
+      <ClientScriptRunner
+        scripts={scripts.map((script) => ({
+          id: script.id,
+          event: script.event,
+          fieldName: script.fieldName,
+          body: script.body,
+        }))}
+      />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <span className="uppercase text-muted-foreground">{lead.status}</span>
         {deal ? <StagePill stage={deal.pipelineStage} /> : null}

@@ -26,6 +26,15 @@ export const SETTINGS_NAV_IDS = [
   "recovery",
   "compliance",
   "export",
+  "developer-hub",
+  "dev-functions",
+  "dev-api",
+  "dev-webhooks",
+  "dev-connections",
+  "dev-macros",
+  "dev-buttons",
+  "dev-scripts",
+  "dev-widgets",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -117,6 +126,53 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },
       { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
+    ],
+  },
+  {
+    id: "developer-hub",
+    href: "/settings/developer-hub",
+    label: "Developer Hub",
+    hint: "Functions, macros, buttons, scripts",
+    children: [
+      {
+        id: "developer-hub",
+        href: "/settings/developer-hub",
+        label: "Overview",
+        hint: "Hub home",
+      },
+      {
+        id: "dev-functions",
+        href: "/settings/developer-hub/functions",
+        label: "Functions",
+        hint: "Server functions",
+      },
+      { id: "dev-api", href: "/settings/developer-hub/api", label: "API", hint: "REST stubs" },
+      {
+        id: "dev-webhooks",
+        href: "/settings/developer-hub/webhooks",
+        label: "Webhooks",
+        hint: "Outbound hooks",
+      },
+      {
+        id: "dev-connections",
+        href: "/settings/developer-hub/connections",
+        label: "Connections",
+        hint: "OAuth stubs",
+      },
+      { id: "dev-macros", href: "/settings/developer-hub/macros", label: "Macros", hint: "Manual run" },
+      {
+        id: "dev-buttons",
+        href: "/settings/developer-hub/custom-buttons",
+        label: "Custom Buttons",
+        hint: "Links & buttons",
+      },
+      {
+        id: "dev-scripts",
+        href: "/settings/developer-hub/client-scripts",
+        label: "Client Scripts",
+        hint: "Form events",
+      },
+      { id: "dev-widgets", href: "/settings/developer-hub/widgets", label: "Widgets", hint: "Embed stubs" },
     ],
   },
   {

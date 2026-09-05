@@ -2486,3 +2486,102 @@ export const portalRequests = pgTable(
 
 export type PortalToken = typeof portalTokens.$inferSelect;
 export type PortalRequest = typeof portalRequests.$inferSelect;
+
+/** Manual, user-run macros. Never scheduled. Developer Hub → Macros. */
+export const deskMacros = pgTable(
+  "desk_macros",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    enabled: boolean("enabled").notNull().default(true),
+    actions: jsonb("actions")
+      .$type<import("@/lib/developer-hub/types").MacroActions>()
+      .notNull(),
+    ...timestamps,
+  },
+  (t) => [index("desk_macros_module_idx").on(t.tenantId, t.module)],
+);
+
+export const deskMacroRuns = pgTable(
+  "desk_macro_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    macroId: uuid("macro_id")
+      .notNull()
+      .references(() => deskMacros.id),
+    module: text("module").notNull(),
+    recordIds: jsonb("record_ids").$type<string[]>().notNull(),
+    summary: text("summary").notNull(),
+    ranBy: uuid("ran_by"),
+    ranAt: timestamp("ran_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("desk_macro_runs_macro_idx").on(t.tenantId, t.macroId)],
+);
+
+/** Links & Buttons. Placement: list / detail / mass_action. */
+export const deskCustomButtons = pgTable(
+  "desk_custom_buttons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    placement: text("placement").notNull(),
+    label: text("label").notNull(),
+    visibilityProfiles: jsonb("visibility_profiles").$type<string[]>().notNull().default(["admin", "agent"]),
+    actionKind: text("action_kind").notNull(),
+    /** Nullable until Developer Hub core Functions table exists. */
+    functionApiName: text("function_api_name"),
+    urlTemplate: text("url_template"),
+    widgetId: uuid("widget_id"),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("desk_custom_buttons_module_idx").on(t.tenantId, t.module, t.placement)],
+);
+
+export const deskClientScripts = pgTable(
+  "desk_client_scripts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    page: text("page").notNull(),
+    event: text("event").notNull(),
+    fieldName: text("field_name"),
+    name: text("name").notNull(),
+    body: text("body").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("desk_client_scripts_page_idx").on(t.tenantId, t.module, t.page)],
+);
+
+export const deskWidgets = pgTable(
+  "desk_widgets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+    hosting: text("hosting").notNull(),
+    externalUrl: text("external_url"),
+    zipMeta: jsonb("zip_meta").$type<{
+      fileName?: string;
+      byteSize?: number;
+      uploadedAt?: string;
+    } | null>(),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("desk_widgets_type_idx").on(t.tenantId, t.type)],
+);
+
+export type DeskMacro = typeof deskMacros.$inferSelect;
+export type DeskMacroRun = typeof deskMacroRuns.$inferSelect;
+export type DeskCustomButton = typeof deskCustomButtons.$inferSelect;
+export type DeskClientScript = typeof deskClientScripts.$inferSelect;
+export type DeskWidget = typeof deskWidgets.$inferSelect;

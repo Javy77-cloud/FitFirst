@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
+import { listEnabledMacrosFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { ListMassBar, ListSelectionProvider, SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LEAD_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
@@ -23,7 +25,11 @@ export default async function LeadsPage({
 }) {
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "source"]);
-  const all = await listLeads();
+  const [all, macros, buttons] = await Promise.all([
+    listLeads(),
+    listEnabledMacrosFor("leads"),
+    listVisibleButtons({ module: "leads", placement: ["list", "mass_action"] }),
+  ]);
   const rows = all.filter(
     (lead) => matchesField(lead.status, filter.status) && matchesField(lead.source, filter.source),
   );
@@ -114,44 +120,60 @@ export default async function LeadsPage({
         </div>
 
         <section className="ff-card overflow-hidden">
-          <ColumnTable
-            moduleId="leads"
-            columns={[
-              { id: "name", label: "Name", locked: true },
-              { id: "status", label: "Status" },
-              { id: "source", label: "Source" },
-              { id: "shop", label: "Shop" },
-            ]}
-            empty={
-              firstParam(params.status) || firstParam(params.source)
-                ? "No leads match this filter."
-                : "No leads yet."
-            }
-            rows={rows.map((lead) => ({
-              key: lead.id,
-              cells: {
-                name: (
-                  <div className="font-medium">
-                    <RecordLink href={`/leads/${lead.id}`}>
-                      {lead.lastName}, {lead.firstName}
-                    </RecordLink>
-                    <div className="text-base text-muted-foreground">
-                      {lead.phone ?? lead.email}
+          <ListSelectionProvider>
+            <div className="px-3 pt-3">
+              <ListMassBar
+                module="leads"
+                macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
+                buttons={buttons.map((button) => ({
+                  id: button.id,
+                  label: button.label,
+                  actionKind: button.actionKind,
+                  functionApiName: button.functionApiName,
+                }))}
+              />
+            </div>
+            <ColumnTable
+              moduleId="leads"
+              columns={[
+                { id: "pick", label: "", locked: true },
+                { id: "name", label: "Name", locked: true },
+                { id: "status", label: "Status" },
+                { id: "source", label: "Source" },
+                { id: "shop", label: "Shop" },
+              ]}
+              empty={
+                firstParam(params.status) || firstParam(params.source)
+                  ? "No leads match this filter."
+                  : "No leads yet."
+              }
+              rows={rows.map((lead) => ({
+                key: lead.id,
+                cells: {
+                  pick: <SelectRowCheckbox id={lead.id} />,
+                  name: (
+                    <div className="font-medium">
+                      <RecordLink href={`/leads/${lead.id}`}>
+                        {lead.lastName}, {lead.firstName}
+                      </RecordLink>
+                      <div className="text-base text-muted-foreground">
+                        {lead.phone ?? lead.email}
+                      </div>
                     </div>
-                  </div>
-                ),
-                status: <span className="uppercase">{lead.status}</span>,
-                source: lead.source,
-                shop: lead.convertedDealId ? (
-                  <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
-                    Open deal
-                  </Link>
-                ) : (
-                  <StartShopForm leadId={lead.id} />
-                ),
-              },
-            }))}
-          />
+                  ),
+                  status: <span className="uppercase">{lead.status}</span>,
+                  source: lead.source,
+                  shop: lead.convertedDealId ? (
+                    <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
+                      Open deal
+                    </Link>
+                  ) : (
+                    <StartShopForm leadId={lead.id} />
+                  ),
+                },
+              }))}
+            />
+          </ListSelectionProvider>
         </section>
       </div>
     </AppShell>

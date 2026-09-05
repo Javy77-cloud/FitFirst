@@ -40,6 +40,20 @@ export default async function SettingsPage() {
           ? "Admin settings change the agency. Agent settings change only this desk. Use the left menu: Communications, Integrations, Lines / lists, Brand, then Admin vs Agent prefs."
           : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
+      {session.isAdmin ? (
+        <Link
+          href="/settings/developer-hub"
+          className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+        >
+          <div>
+            <div className="text-sm font-semibold text-navy">Developer Hub</div>
+            <p className="text-xs text-muted-foreground">
+              Macros, Custom Buttons, Client Scripts, Widgets — plus Functions / API / Webhooks /
+              Connections when that core branch lands.
+            </p>
+          </div>
+        </Link>
+      ) : null}
       <Link
         href="/automations"
         className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"

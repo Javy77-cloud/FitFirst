@@ -1,0 +1,58 @@
+export const DEV_HUB_SECTIONS = [
+  {
+    id: "functions",
+    href: "/settings/developer-hub/functions",
+    label: "Functions",
+    hint: "Server functions by apiName. Owned by Developer Hub core when that branch lands.",
+    ownedHere: false,
+  },
+  {
+    id: "api",
+    href: "/settings/developer-hub/api",
+    label: "API",
+    hint: "REST token stubs. Reserved for Developer Hub core.",
+    ownedHere: false,
+  },
+  {
+    id: "webhooks",
+    href: "/settings/developer-hub/webhooks",
+    label: "Webhooks",
+    hint: "Outbound webhook stubs. Reserved for Developer Hub core.",
+    ownedHere: false,
+  },
+  {
+    id: "connections",
+    href: "/settings/developer-hub/connections",
+    label: "Connections",
+    hint: "OAuth / connector stubs. Reserved for Developer Hub core.",
+    ownedHere: false,
+  },
+  {
+    id: "macros",
+    href: "/settings/developer-hub/macros",
+    label: "Macros",
+    hint: "Manual, user-run actions. Not workflows. Cap: 1 email, 3 field updates, 3 tasks.",
+    ownedHere: true,
+  },
+  {
+    id: "custom-buttons",
+    href: "/settings/developer-hub/custom-buttons",
+    label: "Custom Buttons",
+    hint: "Links & Buttons on list, detail, and mass-action bars.",
+    ownedHere: true,
+  },
+  {
+    id: "client-scripts",
+    href: "/settings/developer-hub/client-scripts",
+    label: "Client Scripts",
+    hint: "onLoad / onChange on create, edit, and detail forms.",
+    ownedHere: true,
+  },
+  {
+    id: "widgets",
+    href: "/settings/developer-hub/widgets",
+    label: "Widgets",
+    hint: "Internal zip metadata or an external URL iframe. No Zoho Widget SDK.",
+    ownedHere: true,
+  },
+] as const;
