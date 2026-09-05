@@ -571,3 +571,16 @@ export const SEQUENCE_TEMPLATE_IDS = {
   reviewAsk: "a0801111-a080-4111-8111-a08011111118",
 } as const;
 
+/** AMS wave 2. Off Ana / Elena owner blocks and campaign a080… */
+export const AMS_WAVE2_IDS = {
+  elenaEndorsementRequest: "a0481111-a048-4048-8048-a04811111101",
+  haleEndorsementRequest: "a0481111-a048-4048-8048-a04811111102",
+  harborCoiRequest: "a0481111-a048-4048-8048-a04811111103",
+  ivansConnection: "a0481111-a048-4048-8048-a04811111104",
+  al3Connection: "a0481111-a048-4048-8048-a04811111105",
+  elenaRequestActivity: "a0481111-a048-4048-8048-a04811111106",
+  elenaRequestLog: "a0481111-a048-4048-8048-a04811111107",
+  harborCoiActivity: "a0481111-a048-4048-8048-a04811111108",
+  harborCoiLog: "a0481111-a048-4048-8048-a04811111109",
+} as const;
+

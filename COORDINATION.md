@@ -715,4 +715,24 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 
 ## WAVE3 leftover
 
-DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. **0046**–**0047** landed later. AMS wave 2 took **0048**. Next free additive migration is **0049**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+
+## AMS wave 2 — book-of-business depth (`cursor/ams-wave2-book-3be9`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Quotes still do not create a Policy. No Stripe, Twilio, DocuSign, OAuth, or rater APIs.
+
+Additive `0048_ams_wave2`:
+
+- `policy_service_requests` — endorsement / cancel / non-renew request → in_progress → filed / withdrawn. Filing calls existing `filePolicyChange` (updates Policy + change log) and writes `activities` + `activity_logs`.
+- `certificate_requests` — desk COI queue. Issue writes `issued_certificates` (stub, not licensed ACORD). Matching holder reuses the stub.
+- `carrier_download_connections` — IVANS / AL3 plug. Status stays `not_connected`. Attempt import stores `needs carrier download / IVANS later`. No fake fees.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — checklist: dec + ID on file, AOR missing, renewal 2027-09-01, next service task. Endorsement request is **in progress**. File it from the panel to update the same Policy.
+2. **Book health** `/book-health` — active vs lapsed + missing docs (Elena AOR; Hale/Nair empty packets).
+3. **Renewals** `/renewals` — Hale in 30 days ($2,184 vs $2,547). Follow up writes a Task + in-app Alert only.
+4. **Certificates** `/certificates` — Harbor request for Brevard County Parks. Issue stub. Palm Bay Marina Dockage already issued.
+5. **Settings → IVANS / AL3** — Not connected. Attempt import does not invent a download.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. `getActor` still goes through `currentDeskSession`. Drizzle `alias` stays on `pg-core`.

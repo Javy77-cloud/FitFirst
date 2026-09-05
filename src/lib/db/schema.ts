@@ -2486,3 +2486,78 @@ export const portalRequests = pgTable(
 
 export type PortalToken = typeof portalTokens.$inferSelect;
 export type PortalRequest = typeof portalRequests.$inferSelect;
+
+/** Endorsement / cancel / non-renew request pipeline. Filing updates the Policy. */
+export const policyServiceRequests = pgTable(
+  "policy_service_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("requested"),
+    reason: text("reason").notNull(),
+    summary: text("summary"),
+    effectiveDate: timestamp("effective_date", { withTimezone: true }).notNull(),
+    coverageA: integer("coverage_a"),
+    premium: numeric("premium", { precision: 12, scale: 2 }),
+    requestedBy: uuid("requested_by"),
+    requestedByName: text("requested_by_name"),
+    filedEventId: uuid("filed_event_id"),
+    filedAt: timestamp("filed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("policy_service_requests_tenant_idx").on(t.tenantId, t.status),
+    index("policy_service_requests_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+/** Desk COI request queue. Issue still writes issued_certificates (stub, not ACORD). */
+export const certificateRequests = pgTable(
+  "certificate_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    holderName: text("holder_name").notNull(),
+    holderAddress: text("holder_address").notNull(),
+    jobLocation: text("job_location"),
+    status: text("status").notNull().default("requested"),
+    notes: text("notes"),
+    issuedCertificateId: uuid("issued_certificate_id"),
+    requestedBy: uuid("requested_by"),
+    requestedByName: text("requested_by_name"),
+    issuedAt: timestamp("issued_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("certificate_requests_tenant_idx").on(t.tenantId, t.status),
+    index("certificate_requests_account_idx").on(t.tenantId, t.accountId),
+  ],
+);
+
+/** IVANS / AL3 plug. Empty importer — never invents carrier fees. */
+export const carrierDownloadConnections = pgTable(
+  "carrier_download_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    status: text("status").notNull().default("not_connected"),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("carrier_download_connections_uidx").on(t.tenantId, t.provider)],
+);
+
+export type PolicyServiceRequest = typeof policyServiceRequests.$inferSelect;
+export type CertificateRequest = typeof certificateRequests.$inferSelect;
+export type CarrierDownloadConnection = typeof carrierDownloadConnections.$inferSelect;

@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getPolicyWorkspace } from "@/lib/db/queries";
+import { loadPolicyServicing } from "@/lib/ams/queries";
+import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
+import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
+import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
@@ -20,13 +24,20 @@ export const dynamic = "force-dynamic";
 
 export default async function PolicyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles } = workspace;
+  const servicing = await loadPolicyServicing(id);
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs } =
+    workspace;
+  const error = typeof query.error === "string" ? query.error : undefined;
+  const notice = typeof query.notice === "string" ? query.notice : typeof query.filed === "string" ? query.filed : undefined;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
   const context = await loadRecordContext({
     contactId: contact?.id,
@@ -60,12 +71,29 @@ export default async function PolicyDetailPage({
         >
           Compare renewal
         </Link>
+        <Link href="/renewals" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Renewal list
+        </Link>
+        <Link href="/book-health" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Book health
+        </Link>
       </div>
 
       <RecordDetailLayout
         main={
           <div>
       {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
+
+      {servicing ? <ServicingChecklistCard checklist={servicing.checklist} /> : null}
+      <ServiceRequestPanel
+        policyId={policy.id}
+        status={policy.status}
+        coverageA={policy.coverageA}
+        premium={policy.premium}
+        requests={servicing?.requests ?? []}
+        error={error}
+        notice={notice}
+      />
 
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Issued policy files</h2>
@@ -87,6 +115,7 @@ export default async function PolicyDetailPage({
               <option value="policy_dec">Issued dec</option>
               <option value="policy_complete">Complete policy</option>
               <option value="policy_id">ID card</option>
+              <option value="aor">AOR packet</option>
             </select>
           </div>
           <div className="sm:col-span-2">
@@ -119,7 +148,8 @@ export default async function PolicyDetailPage({
         )}
       </section>
 
-      <div className="mt-4">
+      <div className="mt-4 space-y-4">
+        <PolicyChangeTimeline logs={changeLogs} />
         <ActivityTimeline
           items={timeline}
           policyId={policy.id}

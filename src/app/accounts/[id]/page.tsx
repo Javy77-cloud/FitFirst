@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { CertificateRequestForm } from "@/components/ams/certificate-request-form";
 import { CertificatesList, LocationsList } from "@/components/desk-ams-panels";
+import { isCertifiableLine, isInForceStatus } from "@/lib/domain";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { formatMoney } from "@/lib/domain";
 import { getAccountWorkspace } from "@/lib/db/queries";
@@ -105,6 +107,21 @@ export default async function AccountDetailPage({
       </section>
       <LocationsList locations={locations} />
       <CertificatesList accountId={account.id} certificates={certificates} />
+      <section className="ff-card mb-4 p-4">
+        <h2 className="text-base font-semibold text-navy">Request a certificate stub</h2>
+        <p className="mt-1 mb-3 text-sm text-muted-foreground">
+          Queues a holder request. Issue from the Certificates board. Not a licensed ACORD
+          product.
+        </p>
+        <CertificateRequestForm
+          accountId={account.id}
+          returnTo={`/accounts/${account.id}`}
+          canRequest={policies.some(
+            ({ policy }) =>
+              isInForceStatus(policy.status) && isCertifiableLine(policy.lineOfBusiness),
+          )}
+        />
+      </section>
 
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">

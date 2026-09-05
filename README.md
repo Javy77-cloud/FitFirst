@@ -31,6 +31,18 @@ Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`),
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
+## AMS wave 2 (this branch)
+
+In-house servicing on Policies that already exist. No IVANS, no rater, no Stripe / Twilio / DocuSign.
+
+- **Policy 360** — servicing checklist (dec, ID cards, AOR, renewal date, next task) plus an endorsement / cancel / non-renew **request → start → file** pipeline. Filing updates the Policy and writes the activity log.
+- **Book health** (`/book-health`) — active vs lapsed counts and missing servicing docs.
+- **Renewals** (`/renewals`) — upcoming expirations, current vs proposed premium, in-app Task + Alert follow-up.
+- **Certificates** (`/certificates`) — COI request queue. Issue still prints a desk stub. **Not a licensed ACORD product.**
+- **IVANS / AL3** (`/settings/carrier-download`) — empty importer. Status stays **Not connected**. Attempt import returns `needs carrier download / IVANS later`. No fake carrier fees.
+
+Try: bind is already on Elena `HO3-ELENA-2026` (dec + ID, missing AOR, endorsement in progress). Hale `HP-FL-88421` is in the 30-day renewal window with a compare. Harbor Key has an open COI request for Brevard County Parks. Do not bind Ana.
+
 ## Tests
 
 ```bash

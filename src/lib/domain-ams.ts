@@ -304,3 +304,62 @@ export function isCertifiableLine(line: string): line is CertifiableLine {
 
 export const TRACKING_STATUSES = ["quoted", "declined", "skip", "bound"] as const;
 export type TrackingStatus = (typeof TRACKING_STATUSES)[number];
+
+export const SERVICE_REQUEST_STATUSES = [
+  "requested",
+  "in_progress",
+  "filed",
+  "withdrawn",
+] as const;
+export type ServiceRequestStatus = (typeof SERVICE_REQUEST_STATUSES)[number];
+
+export const SERVICE_REQUEST_STATUS_LABELS: Record<ServiceRequestStatus, string> = {
+  requested: "Requested",
+  in_progress: "In progress",
+  filed: "Filed",
+  withdrawn: "Withdrawn",
+};
+
+export function isServiceRequestStatus(value: string): value is ServiceRequestStatus {
+  return (SERVICE_REQUEST_STATUSES as readonly string[]).includes(value);
+}
+
+export function serviceRequestStatusLabel(status: string): string {
+  return isServiceRequestStatus(status) ? SERVICE_REQUEST_STATUS_LABELS[status] : status;
+}
+
+export const CERTIFICATE_REQUEST_STATUSES = ["requested", "issued", "withdrawn"] as const;
+export type CertificateRequestStatus = (typeof CERTIFICATE_REQUEST_STATUSES)[number];
+
+export const CERTIFICATE_REQUEST_STATUS_LABELS: Record<CertificateRequestStatus, string> = {
+  requested: "Requested",
+  issued: "Issued stub",
+  withdrawn: "Withdrawn",
+};
+
+export function certificateRequestStatusLabel(status: string): string {
+  return status in CERTIFICATE_REQUEST_STATUS_LABELS
+    ? CERTIFICATE_REQUEST_STATUS_LABELS[status as CertificateRequestStatus]
+    : status;
+}
+
+export const SERVICING_DOC_KEYS = ["dec", "id_card", "aor"] as const;
+export type ServicingDocKey = (typeof SERVICING_DOC_KEYS)[number];
+
+export const SERVICING_DOC_LABELS: Record<ServicingDocKey, string> = {
+  dec: "Dec on file",
+  id_card: "ID cards",
+  aor: "AOR packet",
+};
+
+export const CARRIER_DOWNLOAD_PROVIDERS = ["ivans", "al3"] as const;
+export type CarrierDownloadProvider = (typeof CARRIER_DOWNLOAD_PROVIDERS)[number];
+
+export const CARRIER_DOWNLOAD_LABELS: Record<CarrierDownloadProvider, string> = {
+  ivans: "IVANS",
+  al3: "AL3 / carrier download",
+};
+
+export const CARRIER_DOWNLOAD_NOT_CONNECTED = "not_connected";
+export const CARRIER_DOWNLOAD_STUB_REASON =
+  "needs carrier download / IVANS later";

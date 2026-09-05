@@ -534,4 +534,6 @@ export async function seed() {
   const { seedCommissionReconciliations } = await import("./seed-commission-recon");
   await seedCommissionReconciliations();
   await seedClientPortal();
+  const { seedAmsWave2 } = await import("./seed-ams-wave2");
+  await seedAmsWave2();
 }

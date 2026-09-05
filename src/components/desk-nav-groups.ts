@@ -62,6 +62,10 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Records",
     items: [
       { href: "/policies", label: "Policies", icon: Shield, match: "/policies" },
+      { href: "/book-health", label: "Book health", icon: Shield, match: "/book-health" },
+      { href: "/renewals", label: "Renewals", icon: ClipboardList, match: "/renewals" },
+      { href: "/certificates", label: "Certificates", icon: FileStack, match: "/certificates" },
+      { href: "/service-requests", label: "Service", icon: ListChecks, match: "/service-requests" },
       { href: "/documents", label: "Documents", icon: FileStack, match: "/documents" },
       { href: "/forms", label: "Forms", icon: FileStack, match: "/forms" },
       { href: "/merge", label: "Merge", icon: Users, match: "/merge" },

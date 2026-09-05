@@ -872,6 +872,19 @@ export {
   CERTIFIABLE_LINES,
   isCertifiableLine,
   TRACKING_STATUSES,
+  SERVICE_REQUEST_STATUSES,
+  SERVICE_REQUEST_STATUS_LABELS,
+  isServiceRequestStatus,
+  serviceRequestStatusLabel,
+  CERTIFICATE_REQUEST_STATUSES,
+  CERTIFICATE_REQUEST_STATUS_LABELS,
+  certificateRequestStatusLabel,
+  SERVICING_DOC_KEYS,
+  SERVICING_DOC_LABELS,
+  CARRIER_DOWNLOAD_PROVIDERS,
+  CARRIER_DOWNLOAD_LABELS,
+  CARRIER_DOWNLOAD_NOT_CONNECTED,
+  CARRIER_DOWNLOAD_STUB_REASON,
 } from "./domain-ams";
 export type {
   AppointmentLine,
@@ -901,6 +914,10 @@ export type {
   MeetingLogEvent,
   CertifiableLine,
   TrackingStatus,
+  ServiceRequestStatus,
+  CertificateRequestStatus,
+  ServicingDocKey,
+  CarrierDownloadProvider,
 } from "./domain-ams";
 
 export {

@@ -30,6 +30,18 @@ describe("desk nav chrome", () => {
     expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
   });
 
+  it("adds Book health, Renewals, and Certificates without a second Pipeline", () => {
+    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    expect(labels).toContain("Book health");
+    expect(labels).toContain("Renewals");
+    expect(labels).toContain("Certificates");
+    expect(hrefs).toContain("/book-health");
+    expect(hrefs).toContain("/renewals");
+    expect(hrefs).toContain("/certificates");
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+  });
+
   it("uses Documents instead of Forms on the left nav", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);

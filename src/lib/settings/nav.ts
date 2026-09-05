@@ -8,6 +8,7 @@ export const SETTINGS_NAV_IDS = [
   "phone",
   "video",
   "integrations",
+  "carrier-download",
   "social",
   "lists",
   "lines",
@@ -85,6 +86,12 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
         href: "/settings/integrations",
         label: "Catalog",
         hint: "BYO providers",
+      },
+      {
+        id: "carrier-download",
+        href: "/settings/carrier-download",
+        label: "IVANS / AL3",
+        hint: "Not connected",
       },
       {
         id: "social",

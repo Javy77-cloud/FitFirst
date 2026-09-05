@@ -77,13 +77,19 @@ export function CertificatesList({
 }) {
   return (
     <section className="ff-card mb-4 overflow-hidden">
-      <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-        Certificates of Insurance
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-4 py-2">
+        <h2 className="text-base font-semibold text-navy">Certificates of Insurance</h2>
+        <Link href="/certificates" className="text-sm text-primary hover:underline">
+          Request queue
+        </Link>
       </div>
       {certificates.length === 0 ? (
         <p className="px-4 py-6 text-base text-muted-foreground">
-          No COI stub on this Business. The certificate preview is not issued until a stub row
-          exists — this is not an ACORD form and nothing is emailed.
+          No COI stub on this Business. Queue a request on{" "}
+          <Link href="/certificates" className="text-primary hover:underline">
+            Certificates
+          </Link>
+          . This is not an ACORD form and nothing is emailed.
         </p>
       ) : (
         <ul className="divide-y divide-border">
