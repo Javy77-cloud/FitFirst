@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home layouts (`0066`), lead sources (`0067`). AMS waves 10–16 parked. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`. Merged branch list is in `COORDINATION.md`.
+**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home layouts (`0066` from `fp-home-layouts-resize-a094`), lead sources (`0067` from `fp-lead-sources-ed87` / `bc-0c631135`). Leftover: `home-custom-layout-resize-0cb4` (`bc-2fe67478`) — competing JSONB Home layouts, not merged. AMS waves 10–16 parked. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`.
 
 ## Run locally (Mac Air and Mac mini)
 

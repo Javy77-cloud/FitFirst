@@ -1162,8 +1162,10 @@ Merged feel-pass fixes:
 | `cursor/fp-quotes-chrome-ddac` | Quotes **Actions** menu + expand arrows. No migration. Quotes still do not create a Policy. |
 | `cursor/macros-platform-settings-1dae` | Platform Settings macros on `desk_macros`. Preferred over `fp-macros-platform-6af6`. Kept as `0064_platform_macros`. |
 | `cursor/social-byo-connect-4bd5` | Agency-owned social OAuth. `fp-social-byo-1028` was not on remote. Incoming `0064_social_byo` remapped to `0065_social_byo`. |
-| `cursor/fp-home-layouts-resize-a094` | Named Home layouts + Resize tiles. Preferred over `home-custom-layout-resize-0cb4`. Incoming `0064_home_custom_layouts` remapped to `0066_home_custom_layouts`. |
-| `cursor/fp-lead-sources-ed87` | One insurance-industry source picklist on Lead / Deal / Contact. Incoming `0064_record_sources` remapped to `0067_record_sources`. |
+| `cursor/fp-home-layouts-resize-a094` | Named Home layouts + Resize tiles (`bc-b1c4792e`). Incoming `0064_home_custom_layouts` remapped to `0066_home_custom_layouts`. Real `user_home_layouts` table. |
+| `cursor/fp-lead-sources-ed87` | One insurance-industry source picklist on Lead / Deal / Contact (`bc-0c631135`). Incoming `0064_record_sources` remapped to `0067_record_sources`. |
+
+**Leftover (not merged):** `cursor/home-custom-layout-resize-0cb4` from `bc-2fe67478` is a second Home-layouts take (named boards as JSONB on `user_dashboard_prefs.custom_layouts`, `active_layout_id` text). Same feature as `a094`, different schema. Merging both would fork Home prefs. Agent was still in background verify when this tip shipped. Revisit only if `a094` is dropped.
 
 Feel-desk hygiene on this tip:
 
