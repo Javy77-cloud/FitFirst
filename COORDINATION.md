@@ -1063,3 +1063,11 @@ On top of `cursor/feel-pass-consolidate-sep5b-6195` (already includes Reviews `d
 - `/documents/fill/:slug?fillId=`
 
 Loaders now `isUuid()`-guard. Proxy 404s those record paths the same way as Contact/Deal/Policy.
+
+## Zoho JSONL data import (`cursor/zoho-data-import-a792`)
+
+Records only. Files later. Additive `0064_zoho_external_ids` (`zoho_id` / `source_id` on leads, deals, carriers, activities). Contacts / accounts / policies already had `zoho_id`.
+
+- `npm run db:wipe-crm` — deletes leads, deals, contacts, businesses, policies, tasks, quotes, alerts, and dependent book rows. Keeps users/login, tenant, carriers + appointments. Does **not** re-seed Ana.
+- `npm run db:import-zoho` — reads `import/zoho/*.jsonl` (Zoho MCP `getRecords` layout). Maps Contacts→contacts, Accounts→businesses, Leads→leads, Deals→deals (link contact/business when ids match), Vendors→carriers (add only new names; merge written lines when appointment differs), Policies→policies, Tasks→activities.
+- Prints import counts + unmatched Zoho field report. No paid APIs. Settings → Import / Export documents the Air commands.

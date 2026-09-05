@@ -383,11 +383,14 @@ export const leads = pgTable(
     mergedIntoId: uuid("merged_into_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ownerId: uuid("owner_id"),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
     ...timestamps,
   },
   (t) => [
     index("leads_tenant_idx").on(t.tenantId),
     index("leads_owner_idx").on(t.tenantId, t.ownerId),
+    index("leads_zoho_idx").on(t.tenantId, t.zohoId),
   ],
 );
 
@@ -482,12 +485,15 @@ export const deals = pgTable(
     esignSignedAt: timestamp("esign_signed_at", { withTimezone: true }),
     esignSignerName: text("esign_signer_name"),
     esignDocumentId: uuid("esign_document_id"),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
     ...timestamps,
   },
   (t) => [
     index("deals_tenant_idx").on(t.tenantId),
     index("deals_stage_idx").on(t.tenantId, t.pipelineStage),
     index("deals_owner_idx").on(t.tenantId, t.ownerId),
+    index("deals_zoho_idx").on(t.tenantId, t.zohoId),
   ],
 );
 
@@ -532,9 +538,14 @@ export const carriers = pgTable(
     appetiteNotes: text("appetite_notes"),
     active: boolean("active").notNull().default(true),
     fixtureTag: text("fixture_tag"),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
     ...timestamps,
   },
-  (t) => [index("carriers_tenant_idx").on(t.tenantId)],
+  (t) => [
+    index("carriers_tenant_idx").on(t.tenantId),
+    index("carriers_zoho_idx").on(t.tenantId, t.zohoId),
+  ],
 );
 
 /** Admin-only reveal / readiness checks. Never stores the secret itself. */
@@ -1226,6 +1237,8 @@ export const activities = pgTable(
     inviteOfficeId: uuid("invite_office_id"),
     inviteTerritoryId: uuid("invite_territory_id"),
     createdByUserId: uuid("created_by_user_id"),
+    zohoId: text("zoho_id"),
+    sourceId: text("source_id"),
     ...timestamps,
   },
   (t) => [
@@ -1233,6 +1246,7 @@ export const activities = pgTable(
     index("activities_when_idx").on(t.tenantId, t.startAt, t.dueAt),
     index("activities_status_idx").on(t.tenantId, t.status, t.kind),
     index("activities_account_idx").on(t.tenantId, t.accountId),
+    index("activities_zoho_idx").on(t.tenantId, t.zohoId),
   ],
 );
 

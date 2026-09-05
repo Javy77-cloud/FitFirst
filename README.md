@@ -25,6 +25,26 @@ First-time only: `cp .env.example .env`. Postgres on `DATABASE_URL` (default `po
 
 Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
 
+## Zoho JSONL import (Air desk — records only)
+
+Branch: **`cursor/zoho-data-import-a792`** (off the Sep 5b tip). Javy dual-enters: FitFirst live test + Zoho backup. This path wipes demo CRM rows and loads a Zoho MCP dump. It does **not** call paid APIs. Login, tenant, and existing FitFirst carriers stay. Ana is not re-seeded after wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/zoho-data-import-a792 && git pull
+npm install
+npm run db:migrate
+```
+
+```bash
+# after copying JSONL into ~/FitFirst/import/zoho/
+npm run db:wipe-crm
+npm run db:import-zoho
+npm run dev -- --port 43147
+```
+
+One file per module: `Contacts.jsonl`, `Accounts.jsonl`, `Leads.jsonl`, `Deals.jsonl`, `Vendors.jsonl`, `Policies.jsonl`, `Tasks.jsonl`. Each line is a Zoho `getRecords` row (or a `{ data: [...] }` page). Vendors merge into carriers by normalized name — no duplicate carriers; new names are added. The importer prints counts and unmatched Zoho fields. Files/attachments stay out. Settings → Import / Export shows whether those JSONL files are present.
+
 ## Pipeline views + status colors (this slice)
 
 Overnight feel-pass: grouped left nav, named list filters, header column sliders, RecordContextRail, Start Shop, in-desk calendar, quick comms, Choose files, floating Support, settings accordion, widget resize chrome, Ask a teammate, HTML 404s.

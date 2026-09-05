@@ -21,9 +21,11 @@ export default async function ImportSettingsPage({
   return (
     <SettingsShell title="Import" current="import">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        CSV import is a placeholder. FitFirst will not write Contacts, Businesses, Policies, or
-        shops from this page until the import slice lands. Choose a pack so the route is real —
-        the file picker stays disabled.
+        CSV import on this page stays a placeholder. The Air-desk Zoho book path is JSONL:
+        copy dumps into <code>import/zoho/</code>, then{" "}
+        <code>npm run db:wipe-crm</code> and <code>npm run db:import-zoho</code>. That wipe
+        keeps users, tenant, and carriers. Ana is not re-seeded. File bytes stay out of this
+        pass.
       </p>
       <p className="mb-4 text-sm">
         <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">

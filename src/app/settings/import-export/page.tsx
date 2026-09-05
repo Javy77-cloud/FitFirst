@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ImportExportHub } from "@/components/settings/import-export-hub";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { ZohoJsonlImportCard } from "@/components/settings/zoho-jsonl-import";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { listJobs } from "@/lib/import-export/jobs";
 import { EXPORT_HREF, IMPORT_HREF } from "@/lib/settings/import-export";
@@ -27,6 +28,8 @@ export default async function ImportExportPage() {
         </Link>
         .
       </p>
+
+      <ZohoJsonlImportCard />
 
       <section className="ff-card mb-4 border-dashed p-4">
         <div className="text-sm font-semibold text-navy">IVANS / AL3 download</div>
