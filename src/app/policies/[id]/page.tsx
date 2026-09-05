@@ -24,6 +24,7 @@ import { allowedInterestKinds, canHoldInterests, isPersonalLinesPolicy } from "@
 import { listClaimsForPolicy } from "@/lib/db/claim-queries";
 import { currentDeskSession } from "@/lib/auth/session";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
+import { PolicyInformationCard } from "@/components/policy/policy-information";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { PolicyChangeDesk, PolicyOutcomeBanner } from "@/components/policy/change-desk";
 import { PolicyWorkPanel } from "@/components/work-queue/work-panel";
@@ -53,7 +54,7 @@ export default async function PolicyDetailPage({
     currentDeskSession(),
     getLatestInDeskEnvelope({ policyId: id }),
   ]);
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms, work } =
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms, work, location } =
     workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
   const filed = typeof query.filed === "string" ? query.filed : undefined;
@@ -133,6 +134,13 @@ export default async function PolicyDetailPage({
       <RecordDetailLayout
         main={
           <div className="space-y-4">
+      <PolicyInformationCard
+        policy={policy}
+        carrierName={carrier?.name}
+        contact={contact}
+        account={account}
+        locationLabel={location?.label ?? location?.address1 ?? location?.street ?? null}
+      />
             {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
             {servicing ? (
@@ -287,7 +295,19 @@ export default async function PolicyDetailPage({
             />
           </div>
         }
-        rail={<RecordContextRail context={context} />}
+        rail={
+          <RecordContextRail
+            context={context}
+            policyFacts={{
+              number: policy.policyNumber,
+              status: policy.status,
+              carrier: carrier?.name ?? "Carrier TBD",
+              effective: formatDay(policy.effectiveDate),
+              expiration: formatDay(policy.expirationDate),
+              premium: formatMoney(policy.premium),
+            }}
+          />
+        }
       />
     </AppShell>
   );

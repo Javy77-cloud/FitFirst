@@ -112,6 +112,18 @@ The banner always reads **In-desk stub — not DocuSign**. `/esign` lists in-des
 
 Do not bind Ana. Her shop stays Quote Sent at Coverage A **$321,000**.
 
+## Policy detail (this branch)
+
+`/policies/[id]` shows a **Policy Information** card first: number, colored status, carrier, line/product/subtype, effective, expiration/renewal, premium, billing, Coverage A / limits, insured (Contact or Business link), premises, commission, selling agency, written date — whatever is already on `policies`. Servicing checklist, change history, and issued files stay below. The context rail repeats carrier + effective + premium.
+
+### Local click-path (localhost:43147)
+
+1. Sign in as **javy@fitfirst.local** / **javy**.
+2. Policies → `HO3-ELENA-2026` — American Integrity, effective 2026-09-01, $2,840, Cov A $385,000, Elena Ruiz, 412 Harbor Isle Dr. Servicing + files still on the page.
+3. Policies → `HP-FL-88421` (Hale) — Heritage, effective 2025-10-01, Cov A $275,000.
+4. Policies → `GL-HARBOR-2026` — Harbor Key Marine LLC, effective 2026-08-15, 88 Harbor Key Blvd.
+5. Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Do not bind.
+
 ## Tests
 
 ```bash

@@ -1091,6 +1091,12 @@ export async function getPolicyWorkspace(id: string) {
       ? await db.select().from(risks).where(eq(risks.dealId, row.policy.dealId))
       : [];
   const { getPolicyWorkBundle } = await import("@/lib/work-queue/list");
+  const [location] = row.policy.locationId
+    ? await db
+        .select()
+        .from(locations)
+        .where(and(eq(locations.tenantId, tenant()), eq(locations.id, row.policy.locationId)))
+    : [];
   const [terms, compareLogs, vehicleRows, work] = await Promise.all([
     db
       .select()
@@ -1110,6 +1116,7 @@ export async function getPolicyWorkspace(id: string) {
   return {
     ...row,
     risk: risk ?? null,
+    location: location ?? null,
     files,
     fileVersions,
     changeLogs,

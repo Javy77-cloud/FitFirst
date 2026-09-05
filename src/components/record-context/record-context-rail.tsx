@@ -12,6 +12,15 @@ import { ACTIVITY_KIND_LABEL, type ActivityKind } from "@/lib/domain";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { cn } from "@/lib/utils";
 
+export type RailPolicyFacts = {
+  number: string;
+  status: string;
+  carrier: string;
+  effective: string;
+  expiration: string;
+  premium: string;
+};
+
 function initials(label: string): string {
   const parts = label.split(/\s+/).filter(Boolean);
   const letters = (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
@@ -36,7 +45,13 @@ function DealStage({ stage }: { stage: string }) {
   );
 }
 
-export function RecordContextRail({ context }: { context: RecordContextPayload }) {
+export function RecordContextRail({
+  context,
+  policyFacts,
+}: {
+  context: RecordContextPayload;
+  policyFacts?: RailPolicyFacts;
+}) {
   const [tab, setTab] = useState<"info" | "conversations">("info");
   const [personKey, setPersonKey] = useState(context.people[0]?.key ?? "");
   const [openKind, setOpenKind] = useState<string | null>(null);
@@ -93,6 +108,7 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
         <Conversations conversations={context.conversations} />
       ) : (
         <div>
+          {policyFacts ? <PolicyFactsCard facts={policyFacts} /> : null}
           <PersonCard person={person} />
 
           <section className="border-t border-border px-3 py-3">
@@ -185,6 +201,36 @@ export function RecordContextRail({ context }: { context: RecordContextPayload }
         </div>
       )}
     </div>
+  );
+}
+
+function PolicyFactsCard({ facts }: { facts: RailPolicyFacts }) {
+  return (
+    <section className="border-b border-border px-3 py-3">
+      <h3 className="mb-2 text-sm font-semibold text-navy">This policy</h3>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-navy">{facts.number}</span>
+        <PolicyStatusBadge status={facts.status} />
+      </div>
+      <dl className="space-y-1.5 text-sm">
+        <div className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">Carrier</dt>
+          <dd className="text-right font-medium text-navy">{facts.carrier}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">Effective</dt>
+          <dd className="text-right font-medium text-navy">{facts.effective}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">Expires</dt>
+          <dd className="text-right font-medium text-navy">{facts.expiration}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">Premium</dt>
+          <dd className="text-right font-medium text-navy">{facts.premium}</dd>
+        </div>
+      </dl>
+    </section>
   );
 }
 
