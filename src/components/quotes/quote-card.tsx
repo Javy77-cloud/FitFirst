@@ -108,7 +108,6 @@ export function QuoteCard({
               wide
             />
           </dl>
-          <QuoteLostReason row={row} />
         </div>
       ) : null}
     </article>
