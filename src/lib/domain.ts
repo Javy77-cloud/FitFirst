@@ -348,6 +348,14 @@ export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
   general_liability: "General Liability",
 };
 
+export function isShopLine(value: string | null | undefined): value is ShopLine {
+  return Boolean(value && (SHOP_LINES as readonly string[]).includes(value));
+}
+
+export function parseShopLine(value: string | null | undefined, fallback: ShopLine = "home"): ShopLine {
+  return isShopLine(value) ? value : fallback;
+}
+
 /** Policy form the agent picks after dropping dec / 4-point / wind mit on the Deal. */
 export const QUOTING_FORMS = [
   { id: "HO3", label: "HO3 homeowners", shopLine: "home" as ShopLine, lob: "HO" },

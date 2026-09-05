@@ -155,3 +155,21 @@ In-house CRM up to the API wall. No paid email/SMS/Zoho plugs. Chrome stays (sid
 - **Contact / Business 360** shows policies, deals, and activities at a glance. Contact opt-out flags are editable. Record comms queue email/SMS from the record.
 - **Pipeline** stage moves update both `pipeline_stage` and `pipeline_stage_slug`. Meeting types (video / in-home / in-office) write a calendar activity plus an in-app task/alert.
 - **Outbound queue** at `/settings/outbound` drafts or holds email/SMS intent. Nothing sends. Opt-outs hold the job.
+
+## Quote Sheet (this branch)
+
+Deal tabs are **Documents · Quote Sheet · Markets · Quotes**. Master Risk is not on the Deal.
+
+On **Quote Sheet**:
+- Line tabs (Home, plus any other shop lines). Add line opens a blank worksheet.
+- **Edit** / **Enter data** unlocks every field. **Save Quote Sheet** / **Cancel** are next to the fields.
+- Manual entry works with no PDF. Fill from source docs is optional.
+- Toolbar: **Fill from source docs** (needs an uploaded dec), **Copy sheet** (clipboard packet for carrier paste), **Send field sheet** (Fill clipboard + browser handoff — not email).
+
+### How to test at localhost:43147
+
+1. Log in as **javy@fitfirst.local** / **javy**.
+2. Open Ana: [http://localhost:43147/deals/22222222-2222-4222-8222-222222222222?tab=quote-sheet&line=home](http://localhost:43147/deals/22222222-2222-4222-8222-222222222222?tab=quote-sheet&line=home). Confirm Cov A is $321,000, shopping / unbound. Do not bind.
+3. Click **Edit**. Change a yellow or notes field (leave Cov A alone if you want the Javy-tested tag). **Save Quote Sheet**. Confirm the value stuck. **Cancel** discards an in-progress edit.
+4. Confirm there is no **Master Risk** tab. **Markets** and **Quotes** still open. Documents + Quick communications stay on the Deal.
+5. On another Deal (or Add line → Auto), open a blank line with no source docs and use **Enter data** to type the sheet without a PDF.

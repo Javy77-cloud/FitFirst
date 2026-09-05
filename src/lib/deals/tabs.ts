@@ -1,7 +1,7 @@
 export const AGENT_DEAL_TABS = ["documents", "quote-sheet", "markets", "quotes"] as const;
 export type AgentDealTab = (typeof AGENT_DEAL_TABS)[number];
 
-/** Master risk is an admin appetite tool — not an agent Deal tab. */
+/** Master Risk is gone from the Deal. Admin appetite tool stays at /settings/master-risk. */
 export const AGENT_DEAL_TAB_LABELS: Record<AgentDealTab, string> = {
   documents: "Documents",
   "quote-sheet": "Quote Sheet",

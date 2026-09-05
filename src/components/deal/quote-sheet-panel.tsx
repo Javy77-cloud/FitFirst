@@ -1,25 +1,61 @@
 import Link from "next/link";
+import { addShopLine } from "@/app/actions/quote-sheet";
 import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
-import { Button, buttonVariants } from "@/components/ui/button";
-import type { QuoteSheetFieldValue } from "@/lib/domain";
-import { groupHomeFields } from "@/lib/lifecycle/quote-sheet";
-import { sheetFieldDomId } from "@/lib/completeness/fix-href";
+import { Button } from "@/components/ui/button";
+import { CopySheetButton } from "@/components/deal/copy-sheet-button";
+import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
+import { SendFieldSheetButton } from "@/components/deal/sheet-handoff";
+import type { Contact, QuoteSheet } from "@/lib/db/schema";
+import {
+  SHOP_LINE_LABELS,
+  SHOP_LINES,
+  isShopLine,
+  type ShopLine,
+} from "@/lib/domain";
+import { buildCopySheetText } from "@/lib/quote-sheet/super-copy";
+import {
+  COPY_SHEET_HINT,
+  FILL_FROM_DOCS_HINT,
+  FILL_FROM_DOCS_LABEL,
+  SEND_FIELD_SHEET_HINT,
+} from "@/lib/quote-sheet/toolbar";
 import { cn } from "@/lib/utils";
-import { SheetHandoffButtons } from "./sheet-handoff";
 
 export function QuoteSheetPanel({
   dealId,
-  values,
-  line = "home",
-  unlocked = false,
+  dealTitle,
+  line,
+  shopLines,
+  sheet,
+  contact,
+  riskId,
+  sourceDocCount = 0,
+  carriers = [],
 }: {
   dealId: string;
-  values: Record<string, QuoteSheetFieldValue> | null;
-  line?: string;
-  unlocked?: boolean;
+  dealTitle: string;
+  line: ShopLine;
+  shopLines: string[];
+  sheet: QuoteSheet;
+  contact?: Contact | null;
+  riskId?: string;
+  sourceDocCount?: number;
+  carriers?: { id: string; name: string }[];
 }) {
-  const sheet = values ?? {};
-  const groups = groupHomeFields();
+  const tabs = shopLineTabs(shopLines, line);
+  const addable = SHOP_LINES.filter((item) => !tabs.includes(item));
+  const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
+  const copyText = buildCopySheetText({
+    line,
+    dealId,
+    dealTitle,
+    values: sheet.values,
+    contactName,
+    contactDob: contact?.dateOfBirth ?? null,
+  });
+  const blankSheet = Object.values(sheet.values).every(
+    (cell) => !cell.value.trim() || cell.status === "missing",
+  );
 
   return (
     <div className="space-y-4">
@@ -27,83 +63,103 @@ export function QuoteSheetPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-navy">Quote Sheet</h3>
-            <p className="mt-1 text-base text-muted-foreground">
-              Master shopping worksheet. Yellow is missing. Blue is CHECK. Super-Copy, Send to
-              Fill, and Forms Fill all read this same <code>quote_sheets</code> record — never the
-              raw PDFs.
+            <p className="mt-1 text-sm text-muted-foreground">
+              Master shopping worksheet for this deal. Edit any field by hand — even with no
+              source docs. Fill from docs, Copy sheet, and Send field sheet all read this same
+              record.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <form action={fillQuoteSheetBlanks}>
+        </div>
+
+        <nav aria-label="Quote Sheet lines" className="mt-4 flex flex-wrap items-center gap-1">
+          {tabs.map((item) => {
+            const selected = item === line;
+            return (
+              <Link
+                key={item}
+                href={`/deals/${dealId}?tab=quote-sheet&line=${item}`}
+                scroll={false}
+                className={cn(
+                  "rounded-sm px-2.5 py-1 text-sm font-medium",
+                  selected
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {SHOP_LINE_LABELS[item]}
+              </Link>
+            );
+          })}
+          {addable.length > 0 ? (
+            <form action={addShopLine} className="ml-2 flex flex-wrap items-center gap-1">
               <input type="hidden" name="dealId" value={dealId} />
-              <Button type="submit" size="sm">
-                Fill blanks from source docs
+              <label className="sr-only" htmlFor="add-shop-line">
+                Add another line
+              </label>
+              <select
+                id="add-shop-line"
+                name="line"
+                className="h-8 rounded-md border border-input bg-card px-2 text-xs"
+                defaultValue={addable[0]}
+              >
+                {addable.map((item) => (
+                  <option key={item} value={item}>
+                    {SHOP_LINE_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" size="sm" variant="outline">
+                Add line
               </Button>
             </form>
-            <Link
-              href={`/api/deals/${dealId}/quote-sheets/${line}/super-copy`}
-              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-            >
-              Super-Copy JSON
-            </Link>
-            <Link
-              href={`/forms/fl-ho3?dealId=${dealId}`}
-              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-            >
-              Forms Fill
-            </Link>
+          ) : null}
+        </nav>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-md border border-border bg-card p-3">
+            <form action={fillQuoteSheetBlanks}>
+              <input type="hidden" name="dealId" value={dealId} />
+              <input type="hidden" name="line" value={line} />
+              <Button type="submit" size="sm" variant="secondary" disabled={sourceDocCount === 0}>
+                {FILL_FROM_DOCS_LABEL}
+              </Button>
+            </form>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {sourceDocCount === 0
+                ? "No source docs yet. Use Enter data below, or upload a dec on Documents first."
+                : FILL_FROM_DOCS_HINT}
+            </p>
           </div>
-        </div>
-        <SheetHandoffButtons dealId={dealId} line={line} unlocked={unlocked} />
-        <div className="mt-3 flex flex-wrap gap-2 text-sm">
-          <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 text-fit-yellow">Missing</span>
-          <span className="rounded-sm bg-fit-check-bg px-1.5 py-0.5 text-fit-check">CHECK</span>
-          <span className="rounded-sm bg-fit-green-bg px-1.5 py-0.5 text-fit-green">Confirmed</span>
+          <div className="rounded-md border border-border bg-card p-3">
+            <CopySheetButton text={copyText} />
+            <p className="mt-1.5 text-xs text-muted-foreground">{COPY_SHEET_HINT}</p>
+          </div>
+          <div className="rounded-md border border-border bg-card p-3">
+            <SendFieldSheetButton dealId={dealId} line={line} />
+            <p className="mt-1.5 text-xs text-muted-foreground">{SEND_FIELD_SHEET_HINT}</p>
+          </div>
         </div>
       </section>
 
-      {groups.map((group) => (
-        <section key={group.group} className="ff-card overflow-hidden">
-          <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-            {group.group}
-          </div>
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Value</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {group.fields.map((field) => {
-                const cell = sheet[field.key];
-                const status = cell?.status ?? "missing";
-                return (
-                  <tr
-                    key={field.key}
-                    id={sheetFieldDomId(field.key)}
-                    className={
-                      status === "missing"
-                        ? "bg-fit-yellow-bg/60"
-                        : status === "check"
-                          ? "bg-fit-check-bg/70"
-                          : ""
-                    }
-                  >
-                    <td className="font-medium">{field.label}</td>
-                    <td>{cell?.value || "—"}</td>
-                    <td className="uppercase text-[11px]">
-                      {status}
-                      {cell?.source && cell.source !== "blank" ? ` · ${cell.source}` : ""}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-      ))}
+      <QuoteSheetForm
+        dealId={dealId}
+        dealTitle={dealTitle}
+        line={line}
+        sheet={sheet}
+        contact={contact}
+        riskId={riskId}
+        sourceDocCount={sourceDocCount}
+        startEditing={sourceDocCount === 0 && blankSheet}
+        carriers={carriers}
+      />
     </div>
   );
+}
+
+function shopLineTabs(shopLines: string[], active: ShopLine): ShopLine[] {
+  const lines: ShopLine[] = [];
+  for (const item of ["home", ...shopLines, active]) {
+    if (isShopLine(item) && !lines.includes(item)) lines.push(item);
+  }
+  return lines;
 }

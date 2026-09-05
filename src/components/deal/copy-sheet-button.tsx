@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { COPY_SHEET_LABEL } from "@/lib/quote-sheet/toolbar";
 
 export function CopySheetButton({
   text,
@@ -24,7 +25,7 @@ export function CopySheetButton({
 
   return (
     <Button type="button" size={size} onClick={copy}>
-      {state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : "Copy sheet"}
+      {state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : COPY_SHEET_LABEL}
     </Button>
   );
 }

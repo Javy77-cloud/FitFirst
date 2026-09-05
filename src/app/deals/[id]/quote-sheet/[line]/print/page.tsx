@@ -15,7 +15,8 @@ export default async function QuoteSheetPrintPage({
   if (!(SHOP_LINES as readonly string[]).includes(line)) notFound();
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
-  const sheet = workspace.quoteSheet;
+  const sheet =
+    workspace.sheets.find((row) => row.line === line) ?? workspace.quoteSheet;
   if (!sheet) notFound();
 
   return (
