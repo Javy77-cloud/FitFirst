@@ -38,6 +38,12 @@ yarn-error.log*
 /uploads/*
 !/uploads/.gitkeep
 
+# Live Zoho dumps (records only). Keep the folder + README.
+/import/zoho/*.jsonl
+/import/zoho/*.json
+!/import/zoho/README.md
+!/import/zoho/.gitkeep
+
 # tesseract.js traineddata cache (downloaded on first OCR)
 /eng.traineddata
 /.tesseract-cache/

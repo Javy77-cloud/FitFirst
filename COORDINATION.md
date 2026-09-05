@@ -1195,3 +1195,28 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+
+## LIVE-TEST + Zoho JSONL (`cursor/live-ff-zoho-data-1809`)
+
+Cursor plan only. Merge `cursor/zoho-data-import-a792` onto `cursor/live-crm-quote-tip-0836`. Did **not** merge AMS waves 10–16. Live tip UX stays (bell, Quotes chrome, Home layouts, lead sources, social BYO). Wipe+import replaces the demo CRM book. Ana is **not** re-seeded.
+
+Incoming `0064_zoho_external_ids` remapped to `0069_zoho_external_ids` (`zoho_id` / `source_id` on leads, deals, carriers, activities). Contacts / accounts / policies already had `zoho_id`. Next free additive migration is **0070**.
+
+- `npm run db:wipe-crm` — deletes leads, deals, contacts, businesses, policies, tasks, quotes, alerts, and dependent book rows. Keeps users/login, tenant, carriers + appointments, Home layout prefs. Does **not** re-seed Ana.
+- `npm run db:import-zoho` — reads `import/zoho/*.jsonl` (Zoho MCP `getRecords` layout). Maps Contacts→contacts, Accounts→businesses, Leads→leads, Deals→deals (link contact/business when ids match), Vendors→carriers (add only new names; merge written lines when appointment differs), Policies→policies, Tasks→activities.
+- Prints import counts + unmatched Zoho field report. No paid APIs. Settings → Import / Export shows the JSONL card.
+
+Mac Chrome (Air **and** mini) after JSONL is in `import/zoho/`:
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-zoho-data-1809 && git pull
+npm install
+npm run db:migrate
+# put JSONL in import/zoho/
+npm run db:wipe-crm
+npm run db:import-zoho
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Wipe keeps that user. Do not run `db:seed` after wipe.

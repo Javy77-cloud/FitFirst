@@ -6,31 +6,39 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/live-crm-quote-tip-0836`** — LIVE-TEST CRM+Quote tip on `cursor/feel-pass-consolidate-sep5b-6195`. Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home table layouts (`0066`), lead sources (`0067` from `fp-lead-sources-ed87`), Home JSONB layouts (`0068` from `home-custom-layout-resize-0cb4`). AMS waves 10–16 parked. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`.
+**`cursor/live-ff-zoho-data-1809`** — LIVE-TEST CRM+Quote tip (`cursor/live-crm-quote-tip-0836`) plus Zoho JSONL wipe+import (`cursor/zoho-data-import-a792`). Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home table layouts (`0066`), lead sources (`0067`), Home JSONB layouts (`0068`), Zoho external ids (`0069`). AMS waves 10–16 parked. Wipe+import replaces the demo CRM book. Ana is **not** re-seeded. Sidebar stays `#1d4e89`.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-crm-quote-tip-0836 && git pull
+git fetch && git checkout cursor/live-ff-zoho-data-1809 && git pull
 npm install
 npm run db:migrate
-npm run db:seed
+# put JSONL in import/zoho/
+npm run db:wipe-crm
+npm run db:import-zoho
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147).
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Wipe keeps users + carriers. Do not run `db:seed` after wipe.
 
 ### Home custom layouts + corner resize (this slice)
 
 1. Home (signed in as **javy@fitfirst.local** / **javy**).
 2. **Layout** (same outline dropdown as Book) → pick a preset, or **Save as custom layout…**, name it, then pick it later. **Rename current layout…** while a custom layout is active.
 3. **Widget settings** → check **Resize tiles** → pull the bottom-right corner of any card. Neighbors keep their size. Preset chips still work.
-4. Management lead offers still show language / state (Montana licensed producers). Do not bind Ana. Cov A **$321,000**.
+4. Management lead offers still show language / state (Montana licensed producers). After wipe+import the book is Zoho data, not the Ana demo.
 
 First-time only: `cp .env.example .env`. Postgres on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`). `docker compose up -d db` if you need the local database.
 
 Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
+
+## Zoho JSONL import (Air desk — records only)
+
+On this tip. Javy dual-enters: FitFirst live test + Zoho backup. Wipe demo CRM rows and load a Zoho MCP dump. It does **not** call paid APIs. Login, tenant, Home layouts, and existing FitFirst carriers stay. Ana is not re-seeded after wipe.
+
+One file per module: `Contacts.jsonl`, `Accounts.jsonl`, `Leads.jsonl`, `Deals.jsonl`, `Vendors.jsonl`, `Policies.jsonl`, `Tasks.jsonl`. Each line is a Zoho `getRecords` row (or a `{ data: [...] }` page). Vendors merge into carriers by normalized name — no duplicate carriers; new names are added. The importer prints counts and unmatched Zoho fields. Files/attachments stay out. Settings → Import / Export shows whether those JSONL files are present. First-time empty Postgres still needs one `db:seed` to create login users, then wipe+import. An Air desk that already has **javy** skips seed.
 
 ## Pipeline views + status colors (this slice)
 

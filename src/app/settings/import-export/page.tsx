@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ImportExportHub } from "@/components/settings/import-export-hub";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { ZohoJsonlImportCard } from "@/components/settings/zoho-jsonl-import";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { listJobs } from "@/lib/import-export/jobs";
 import { EXPORT_HREF, IMPORT_HREF } from "@/lib/settings/import-export";
@@ -16,7 +17,8 @@ export default async function ImportExportPage() {
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Portable CRM + AMS packs. Export CSV with stable headers, download a blank template, then import
         with a dry-run preview. Create vs update matches email, policy number, or carrier code. Import never
-        deletes. Ana Dib stays shopping — no Policy from her shop, Cov A stays $321,000. No paid migration
+        deletes. CSV import does not bind a shop or invent a Policy. After a Zoho wipe+import the
+        demo Ana fixture is gone — the live book is the JSONL dump. No paid migration
         vendor. Open API CSV still lives on{" "}
         <Link href={EXPORT_HREF} className="text-primary hover:underline">
           Export
@@ -27,6 +29,8 @@ export default async function ImportExportPage() {
         </Link>
         .
       </p>
+
+      <ZohoJsonlImportCard />
 
       <section className="ff-card mb-4 border-dashed p-4">
         <div className="text-sm font-semibold text-navy">IVANS / AL3 download</div>
