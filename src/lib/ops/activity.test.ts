@@ -12,8 +12,8 @@ describe("activity model helpers", () => {
     expect(normalizeActivityStatus("open")).toBe("open");
     expect(normalizeActivityStatus("incomplete")).toBe("open");
     expect(normalizeActivityStatus("cancelled")).toBe("cancelled");
-    expect(pipelineColumn("delayed")).toBe("delayed");
-    expect(pipelineColumn("moved")).toBe("moved");
+    expect(pipelineColumn("delayed")).toBe("open");
+    expect(pipelineColumn("moved")).toBe("open");
   });
 
   it("assigns to contact and policy together", () => {
