@@ -16,7 +16,7 @@ export function HardDeleteForm({
 }) {
   return (
     <form
-      action={action}
+      action={action as (formData: FormData) => void | Promise<void>}
       className={className}
       onSubmit={(event) => {
         if (!confirmHardDelete(subject)) event.preventDefault();
