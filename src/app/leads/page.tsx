@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
+import { LEADS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
@@ -119,13 +120,7 @@ export default async function LeadsPage({
           <ModuleListActions module="leads" recordIds={rows.map((lead) => lead.id)}>
             <ColumnTable
               moduleId="leads"
-              columns={[
-                { id: "pick", label: "", locked: true },
-                { id: "name", label: "Name", locked: true },
-                { id: "status", label: "Status" },
-                { id: "source", label: "Source" },
-                { id: "shop", label: "Shop" },
-              ]}
+              columns={LEADS_LIST_COLUMNS}
               empty={
                 firstParam(params.status) || firstParam(params.source)
                   ? "No leads match this filter."
