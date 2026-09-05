@@ -6,26 +6,27 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/ff-sidebar-accordion-31b5`** — Zoho-like left-nav accordion on **`cursor/ff-zoho-owner-fix-6b9e`**. One section open at a time; click again to close. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands. Sidebar stays `#1d4e89`. No wipe.
+**`cursor/live-crm-zoho-tip-sep5c`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-ff-zoho-data-1809`** (CRM+Quote + Zoho wipe/import), then merges:
 
-**`cursor/ff-zoho-owner-fix-6b9e`** — owner fix on **`cursor/live-ff-zoho-data-1809`**. Zoho import now writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls. No wipe.
+1. **`cursor/ff-zoho-owner-fix-6b9e`** — Zoho import always writes `owner_id` (map Zoho Owner, else Javy). `npm run db:assign-owner` fills leftover nulls so Maya’s lists are not empty.
+2. **`cursor/ff-sidebar-accordion-31b5`** (agent `bc-38f9fe06`) — Zoho-like one-open left-nav accordion. Last-open + icon rail in `localStorage` (`ff-sidebar-accordion:v1`). Active route’s section auto-expands.
 
-**`cursor/live-ff-zoho-data-1809`** — LIVE-TEST CRM+Quote tip (`cursor/live-crm-quote-tip-0836`) plus Zoho JSONL wipe+import (`cursor/zoho-data-import-a792`). Notification bell, columns fix, Quotes chrome, platform macros (`0064`), social BYO (`0065`), Home table layouts (`0066`), lead sources (`0067`), Home JSONB layouts (`0068`), Zoho external ids (`0069`). AMS waves 10–16 parked. Wipe+import replaces the demo CRM book. Ana is **not** re-seeded. Sidebar stays `#1d4e89`.
+AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip). Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/ff-sidebar-accordion-31b5 && git pull
+git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
 npm install
-# already have the Zoho book? do not wipe. migrate only if this desk is behind.
-# npm run db:migrate
-# Maya empty after an older import? owner fix only:
-# npm run db:assign-owner
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+npm run db:seed   # only if he wants demo seed; skip if keeping live Zoho-imported book
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Do **not** run `db:wipe-crm` to pick up this sidebar slice.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` just to pick up the sidebar or owner-fix slices.
 
 ### Left nav accordion (this slice)
 
@@ -40,12 +41,15 @@ Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home 
 ### Air checkout (no wipe)
 
 ```bash
-git fetch && git checkout cursor/ff-sidebar-accordion-31b5 && git pull
+git fetch && git checkout cursor/live-crm-zoho-tip-sep5c && git pull
 npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed`. If Maya’s lists are empty from the older Zoho import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Home custom layouts + corner resize (this slice)
 
