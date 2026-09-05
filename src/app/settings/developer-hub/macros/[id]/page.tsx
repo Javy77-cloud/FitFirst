@@ -3,6 +3,7 @@ import { deleteDeskMacro } from "@/app/actions/developer-hub";
 import { HubNotice } from "@/components/developer-hub/hub-notice";
 import { MacroForm } from "@/components/developer-hub/macro-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { getDeskMacro, listDeskMacroRuns } from "@/lib/db/developer-hub-queries";
@@ -32,12 +33,12 @@ export default async function EditMacroPage({
       title={macro.name}
       current="macros"
       actions={
-        <form action={deleteDeskMacro}>
+        <HardDeleteForm action={deleteDeskMacro} subject="this macro">
           <input type="hidden" name="id" value={macro.id} />
           <Button type="submit" size="sm" variant="outline">
             Delete
           </Button>
-        </form>
+        </HardDeleteForm>
       }
     >
       <HubNotice notice={notice} />

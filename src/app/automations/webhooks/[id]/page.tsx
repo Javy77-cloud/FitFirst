@@ -7,6 +7,7 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
 import { AutomationsNotice } from "@/components/automations/notice";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,12 +93,12 @@ export default async function WebhookDetailPage({
           </ul>
         )}
       </section>
-      <form action={removeDeveloperWebhook} className="mt-4">
+      <HardDeleteForm action={removeDeveloperWebhook} subject="this webhook" className="mt-4">
         <input type="hidden" name="id" value={hook.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete webhook
         </Button>
-      </form>
+      </HardDeleteForm>
     </AppShell>
   );
 }

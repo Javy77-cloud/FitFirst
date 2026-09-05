@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
 import { AutomationsNotice } from "@/components/automations/notice";
 import { StatusChip } from "@/components/developer-hub/status-chip";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,12 +109,12 @@ export default async function WebhooksPage({
                 <span className="font-medium text-navy">{hook.name}</span>{" "}
                 <code className="text-xs">/api/dev/webhooks/inbound/{hook.slug}</code>
               </span>
-              <form action={removeInboundHook}>
+              <HardDeleteForm action={removeInboundHook} subject="this inbound hook">
                 <input type="hidden" name="id" value={hook.id} />
                 <Button type="submit" size="xs" variant="outline">
                   Remove
                 </Button>
-              </form>
+              </HardDeleteForm>
             </li>
           ))}
         </ul>

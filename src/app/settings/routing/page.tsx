@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { deleteLeadRoutingRule, saveLeadRoutingRule } from "@/app/actions/lead-routing";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,12 +73,12 @@ export default async function LeadRoutingSettingsPage({
                     >
                       Edit
                     </Link>
-                    <form action={deleteLeadRoutingRule}>
+                    <HardDeleteForm action={deleteLeadRoutingRule} subject="this routing rule">
                       <input type="hidden" name="id" value={rule.id} />
                       <button type="submit" className="text-xs text-destructive hover:underline">
                         Remove
                       </button>
-                    </form>
+                    </HardDeleteForm>
                   </div>
                 </div>
                 <p className="text-helper text-muted-foreground">

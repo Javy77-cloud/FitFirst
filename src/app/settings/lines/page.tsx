@@ -3,6 +3,7 @@ import {
   deleteLineSubfilter,
   saveWrittenLines,
 } from "@/app/actions/line-settings";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,12 +40,12 @@ function OptionList({
             <li key={`${option.book}-${option.slug}-${option.id ?? option.label}`} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
               <span className="text-navy">{option.label}</span>
               {canEdit && option.id ? (
-                <form action={deleteLineSubfilter}>
+                <HardDeleteForm action={deleteLineSubfilter} subject="this line option">
                   <input type="hidden" name="id" value={option.id} />
                   <button type="submit" className="text-xs text-destructive hover:underline">
                     Delete
                   </button>
-                </form>
+                </HardDeleteForm>
               ) : null}
             </li>
           ))}

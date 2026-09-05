@@ -8,10 +8,11 @@ import { clickDeskButton, runDeskMacro } from "@/app/actions/developer-hub";
 import {
   archiveSelectedRecords,
   convertSelectedLeads,
-  deleteSelectedTasks,
+  deleteSelectedRecords,
   duplicateSelectedRecord,
   openMergeForSelection,
 } from "@/app/actions/list-selection";
+import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,9 +48,11 @@ type ButtonOption = {
 
 function ActionLabel({ label, reason }: { label: string; reason?: string }) {
   return (
-    <span className="flex min-w-0 flex-col items-start text-left">
+    <span className="flex w-max flex-col items-start whitespace-nowrap text-left">
       <span>{label}</span>
-      {reason ? <span className="text-[11px] font-normal text-muted-foreground">{reason}</span> : null}
+      {reason ? (
+        <span className="whitespace-nowrap text-[11px] font-normal text-muted-foreground">{reason}</span>
+      ) : null}
     </span>
   );
 }
@@ -128,11 +131,17 @@ export function SelectionActionsMenu({
   }
 
   async function onDelete() {
-    if (!window.confirm(`Delete ${selected.length} selected task${selected.length === 1 ? "" : "s"}? This cannot be undone.`)) {
-      return;
-    }
+    const noun =
+      module === "leads"
+        ? selected.length === 1
+          ? "this lead"
+          : `${selected.length} selected leads`
+        : selected.length === 1
+          ? "this task"
+          : `${selected.length} selected tasks`;
+    if (!confirmHardDelete(noun)) return;
     onBusy(true);
-    await finish(await deleteSelectedTasks(formWithIds()));
+    await finish(await deleteSelectedRecords(formWithIds()));
   }
 
   async function onConvert() {
@@ -263,7 +272,7 @@ export function SelectionActionsMenu({
           Actions
           <ChevronDown className="size-3.5 opacity-80" data-icon="inline-end" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-64">
+        <DropdownMenuContent align="start" className="w-max min-w-max">
           {extras.length ? (
             <>
               <DropdownMenuGroup>

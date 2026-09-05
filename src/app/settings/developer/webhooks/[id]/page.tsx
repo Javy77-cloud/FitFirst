@@ -6,6 +6,7 @@ import {
   testDeveloperWebhook,
 } from "@/app/actions/developer-hub";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,12 +131,12 @@ export default async function DeveloperWebhookDetailPage({
         )}
       </section>
 
-      <form action={removeDeveloperWebhook} className="mt-4">
+      <HardDeleteForm action={removeDeveloperWebhook} subject="this webhook" className="mt-4">
         <input type="hidden" name="id" value={hook.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete webhook
         </Button>
-      </form>
+      </HardDeleteForm>
       <p className="mt-3 text-sm">
         <Link href="/settings/developer/webhooks" className="text-primary hover:underline">
           All webhooks

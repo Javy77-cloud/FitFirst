@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { archiveDeal, convertLeadToDeal } from "@/app/actions/crm";
 import { deleteDeskActivity } from "@/app/actions/activities-desk";
 import { deleteTask } from "@/app/actions/alerts";
@@ -12,13 +12,21 @@ import { db } from "@/lib/db";
 import {
   accounts,
   activities,
+  activityLogs,
+  alerts,
+  commsOutboundJobs,
   contacts,
   deals,
   emailCampaigns,
+  eoAuditLogs,
+  leadOffers,
+  leadRoutingLogs,
   leads,
+  locations,
   mergeCandidates,
   quoteSheets,
   reviewTasks,
+  socialLeadOffers,
 } from "@/lib/db/schema";
 import {
   isCrmListModule,
@@ -336,14 +344,24 @@ export async function archiveSelectedRecords(formData: FormData): Promise<{
   return { ok: false, message: "Archive is not wired on this list." };
 }
 
-export async function deleteSelectedTasks(formData: FormData): Promise<{
+export async function deleteSelectedRecords(formData: FormData): Promise<{
   ok: boolean;
   message: string;
 }> {
   const module = moduleFrom(formData);
   const ids = idsFrom(formData);
-  if (module !== "tasks" || ids.length === 0) {
-    return { ok: false, message: "Select tasks to delete." };
+  if (!module || ids.length === 0) {
+    return { ok: false, message: "Select rows to delete." };
+  }
+
+  if (module === "leads") {
+    const locked = anaBlocked(ids);
+    if (locked) return { ok: false, message: locked };
+    return deleteSelectedLeads(ids);
+  }
+
+  if (module !== "tasks") {
+    return { ok: false, message: "Hard delete is off on this list." };
   }
 
   let removed = 0;
@@ -365,6 +383,85 @@ export async function deleteSelectedTasks(formData: FormData): Promise<{
   }
   revalidateModule("tasks");
   return { ok: true, message: `Deleted ${removed} task${removed === 1 ? "" : "s"}.` };
+}
+
+/** @deprecated use deleteSelectedRecords */
+export async function deleteSelectedTasks(formData: FormData) {
+  return deleteSelectedRecords(formData);
+}
+
+async function deleteSelectedLeads(ids: string[]): Promise<{ ok: boolean; message: string }> {
+  const tenant = eq(leads.tenantId, DEFAULT_TENANT_ID);
+  const rows = await db
+    .select({ id: leads.id })
+    .from(leads)
+    .where(and(tenant, inArray(leads.id, ids)));
+  const found = rows.map((row) => row.id);
+  if (found.length === 0) return { ok: false, message: "Lead not found." };
+
+  const leadIds = inArray(leads.id, found);
+  const byLead = inArray(deals.leadId, found);
+
+  await db
+    .update(deals)
+    .set({ leadId: null, updatedAt: new Date() })
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), byLead));
+  await db
+    .update(activities)
+    .set({ leadId: null, updatedAt: new Date() })
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), inArray(activities.leadId, found)));
+  await db
+    .update(activityLogs)
+    .set({ leadId: null })
+    .where(and(eq(activityLogs.tenantId, DEFAULT_TENANT_ID), inArray(activityLogs.leadId, found)));
+  await db
+    .update(locations)
+    .set({ leadId: null, updatedAt: new Date() })
+    .where(and(eq(locations.tenantId, DEFAULT_TENANT_ID), inArray(locations.leadId, found)));
+  await db
+    .update(commsOutboundJobs)
+    .set({ leadId: null, updatedAt: new Date() })
+    .where(and(eq(commsOutboundJobs.tenantId, DEFAULT_TENANT_ID), inArray(commsOutboundJobs.leadId, found)));
+  await db
+    .update(leadOffers)
+    .set({ leadId: null, updatedAt: new Date() })
+    .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), inArray(leadOffers.leadId, found)));
+  await db
+    .update(eoAuditLogs)
+    .set({ leadId: null })
+    .where(and(eq(eoAuditLogs.tenantId, DEFAULT_TENANT_ID), inArray(eoAuditLogs.leadId, found)));
+
+  await db
+    .delete(socialLeadOffers)
+    .where(and(eq(socialLeadOffers.tenantId, DEFAULT_TENANT_ID), inArray(socialLeadOffers.leadId, found)));
+  await db
+    .delete(leadRoutingLogs)
+    .where(and(eq(leadRoutingLogs.tenantId, DEFAULT_TENANT_ID), inArray(leadRoutingLogs.leadId, found)));
+  await db
+    .delete(alerts)
+    .where(and(eq(alerts.entityType, "lead"), inArray(alerts.entityId, found)));
+  await db
+    .delete(mergeCandidates)
+    .where(
+      and(
+        eq(mergeCandidates.tenantId, DEFAULT_TENANT_ID),
+        eq(mergeCandidates.entityType, "lead"),
+        or(
+          inArray(mergeCandidates.leftId, found),
+          inArray(mergeCandidates.rightId, found),
+          inArray(mergeCandidates.keeperId, found),
+          inArray(mergeCandidates.duplicateId, found),
+        ),
+      ),
+    );
+
+  await db.delete(leads).where(and(tenant, leadIds));
+  revalidateModule("leads", found);
+  revalidatePath("/deals");
+  return {
+    ok: true,
+    message: `Deleted ${found.length} lead${found.length === 1 ? "" : "s"}. Linked shops stay.`,
+  };
 }
 
 export async function openMergeForSelection(formData: FormData): Promise<{

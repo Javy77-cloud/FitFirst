@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
 import { AutomationsNotice } from "@/components/automations/notice";
 import { ScriptForm } from "@/components/developer-hub/script-form";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { parseClientScript } from "@/lib/developer-hub/client-scripts";
@@ -48,12 +49,12 @@ export default async function ClientScriptDetailPage({
           </ul>
         )}
       </section>
-      <form action={deleteDeskScript} className="mt-4">
+      <HardDeleteForm action={deleteDeskScript} subject="this script" className="mt-4">
         <input type="hidden" name="id" value={script.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete script
         </Button>
-      </form>
+      </HardDeleteForm>
     </AppShell>
   );
 }

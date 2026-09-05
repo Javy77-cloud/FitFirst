@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { AutomationsModuleNav } from "@/components/automations/module-nav";
 import { AutomationsNotice } from "@/components/automations/notice";
 import { MacroForm } from "@/components/developer-hub/macro-form";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { getDeskMacro, listDeskMacroRuns } from "@/lib/db/developer-hub-queries";
@@ -44,12 +45,12 @@ export default async function MacroDetailPage({
           </ul>
         )}
       </section>
-      <form action={deleteDeskMacro} className="mt-4">
+      <HardDeleteForm action={deleteDeskMacro} subject="this macro" className="mt-4">
         <input type="hidden" name="id" value={macro.id} />
         <Button type="submit" size="sm" variant="destructive">
           Delete macro
         </Button>
-      </form>
+      </HardDeleteForm>
     </AppShell>
   );
 }

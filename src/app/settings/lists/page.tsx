@@ -3,6 +3,7 @@ import {
   addGlobalListItem,
   deleteGlobalListItem,
 } from "@/app/actions/global-lists";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,12 +132,12 @@ function ListCard({
                 ) : null}
               </span>
               {canEdit ? (
-                <form action={deleteGlobalListItem}>
+                <HardDeleteForm action={deleteGlobalListItem} subject="this list item">
                   <input type="hidden" name="id" value={row.id} />
                   <button type="submit" className="text-xs text-destructive hover:underline">
                     Delete
                   </button>
-                </form>
+                </HardDeleteForm>
               ) : null}
             </li>
           ))}

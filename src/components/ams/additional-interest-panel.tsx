@@ -2,6 +2,7 @@ import {
   deleteAdditionalInterest,
   saveAdditionalInterest,
 } from "@/app/actions/ams";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,13 +57,13 @@ export function AdditionalInterestPanel({
                   </p>
                 ) : null}
               </div>
-              <form action={deleteAdditionalInterest}>
+              <HardDeleteForm action={deleteAdditionalInterest} subject="this additional interest">
                 <input type="hidden" name="policyId" value={policyId} />
                 <input type="hidden" name="interestId" value={row.id} />
                 <Button type="submit" size="sm" variant="secondary">
                   Remove
                 </Button>
-              </form>
+              </HardDeleteForm>
             </li>
           ))}
         </ul>
