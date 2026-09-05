@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { DeskHeader } from "@/components/desk-header";
 import { DeskSidebar } from "@/components/desk-sidebar";
-import { FLAT_NAV } from "@/components/desk-nav-groups";
+import { flattenResolvedNav, resolveNavLayout } from "@/lib/desk/nav-layout";
+import { getStoredNavLayout } from "@/lib/db/nav-prefs";
 import { SupportLauncher } from "@/components/support/help-center";
 import { SupportProvider } from "@/components/support/support-context";
 import { currentDeskSession, getActor } from "@/lib/auth/session";
@@ -36,6 +37,8 @@ export async function AppShell({
     listUsers(),
     listAlerts(),
   ]);
+  const navLayout = await getStoredNavLayout(session.userId);
+  const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout));
   if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
   if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {
     redirect("/enroll-mfa");
@@ -54,12 +57,18 @@ export async function AppShell({
     <SupportProvider>
       <div className="flex min-h-screen bg-background">
         <Suspense fallback={<aside className="hidden w-60 shrink-0 bg-sidebar md:block" />}>
-          <DeskSidebar unread={unread} actor={actor} users={users} signedIn={session.signedIn} />
+          <DeskSidebar
+            unread={unread}
+            actor={actor}
+            users={users}
+            signedIn={session.signedIn}
+            initialLayout={navLayout}
+          />
         </Suspense>
         <div className="flex min-w-0 flex-1 flex-col">
           <nav className="flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-            {FLAT_NAV.map((item) => (
-              <Link key={item.href} href={item.href} className="whitespace-nowrap text-primary">
+            {mobileNav.map((item) => (
+              <Link key={`${item.id}-${item.href}`} href={item.href} className="whitespace-nowrap text-primary">
                 {item.label}
               </Link>
             ))}

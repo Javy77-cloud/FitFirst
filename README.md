@@ -8,22 +8,23 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **`cursor/live-ff-tip-sep5d`** — live CRM+Quote tip for the Air / mini desk. Starts from **`cursor/live-crm-zoho-tip-sep5c`**, then folds finished live-desk fixes:
 
-1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`). Nav DnD parent is **not** on this tip.
+1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
+3. **`cursor/ff-nav-dnd-customize-fe86`** — drag-and-drop left nav. Primary order + editable submenus persist on `agent_ui_prefs.nav_layout`. Default rail stays stub-free.
 
-Skipped for the next tip: AMS waves 10–16, nav DnD, selection actions, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
+Skipped for the next tip: AMS waves 10–16, selection actions, Deals/Pipeline merge, Deal name typeahead, Deal upload half, live search.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
-### Nav items removed (leave for a later nav-DnD merge)
+### Nav items kept off the rail
 
 | Removed | Was | Why |
 | --- | --- | --- |
-| Get Started | `/get-started` (Work accordion) | Demo seed checklist. Bookmarks redirect to Home. |
-| Inbox | `/inbox` (Desk accordion + header Mail) | No mailbox. Header Mail now opens Settings → Email. |
-| Support | `/support` (flat nav + coming-soon dialog) | Coming-soon stub. In-app help panel stays. |
+| Get Started | `/get-started` | Demo seed checklist. Bookmarks redirect to Home. Not in the Add-link catalog. |
+| Inbox | `/inbox` | No mailbox. Header Mail opens Settings → Email. Not in the Add-link catalog. |
+| Support | `/support` | Coming-soon stub. In-app help panel stays. Not in the Add-link catalog. |
 
-Social stays in Work as a BYO connect wall (Settings → Social). Phone stays as a call log.
+Social stays under Home as a BYO connect wall (Settings → Social). Phone stays under Calendar as a call log.
 
 ## Run locally (Mac Air and Mac mini)
 
@@ -40,15 +41,15 @@ npm run dev -- --port 43147
 
 Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` on a live book.
 
-### Left nav accordion (this slice)
+### Left nav customize (this slice)
 
-Grouped rail: **Work**, **Accounts**, **Records**, **Desk**, **Settings**. Home stays pinned above the accordion.
+Primary rail: **Home**, **Leads**, **Deals**, **Pipeline**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom.
 
-1. Click a section header — that group expands and every other group collapses (one at a time).
-2. Click the open header again to close it. All closed is OK.
-3. Last-open section is remembered in `localStorage` (`ff-sidebar-accordion:v1`). Home restores that memory; a record route always opens its own section so the current page stays visible.
-4. **Collapse sidebar** at the bottom of the rail switches to an icon-only narrow rail. Same accordion. Preference is stored next to last-open.
-5. Color stays `#1d4e89`. AMS items already under Records are unchanged — this slice is nav chrome only.
+1. Click the **label** to open that module. Click the **chevron** to expand its submenu. Only one submenu is open at a time.
+2. **Customize menu** at the bottom of the rail. Drag the grip to reorder primaries, or use the up/down arrows. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog. Get Started, Inbox, and Support are not addable.
+3. **Reset to default** restores the factory order and submenus (still no demo stubs).
+4. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
+5. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
 
 ### Air checkout (no wipe)
 
@@ -61,7 +62,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` only if this desk has not already applied the current journal (Manage columns uses `desk_column_prefs`, already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
+Do not run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. `db:migrate` adds nullable `agent_ui_prefs.nav_layout` if this desk has not already applied `0070_nav_layout`. Manage columns uses `desk_column_prefs` (already on sep5c). If Maya’s lists are empty from an older import, `npm run db:assign-owner` only.
 
 ### Manage columns (this slice)
 

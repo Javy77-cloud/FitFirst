@@ -27,7 +27,9 @@ export default async function MyDeskPage() {
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Your interface only. Does not change agency logo, templates, signatures, or another
         agent&apos;s desk. Column order is stored here; the CRM list picker writes the same
-        layout when that slice lands.
+        layout when that slice lands. Rearrange the left menu from the sidebar{" "}
+        <strong>Customize menu</strong> control — that layout is saved on your{" "}
+        <code>agent_ui_prefs</code> row and is not shared with Maya.
       </p>
       <form action={saveMyDeskPrefs} className="ff-card space-y-4 p-4">
         <label className="flex items-center gap-2 text-sm">
