@@ -19,6 +19,7 @@ describe("settings nav", () => {
     expect(settingsGroupFor("security")).toBe("account");
     expect(settingsGroupFor("recovery")).toBe("account");
     expect(settingsGroupFor("compliance")).toBe("compliance");
+    expect(settingsGroupFor("outbound")).toBe("communications");
   });
 
   it("keeps Developer Hub as one Settings group", () => {

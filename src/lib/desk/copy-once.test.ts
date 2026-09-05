@@ -29,6 +29,11 @@ describe("copy once Lead → Deal → Contact", () => {
     existing.city = { value: "Palm Bay", status: "confirmed", source: "javy" };
     const filled = fillSheetFromLead(elena, existing);
     expect(filled.address1.value).toBe("412 Harbor Isle Dr");
+    expect(filled.mailing_address.value).toBe("412 Harbor Isle Dr");
+    expect(filled.named_insured.value).toBe("Elena Ruiz");
+    expect(filled.notes.value).toContain("elena.ruiz@example.com");
+    expect(filled.notes.value).toContain("(321) 555-0188");
+    expect(filled.notes.value).toContain("1984-03-12");
     expect(filled.city.value).toBe("Palm Bay");
     expect(filled.city.source).toBe("javy");
   });

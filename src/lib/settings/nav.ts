@@ -5,6 +5,7 @@ export const SETTINGS_NAV_IDS = [
   "communications",
   "email",
   "sms",
+  "outbound",
   "phone",
   "video",
   "integrations",
@@ -90,6 +91,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     children: [
       { id: "email", href: "/settings/email", label: "Email", hint: "Inbox + templates" },
       { id: "sms", href: "/settings/sms", label: "SMS", hint: "Twilio stub" },
+      { id: "outbound", href: "/settings/outbound", label: "Outbound queue", hint: "Email / SMS intent" },
       { id: "phone", href: "/settings/phone", label: "Phone", hint: "Call log line" },
       { id: "video", href: "/settings/video", label: "Video", hint: "Zoom / Meet" },
     ],

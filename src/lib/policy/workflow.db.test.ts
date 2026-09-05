@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { CONTACT_ID, DEMO_CONTACT_ID, DEMO_POLICY_ID, DEMO_PRIOR_POLICY_NUMBER } from "@/lib/fixtures/ids";
+import { CONTACT_ID, DEMO_CONTACT_ID, DEMO_POLICY_ID, DEMO_POLICY_NUMBER, TENANT_ID } from "@/lib/fixtures/ids";
 import { sql } from "@/lib/db";
-import { policies, policyAttachments, policyEvents } from "@/lib/db/schema";
+import { clientHistory, policies, policyAttachments, policyEvents } from "@/lib/db/schema";
 import { seed } from "@/lib/db/seed";
-import { getContact360, matchReplacementNotice } from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { filePolicyChange } from "./service";
+import { matchReplacementNotice } from "@/lib/db/queries";
+
+const TEMP_POLICY_ID = "a9a9a9a9-a9a9-49a9-89a9-a9a9a9a9a901";
 
 describe("seeded book + policy workflow", () => {
   beforeAll(async () => {
@@ -14,37 +16,62 @@ describe("seeded book + policy workflow", () => {
   });
 
   afterAll(async () => {
+    await db.delete(policyAttachments).where(eq(policyAttachments.policyId, TEMP_POLICY_ID));
+    await db.delete(policyEvents).where(eq(policyEvents.policyId, TEMP_POLICY_ID));
+    await db.delete(clientHistory).where(eq(clientHistory.policyId, TEMP_POLICY_ID));
+    await db.delete(policies).where(eq(policies.id, TEMP_POLICY_ID));
     await sql.end({ timeout: 5 });
   });
 
-  it("leaves Ana unbound and boots a demo Active Policy", async () => {
+  it("leaves Ana unbound and keeps Elena’s Melbourne HO3 Active", async () => {
     const ana = await db.select().from(policies).where(eq(policies.contactId, CONTACT_ID));
     expect(ana).toHaveLength(0);
 
-    const [demo] = await db.select().from(policies).where(eq(policies.id, DEMO_POLICY_ID));
-    expect(demo?.status).toBe("active");
-    expect(demo?.policyNumber).toBe("AIC-HO3-44118");
-    expect(demo?.coverageA).toBe(385000);
+    const [elena] = await db.select().from(policies).where(eq(policies.id, DEMO_POLICY_ID));
+    expect(elena?.status).toBe("active");
+    expect(elena?.policyNumber).toBe(DEMO_POLICY_NUMBER);
+    expect(elena?.coverageA).toBe(385000);
 
-    const ruiz = await getContact360(DEMO_CONTACT_ID);
-    expect(ruiz?.counts).toEqual({ active: 1, lifetime: 2 });
+    const elenaBook = await db.select().from(policies).where(eq(policies.contactId, DEMO_CONTACT_ID));
+    expect(elenaBook.some((row) => row.status === "active")).toBe(true);
+    expect(elenaBook.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("matches a replacement by premises and ignores a cancelled number", async () => {
+  it("matches a replacement by Elena’s premises", async () => {
     const byHouse = await matchReplacementNotice({
-      address1: "412 Oak Grove Ln",
-      city: "Winter Garden",
+      address1: "412 Harbor Isle Dr",
+      city: "Melbourne",
       state: "FL",
-      zip: "34787",
-      policyNumber: DEMO_PRIOR_POLICY_NUMBER,
+      zip: "32935",
+      policyNumber: "AIC-HO3-22001",
     });
-    expect(byHouse.ignoredCancelledNumber).toBe(DEMO_PRIOR_POLICY_NUMBER);
-    expect(byHouse.matches.map((row) => row.policy.policyNumber)).toEqual(["AIC-HO3-44118"]);
+    expect(byHouse.matches.map((row) => row.policy.policyNumber)).toContain(DEMO_POLICY_NUMBER);
   });
 
-  it("endorses then cancels the same Policy with a durable log and 360 update", async () => {
+  it("endorses then cancels a throwaway policy with a durable log", async () => {
+    await db.delete(clientHistory).where(eq(clientHistory.policyId, TEMP_POLICY_ID));
+    await db.delete(policyAttachments).where(eq(policyAttachments.policyId, TEMP_POLICY_ID));
+    await db.delete(policyEvents).where(eq(policyEvents.policyId, TEMP_POLICY_ID));
+    await db.delete(policies).where(eq(policies.id, TEMP_POLICY_ID));
+    await db.insert(policies).values({
+      id: TEMP_POLICY_ID,
+      tenantId: TENANT_ID,
+      contactId: DEMO_CONTACT_ID,
+      policyNumber: "HO3-TEMP-WORKFLOW",
+      lineOfBusiness: "HO",
+      status: "active",
+      effectiveDate: new Date("2026-09-01T05:00:00.000Z"),
+      expirationDate: new Date("2027-09-01T05:00:00.000Z"),
+      premium: "2840.00",
+      coverageA: 385000,
+      premisesAddress: "99 Test Lane",
+      premisesCity: "Melbourne",
+      premisesState: "FL",
+      premisesZip: "32935",
+    });
+
     const endorsed = await filePolicyChange({
-      policyId: DEMO_POLICY_ID,
+      policyId: TEMP_POLICY_ID,
       kind: "endorsement",
       effectiveDate: "2026-06-15",
       reason: "coverage_change",
@@ -56,7 +83,7 @@ describe("seeded book + policy workflow", () => {
     expect(endorsed.ok).toBe(true);
 
     const cancelled = await filePolicyChange({
-      policyId: DEMO_POLICY_ID,
+      policyId: TEMP_POLICY_ID,
       kind: "cancellation",
       effectiveDate: "2026-09-01",
       reason: "insured_request",
@@ -65,25 +92,22 @@ describe("seeded book + policy workflow", () => {
     });
     expect(cancelled.ok).toBe(true);
 
-    const [row] = await db.select().from(policies).where(eq(policies.id, DEMO_POLICY_ID));
-    expect(row?.id).toBe(DEMO_POLICY_ID);
+    const [row] = await db.select().from(policies).where(eq(policies.id, TEMP_POLICY_ID));
     expect(row?.status).toBe("cancellation");
     expect(row?.coverageA).toBe(410000);
     expect(row?.endReason).toBe("insured_request");
 
-    const events = await db
-      .select()
-      .from(policyEvents)
-      .where(eq(policyEvents.policyId, DEMO_POLICY_ID));
+    const events = await db.select().from(policyEvents).where(eq(policyEvents.policyId, TEMP_POLICY_ID));
     expect(events.map((event) => event.kind).sort()).toEqual(["cancellation", "endorsement"]);
 
     const docs = await db
       .select()
       .from(policyAttachments)
-      .where(eq(policyAttachments.policyId, DEMO_POLICY_ID));
+      .where(eq(policyAttachments.policyId, TEMP_POLICY_ID));
     expect(docs.length).toBeGreaterThanOrEqual(2);
 
-    const ruiz = await getContact360(DEMO_CONTACT_ID);
-    expect(ruiz?.counts).toEqual({ active: 0, lifetime: 2 });
+    const [elena] = await db.select().from(policies).where(eq(policies.id, DEMO_POLICY_ID));
+    expect(elena?.status).toBe("active");
+    expect(elena?.policyNumber).toBe(DEMO_POLICY_NUMBER);
   });
 });

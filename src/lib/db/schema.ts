@@ -1457,6 +1457,32 @@ export const emailSendJobs = pgTable(
   (t) => [index("email_jobs_anchor_idx").on(t.tenantId, t.anchorKind, t.status)],
 );
 
+/** Desk outbound email/SMS intent. Drafts and holds only — no vendor send. */
+export const commsOutboundJobs = pgTable(
+  "comms_outbound_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    channel: text("channel").notNull(),
+    status: text("status").notNull().default("queued"),
+    toAddress: text("to_address"),
+    fromAddress: text("from_address"),
+    subject: text("subject"),
+    body: text("body"),
+    contactId: uuid("contact_id"),
+    accountId: uuid("account_id"),
+    dealId: uuid("deal_id"),
+    policyId: uuid("policy_id"),
+    leadId: uuid("lead_id"),
+    activityId: uuid("activity_id"),
+    holdReason: text("hold_reason"),
+    vendor: text("vendor"),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("comms_outbound_tenant_idx").on(t.tenantId, t.status, t.channel)],
+);
+
 export const locations = pgTable(
   "locations",
   {
@@ -2437,6 +2463,7 @@ export type FormFill = typeof formFills.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTrigger = typeof emailTriggers.$inferSelect;
 export type EmailSendJob = typeof emailSendJobs.$inferSelect;
+export type CommsOutboundJob = typeof commsOutboundJobs.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type ApiToken = typeof apiTokens.$inferSelect;
 export type AuthRecoveryToken = typeof authRecoveryTokens.$inferSelect;

@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { emailTemplates } from "@/lib/db/schema";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { writeDeskComms } from "@/lib/desk/write-comms";
+import { enqueueOutboundJob, loadContactOptOuts } from "@/lib/desk/outbound-queue";
+import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -30,7 +32,7 @@ function revalidate(ids: ReturnType<typeof related>) {
   if (ids.leadId) revalidatePath(`/leads/${ids.leadId}`);
 }
 
-/** Log an outbound email through the existing template stub. No SendGrid. */
+/** Queue an outbound email. Nothing leaves the desk — vendor send is later. */
 export async function sendDeskEmail(formData: FormData) {
   const ids = related(formData);
   const brand = await loadAgencyBrand();
@@ -51,18 +53,45 @@ export async function sendDeskEmail(formData: FormData) {
     body = `${body}\n\n${brand.emailSignature}`;
   }
   const toAddress = str(formData, "toAddress") || str(formData, "email");
-  await writeDeskComms({
+  const optOuts = await loadContactOptOuts(ids.contactId);
+  const written = await writeDeskComms({
     kind: "email",
-    title: subject || "Email sent",
+    title: subject || "Email queued",
     subject: subject || "Email",
     body,
     direction: "outbound",
-    eventType: "sent",
+    eventType: "queued",
+    status: "open",
     toAddress,
     fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+    logEmailJob: false,
     ...ids,
   });
+  const { job, decision } = await enqueueOutboundJob({
+    channel: "email",
+    toAddress,
+    fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+    subject: subject || "Email",
+    body,
+    activityId: written.activity.id,
+    ...ids,
+    ...optOuts,
+  });
+  await writeCrmSignalsSafe({
+    kind: decision.status === "held" ? "comms_held" : "comms_queued",
+    title: decision.status === "held" ? `Email held · ${subject || "Email"}` : `Email queued · ${subject || "Email"}`,
+    body: decision.holdReason
+      ? `Held: ${decision.holdReason}. Nothing sent.`
+      : `Queued for later vendor send. Job ${job.id}.`,
+    entityType: ids.contactId ? "contact" : ids.dealId ? "deal" : "lead",
+    entityId: ids.contactId || ids.dealId || ids.leadId || job.id,
+    contactId: ids.contactId,
+    accountId: ids.accountId,
+    dealId: ids.dealId,
+    policyId: ids.policyId,
+  });
   revalidate(ids);
+  revalidatePath("/settings/outbound");
 }
 
 /** Log an inbound email on the same thread (connector stub, not a mailbox product). */
@@ -86,15 +115,56 @@ export async function sendDeskSms(formData: FormData) {
   const ids = related(formData);
   const direction = str(formData, "direction") === "inbound" ? "inbound" : "outbound";
   const body = str(formData, "body") || str(formData, "notes");
-  await writeDeskComms({
+  const toAddress = str(formData, "toAddress") || str(formData, "phone");
+  if (direction === "inbound") {
+    await writeDeskComms({
+      kind: "sms",
+      title: "SMS received",
+      body,
+      direction,
+      eventType: "received",
+      toAddress,
+      fromAddress: str(formData, "fromAddress") || null,
+      ...ids,
+    });
+    revalidate(ids);
+    return;
+  }
+  const optOuts = await loadContactOptOuts(ids.contactId);
+  const written = await writeDeskComms({
     kind: "sms",
-    title: direction === "inbound" ? "SMS received" : "SMS sent",
+    title: "SMS queued",
     body,
-    direction,
-    eventType: direction === "inbound" ? "received" : "sent",
-    toAddress: str(formData, "toAddress") || str(formData, "phone"),
+    direction: "outbound",
+    eventType: "queued",
+    status: "open",
+    toAddress,
     fromAddress: str(formData, "fromAddress") || null,
+    logEmailJob: false,
     ...ids,
   });
+  const { job, decision } = await enqueueOutboundJob({
+    channel: "sms",
+    toAddress,
+    fromAddress: str(formData, "fromAddress") || null,
+    body,
+    activityId: written.activity.id,
+    ...ids,
+    ...optOuts,
+  });
+  await writeCrmSignalsSafe({
+    kind: decision.status === "held" ? "comms_held" : "comms_queued",
+    title: decision.status === "held" ? "SMS held" : "SMS queued",
+    body: decision.holdReason
+      ? `Held: ${decision.holdReason}. Nothing texted.`
+      : `Queued for later vendor send. Job ${job.id}.`,
+    entityType: ids.contactId ? "contact" : ids.dealId ? "deal" : "lead",
+    entityId: ids.contactId || ids.dealId || ids.leadId || job.id,
+    contactId: ids.contactId,
+    accountId: ids.accountId,
+    dealId: ids.dealId,
+    policyId: ids.policyId,
+  });
   revalidate(ids);
+  revalidatePath("/settings/outbound");
 }

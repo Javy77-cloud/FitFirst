@@ -98,9 +98,9 @@ export function RecordComms({
           <HiddenRelated {...related} />
           {email ? <input type="hidden" name="toAddress" value={email} /> : null}
           <div className="sm:col-span-2">
-            <p className="text-xs font-semibold text-navy">Send email</p>
+            <p className="text-xs font-semibold text-navy">Queue email</p>
             <p className="text-[11px] text-muted-foreground">
-              Desk send stub. The outbound message lands on the Timeline automatically.
+              Logs intent on the timeline and the outbound queue. Nothing sends — vendor later.
             </p>
           </div>
           {templates.length ? (
@@ -125,7 +125,7 @@ export function RecordComms({
             <Textarea name="body" className="mt-1 min-h-20" placeholder="Full email body — stored on the record." />
           </div>
           <Button type="submit" size="sm">
-            Send email
+            Queue email
           </Button>
         </form>
       )}
@@ -162,9 +162,9 @@ export function RecordComms({
           {phone ? <input type="hidden" name="phone" value={phone} /> : null}
           {hideManualLogs ? <input type="hidden" name="direction" value="outbound" /> : null}
           <div className="sm:col-span-2">
-            <p className="text-xs font-semibold text-navy">{hideManualLogs ? "Send SMS" : "Text / SMS"}</p>
+            <p className="text-xs font-semibold text-navy">{hideManualLogs ? "Queue SMS" : "Text / SMS"}</p>
             <p className="text-[11px] text-muted-foreground">
-              Desk send stub. Outbound texts land on the Timeline automatically.
+              Outbound texts queue as intent. Nothing texts a client from this desk.
             </p>
           </div>
           {hideManualLogs ? null : (
@@ -181,7 +181,7 @@ export function RecordComms({
             <Input name="body" className="mt-1 h-8" placeholder="Text body kept on this record" />
           </div>
           <Button type="submit" size="sm">
-            {hideManualLogs ? "Send SMS" : "Log SMS"}
+            {hideManualLogs ? "Queue SMS" : "Queue SMS"}
           </Button>
         </form>
       )}

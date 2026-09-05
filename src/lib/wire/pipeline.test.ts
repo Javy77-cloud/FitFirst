@@ -11,6 +11,7 @@ import {
   pipelineHref,
   pipelinePageTitle,
   pipelineTabLabel,
+  resolveStageMove,
   switcherBoards,
 } from "./pipeline";
 
@@ -94,6 +95,15 @@ describe("deal placement", () => {
     expect(dealMatchesBoard(parked, wonLost)).toBe(false);
     expect(dealMatchesBoard(parked, pc)).toBe(false);
     expect(dealMatchesStage(parked, "archive")).toBe(true);
+  });
+});
+
+describe("stage move sync", () => {
+  it("writes both legacy stage and board slug", () => {
+    expect(resolveStageMove("shopping")).toEqual({ pipelineStage: "shopping", pipelineStageSlug: "gather" });
+    expect(resolveStageMove("quotes")).toEqual({ pipelineStage: "quoting", pipelineStageSlug: "quotes" });
+    expect(resolveStageMove("quote_sent")).toEqual({ pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent" });
+    expect(resolveStageMove("closed_lost")).toEqual({ pipelineStage: "lost", pipelineStageSlug: "closed_lost" });
   });
 });
 

@@ -845,3 +845,7 @@ List-page **Run Macro** on Leads / Contacts / Deals. Coverage A client-script wa
 ## Import / Export hub (`cursor/import-export-hub-41c4`)
 
 Admin CRM + AMS CSV packs at `/settings/import-export`. Incoming `0048_import_export_jobs` remapped to `0057_import_export_jobs`. Ana fixture is not in the export packs.
+
+## Pipeline funnel colors (`cursor/pipeline-funnel-colors-32ce`)
+
+Status chips read as badges with calm borders. Incoming `0048_pipeline_stage_color` remapped to `0058_pipeline_stage_color`. One Pipeline nav row. Sidebar stays `#1d4e89`.
