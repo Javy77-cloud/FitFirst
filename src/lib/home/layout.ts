@@ -1,4 +1,5 @@
 import type { HomeWidgetId as PresetWidgetId } from "./presets";
+import type { SocialPlatformId } from "@/lib/social/platforms";
 
 export const HOME_WIDGET_IDS = [
   "kpi-accounts",
@@ -26,6 +27,11 @@ export const HOME_WIDGET_IDS = [
   "ana",
   "alerts",
   "recent-deals",
+  "social-facebook",
+  "social-instagram",
+  "social-x",
+  "social-linkedin",
+  "social-gbp",
 ] as const;
 
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number];
@@ -65,6 +71,52 @@ export const LAYOUT_TO_PRESET: Record<HomeWidgetId, PresetWidgetId> = {
   ana: "ana",
   alerts: "alerts",
   "recent-deals": "recent_deals",
+  "social-facebook": "social",
+  "social-instagram": "social",
+  "social-x": "social",
+  "social-linkedin": "social",
+  "social-gbp": "social",
+};
+
+export const SOCIAL_LAYOUT_TO_PLATFORM: Partial<Record<HomeWidgetId, SocialPlatformId>> = {
+  "social-facebook": "facebook",
+  "social-instagram": "instagram",
+  "social-x": "x",
+  "social-linkedin": "linkedin",
+  "social-gbp": "google_business_profile",
+};
+
+export const LAYOUT_WIDGET_LABEL: Record<HomeWidgetId, string> = {
+  "kpi-accounts": "Active accounts",
+  "kpi-inforce": "Premium in-force",
+  "kpi-policies": "Policies",
+  "kpi-carriers": "Carriers",
+  "kpi-written": "Written this month",
+  "kpi-fourth": "Commission / renewals KPI",
+  ratios: "Premium and policy ratios",
+  mom: "This month vs last",
+  strip: "Pipeline strip",
+  "hit-lost": "Hit ratio / lost business",
+  company: "Agency this month",
+  "line-mix": "Policies by line",
+  "carrier-mix": "Carrier share",
+  leaderboard: "Production leaderboard",
+  contest: "Reward / contest board",
+  "lead-offers": "Management lead offers",
+  "renewal-risk": "Renewal-risk flags",
+  birthdays: "Birthdays",
+  turning65: "Turning 65",
+  renewals: "Renewal windows",
+  attention: "Needs attention",
+  "cross-sell": "Cross-sell",
+  ana: "Ana Dib shop",
+  alerts: "In-app alerts",
+  "recent-deals": "Recent deals",
+  "social-facebook": "Facebook",
+  "social-instagram": "Instagram",
+  "social-x": "X",
+  "social-linkedin": "LinkedIn",
+  "social-gbp": "Google Business Profile",
 };
 
 export const DEFAULT_HOME_LAYOUT: WidgetPlacement[] = [
@@ -93,6 +145,11 @@ export const DEFAULT_HOME_LAYOUT: WidgetPlacement[] = [
   { id: "ana", span: "2x1" },
   { id: "alerts", span: "2x1" },
   { id: "recent-deals", span: "2x1" },
+  { id: "social-facebook", span: "1x1" },
+  { id: "social-instagram", span: "1x1" },
+  { id: "social-x", span: "1x1" },
+  { id: "social-linkedin", span: "1x1" },
+  { id: "social-gbp", span: "1x1" },
 ];
 
 const ID_SET = new Set<string>(HOME_WIDGET_IDS);
@@ -107,11 +164,14 @@ export function isWidgetSpan(value: string): value is WidgetSpan {
   return SPAN_SET.has(value);
 }
 
+/**
+ * Column span + own min-height. No CSS row-span — shared row tracks were
+ * stretching stacked neighbors when one tile changed height.
+ */
 export function spanClass(span: WidgetSpan): string {
-  if (span === "2x2") return "col-span-2 row-span-2";
-  if (span === "2x1") return "col-span-2 row-span-1";
-  if (span === "1x2") return "col-span-1 row-span-2";
-  return "col-span-1 row-span-1";
+  const wide = span.startsWith("2") ? "col-span-2" : "col-span-1";
+  const tall = span.endsWith("2") ? "min-h-[21.5rem]" : "min-h-[10rem]";
+  return `${wide} ${tall} self-start`;
 }
 
 export function mergeHomeLayout(saved: unknown): WidgetPlacement[] {
@@ -148,6 +208,7 @@ export function moveWidget(layout: WidgetPlacement[], fromId: string, toId: stri
   return next;
 }
 
+/** Resize only this tile. Neighbors keep their stored w/h. */
 export function setWidgetSpan(layout: WidgetPlacement[], id: string, span: WidgetSpan): WidgetPlacement[] {
   return layout.map((item) => (item.id === id ? { ...item, span } : item));
 }

@@ -2,9 +2,9 @@ export const DASHBOARD_PRESETS = ["my_production", "pipeline_focus", "retention"
 export type DashboardPreset = (typeof DASHBOARD_PRESETS)[number];
 
 export const DASHBOARD_PRESET_LABEL: Record<DashboardPreset, string> = {
-  my_production: "My production",
-  pipeline_focus: "Pipeline focus",
-  retention: "Retention / renewals",
+  my_production: "My Production",
+  pipeline_focus: "Pipeline Focus",
+  retention: "Retention",
 };
 
 export const BOOK_SCOPES = ["my_book", "agency"] as const;
@@ -30,6 +30,7 @@ export const HOME_WIDGET_IDS = [
   "recent_deals",
   "company",
   "hit_lost",
+  "social",
 ] as const;
 export type HomeWidgetId = (typeof HOME_WIDGET_IDS)[number];
 
@@ -53,6 +54,7 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   recent_deals: "Recent deals",
   company: "Agency widgets",
   hit_lost: "Hit ratio / lost business",
+  social: "Social pulse",
 };
 
 const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
@@ -70,6 +72,7 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "renewal_risk",
     "attention",
     "ana",
+    "social",
   ],
   pipeline_focus: [
     "strip",
@@ -82,6 +85,7 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "charts",
     "hit_lost",
     "ana",
+    "social",
   ],
   retention: [
     "kpis",
@@ -94,6 +98,7 @@ const PRESET_WIDGETS: Record<DashboardPreset, readonly HomeWidgetId[]> = {
     "charts",
     "contest",
     "company",
+    "social",
   ],
 };
 
