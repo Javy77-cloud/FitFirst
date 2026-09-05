@@ -26,6 +26,7 @@ export const SETTINGS_NAV_IDS = [
   "recovery",
   "compliance",
   "export",
+  "developer",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -91,6 +92,12 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
         href: "/settings/social",
         label: "Social / GBP",
         hint: "FB · IG · X · LI · GBP",
+      },
+      {
+        id: "developer",
+        href: "/settings/developer",
+        label: "Developer Hub",
+        hint: "Macros · functions · keys",
       },
     ],
   },

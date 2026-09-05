@@ -13,6 +13,14 @@ const COPY: Record<string, string> = {
   "sequence-on":
     "Sequence is on. Tasks and email templates stay stubs — nothing emails the client.",
   "sequence-off": "Sequence is off. The catalog stays; no new Task or email stub will queue.",
+  saved: "Saved on this desk.",
+  created: "Created.",
+  deleted: "Deleted.",
+  ran: "Test ran. Check the execution log.",
+  revoked: "API key revoked.",
+  inbound: "Inbound slug saved.",
+  "inbound-deleted": "Inbound slug removed.",
+  test: "Webhook test queued.",
 };
 
 export function AutomationsNotice({

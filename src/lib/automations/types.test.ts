@@ -78,8 +78,11 @@ describe("labels", () => {
     expect(AUTOMATION_TRIGGER_LABEL.closed_won).toBe("Closed Won");
   });
 
-  it("lists campaign sequences on the automations hub", () => {
-    expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("sequences");
-    expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/sequences");
+  it("lists playbooks then campaign sequences on the automations hub", () => {
+    expect(AUTOMATION_HUB_SECTIONS[0]?.id).toBe("playbooks");
+    expect(AUTOMATION_HUB_SECTIONS[0]?.href).toBe("/automations/playbooks");
+    expect(AUTOMATION_HUB_SECTIONS.map((section) => section.id)).toEqual(
+      expect.arrayContaining(["sequences", "macros", "functions", "webhooks", "api-keys"]),
+    );
   });
 });

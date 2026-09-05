@@ -571,3 +571,20 @@ export const SEQUENCE_TEMPLATE_IDS = {
   reviewAsk: "a0801111-a080-4111-8111-a08011111118",
 } as const;
 
+/** Shared with Settings Developer Hub siblings (`developer-hub-core`, `dev-hub-macros-buttons`). */
+export const DEV_HUB_FUNCTION_ID = "d0480000-0000-4048-8048-000000000001";
+export const DEV_HUB_WEBHOOK_ID = "d0480000-0000-4048-8048-000000000002";
+export const DEV_HUB_INBOUND_ID = "d0480000-0000-4048-8048-000000000003";
+export const DEV_HUB_CONNECTION_ID = "d0480000-0000-4048-8048-000000000004";
+export const DEV_HUB_API_KEY_ID = "d0480000-0000-4048-8048-000000000005";
+
+export const DEV_HUB_IDS = {
+  macroLeadFollowup: "d0480000-0000-4048-8048-000000000001",
+  buttonDealMap: "d0480000-0000-4048-8048-000000000002",
+  buttonLeadFunction: "d0480000-0000-4048-8048-000000000003",
+  buttonDealWidget: "d0480000-0000-4048-8048-000000000004",
+  scriptDealCovA: "d0480000-0000-4048-8048-000000000005",
+  widgetSettingsPulse: "d0480000-0000-4048-8048-000000000006",
+  widgetDealRelated: "d0480000-0000-4048-8048-000000000007",
+} as const;
+

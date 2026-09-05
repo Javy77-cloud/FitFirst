@@ -2486,3 +2486,244 @@ export const portalRequests = pgTable(
 
 export type PortalToken = typeof portalTokens.$inferSelect;
 export type PortalRequest = typeof portalRequests.$inferSelect;
+
+/** Shared with Settings Developer Hub siblings. Same table names so those branches can merge. */
+export const developerFunctions = pgTable(
+  "developer_functions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    apiName: text("api_name").notNull(),
+    description: text("description"),
+    language: text("language").notNull().default("typescript"),
+    category: text("category").notNull().default("standalone"),
+    body: text("body").notNull().default(""),
+    exposeAsRest: boolean("expose_as_rest").notNull().default(false),
+    exposeAsOauth: boolean("expose_as_oauth").notNull().default(false),
+    connectionLinkName: text("connection_link_name"),
+    createdBy: uuid("created_by"),
+    ...timestamps,
+  },
+  (t) => [
+    index("developer_functions_tenant_idx").on(t.tenantId),
+    uniqueIndex("developer_functions_api_name_uidx").on(t.tenantId, t.apiName),
+  ],
+);
+
+export const developerFunctionExecutions = pgTable(
+  "developer_function_executions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    functionId: uuid("function_id")
+      .notNull()
+      .references(() => developerFunctions.id),
+    source: text("source").notNull().default("test"),
+    status: text("status").notNull().default("ok"),
+    input: jsonb("input").$type<unknown>().notNull().default({}),
+    output: jsonb("output").$type<unknown>().notNull().default({}),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("developer_function_executions_fn_idx").on(t.tenantId, t.functionId, t.createdAt)],
+);
+
+export const developerOrgApiKeys = pgTable(
+  "developer_org_api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    prefix: text("prefix").notNull(),
+    secretHash: text("secret_hash").notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("developer_org_api_keys_tenant_idx").on(t.tenantId),
+    uniqueIndex("developer_org_api_keys_hash_uidx").on(t.secretHash),
+  ],
+);
+
+export const developerWebhooks = pgTable(
+  "developer_webhooks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    event: text("event").notNull(),
+    targetUrl: text("target_url").notNull(),
+    secret: text("secret"),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("developer_webhooks_tenant_idx").on(t.tenantId, t.event)],
+);
+
+export const developerWebhookDeliveries = pgTable(
+  "developer_webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    webhookId: uuid("webhook_id")
+      .notNull()
+      .references(() => developerWebhooks.id),
+    event: text("event").notNull(),
+    payload: jsonb("payload").$type<unknown>().notNull().default({}),
+    status: text("status").notNull().default("pending"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+  },
+  (t) => [index("developer_webhook_deliveries_hook_idx").on(t.tenantId, t.webhookId, t.createdAt)],
+);
+
+export const developerInboundHooks = pgTable(
+  "developer_inbound_hooks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("developer_inbound_hooks_slug_uidx").on(t.tenantId, t.slug)],
+);
+
+export const developerInboundPayloads = pgTable(
+  "developer_inbound_payloads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    hookId: uuid("hook_id").references(() => developerInboundHooks.id),
+    slug: text("slug").notNull(),
+    payload: jsonb("payload").$type<unknown>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("developer_inbound_payloads_slug_idx").on(t.tenantId, t.slug, t.createdAt)],
+);
+
+export const developerConnections = pgTable(
+  "developer_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    linkName: text("link_name").notNull(),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("needs_credentials"),
+    clientId: text("client_id"),
+    clientSecretEnc: text("client_secret_enc"),
+    clientSecretIv: text("client_secret_iv"),
+    notes: text("notes"),
+    createdBy: uuid("created_by"),
+    ...timestamps,
+  },
+  (t) => [
+    index("developer_connections_tenant_idx").on(t.tenantId),
+    uniqueIndex("developer_connections_link_uidx").on(t.tenantId, t.linkName),
+  ],
+);
+
+export const deskMacros = pgTable(
+  "desk_macros",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    enabled: boolean("enabled").notNull().default(true),
+    actions: jsonb("actions").$type<Record<string, unknown>>().notNull(),
+    ...timestamps,
+  },
+  (t) => [index("desk_macros_module_idx").on(t.tenantId, t.module)],
+);
+
+export const deskMacroRuns = pgTable(
+  "desk_macro_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    macroId: uuid("macro_id")
+      .notNull()
+      .references(() => deskMacros.id),
+    module: text("module").notNull(),
+    recordIds: jsonb("record_ids").$type<string[]>().notNull(),
+    summary: text("summary").notNull(),
+    ranBy: uuid("ran_by"),
+    ranAt: timestamp("ran_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("desk_macro_runs_macro_idx").on(t.tenantId, t.macroId)],
+);
+
+export const deskCustomButtons = pgTable(
+  "desk_custom_buttons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    placement: text("placement").notNull(),
+    label: text("label").notNull(),
+    visibilityProfiles: jsonb("visibility_profiles").$type<string[]>().notNull().default(["admin", "agent"]),
+    actionKind: text("action_kind").notNull(),
+    functionApiName: text("function_api_name"),
+    urlTemplate: text("url_template"),
+    widgetId: uuid("widget_id"),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("desk_custom_buttons_module_idx").on(t.tenantId, t.module, t.placement)],
+);
+
+export const deskClientScripts = pgTable(
+  "desk_client_scripts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    page: text("page").notNull(),
+    event: text("event").notNull(),
+    fieldName: text("field_name"),
+    name: text("name").notNull(),
+    body: text("body").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("desk_client_scripts_page_idx").on(t.tenantId, t.module, t.page)],
+);
+
+export const deskWidgets = pgTable(
+  "desk_widgets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+    hosting: text("hosting").notNull(),
+    externalUrl: text("external_url"),
+    zipMeta: jsonb("zip_meta").$type<Record<string, unknown> | null>(),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("desk_widgets_type_idx").on(t.tenantId, t.type)],
+);
+
+export type DeveloperFunction = typeof developerFunctions.$inferSelect;
+export type DeveloperFunctionExecution = typeof developerFunctionExecutions.$inferSelect;
+export type DeveloperOrgApiKey = typeof developerOrgApiKeys.$inferSelect;
+export type DeveloperWebhook = typeof developerWebhooks.$inferSelect;
+export type DeveloperWebhookDelivery = typeof developerWebhookDeliveries.$inferSelect;
+export type DeveloperInboundHook = typeof developerInboundHooks.$inferSelect;
+export type DeveloperInboundPayload = typeof developerInboundPayloads.$inferSelect;
+export type DeveloperConnection = typeof developerConnections.$inferSelect;
+export type DeskMacro = typeof deskMacros.$inferSelect;
+export type DeskMacroRun = typeof deskMacroRuns.$inferSelect;
+export type DeskCustomButton = typeof deskCustomButtons.$inferSelect;
+export type DeskClientScript = typeof deskClientScripts.$inferSelect;
+export type DeskWidget = typeof deskWidgets.$inferSelect;

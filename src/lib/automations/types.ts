@@ -66,44 +66,111 @@ export const SIGNATURE_STATUS_LABEL: Record<SignatureApprovalStatus, string> = {
   rejected: "Rejected",
 };
 
-export const AUTOMATION_HUB_SECTIONS = [
+export const AUTOMATION_DESK_SECTIONS = [
+  {
+    id: "playbooks",
+    href: "/automations/playbooks",
+    label: "Playbooks",
+    summary: "Named in-desk rules — the existing guided automations plus campaign sequences. Tasks and Alerts only.",
+    group: "desk",
+  },
   {
     id: "sequences",
     href: "/automations/sequences",
     label: "Campaign sequences",
     summary: "Lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask — Task + email stubs.",
+    group: "desk",
   },
   {
     id: "campaigns",
     href: "/automations/campaigns",
     label: "Email campaigns",
     summary: "Mailchimp, Constant Contact, or SendGrid — only if the agency connected one.",
+    group: "desk",
   },
   {
     id: "sms",
     href: "/automations/sms",
     label: "Bulk SMS",
     summary: "Needs a Twilio / RingCentral / Lightspeed stub. Guided empty state until then.",
+    group: "desk",
   },
   {
     id: "templates",
     href: "/automations/templates",
     label: "Work email templates",
-    summary: "Same library as Settings. Agents read; Admin edits.",
+    summary: "Same EN / ES library as Settings. Agents read; Admin edits.",
+    group: "desk",
   },
   {
     id: "builder",
     href: "/automations/builder",
     label: "Guided builder",
     summary: "Trigger → Condition → Action. Save a named rule. Prefer in-app notify.",
+    group: "desk",
   },
   {
     id: "signatures",
     href: "/automations/signatures",
     label: "Email signatures",
     summary: "Agents draft. Admin approves before a signature goes live.",
+    group: "desk",
   },
 ] as const;
+
+export const AUTOMATION_DEV_SECTIONS = [
+  {
+    id: "macros",
+    href: "/automations/macros",
+    label: "Macros",
+    summary: "Manual run. At most one email stub, three field updates, and three tasks. Ana is skipped.",
+    group: "developer",
+  },
+  {
+    id: "functions",
+    href: "/automations/functions",
+    label: "Functions",
+    summary: "Button / Automation / Schedule / Standalone. Persist the body. Test log. REST with an org API key.",
+    group: "developer",
+  },
+  {
+    id: "webhooks",
+    href: "/automations/webhooks",
+    label: "Webhooks",
+    summary: "Outbound desk events + inbound Signals. Localhost POST or a stub attempt.",
+    group: "developer",
+  },
+  {
+    id: "api-keys",
+    href: "/automations/api-keys",
+    label: "API Keys",
+    summary: "Org-level keys for Standalone function REST. Secret is hashed and shown once.",
+    group: "developer",
+  },
+  {
+    id: "buttons",
+    href: "/automations/buttons",
+    label: "Custom Buttons",
+    summary: "List / detail / mass-action buttons that open a URL, run a function, or a widget stub.",
+    group: "developer",
+  },
+  {
+    id: "client-scripts",
+    href: "/automations/client-scripts",
+    label: "Client Scripts",
+    summary: "onLoad / onChange bodies persist. Allowlisted getValue / setValue / showError — no eval.",
+    group: "developer",
+  },
+  {
+    id: "connections",
+    href: "/automations/connections",
+    label: "Connections",
+    summary: "Named OAuth connectors. Client secrets encrypt at rest. Authorize stays a wall.",
+    group: "developer",
+  },
+] as const;
+
+export const AUTOMATION_HUB_SECTIONS = [...AUTOMATION_DESK_SECTIONS, ...AUTOMATION_DEV_SECTIONS] as const;
 
 export function isAutomationTrigger(value: string): value is AutomationTrigger {
   return (AUTOMATION_TRIGGERS as readonly string[]).includes(value);

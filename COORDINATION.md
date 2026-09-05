@@ -716,3 +716,13 @@ Public / token self-serve pages. Stub auth is the token in the URL — no desk p
 ## WAVE3 leftover
 
 DIFF WAVE-1 took **0036**–**0045**. Diff H added no migration. Next free additive migration is **0046**. Do not bind Ana (Cov A **$321,000**). One Pipeline. Alerts off the sidebar. Build green. Skipped duplicate packs A/D (`diff-pack-a-scorecards-726b`, `diff-pack-d-queue-campaigns-ccd2`).
+
+## Automations developer tools (`cursor/automations-dev-tools-de23`)
+
+Fills `/automations` with power-user tools. Shares the same table names as Settings siblings `cursor/developer-hub-core-a882` (`developer_*`) and `cursor/dev-hub-macros-buttons-649d` (`desk_macros`, `desk_custom_buttons`, `desk_client_scripts`). Deep-links: Settings → Developer Hub → Automations pages. Sibling paths `/settings/developer/*` and `/settings/developer-hub/*` redirect here.
+
+- Playbooks: existing guided automations (Task + Alert). Campaign sequences + EN/ES templates stay. Paid SMS / Mailchimp stay connect stubs.
+- Macros: manual only. ≤1 email stub, ≤3 field updates, ≤3 tasks. **Run Macro** on Leads / Contacts / Deals. Ana records are skipped.
+- Functions: Button / Automation / Schedule / Standalone. Body persists. Test log. Standalone REST at `/api/dev/functions/[apiName]/execute` with an org API key.
+- Webhooks, org API keys, custom buttons, client scripts, connections (OAuth wall).
+- Migration `0048_developer_hub`. Seed does not touch Ana. Sidebar stays `--ff-sidebar: #1d4e89`.

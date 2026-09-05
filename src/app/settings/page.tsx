@@ -47,8 +47,20 @@ export default async function SettingsPage() {
         <div>
           <div className="text-sm font-semibold text-navy">Automations hub</div>
           <p className="text-xs text-muted-foreground">
-            Campaigns, bulk SMS, templates, guided builder, and signature approval — one nav row,
-            not buried only here.
+            Playbooks, macros, functions, webhooks, and campaign stubs — one nav row, not buried
+            only here.
+          </p>
+        </div>
+      </Link>
+      <Link
+        href="/settings/developer"
+        className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+      >
+        <div>
+          <div className="text-sm font-semibold text-navy">Developer Hub</div>
+          <p className="text-xs text-muted-foreground">
+            Same tables as Automations developer tools. Deep-links into macros, functions, keys,
+            and webhooks.
           </p>
         </div>
       </Link>

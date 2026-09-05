@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { SETTINGS_NAV, SETTINGS_NAV_IDS, settingsGroupFor } from "./nav";
 
 describe("settings nav", () => {
-  it("nests Social under Integrations", () => {
+  it("nests Social and Developer Hub under Integrations", () => {
     const integrations = SETTINGS_NAV.find((group) => group.id === "integrations");
     expect(integrations?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["integrations", "social"]),
+      expect.arrayContaining(["integrations", "social", "developer"]),
     );
     expect(settingsGroupFor("social")).toBe("integrations");
+    expect(settingsGroupFor("developer")).toBe("integrations");
   });
 
   it("keeps People/Agents and Account recovery as distinct ids", () => {

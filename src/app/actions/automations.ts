@@ -22,6 +22,7 @@ function refreshAutomations() {
   revalidatePath("/automations/templates");
   revalidatePath("/automations/signatures");
   revalidatePath("/automations/sequences");
+  revalidatePath("/automations/playbooks");
   revalidatePath("/alerts");
 }
 
@@ -81,7 +82,12 @@ export async function toggleGuidedAutomation(formData: FormData) {
     .set({ enabled, updatedAt: new Date() })
     .where(and(eq(guidedAutomations.tenantId, DEFAULT_TENANT_ID), eq(guidedAutomations.id, id)));
   refreshAutomations();
-  redirect("/automations/builder?notice=automation-saved");
+  const next = str(formData, "next");
+  redirect(
+    next.startsWith("/automations/")
+      ? `${next}?notice=automation-saved`
+      : "/automations/builder?notice=automation-saved",
+  );
 }
 
 export async function previewAutomationNotify(formData: FormData) {
