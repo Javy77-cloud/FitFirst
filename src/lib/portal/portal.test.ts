@@ -32,6 +32,9 @@ const HARBOR_STUB = {
   issuedAt: new Date("2026-08-20T15:00:00.000Z"),
   status: "issued",
   createdAt: new Date("2026-08-20T15:00:00.000Z"),
+  additionalInsured: null,
+  specialWording: null,
+  interestId: null,
 };
 
 describe("client portal stubs", () => {

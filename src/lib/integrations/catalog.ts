@@ -26,15 +26,11 @@ export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
 
 export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   email: "Agency inbox. Google, Outlook, or Zoho Mail — FitFirst does not host mail.",
-  campaigns: "Bulk and drip later. Mailchimp, Constant Contact, or SendGrid — agency pays the vendor.",
   calendar: "Desk calendar stays here. Google, Outlook, and Zoho Calendar are demo plugs.",
-  phone_sms: "Call log and SMS. Twilio, RingCentral, or Lightspeed Voice. Nothing dials from this build.",
-  video: "Meeting links on the calendar. Zoom or Google Meet — agency account.",
-  esign: "In-desk stub on Deal or Policy. Finish-line DocuSign / Dropbox Sign stay parked. No envelope leaves the desk.",
   social:
     "Facebook, Instagram, and Google Business Profile. GBP stays Admin-gated. FitFirst does not buy ads or API seats.",
-  phone_sms: "Texts from the agency SMS vendor. Nothing sends from this desk. No Twilio account is created.",
-  esign: "DocuSign or Dropbox Sign for a signed app. No envelope leaves the desk today.",
+  phone_sms: "Call log and SMS. Twilio, RingCentral, or Lightspeed Voice. Nothing dials from this build.",
+  esign: "In-desk stub on Deal or Policy. Finish-line DocuSign / Dropbox Sign stay parked. No envelope leaves the desk.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
   campaigns: "Bulk and drip later. Mailchimp, Constant Contact, or SendGrid — agency pays the vendor.",
   video: "Meeting links on the calendar. Zoom or Google Meet — agency account.",
@@ -334,22 +330,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     initials: "Mt",
     blurb: "Meet links beside Google Calendar on the desk board.",
     byoNote: "Agency Google Workspace. Meet is not opened from FitFirst.",
-  },
-  {
-    id: "docusign",
-    category: "esign",
-    name: "DocuSign",
-    initials: "Ds",
-    blurb: "Finish-line vendor. Use the in-desk stub on Deal or Policy today.",
-    byoNote: "Agency DocuSign plan. Envelope send stays not_implemented. No paid SDK in this desk.",
-  },
-  {
-    id: "dropbox_sign",
-    category: "esign",
-    name: "Dropbox Sign",
-    initials: "Hx",
-    blurb: "HelloSign / Dropbox Sign for the same packet flow.",
-    byoNote: "Agency Dropbox Sign plan. No document leaves the desk.",
+    tone: "video",
+    optional: true,
   },
 ];
 

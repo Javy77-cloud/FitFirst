@@ -102,7 +102,7 @@ export function policyInformationFields(input: {
   const fields: PolicyInfoField[] = [];
   const lineProduct = [policy.lineOfBusiness, policy.policyType || policy.formType]
     .map((part) => part?.trim())
-    .filter(Boolean)
+    .filter((part): part is string => Boolean(part))
     .filter((part, index, all) => all.findIndex((other) => other.toLowerCase() === part.toLowerCase()) === index)
     .join(" · ");
   const insured = partyLabel(input.contact, input.account);

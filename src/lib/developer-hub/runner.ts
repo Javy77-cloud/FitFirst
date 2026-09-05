@@ -35,7 +35,7 @@ function applyTransform(spec: JsonObject, input: unknown): unknown {
   }
   if (op === "set") {
     const key = typeof spec.key === "string" ? spec.key : "";
-    const base = isObject(input) ? { ...input } : { value: input };
+    const base: Record<string, unknown> = isObject(input) ? { ...input } : { value: input };
     if (key) base[key] = spec.value;
     return base;
   }
