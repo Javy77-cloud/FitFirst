@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass Air tip. Includes AMS wave 8/9 plus `cursor/error-sweep-sep5-31ef` (Reviews 500 fix). Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
+**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass Air tip. Includes AMS wave 8/9, `cursor/error-sweep-sep5-31ef` (Reviews 500 fix), and `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations UUID 404s). Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
 
 ## Run locally (Mac Air and Mac mini)
 

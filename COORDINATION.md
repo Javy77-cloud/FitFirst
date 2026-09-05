@@ -889,7 +889,7 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 
 ## Feel-pass consolidate Sep 5b (`cursor/feel-pass-consolidate-sep5b-6195`)
 
-Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s).
+Post-feel-pass tip for Javy’s Air retest. Start: `cursor/feel-pass-consolidate-sep5-fed3`. Fast-forwarded `cursor/ams-wave9-depth-de2e` (already remapped `cursor/ams-wave8-depth-6481` to `0062_ams_wave8` plus additive `0063_ams_wave9`). Fast-forwarded `cursor/error-sweep-sep5-31ef` (desk_agents insert collision — Reviews no longer 500s). Fast-forwarded `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations / template / fill UUID 404s instead of 500s). Both tip names point at this same commit.
 
 `cursor/ams-wave7-depth-da3a` not merged: Records already lists Suspense / Notices / Endorsements; `/claims/diary` is already reserved in the record-id 404 gate. da3a nav would regress Accounts → People, restore sidebar Search, and split Settings into multiple left-nav rows.
 
@@ -1054,7 +1054,7 @@ Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is *
 
 ## Desk error sweep follow (`cursor/error-sweep-sep5-follow-31ef`)
 
-On top of `cursor/feel-pass-consolidate-sep5b-6195` (already includes Reviews `desk_agents` fix). Did not bind Ana.
+On top of `cursor/feel-pass-consolidate-sep5b-6195` (already includes Reviews `desk_agents` fix). Fast-forwarded onto that tip name — both branches point at the same commit. Did not bind Ana.
 
 **Patched remaining 500s** (bad UUID on Developer Hub / template / fill):
 - `/automations/functions|webhooks|connections/:id`
