@@ -112,7 +112,7 @@ export default async function PoliciesPage({
             { id: "carrier", label: "Carrier" },
             { id: "premium", label: "Premium" },
             { id: "expires", label: "Expires" },
-            { id: "esign", label: "E-sign" },
+            { id: "esign", label: "E-sign", locked: true },
           ]}
           empty="No policies match. Bind a shopping deal when a market is actually written."
           rows={rows.map(({ policy, contact, account, carrier }) => ({

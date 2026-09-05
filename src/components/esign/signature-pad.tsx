@@ -71,6 +71,7 @@ export function SignaturePad({
   }
 
   function end() {
+    if (!drawing.current) return;
     drawing.current = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -89,7 +90,17 @@ export function SignaturePad({
   }
 
   return (
-    <form action={completeInDeskSignature} className="space-y-3">
+    <form
+      action={completeInDeskSignature}
+      className="space-y-3"
+      onSubmit={(event) => {
+        const canvas = canvasRef.current;
+        if (!canvas || kind !== "drawn") return;
+        const data = canvas.toDataURL("image/png");
+        const field = event.currentTarget.elements.namedItem("signatureData");
+        if (field instanceof HTMLInputElement) field.value = data;
+      }}
+    >
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="role" value={role} />
       <input type="hidden" name="signatureKind" value={kind} />

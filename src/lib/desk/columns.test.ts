@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEAD_FORM_COLUMN_KEYS, TABLE_COLUMNS } from "./columns";
+import { LEAD_FORM_COLUMN_KEYS, TABLE_COLUMNS, parseColumns } from "./columns";
 
 describe("table column pickers", () => {
   it("exposes every New Lead form field as a choosable Leads column", () => {
@@ -52,5 +52,10 @@ describe("table column pickers", () => {
       "detail",
     ]);
     expect((TABLE_COLUMNS["eo-trail"] ?? []).map((col) => col.key)).toContain("ids");
+  });
+
+  it("keeps the e-sign list column on even if older column prefs omit it", () => {
+    expect(parseColumns("deals", "title,stage,line")).toContain("esign");
+    expect(parseColumns("policies", "number,status")).toContain("esign");
   });
 });

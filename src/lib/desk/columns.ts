@@ -291,5 +291,9 @@ export function parseColumns(tableKey: string, raw: string | null | undefined): 
     .split(",")
     .map((s) => s.trim())
     .filter((s) => allowed.has(s));
-  return picked.length ? picked : defaultColumns(tableKey);
+  const next = picked.length ? picked : defaultColumns(tableKey);
+  if ((tableKey === "deals" || tableKey === "policies") && !next.includes("esign")) {
+    next.push("esign");
+  }
+  return next;
 }

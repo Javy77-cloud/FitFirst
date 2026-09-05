@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requestInDeskSignature } from "@/app/actions/in-desk-esign";
+import { requestInDeskSamplePacket, requestInDeskSignature } from "@/app/actions/in-desk-esign";
 import { ChooseFiles } from "@/components/choose-files";
 import { InDeskEsignBanner } from "@/components/esign/in-desk-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -131,7 +131,7 @@ export function InDeskEsignPanel({
           <Button type="submit" size="sm">
             Request signature
           </Button>
-          <Button type="submit" size="sm" variant="outline" name="createSample" value="1">
+          <Button type="submit" size="sm" variant="outline" formAction={requestInDeskSamplePacket}>
             Create sample packet + request
           </Button>
         </div>
