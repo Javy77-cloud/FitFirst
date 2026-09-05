@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { bindDeal } from "@/app/actions/crm";
+import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
+import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { RiskForm } from "@/components/deal/risk-form";
@@ -30,6 +32,8 @@ import { HealthStrip } from "@/components/completeness/health-strip";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { reportFromSheet } from "@/lib/completeness/report";
+import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
+import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
 import type { ShopLine } from "@/lib/domain";
 
@@ -40,10 +44,11 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; riskTab?: string; notice?: string }>;
+  searchParams: Promise<{ tab?: string; riskTab?: string; notice?: string; field?: string }>;
 }) {
   const { id } = await params;
-  const { tab, riskTab, notice } = await searchParams;
+  const { tab, riskTab, notice, field } = await searchParams;
+  const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -154,11 +159,15 @@ export default async function DealPage({
       ) : null}
 
       {health ? (
-        <HealthStrip
-          report={health}
-          title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
-          href={`/deals/${deal.id}?tab=quote-sheet`}
-        />
+        <>
+          <HealthStrip
+            report={health}
+            title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
+            href={`/deals/${deal.id}?tab=quote-sheet`}
+            dealId={deal.id}
+          />
+          <SheetFieldFocus field={focusField} />
+        </>
       ) : null}
 
       <RecordDetailLayout
@@ -196,8 +205,26 @@ export default async function DealPage({
                   {
                     id: "quote-sheet",
                     label: "Quote Sheet",
-                    content: (
-                      <QuoteSheetPanel dealId={deal.id} values={quoteSheet?.values ?? null} />
+                    content: quoteSheet ? (
+                      <div className="space-y-3">
+                        <form action={fillQuoteSheetBlanks}>
+                          <input type="hidden" name="dealId" value={deal.id} />
+                          <input type="hidden" name="line" value={sheetLine} />
+                          <Button type="submit" size="sm">
+                            Fill blanks from source docs
+                          </Button>
+                        </form>
+                        <QuoteSheetForm
+                          dealId={deal.id}
+                          dealTitle={deal.title}
+                          line={sheetLine}
+                          sheet={quoteSheet}
+                          contact={contact}
+                          riskId={risk.id}
+                        />
+                      </div>
+                    ) : (
+                      <QuoteSheetPanel dealId={deal.id} values={null} line={sheetLine} />
                     ),
                   },
                   {

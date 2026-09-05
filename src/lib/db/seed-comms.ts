@@ -213,5 +213,7 @@ export async function seedCommsDesk() {
     severity: "warning",
     entityType: "policy",
     entityId: ELENA_POLICY_ID,
+    userId: ADMIN_USER_ID,
+    recipientUserId: ADMIN_USER_ID,
   });
 }

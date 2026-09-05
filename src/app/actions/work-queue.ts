@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { currentDeskSession } from "@/lib/auth/session";
 import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import {
   addWorkNote,
@@ -11,8 +12,9 @@ import {
   toggleWorkFlag,
 } from "@/lib/work-queue/service";
 
-function actorId(formData: FormData) {
-  return String(formData.get("actorId") ?? ADMIN_USER_ID) || ADMIN_USER_ID;
+async function actorId(formData: FormData) {
+  const session = await currentDeskSession();
+  return session.userId || String(formData.get("actorId") ?? ADMIN_USER_ID) || ADMIN_USER_ID;
 }
 
 function policyIdOf(formData: FormData) {
@@ -57,7 +59,7 @@ export async function saveWorkFlag(formData: FormData) {
     await toggleWorkFlag({
       policyId,
       flag: String(formData.get("flag") ?? ""),
-      actorId: actorId(formData),
+      actorId: await actorId(formData),
       on,
     });
   } catch (error) {
@@ -72,7 +74,7 @@ export async function postWorkNote(formData: FormData) {
   try {
     await addWorkNote({
       policyId,
-      authorId: actorId(formData),
+      authorId: await actorId(formData),
       body: String(formData.get("body") ?? ""),
     });
   } catch (error) {
@@ -89,7 +91,7 @@ export async function pingAssignee(formData: FormData) {
   try {
     await notifyAssignee({
       policyId,
-      actorId: actorId(formData),
+      actorId: await actorId(formData),
       message: String(formData.get("message") ?? ""),
       dueDate,
     });

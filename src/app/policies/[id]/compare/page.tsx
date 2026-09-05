@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { ComparePanel } from "@/components/policy/compare-panel";
 import { buttonVariants } from "@/components/ui/button";
-import { formatMoney } from "@/lib/domain";
 import { getPolicyWorkspace } from "@/lib/db/queries";
 import { cn } from "@/lib/utils";
 
@@ -10,10 +10,13 @@ export const dynamic = "force-dynamic";
 
 export default async function PolicyComparePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; filed?: string }>;
 }) {
   const { id } = await params;
+  const { error, filed } = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
 
@@ -31,95 +34,22 @@ export default async function PolicyComparePage({
         </Link>
       }
     >
-      <p className="mb-4 text-base text-muted-foreground">
-        Current term vs the carrier&apos;s proposed term — premium, deductibles, and key
-        coverages. {contact ? `${contact.firstName} ${contact.lastName}` : "Client"} ·{" "}
-        {carrier?.name ?? "carrier"} · {policy.lineOfBusiness}. Not a rater. No emails.
-      </p>
-
-      {policy.status.toLowerCase() !== "active" && policy.status.toLowerCase() !== "bound" ? (
-        <section className="ff-card mb-4 p-4 text-base text-muted-foreground">
-          Compare renewal is meant for in-force policies. This policy is {policy.status}.
+      {error ? (
+        <section className="mb-4 rounded-md border border-fit-red bg-fit-red-bg px-4 py-3 text-sm text-fit-red">
+          {error}
+        </section>
+      ) : filed === "compare" ? (
+        <section className="mb-4 rounded-md border border-fit-green/40 bg-fit-green-bg px-4 py-3 text-sm text-navy">
+          Proposed term saved and logged on this Policy.
         </section>
       ) : null}
+      <p className="mb-4 text-base text-muted-foreground">
+        Current term vs the carrier&apos;s proposed term. Premium change is dollars and percent —
+        not a rater score. {contact ? `${contact.firstName} ${contact.lastName}` : "Client"} ·{" "}
+        {carrier?.name ?? "carrier"} · {policy.lineOfBusiness}.
+      </p>
 
-      <div className="mb-4 grid gap-4 md:grid-cols-2">
-        <TermCard title="Current term" term={current} />
-        <TermCard title="Proposed term" term={proposed} />
-      </div>
-
-      <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-          Compare log
-        </div>
-        {compareLogs.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No renewal compare has been recorded on this policy. Terms are not seeded on the
-            overnight book — this page reads `policy_terms` and `renewal_compare_logs` only.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {compareLogs.map((log) => (
-              <li key={log.id} className="px-4 py-2 text-sm">
-                <span className="font-medium">{log.eventType}</span>
-                <span className="ml-2 text-base text-muted-foreground">{log.summary ?? "—"}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <ComparePanel policy={policy} current={current} proposed={proposed} logs={compareLogs} />
     </AppShell>
-  );
-}
-
-function TermCard({
-  title,
-  term,
-}: {
-  title: string;
-  term:
-    | {
-        premium: string | null;
-        aopDeductible: string | null;
-        hurricaneDeductible: string | null;
-        termEffective: Date;
-        termExpiration: Date;
-        notes: string | null;
-      }
-    | undefined;
-}) {
-  return (
-    <section className="ff-card p-4 text-sm">
-      <h2 className="text-base font-semibold text-navy">{title}</h2>
-      {!term ? (
-        <p className="mt-2 text-base text-muted-foreground">No {title.toLowerCase()} on file.</p>
-      ) : (
-        <dl className="mt-3 grid gap-2 text-xs">
-          <div>
-            <dt className="text-muted-foreground">Premium</dt>
-            <dd className="font-medium">{formatMoney(term.premium)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Term</dt>
-            <dd>
-              {term.termEffective.toISOString().slice(0, 10)} →{" "}
-              {term.termExpiration.toISOString().slice(0, 10)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">AOP / hurricane</dt>
-            <dd>
-              {term.aopDeductible ?? "—"} / {term.hurricaneDeductible ?? "—"}
-            </dd>
-          </div>
-          {term.notes ? (
-            <div>
-              <dt className="text-muted-foreground">Notes</dt>
-              <dd>{term.notes}</dd>
-            </div>
-          ) : null}
-        </dl>
-      )}
-    </section>
   );
 }

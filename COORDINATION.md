@@ -853,3 +853,14 @@ Status chips read as badges with calm borders. Incoming `0048_pipeline_stage_col
 ## CRM depth API wall (`cursor/crm-depth-api-wall-7faa`)
 
 Outbound comms jobs + CRM signals stop at the API wall. Incoming `0048_comms_outbound_jobs` remapped to `0059_comms_outbound_jobs`. Quotes still do not create a Policy. Ana unbound.
+
+## AMS desk polish (`cursor/ams-desk-polish-5344`)
+
+Side branch off `cursor/fitfirst-type-readability-e960`. Additive only. No new migration. Ana fixture untouched (unbound, Cov A **$321,000**). One Pipeline. One Settings. Sidebar stays `#1d4e89`. Quotes still do not create a Policy.
+
+- Policy record files endorsement / cancellation / non-renewal and shows the outcome on that same Policy (in-force vs off the book).
+- Renewal compare uses the premium-change summary (Hale +$363 / +16.6%, Nair −$72 / −5.0%).
+- Work queue lists flags, notes, assignee, and in-app pings. `notifyAssignee` writes `alerts.user_id` + `recipient_user_id` so the bell is not agency-wide. `seedWorkQueue()` is wired after Elena exists.
+- Claims log is Inquiry / Referred / Closed with Add FNOL. Claim detail uses the FNOL record.
+- Commissions pending vs paid cards filter the sheet. Payable/held stay pending. Mark paid does not change Policy status.
+- Sheet health blockers link to `?tab=quote-sheet&field=` and `#sheet-field-*`.

@@ -5,11 +5,9 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { ChooseFiles } from "@/components/choose-files";
 import { VehiclesList } from "@/components/desk-ams-panels";
-import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { RecordLink } from "@/components/record-links";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { getLatestInDeskEnvelope, getPolicyWorkspace } from "@/lib/db/queries";
@@ -26,9 +24,15 @@ import { allowedInterestKinds, canHoldInterests, isPersonalLinesPolicy } from "@
 import { listClaimsForPolicy } from "@/lib/db/claim-queries";
 import { currentDeskSession } from "@/lib/auth/session";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
+import { PolicyChangeDesk, PolicyOutcomeBanner } from "@/components/policy/change-desk";
+import { PolicyWorkPanel } from "@/components/work-queue/work-panel";
+import { PremiumChangeSummary } from "@/components/policy/premium-change";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
+import { parseMoney, premiumChange } from "@/lib/renewal/compare";
+import { isInForceStatus } from "@/lib/policy/status";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +53,11 @@ export default async function PolicyDetailPage({
     currentDeskSession(),
     getLatestInDeskEnvelope({ policyId: id }),
   ]);
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms } =
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms, work } =
     workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
-  const notice = typeof query.notice === "string" ? query.notice : typeof query.filed === "string" ? query.filed : undefined;
+  const filed = typeof query.filed === "string" ? query.filed : undefined;
+  const notice = typeof query.notice === "string" ? query.notice : filed;
   const partyName = contact
     ? `${contact.firstName} ${contact.lastName}`
     : account?.name ?? policy.policyNumber;
@@ -63,6 +68,14 @@ export default async function PolicyDetailPage({
     dealId: deal?.id,
     policyId: policy.id,
   });
+  const current = terms.find((term) => term.role === "current");
+  const proposed = terms.find((term) => term.role === "proposed");
+  const currentPremium = parseMoney(current?.premium ?? policy.premium);
+  const proposedPremium = parseMoney(proposed?.premium);
+  const change =
+    currentPremium != null && proposedPremium != null
+      ? premiumChange(currentPremium, proposedPremium)
+      : null;
 
   return (
     <AppShell title={policy.policyNumber}>
@@ -74,6 +87,9 @@ export default async function PolicyDetailPage({
         <span className="text-muted-foreground">
           {formatDay(policy.effectiveDate)} → {formatDay(policy.expirationDate)}
         </span>
+        {policy.endedAt ? (
+          <span className="text-fit-red">Ended {formatDay(policy.endedAt)}</span>
+        ) : null}
       </div>
       <div className="mb-4 flex flex-wrap gap-3 text-sm">
         {contact ? (
@@ -101,147 +117,174 @@ export default async function PolicyDetailPage({
         >
           Log FNOL
         </Link>
+        <Link href="/work-queue" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Work queue
+        </Link>
       </div>
+
+      <PolicyOutcomeBanner filed={filed} error={error} policy={policy} />
+
+      {change && isInForceStatus(policy.status) ? (
+        <div className="mb-4">
+          <PremiumChangeSummary change={change} />
+        </div>
+      ) : null}
 
       <RecordDetailLayout
         main={
-          <div>
-      {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
+          <div className="space-y-4">
+            {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
-      {servicing ? (
-        <ServicingChecklistCard
-          checklist={servicing.checklist}
-          policyId={policy.id}
-          packetByKey={servicing.packetByKey}
-          missingPackets={servicing.missingPackets}
-        />
-      ) : null}
-      {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} /> : null}
-      {canHoldInterests(policy) ? (
-        <AdditionalInterestPanel
-          policyId={policy.id}
-          interests={servicing?.interests ?? []}
-          kinds={allowedInterestKinds(policy)}
-          variant={isPersonalLinesPolicy(policy) ? "personal" : "commercial"}
-        />
-      ) : null}
-      <TermHistoryPanel policyId={policy.id} terms={terms} />
-      <LossRunPanel policyId={policy.id} claims={policyClaims.map((row) => row.claim)} />
-      <ServiceRequestPanel
-        policyId={policy.id}
-        status={policy.status}
-        coverageA={policy.coverageA}
-        premium={policy.premium}
-        requests={servicing?.requests ?? []}
-        events={servicing?.events ?? []}
-        error={error}
-        notice={notice}
-      />
-      <PolicyClaimsPanel
-        policyId={policy.id}
-        contactId={contact?.id}
-        policyNumber={policy.policyNumber}
-        partyName={
-          contact
-            ? `${contact.lastName}, ${contact.firstName}`
-            : account?.name ?? "Insured"
-        }
-        postedBy={session.name || "Javy"}
-        claims={(servicing?.claims ?? []).map(({ claim, contact: claimContact }) => ({
-          id: claim.id,
-          status: claim.status,
-          causeType: claim.causeType ?? "other",
-          description: claim.description,
-          reportedHow: claim.reportedHow ?? "phone",
-          dateReported: claim.dateReported ?? claim.createdAt,
-          dateOfLoss: claim.dateOfLoss,
-          carrierClaimNumber: claim.carrierClaimNumber,
-          policyId: claim.policyId,
-          policyNumber: policy.policyNumber,
-          contactId: claim.contactId,
-          contactName: claimContact
-            ? `${claimContact.lastName}, ${claimContact.firstName}`
-            : null,
-        }))}
-        activity={servicing?.claimActivity ?? []}
-      />
+            {servicing ? (
+              <ServicingChecklistCard
+                checklist={servicing.checklist}
+                policyId={policy.id}
+                packetByKey={servicing.packetByKey}
+                missingPackets={servicing.missingPackets}
+              />
+            ) : null}
+            {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} /> : null}
+            {canHoldInterests(policy) ? (
+              <AdditionalInterestPanel
+                policyId={policy.id}
+                interests={servicing?.interests ?? []}
+                kinds={allowedInterestKinds(policy)}
+                variant={isPersonalLinesPolicy(policy) ? "personal" : "commercial"}
+              />
+            ) : null}
+            <TermHistoryPanel policyId={policy.id} terms={terms} />
+            <LossRunPanel policyId={policy.id} claims={policyClaims.map((row) => row.claim)} />
+            <ServiceRequestPanel
+              policyId={policy.id}
+              status={policy.status}
+              coverageA={policy.coverageA}
+              premium={policy.premium}
+              requests={servicing?.requests ?? []}
+              events={servicing?.events ?? []}
+              error={error}
+              notice={notice}
+            />
+            <PolicyClaimsPanel
+              policyId={policy.id}
+              contactId={contact?.id}
+              policyNumber={policy.policyNumber}
+              partyName={
+                contact
+                  ? `${contact.lastName}, ${contact.firstName}`
+                  : account?.name ?? "Insured"
+              }
+              postedBy={session.name || "Javy"}
+              claims={(servicing?.claims ?? []).map(({ claim, contact: claimContact }) => ({
+                id: claim.id,
+                status: claim.status,
+                causeType: claim.causeType ?? "other",
+                description: claim.description,
+                reportedHow: claim.reportedHow ?? "phone",
+                dateReported: claim.dateReported ?? claim.createdAt,
+                dateOfLoss: claim.dateOfLoss,
+                carrierClaimNumber: claim.carrierClaimNumber,
+                policyId: claim.policyId,
+                policyNumber: policy.policyNumber,
+                contactId: claim.contactId,
+                contactName: claimContact
+                  ? `${claimContact.lastName}, ${claimContact.firstName}`
+                  : null,
+              }))}
+              activity={servicing?.claimActivity ?? []}
+            />
 
-      <section className="ff-card p-4">
-        <h2 className="text-base font-semibold text-navy">Issued policy files</h2>
-        <p className="mt-1 text-base text-muted-foreground">
-          Dec / complete / ID after bind. Shopping docs (source dec, wind mit, quote PDFs) stay
-          on the deal.
-        </p>
-        <form action={uploadDealSlot} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3">
-          <input type="hidden" name="policyId" value={policy.id} />
-          <input type="hidden" name="dealId" value={policy.dealId ?? ""} />
-          <input type="hidden" name="slot" value="policy_file" />
-          <div>
-            <Label className="text-xs">Type</Label>
-            <select
-              name="docType"
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              defaultValue="policy_dec"
-            >
-              <option value="policy_dec">Issued dec</option>
-              <option value="policy_complete">Complete policy</option>
-              <option value="policy_id">ID card</option>
-              <option value="aor">AOR packet</option>
-            </select>
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">File</Label>
-            <ChooseFiles name="file" required className="mt-1" />
-          </div>
-          <Button type="submit" size="sm">
-            Attach issued file
-          </Button>
-        </form>
-        {files.length === 0 ? (
-          <p className="text-base text-muted-foreground">No issued policy files yet.</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>File</th>
-                <th>Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {files.map((file) => (
-                <tr key={file.id}>
-                  <td className="font-medium">{file.filename}</td>
-                  <td className="uppercase">{file.docType.replaceAll("_", " ")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+            <PolicyChangeDesk
+              policyId={policy.id}
+              coverageA={policy.coverageA}
+              premium={policy.premium}
+              status={policy.status}
+            />
 
-      <div className="mt-4 space-y-4">
-        <InDeskEsignPanel
-          recordKind="policy"
-          recordId={policy.id}
-          riskId={policy.riskId}
-          partyName={partyName}
-          status={policy.esignStatus}
-          requestedAt={policy.esignRequestedAt}
-          signedAt={policy.esignSignedAt}
-          signerName={policy.esignSignerName}
-          docs={files}
-          envelope={envelope}
-          notice={notice}
-        />
-        <PolicyChangeTimeline logs={changeLogs} />
-        <ActivityTimeline
-          items={timeline}
-          policyId={policy.id}
-          contactId={contact?.id}
-          accountId={account?.id}
-          dealId={deal?.id}
-        />
-      </div>
+            <PolicyWorkPanel
+              policyId={policy.id}
+              actorId={session.userId ?? undefined}
+              users={work.users}
+              assigneeId={work.item?.assigneeId ?? null}
+              workStatus={work.item?.workStatus ?? null}
+              flags={work.flags}
+              notes={work.notes}
+              reminders={work.reminders}
+            />
+
+            <section className="ff-card p-4">
+              <h2 className="text-base font-semibold text-navy">Issued policy files</h2>
+              <p className="mt-1 text-base text-muted-foreground">
+                Dec / complete / ID after bind. Shopping docs (source dec, wind mit, quote PDFs) stay
+                on the deal.
+              </p>
+              <form action={uploadDealSlot} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3">
+                <input type="hidden" name="policyId" value={policy.id} />
+                <input type="hidden" name="dealId" value={policy.dealId ?? ""} />
+                <input type="hidden" name="slot" value="policy_file" />
+                <div>
+                  <Label className="text-xs">Type</Label>
+                  <select
+                    name="docType"
+                    className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                    defaultValue="policy_dec"
+                  >
+                    <option value="policy_dec">Issued dec</option>
+                    <option value="policy_complete">Complete policy</option>
+                    <option value="policy_id">ID card</option>
+                    <option value="aor">AOR packet</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">File</Label>
+                  <ChooseFiles name="file" required className="mt-1" />
+                </div>
+                <Button type="submit" size="sm">
+                  Attach issued file
+                </Button>
+              </form>
+              {files.length === 0 ? (
+                <p className="text-base text-muted-foreground">No issued policy files yet.</p>
+              ) : (
+                <table className="ff-table">
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {files.map((file) => (
+                      <tr key={file.id}>
+                        <td className="font-medium">{file.filename}</td>
+                        <td className="uppercase">{file.docType.replaceAll("_", " ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+
+            <InDeskEsignPanel
+              recordKind="policy"
+              recordId={policy.id}
+              riskId={policy.riskId}
+              partyName={partyName}
+              status={policy.esignStatus}
+              requestedAt={policy.esignRequestedAt}
+              signedAt={policy.esignSignedAt}
+              signerName={policy.esignSignerName}
+              docs={files}
+              envelope={envelope}
+              notice={notice}
+            />
+            <PolicyChangeTimeline logs={changeLogs} />
+            <ActivityTimeline
+              items={timeline}
+              policyId={policy.id}
+              contactId={contact?.id}
+              accountId={account?.id}
+              dealId={deal?.id}
+            />
           </div>
         }
         rail={<RecordContextRail context={context} />}

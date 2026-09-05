@@ -122,6 +122,16 @@ async function notifyProducer(input: {
   );
 }
 
+function bounceFnol(error: string, formData: FormData): never {
+  const params = new URLSearchParams();
+  params.set("error", error);
+  const policyId = str(formData, "policyId");
+  const contactId = str(formData, "contactId");
+  if (policyId) params.set("policy", policyId);
+  if (contactId) params.set("contact", contactId);
+  redirect(`/claims/new?${params.toString()}`);
+}
+
 export async function logClaim(formData: FormData) {
   const session = await currentDeskSession();
   const intake = fnolIntakeValues({
@@ -141,17 +151,17 @@ export async function logClaim(formData: FormData) {
   });
 
   const policy = await loadPolicy(intake.policyId);
-  if (intake.policyId && !policy) throw new Error("Policy not found");
+  if (intake.policyId && !policy) bounceFnol("Policy not found.", formData);
 
   const contactId = intake.contactId || policy?.contactId || null;
   const contact = await loadContact(contactId);
-  if (contactId && !contact) throw new Error("Contact not found");
+  if (contactId && !contact) bounceFnol("Contact not found.", formData);
 
   const dateReported = day(intake.dateReported) ?? day(new Date().toISOString().slice(0, 10));
-  if (!dateReported) throw new Error("Date reported is required.");
-  if (!isClaimCause(intake.causeType)) throw new Error("Unknown cause.");
-  if (!isClaimChannel(intake.reportedHow)) throw new Error("Unknown report channel.");
-  if (!isClaimStatus(intake.status)) throw new Error("Unknown status.");
+  if (!dateReported) bounceFnol("Date reported is required.", formData);
+  if (!isClaimCause(intake.causeType)) bounceFnol("Unknown cause.", formData);
+  if (!isClaimChannel(intake.reportedHow)) bounceFnol("Unknown report channel.", formData);
+  if (!isClaimStatus(intake.status)) bounceFnol("Unknown status.", formData);
 
   const who = actorName(formData, session.name);
   const producerId = resolveClaimProducerId({

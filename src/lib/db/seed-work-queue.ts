@@ -153,6 +153,8 @@ export async function seedWorkQueue() {
     severity: "warning",
     entityType: "policy",
     entityId: DEMO_POLICY_ID,
+    userId: ADMIN_USER_ID,
+    recipientUserId: ADMIN_USER_ID,
   });
 
   await db

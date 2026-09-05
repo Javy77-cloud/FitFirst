@@ -46,6 +46,13 @@ describe("completeness strip — blank vs filled, not a score", () => {
     expect(completenessSeed).not.toMatch(/[^_]DEAL_ID/);
     expect(completenessSeed).not.toMatch(/321000/);
     expect(completenessSeed).toMatch(/pipelineStage: "bound"/);
+    expect(seed).toMatch(/seedWorkQueue/);
+    expect(seed).toMatch(/from "@\/lib\/quote-sheet\/ana-home"/);
+
+    const dealPage = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
+    expect(dealPage).toMatch(/QuoteSheetForm/);
+    expect(dealPage).toMatch(/tab=quote-sheet/);
+    expect(dealPage).toMatch(/Fill blanks from source docs/);
   });
 
   it("treats CHECK as blue, not confirmed, and blanks as yellow missing", () => {

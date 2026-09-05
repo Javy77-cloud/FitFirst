@@ -19,10 +19,10 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
 
   const context = await loadRecordContext(
     {
-      contactId: workspace.contact?.id,
-      policyId: workspace.policy?.id,
+      contactId: workspace.contact?.id ?? workspace.claim.contactId,
+      policyId: workspace.policy?.id ?? workspace.claim.policyId,
       dealId: workspace.policy?.dealId,
-      accountId: workspace.policy?.accountId ?? workspace.account?.id,
+      accountId: workspace.account?.id ?? workspace.policy?.accountId,
     },
     {
       conversations: [
