@@ -652,6 +652,7 @@ export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[
     { key: "assigned", label: "Assigned" },
     { key: "premium", label: "Coverage $" },
     { key: "updated", label: "Updated" },
+    { key: "esign", label: "E-sign" },
     { key: "comms", label: "Comms" },
   ],
   accounts: [
@@ -682,6 +683,7 @@ export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[
     { key: "premisesCity", label: "Premises city" },
     { key: "effective", label: "Effective" },
     { key: "expires", label: "X-Date" },
+    { key: "esign", label: "E-sign" },
     { key: "assigned", label: "Assigned" },
   ],
   carriers: [

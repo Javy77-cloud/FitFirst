@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay, formatMoney } from "@/lib/domain";
-import { getPolicyWorkspace } from "@/lib/db/queries";
+import { getLatestInDeskEnvelope, getPolicyWorkspace } from "@/lib/db/queries";
 import { loadPolicyServicing } from "@/lib/ams/queries";
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { LossRunPanel } from "@/components/ams/loss-run-panel";
@@ -20,6 +20,7 @@ import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
 import { SuspensePanel } from "@/components/ams/suspense-panel";
 import { TermHistoryPanel } from "@/components/ams/term-history-panel";
+import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
 import { allowedInterestKinds, canHoldInterests, isPersonalLinesPolicy } from "@/lib/ams/additional-interests";
 import { listClaimsForPolicy } from "@/lib/db/claim-queries";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -41,15 +42,19 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const [servicing, policyClaims, session] = await Promise.all([
+  const [servicing, policyClaims, session, envelope] = await Promise.all([
     loadPolicyServicing(id),
     listClaimsForPolicy(id),
     currentDeskSession(),
+    getLatestInDeskEnvelope({ policyId: id }),
   ]);
   const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms } =
     workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
   const notice = typeof query.notice === "string" ? query.notice : typeof query.filed === "string" ? query.filed : undefined;
+  const partyName = contact
+    ? `${contact.firstName} ${contact.lastName}`
+    : account?.name ?? policy.policyNumber;
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
   const context = await loadRecordContext({
     contactId: contact?.id,
@@ -214,6 +219,19 @@ export default async function PolicyDetailPage({
       </section>
 
       <div className="mt-4 space-y-4">
+        <InDeskEsignPanel
+          recordKind="policy"
+          recordId={policy.id}
+          riskId={policy.riskId}
+          partyName={partyName}
+          status={policy.esignStatus}
+          requestedAt={policy.esignRequestedAt}
+          signedAt={policy.esignSignedAt}
+          signerName={policy.esignSignerName}
+          docs={files}
+          envelope={envelope}
+          notice={notice}
+        />
         <PolicyChangeTimeline logs={changeLogs} />
         <ActivityTimeline
           items={timeline}

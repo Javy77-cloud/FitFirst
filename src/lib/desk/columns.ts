@@ -49,6 +49,7 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "assigned", label: "Assigned", defaultOn: true },
     { key: "premium", label: "Coverage $", defaultOn: false },
     { key: "updated", label: "Updated", defaultOn: false },
+    { key: "esign", label: "E-sign", defaultOn: true },
     { key: "comms", label: "Comms", defaultOn: true },
   ],
   contacts: [
@@ -101,6 +102,7 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "premisesCity", label: "Premises city", defaultOn: false },
     { key: "effective", label: "Effective", defaultOn: false },
     { key: "expires", label: "Expires", defaultOn: true },
+    { key: "esign", label: "E-sign", defaultOn: true },
     { key: "assigned", label: "Assigned", defaultOn: false },
   ],
   carriers: [
@@ -289,5 +291,9 @@ export function parseColumns(tableKey: string, raw: string | null | undefined): 
     .split(",")
     .map((s) => s.trim())
     .filter((s) => allowed.has(s));
-  return picked.length ? picked : defaultColumns(tableKey);
+  const next = picked.length ? picked : defaultColumns(tableKey);
+  if ((tableKey === "deals" || tableKey === "policies") && !next.includes("esign")) {
+    next.push("esign");
+  }
+  return next;
 }

@@ -90,6 +90,7 @@ import {
   tenants,
   telephonySettings,
   esignSettings,
+  signatureEnvelopes,
   users,
   vehicles,
   contests,
@@ -405,6 +406,43 @@ export async function getEsignSettings() {
     .select()
     .from(esignSettings)
     .where(eq(esignSettings.tenantId, tenant()));
+  return row ?? null;
+}
+
+export async function getInDeskEnvelopeByToken(token: string) {
+  const [row] = await db
+    .select({
+      envelope: signatureEnvelopes,
+      document: documents,
+    })
+    .from(signatureEnvelopes)
+    .innerJoin(documents, eq(signatureEnvelopes.documentId, documents.id))
+    .where(
+      and(
+        eq(signatureEnvelopes.tenantId, tenant()),
+        eq(signatureEnvelopes.publicToken, token),
+        eq(signatureEnvelopes.mode, "in_desk"),
+      ),
+    );
+  return row ?? null;
+}
+
+export async function getLatestInDeskEnvelope(input: {
+  dealId?: string | null;
+  policyId?: string | null;
+}) {
+  const scope = input.policyId
+    ? eq(signatureEnvelopes.policyId, input.policyId)
+    : input.dealId
+      ? eq(signatureEnvelopes.dealId, input.dealId)
+      : null;
+  if (!scope) return null;
+  const [row] = await db
+    .select()
+    .from(signatureEnvelopes)
+    .where(and(eq(signatureEnvelopes.tenantId, tenant()), eq(signatureEnvelopes.mode, "in_desk"), scope))
+    .orderBy(desc(signatureEnvelopes.updatedAt))
+    .limit(1);
   return row ?? null;
 }
 

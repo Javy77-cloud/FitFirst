@@ -8,6 +8,7 @@ import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { DealRowComms } from "@/components/deal-row-comms";
 import { defaultColumns } from "@/lib/desk/columns";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -121,6 +122,7 @@ export default async function DealsPage({
                 <Col table="deals" col="assigned" as="th">Assigned</Col>
                 <Col table="deals" col="premium" as="th">Coverage $</Col>
                 <Col table="deals" col="updated" as="th">Updated</Col>
+                <Col table="deals" col="esign" as="th">E-sign</Col>
                 <Col table="deals" col="comms" as="th">Comms</Col>
               </tr>
             </thead>
@@ -166,6 +168,9 @@ export default async function DealsPage({
                     {formatMoney(deal.coverageAmount)}
                   </Col>
                   <Col table="deals" col="updated">{formatDay(deal.updatedAt)}</Col>
+                  <Col table="deals" col="esign">
+                    {formatInDeskEsignList(deal.esignStatus, deal.esignSignedAt, deal.esignRequestedAt)}
+                  </Col>
                   <Col table="deals" col="comms">
                     <DealRowComms
                       dealId={deal.id}

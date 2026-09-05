@@ -372,6 +372,13 @@
       "when": 1788558200000,
       "tag": "0052_automation_playbooks",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1788558300000,
+      "tag": "0053_in_desk_esign",
+      "breakpoints": true
     }
   ]
 }

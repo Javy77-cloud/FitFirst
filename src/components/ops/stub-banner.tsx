@@ -13,8 +13,12 @@ export function Notice({ code }: { code?: string }) {
     "would-send":
       "Campaign send is stubbed. FitFirst logged “would send” for each audience member. No SMTP.",
     "esign-not-implemented":
-      "Envelope created as sent in-app. The e-sign provider interface returned not_implemented. No DocuSign / Dropbox Sign / Zoho Sign call.",
-    "marked-signed": "Envelope marked signed in FitFirst only.",
+      "Finish-line DocuSign / Dropbox Sign stay parked (not_implemented). Use the in-desk stub on a Deal or Policy.",
+    "marked-signed": "Vendor envelope marked signed in FitFirst only. Prefer the in-desk stub on Deal or Policy.",
+    "esign-requested": "In-desk signature requested. Open the client link or agent demo — not DocuSign.",
+    "esign-signed": "Signed in the in-desk stub. Status and timestamp are on the record.",
+    "esign-need-packet": "Choose or upload a PDF packet before requesting a signature.",
+    "esign-invalid": "Type the legal name. A drawn mark is optional unless you chose draw.",
     "sms-not-implemented":
       "SMS provider connect returned not_implemented. No number purchased. Twilio was not called.",
     "sms-disconnected": "SMS provider marked not connected.",

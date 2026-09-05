@@ -86,8 +86,23 @@ After `npm run db:migrate && npm run db:seed` and `npm run dev`:
 7. `/claims` — FNOL pipeline and “Handle the claim on the carrier website.”
 8. Settings → IVANS / AL3 still **Not connected**.
 
+## In-desk e-sign stub (kept)
+
+Finish-line DocuSign stays parked. No paid e-sign vendor SDK.
+
+1. Sign in as Javy or Maya.
+2. Open **Elena Ruiz** — Deal Documents (`/deals` → Ruiz · Melbourne HO3 → Documents) or Policy `HO3-ELENA-2026`.
+3. Under **In-desk signature**, pick an existing PDF or click **Create sample packet + request**.
+4. Open **Open agent demo** (or the client sign link). Type a name and/or draw, then **Mark signed**.
+5. Confirm **Signed** plus the timestamp on the record and on the Deals / Policies lists.
+
+The banner always reads **In-desk stub — not DocuSign**. `/esign` lists in-desk envelopes first; vendor send stays `not_implemented`.
+
+Do not bind Ana. Her shop stays Quote Sent at Coverage A **$321,000**.
+
 ## Tests
 
 ```bash
 npm test
 ```
+

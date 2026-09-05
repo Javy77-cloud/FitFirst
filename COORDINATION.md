@@ -810,3 +810,12 @@ Off `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouche
 - **Seed fires** (Tasks + Alerts only): Elena Closed Won (Alert, Maya); Elena renewal 60 (Task + Alert, Maya); Ana Quote Sent (Alert only, Cov A $321k, do not bind); Marcus Hale renewal 30 (Task + Alert, Javy); Robert Hale birthday (agency-wide Alert).
 - `/tasks` lists open `activities` (kind=task) next to review items so playbook fires show on the existing Tasks table. `/alerts` Open jumps the related record. Chrome unchanged.
 - Incoming `0048_automation_playbooks` remapped to `0052_automation_playbooks` (`guided_automations.visibility` + `automation_runs`).
+
+## In-desk e-sign stub (`cursor/in-desk-esign-stub-fdce`)
+
+Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture untouched (unbound, Cov A **$321,000**). Dark sidebar tokens stay `#1d4e89`. Chrome Fill folder not rewritten. Mac Chrome unblock rules kept: Col-based lists compile, no vendor SDK.
+
+- Deal Documents + Policy issued-files: upload/select a PDF packet, request signature, client or agent demo draws/types a name, mark Signed in-app.
+- Status + timestamp stored on `deals` / `policies` (`esign_status`, `esign_requested_at`, `esign_signed_at`) and shown on those lists.
+- Banner copy is **In-desk stub — not DocuSign**. `/sign/[token]` is public. Finish-line DocuSign / Dropbox Sign stay `not_implemented`.
+- Incoming `0048_in_desk_esign` remapped to `0053_in_desk_esign`.

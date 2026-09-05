@@ -83,6 +83,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/portal")).toBe(true);
     expect(isPublicPath("/portal/elena-ruiz-2026/id-cards")).toBe(true);
     expect(isPublicPath("/api/portal/harbor-key-2026/files/x")).toBe(true);
+    expect(isPublicPath("/sign/idesk-demo")).toBe(true);
+    expect(isPublicPath("/api/sign/idesk-demo/file")).toBe(true);
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/settings")).toBe(false);
     expect(adminRedirectPath()).toContain("admin-only");

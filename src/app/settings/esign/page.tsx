@@ -35,9 +35,9 @@ export default async function EsignSettingsPage({
         </p>
       ) : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          BYO later. FitFirst does not store vendor keys or send envelopes from Settings. Pick
-          DocuSign or Dropbox Sign so the desk remembers which provider you intend. Signed
-          applications return on the Deal.
+          In-desk stub lives on Deal and Policy. Finish-line DocuSign stays parked. FitFirst does
+          not store vendor keys or send vendor envelopes from Settings. Pick a BYO provider only
+          as a reminder — signed apps still return on the Deal.
         </p>
       )}
       {notice === "esign-stub" ? (

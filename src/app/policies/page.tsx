@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { listPolicies, type PolicyListFilter } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
@@ -111,6 +112,7 @@ export default async function PoliciesPage({
             { id: "carrier", label: "Carrier" },
             { id: "premium", label: "Premium" },
             { id: "expires", label: "Expires" },
+            { id: "esign", label: "E-sign", locked: true },
           ]}
           empty="No policies match. Bind a shopping deal when a market is actually written."
           rows={rows.map(({ policy, contact, account, carrier }) => ({
@@ -134,6 +136,11 @@ export default async function PoliciesPage({
               carrier: carrier?.name ?? "—",
               premium: formatMoney(policy.premium),
               expires: formatDay(policy.expirationDate),
+              esign: formatInDeskEsignList(
+                policy.esignStatus,
+                policy.esignSignedAt,
+                policy.esignRequestedAt,
+              ),
             },
           }))}
         />
