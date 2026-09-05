@@ -11,6 +11,7 @@ describe("desk settings IA", () => {
       "Desk & Phone",
       "Connect",
       "Security",
+      "Import / Export",
       "Billing",
     ]);
     expect(settings?.items.map((item) => item.href)).toEqual(
@@ -20,6 +21,7 @@ describe("desk settings IA", () => {
         "/settings?section=phone",
         "/settings/integrations",
         "/settings/security",
+        "/settings/import-export",
         "/settings/billing",
       ]),
     );
@@ -30,6 +32,8 @@ describe("desk settings IA", () => {
     expect(groupIdForPath("/settings/offices")).toBe("settings");
     expect(groupIdForPath("/settings/phone")).toBe("settings");
     expect(groupIdForPath("/settings/billing")).toBe("settings");
+    expect(groupIdForPath("/settings/import-export")).toBe("settings");
+    expect(groupIdForPath("/settings/import")).toBe("settings");
   });
 
   it("treats Setup as an exact /settings match", () => {

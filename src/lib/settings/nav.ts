@@ -5,6 +5,8 @@ export const SETTINGS_NAV_IDS = [
   "connect",
   "automations-dev",
   "billing",
+  "import-export",
+  "import",
   "people",
   "agents",
   "communications",
@@ -45,7 +47,8 @@ export type SettingsGroupIcon =
   | "connect"
   | "automations"
   | "security"
-  | "billing";
+  | "billing"
+  | "import-export";
 
 export type SettingsNavChild = {
   id: SettingsNavId;
@@ -151,16 +154,29 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     ],
   },
   {
+    id: "import-export",
+    href: "/settings/import-export",
+    label: "Import / Export",
+    hint: "CSV + Open API",
+    blurb: "Admin book move: contacts, businesses, policies, carriers, leads, deals, plus related packs.",
+    icon: "import-export",
+    badge: "Admin",
+    children: [
+      { id: "import-export", href: "/settings/import-export", label: "Hub", hint: "All packs" },
+      { id: "import", href: "/settings/import", label: "Import", hint: "CSV stub" },
+      { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
+    ],
+  },
+  {
     id: "billing",
     href: "/settings/billing",
     label: "Billing",
-    hint: "Export stub — no SaaS invoicing",
-    blurb: "FitFirst does not bill producers from this desk. Export the book. Commissions stay on the desk.",
+    hint: "No SaaS invoicing",
+    blurb: "FitFirst does not bill producers from this desk. Book CSV lives under Import / Export.",
     icon: "billing",
     badge: "Admin",
     children: [
       { id: "billing", href: "/settings/billing", label: "Billing stub", hint: "No invoicing here" },
-      { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
     ],
   },
 ];
@@ -205,5 +221,7 @@ export const SETTINGS_KNOWN_HREFS = [
   "/settings/security",
   "/compliance",
   "/settings/billing",
+  "/settings/import-export",
+  "/settings/import",
   "/settings/export",
 ] as const;

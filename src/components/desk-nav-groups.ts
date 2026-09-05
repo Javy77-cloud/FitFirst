@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Bell,
   Briefcase,
   Building2,
@@ -94,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/settings?section=phone", label: "Desk & Phone", icon: Phone, match: "/settings/phone" },
       { href: "/settings/integrations", label: "Connect", icon: Plug, match: "/settings/integrations" },
       { href: "/settings/security", label: "Security", icon: Shield, match: "/settings/security" },
+      { href: "/settings/import-export", label: "Import / Export", icon: ArrowLeftRight, match: "/settings/import-export" },
       { href: "/settings/billing", label: "Billing", icon: CreditCard, match: "/settings/billing" },
     ],
   },

@@ -41,7 +41,7 @@ export default async function SettingsPage({
     <SettingsShell title="Settings" current="overview">
       <p className="mb-4 text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Admin settings change the agency. Agent settings change only this desk. Open a Setup card — Agency & People, Desk & Phone, Connect, Automations, Security, or Billing."
+          ? "Admin settings change the agency. Agent settings change only this desk. Open a Setup card — Agency & People, Desk & Phone, Connect, Automations, Security, Import / Export, or Billing."
           : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
       <div className="mb-6">
@@ -77,13 +77,13 @@ export default async function SettingsPage({
         </Link>
         {session.isAdmin ? (
           <Link
-            href="/settings/export"
+            href="/settings/import-export"
             className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
           >
             <div>
-              <div className="text-sm font-semibold text-navy">Export</div>
+              <div className="text-sm font-semibold text-navy">Import / Export</div>
               <p className="text-xs text-muted-foreground">
-                CSV of contacts, policies, and commissions. Same rows as <code>/api/v1</code>.
+                Contacts, businesses, policies, and related packs. Live CSV plus an import stub.
               </p>
             </div>
           </Link>

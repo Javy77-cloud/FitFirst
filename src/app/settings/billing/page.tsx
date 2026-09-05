@@ -11,22 +11,22 @@ export default async function BillingSettingsPage() {
     <SettingsShell title="Billing" current="billing">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         FitFirst does not invoice producers or take card numbers on this desk. Commission math
-        stays on each policy. The book can be exported as CSV.
+        stays on each policy. Book CSV lives under Import / Export — not here.
       </p>
       {!session.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Export is Admin-only. Use Commissions for your own production.
+          Import / Export is Admin-only. Use Commissions for your own production.
         </p>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         {session.isAdmin ? (
           <Link
-            href="/settings/export"
+            href="/settings/import-export"
             className="ff-card block p-4 hover:border-primary/40"
           >
-            <div className="text-sm font-semibold text-navy">Export the book</div>
+            <div className="text-sm font-semibold text-navy">Import / Export</div>
             <p className="mt-1 text-sm text-muted-foreground">
-              CSV of contacts, policies, and commissions. Same rows as <code>/api/v1</code>.
+              Contacts, businesses, policies, and related packs. CSV import is a stub.
             </p>
           </Link>
         ) : null}

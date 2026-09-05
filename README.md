@@ -25,7 +25,7 @@ Overnight feel-pass: grouped left nav, named list filters, header column sliders
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, Automations hub, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
 
-Settings is Setup-style **card groups** (Agency & People, Desk & Phone, Integrations / Connect, Automations & Developer, Security, Billing stub) — not one endless left rail. Phone and agency stay under the Admin Settings group. Developer Hub is a placeholder card into `/automations` until that slice lands. Deep links (`/settings/phone`, `/settings?section=phone`) still work.
+Settings is Setup-style **card groups** (Agency & People, Desk & Phone, Integrations / Connect, Automations & Developer, Security, Import / Export, Billing stub) — not one endless left rail. Phone and agency stay under the Admin Settings group. Developer Hub is a placeholder card into `/automations` until that slice lands. Import / Export (`/settings/import-export`) lists contacts, businesses, policies, carriers, leads, deals, plus activities, document metadata, commissions, and quote-sheet stubs. CSV import is a placeholder (`/settings/import`) until that slice merges. Deep links (`/settings/phone`, `/settings?section=phone`) still work.
 
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 

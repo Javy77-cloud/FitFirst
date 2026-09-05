@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Building2,
   CreditCard,
   Phone,
@@ -17,6 +18,7 @@ const ICONS: Record<IconId, LucideIcon> = {
   automations: Workflow,
   security: Shield,
   billing: CreditCard,
+  "import-export": ArrowLeftRight,
 };
 
 export function SettingsGroupIcon({

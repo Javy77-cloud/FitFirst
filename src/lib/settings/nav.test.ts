@@ -14,6 +14,7 @@ describe("settings IA cards", () => {
       "connect",
       "automations-dev",
       "security",
+      "import-export",
       "billing",
     ]);
     expect(SETTINGS_NAV.every((group) => group.blurb.length > 20)).toBe(true);
@@ -66,10 +67,16 @@ describe("settings IA cards", () => {
     expect(settingsGroupFor("developer")).toBe("automations-dev");
   });
 
-  it("puts export on the Billing stub group", () => {
-    expect(settingsGroupFor("export")).toBe("billing");
+  it("puts Import / Export on its own Admin group", () => {
+    expect(settingsGroupFor("export")).toBe("import-export");
+    expect(settingsGroupFor("import")).toBe("import-export");
+    expect(settingsGroupFor("import-export")).toBe("import-export");
     expect(settingsGroupFor("billing")).toBe("billing");
     expect(settingsGroupFor("routing")).toBe("agency-people");
+    expect(SETTINGS_NAV.find((group) => group.id === "import-export")?.badge).toBe("Admin");
+    expect(SETTINGS_NAV.find((group) => group.id === "import-export")?.children.map((child) => child.id)).toEqual(
+      ["import-export", "import", "export"],
+    );
   });
 
   it("does not invent dead links", () => {

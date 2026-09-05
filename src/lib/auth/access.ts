@@ -12,6 +12,8 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/email-triggers",
   "/settings/agents",
   "/settings/export",
+  "/settings/import-export",
+  "/settings/import",
   "/logs/fill-learning",
   "/compliance",
 ] as const;
