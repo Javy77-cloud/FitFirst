@@ -351,46 +351,6 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     blurb: "HelloSign / Dropbox Sign for the same packet flow.",
     byoNote: "Agency Dropbox Sign plan. No document leaves the desk.",
   },
-  {
-    id: "facebook",
-    category: "social",
-    name: "Facebook",
-    initials: "Fb",
-    blurb: "Page inbox and lead forms. Inquiries land on Leads. Pulse shows followers and post views.",
-    byoNote: "Agency Facebook Page. OAuth does not open Meta. No ad spend.",
-  },
-  {
-    id: "instagram",
-    category: "social",
-    name: "Instagram",
-    initials: "Ig",
-    blurb: "DMs and comment asks for a quote. Same social → Lead path as the stub button.",
-    byoNote: "Agency Instagram. Connect is a stub. Nothing syncs from Meta.",
-  },
-  {
-    id: "x",
-    category: "social",
-    name: "X (Twitter)",
-    initials: "X",
-    blurb: "Mentions and DMs that ask for coverage. Pulse is demo numbers after connect.",
-    byoNote: "Agency X account. No live Twitter API. Agency pays X later.",
-  },
-  {
-    id: "linkedin",
-    category: "social",
-    name: "LinkedIn",
-    initials: "Li",
-    blurb: "Company-page messages for commercial shops. Inquiries become Leads.",
-    byoNote: "Agency LinkedIn Page. No Sales Navigator seat from FitFirst.",
-  },
-  {
-    id: "google_business_profile",
-    category: "social",
-    name: "Google Business Profile",
-    initials: "Gb",
-    blurb: "GBP messages and listing views. Agents see this only after Admin allows monitoring.",
-    byoNote: "Agency Google Business Profile. Admin approval required before agents monitor.",
-  },
 ];
 
 export const CONNECT_HUB_SECTIONS = [

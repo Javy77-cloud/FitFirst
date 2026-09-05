@@ -889,7 +889,7 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 
 ## Feel-pass consolidate Sep 5 (`cursor/feel-pass-consolidate-sep5-fed3`)
 
-One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. No migration dropped.
+One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. No migration dropped. `0055_developer_hub` (power-user superset after `0054`) wraps shared FK adds in `DO $$ … EXCEPTION WHEN duplicate_object` so `db:migrate` can apply both files.
 
 ### Merged (schema first, then features, then UX)
 

@@ -50,9 +50,11 @@ describe("completeness strip — blank vs filled, not a score", () => {
     expect(seed).toMatch(/from "@\/lib\/quote-sheet\/ana-home"/);
 
     const dealPage = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
-    expect(dealPage).toMatch(/QuoteSheetForm/);
+    const sheetPanel = readFileSync("src/components/deal/quote-sheet-panel.tsx", "utf8");
+    expect(dealPage).toMatch(/QuoteSheetPanel/);
     expect(dealPage).toMatch(/tab=quote-sheet/);
-    expect(dealPage).toMatch(/Fill blanks from source docs/);
+    expect(sheetPanel).toMatch(/QuoteSheetForm/);
+    expect(sheetPanel).toMatch(/FILL_FROM_DOCS_LABEL/);
   });
 
   it("treats CHECK as blue, not confirmed, and blanks as yellow missing", () => {
