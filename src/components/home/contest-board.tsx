@@ -10,14 +10,16 @@ import type { HomeContestView } from "@/lib/db/queries";
 export function ContestBoard({
   contests,
   isAdmin,
+  embedded = false,
 }: {
   contests: HomeContestView[];
   isAdmin: boolean;
+  embedded?: boolean;
 }) {
   const contest = contests[0] ?? null;
 
   return (
-    <section className="ff-card overflow-hidden">
+    <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"}>
       <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div>
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-navy">

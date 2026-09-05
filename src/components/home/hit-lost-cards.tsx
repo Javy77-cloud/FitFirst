@@ -7,9 +7,9 @@ function fmt(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
-export function HitLostCards({ report }: { report: HitLostReport }) {
+export function HitLostCards({ report, embedded = false }: { report: HitLostReport; embedded?: boolean }) {
   return (
-    <section className="ff-card overflow-hidden">
+    <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"}>
       <div className="border-b border-border bg-[color:var(--ff-wash)] px-4 py-3">
         <h3 className="text-sm font-semibold text-navy">Hit ratio and lost business</h3>
         <p className="text-[11px] text-muted-foreground">

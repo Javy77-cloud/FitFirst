@@ -11,7 +11,7 @@ export type CrossSellRow = {
   has: HomeLineKey[];
 };
 
-export function CrossSellPanel({ rows }: { rows: CrossSellRow[] }) {
+export function CrossSellPanel({ rows, embedded = false }: { rows: CrossSellRow[]; embedded?: boolean }) {
   const [line, setLine] = useState<HomeLineKey | "">("");
   const matches = useMemo(() => {
     if (!line) return [];
@@ -19,7 +19,7 @@ export function CrossSellPanel({ rows }: { rows: CrossSellRow[] }) {
   }, [line, rows]);
 
   return (
-    <section className="ff-card overflow-hidden">
+    <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"}>
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-base font-semibold text-navy">Cross-sell</h3>
         <p className="text-xs text-muted-foreground">

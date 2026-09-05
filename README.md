@@ -21,7 +21,9 @@ Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fi
 
 ## What this branch keeps
 
-Overnight feel-pass: grouped left nav, named list filters, header column sliders, RecordContextRail, Start Shop, in-desk calendar, quick comms, Choose files, floating Support, settings accordion, widget resize chrome, Ask a teammate, HTML 404s, ~15px helper copy.
+Overnight feel-pass: grouped left nav, named list filters, header column sliders, RecordContextRail, Start Shop, in-desk calendar, quick comms, Choose files, floating Support, settings accordion, widget settings (size + reset), Ask a teammate, HTML 404s, ~15px helper copy.
+
+Home tiles drag from the six-dot handle with a following ghost. Resize is 1×1 / 1×2 / 2×1 / 2×2 inside Widget settings only — resizing widget A must not change widget B’s stored w/h. Layout / Book are compact dropdowns; Widget settings sits at the right of the toolbar.
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, Automations hub, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
 
