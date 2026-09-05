@@ -68,6 +68,18 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/scorecards", "/glance")).toBe(false);
   });
 
+  it("highlights Endorsements and claim diary under their modules", () => {
+    expect(navItemIsActive("/endorsements", "/endorsements")).toBe(true);
+    expect(navItemIsActive("/claims/diary", "/claims")).toBe(true);
+    expect(navItemIsActive("/endorsements", "/notices")).toBe(false);
+  });
+
+  it("highlights Certificates on the holder directory", () => {
+    expect(navItemIsActive("/certificates", "/certificates")).toBe(true);
+    expect(navItemIsActive("/certificates/holders", "/certificates")).toBe(true);
+    expect(navItemIsActive("/suspense", "/certificates")).toBe(false);
+  });
+
   it("highlights Automations on hub and section pages", () => {
     expect(navItemIsActive("/automations", "/automations")).toBe(true);
     expect(navItemIsActive("/automations/builder", "/automations")).toBe(true);

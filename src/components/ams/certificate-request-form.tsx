@@ -151,6 +151,26 @@ export function CertificateRequestForm({
           className="mt-1 min-h-16"
         />
       </div>
+      <label className="flex items-start gap-2 text-sm text-navy">
+        <input
+          type="checkbox"
+          name="waiverOfSubrogation"
+          value="1"
+          disabled={!canRequest}
+          className="mt-1"
+        />
+        Waiver of subrogation (desk stub only — not ACORD)
+      </label>
+      <label className="flex items-start gap-2 text-sm text-navy">
+        <input
+          type="checkbox"
+          name="primaryNoncontributory"
+          value="1"
+          disabled={!canRequest}
+          className="mt-1"
+        />
+        Primary &amp; noncontributory (desk stub only — not ACORD)
+      </label>
       {policyId && !selected ? (
         <label className="flex items-start gap-2 text-sm text-navy">
           <input

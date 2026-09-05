@@ -6,7 +6,7 @@ import { isDeskUuid } from "@/lib/desk-id";
 import { isModulePath } from "@/lib/people/privileges";
 
 const RECORD = /^\/(leads|deals|contacts|policies|tasks|claims|accounts|businesses|merge|meetings)\/([^/]+)/;
-const RESERVED = new Set(["new", "compare", "agents"]);
+const RESERVED = new Set(["new", "compare", "agents", "diary"]);
 
 function invalidRecordHtml() {
   return new NextResponse(

@@ -677,3 +677,20 @@ export const DEV_HUB_IDS = {
   macroTaskConfirm: "d0480000-0000-4048-8048-00000000000b",
 } as const;
 
+/** AMS wave 6. Off wave5 a050… and Ana / Elena owner blocks. */
+export const AMS_WAVE6_IDS = {
+  haleNonRenewNotice: "a0511111-a051-4051-8051-a05111111101",
+  haleNoticeActivity: "a0511111-a051-4051-8051-a05111111102",
+  haleNoticeLog: "a0511111-a051-4051-8051-a05111111103",
+} as const;
+
+/** AMS wave 7. Off wave6 a051… and Ana / Elena owner blocks. */
+export const AMS_WAVE7_IDS = {
+  elenaClaimDiary: "a0521111-a052-4052-8052-a05211111101",
+  elenaDiaryActivity: "a0521111-a052-4052-8052-a05211111102",
+  elenaEndorsementDraft: "a0521111-a052-4052-8052-a05211111103",
+  elenaDraftActivity: "a0521111-a052-4052-8052-a05211111104",
+  elenaDraftLog: "a0521111-a052-4052-8052-a05211111105",
+  camilaClaimDiary: "a0521111-a052-4052-8052-a05211111106",
+} as const;
+

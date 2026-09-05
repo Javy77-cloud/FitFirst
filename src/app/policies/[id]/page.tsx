@@ -15,6 +15,8 @@ import { loadPolicyServicing } from "@/lib/ams/queries";
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { LossRunPanel } from "@/components/ams/loss-run-panel";
 import { PolicyClaimsPanel } from "@/components/ams/policy-claims-panel";
+import { EndorsementDraftPanel } from "@/components/ams/endorsement-draft-panel";
+import { NoticePanel } from "@/components/ams/notice-panel";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
 import { SuspensePanel } from "@/components/ams/suspense-panel";
@@ -112,6 +114,15 @@ export default async function PolicyDetailPage({
         <Link href="/book-health" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
           Book health
         </Link>
+        <Link href="/suspense" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Suspense board
+        </Link>
+        <Link href="/notices" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Notices
+        </Link>
+        <Link href="/endorsements" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Endorsement drafts
+        </Link>
         <Link
           href={`/claims/new?policy=${policy.id}${contact ? `&contact=${contact.id}` : ""}`}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -141,6 +152,13 @@ export default async function PolicyDetailPage({
         account={account}
         locationLabel={location?.label ?? location?.address1 ?? location?.street ?? null}
       />
+      <NoticePanel policyId={policy.id} notices={servicing?.notices ?? []} error={error} />
+      <EndorsementDraftPanel
+        policyId={policy.id}
+        drafts={servicing?.drafts ?? []}
+        requests={servicing?.requests ?? []}
+        error={error}
+      />
             {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
             {servicing ? (
@@ -151,7 +169,7 @@ export default async function PolicyDetailPage({
                 missingPackets={servicing.missingPackets}
               />
             ) : null}
-            {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} /> : null}
+            {servicing ? <SuspensePanel packetTasks={servicing.packetTasks} policyId={policy.id} /> : null}
             {canHoldInterests(policy) ? (
               <AdditionalInterestPanel
                 policyId={policy.id}

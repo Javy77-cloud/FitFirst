@@ -1555,6 +1555,8 @@ export const issuedCertificates = pgTable(
     additionalInsured: text("additional_insured"),
     specialWording: text("special_wording"),
     interestId: uuid("interest_id"),
+    waiverOfSubrogation: boolean("waiver_of_subrogation").notNull().default(false),
+    primaryNoncontributory: boolean("primary_noncontributory").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
 );
@@ -2653,6 +2655,8 @@ export const certificateRequests = pgTable(
     interestId: uuid("interest_id"),
     additionalInsured: text("additional_insured"),
     specialWording: text("special_wording"),
+    waiverOfSubrogation: boolean("waiver_of_subrogation").notNull().default(false),
+    primaryNoncontributory: boolean("primary_noncontributory").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -2748,6 +2752,77 @@ export const policyServiceRequestEvents = pgTable(
   (t) => [
     index("policy_service_request_events_request_idx").on(t.tenantId, t.requestId),
     index("policy_service_request_events_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+/** Claim follow-up diary. Completing a row does not file FNOL or change claim status. */
+export const claimDiary = pgTable(
+  "claim_diary",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    claimId: uuid("claim_id")
+      .notNull()
+      .references(() => claims.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("open"),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    body: text("body").notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("claim_diary_tenant_idx").on(t.tenantId, t.status),
+    index("claim_diary_claim_idx").on(t.tenantId, t.claimId),
+    index("claim_diary_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+/** Endorsement wording stub. Ready / withdraw does not file the Policy. */
+export const endorsementDrafts = pgTable(
+  "endorsement_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    serviceRequestId: uuid("service_request_id").references(() => policyServiceRequests.id),
+    status: text("status").notNull().default("drafted"),
+    formCode: text("form_code").notNull(),
+    wording: text("wording").notNull(),
+    effectiveOn: timestamp("effective_on", { withTimezone: true }).notNull(),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("endorsement_drafts_tenant_idx").on(t.tenantId, t.status),
+    index("endorsement_drafts_policy_idx").on(t.tenantId, t.policyId),
+    index("endorsement_drafts_request_idx").on(t.tenantId, t.serviceRequestId),
+  ],
+);
+
+/** Desk cancel / non-renew / reinstatement notice diary. Does not file the Policy. */
+export const policyNotices = pgTable(
+  "policy_notices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("drafted"),
+    reason: text("reason").notNull(),
+    mailedAt: timestamp("mailed_at", { withTimezone: true }),
+    effectiveOn: timestamp("effective_on", { withTimezone: true }).notNull(),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("policy_notices_tenant_idx").on(t.tenantId, t.status),
+    index("policy_notices_policy_idx").on(t.tenantId, t.policyId),
   ],
 );
 
@@ -3009,3 +3084,6 @@ export type DeskMacroRun = typeof deskMacroRuns.$inferSelect;
 export type DeskCustomButton = typeof deskCustomButtons.$inferSelect;
 export type DeskClientScript = typeof deskClientScripts.$inferSelect;
 export type DeskWidget = typeof deskWidgets.$inferSelect;
+export type PolicyNotice = typeof policyNotices.$inferSelect;
+export type ClaimDiaryEntry = typeof claimDiary.$inferSelect;
+export type EndorsementDraft = typeof endorsementDrafts.$inferSelect;

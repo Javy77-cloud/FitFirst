@@ -5,6 +5,7 @@ import { CertificateRequestForm } from "@/components/ams/certificate-request-for
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
+import { certificateFlagLabels } from "@/lib/ams/certificate-holders";
 import { ACORD_STUB_DISCLAIMER } from "@/lib/ams/coi-requests";
 import { certificateRequestStatusLabel } from "@/lib/domain-ams";
 import { listAccountInterests, listCertificateQueue } from "@/lib/ams/queries";
@@ -28,6 +29,11 @@ export default async function CertificatesPage({
   return (
     <AppShell title="Certificates">
       <p className="mb-4 text-base text-muted-foreground">{ACORD_STUB_DISCLAIMER}</p>
+      <p className="mb-4 text-sm">
+        <Link href="/certificates/holders" className="text-primary hover:underline">
+          Certificate holder directory
+        </Link>
+      </p>
       {error ? (
         <p className="mb-3 text-sm text-destructive" role="alert">
           {error}
@@ -74,6 +80,9 @@ export default async function CertificatesPage({
                       {request.additionalInsured
                         ? ` · AI ${request.additionalInsured}`
                         : ""}
+                      {certificateFlagLabels(request).length
+                        ? ` · ${certificateFlagLabels(request).join(" · ")}`
+                        : ""}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <form action={advanceCertificateRequest}>
@@ -112,6 +121,7 @@ export default async function CertificatesPage({
                 <th>Holder</th>
                 <th>Business</th>
                 <th>Issued</th>
+                <th>Flags</th>
               </tr>
             </thead>
             <tbody>
@@ -132,6 +142,7 @@ export default async function CertificatesPage({
                   <td>{certificate.holderName}</td>
                   <td>{account?.name ?? "—"}</td>
                   <td>{formatDay(certificate.issuedAt)}</td>
+                  <td>{certificateFlagLabels(certificate).join(" · ") || "—"}</td>
                 </tr>
               ))}
             </tbody>

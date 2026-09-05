@@ -889,7 +889,7 @@ Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue s
 
 ## Feel-pass consolidate Sep 5 (`cursor/feel-pass-consolidate-sep5-fed3`)
 
-One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. No migration dropped. `0055_developer_hub` (power-user superset after `0054`) wraps shared FK adds in `DO $$ … EXCEPTION WHEN duplicate_object` so `db:migrate` can apply both files.
+One Mac Chrome tip for Javy’s Air + mini. Base: `cursor/ams-wave5-depth-9dbf` (builds; includes wave2, wave4, batch4). Additive only. Ana fixture untouched (shopping / unbound / Cov A **$321,000**). Quotes never create a Policy. One Pipeline nav. One Settings entry. Sidebar `#1d4e89` — never `#d6e8f8`. `getActor` / `isAdmin` still go through `currentDeskSession`. Drizzle `alias` stays on `pg-core`. Incoming colliding `0048`/`0049` SQL remapped sequentially to **0051–0059**. Wave 6/7 `0051`/`0052` remapped to **0060–0061**. No migration dropped. `0055_developer_hub` (power-user superset after `0054`) wraps shared FK adds in `DO $$ … EXCEPTION WHEN duplicate_object` so `db:migrate` can apply both files.
 
 ### Merged (schema first, then features, then UX)
 
@@ -899,6 +899,8 @@ AMS:
 - `cursor/ams-wave4-depth-a034` (already on wave5)
 - `cursor/ams-wave5-depth-9dbf` (base)
 - `cursor/ams-desk-polish-5344` (bc-406eb30f deeper AMS polish)
+- `cursor/ams-wave6-depth-1040` → `0060_ams_wave6`
+- `cursor/ams-wave7-depth-34d6` → `0061_ams_wave7` (sibling `cursor/ams-wave7-depth-da3a` not deleted)
 
 CRM / Quote / function:
 - `cursor/quote-sheet-fill-appetite-6178`
@@ -940,3 +942,42 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+
+## AMS wave 6 — desk depth (`cursor/ams-wave6-depth-1040`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. Wave 2–5 surfaces stay.
+
+Incoming `0051_ams_wave6` remapped to `0060_ams_wave6` on existing tables plus one notice diary:
+
+- `certificate_requests` / `issued_certificates` — `waiver_of_subrogation`, `primary_noncontributory`. Palm Bay issued stub has both. Holder directory is `/certificates/holders`.
+- Agency suspense board `/suspense` reads open `review_tasks` (`servicing_id_card` / `servicing_aor`). Complete marks the task collected. Dec stays a manual collect.
+- `policy_notices` — cancellation / non-renew / reinstatement diary (`drafted` / `mailed` / `withdrawn`). Mail does **not** call `filePolicyChange`. Hale seed is a drafted non-renew.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open. Term history prior + current. Loss-run CSV. CSR endorsement **in progress**. Do not file. Do not bind Ana.
+2. Policy **HP-FL-88421** — auto ID + AOR suspense. Drafted non-renew notice. Producer endorsement **requested**. Do not file or mail.
+3. `/suspense` — Elena AOR + Hale ID/AOR. `/certificates/holders` — Brevard open, Palm Bay issued with waiver + PNC.
+4. `/notices` — Hale drafted non-renew. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0062**.
+
+## AMS wave 7 — desk depth (`cursor/ams-wave7-depth-34d6`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. Wave 2–6 surfaces stay.
+
+Incoming `0052_ams_wave7` remapped to `0061_ams_wave7`:
+
+- `claim_diary` — follow-up / insured call / carrier status / docs requested / note. Open → completed. Completing does **not** change claim status or file FNOL. Board is `/claims/diary`. Elena wind inquiry has an open docs row.
+- `endorsement_drafts` — wording stub (`drafted` / `ready` / `withdrawn`) optionally tied to a service request. Ready / withdraw does **not** call `filePolicyChange`. Elena seed is a drafted mortgagee stub on the in-progress CSR endorsement.
+- Agency suspense board ages days-open vs the desk clock (`current` 0–7 / `watch` 8–14 / `aging` 15–29 / `stale` 30+). `/suspense?age=stale` is Hale ID.
+- `/book-health?owner=` filters missing packets by producer. Agency totals stay. Click the producer name.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open (watch). Term history prior + current. Loss-run CSV. CSR endorsement **in progress** plus drafted mortgagee wording. Do not file. Do not bind Ana.
+2. Policy **HP-FL-88421** — auto ID (stale) + AOR (aging) suspense. Drafted non-renew notice. Producer endorsement **requested**. Do not file or mail.
+3. `/claims` → Elena wind inquiry → open docs diary. `/claims/diary` lists it. Completing does not file FNOL.
+4. `/endorsements` — Elena drafted mortgagee stub. `/book-health?owner=` filters missing docs. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0062**.

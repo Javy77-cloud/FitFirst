@@ -91,18 +91,38 @@ Same Policies. No redesign. Stubs stop at the API wall.
 - **Policy term history** — prior / current / proposed on the Policy. Elena has a prior 2025–26 term. Compare page unchanged.
 - **Loss-run CSV stub** — desk claims summary download on the Policy. Elena wind inquiry is on the export. Not a carrier loss run.
 
+## AMS wave 6 (kept)
+
+Function first. Same Policies. No redesign. IVANS stays **Not connected**.
+
+- **Certificate holder polish** — waiver of subrogation + primary & noncontributory on the COI request and issued stub. `/certificates/holders` lists holders already on commercial Policies.
+- **Agency suspense board** (`/suspense`) — rollup of open AOR / ID-card auto-tasks. Mark collected from the board or the Policy. Dec stays a manual collect.
+- **Cancel / non-renew notice diary** (`/notices`) — draft → mailed / withdrawn. **Does not file** and does not change Policy status. Hale has a drafted non-renew.
+
+## AMS wave 7 (this branch)
+
+Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 2–6 surfaces stay.
+
+- **Claim diary** (`/claims/diary`) — follow-up / call / carrier-status / docs rows on the FNOL record. Completing a row does **not** file FNOL or change claim status. Elena wind inquiry has an open docs request.
+- **Endorsement draft stubs** (`/endorsements`) — wording draft → ready / withdrawn. **Does not file** and does not change the Policy. Elena’s in-progress CSR endorsement has a drafted mortgagee stub.
+- **Suspense aging** — days-open buckets on `/suspense` (current / watch / aging / stale) from the desk clock. Elena AOR is watch; Hale AOR is aging; Hale ID is stale.
+- **Producer book filters** — click a producer on `/book-health?owner=` to filter missing packets. Agency totals stay.
+
 ## Localhost :43147 notes
 
 After `npm run db:migrate && npm run db:seed` and `npm run dev`:
 
 1. Sign in as **javy@fitfirst.local** / **javy**.
-2. Open Elena Policy — AOR suspense still open, prior + current terms, loss-run CSV, CSR endorsement **in progress**. Do not file. Do not bind Ana.
-3. Open Hale Policy — ID + AOR suspense auto-opened, producer endorsement **requested**. Do not file or cancel.
-4. Harbor Policy / `/certificates` — Brevard AI on the open request; Palm Bay issued stub shows additional insured + wording.
-5. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
-6. `/book-health` — agency + producer rollups; Elena AOR and Hale packet still in missing docs.
-7. `/claims` — FNOL pipeline and “Handle the claim on the carrier website.”
-8. Settings → IVANS / AL3 still **Not connected**.
+2. Open Elena Policy — AOR suspense still open, prior + current terms, loss-run CSV, CSR endorsement **in progress**, drafted mortgagee wording stub. Do not file. Do not bind Ana.
+3. Open Hale Policy — ID + AOR suspense auto-opened, producer endorsement **requested**, drafted non-renew notice. Do not file, mail, or cancel.
+4. Harbor Policy / `/certificates` — Brevard AI on the open request; Palm Bay issued stub shows additional insured + wording + waiver + PNC. `/certificates/holders` lists both.
+5. `/suspense` — Elena AOR (watch), Hale AOR (aging), Hale ID (stale). `/suspense?doc=aor` hides ID cards. `/suspense?age=stale` is Hale ID.
+6. `/notices` — Hale drafted non-renew. Do not mark mailed to “prove” a cancel.
+7. `/endorsements` — Elena drafted mortgagee stub. Do not mark ready to “prove” a file.
+8. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
+9. `/book-health` — agency + producer rollups; click a producer name to filter missing docs. Elena AOR and Hale packet still in missing docs.
+10. `/claims` — FNOL pipeline. Elena wind inquiry diary is open. `/claims/diary` lists it. Camila water has a completed carrier-status row.
+11. Settings → IVANS / AL3 still **Not connected**.
 
 ## In-desk e-sign stub (kept)
 

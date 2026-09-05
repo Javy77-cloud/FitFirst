@@ -421,6 +421,20 @@
       "when": 1788558900000,
       "tag": "0059_comms_outbound_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1788561000000,
+      "tag": "0060_ams_wave6",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1788562000000,
+      "tag": "0061_ams_wave7",
+      "breakpoints": true
     }
   ]
 }

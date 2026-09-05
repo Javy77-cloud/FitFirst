@@ -12,6 +12,7 @@ import {
   ClaimStatusSelect,
   fieldClass,
 } from "@/components/claims/field";
+import { ClaimDiaryPanel } from "@/components/ams/claim-diary-panel";
 import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
 import { ClaimStatusBadge } from "@/components/claims/status-badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ export function ClaimRecord({
   workspace: Workspace;
   postedBy?: string;
 }) {
-  const { claim, policy, contact, account, producer, notes, files, activity } = workspace;
+  const { claim, policy, contact, account, producer, notes, files, activity, diary } = workspace;
   const party = contact
     ? `${contact.lastName}, ${contact.firstName}`
     : account?.name ?? "Unlinked";
@@ -236,6 +237,8 @@ export function ClaimRecord({
           </Button>
         </form>
       </section>
+
+      <ClaimDiaryPanel claimId={claim.id} entries={diary ?? []} postedBy={postedBy} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="ff-card p-4">

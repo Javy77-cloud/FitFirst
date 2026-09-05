@@ -1,4 +1,5 @@
 import { formatDay } from "@/lib/domain";
+import { certificateFlagLabels } from "@/lib/ams/certificate-holders";
 import type { Account, IssuedCertificate } from "@/lib/db/schema";
 
 export function CertificateStub({
@@ -124,7 +125,10 @@ export function CertificateStub({
         </section>
       </div>
 
-      {certificate.additionalInsured || certificate.specialWording ? (
+      {certificate.additionalInsured ||
+      certificate.specialWording ||
+      certificate.waiverOfSubrogation ||
+      certificate.primaryNoncontributory ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <section className="rounded-md border border-border p-3">
             <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -145,6 +149,11 @@ export function CertificateStub({
             ) : (
               <p className="mt-1 text-muted-foreground">None listed on this stub.</p>
             )}
+            {certificateFlagLabels(certificate).length > 0 ? (
+              <p className="mt-2 font-medium text-navy">
+                {certificateFlagLabels(certificate).join(" · ")}
+              </p>
+            ) : null}
           </section>
         </div>
       ) : null}

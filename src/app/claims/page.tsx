@@ -32,9 +32,14 @@ export default async function ClaimsPage({
           on the carrier website — FitFirst does not file FNOL, set reserves, or talk to a
           carrier claims API.
         </p>
-        <Link href="/claims/new" className={cn(buttonVariants({ size: "sm" }))}>
-          Log FNOL
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/claims/diary" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+            Claim diary
+          </Link>
+          <Link href="/claims/new" className={cn(buttonVariants({ size: "sm" }))}>
+            Log FNOL
+          </Link>
+        </div>
       </div>
       <div className="mb-4">
         <ClaimsDeskNotice />

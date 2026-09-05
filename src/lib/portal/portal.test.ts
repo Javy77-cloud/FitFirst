@@ -35,6 +35,8 @@ const HARBOR_STUB = {
   additionalInsured: null,
   specialWording: null,
   interestId: null,
+  waiverOfSubrogation: true,
+  primaryNoncontributory: true,
 };
 
 describe("client portal stubs", () => {

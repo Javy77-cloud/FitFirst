@@ -19,7 +19,11 @@ import {
 } from "@/lib/claims";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { alerts, claimActivity, claimAttachments, claimNotes, claims, contacts, policies } from "@/lib/db/schema";
+import { alerts, claimActivity, claimAttachments, claimDiary, claimNotes, claims, contacts, policies } from "@/lib/db/schema";
+import { claimDiaryLine, nextClaimDiaryStatus, validateClaimDiaryDraft } from "@/lib/ams/claim-diary";
+import { parseIsoDate } from "@/lib/policy/workflow";
+import { isUuid } from "@/lib/ids";
+import { getClaimDiaryEntry } from "@/lib/ams/queries";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -55,6 +59,8 @@ async function recordActivity(claimId: string, eventType: string, body: string, 
 function revalidateClaimSurfaces(claimId: string, policyId?: string | null, contactId?: string | null) {
   revalidatePath(`/claims/${claimId}`);
   revalidatePath("/claims");
+  revalidatePath("/claims/diary");
+  revalidatePath("/book-health");
   revalidatePath("/alerts");
   if (policyId) {
     revalidatePath(`/policies/${policyId}`);
@@ -450,4 +456,73 @@ export async function notifyClaimProducer(formData: FormData) {
     who,
   });
   revalidateClaimSurfaces(claimId, existing.policyId, existing.contactId ?? policy?.contactId);
+}
+
+function bounceClaim(path: string, error?: string, notice?: string): never {
+  const params = new URLSearchParams();
+  if (error) params.set("error", error);
+  if (notice) params.set("notice", notice);
+  redirect(params.size ? `${path}?${params.toString()}` : path);
+}
+
+export async function createClaimDiary(formData: FormData) {
+  const claimId = str(formData, "claimId");
+  if (!isUuid(claimId)) bounceClaim("/claims/diary", "Claim is required.");
+  const [existing] = await db
+    .select()
+    .from(claims)
+    .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, claimId)));
+  if (!existing) bounceClaim(`/claims/${claimId}`, "Claim not found.");
+  const parsed = validateClaimDiaryDraft({
+    kind: str(formData, "kind"),
+    body: str(formData, "body"),
+    dueAt: parseIsoDate(str(formData, "dueAt")),
+  });
+  if (!parsed.ok) bounceClaim(`/claims/${claimId}`, parsed.error);
+  const who = actorName(formData);
+  await db.insert(claimDiary).values({
+    tenantId: DEFAULT_TENANT_ID,
+    claimId,
+    policyId: existing.policyId,
+    kind: parsed.kind,
+    status: "open",
+    dueAt: parsed.dueAt,
+    body: parsed.body,
+  });
+  await recordActivity(
+    claimId,
+    "diary_added",
+    `${claimDiaryLine(parsed.kind, null)}. Desk diary only — claim status stays ${existing.status}.`,
+    who,
+  );
+  revalidateClaimSurfaces(claimId, existing.policyId, existing.contactId);
+  bounceClaim(`/claims/${claimId}`, undefined, "diary_added");
+}
+
+export async function completeClaimDiary(formData: FormData) {
+  const entryId = str(formData, "entryId");
+  const returnTo = str(formData, "returnTo") || "/claims/diary";
+  const loaded = await getClaimDiaryEntry(entryId);
+  if (!loaded) bounceClaim(returnTo, "Diary row not found.");
+  const next = nextClaimDiaryStatus(loaded.entry.status as "open" | "completed", "complete");
+  if (!next) bounceClaim(returnTo, "That diary row is already completed.");
+  const who = actorName(formData);
+  await db
+    .update(claimDiary)
+    .set({ status: next, completedAt: new Date(), updatedAt: new Date() })
+    .where(eq(claimDiary.id, loaded.entry.id));
+  await recordActivity(
+    loaded.claim.id,
+    "diary_completed",
+    `${claimDiaryLine(loaded.entry.kind, null)} completed. Claim status stays ${loaded.claim.status}. FNOL not filed.`,
+    who,
+  );
+  revalidateClaimSurfaces(loaded.claim.id, loaded.claim.policyId, loaded.claim.contactId);
+  bounceClaim(
+    returnTo.includes("/claims/") && !returnTo.includes("/claims/diary")
+      ? `/claims/${loaded.claim.id}`
+      : "/claims/diary",
+    undefined,
+    "diary_completed",
+  );
 }
