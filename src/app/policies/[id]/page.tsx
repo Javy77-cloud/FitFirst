@@ -16,6 +16,8 @@ import { loadPolicyServicing } from "@/lib/ams/queries";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { ServiceRequestPanel } from "@/components/ams/service-request-panel";
 import { PolicyChangeTimeline } from "@/components/policy/policy-change-timeline";
+import { PolicyInformationCard } from "@/components/policy/policy-information";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
@@ -34,7 +36,7 @@ export default async function PolicyDetailPage({
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
   const servicing = await loadPolicyServicing(id);
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs } =
+  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, location } =
     workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
   const notice = typeof query.notice === "string" ? query.notice : typeof query.filed === "string" ? query.filed : undefined;
@@ -49,7 +51,7 @@ export default async function PolicyDetailPage({
   return (
     <AppShell title={policy.policyNumber}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <span className="uppercase">{policy.status}</span>
+        <PolicyStatusBadge status={policy.status} />
         <span>{policy.lineOfBusiness}</span>
         <span>{carrier?.name ?? "Carrier TBD"}</span>
         <span>{formatMoney(policy.premium)}</span>
@@ -82,6 +84,13 @@ export default async function PolicyDetailPage({
       <RecordDetailLayout
         main={
           <div>
+      <PolicyInformationCard
+        policy={policy}
+        carrierName={carrier?.name}
+        contact={contact}
+        account={account}
+        locationLabel={location?.label ?? location?.address1 ?? location?.street ?? null}
+      />
       {isAuto ? <VehiclesList vehicles={vehicles} /> : null}
 
       {servicing ? <ServicingChecklistCard checklist={servicing.checklist} /> : null}
@@ -160,7 +169,19 @@ export default async function PolicyDetailPage({
       </div>
           </div>
         }
-        rail={<RecordContextRail context={context} />}
+        rail={
+          <RecordContextRail
+            context={context}
+            policyFacts={{
+              number: policy.policyNumber,
+              status: policy.status,
+              carrier: carrier?.name ?? "Carrier TBD",
+              effective: formatDay(policy.effectiveDate),
+              expiration: formatDay(policy.expirationDate),
+              premium: formatMoney(policy.premium),
+            }}
+          />
+        }
       />
     </AppShell>
   );
