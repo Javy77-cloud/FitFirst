@@ -849,3 +849,7 @@ Admin CRM + AMS CSV packs at `/settings/import-export`. Incoming `0048_import_ex
 ## Pipeline funnel colors (`cursor/pipeline-funnel-colors-32ce`)
 
 Status chips read as badges with calm borders. Incoming `0048_pipeline_stage_color` remapped to `0058_pipeline_stage_color`. One Pipeline nav row. Sidebar stays `#1d4e89`.
+
+## CRM depth API wall (`cursor/crm-depth-api-wall-7faa`)
+
+Outbound comms jobs + CRM signals stop at the API wall. Incoming `0048_comms_outbound_jobs` remapped to `0059_comms_outbound_jobs`. Quotes still do not create a Policy. Ana unbound.
