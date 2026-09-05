@@ -17,7 +17,7 @@ export default async function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
       <div className="w-full max-w-3xl space-y-5">
         <div className="text-center sm:text-left">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
+          <div className="text-caption uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
           <h1 className="text-2xl font-semibold text-navy">Sign in as Admin or Agent</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Password is required, then 2-step (SMS stub, email stub, or TOTP). Javy and Maya
@@ -63,10 +63,10 @@ export default async function LoginPage({
           <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
             <input type="hidden" name="who" value="admin" />
             <div className="flex items-center justify-between gap-2">
-              <span className="rounded-md bg-navy px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+              <span className="rounded-md bg-navy px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-white">
                 Admin
               </span>
-              <span className="text-xs text-muted-foreground">All book</span>
+              <span className="text-helper text-muted-foreground">All book</span>
             </div>
             <div>
               <h2 className="text-lg font-semibold text-navy">{DEMO_USERS.admin.name}</h2>
@@ -86,23 +86,23 @@ export default async function LoginPage({
             <Button type="submit" className="mt-auto">
               Sign in as Admin
             </Button>
-            <p className="text-[11px] text-muted-foreground">Seed password: {DEMO_USERS.admin.password}</p>
+            <p className="text-helper text-muted-foreground">Seed password: {DEMO_USERS.admin.password}</p>
           </form>
 
           <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
             <input type="hidden" name="who" value="agent" />
             <div className="flex items-center justify-between gap-2">
-              <span className="rounded-md bg-primary px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground">
+              <span className="rounded-md bg-primary px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-primary-foreground">
                 Agent
               </span>
-              <span className="text-xs text-muted-foreground">Own book</span>
+              <span className="text-helper text-muted-foreground">Own book</span>
             </div>
             <div>
               <h2 className="text-lg font-semibold text-navy">{DEMO_USERS.agent.name}</h2>
               <p className="text-sm text-muted-foreground">{DEMO_USERS.agent.email}</p>
             </div>
             <p className="text-sm text-navy/80">{DEMO_USERS.agent.summary}</p>
-            <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+            <ul className="list-disc space-y-1 pl-5 text-helper text-muted-foreground">
               <li>Leads, contacts, deals, and policies she owns</li>
               <li>Send client email / SMS when the agency line is connected</li>
               <li>Calendar items assigned to her, plus company / training invites</li>
@@ -121,14 +121,14 @@ export default async function LoginPage({
             <Button type="submit" className="mt-auto">
               Sign in as Agent
             </Button>
-            <p className="text-[11px] text-muted-foreground">Seed password: {DEMO_USERS.agent.password}</p>
+            <p className="text-helper text-muted-foreground">Seed password: {DEMO_USERS.agent.password}</p>
           </form>
         </div>
 
         <form action={loginDesk} className="ff-card space-y-3 p-5">
           <div>
             <h2 className="text-sm font-semibold text-navy">Email or username</h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-helper text-muted-foreground">
               Same demo users, plus any agent Admin created. After login the rail shows Admin ·
               all book or Agent · own book.
             </p>
