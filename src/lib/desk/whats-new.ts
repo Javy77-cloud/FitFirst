@@ -45,6 +45,12 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
     date: "2026-09-04",
   },
   {
+    id: "live-typeahead",
+    title: "Live typeahead search",
+    body: "Type in the top chrome and matching contacts, leads, deals, businesses, policies, and carriers appear — contains match, no Search click. The same live box filters module lists.",
+    date: "2026-09-05",
+  },
+  {
     id: "top-chrome",
     title: "Top chrome utilities",
     body: "The header holds Smart Search, Alerts (the bell is the alerts module), What’s New, profile, recently accessed, and quick add. Alerts and Search are off the left nav.",

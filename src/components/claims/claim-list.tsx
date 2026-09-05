@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { haystack } from "@/lib/search/live-query";
 import { Col } from "@/components/column-picker";
 import { SheetTbody } from "@/components/sheet/sheet-table";
 import { ClaimStatusBadge } from "@/components/claims/status-badge";
@@ -47,7 +48,17 @@ export function ClaimList({
       </thead>
       <SheetTbody>
         {rows.map((row) => (
-          <tr key={row.id}>
+          <tr
+            key={row.id}
+            data-hay={haystack([
+              row.policyNumber,
+              row.contactName,
+              row.causeType,
+              row.description,
+              row.carrierClaimNumber,
+              row.status,
+            ])}
+          >
             <Col table="claim-rows" col="reported" sortValue={row.dateReported.toISOString()}>
               <Link href={`/claims/${row.id}`} className="font-medium text-primary hover:underline">
                 {formatDate(row.dateReported)}

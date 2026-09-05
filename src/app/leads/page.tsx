@@ -18,6 +18,7 @@ import { LEAD_STATUSES } from "@/lib/domain";
 import { SourceSelect } from "@/components/crm/source-select";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function LeadsPage({
 }) {
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "source"]);
+  const q = firstParam(params.q) ?? "";
   const all = await listLeads();
   const rows = all.filter(
     (lead) => matchesField(lead.status, filter.status) && matchesField(lead.source, filter.source),
@@ -40,6 +42,7 @@ export default async function LeadsPage({
       </p>
       <SavedFiltersBar
         moduleId="leads"
+        searchPlaceholder="Contains name, phone, email…"
         fields={[
           {
             key: "status",
@@ -126,6 +129,7 @@ export default async function LeadsPage({
           <ModuleListActions module="leads" recordIds={rows.map((lead) => lead.id)}>
             <ColumnTable
               moduleId="leads"
+              initialQuery={q}
               columns={LEADS_LIST_COLUMNS}
               empty={
                 firstParam(params.status) || firstParam(params.source)
@@ -134,6 +138,7 @@ export default async function LeadsPage({
               }
               rows={rows.map((lead) => ({
                 key: lead.id,
+                hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
                 cells: {
                   pick: <SelectRowCheckbox id={lead.id} />,
                   name: (

@@ -13,6 +13,12 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 AMS waves 10–16 stay parked (`cursor/ams-wave16-depth-e1a7` is not on this tip). Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
+### Live typeahead search (this slice)
+
+Top chrome search fills as you type (200ms debounce). No Search click. Contains-match across **contacts, leads, deals, businesses, policies, and carriers**. Arrow keys + Enter open a hit; “See all results” still goes to `/search`.
+
+The same live-contains box sits on module lists (Leads, Contacts, Businesses, Policies, Carriers, Deals, Quotes, Tasks, Claims, Work queue). Typing filters the list immediately. Named dropdown filters are unchanged.
+
 ## Run locally (Mac Air and Mac mini)
 
 ```bash

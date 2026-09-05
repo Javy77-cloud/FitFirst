@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { formatMoney } from "@/lib/domain";
 import { listCarriers } from "@/lib/db/queries";
 import { ColumnTable } from "@/components/lists/column-table";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,9 @@ export default async function CarriersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["portal", "line"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["portal", "line"]);
+  const q = firstParam(params.q) ?? "";
   const all = await listCarriers();
   const rows = all.filter(({ carrier }) => {
     if (!matchesField(carrier.portalStatus, filter.portal)) return false;
@@ -30,6 +34,7 @@ export default async function CarriersPage({
       </p>
       <SavedFiltersBar
         moduleId="carriers"
+        searchPlaceholder="Contains carrier, NAIC, line…"
         fields={[
           {
             key: "portal",
@@ -46,6 +51,7 @@ export default async function CarriersPage({
       <section className="ff-card overflow-hidden">
         <ColumnTable
           moduleId="carriers"
+          initialQuery={q}
           columns={[
             { id: "carrier", label: "Carrier", locked: true },
             { id: "portal", label: "Portal" },
@@ -56,10 +62,18 @@ export default async function CarriersPage({
           empty="No carriers match this filter."
           rows={rows.map(({ carrier, rule }) => ({
             key: `${carrier.id}-${rule?.id ?? "none"}`,
+            hay: haystack([
+              carrier.name,
+              carrier.naic,
+              carrier.territory,
+              ...(carrier.writtenLines ?? []),
+            ]),
             cells: {
               carrier: (
                 <div className="font-medium">
-                  {carrier.name}
+                  <Link href={`/carriers/${carrier.id}`} className="text-primary hover:underline">
+                    {carrier.name}
+                  </Link>
                   <div className="text-base text-muted-foreground">
                     {(carrier.writtenLines ?? []).join(", ")}
                   </div>

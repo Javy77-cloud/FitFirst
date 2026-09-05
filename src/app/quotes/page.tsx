@@ -6,7 +6,7 @@ import { listEnabledMacrosFor } from "@/lib/db/developer-hub-queries";
 import { listQuoteTrackingShops } from "@/lib/db/queries";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { DEAL_STAGES, LINES } from "@/lib/domain";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +19,7 @@ export default async function QuotesBoardPage({
   const params = await searchParams;
   const deal = Array.isArray(params.deal) ? params.deal[0] : params.deal;
   const filter = pickFilterParams(params, ["stage", "line"]);
+  const q = firstParam(params.q) ?? "";
   const [all, macros] = await Promise.all([
     listQuoteTrackingShops(deal || undefined),
     listEnabledMacrosFor("quotes"),
@@ -45,6 +46,7 @@ export default async function QuotesBoardPage({
 
       <SavedFiltersBar
         moduleId="quotes"
+        searchPlaceholder="Contains deal, carrier, quote #…"
         fields={[
           {
             key: "stage",
@@ -82,6 +84,7 @@ export default async function QuotesBoardPage({
         <QuoteBoard
           shops={shops}
           focusedDeal={Boolean(deal)}
+          initialQuery={q}
           macros={macros.map((macro) => ({ id: macro.id, name: macro.name }))}
         />
       )}

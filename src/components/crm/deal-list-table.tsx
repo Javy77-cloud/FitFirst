@@ -9,6 +9,7 @@ import { LinkedValue } from "@/components/crm/linked-value";
 import { StagePill } from "@/components/fit-badge";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
+import { LiveContainsScope } from "@/components/search/live-contains-scope";
 import {
   insuredContactName,
   insuredHref,
@@ -16,6 +17,7 @@ import {
   riskAddress,
   type DealListFilter,
 } from "@/lib/crm/lists";
+import { haystack } from "@/lib/search/live-query";
 import { formatMoney } from "@/lib/domain";
 import type { DealListRow } from "@/lib/db/queries";
 import type { PipelineStageRow } from "@/lib/db/schema";
@@ -71,7 +73,7 @@ export function DealListTable({
         email: contact?.email ?? lead?.email,
         city: risk?.city ?? contact?.city,
       },
-      filter,
+      { ...filter, q: undefined },
     ),
   );
 
@@ -85,6 +87,7 @@ export function DealListTable({
         ) : undefined
       }
     >
+      <LiveContainsScope moduleId="deals" initialQuery={filter.q ?? ""}>
       <section className="ff-card overflow-x-auto">
         <table className="ff-table">
           <thead>
@@ -115,7 +118,19 @@ export function DealListTable({
                 const phone = contact?.phone ?? lead?.phone;
                 const email = contact?.email ?? lead?.email;
                 return (
-                  <tr key={deal.id}>
+                  <tr
+                    key={deal.id}
+                    data-hay={haystack([
+                      deal.title,
+                      insured,
+                      phone,
+                      email,
+                      riskAddress(risk),
+                      deal.lineOfBusiness,
+                      deal.state,
+                      risk?.city ?? contact?.city,
+                    ])}
+                  >
                     <td data-col="deal" data-sheet-col="deal">
                       <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
                         {deal.title}
@@ -170,6 +185,7 @@ export function DealListTable({
           </SheetTbody>
         </table>
       </section>
+      </LiveContainsScope>
     </ColumnPicker>
   );
 }

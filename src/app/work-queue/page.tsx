@@ -5,7 +5,8 @@ import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { WorkFlagPills, WorkStatusPill } from "@/components/work-queue/flag-pills";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
-import { matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { haystack } from "@/lib/search/live-query";
 import { listDeskWorkQueue } from "@/lib/work-queue/list";
 import { workStatusLabel } from "@/lib/work-queue/types";
 
@@ -16,7 +17,9 @@ export default async function WorkQueuePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filter = pickFilterParams(await searchParams, ["kind", "status", "assignee", "flag"]);
+  const params = await searchParams;
+  const filter = pickFilterParams(params, ["kind", "status", "assignee", "flag"]);
+  const q = firstParam(params.q) ?? "";
   const [{ snapshot }, rows, workRows] = await Promise.all([
     ownerHomeDashboard(),
     listPolicies(),
@@ -48,6 +51,7 @@ export default async function WorkQueuePage({
       </p>
       <SavedFiltersBar
         moduleId="work-queue"
+        searchPlaceholder="Contains policy, party, flag…"
         fields={[
           {
             key: "kind",
@@ -83,6 +87,8 @@ export default async function WorkQueuePage({
         </div>
         <ColumnTable
           moduleId="work-queue-flags"
+          searchModuleId="work-queue"
+          initialQuery={q}
           columns={[
             { id: "policy", label: "Policy", locked: true },
             { id: "assignee", label: "Assignee" },
@@ -94,6 +100,12 @@ export default async function WorkQueuePage({
           empty="No flagged files. Open a Policy and assign, flag, or ping from Work on this file."
           rows={flagged.map((row) => ({
             key: row.item.id,
+            hay: haystack([
+              row.policy.policyNumber,
+              row.assignee?.name,
+              row.latestNote,
+              ...row.flags.map((flag) => flag.flag),
+            ]),
             cells: {
               policy: (
                 <Link
@@ -124,6 +136,8 @@ export default async function WorkQueuePage({
         </div>
         <ColumnTable
           moduleId="work-queue-attention"
+          searchModuleId="work-queue"
+          initialQuery={q}
           columns={[
             { id: "kind", label: "Kind" },
             { id: "item", label: "Item", locked: true },
@@ -132,6 +146,7 @@ export default async function WorkQueuePage({
           empty="Queue is clear."
           rows={attention.map((item) => ({
             key: item.id,
+            hay: haystack([item.kind, item.title, item.detail]),
             cells: {
               kind: <span className="uppercase">{item.kind.replaceAll("_", " ")}</span>,
               item: (
@@ -151,6 +166,8 @@ export default async function WorkQueuePage({
         </div>
         <ColumnTable
           moduleId="work-queue-policies"
+          searchModuleId="work-queue"
+          initialQuery={q}
           columns={[
             { id: "policy", label: "Policy", locked: true },
             { id: "status", label: "Status" },
@@ -160,6 +177,12 @@ export default async function WorkQueuePage({
           empty="Nothing waiting on the book."
           rows={open.map(({ policy, contact, account }) => ({
             key: policy.id,
+            hay: haystack([
+              policy.policyNumber,
+              policy.status,
+              contact ? `${contact.lastName} ${contact.firstName}` : null,
+              account?.name,
+            ]),
             cells: {
               policy: (
                 <Link

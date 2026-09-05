@@ -1,3 +1,4 @@
+import { HiddenLiveQuery } from "@/components/search/hidden-live-query";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { visiblePolicyBooks } from "@/lib/desk/line-settings";
 
@@ -10,6 +11,7 @@ export function BookFilterBar({
   healthSub,
   hidden,
   hideFamily,
+  searchModuleId,
 }: {
   action: string;
   settings: DeskLineSettings;
@@ -19,6 +21,7 @@ export function BookFilterBar({
   healthSub?: string;
   hidden?: Record<string, string>;
   hideFamily?: boolean;
+  searchModuleId?: string;
 }) {
   const books = visiblePolicyBooks(settings);
   const showLife = family === "life" && settings.writeLife;
@@ -28,10 +31,13 @@ export function BookFilterBar({
   return (
     <form action={action} method="get" className="mb-3 flex flex-wrap gap-2 text-sm">
       {hidden
-        ? Object.entries(hidden).map(([name, value]) => (
-            <input key={name} type="hidden" name={name} value={value} />
-          ))
+        ? Object.entries(hidden)
+            .filter(([name]) => name !== "q")
+            .map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))
         : null}
+      {searchModuleId ? <HiddenLiveQuery moduleId={searchModuleId} /> : null}
       {hideFamily ? (
         family ? <input type="hidden" name="family" value={family} /> : null
       ) : (

@@ -11,6 +11,9 @@ import { sourceLabel } from "@/lib/crm/sources";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
+import { LiveContainsInput } from "@/components/search/live-contains-input";
+import { LiveContainsScope } from "@/components/search/live-contains-scope";
+import { haystack } from "@/lib/search/live-query";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { listBoundPendingDeals, listDealLookup, listDeals, listUsersById, type DealListFilter } from "@/lib/db/queries";
@@ -35,6 +38,7 @@ export default async function DealsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const q = first(params.q) ?? "";
   const filter: DealListFilter = {
     stage: first(params.stage),
     attention: first(params.attention),
@@ -78,18 +82,28 @@ export default async function DealsPage({
           Add at least one file on a line.
         </p>
       ) : null}
-      <BookFilterBar
-        action="/deals"
-        settings={lineSettings}
-        family={filter.family}
-        pcSub={filter.pcSub}
-        lifeSub={filter.lifeSub}
-        healthSub={filter.healthSub}
-        hidden={{
-          ...(filter.stage ? { stage: filter.stage } : {}),
-          ...(filter.attention ? { attention: filter.attention } : {}),
-        }}
-      />
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <LiveContainsInput
+          moduleId="deals"
+          initialQuery={q}
+          placeholder="Contains deal, contact, phone…"
+          aria-label="Search deals"
+          inputClassName="h-8 w-56 text-sm"
+        />
+        <BookFilterBar
+          action="/deals"
+          settings={lineSettings}
+          family={filter.family}
+          pcSub={filter.pcSub}
+          lifeSub={filter.lifeSub}
+          healthSub={filter.healthSub}
+          hidden={{
+            ...(filter.stage ? { stage: filter.stage } : {}),
+            ...(filter.attention ? { attention: filter.attention } : {}),
+          }}
+          searchModuleId="deals"
+        />
+      </div>
       <div className="mb-4">
         <DealDocsUpload deals={lookup} />
       </div>
@@ -100,6 +114,7 @@ export default async function DealsPage({
           </Link>
         </p>
       ) : null}
+      <LiveContainsScope moduleId="deals" initialQuery={q}>
       <section className="ff-card overflow-x-auto">
         <ModuleListActions module="deals" recordIds={rows.map(({ deal }) => deal.id)}>
         {rows.length === 0 ? (
@@ -133,8 +148,26 @@ export default async function DealsPage({
               </tr>
             </thead>
             <SheetTbody>
-              {rows.map(({ deal, contact, account }) => (
-                <tr key={deal.id}>
+              {              rows.map(({ deal, contact, account }) => (
+                <tr
+                  key={deal.id}
+                  data-hay={haystack([
+                    deal.title,
+                    deal.pipelineStage,
+                    deal.lineOfBusiness,
+                    deal.state,
+                    deal.propertyOneliner,
+                    deal.source,
+                    contact?.firstName,
+                    contact?.lastName,
+                    contact?.phone,
+                    contact?.email,
+                    contact?.city,
+                    account?.name,
+                    account?.phone,
+                    account?.email,
+                  ])}
+                >
                   <td>
                     <SelectRowCheckbox id={deal.id} />
                   </td>
@@ -197,6 +230,7 @@ export default async function DealsPage({
         )}
         </ModuleListActions>
       </section>
+      </LiveContainsScope>
     </AppShell>
   );
 }

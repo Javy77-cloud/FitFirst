@@ -104,6 +104,7 @@ import { attachQuotePdfs } from "@/lib/quotes/board";
 import { groupTrackingShops, buildTrackingRows } from "@/lib/quotes/tracking";
 import {
   hitFromBusiness,
+  hitFromCarrier,
   hitFromContact,
   hitFromDeal,
   hitFromLead,
@@ -1594,12 +1595,13 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
   const q = query.trim();
   if (!q) return [];
   const session = await currentDeskSession();
-  const [leadRows, dealRows, contactRows, accountRows, policyRows] = await Promise.all([
+  const [leadRows, dealRows, contactRows, accountRows, policyRows, carrierRows] = await Promise.all([
     db.select().from(leads).where(eq(leads.tenantId, tenant())),
     db.select().from(deals).where(eq(deals.tenantId, tenant())),
     db.select().from(contacts).where(eq(contacts.tenantId, tenant())),
     db.select().from(accounts).where(eq(accounts.tenantId, tenant())),
     db.select().from(policies).where(eq(policies.tenantId, tenant())),
+    db.select().from(carriers).where(eq(carriers.tenantId, tenant())),
   ]);
   const hits: SearchHit[] = [];
   for (const row of leadRows) {
@@ -1627,7 +1629,36 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
   }
   for (const row of policyRows) {
     if (!canViewOwned(session, row.ownerId)) continue;
-    if (matchesQuery(q, row.policyNumber, row.lineOfBusiness)) hits.push(hitFromPolicy(row));
+    const contact = contactRows.find((item) => item.id === row.contactId);
+    const account = accountRows.find((item) => item.id === row.accountId);
+    const carrier = carrierRows.find((item) => item.id === row.carrierId);
+    if (
+      matchesQuery(
+        q,
+        row.policyNumber,
+        row.lineOfBusiness,
+        contact?.firstName,
+        contact?.lastName,
+        account?.name,
+        carrier?.name,
+      )
+    ) {
+      hits.push(hitFromPolicy(row));
+    }
+  }
+  for (const row of carrierRows) {
+    if (
+      matchesQuery(
+        q,
+        row.name,
+        row.naic,
+        row.territory,
+        row.amBestRating,
+        ...(row.writtenLines ?? []),
+      )
+    ) {
+      hits.push(hitFromCarrier(row));
+    }
   }
   return rankHits(hits, q).slice(0, 24);
 }
