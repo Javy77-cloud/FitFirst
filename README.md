@@ -19,8 +19,9 @@ Try: Deals → New shopping deal, or Pipeline → Deal name. Type `javy` (or a p
 3. **`cursor/ff-nav-dnd-customize-fe86`** — drag-and-drop left nav. Primary order + editable submenus persist on `agent_ui_prefs.nav_layout`. Default rail stays stub-free.
 4. **`cursor/ff-selection-actions-dae2`** — tick rows for Duplicate / Merge / Email / SMS / Print / Run macro / Archive / Delete. Call and hard-delete stay off.
 5. **`cursor/ff-deal-name-typeahead-b1c0`** — Deal Name typeaheads Contacts + Businesses as you type (name / email / phone). Pipeline create and Deals upload use the same picker.
+6. **`cursor/ff-deal-upload-half-88fe`** — Deal Documents upload is half width; the right half is a live shop desk (person, email/call, sheet status, collect-next, open activities).
 
-Skipped for the next tip: AMS waves 10–16, Deals/Pipeline merge, Deal upload half, live search.
+Skipped for the next tip: AMS waves 10–16, Deals/Pipeline merge, live search.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
@@ -300,7 +301,7 @@ On Deal detail → **Documents**, source-doc upload is **half width** (`lg:grid-
 Extracted fields stay under the split. Page-right context rail is unchanged. No wipe.
 
 ```bash
-git fetch && git checkout cursor/ff-deal-upload-half-88fe && git pull
+git fetch && git checkout cursor/live-ff-tip-sep5d2 && git pull
 npm install
 npm run db:migrate
 npm run dev -- --port 43147
