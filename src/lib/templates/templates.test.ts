@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AGENCY_BRAND } from "@/lib/domain";
 import { addDelay, archiveCancelsEmailJobs } from "./dates";
+import { templateLanguageLabel, templateLocaleCopy } from "./library";
 import { isProtectedAnaContact, pickEmailLocale } from "./locale";
 import { mergeTemplate } from "./merge";
 
@@ -39,6 +40,31 @@ describe("mergeTemplate", () => {
     expect(text).toContain(AGENCY_BRAND.phone);
     expect(text).toContain("[Google review link]");
     expect(text).not.toMatch(/\d{2,5}\s+\w+\s+(St|Ave|Ct|Rd)/i);
+  });
+});
+
+describe("template library EN/ES", () => {
+  it("marks both languages ready and never claims a send", () => {
+    const copy = templateLocaleCopy({
+      subjectEn: "Renewal is coming",
+      bodyEn: "I will write before it.",
+      subjectEs: "Se acerca tu renovación",
+      bodyEs: "Te escribo con tiempo.",
+    });
+    expect(copy.enReady).toBe(true);
+    expect(copy.esReady).toBe(true);
+    expect(copy.sends).toBe(false);
+    expect(templateLanguageLabel(copy)).toBe("EN + ES ready");
+  });
+
+  it("falls back to the legacy subject/body for English only", () => {
+    const copy = templateLocaleCopy({
+      subject: "Thanks",
+      body: "Example copy.",
+    });
+    expect(copy.enReady).toBe(true);
+    expect(copy.esReady).toBe(false);
+    expect(templateLanguageLabel(copy)).toBe("EN ready · ES missing");
   });
 });
 

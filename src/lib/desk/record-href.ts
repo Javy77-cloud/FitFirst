@@ -10,5 +10,6 @@ export function recordHref(entityType?: string | null, entityId?: string | null)
   if (entityType === "carrier") return `/carriers/${entityId}`;
   if (entityType === "activity") return `/calendar?event=${entityId}`;
   if (entityType === "document") return `/files/${entityId}`;
+  if (entityType === "automation" || entityType === "playbook") return "/automations/playbooks";
   return null;
 }

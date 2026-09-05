@@ -31,4 +31,18 @@ describe("toHeaderAlert", () => {
     expect(alert.href).toBe("/claims/c1");
     expect(alert.kind).toBe("fnol");
   });
+
+  it("maps a playbook ping onto the playbooks module", () => {
+    const alert = toHeaderAlert({
+      id: "a3",
+      title: "Renewal 60 — shop task + alert · in-desk",
+      body: "Shop this renewal 60 days out",
+      severity: "info",
+      kind: "playbook",
+      readAt: null,
+      entityType: "automation",
+      entityId: "p1",
+    });
+    expect(alert.href).toBe("/automations/playbooks");
+  });
 });

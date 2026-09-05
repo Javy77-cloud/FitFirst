@@ -1,7 +1,9 @@
 import { StubBanner } from "@/components/ops/stub-banner";
 
 const COPY: Record<string, string> = {
-  "automation-saved": "Automation saved. Rules stay on this desk — nothing emails a client yet.",
+  "automation-saved": "Playbook saved. Rules stay on this desk — nothing emails Javy or a client.",
+  "playbook-fired":
+    "Playbook fired. It wrote a desk Task and/or an in-app Alert. Nothing emailed.",
   "notify-preview":
     "In-app notify preview posted to Alerts. The agent sees it in the desk. Nothing left FitFirst.",
   "sms-would-send":

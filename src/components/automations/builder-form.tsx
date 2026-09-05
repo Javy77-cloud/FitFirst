@@ -15,10 +15,14 @@ import {
   AUTOMATION_TRIGGERS,
   AUTOMATION_TRIGGER_HINT,
   AUTOMATION_TRIGGER_LABEL,
+  PLAYBOOK_VISIBILITIES,
+  PLAYBOOK_VISIBILITY_HINT,
+  PLAYBOOK_VISIBILITY_LABEL,
   preferredActionFor,
   type AutomationAction,
   type AutomationCondition,
   type AutomationTrigger,
+  type PlaybookVisibility,
 } from "@/lib/automations/types";
 import { DEAL_STAGES, LINES } from "@/lib/domain";
 
@@ -32,6 +36,7 @@ export function AutomationBuilderForm({
   const [triggerKind, setTriggerKind] = useState<AutomationTrigger>("closed_won");
   const [conditionKind, setConditionKind] = useState<AutomationCondition>("always");
   const [actionKind, setActionKind] = useState<AutomationAction>("in_app_notify");
+  const [visibility, setVisibility] = useState<PlaybookVisibility>("both");
   const [actionValue, setActionValue] = useState(
     "Closed Won just landed. Confirm the bind packet.",
   );
@@ -43,28 +48,29 @@ export function AutomationBuilderForm({
     if (actionKind === "send_template_email") {
       return (
         <div>
-          <Label className="text-xs">Work-email template</Label>
-          <select
+          <Label className="text-xs">Draft hold note</Label>
+          <Input
             name="actionValue"
             required
             value={actionValue}
             onChange={(event) => setActionValue(event.target.value)}
-            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-          >
-            <option value="">Pick a template</option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
+            className="mt-1 h-8"
+            placeholder="Hold this template as a draft. Nothing sends."
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {templates.length
+              ? `${templates.length} templates in the library — none send from a playbook.`
+              : "No templates yet. The hold still stays in-desk."}
+          </p>
         </div>
       );
     }
-    if (actionKind === "create_task") {
+    if (actionKind === "create_task" || actionKind === "task_and_alert") {
       return (
         <div>
-          <Label className="text-xs">Task title</Label>
+          <Label className="text-xs">
+            {actionKind === "task_and_alert" ? "Task title + alert body" : "Task title"}
+          </Label>
           <Input
             name="actionValue"
             required
@@ -96,8 +102,8 @@ export function AutomationBuilderForm({
     <form action={saveGuidedAutomation} className="ff-card space-y-3 p-4">
       <h2 className="text-sm font-semibold text-navy">New automation</h2>
       <p className="text-xs text-muted-foreground">
-        Pick a trigger, a condition, then an action. Agent alerts stay in-app — that is the Javy
-        preference.
+        Admin writes the rule. Fired work stays in-desk — Task, Alert, or both. Nothing emails
+        Javy.
       </p>
       <div>
         <Label className="text-xs">Name</Label>
@@ -115,7 +121,7 @@ export function AutomationBuilderForm({
             setActionKind(preferred);
             if (preferred === "in_app_notify") {
               setActionValue("Check Alerts. Nothing emailed the broker.");
-            } else if (preferred === "create_task") {
+            } else if (preferred === "task_and_alert" || preferred === "create_task") {
               setActionValue("Shop this renewal 60 days out");
             }
           }}
@@ -215,10 +221,10 @@ export function AutomationBuilderForm({
             setActionKind(next);
             if (next === "in_app_notify") {
               setActionValue("Check Alerts. Nothing emailed the broker.");
-            } else if (next === "create_task") {
+            } else if (next === "create_task" || next === "task_and_alert") {
               setActionValue("Follow this record");
             } else {
-              setActionValue(templates[0]?.id ?? "");
+              setActionValue("Hold this template as a draft. Nothing sends.");
             }
           }}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
@@ -230,6 +236,22 @@ export function AutomationBuilderForm({
           ))}
         </select>
         <p className="mt-1 text-[11px] text-muted-foreground">{actionHint}</p>
+      </div>
+      <div>
+        <Label className="text-xs">Who sees this playbook</Label>
+        <select
+          name="visibility"
+          value={visibility}
+          onChange={(event) => setVisibility(event.target.value as PlaybookVisibility)}
+          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+        >
+          {PLAYBOOK_VISIBILITIES.map((value) => (
+            <option key={value} value={value}>
+              {PLAYBOOK_VISIBILITY_LABEL[value]}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-[11px] text-muted-foreground">{PLAYBOOK_VISIBILITY_HINT[visibility]}</p>
       </div>
       {actionField}
       <label className="flex items-center gap-2 text-sm">

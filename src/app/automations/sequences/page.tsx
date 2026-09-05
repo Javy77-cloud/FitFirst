@@ -28,8 +28,8 @@ export default async function CampaignSequencesPage({
         error={typeof query.error === "string" ? query.error : undefined}
       />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Five insurance sequences. Each step is a desk Task or a work-email template stub.
-        Enable or disable the sequence. Nothing sends — FitFirst does not mail the client.
+        Five insurance sequence stubs. Steps are desk Tasks or work-email drafts.
+        Enable or disable. Nothing sends — use Playbooks when you want a live Task + Alert.
       </p>
       <p className="mb-4 text-xs text-navy">
         {onCount} of {rows.length} sequences on

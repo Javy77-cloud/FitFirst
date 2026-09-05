@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { requireSignedInAction } from "@/lib/auth/guards";
+import { requireAdminAction, requireSignedInAction } from "@/lib/auth/guards";
+import { demoTargetForPlaybook } from "@/lib/automations/demo-targets";
+import { firePlaybook } from "@/lib/automations/fire";
+import { normalizeVisibility } from "@/lib/automations/engine";
 import { validateGuidedAutomation } from "@/lib/automations/types";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -22,11 +25,13 @@ function refreshAutomations() {
   revalidatePath("/automations/templates");
   revalidatePath("/automations/signatures");
   revalidatePath("/automations/sequences");
+  revalidatePath("/automations/playbooks");
   revalidatePath("/alerts");
+  revalidatePath("/tasks");
 }
 
 export async function saveGuidedAutomation(formData: FormData) {
-  const session = await requireSignedInAction();
+  const session = await requireAdminAction("Admin writes playbooks.");
   const parsed = validateGuidedAutomation({
     name: str(formData, "name"),
     triggerKind: str(formData, "triggerKind"),
@@ -35,6 +40,7 @@ export async function saveGuidedAutomation(formData: FormData) {
     conditionValue: str(formData, "conditionValue"),
     actionKind: str(formData, "actionKind"),
     actionValue: str(formData, "actionValue"),
+    visibility: str(formData, "visibility"),
   });
   if (!parsed.ok) {
     redirect(`/automations/builder?error=${encodeURIComponent(parsed.error)}`);
@@ -50,6 +56,7 @@ export async function saveGuidedAutomation(formData: FormData) {
     conditionValue: parsed.value.conditionValue || null,
     actionKind: parsed.value.actionKind,
     actionValue: parsed.value.actionValue,
+    visibility: parsed.value.visibility,
     enabled,
     updatedAt: new Date(),
   };
@@ -73,7 +80,7 @@ export async function saveGuidedAutomation(formData: FormData) {
 }
 
 export async function toggleGuidedAutomation(formData: FormData) {
-  await requireSignedInAction();
+  await requireAdminAction("Admin toggles playbooks.");
   const id = str(formData, "id");
   const enabled = str(formData, "enabled") === "true";
   await db
@@ -81,7 +88,42 @@ export async function toggleGuidedAutomation(formData: FormData) {
     .set({ enabled, updatedAt: new Date() })
     .where(and(eq(guidedAutomations.tenantId, DEFAULT_TENANT_ID), eq(guidedAutomations.id, id)));
   refreshAutomations();
-  redirect("/automations/builder?notice=automation-saved");
+  redirect("/automations/playbooks?notice=automation-saved");
+}
+
+export async function runPlaybookNow(formData: FormData) {
+  await requireAdminAction("Admin runs playbook demos.");
+  const id = str(formData, "id");
+  const [playbook] = await db
+    .select()
+    .from(guidedAutomations)
+    .where(and(eq(guidedAutomations.tenantId, DEFAULT_TENANT_ID), eq(guidedAutomations.id, id)));
+  if (!playbook) {
+    redirect("/automations/playbooks?error=Playbook%20not%20found.");
+  }
+  if (!playbook.enabled) {
+    redirect("/automations/playbooks?error=Turn%20the%20playbook%20on%20first.");
+  }
+  const visibility = normalizeVisibility(playbook.visibility);
+  const target = demoTargetForPlaybook({
+    triggerKind: playbook.triggerKind,
+    triggerValue: playbook.triggerValue,
+    visibility,
+  });
+  const result = await firePlaybook({
+    playbookId: playbook.id,
+    related: target.related,
+    assigneeName: target.assigneeName,
+    alertUserId: target.alertUserId,
+    audience: visibility,
+    summary: target.summary,
+  });
+  refreshAutomations();
+  redirect(
+    result.emailed
+      ? "/automations/playbooks?error=Playbooks%20must%20not%20email."
+      : "/automations/playbooks?notice=playbook-fired",
+  );
 }
 
 export async function previewAutomationNotify(formData: FormData) {

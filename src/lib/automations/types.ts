@@ -40,20 +40,38 @@ export const AUTOMATION_CONDITION_LABEL: Record<AutomationCondition, string> = {
 export const AUTOMATION_ACTIONS = [
   "in_app_notify",
   "create_task",
+  "task_and_alert",
   "send_template_email",
 ] as const;
 export type AutomationAction = (typeof AUTOMATION_ACTIONS)[number];
 
 export const AUTOMATION_ACTION_LABEL: Record<AutomationAction, string> = {
-  in_app_notify: "In-app notify",
+  in_app_notify: "In-app alert",
   create_task: "Create task",
-  send_template_email: "Send template email",
+  task_and_alert: "Task + in-app alert",
+  send_template_email: "Queue draft template (does not send)",
 };
 
 export const AUTOMATION_ACTION_HINT: Record<AutomationAction, string> = {
-  in_app_notify: "Javy preference — ping the agent in Alerts. Nothing emails the broker.",
-  create_task: "Adds an open desk task. No client mail.",
-  send_template_email: "Queues a work-email template. Still a stub send.",
+  in_app_notify: "Ping the desk in Alerts / pop-up. Nothing emails Javy or the client.",
+  create_task: "Adds an open desk task on the related record. No client mail.",
+  task_and_alert: "Creates a desk Task and an in-app Alert together. Preferred for renewals.",
+  send_template_email: "Holds a work-email draft. FitFirst does not send client mail from playbooks.",
+};
+
+export const PLAYBOOK_VISIBILITIES = ["admin", "agent", "both"] as const;
+export type PlaybookVisibility = (typeof PLAYBOOK_VISIBILITIES)[number];
+
+export const PLAYBOOK_VISIBILITY_LABEL: Record<PlaybookVisibility, string> = {
+  admin: "Admin only",
+  agent: "Agent book",
+  both: "Admin + agent",
+};
+
+export const PLAYBOOK_VISIBILITY_HINT: Record<PlaybookVisibility, string> = {
+  admin: "Javy and other Admins see and run this playbook. Agents do not.",
+  agent: "Producers see this playbook and the Tasks / Alerts it fires on their book.",
+  both: "Everyone on the desk sees the playbook. Fired work still follows the assignee.",
 };
 
 export const SIGNATURE_APPROVAL_STATUSES = ["draft", "pending", "live", "rejected"] as const;
@@ -68,40 +86,46 @@ export const SIGNATURE_STATUS_LABEL: Record<SignatureApprovalStatus, string> = {
 
 export const AUTOMATION_HUB_SECTIONS = [
   {
-    id: "sequences",
-    href: "/automations/sequences",
-    label: "Campaign sequences",
-    summary: "Lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask — Task + email stubs.",
-  },
-  {
-    id: "campaigns",
-    href: "/automations/campaigns",
-    label: "Email campaigns",
-    summary: "Mailchimp, Constant Contact, or SendGrid — only if the agency connected one.",
-  },
-  {
-    id: "sms",
-    href: "/automations/sms",
-    label: "Bulk SMS",
-    summary: "Needs a Twilio / RingCentral / Lightspeed stub. Guided empty state until then.",
+    id: "playbooks",
+    href: "/automations/playbooks",
+    label: "Playbooks",
+    summary: "In-desk triggers that fire Tasks and Alerts. Renewal nudges stay on the desk.",
   },
   {
     id: "templates",
     href: "/automations/templates",
-    label: "Work email templates",
-    summary: "Same library as Settings. Agents read; Admin edits.",
+    label: "Template library",
+    summary: "EN + ES work-email copy. Preview only — nothing sends from this desk.",
   },
   {
     id: "builder",
     href: "/automations/builder",
     label: "Guided builder",
-    summary: "Trigger → Condition → Action. Save a named rule. Prefer in-app notify.",
+    summary: "Admin writes Trigger → Condition → Action. Agents read the playbooks they can see.",
+  },
+  {
+    id: "sequences",
+    href: "/automations/sequences",
+    label: "Sequence stubs",
+    summary: "Lead nurture, quote follow-up, 60/30 renewal, cross-sell, review ask — Task stubs.",
   },
   {
     id: "signatures",
     href: "/automations/signatures",
     label: "Email signatures",
     summary: "Agents draft. Admin approves before a signature goes live.",
+  },
+  {
+    id: "campaigns",
+    href: "/automations/campaigns",
+    label: "Paid campaigns",
+    summary: "Not offered. FitFirst does not buy Mailchimp, Constant Contact, or SendGrid.",
+  },
+  {
+    id: "sms",
+    href: "/automations/sms",
+    label: "Bulk SMS vendors",
+    summary: "Not offered. No Twilio. Use playbooks that create Tasks + Alerts.",
   },
 ] as const;
 
@@ -129,6 +153,7 @@ export type GuidedAutomationInput = {
   conditionValue: string;
   actionKind: AutomationAction;
   actionValue: string;
+  visibility: PlaybookVisibility;
   enabled: boolean;
 };
 
@@ -140,6 +165,7 @@ export function validateGuidedAutomation(input: {
   conditionValue: string;
   actionKind: string;
   actionValue: string;
+  visibility?: string;
 }): { ok: true; value: GuidedAutomationInput } | { ok: false; error: string } {
   const name = input.name.trim();
   if (!name) return { ok: false, error: "Name the automation." };
@@ -157,10 +183,10 @@ export function validateGuidedAutomation(input: {
     if (input.actionKind === "in_app_notify") {
       return { ok: false, error: "Write the in-app alert the agent should see." };
     }
-    if (input.actionKind === "create_task") {
+    if (input.actionKind === "create_task" || input.actionKind === "task_and_alert") {
       return { ok: false, error: "Name the task this rule should create." };
     }
-    return { ok: false, error: "Pick the work-email template to send." };
+    return { ok: false, error: "Name the draft template hold — nothing will send." };
   }
   if (input.conditionKind === "line_of_business" && !input.conditionValue.trim()) {
     return { ok: false, error: "Pick a line of business." };
@@ -171,6 +197,10 @@ export function validateGuidedAutomation(input: {
   if (input.conditionKind === "stage_is" && !input.conditionValue.trim()) {
     return { ok: false, error: "Pick the pipeline stage." };
   }
+  const visibilityRaw = (input.visibility ?? "both").trim();
+  const visibility: PlaybookVisibility = isPlaybookVisibility(visibilityRaw)
+    ? visibilityRaw
+    : "both";
   return {
     ok: true,
     value: {
@@ -181,14 +211,20 @@ export function validateGuidedAutomation(input: {
       conditionValue: input.conditionValue.trim(),
       actionKind: input.actionKind,
       actionValue,
+      visibility,
       enabled: true,
     },
   };
 }
 
 export function preferredActionFor(trigger: AutomationTrigger): AutomationAction {
+  if (trigger === "policy_renewal_window") return "task_and_alert";
   if (trigger === "closed_won" || trigger === "birthday" || trigger === "deal_stage_change") {
     return "in_app_notify";
   }
   return "create_task";
+}
+
+export function isPlaybookVisibility(value: string): value is PlaybookVisibility {
+  return (PLAYBOOK_VISIBILITIES as readonly string[]).includes(value);
 }

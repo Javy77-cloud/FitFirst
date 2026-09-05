@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   campaignsReady,
   connectedCampaignIntegrations,
+  paidVendorsAllowed,
   smsReady,
 } from "./connections";
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
@@ -26,25 +27,16 @@ function item(
 }
 
 describe("campaign / SMS readiness", () => {
-  it("keeps campaigns empty until a campaign vendor is connected", () => {
+  it("keeps paid campaign and SMS vendors off this desk", () => {
+    expect(paidVendorsAllowed()).toBe(false);
     const items = [
       item("gmail", "email", true),
-      item("mailchimp", "campaigns", false),
-      item("sendgrid", "campaigns", false),
+      item("mailchimp", "campaigns", true),
+      item("sendgrid", "campaigns", true),
+      item("twilio", "phone_sms", true),
     ];
     expect(campaignsReady(items)).toBe(false);
-    expect(connectedCampaignIntegrations(items)).toHaveLength(0);
-  });
-
-  it("opens campaigns when Mailchimp is stub-connected", () => {
-    const items = [item("mailchimp", "campaigns", true), item("twilio", "phone_sms", false)];
-    expect(campaignsReady(items)).toBe(true);
-  });
-
-  it("treats SMS settings or a phone_sms vendor as ready", () => {
-    const items = [item("twilio", "phone_sms", true)];
-    expect(smsReady(items, false)).toBe(true);
-    expect(smsReady([item("twilio", "phone_sms", false)], true)).toBe(true);
-    expect(smsReady([item("twilio", "phone_sms", false)], false)).toBe(false);
+    expect(smsReady(items, true)).toBe(false);
+    expect(connectedCampaignIntegrations(items).map((row) => row.id)).toContain("sendgrid");
   });
 });

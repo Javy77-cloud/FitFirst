@@ -3,6 +3,11 @@ import type { CatalogItem } from "@/lib/integrations/catalog-store";
 const CAMPAIGN_PROVIDERS = new Set(["mailchimp", "constant_contact", "sendgrid"]);
 const SMS_PROVIDERS = new Set(["twilio", "ringcentral", "lightspeed_voice"]);
 
+/** In-desk automations. FitFirst does not buy campaign or SMS vendors. */
+export function paidVendorsAllowed(): boolean {
+  return false;
+}
+
 export function campaignIntegrations(items: CatalogItem[]) {
   return items.filter((item) => item.category === "campaigns" || CAMPAIGN_PROVIDERS.has(item.id));
 }
@@ -20,9 +25,11 @@ export function connectedSmsIntegrations(items: CatalogItem[]) {
 }
 
 export function campaignsReady(items: CatalogItem[]) {
+  if (!paidVendorsAllowed()) return false;
   return connectedCampaignIntegrations(items).length > 0;
 }
 
 export function smsReady(items: CatalogItem[], smsConnected: boolean) {
+  if (!paidVendorsAllowed()) return false;
   return smsConnected || connectedSmsIntegrations(items).length > 0;
 }
