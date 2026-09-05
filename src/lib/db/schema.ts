@@ -1315,6 +1315,7 @@ export const pipelineStages = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
+    color: text("color").notNull().default("blue"),
     seeded: boolean("seeded").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

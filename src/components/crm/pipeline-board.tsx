@@ -56,6 +56,7 @@ export function PipelineBoard({
             slug: "_unstaged",
             name: "Unstaged",
             sortOrder: 999,
+            color: "slate",
             seeded: false,
             createdAt: new Date(),
           } satisfies PipelineStageRow,
@@ -84,7 +85,7 @@ export function PipelineBoard({
           return (
             <section key={stage.id} className="ff-card min-h-48 overflow-hidden">
               <div className="flex items-center justify-between border-b border-border px-3 py-2">
-                <StagePill stage={stage.name || stage.slug} />
+                <StagePill stage={stage.name || stage.slug} color={stage.color} />
                 <span className="text-[11px] text-muted-foreground">{column.length}</span>
               </div>
               <div className="space-y-2 p-2">

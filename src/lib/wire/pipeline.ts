@@ -121,9 +121,20 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
   },
 ];
 
-export function pipelineHref(slug: string, view?: string) {
-  const viewQ = view === "table" ? "&view=table" : "";
-  return `/pipeline?pipeline=${encodeURIComponent(slug)}${viewQ}`;
+export type PipelineViewId = "board" | "table" | "funnel";
+
+export function parsePipelineView(raw?: string | null): PipelineViewId {
+  if (raw === "table" || raw === "funnel") return raw;
+  return "board";
+}
+
+export function pipelineHref(slug: string, view?: string, stage?: string) {
+  const params = new URLSearchParams();
+  params.set("pipeline", slug);
+  const parsed = parsePipelineView(view);
+  if (parsed !== "board") params.set("view", parsed);
+  if (stage) params.set("stage", stage);
+  return `/pipeline?${params.toString()}`;
 }
 
 export function pipelineTabLabel(board: { slug: string; name: string }) {
@@ -259,6 +270,22 @@ export function parseCollapsedStages(raw: string | null | undefined): string[] {
       .map((part) => part.trim())
       .filter(Boolean);
   }
+}
+
+export function pipelineFunnelRows<
+  TStage extends { slug: string; name: string; color?: string | null },
+  TCard extends {
+    pipelineStage: string;
+    pipelineStageSlug?: string | null;
+    archivedAt?: Date | string | null;
+  },
+>(stages: TStage[], cards: TCard[]) {
+  return stages.map((stage) => ({
+    slug: stage.slug,
+    name: stage.name,
+    color: stage.color ?? null,
+    count: cards.filter((card) => dealMatchesStage(card, stage.slug)).length,
+  }));
 }
 
 export function switcherBoards<T extends { slug: string; name: string; sortOrder?: number }>(boards: T[]) {

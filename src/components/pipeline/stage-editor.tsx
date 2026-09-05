@@ -6,6 +6,7 @@ import {
   relabelPipelineStage,
   reorderPipelineStage,
 } from "@/app/actions/pipeline-admin";
+import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PipelineStageView } from "@/lib/wire/pipeline-cards";
@@ -36,6 +37,7 @@ export function PipelineStageEditor({
       <ul className="mt-3 space-y-2">
         {stages.map((stage, index) => (
           <li key={stage.id} className="flex flex-wrap items-center gap-2">
+            <StagePill stage={stage.name} color={stage.color} />
             <form action={reorderPipelineStage} className="flex items-center gap-0.5">
               <input type="hidden" name="stageId" value={stage.id} />
               <button

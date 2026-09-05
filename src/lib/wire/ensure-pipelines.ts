@@ -3,6 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { PIPELINE_IDS_BY_SLUG } from "@/lib/fixtures/ids";
 import { db } from "@/lib/db";
 import { deals, pipelineStages, pipelines } from "@/lib/db/schema";
+import { defaultStageColor } from "@/lib/desk/status-colors";
 import { SEEDED_PIPELINES } from "./pipeline";
 
 /** Insert missing boards / stages and split Archive off Won-Lost on existing desks. */
@@ -31,6 +32,7 @@ export async function ensureSeededPipelines() {
           name: stage.name,
           slug: stage.slug,
           sortOrder,
+          color: defaultStageColor(sortOrder, stage.slug),
           seeded: seed.seeded,
         })),
       );
@@ -68,8 +70,16 @@ export async function ensureSeededPipelines() {
         name: stage.name,
         slug: stage.slug,
         sortOrder,
+        color: defaultStageColor(sortOrder, stage.slug),
         seeded: seed.seeded,
       });
+    }
+    for (const stage of stages) {
+      if (stage.color) continue;
+      await db
+        .update(pipelineStages)
+        .set({ color: defaultStageColor(stage.sortOrder, stage.slug) })
+        .where(eq(pipelineStages.id, stage.id));
     }
   }
 

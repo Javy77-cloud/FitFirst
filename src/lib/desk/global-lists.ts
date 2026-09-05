@@ -11,6 +11,7 @@ import {
   POLICY_TERMS_BY_FAMILY,
   type InsuranceFamily,
 } from "@/lib/desk/policy-family";
+import { policyStatusColor } from "@/lib/desk/status-colors";
 
 export const GLOBAL_LIST_KEYS = [
   "policy_type",
@@ -113,7 +114,7 @@ export function defaultGlobalLists(): GlobalListSeed[] {
       slug: option.value,
       label: option.label,
       sortOrder: index,
-      color: option.value === "active" ? "green" : option.value === "bound" || option.value === "lapse" ? "yellow" : "red",
+      color: policyStatusColor(option.value),
     });
   });
 

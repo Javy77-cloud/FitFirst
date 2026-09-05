@@ -2,13 +2,16 @@ import Link from "next/link";
 import { createPipelineDeal } from "@/app/actions/pipeline-admin";
 import { AppShell } from "@/components/app-shell";
 import { BookFilterBar } from "@/components/desk/book-filter-bar";
+import { StagePill } from "@/components/fit-badge";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireSignedIn } from "@/lib/auth/guards";
 import { getPipelineBoard } from "@/lib/db/queries";
 import { lineForPipelineSlug } from "@/lib/desk/line-settings";
+import { cn } from "@/lib/utils";
 import {
+  parsePipelineView,
   pipelineHref,
   pipelinePageTitle,
   pipelineTabLabel,
@@ -20,10 +23,16 @@ export const dynamic = "force-dynamic";
 export default async function PipelinePage({
   searchParams,
 }: {
-  searchParams: Promise<{ pipeline?: string; view?: string; lifeSub?: string; healthSub?: string }>;
+  searchParams: Promise<{
+    pipeline?: string;
+    view?: string;
+    stage?: string;
+    lifeSub?: string;
+    healthSub?: string;
+  }>;
 }) {
   const session = await requireSignedIn();
-  const { pipeline: slug, view, lifeSub, healthSub } = await searchParams;
+  const { pipeline: slug, view: rawView, stage, lifeSub, healthSub } = await searchParams;
   const data = await getPipelineBoard(slug || "p-c", { lifeSub, healthSub });
   if (!data) {
     return (
@@ -33,7 +42,7 @@ export default async function PipelinePage({
     );
   }
   const { board, boards, cards, lineSettings } = data;
-  const tableView = view === "table";
+  const view = parsePipelineView(rawView);
   const presented = cards.map(presentPipelineCard);
   const subQuery =
     (lifeSub ? `&lifeSub=${encodeURIComponent(lifeSub)}` : "") +
@@ -45,7 +54,7 @@ export default async function PipelinePage({
         {boards.map((item) => (
           <Link
             key={item.id}
-            href={`${pipelineHref(item.slug, tableView ? "table" : undefined)}${item.slug === board.slug ? subQuery : ""}`}
+            href={`${pipelineHref(item.slug, view)}${item.slug === board.slug ? subQuery : ""}`}
             className={
               item.slug === board.slug
                 ? "rounded-md bg-primary px-2.5 py-1 text-primary-foreground"
@@ -55,19 +64,22 @@ export default async function PipelinePage({
             {pipelineTabLabel(item)}
           </Link>
         ))}
-        <span className="ml-auto flex gap-2">
-          <Link
-            href={`${pipelineHref(board.slug)}${subQuery}`}
-            className={!tableView ? "font-semibold text-primary" : "text-muted-foreground"}
-          >
-            Board
-          </Link>
-          <Link
-            href={`${pipelineHref(board.slug, "table")}${subQuery}`}
-            className={tableView ? "font-semibold text-primary" : "text-muted-foreground"}
-          >
-            Table
-          </Link>
+        <span className="ml-auto flex gap-3">
+          {(
+            [
+              ["board", "Board"],
+              ["table", "Table"],
+              ["funnel", "Funnel"],
+            ] as const
+          ).map(([id, label]) => (
+            <Link
+              key={id}
+              href={`${pipelineHref(board.slug, id)}${subQuery}`}
+              className={view === id ? "font-semibold text-primary" : "text-muted-foreground"}
+            >
+              {label}
+            </Link>
+          ))}
         </span>
       </div>
 
@@ -81,7 +93,7 @@ export default async function PipelinePage({
           hideFamily
           hidden={{
             pipeline: board.slug,
-            ...(tableView ? { view: "table" } : {}),
+            ...(view !== "board" ? { view } : {}),
           }}
         />
       ) : null}
@@ -114,9 +126,9 @@ export default async function PipelinePage({
           </select>
         ) : null}
         <select name="stageSlug" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-          {board.stages.map((stage) => (
-            <option key={stage.slug} value={stage.slug}>
-              {stage.name}
+          {board.stages.map((item) => (
+            <option key={item.slug} value={item.slug}>
+              {item.name}
             </option>
           ))}
         </select>
@@ -124,6 +136,21 @@ export default async function PipelinePage({
           Create deal
         </Button>
       </form>
+
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Stages
+        </span>
+        {board.stages.map((item) => (
+          <Link
+            key={item.id}
+            href={`${pipelineHref(board.slug, "table", item.slug)}${subQuery}`}
+            className={cn(stage === item.slug && "ring-2 ring-primary rounded-sm")}
+          >
+            <StagePill stage={item.name} color={item.color} />
+          </Link>
+        ))}
+      </div>
 
       <PipelineWorkspace
         canEditStages={session.isAdmin}
@@ -133,16 +160,18 @@ export default async function PipelinePage({
           name: board.name,
           kind: board.kind,
           seeded: board.seeded,
-          stages: board.stages.map((stage) => ({
-            id: stage.id,
-            slug: stage.slug,
-            name: stage.name,
-            sortOrder: stage.sortOrder,
-            seeded: stage.seeded,
+          stages: board.stages.map((item) => ({
+            id: item.id,
+            slug: item.slug,
+            name: item.name,
+            sortOrder: item.sortOrder,
+            color: item.color,
+            seeded: item.seeded,
           })),
         }}
         cards={presented}
-        tableView={tableView}
+        view={view}
+        stageFilter={stage}
       />
     </AppShell>
   );

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { PipelineDealCard } from "@/components/pipeline/deal-card";
+import { StagePill } from "@/components/fit-badge";
 import { cn } from "@/lib/utils";
 import { collapsedStorageKey, dealMatchesStage, parseCollapsedStages } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
@@ -29,7 +30,7 @@ export function PipelineKanban({
   const columns = useMemo(() => {
     const extras =
       cards.some((deal) => !board.stages.some((stage) => dealMatchesStage(deal, stage.slug)))
-        ? [{ id: "unstaged", slug: "_unstaged", name: "Unstaged", sortOrder: 999, seeded: false }]
+        ? [{ id: "unstaged", slug: "_unstaged", name: "Unstaged", sortOrder: 999, color: "slate", seeded: false }]
         : [];
     return [...board.stages, ...extras];
   }, [board.stages, cards]);
@@ -86,8 +87,8 @@ export function PipelineKanban({
               data-pipe-head
               className="flex items-center gap-2 border-b border-border bg-muted px-2 py-2"
             >
-              <span data-pipe-title className="min-w-0 flex-1 text-sm font-semibold text-navy">
-                {stage.name}
+              <span data-pipe-title className="min-w-0 flex-1">
+                <StagePill stage={stage.name} color={"color" in stage ? stage.color : undefined} />
               </span>
               <span className="text-[11px] text-muted-foreground">{column.length}</span>
               <button
@@ -113,6 +114,7 @@ export function PipelineKanban({
                       key={deal.id}
                       deal={deal}
                       stageName={stage.name}
+                      stageColor={"color" in stage ? stage.color : undefined}
                       showArchive={board.slug !== "archive"}
                     />
                   ))

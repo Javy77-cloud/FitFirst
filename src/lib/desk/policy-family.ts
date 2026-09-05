@@ -1,6 +1,7 @@
 import { inferLineFamily, type LineFamily } from "@/lib/desk/commission-line";
 import { homeLineKey } from "@/lib/home/lines";
 import { lineOfBusinessFromZoho, policyTypesFor, policySubTypesFor } from "@/lib/commissions/zoho-fields";
+import { policyStatusColor, statusColorClass } from "@/lib/desk/status-colors";
 
 export const INSURANCE_FAMILIES = ["Life", "Health", "P&C"] as const;
 export type InsuranceFamily = (typeof INSURANCE_FAMILIES)[number];
@@ -9,9 +10,12 @@ export type PolicyStatusTone = "green" | "yellow" | "red";
 
 export const POLICY_STATUS_OPTIONS = [
   { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
   { value: "bound", label: "Bound" },
   { value: "pending", label: "Pending" },
   { value: "lapse", label: "Lapse" },
+  { value: "cancellation", label: "Cancellation" },
+  { value: "non_renewal", label: "Non-renewal" },
   { value: "expired", label: "Expired" },
   { value: "cancelled", label: "Cancelled" },
 ] as const;
@@ -25,10 +29,7 @@ export function policyStatusTone(status: string | null | undefined): PolicyStatu
 }
 
 export function policyStatusClass(status: string | null | undefined): string {
-  const tone = policyStatusTone(status);
-  if (tone === "green") return "bg-emerald-600 text-white";
-  if (tone === "yellow") return "bg-amber-400 text-navy";
-  return "bg-red-600 text-white";
+  return statusColorClass(policyStatusColor(status));
 }
 
 export const POLICY_TERMS_BY_FAMILY: Record<InsuranceFamily, readonly string[]> = {

@@ -1,4 +1,5 @@
 import { createPipelineStage, deletePipelineStage, relabelPipelineStage } from "@/app/actions/crm";
+import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PipelineStageRow } from "@/lib/db/schema";
@@ -16,6 +17,7 @@ export function StageEditor({ stages }: { stages: PipelineStageRow[] }) {
             <form action={relabelPipelineStage} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               <input type="hidden" name="stageId" value={stage.id} />
               <Input name="label" defaultValue={stage.name} className="h-8 max-w-xs" />
+              <StagePill stage={stage.name} color={stage.color} />
               <span className="text-[11px] text-muted-foreground">{stage.slug}</span>
               <Button type="submit" size="xs" variant="outline">
                 Relabel

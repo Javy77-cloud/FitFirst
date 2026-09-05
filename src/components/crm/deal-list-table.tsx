@@ -53,6 +53,7 @@ export function DealListTable({
   showFilters?: boolean;
 }) {
   const labels = new Map(stages.map((stage) => [stage.slug, stage.name]));
+  const colors = new Map(stages.map((stage) => [stage.slug, stage.color]));
   const visible = rows.filter(({ deal, lead, contact, risk }) =>
     matchesDealFilters(
       {
@@ -143,7 +144,10 @@ export function DealListTable({
                       <LinkedValue value={riskAddress(risk)} />
                     </td>
                     <td data-col="stage" data-sheet-col="stage">
-                      <StagePill stage={labels.get(deal.pipelineStage) ?? deal.pipelineStage} />
+                      <StagePill
+                        stage={labels.get(deal.pipelineStage) ?? deal.pipelineStage}
+                        color={colors.get(deal.pipelineStage)}
+                      />
                     </td>
                     <td data-col="line" data-sheet-col="line">
                       {LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ??

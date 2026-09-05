@@ -5,6 +5,7 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { ChooseFiles } from "@/components/choose-files";
 import { VehiclesList } from "@/components/desk-ams-panels";
+import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { RecordLink } from "@/components/record-links";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,7 @@ export default async function PolicyDetailPage({
   return (
     <AppShell title={policy.policyNumber}>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <span className="uppercase">{policy.status}</span>
+        <PolicyStatusBadge status={policy.status} />
         <span>{policy.lineOfBusiness}</span>
         <span>{carrier?.name ?? "Carrier TBD"}</span>
         <span>{formatMoney(policy.premium)}</span>

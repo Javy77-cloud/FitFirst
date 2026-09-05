@@ -8,23 +8,42 @@ import { StagePill } from "@/components/fit-badge";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
-import { PIPELINE_FIELDS } from "@/lib/wire/pipeline";
+import { dealMatchesStage, PIPELINE_FIELDS, pipelineHref } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineTableView({
   board,
   cards,
+  stageFilter,
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
+  stageFilter?: string | null;
 }) {
   const labels = new Map(board.stages.map((stage) => [stage.slug, stage.name]));
+  const colors = new Map(board.stages.map((stage) => [stage.slug, stage.color]));
+  const filtered =
+    stageFilter && stageFilter !== "all"
+      ? cards.filter((card) => dealMatchesStage(card, stageFilter))
+      : cards;
+  const filterStage = board.stages.find((stage) => stage.slug === stageFilter);
 
   return (
     <section className="ff-card overflow-x-auto">
-      {cards.length === 0 ? (
+      {filterStage ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-sm">
+          <span className="text-muted-foreground">Stage</span>
+          <StagePill stage={filterStage.name} color={filterStage.color} />
+          <Link href={pipelineHref(board.slug, "table")} className="text-primary hover:underline">
+            Show all stages
+          </Link>
+        </div>
+      ) : null}
+      {filtered.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">
-          No deals on this board. Create one or drag a shop here from another tab.
+          {filterStage
+            ? "No deals in this stage. Clear the stage filter or create one above."
+            : "No deals on this board. Create one or drag a shop here from another tab."}
         </p>
       ) : (
         <table className="ff-table">
@@ -39,7 +58,7 @@ export function PipelineTableView({
             </tr>
           </thead>
           <tbody>
-            {cards.map((deal) => (
+            {filtered.map((deal) => (
               <tr key={deal.id}>
                 <td data-col="pipeline_fields.title">
                   <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
@@ -70,6 +89,7 @@ export function PipelineTableView({
                 <td data-col="pipeline_fields.stage">
                   <StagePill
                     stage={labels.get(deal.pipelineStageSlug ?? "") ?? deal.pipelineStage}
+                    color={colors.get(deal.pipelineStageSlug ?? "") ?? colors.get(deal.pipelineStage)}
                   />
                 </td>
                 <td data-col="pipeline_fields.updated">
