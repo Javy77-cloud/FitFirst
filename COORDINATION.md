@@ -876,3 +876,13 @@ Starts from `cursor/fitfirst-type-readability-e960`. Additive only. Ana fixture 
 - Settings overview still links to `/settings/integrations`. No visual redesign.
 
 Do not bind Ana.
+
+## Nav cleanup + Phone / Inbox stubs (`cursor/nav-phone-inbox-stubs-8078`)
+
+Feel-desk unblock on `cursor/full-day-batch4-57f6`. Ana untouched. Darker blue sidebar unchanged. One Pipeline row.
+
+- Left-nav group **People** → **Accounts**. Children stay Contacts (`/contacts`) and Businesses (`/accounts`). Contact and Business modules were not deleted.
+- Sidebar **Search** removed. Top-bar Smart Search is the only search.
+- `/phone` — connect-later wall (BYO line later, no Twilio buy) + dialer stub. Outcome + notes write `activities` / `activity_logs` via `saveCallOutcome`. Existing call log (`listCallLog`) stays on the page. `/settings/phone` is unchanged.
+- `/inbox` — label Inbox, eyebrow **Envoys**. Connect work email later. Queued inbound stubs from seed: activity inbound email/SMS + `lead_offers.kind = inbound_email` (Renee Colbert).
+- Tasks, Work queue, Alerts, Carriers, Documents stay where Javy liked them.

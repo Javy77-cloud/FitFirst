@@ -16,6 +16,7 @@ describe("moduleTitleFromPath", () => {
     expect(moduleTitleFromPath("/businesses/1")).toBe("Businesses");
     expect(moduleTitleFromPath("/search?q=Elena")).toBe("Search");
     expect(moduleTitleFromPath("/alerts")).toBe("Alerts");
+    expect(moduleTitleFromPath("/inbox")).toBe("Inbox");
     expect(moduleTitleFromPath("/phone")).toBe("Phone");
     expect(moduleTitleFromPath("/settings/my-desk")).toBe("Settings");
     expect(moduleTitleFromPath("/quotes")).toBe("Quotes");

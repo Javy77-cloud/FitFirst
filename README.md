@@ -41,6 +41,8 @@ Settings is Setup-style **card groups** (Agency & People, Desk & Phone, Integrat
 
 Calendar chrome is three rows: **Add event | Add company meeting | Add training**, then **Month | Week | Day**, then **Task | Meeting | Call | Email | SMS**. Company meeting and training stay Admin. Month/week/day, drag-drop, type filters, and add-by-type stay as they were.
 
+Nav cleanup: left-nav group is **Accounts** (Contacts + Businesses — not “People”). Sidebar Search is gone; Smart Search stays in the top bar. **Phone** (`/phone`) is a BYO-later setup stub with a dialer that logs outcomes on activities. **Inbox** (`/inbox`, eyebrow Envoys) is a work-email-later stub that shows seeded inbound queue rows.
+
 **Ana Dib HO3** stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
 ## AMS wave 2 (kept)
