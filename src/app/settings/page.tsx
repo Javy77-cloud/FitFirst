@@ -78,6 +78,20 @@ export default async function SettingsPage() {
             </div>
           </Link>
         ) : null}
+        {session.isAdmin ? (
+          <Link
+            href="/settings/developer"
+            className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
+          >
+            <div>
+              <div className="text-sm font-semibold text-navy">Developer Hub</div>
+              <p className="text-xs text-muted-foreground">
+                Functions, org API keys, webhooks, and named connections. Working stubs up to the
+                OAuth wall.
+              </p>
+            </div>
+          </Link>
+        ) : null}
         <Link
           href="/settings/social"
           className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"

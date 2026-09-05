@@ -6,6 +6,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { db } from "@/lib/db";
 import { accounts, contacts, leads } from "@/lib/db/schema";
+import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { replaceEin, replaceSsn } from "@/lib/pii/write";
 
 function str(form: FormData, key: string) {
@@ -53,6 +54,7 @@ export async function updateContactRecord(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(contacts.id, id));
+  await emitDeskEvent("record.updated", { entityType: "contact", entityId: id });
   revalidatePath(`/contacts/${id}`);
   revalidatePath("/contacts");
 }

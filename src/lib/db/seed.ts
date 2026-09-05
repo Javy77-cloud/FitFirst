@@ -62,6 +62,7 @@ import { seedCampaignSequences } from "./seed-campaign-sequences";
 import { seedApiTokens } from "./seed-api-tokens";
 import { seedPolicyDocVersions } from "./seed-versions";
 import { seedClientPortal } from "./seed-portal";
+import { seedDeveloperHub } from "./seed-developer-hub";
 
 type CarrierKey = keyof typeof CARRIER_IDS;
 
@@ -542,4 +543,5 @@ export async function seed() {
   await seedAmsWave4();
   const { seedAmsWave5 } = await import("./seed-ams-wave5");
   await seedAmsWave5();
+  await seedDeveloperHub();
 }

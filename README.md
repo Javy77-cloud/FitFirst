@@ -106,3 +106,30 @@ Do not bind Ana. Her shop stays Quote Sent at Coverage A **$321,000**.
 npm test
 ```
 
+
+## Developer Hub (admin)
+
+Settings → Developer Hub. Working stubs stop at the OAuth wall. No live Zoho writes.
+
+| Route | What it does |
+| --- | --- |
+| `/settings/developer` | Overview + status chips |
+| `/automations` | Same tools as hub cards + Developer tools tabs |
+| `/automations/functions` (also macros, webhooks, api-keys, connections) | Same records, Automations chrome |
+| `/settings/developer/functions` | CRUD + Run test + execution log |
+| `/settings/developer/api-keys` | Create / regenerate / revoke. Secret shown once. |
+| `/settings/developer/webhooks` | Outbound queue + inbound Signals slugs |
+| `/settings/developer/connections` | Named connectors. Authorize is a wall. |
+| `POST /api/dev/functions/[apiName]/execute` | Org API key. Seeded `echo_payload`. |
+| `POST /api/dev/webhooks/inbound/[slug]` | Stores payload + in-app Alert |
+
+Seeded demo org key: `ffk_devhub_demo`.
+
+```bash
+curl -s -X POST http://127.0.0.1:43147/api/dev/functions/echo_payload/execute \
+  -H "Authorization: Bearer ffk_devhub_demo" \
+  -H "Content-Type: application/json" \
+  -d '{"contact":"Elena Ruiz","line":"HO"}'
+```
+
+Tables (all `tenant_id`): `developer_functions`, `developer_function_executions`, `developer_org_api_keys`, `developer_webhooks`, `developer_webhook_deliveries`, `developer_inbound_hooks`, `developer_inbound_payloads`, `developer_connections`.

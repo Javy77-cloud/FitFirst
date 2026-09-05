@@ -54,6 +54,9 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/agents")).toBe(true);
     expect(isAdminOnlyPath("/settings/agents/abc/performance")).toBe(true);
     expect(isAdminOnlyPath("/settings/export")).toBe(true);
+    expect(isAdminOnlyPath("/settings/developer")).toBe(true);
+    expect(isAdminOnlyPath("/settings/developer/functions")).toBe(true);
+    expect(isAdminOnlyPath("/settings/developer/api-keys")).toBe(true);
     expect(isAdminOnlyPath("/logs/fill-learning")).toBe(true);
     expect(isAdminOnlyPath("/compliance")).toBe(true);
     expect(isAdminOnlyPath("/carriers/logs")).toBe(false);
@@ -80,6 +83,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/api/v1")).toBe(true);
     expect(isPublicPath("/api/v1/contacts")).toBe(true);
     expect(isPublicPath("/api/v1/export/contacts.csv")).toBe(true);
+    expect(isPublicPath("/api/dev/functions/echo_payload/execute")).toBe(true);
+    expect(isPublicPath("/api/dev/webhooks/inbound/desk-echo")).toBe(true);
     expect(isPublicPath("/portal")).toBe(true);
     expect(isPublicPath("/portal/elena-ruiz-2026/id-cards")).toBe(true);
     expect(isPublicPath("/api/portal/harbor-key-2026/files/x")).toBe(true);

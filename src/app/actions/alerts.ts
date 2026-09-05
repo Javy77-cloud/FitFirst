@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isDeskUuid } from "@/lib/desk-id";
 import { db } from "@/lib/db";
@@ -91,6 +92,7 @@ export async function createTask(formData: FormData) {
     contactId,
     policyId,
   });
+  await emitDeskEvent("task.due", { title, dueDate: dueDate.toISOString(), dealId, contactId, policyId });
   revalidateTasks({ dealId, contactId, policyId });
 }
 

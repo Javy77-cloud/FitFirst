@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
+import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { reviewTasks } from "@/lib/db/schema";
@@ -25,6 +26,10 @@ export async function createReviewTask(formData: FormData) {
     accountId: str(formData, "accountId") || null,
     policyId: str(formData, "policyId") || null,
     dealId: str(formData, "dealId") || null,
+  });
+  await emitDeskEvent("task.due", {
+    title,
+    dueDate: new Date(`${dueRaw}T16:00:00.000Z`).toISOString(),
   });
   revalidatePath("/tasks");
   redirect("/tasks");

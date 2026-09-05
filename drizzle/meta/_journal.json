@@ -379,6 +379,13 @@
       "when": 1788558300000,
       "tag": "0053_in_desk_esign",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1788558400000,
+      "tag": "0054_developer_hub",
+      "breakpoints": true
     }
   ]
 }
