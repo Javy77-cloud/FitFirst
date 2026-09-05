@@ -21,7 +21,7 @@ export function SettingsShell({
   return (
     <AppShell title={title} eyebrow={eyebrow} actions={actions} allowMfaPending={allowMfaPending}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <SettingsNav current={current} />
+        {current === "overview" ? null : <SettingsNav current={current} />}
         <div className="min-w-0 flex-1">{children}</div>
       </div>
     </AppShell>

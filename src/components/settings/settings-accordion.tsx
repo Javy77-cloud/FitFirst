@@ -83,7 +83,7 @@ export function SettingsAccordion({ initial = "phone" }: { initial?: string }) {
       {SECTIONS.map((section) => {
         const open = openId === section.id;
         return (
-          <section key={section.id} className="ff-card overflow-hidden">
+          <section key={section.id} id={section.id} className="ff-card overflow-hidden scroll-mt-4">
             <button
               type="button"
               aria-expanded={open}

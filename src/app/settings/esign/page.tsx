@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { disconnectEsignStub, saveEsignStub } from "@/app/actions/esign-settings";
-import { AppShell } from "@/components/app-shell";
-import { SettingsSubnav } from "@/components/templates/email-activity";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,8 +25,7 @@ export default async function EsignSettingsPage({
   const provider = settings?.provider ?? "none";
 
   return (
-    <AppShell title="E-sign">
-      <SettingsSubnav current="esign" />
+    <SettingsShell title="E-sign" current="esign">
       {!session.isAdmin ? (
         <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Connecting DocuSign or Dropbox Sign is Admin-only. Agents still attach signed apps on
@@ -108,6 +106,6 @@ export default async function EsignSettingsPage({
           Open e-sign envelopes
         </Link>
       </p>
-    </AppShell>
+    </SettingsShell>
   );
 }

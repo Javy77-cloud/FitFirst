@@ -11,7 +11,7 @@ export default async function EmailSettingsPage() {
   const inboxes = items.filter((item) => item.category === "email");
 
   return (
-    <SettingsShell title="Email">
+    <SettingsShell title="Email" current="email">
       <p className="mb-4 text-sm text-muted-foreground">
         Client mail goes through the agency inbox. Connect Gmail, Outlook, or Yahoo as a stub.
         Templates and signatures are written once for the agency.

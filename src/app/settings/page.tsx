@@ -3,6 +3,7 @@ import { saveAgencyBrand, saveEmailTemplate, uploadAgencyLogo } from "@/app/acti
 import { saveCommissionRate } from "@/app/actions/pipeline-admin";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SettingsAccordion } from "@/components/settings/settings-accordion";
+import { SettingsHomeCards } from "@/components/settings/settings-home-cards";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
@@ -18,28 +19,37 @@ import { TELEPHONY_PROVIDER_LABEL, type TelephonyProvider } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requireSignedIn();
-  const [brand, templates, triggers, telephony, catalog] = await Promise.all([
+  const [brand, templates, triggers, telephony, catalog, query] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),
     listEmailTriggers(),
     getTelephonySettings(),
     listCatalogItems(),
+    searchParams,
   ]);
   const catalogConnected = catalog.some((item) => item.connected);
   const provider = (telephony?.provider ?? "none") as TelephonyProvider;
+  const section = typeof query.section === "string" ? query.section : "phone";
 
   return (
     <SettingsShell title="Settings" current="overview">
-      <div className="mb-4">
-        <SettingsAccordion />
-      </div>
       <p className="mb-4 text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Admin settings change the agency. Agent settings change only this desk. Use the left menu: Communications, Integrations, Lines / lists, Brand, then Admin vs Agent prefs."
+          ? "Admin settings change the agency. Agent settings change only this desk. Open a Setup card — Agency & People, Desk & Phone, Connect, Automations, Security, or Billing."
           : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
+      <div className="mb-6">
+        <SettingsHomeCards />
+      </div>
+      <div className="mb-4" id="settings-sections">
+        <SettingsAccordion initial={section} />
+      </div>
       <Link
         href="/automations"
         className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 hover:border-primary/40"
