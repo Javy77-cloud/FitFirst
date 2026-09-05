@@ -901,6 +901,8 @@ AMS:
 - `cursor/ams-desk-polish-5344` (bc-406eb30f deeper AMS polish)
 - `cursor/ams-wave6-depth-1040` → `0060_ams_wave6`
 - `cursor/ams-wave7-depth-34d6` → `0061_ams_wave7` (sibling `cursor/ams-wave7-depth-da3a` not deleted)
+- `cursor/ams-wave8-depth-6481` → `0062_ams_wave8` (this AMS wave 9 session)
+- `cursor/ams-wave9-depth-de2e` → `0063_ams_wave9`
 
 CRM / Quote / function:
 - `cursor/quote-sheet-fill-appetite-6178`
@@ -983,4 +985,41 @@ Click path:
 3. `/claims` → Elena wind inquiry → open docs diary. `/claims/diary` lists it. Completing does not file FNOL.
 4. `/endorsements` — Elena drafted mortgagee stub. `/book-health?owner=` filters missing docs. Settings → IVANS / AL3 still **Not connected**.
 
-Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0062**.
+Sidebar stays `#1d4e89`. One Pipeline nav row. Wave 8 remapped to **0062**. Wave 9 is **0063**. Next free additive migration is **0064**.
+
+## AMS wave 8 — desk depth (`cursor/ams-wave8-depth-6481`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. Wave 2–7 surfaces stay.
+
+Incoming `0053_ams_wave8` remapped to `0062_ams_wave8`:
+
+- Service timeline reads existing `activity_logs` for AMS servicing events. Board is `/service-timeline`. Policy 360 has the same log plus a servicing note that writes `service_note`. Notes do **not** file and do not bind. Elena seed is a CSR note on the in-progress endorsement.
+- `certificate_holder_contacts` — name / email / phone / address CRUD. Archive does not issue or withdraw a stub. `certificate_requests.holder_contact_id` links Brevard to the open Harbor COI. Palm Bay is the issued-stub contact.
+- `renewal_queue` — upcoming / quoting / offered / accepted / lost. Accept does **not** bind and does not change Policy status. Hale seed is quoting; Nair is upcoming. No rater.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open (watch). Term history prior + current. Loss-run CSV. CSR endorsement **in progress** plus drafted mortgagee wording. Service timeline shows the CSR note. Do not file. Do not bind Ana.
+2. Policy **HP-FL-88421** — auto ID (stale) + AOR (aging) suspense. Drafted non-renew notice. Producer endorsement **requested**. Renewal queue **quoting**. Do not file, mail, or accept.
+3. `/certificates/holders` — Palm Bay + Brevard contacts with email/phone. Edit/archive does not issue a COI. `/renewals/queue` — Hale quoting, Nair upcoming.
+4. `/service-timeline` — Elena note + Hale queue move. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row.
+
+## AMS wave 9 — desk depth (`cursor/ams-wave9-depth-de2e`)
+
+Owner: AMS. Function first. Did not redesign chrome. Did not edit `src/lib/fixtures/ana-dib-ho3-2026-09-02.json`. Ana stays shopping / unbound / Cov A **$321,000**. Did not file or cancel Elena `HO3-ELENA-2026` or Hale `HP-FL-88421`. IVANS / AL3 stay **Not connected**. No fake fees. No carrier claims API. No licensed ACORD. No Stripe. Wave 2–8 surfaces stay.
+
+Additive `0063_ams_wave9` after remapped wave 8:
+
+- `policy_inspections` — 4-point / wind mit / roof / photo. requested → scheduled → completed / waived. Completing does **not** call `filePolicyChange`. Board is `/inspections`. Elena seed is a scheduled roof; Hale is a requested wind mit.
+- `policy_installments` — agency bill / direct bill. scheduled → due → received / past_due / waived. Marking received does **not** collect money and does not change Policy status. Board is `/installments`. Elena seed is a scheduled October installment; Hale is past-due August.
+
+Click path:
+
+1. Policy **HO3-ELENA-2026** — AOR suspense still open (watch). CSR endorsement **in progress**. Scheduled roof inspection. October agency-bill installment. Service timeline shows the note + inspection + installment. Do not file. Do not bind Ana.
+2. Policy **HP-FL-88421** — auto ID (stale) + AOR (aging). Drafted non-renew. Renewal queue **quoting**. Requested wind mit. Past-due August installment. Do not file, mail, accept, or mark received.
+3. `/inspections` — Elena roof scheduled; Hale wind mit requested. Completing does not file.
+4. `/installments` — Elena October scheduled; Hale August past due. Settings → IVANS / AL3 still **Not connected**.
+
+Sidebar stays `#1d4e89`. One Pipeline nav row. Next free additive migration is **0064**.

@@ -63,6 +63,19 @@ describe("desk nav chrome", () => {
     expect(hrefs).not.toContain("/alerts");
   });
 
+  it("adds Service timeline, Inspections, and Installments without a second Pipeline or Alerts row", () => {
+    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    expect(labels).toContain("Service timeline");
+    expect(labels).toContain("Inspections");
+    expect(labels).toContain("Installments");
+    expect(hrefs).toContain("/service-timeline");
+    expect(hrefs).toContain("/inspections");
+    expect(hrefs).toContain("/installments");
+    expect(labels.filter((label) => label === "Pipeline")).toHaveLength(1);
+    expect(hrefs).not.toContain("/alerts");
+  });
+
   it("uses Documents instead of Forms on the left nav", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);

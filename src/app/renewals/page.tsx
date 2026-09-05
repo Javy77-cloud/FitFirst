@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { createRenewalFollowup } from "@/app/actions/ams";
+import { createRenewalFollowup, enqueueRenewal } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatDeltaPct, formatSignedMoney } from "@/lib/renewal/compare";
 import { loadRenewalPipeline } from "@/lib/ams/queries";
+import { renewalQueueStageLabel } from "@/lib/domain-ams";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +24,13 @@ export default async function RenewalsPage({
     <AppShell title="Renewals">
       <p className="mb-3 text-base text-muted-foreground">
         90 / 60 / 30 desk queue tied to Policy expiration. Follow-up creates a Task and an
-        in-app Alert — no email to Javy, no rater. Quotes are not renewals.
+        in-app Alert — no email to Javy, no rater. The renewal queue is a stage stub and does not bind.
       </p>
       <p className="mb-3 text-sm">
+        <Link href="/renewals/queue" className="text-primary hover:underline">
+          Renewal queue
+        </Link>
+        {" · "}
         <Link href="/book-health" className="text-primary hover:underline">
           Book health
         </Link>
@@ -42,6 +47,12 @@ export default async function RenewalsPage({
       ) : null}
       {notice === "followup_exists" ? (
         <p className="mb-3 text-sm text-muted-foreground">A renewal follow-up is already open.</p>
+      ) : null}
+      {notice === "queued" ? (
+        <p className="mb-3 text-sm text-navy">Added to the renewal queue as upcoming.</p>
+      ) : null}
+      {notice === "already_queued" ? (
+        <p className="mb-3 text-sm text-muted-foreground">Already on the renewal queue.</p>
       ) : null}
 
       <RenewalBucket
@@ -95,6 +106,7 @@ function RenewalBucket({
               <th>Current</th>
               <th>Proposed</th>
               <th>Delta</th>
+              <th>Queue</th>
               <th></th>
             </tr>
           </thead>
@@ -118,6 +130,20 @@ function RenewalBucket({
                       {formatSignedMoney(row.delta)}{" "}
                       <span className="text-muted-foreground">{formatDeltaPct(row.pct)}</span>
                     </>
+                  )}
+                </td>
+                <td>
+                  {row.queue ? (
+                    <Link href="/renewals/queue" className="text-sm text-primary hover:underline">
+                      {renewalQueueStageLabel(row.queue.stage)}
+                    </Link>
+                  ) : (
+                    <form action={enqueueRenewal} className="inline">
+                      <input type="hidden" name="policyId" value={row.id} />
+                      <Button type="submit" size="sm" variant="secondary">
+                        Queue
+                      </Button>
+                    </form>
                   )}
                 </td>
                 <td className="space-x-2 whitespace-nowrap">

@@ -634,6 +634,257 @@ export function suspenseAgeLabel(bucket: string): string {
   return isSuspenseAgeBucket(bucket) ? SUSPENSE_AGE_LABELS[bucket] : bucket.replaceAll("_", " ");
 }
 
+export const SERVICE_TIMELINE_EVENTS = [
+  "service_requested",
+  "service_start",
+  "service_file",
+  "service_withdraw",
+  "service_note",
+  "coi_requested",
+  "coi_issued",
+  "renewal_followup",
+  "renewal_queue_moved",
+  "packet_task",
+  "interest_added",
+  "interest_removed",
+  "holder_contact_saved",
+  "holder_contact_archived",
+  "suspense_closed",
+  "notice_drafted",
+  "notice_mailed",
+  "notice_withdrawn",
+  "endorsement_drafted",
+  "endorsement_draft_ready",
+  "endorsement_draft_withdrawn",
+  "inspection_requested",
+  "inspection_scheduled",
+  "inspection_completed",
+  "inspection_waived",
+  "installment_scheduled",
+  "installment_due",
+  "installment_received",
+  "installment_past_due",
+  "installment_waived",
+] as const;
+export type ServiceTimelineEvent = (typeof SERVICE_TIMELINE_EVENTS)[number];
+
+export const SERVICE_TIMELINE_EVENT_LABELS: Record<ServiceTimelineEvent, string> = {
+  service_requested: "Service requested",
+  service_start: "Service started",
+  service_file: "Service filed",
+  service_withdraw: "Service withdrawn",
+  service_note: "Servicing note",
+  coi_requested: "COI requested",
+  coi_issued: "COI stub issued",
+  renewal_followup: "Renewal follow-up",
+  renewal_queue_moved: "Renewal queue",
+  packet_task: "Packet task",
+  interest_added: "Interest added",
+  interest_removed: "Interest removed",
+  holder_contact_saved: "Holder contact saved",
+  holder_contact_archived: "Holder contact archived",
+  suspense_closed: "Suspense collected",
+  notice_drafted: "Notice drafted",
+  notice_mailed: "Notice mailed",
+  notice_withdrawn: "Notice withdrawn",
+  endorsement_drafted: "Endorsement drafted",
+  endorsement_draft_ready: "Endorsement ready",
+  endorsement_draft_withdrawn: "Endorsement withdrawn",
+  inspection_requested: "Inspection requested",
+  inspection_scheduled: "Inspection scheduled",
+  inspection_completed: "Inspection completed",
+  inspection_waived: "Inspection waived",
+  installment_scheduled: "Installment scheduled",
+  installment_due: "Installment due",
+  installment_received: "Installment received",
+  installment_past_due: "Installment past due",
+  installment_waived: "Installment waived",
+};
+
+export function isServiceTimelineEvent(value: string): value is ServiceTimelineEvent {
+  return (SERVICE_TIMELINE_EVENTS as readonly string[]).includes(value);
+}
+
+export function serviceTimelineEventLabel(eventType: string): string {
+  return isServiceTimelineEvent(eventType)
+    ? SERVICE_TIMELINE_EVENT_LABELS[eventType]
+    : eventType.replaceAll("_", " ");
+}
+
+export const SERVICE_TIMELINE_DISCLAIMER =
+  "Service timeline reads the activity log on this Policy. A servicing note does not file a change and does not bind.";
+
+export const HOLDER_CONTACT_STATUSES = ["active", "archived"] as const;
+export type HolderContactStatus = (typeof HOLDER_CONTACT_STATUSES)[number];
+
+export const HOLDER_CONTACT_STATUS_LABELS: Record<HolderContactStatus, string> = {
+  active: "Active",
+  archived: "Archived",
+};
+
+export function isHolderContactStatus(value: string): value is HolderContactStatus {
+  return (HOLDER_CONTACT_STATUSES as readonly string[]).includes(value);
+}
+
+export function holderContactStatusLabel(status: string): string {
+  return isHolderContactStatus(status)
+    ? HOLDER_CONTACT_STATUS_LABELS[status]
+    : status.replaceAll("_", " ");
+}
+
+export const HOLDER_CONTACT_DISCLAIMER =
+  "Holder contacts are desk records only. Saving or archiving a contact does not issue a COI and does not file an endorsement.";
+
+export const RENEWAL_QUEUE_STAGES = [
+  "upcoming",
+  "quoting",
+  "offered",
+  "accepted",
+  "lost",
+] as const;
+export type RenewalQueueStage = (typeof RENEWAL_QUEUE_STAGES)[number];
+
+export const RENEWAL_QUEUE_STAGE_LABELS: Record<RenewalQueueStage, string> = {
+  upcoming: "Upcoming",
+  quoting: "Quoting",
+  offered: "Offered",
+  accepted: "Accepted (stub)",
+  lost: "Lost",
+};
+
+export function isRenewalQueueStage(value: string): value is RenewalQueueStage {
+  return (RENEWAL_QUEUE_STAGES as readonly string[]).includes(value);
+}
+
+export function renewalQueueStageLabel(stage: string): string {
+  return isRenewalQueueStage(stage)
+    ? RENEWAL_QUEUE_STAGE_LABELS[stage]
+    : stage.replaceAll("_", " ");
+}
+
+export const RENEWAL_QUEUE_NEXT_STEPS: Record<RenewalQueueStage, string> = {
+  upcoming: "On the renewal list. Move to quoting when you start the market check — no rater.",
+  quoting: "Desk quoting stub. Compare current vs proposed on the Policy. Does not bind.",
+  offered: "Proposal logged in-desk. Accept does not write a new Policy.",
+  accepted: "Stub only. The same Policy stays in force. No bind from this queue.",
+  lost: "Logged as lost. Policy status stays as-is.",
+};
+
+export function renewalQueueNextStep(stage: string): string {
+  return isRenewalQueueStage(stage) ? RENEWAL_QUEUE_NEXT_STEPS[stage] : "";
+}
+
+export const RENEWAL_QUEUE_DISCLAIMER =
+  "Renewal pipeline queue stub only. Moving a card does not bind, rewrite, or cancel the Policy. No rater. Quotes are not Policies.";
+
+export const INSPECTION_KINDS = ["four_point", "wind_mit", "roof", "photo"] as const;
+export type InspectionKind = (typeof INSPECTION_KINDS)[number];
+
+export const INSPECTION_KIND_LABELS: Record<InspectionKind, string> = {
+  four_point: "4-point",
+  wind_mit: "Wind mitigation",
+  roof: "Roof",
+  photo: "Photo / site",
+};
+
+export const INSPECTION_STATUSES = ["requested", "scheduled", "completed", "waived"] as const;
+export type InspectionStatus = (typeof INSPECTION_STATUSES)[number];
+
+export const INSPECTION_STATUS_LABELS: Record<InspectionStatus, string> = {
+  requested: "Requested",
+  scheduled: "Scheduled",
+  completed: "Completed",
+  waived: "Waived",
+};
+
+export function isInspectionKind(value: string): value is InspectionKind {
+  return (INSPECTION_KINDS as readonly string[]).includes(value);
+}
+
+export function isInspectionStatus(value: string): value is InspectionStatus {
+  return (INSPECTION_STATUSES as readonly string[]).includes(value);
+}
+
+export function inspectionKindLabel(kind: string): string {
+  return isInspectionKind(kind) ? INSPECTION_KIND_LABELS[kind] : kind.replaceAll("_", " ");
+}
+
+export function inspectionStatusLabel(status: string): string {
+  return isInspectionStatus(status) ? INSPECTION_STATUS_LABELS[status] : status.replaceAll("_", " ");
+}
+
+export const INSPECTION_NEXT_STEPS: Record<InspectionStatus, string> = {
+  requested: "Queued. Schedule when the vendor is booked. Does not file an endorsement.",
+  scheduled: "On the calendar. Complete or waive after the visit. Policy stays in force.",
+  completed: "Logged complete. Upload the report on the Deal or Policy files — this diary does not file.",
+  waived: "Waived. Policy unchanged.",
+};
+
+export function inspectionNextStep(status: string): string {
+  return isInspectionStatus(status) ? INSPECTION_NEXT_STEPS[status] : "";
+}
+
+export const INSPECTION_DISCLAIMER =
+  "Inspection diary only. Scheduling, completing, or waiving does not file an endorsement and does not bind.";
+
+export const BILL_TYPES = ["agency_bill", "direct_bill"] as const;
+export type BillType = (typeof BILL_TYPES)[number];
+
+export const BILL_TYPE_LABELS: Record<BillType, string> = {
+  agency_bill: "Agency bill",
+  direct_bill: "Direct bill",
+};
+
+export const INSTALLMENT_STATUSES = [
+  "scheduled",
+  "due",
+  "received",
+  "past_due",
+  "waived",
+] as const;
+export type InstallmentStatus = (typeof INSTALLMENT_STATUSES)[number];
+
+export const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
+  scheduled: "Scheduled",
+  due: "Due",
+  received: "Received (stub)",
+  past_due: "Past due",
+  waived: "Waived",
+};
+
+export function isBillType(value: string): value is BillType {
+  return (BILL_TYPES as readonly string[]).includes(value);
+}
+
+export function isInstallmentStatus(value: string): value is InstallmentStatus {
+  return (INSTALLMENT_STATUSES as readonly string[]).includes(value);
+}
+
+export function billTypeLabel(value: string): string {
+  return isBillType(value) ? BILL_TYPE_LABELS[value] : value.replaceAll("_", " ");
+}
+
+export function installmentStatusLabel(status: string): string {
+  return isInstallmentStatus(status)
+    ? INSTALLMENT_STATUS_LABELS[status]
+    : status.replaceAll("_", " ");
+}
+
+export const INSTALLMENT_NEXT_STEPS: Record<InstallmentStatus, string> = {
+  scheduled: "On the installment diary. Mark due when the carrier statement posts. No Stripe.",
+  due: "Owed on the desk diary. Mark received after the carrier or insured pays — this does not collect.",
+  received: "Logged as received. No money moved. Policy status stays as-is.",
+  past_due: "Past due on the diary. Follow up in-desk. Does not cancel the Policy.",
+  waived: "Waived. Policy unchanged.",
+};
+
+export function installmentNextStep(status: string): string {
+  return isInstallmentStatus(status) ? INSTALLMENT_NEXT_STEPS[status] : "";
+}
+
+export const INSTALLMENT_DISCLAIMER =
+  "Installment diary only. Marking received does not collect a payment, does not talk to Stripe, and does not change Policy status.";
+
 export function isInterestKind(value: string): value is InterestKind {
   return (INTEREST_KINDS as readonly string[]).includes(value);
 }

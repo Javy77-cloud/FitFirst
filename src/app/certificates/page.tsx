@@ -8,7 +8,7 @@ import { formatDay } from "@/lib/domain";
 import { certificateFlagLabels } from "@/lib/ams/certificate-holders";
 import { ACORD_STUB_DISCLAIMER } from "@/lib/ams/coi-requests";
 import { certificateRequestStatusLabel } from "@/lib/domain-ams";
-import { listAccountInterests, listCertificateQueue } from "@/lib/ams/queries";
+import { listAccountInterests, listCertificateQueue, listHolderContacts } from "@/lib/ams/queries";
 import { HARBOR_ACCOUNT_ID, HARBOR_POLICY_ID } from "@/lib/fixtures/ids";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +19,10 @@ export default async function CertificatesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const [{ requests, issued }, harborInterests] = await Promise.all([
+  const [{ requests, issued }, harborInterests, holderContacts] = await Promise.all([
     listCertificateQueue(),
     listAccountInterests(HARBOR_ACCOUNT_ID),
+    listHolderContacts("active"),
   ]);
   const error = typeof params.error === "string" ? params.error : undefined;
   const notice = typeof params.notice === "string" ? params.notice : undefined;
@@ -57,6 +58,7 @@ export default async function CertificatesPage({
             canRequest
             error={error}
             interests={harborInterests.map(({ interest }) => interest)}
+            holderContacts={holderContacts.map(({ contact }) => contact)}
           />
         </section>
         <section className="ff-card overflow-hidden">

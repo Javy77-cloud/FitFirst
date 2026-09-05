@@ -72,6 +72,11 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/endorsements", "/endorsements")).toBe(true);
     expect(navItemIsActive("/claims/diary", "/claims")).toBe(true);
     expect(navItemIsActive("/endorsements", "/notices")).toBe(false);
+    expect(navItemIsActive("/service-timeline", "/service-timeline")).toBe(true);
+    expect(navItemIsActive("/renewals/queue", "/renewals")).toBe(true);
+    expect(navItemIsActive("/inspections", "/inspections")).toBe(true);
+    expect(navItemIsActive("/installments", "/installments")).toBe(true);
+    expect(navItemIsActive("/installments", "/settings/billing")).toBe(false);
   });
 
   it("highlights Certificates on the holder directory", () => {

@@ -108,15 +108,32 @@ Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 
 - **Suspense aging** — days-open buckets on `/suspense` (current / watch / aging / stale) from the desk clock. Elena AOR is watch; Hale AOR is aging; Hale ID is stale.
 - **Producer book filters** — click a producer on `/book-health?owner=` to filter missing packets. Agency totals stay.
 
-Wave 6/7 SQL remapped to `0060_ams_wave6` and `0061_ams_wave7` on this tip.
+Wave 6/7 SQL remapped to `0060_ams_wave6` and `0061_ams_wave7` on this tip. Wave 8 remapped to `0062_ams_wave8`. Wave 9 is `0063_ams_wave9`.
+
+## AMS wave 8 (kept)
+
+Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 2–7 surfaces stay.
+
+- **Service timeline** (`/service-timeline` + Policy 360) — activity log filtered to servicing events. A servicing note writes the log and does **not** file or bind. Elena has a CSR note.
+- **Certificate holder contacts** (`/certificates/holders`) — add / edit / archive name, email, phone, address. Saving does **not** issue a COI. Palm Bay and Brevard are seeded; Brevard is linked to the open Harbor request.
+- **Renewal pipeline queue** (`/renewals/queue`) — upcoming → quoting → offered → accepted / lost. **Does not bind** and does not change the Policy. Hale is quoting; Nair is upcoming. No rater.
+
+Incoming `0053_ams_wave8` remapped to `0062_ams_wave8` on this tip.
+
+## AMS wave 9 (this branch)
+
+Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 2–8 surfaces stay.
+
+- **Inspection diary** (`/inspections` + Policy 360) — 4-point / wind mit / roof / photo. requested → scheduled → completed / waived. Completing does **not** file. Elena roof is scheduled; Hale wind mit is requested.
+- **Installment diary** (`/installments` + Policy 360) — agency bill / direct bill. scheduled → due → received / past due / waived. Marking received does **not** collect (no Stripe) and does not change Policy status. Elena October is scheduled; Hale August is past due.
 
 ## Localhost :43147 notes
 
 After `npm run db:migrate && npm run db:seed` and `npm run dev`:
 
 1. Sign in as **javy@fitfirst.local** / **javy**.
-2. Open Elena Policy — AOR suspense still open, prior + current terms, loss-run CSV, CSR endorsement **in progress**, drafted mortgagee wording stub. Do not file. Do not bind Ana.
-3. Open Hale Policy — ID + AOR suspense auto-opened, producer endorsement **requested**, drafted non-renew notice. Do not file, mail, or cancel.
+2. Open Elena Policy — AOR suspense still open, prior + current terms, loss-run CSV, CSR endorsement **in progress**, drafted mortgagee wording stub, service timeline note, scheduled roof inspection, October installment. Do not file. Do not bind Ana.
+3. Open Hale Policy — ID + AOR suspense auto-opened, producer endorsement **requested**, drafted non-renew notice, renewal queue **quoting**, requested wind mit, past-due August installment. Do not file, mail, or cancel.
 4. Harbor Policy / `/certificates` — Brevard AI on the open request; Palm Bay issued stub shows additional insured + wording + waiver + PNC. `/certificates/holders` lists both.
 5. `/suspense` — Elena AOR (watch), Hale AOR (aging), Hale ID (stale). `/suspense?doc=aor` hides ID cards. `/suspense?age=stale` is Hale ID.
 6. `/notices` — Hale drafted non-renew. Do not mark mailed to “prove” a cancel.
@@ -124,7 +141,10 @@ After `npm run db:migrate && npm run db:seed` and `npm run dev`:
 8. `/service-requests?desk=csr` — Elena. `?desk=producer` — Hale.
 9. `/book-health` — agency + producer rollups; click a producer name to filter missing docs. Elena AOR and Hale packet still in missing docs.
 10. `/claims` — FNOL pipeline. Elena wind inquiry diary is open. `/claims/diary` lists it. Camila water has a completed carrier-status row.
-11. Settings → IVANS / AL3 still **Not connected**.
+11. `/service-timeline` — Elena servicing note + Hale queue move + inspection / installment diary. `/renewals/queue` — Hale quoting, Nair upcoming. Do not mark accepted to “prove” a bind.
+12. `/inspections` — Elena roof scheduled; Hale wind mit requested. Do not mark complete to “prove” a file.
+13. `/installments` — Elena October scheduled; Hale August past due. Do not mark received to “prove” a payment.
+14. Settings → IVANS / AL3 still **Not connected**.
 
 ## In-desk e-sign stub (kept)
 

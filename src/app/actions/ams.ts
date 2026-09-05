@@ -12,14 +12,18 @@ import {
   activityLogs,
   alerts,
   carrierDownloadConnections,
+  certificateHolderContacts,
   certificateRequests,
   issuedCertificates,
   endorsementDrafts,
   policyAdditionalInterests,
   policyServiceRequestEvents,
+  policyInspections,
+  policyInstallments,
   policyNotices,
   policyServiceRequests,
   policyServicingChecks,
+  renewalQueue,
   reviewTasks,
   tenants,
 } from "@/lib/db/schema";
@@ -64,7 +68,12 @@ import { ensureWorkItem, setWorkStatus, toggleWorkFlag } from "@/lib/work-queue/
 import {
   getCertificateRequest,
   getEndorsementDraft,
+  getHolderContact,
+  getPolicyInspection,
+  getPolicyInstallment,
   getPolicyNotice,
+  getRenewalQueue,
+  getRenewalQueueForPolicy,
   getServiceRequest,
   loadPolicyServicing,
 } from "@/lib/ams/queries";
@@ -76,6 +85,30 @@ import {
 import { attemptCarrierDownload } from "@/lib/ams/carrier-download";
 import { buildCertificateDraft, nextCertificateNumber } from "@/lib/certificates/issue";
 import { renewalFollowupBody, renewalFollowupTitle } from "@/lib/ams/renewals";
+import { serviceNoteTitle, validateServiceNote } from "@/lib/ams/service-timeline";
+import { validateHolderContact } from "@/lib/ams/holder-contacts";
+import {
+  nextRenewalQueueStage,
+  renewalQueueLine,
+  type RenewalQueueAction,
+} from "@/lib/ams/renewal-queue";
+import {
+  inspectionLine,
+  nextInspectionStatus,
+  validateInspectionDraft,
+  type InspectionAction,
+} from "@/lib/ams/inspections";
+import {
+  installmentLine,
+  nextInstallmentStatus,
+  validateInstallmentDraft,
+  type InstallmentAction,
+} from "@/lib/ams/installments";
+import {
+  isInspectionStatus,
+  isInstallmentStatus,
+  isRenewalQueueStage,
+} from "@/lib/domain-ams";
 import type { PolicyChangeKind } from "@/lib/policy/status";
 import type { CarrierDownloadProvider } from "@/lib/domain-ams";
 
@@ -192,6 +225,10 @@ function refreshPolicy(policyId: string, extras: string[] = []) {
   revalidatePath("/claims/diary");
   revalidatePath("/certificates");
   revalidatePath("/certificates/holders");
+  revalidatePath("/service-timeline");
+  revalidatePath("/renewals/queue");
+  revalidatePath("/inspections");
+  revalidatePath("/installments");
   revalidatePath("/");
   for (const path of extras) revalidatePath(path);
 }
@@ -404,6 +441,15 @@ export async function createCertificateRequest(formData: FormData) {
   const actor = await actorName();
   const policyId = isUuid(str(formData, "policyId")) ? str(formData, "policyId") : null;
   let interestId = isUuid(str(formData, "interestId")) ? str(formData, "interestId") : null;
+  const holderContactId = isUuid(str(formData, "holderContactId"))
+    ? str(formData, "holderContactId")
+    : null;
+  if (holderContactId) {
+    const loadedHolder = await getHolderContact(holderContactId);
+    if (!loadedHolder || loadedHolder.contact.status !== "active") {
+      bounce(returnTo, "That holder contact is not on file.");
+    }
+  }
   let additionalInsured = parsed.additionalInsured;
   if (interestId) {
     const [interest] = await db
@@ -459,6 +505,7 @@ export async function createCertificateRequest(formData: FormData) {
     specialWording: parsed.specialWording,
     waiverOfSubrogation: flags.waiverOfSubrogation,
     primaryNoncontributory: flags.primaryNoncontributory,
+    holderContactId,
   });
   await writeServicingLog({
     title: `COI requested · ${parsed.holderName}`,
@@ -1178,5 +1225,374 @@ export async function advanceEndorsementDraft(formData: FormData) {
     undefined,
     next,
   );
+}
+
+export async function addServiceNote(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const returnTo = str(formData, "returnTo") || (isUuid(policyId) ? `/policies/${policyId}` : "/service-timeline");
+  if (!isUuid(policyId)) bounce(returnTo, "Policy is required.");
+  const parsed = validateServiceNote(str(formData, "body"));
+  if (!parsed.ok) bounce(returnTo, parsed.error);
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(returnTo, "Policy not found.");
+  await writeServicingLog({
+    title: serviceNoteTitle(workspace.policy.policyNumber),
+    body: parsed.body,
+    eventType: "service_note",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/service-timeline"]);
+  bounce(returnTo.includes("/service-timeline") ? "/service-timeline" : `/policies/${policyId}`, undefined, "note_logged");
+}
+
+export async function saveHolderContact(formData: FormData) {
+  const contactId = str(formData, "contactId");
+  const accountId = isUuid(str(formData, "accountId")) ? str(formData, "accountId") : null;
+  const parsed = validateHolderContact({
+    name: str(formData, "name"),
+    email: str(formData, "email"),
+    phone: str(formData, "phone"),
+    address: str(formData, "address"),
+    city: str(formData, "city"),
+    state: str(formData, "state"),
+    zip: str(formData, "zip"),
+    notes: str(formData, "notes"),
+  });
+  if (!parsed.ok) bounce("/certificates/holders", parsed.error);
+  if (contactId) {
+    if (!isUuid(contactId)) bounce("/certificates/holders", "Holder contact not found.");
+    const existing = await getHolderContact(contactId);
+    if (!existing) bounce("/certificates/holders", "Holder contact not found.");
+    await db
+      .update(certificateHolderContacts)
+      .set({
+        accountId,
+        name: parsed.name,
+        email: parsed.email,
+        phone: parsed.phone,
+        address: parsed.address,
+        city: parsed.city,
+        state: parsed.state,
+        zip: parsed.zip,
+        notes: parsed.notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(certificateHolderContacts.id, contactId));
+    await writeServicingLog({
+      title: `Holder contact updated · ${parsed.name}`,
+      body: `${parsed.name} contact saved. ${HOLDER_CONTACT_NOTE}`,
+      eventType: "holder_contact_saved",
+      accountId,
+    });
+    revalidatePath("/certificates/holders");
+    revalidatePath("/certificates");
+    revalidatePath("/book-health");
+    bounce("/certificates/holders", undefined, "holder_updated");
+  }
+  const [row] = await db
+    .insert(certificateHolderContacts)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      accountId,
+      name: parsed.name,
+      email: parsed.email,
+      phone: parsed.phone,
+      address: parsed.address,
+      city: parsed.city,
+      state: parsed.state,
+      zip: parsed.zip,
+      notes: parsed.notes,
+      status: "active",
+    })
+    .returning();
+  await writeServicingLog({
+    title: `Holder contact added · ${row.name}`,
+    body: `${row.name} added as a certificate holder contact. ${HOLDER_CONTACT_NOTE}`,
+    eventType: "holder_contact_saved",
+    accountId,
+  });
+  revalidatePath("/certificates/holders");
+  revalidatePath("/certificates");
+  revalidatePath("/book-health");
+  bounce("/certificates/holders", undefined, "holder_saved");
+}
+
+export async function archiveHolderContact(formData: FormData) {
+  const contactId = str(formData, "contactId");
+  if (!isUuid(contactId)) bounce("/certificates/holders", "Holder contact not found.");
+  const existing = await getHolderContact(contactId);
+  if (!existing) bounce("/certificates/holders", "Holder contact not found.");
+  await db
+    .update(certificateHolderContacts)
+    .set({ status: "archived", updatedAt: new Date() })
+    .where(eq(certificateHolderContacts.id, contactId));
+  await writeServicingLog({
+    title: `Holder contact archived · ${existing.contact.name}`,
+    body: `${existing.contact.name} archived. Open COI requests stay. Does not issue or withdraw a stub.`,
+    eventType: "holder_contact_archived",
+    accountId: existing.contact.accountId,
+  });
+  revalidatePath("/certificates/holders");
+  revalidatePath("/certificates");
+  revalidatePath("/book-health");
+  bounce("/certificates/holders", undefined, "holder_archived");
+}
+
+export async function enqueueRenewal(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  if (!isUuid(policyId)) bounce("/renewals/queue", "Policy is required.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce("/renewals/queue", "Policy not found.");
+  const existing = await getRenewalQueueForPolicy(policyId);
+  if (existing) bounce("/renewals/queue", undefined, "already_queued");
+  const [row] = await db
+    .insert(renewalQueue)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      stage: "upcoming",
+      notes: str(formData, "notes") || "Queued from the renewal list. Desk stub only.",
+    })
+    .returning();
+  await writeServicingLog({
+    title: renewalQueueLine(workspace.policy.policyNumber, row.stage),
+    body: `${workspace.policy.policyNumber} added to the renewal queue as upcoming. Does not bind. No rater.`,
+    eventType: "renewal_queue_moved",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/renewals/queue", "/renewals"]);
+  bounce("/renewals/queue", undefined, "queued");
+}
+
+export async function advanceRenewalQueue(formData: FormData) {
+  const queueId = str(formData, "queueId");
+  const action = asRenewalQueueAction(str(formData, "action"));
+  const returnTo = str(formData, "returnTo") || "/renewals/queue";
+  if (!action) bounce(returnTo, "Choose a queue action.");
+  const loaded = await getRenewalQueue(queueId);
+  if (!loaded) bounce(returnTo, "Renewal queue row not found.");
+  if (!isRenewalQueueStage(loaded.queue.stage)) bounce(returnTo, "Queue stage is not recognized.");
+  const next = nextRenewalQueueStage(loaded.queue.stage, action);
+  if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.queue.stage} card.`);
+  await db
+    .update(renewalQueue)
+    .set({
+      stage: next,
+      notes: str(formData, "notes") || loaded.queue.notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(renewalQueue.id, loaded.queue.id));
+  await writeServicingLog({
+    title: renewalQueueLine(loaded.policy.policyNumber, next),
+    body:
+      next === "accepted"
+        ? `${loaded.policy.policyNumber} marked accepted on the queue stub. Same Policy stays in force. Did not bind.`
+        : next === "lost"
+          ? `${loaded.policy.policyNumber} marked lost on the queue stub. Policy status unchanged.`
+          : `${loaded.policy.policyNumber} moved to ${next}. Desk stub only — no rater, no bind.`,
+    eventType: "renewal_queue_moved",
+    policyId: loaded.policy.id,
+    contactId: loaded.policy.contactId,
+    accountId: loaded.policy.accountId,
+    dealId: loaded.policy.dealId,
+  });
+  refreshPolicy(loaded.policy.id, ["/renewals/queue", "/renewals"]);
+  bounce(returnTo, undefined, next);
+}
+
+export async function createPolicyInspection(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const returnTo = str(formData, "returnTo") || (isUuid(policyId) ? `/policies/${policyId}` : "/inspections");
+  if (!isUuid(policyId)) bounce(returnTo, "Policy is required.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(returnTo, "Policy not found.");
+  const parsed = validateInspectionDraft({
+    kind: str(formData, "kind"),
+    vendor: str(formData, "vendor"),
+    scheduledOn: parseIsoDate(str(formData, "scheduledOn")),
+    notes: str(formData, "notes"),
+  });
+  if (!parsed.ok) bounce(returnTo, parsed.error);
+  const status = parsed.scheduledOn ? "scheduled" : "requested";
+  await db.insert(policyInspections).values({
+    tenantId: DEFAULT_TENANT_ID,
+    policyId,
+    kind: parsed.kind,
+    status,
+    vendor: parsed.vendor,
+    scheduledOn: parsed.scheduledOn,
+    notes: parsed.notes,
+  });
+  await writeServicingLog({
+    title: inspectionLine(parsed.kind, workspace.policy.policyNumber),
+    body: `${inspectionLine(parsed.kind, workspace.policy.policyNumber)} ${status}. Diary only — does not file.`,
+    eventType: status === "scheduled" ? "inspection_scheduled" : "inspection_requested",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/inspections"]);
+  bounce(returnTo.includes("/policies/") ? `/policies/${policyId}` : "/inspections", undefined, status);
+}
+
+export async function advancePolicyInspection(formData: FormData) {
+  const inspectionId = str(formData, "inspectionId");
+  const action = asInspectionAction(str(formData, "action"));
+  const returnTo = str(formData, "returnTo") || "/inspections";
+  if (!action) bounce(returnTo, "Choose an inspection action.");
+  const loaded = await getPolicyInspection(inspectionId);
+  if (!loaded) bounce(returnTo, "Inspection not found.");
+  if (!isInspectionStatus(loaded.inspection.status)) bounce(returnTo, "Inspection status is not recognized.");
+  const next = nextInspectionStatus(loaded.inspection.status, action);
+  if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.inspection.status} inspection.`);
+  await db
+    .update(policyInspections)
+    .set({
+      status: next,
+      scheduledOn:
+        next === "scheduled"
+          ? parseIsoDate(str(formData, "scheduledOn")) ?? loaded.inspection.scheduledOn ?? new Date()
+          : loaded.inspection.scheduledOn,
+      completedAt: next === "completed" ? new Date() : loaded.inspection.completedAt,
+      notes: str(formData, "notes") || loaded.inspection.notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(policyInspections.id, loaded.inspection.id));
+  const eventType =
+    next === "scheduled"
+      ? "inspection_scheduled"
+      : next === "completed"
+        ? "inspection_completed"
+        : "inspection_waived";
+  await writeServicingLog({
+    title: `${inspectionLine(loaded.inspection.kind, loaded.policy.policyNumber)} · ${next}`,
+    body:
+      next === "completed"
+        ? `${loaded.policy.policyNumber} inspection logged complete. Does not file an endorsement.`
+        : next === "waived"
+          ? `${loaded.policy.policyNumber} inspection waived. Policy unchanged.`
+          : `${loaded.policy.policyNumber} inspection scheduled. Diary only — does not file.`,
+    eventType,
+    policyId: loaded.policy.id,
+    contactId: loaded.policy.contactId,
+    accountId: loaded.policy.accountId,
+    dealId: loaded.policy.dealId,
+  });
+  refreshPolicy(loaded.policy.id, ["/inspections"]);
+  bounce(returnTo.includes("/policies/") ? `/policies/${loaded.policy.id}` : "/inspections", undefined, next);
+}
+
+export async function createPolicyInstallment(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const returnTo = str(formData, "returnTo") || (isUuid(policyId) ? `/policies/${policyId}` : "/installments");
+  if (!isUuid(policyId)) bounce(returnTo, "Policy is required.");
+  const { getPolicyWorkspace } = await import("@/lib/db/queries");
+  const workspace = await getPolicyWorkspace(policyId);
+  if (!workspace) bounce(returnTo, "Policy not found.");
+  const parsed = validateInstallmentDraft({
+    billType: str(formData, "billType"),
+    amount: str(formData, "amount"),
+    dueOn: parseIsoDate(str(formData, "dueOn")),
+    notes: str(formData, "notes"),
+  });
+  if (!parsed.ok) bounce(returnTo, parsed.error);
+  await db.insert(policyInstallments).values({
+    tenantId: DEFAULT_TENANT_ID,
+    policyId,
+    billType: parsed.billType,
+    status: "scheduled",
+    amount: parsed.amount,
+    dueOn: parsed.dueOn,
+    notes: parsed.notes,
+  });
+  await writeServicingLog({
+    title: installmentLine(workspace.policy.policyNumber, "scheduled"),
+    body: `${workspace.policy.policyNumber} ${parsed.billType.replaceAll("_", " ")} installment ${parsed.amount} scheduled. Diary only — no Stripe.`,
+    eventType: "installment_scheduled",
+    policyId,
+    contactId: workspace.policy.contactId,
+    accountId: workspace.policy.accountId,
+    dealId: workspace.policy.dealId,
+  });
+  refreshPolicy(policyId, ["/installments"]);
+  bounce(returnTo.includes("/policies/") ? `/policies/${policyId}` : "/installments", undefined, "scheduled");
+}
+
+export async function advancePolicyInstallment(formData: FormData) {
+  const installmentId = str(formData, "installmentId");
+  const action = asInstallmentAction(str(formData, "action"));
+  const returnTo = str(formData, "returnTo") || "/installments";
+  if (!action) bounce(returnTo, "Choose an installment action.");
+  const loaded = await getPolicyInstallment(installmentId);
+  if (!loaded) bounce(returnTo, "Installment not found.");
+  if (!isInstallmentStatus(loaded.installment.status)) {
+    bounce(returnTo, "Installment status is not recognized.");
+  }
+  const next = nextInstallmentStatus(loaded.installment.status, action);
+  if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.installment.status} installment.`);
+  await db
+    .update(policyInstallments)
+    .set({
+      status: next,
+      receivedAt: next === "received" ? new Date() : loaded.installment.receivedAt,
+      notes: str(formData, "notes") || loaded.installment.notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(policyInstallments.id, loaded.installment.id));
+  const eventType =
+    next === "due"
+      ? "installment_due"
+      : next === "received"
+        ? "installment_received"
+        : next === "past_due"
+          ? "installment_past_due"
+          : "installment_waived";
+  await writeServicingLog({
+    title: installmentLine(loaded.policy.policyNumber, next),
+    body:
+      next === "received"
+        ? `${loaded.policy.policyNumber} installment marked received. No money moved. Policy unchanged.`
+        : next === "waived"
+          ? `${loaded.policy.policyNumber} installment waived. Policy unchanged.`
+          : `${loaded.policy.policyNumber} installment marked ${next.replaceAll("_", " ")}. Diary only — no Stripe.`,
+    eventType,
+    policyId: loaded.policy.id,
+    contactId: loaded.policy.contactId,
+    accountId: loaded.policy.accountId,
+    dealId: loaded.policy.dealId,
+  });
+  refreshPolicy(loaded.policy.id, ["/installments"]);
+  bounce(returnTo.includes("/policies/") ? `/policies/${loaded.policy.id}` : "/installments", undefined, next);
+}
+
+const HOLDER_CONTACT_NOTE = "Does not issue a COI and does not file an endorsement.";
+
+function asRenewalQueueAction(value: string): RenewalQueueAction | null {
+  if (value === "quote" || value === "offer" || value === "accept" || value === "lose" || value === "reset") {
+    return value;
+  }
+  return null;
+}
+
+function asInspectionAction(value: string): InspectionAction | null {
+  if (value === "schedule" || value === "complete" || value === "waive") return value;
+  return null;
+}
+
+function asInstallmentAction(value: string): InstallmentAction | null {
+  if (value === "mark_due" || value === "receive" || value === "mark_past_due" || value === "waive") {
+    return value;
+  }
+  return null;
 }
 

@@ -34,9 +34,13 @@ export default async function BookHealthPage({
         <Stat label="Open suspense" value={health.openSuspense} href="/suspense" />
         <Stat label="Drafted notices" value={health.openNotices} href="/notices" />
       </div>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Stat label="Open claim diary" value={health.openClaimDiary} href="/claims/diary" />
         <Stat label="Drafted endorsements" value={health.openEndorsementDrafts} href="/endorsements" />
+        <Stat label="Renewal queue" value={health.openRenewalQueue} href="/renewals/queue" />
+        <Stat label="Holder contacts" value={health.activeHolderContacts} href="/certificates/holders" />
+        <Stat label="Open inspections" value={health.openInspections} href="/inspections" />
+        <Stat label="Open installments" value={health.openInstallments} href="/installments" />
       </div>
 
       <section className="ff-card mb-4 overflow-hidden">
@@ -129,6 +133,26 @@ export default async function BookHealthPage({
         {" · "}
         <Link href="/claims/diary" className="text-primary hover:underline">
           Claim diary
+        </Link>
+        {" · "}
+        <Link href="/service-timeline" className="text-primary hover:underline">
+          Service timeline
+        </Link>
+        {" · "}
+        <Link href="/renewals/queue" className="text-primary hover:underline">
+          Renewal queue
+        </Link>
+        {" · "}
+        <Link href="/certificates/holders" className="text-primary hover:underline">
+          Holder contacts
+        </Link>
+        {" · "}
+        <Link href="/inspections" className="text-primary hover:underline">
+          Inspections
+        </Link>
+        {" · "}
+        <Link href="/installments" className="text-primary hover:underline">
+          Installments
         </Link>
         {" · "}
         <Link href="/settings/carrier-download" className="text-primary hover:underline">

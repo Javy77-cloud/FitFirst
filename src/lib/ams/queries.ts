@@ -3,7 +3,12 @@ import { alias } from "drizzle-orm/pg-core";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
+  isHolderContactStatus,
+  isInspectionStatus,
+  isInstallmentStatus,
+  isRenewalQueueStage,
   isWorkDesk,
+  SERVICE_TIMELINE_EVENTS,
   SERVICING_TASK_KINDS,
   servicingDocKeyFromTaskKind,
   servicingTaskKind,
@@ -18,8 +23,10 @@ import { db } from "@/lib/db";
 import {
   accounts,
   activities,
+  activityLogs,
   carrierDownloadConnections,
   carriers,
+  certificateHolderContacts,
   certificateRequests,
   claimActivity,
   claims,
@@ -31,10 +38,13 @@ import {
   endorsementDrafts,
   policyAdditionalInterests,
   policyServiceRequestEvents,
+  policyInspections,
+  policyInstallments,
   policyNotices,
   policyServiceRequests,
   policyServicingChecks,
   policyTerms,
+  renewalQueue,
   reviewTasks,
   users,
 } from "@/lib/db/schema";
@@ -502,6 +512,58 @@ export async function loadBookHealth(ownerId?: string) {
           .where(and(eq(policyNotices.tenantId, tenant()), eq(policyNotices.status, "drafted")))
       )[0]?.n ?? 0,
     ),
+    openRenewalQueue: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(renewalQueue)
+          .where(
+            and(
+              eq(renewalQueue.tenantId, tenant()),
+              inArray(renewalQueue.stage, ["upcoming", "quoting", "offered"]),
+            ),
+          )
+      )[0]?.n ?? 0,
+    ),
+    activeHolderContacts: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(certificateHolderContacts)
+          .where(
+            and(
+              eq(certificateHolderContacts.tenantId, tenant()),
+              eq(certificateHolderContacts.status, "active"),
+            ),
+          )
+      )[0]?.n ?? 0,
+    ),
+    openInspections: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(policyInspections)
+          .where(
+            and(
+              eq(policyInspections.tenantId, tenant()),
+              inArray(policyInspections.status, ["requested", "scheduled"]),
+            ),
+          )
+      )[0]?.n ?? 0,
+    ),
+    openInstallments: Number(
+      (
+        await db
+          .select({ n: sql<number>`count(*)` })
+          .from(policyInstallments)
+          .where(
+            and(
+              eq(policyInstallments.tenantId, tenant()),
+              inArray(policyInstallments.status, ["scheduled", "due", "past_due"]),
+            ),
+          )
+      )[0]?.n ?? 0,
+    ),
   };
 }
 
@@ -552,11 +614,19 @@ export async function loadRenewalPipeline(windowDays = 60) {
       proposedPremium: proposedByPolicy.get(policy.id) ?? null,
     });
   }
+  const queueRows = ids.length
+    ? await db
+        .select()
+        .from(renewalQueue)
+        .where(and(eq(renewalQueue.tenantId, tenant()), inArray(renewalQueue.policyId, ids)))
+    : [];
+  const queueByPolicy = new Map(queueRows.map((row) => [row.policyId, row]));
   const list = sortRenewalRows(
     upcoming.map((row) => buildRenewalRow(row, DESK_AS_OF)).filter((row) => row != null),
   ).map((row) => ({
     ...row,
     hasFollowup: followupByPolicy.has(row.id),
+    queue: queueByPolicy.get(row.id) ?? null,
   }));
   return {
     windowDays,
@@ -818,4 +888,177 @@ export async function listCertificateHolders() {
       })),
     ],
   );
+}
+
+export async function listServiceTimeline(policyId?: string) {
+  const clauses = [
+    eq(activityLogs.tenantId, tenant()),
+    inArray(activityLogs.eventType, [...SERVICE_TIMELINE_EVENTS]),
+  ];
+  if (policyId) {
+    if (!isUuid(policyId)) return [];
+    clauses.push(eq(activityLogs.policyId, policyId));
+  }
+  return db
+    .select({
+      log: activityLogs,
+      activity: activities,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(activityLogs)
+    .innerJoin(activities, eq(activityLogs.activityId, activities.id))
+    .leftJoin(policies, eq(activityLogs.policyId, policies.id))
+    .leftJoin(contacts, eq(activityLogs.contactId, contacts.id))
+    .leftJoin(accounts, eq(activityLogs.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(desc(activityLogs.occurredAt));
+}
+
+export async function listHolderContacts(status?: string) {
+  const clauses = [eq(certificateHolderContacts.tenantId, tenant())];
+  if (status && isHolderContactStatus(status)) {
+    clauses.push(eq(certificateHolderContacts.status, status));
+  }
+  return db
+    .select({
+      contact: certificateHolderContacts,
+      account: accounts,
+    })
+    .from(certificateHolderContacts)
+    .leftJoin(accounts, eq(certificateHolderContacts.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(asc(certificateHolderContacts.name));
+}
+
+export async function getHolderContact(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      contact: certificateHolderContacts,
+      account: accounts,
+    })
+    .from(certificateHolderContacts)
+    .leftJoin(accounts, eq(certificateHolderContacts.accountId, accounts.id))
+    .where(and(eq(certificateHolderContacts.tenantId, tenant()), eq(certificateHolderContacts.id, id)));
+  return row ?? null;
+}
+
+export async function listRenewalQueue(stage?: string) {
+  const clauses = [eq(renewalQueue.tenantId, tenant())];
+  if (stage && isRenewalQueueStage(stage)) {
+    clauses.push(eq(renewalQueue.stage, stage));
+  }
+  return db
+    .select({
+      queue: renewalQueue,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+      carrier: carriers,
+    })
+    .from(renewalQueue)
+    .innerJoin(policies, eq(renewalQueue.policyId, policies.id))
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .leftJoin(carriers, eq(policies.carrierId, carriers.id))
+    .where(and(...clauses))
+    .orderBy(asc(policies.expirationDate));
+}
+
+export async function getRenewalQueue(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      queue: renewalQueue,
+      policy: policies,
+    })
+    .from(renewalQueue)
+    .innerJoin(policies, eq(renewalQueue.policyId, policies.id))
+    .where(and(eq(renewalQueue.tenantId, tenant()), eq(renewalQueue.id, id)));
+  return row ?? null;
+}
+
+export async function getRenewalQueueForPolicy(policyId: string) {
+  if (!isUuid(policyId)) return null;
+  const [row] = await db
+    .select()
+    .from(renewalQueue)
+    .where(and(eq(renewalQueue.tenantId, tenant()), eq(renewalQueue.policyId, policyId)));
+  return row ?? null;
+}
+
+export async function listPolicyInspections(policyId?: string, status?: string) {
+  const clauses = [eq(policyInspections.tenantId, tenant())];
+  if (policyId) {
+    if (!isUuid(policyId)) return [];
+    clauses.push(eq(policyInspections.policyId, policyId));
+  }
+  if (status && isInspectionStatus(status)) {
+    clauses.push(eq(policyInspections.status, status));
+  }
+  return db
+    .select({
+      inspection: policyInspections,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(policyInspections)
+    .innerJoin(policies, eq(policyInspections.policyId, policies.id))
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(asc(policyInspections.scheduledOn), desc(policyInspections.createdAt));
+}
+
+export async function getPolicyInspection(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      inspection: policyInspections,
+      policy: policies,
+    })
+    .from(policyInspections)
+    .innerJoin(policies, eq(policyInspections.policyId, policies.id))
+    .where(and(eq(policyInspections.tenantId, tenant()), eq(policyInspections.id, id)));
+  return row ?? null;
+}
+
+export async function listPolicyInstallments(policyId?: string, status?: string) {
+  const clauses = [eq(policyInstallments.tenantId, tenant())];
+  if (policyId) {
+    if (!isUuid(policyId)) return [];
+    clauses.push(eq(policyInstallments.policyId, policyId));
+  }
+  if (status && isInstallmentStatus(status)) {
+    clauses.push(eq(policyInstallments.status, status));
+  }
+  return db
+    .select({
+      installment: policyInstallments,
+      policy: policies,
+      contact: contacts,
+      account: accounts,
+    })
+    .from(policyInstallments)
+    .innerJoin(policies, eq(policyInstallments.policyId, policies.id))
+    .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(accounts, eq(policies.accountId, accounts.id))
+    .where(and(...clauses))
+    .orderBy(asc(policyInstallments.dueOn));
+}
+
+export async function getPolicyInstallment(id: string) {
+  if (!isUuid(id)) return null;
+  const [row] = await db
+    .select({
+      installment: policyInstallments,
+      policy: policies,
+    })
+    .from(policyInstallments)
+    .innerJoin(policies, eq(policyInstallments.policyId, policies.id))
+    .where(and(eq(policyInstallments.tenantId, tenant()), eq(policyInstallments.id, id)));
+  return row ?? null;
 }

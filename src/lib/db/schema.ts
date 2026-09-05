@@ -2657,12 +2657,14 @@ export const certificateRequests = pgTable(
     specialWording: text("special_wording"),
     waiverOfSubrogation: boolean("waiver_of_subrogation").notNull().default(false),
     primaryNoncontributory: boolean("primary_noncontributory").notNull().default(false),
+    holderContactId: uuid("holder_contact_id"),
     ...timestamps,
   },
   (t) => [
     index("certificate_requests_tenant_idx").on(t.tenantId, t.status),
     index("certificate_requests_account_idx").on(t.tenantId, t.accountId),
     index("certificate_requests_interest_idx").on(t.tenantId, t.interestId),
+    index("certificate_requests_holder_contact_idx").on(t.tenantId, t.holderContactId),
   ],
 );
 
@@ -2826,12 +2828,110 @@ export const policyNotices = pgTable(
   ],
 );
 
+/** Named COI holder contact. Add / edit / archive does not issue a stub. */
+export const certificateHolderContacts = pgTable(
+  "certificate_holder_contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    accountId: uuid("account_id").references(() => accounts.id),
+    name: text("name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    address: text("address"),
+    city: text("city"),
+    state: text("state"),
+    zip: text("zip"),
+    notes: text("notes"),
+    status: text("status").notNull().default("active"),
+    ...timestamps,
+  },
+  (t) => [
+    index("certificate_holder_contacts_tenant_idx").on(t.tenantId, t.status),
+    index("certificate_holder_contacts_account_idx").on(t.tenantId, t.accountId),
+    index("certificate_holder_contacts_name_idx").on(t.tenantId, t.name),
+  ],
+);
+
+/** Renewal pipeline queue stub. Stage moves do not bind or rewrite the Policy. */
+export const renewalQueue = pgTable(
+  "renewal_queue",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    stage: text("stage").notNull().default("upcoming"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("renewal_queue_policy_uidx").on(t.tenantId, t.policyId),
+    index("renewal_queue_tenant_idx").on(t.tenantId, t.stage),
+    index("renewal_queue_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+/** Inspection diary. Completing or waiving does not file an endorsement. */
+export const policyInspections = pgTable(
+  "policy_inspections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("requested"),
+    vendor: text("vendor"),
+    scheduledOn: timestamp("scheduled_on", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("policy_inspections_tenant_idx").on(t.tenantId, t.status),
+    index("policy_inspections_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
+/** Installment diary. Receiving does not collect money and does not change Policy status. */
+export const policyInstallments = pgTable(
+  "policy_installments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    billType: text("bill_type").notNull().default("agency_bill"),
+    status: text("status").notNull().default("scheduled"),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    dueOn: timestamp("due_on", { withTimezone: true }).notNull(),
+    receivedAt: timestamp("received_at", { withTimezone: true }),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("policy_installments_tenant_idx").on(t.tenantId, t.status),
+    index("policy_installments_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
 export type PolicyServiceRequest = typeof policyServiceRequests.$inferSelect;
 export type CertificateRequest = typeof certificateRequests.$inferSelect;
 export type CarrierDownloadConnection = typeof carrierDownloadConnections.$inferSelect;
 export type PolicyAdditionalInterest = typeof policyAdditionalInterests.$inferSelect;
 export type PolicyServicingCheck = typeof policyServicingChecks.$inferSelect;
 export type PolicyServiceRequestEvent = typeof policyServiceRequestEvents.$inferSelect;
+export type PolicyNotice = typeof policyNotices.$inferSelect;
+export type ClaimDiaryEntry = typeof claimDiary.$inferSelect;
+export type EndorsementDraft = typeof endorsementDrafts.$inferSelect;
+export type CertificateHolderContact = typeof certificateHolderContacts.$inferSelect;
+export type RenewalQueueRow = typeof renewalQueue.$inferSelect;
+export type PolicyInspection = typeof policyInspections.$inferSelect;
+export type PolicyInstallment = typeof policyInstallments.$inferSelect;
 
 /** Developer Hub — custom functions. Body is an allowlisted JSON transform, not host JS. */
 export const developerFunctions = pgTable(
@@ -3084,6 +3184,3 @@ export type DeskMacroRun = typeof deskMacroRuns.$inferSelect;
 export type DeskCustomButton = typeof deskCustomButtons.$inferSelect;
 export type DeskClientScript = typeof deskClientScripts.$inferSelect;
 export type DeskWidget = typeof deskWidgets.$inferSelect;
-export type PolicyNotice = typeof policyNotices.$inferSelect;
-export type ClaimDiaryEntry = typeof claimDiary.$inferSelect;
-export type EndorsementDraft = typeof endorsementDrafts.$inferSelect;

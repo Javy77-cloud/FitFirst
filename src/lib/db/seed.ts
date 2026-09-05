@@ -582,4 +582,8 @@ async function seedUnlocked() {
   await seedAmsWave6();
   const { seedAmsWave7 } = await import("./seed-ams-wave7");
   await seedAmsWave7();
+  const { seedAmsWave8 } = await import("./seed-ams-wave8");
+  await seedAmsWave8();
+  const { seedAmsWave9 } = await import("./seed-ams-wave9");
+  await seedAmsWave9();
 }

@@ -20,6 +20,17 @@ export type CertificateInterestOption = {
   zip?: string | null;
 };
 
+export type CertificateHolderContactOption = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+};
+
 export function CertificateRequestForm({
   accountId,
   policyId,
@@ -27,6 +38,7 @@ export function CertificateRequestForm({
   canRequest,
   error,
   interests = [],
+  holderContacts = [],
 }: {
   accountId: string;
   policyId?: string;
@@ -34,8 +46,10 @@ export function CertificateRequestForm({
   canRequest: boolean;
   error?: string;
   interests?: CertificateInterestOption[];
+  holderContacts?: CertificateHolderContactOption[];
 }) {
   const [interestId, setInterestId] = useState("");
+  const [holderContactId, setHolderContactId] = useState("");
   const [holderName, setHolderName] = useState("");
   const [holderAddress, setHolderAddress] = useState("");
   const [additionalInsured, setAdditionalInsured] = useState("");
@@ -47,6 +61,7 @@ export function CertificateRequestForm({
 
   function pickInterest(id: string) {
     setInterestId(id);
+    setHolderContactId("");
     const found = interests.find((row) => row.id === id);
     if (!found) return;
     setHolderName(found.name);
@@ -56,11 +71,44 @@ export function CertificateRequestForm({
     }
   }
 
+  function pickHolderContact(id: string) {
+    setHolderContactId(id);
+    setInterestId("");
+    const found = holderContacts.find((row) => row.id === id);
+    if (!found) return;
+    setHolderName(found.name);
+    setHolderAddress(formatHolderAddress(found));
+    setAdditionalInsured(found.name);
+  }
+
   return (
     <form action={createCertificateRequest} className="space-y-3">
       <input type="hidden" name="accountId" value={accountId} />
       {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
       {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+      {holderContacts.length > 0 ? (
+        <div>
+          <Label htmlFor="holderContactId" className="text-xs">
+            Holder contact
+          </Label>
+          <select
+            id="holderContactId"
+            name="holderContactId"
+            disabled={!canRequest}
+            value={holderContactId}
+            onChange={(event) => pickHolderContact(event.target.value)}
+            className="mt-1 h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
+          >
+            <option value="">New or pick from Policy interests</option>
+            {holderContacts.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+                {row.email ? ` · ${row.email}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       {interests.length > 0 ? (
         <div>
           <Label htmlFor="interestId" className="text-xs">

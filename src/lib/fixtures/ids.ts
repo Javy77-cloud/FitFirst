@@ -684,6 +684,36 @@ export const AMS_WAVE6_IDS = {
   haleNoticeLog: "a0511111-a051-4051-8051-a05111111103",
 } as const;
 
+/** AMS wave 8. Off wave7 a052… and Ana / Elena owner blocks. */
+export const AMS_WAVE8_IDS = {
+  palmBayHolder: "a0531111-a053-4053-8053-a05311111101",
+  brevardHolder: "a0531111-a053-4053-8053-a05311111102",
+  haleRenewalQueue: "a0531111-a053-4053-8053-a05311111103",
+  nairRenewalQueue: "a0531111-a053-4053-8053-a05311111104",
+  elenaServiceNoteActivity: "a0531111-a053-4053-8053-a05311111105",
+  elenaServiceNoteLog: "a0531111-a053-4053-8053-a05311111106",
+  haleQueueActivity: "a0531111-a053-4053-8053-a05311111107",
+  haleQueueLog: "a0531111-a053-4053-8053-a05311111108",
+  palmBayActivity: "a0531111-a053-4053-8053-a05311111109",
+  palmBayLog: "a0531111-a053-4053-8053-a05311111110",
+} as const;
+
+/** AMS wave 9. Off wave8 a053… and Ana / Elena owner blocks. */
+export const AMS_WAVE9_IDS = {
+  elenaRoofInspection: "a0631111-a063-4063-8063-a06311111101",
+  haleWindInspection: "a0631111-a063-4063-8063-a06311111102",
+  elenaInstallment: "a0631111-a063-4063-8063-a06311111103",
+  haleInstallment: "a0631111-a063-4063-8063-a06311111104",
+  elenaInspectionActivity: "a0631111-a063-4063-8063-a06311111105",
+  elenaInspectionLog: "a0631111-a063-4063-8063-a06311111106",
+  haleInspectionActivity: "a0631111-a063-4063-8063-a06311111107",
+  haleInspectionLog: "a0631111-a063-4063-8063-a06311111108",
+  elenaInstallmentActivity: "a0631111-a063-4063-8063-a06311111109",
+  elenaInstallmentLog: "a0631111-a063-4063-8063-a06311111110",
+  haleInstallmentActivity: "a0631111-a063-4063-8063-a06311111111",
+  haleInstallmentLog: "a0631111-a063-4063-8063-a06311111112",
+} as const;
+
 /** AMS wave 7. Off wave6 a051… and Ana / Elena owner blocks. */
 export const AMS_WAVE7_IDS = {
   elenaClaimDiary: "a0521111-a052-4052-8052-a05211111101",
