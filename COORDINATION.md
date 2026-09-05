@@ -1063,3 +1063,25 @@ On top of `cursor/feel-pass-consolidate-sep5b-6195` (already includes Reviews `d
 - `/documents/fill/:slug?fillId=`
 
 Loaders now `isUuid()`-guard. Proxy 404s those record paths the same way as Contact/Deal/Policy.
+
+## Notification bell + board (`cursor/notif-bell-board-1e01`)
+
+Feel-desk unblock on `cursor/feel-pass-consolidate-sep5b-6195`. Standard desk. Ana unbound $321k. Sidebar `#1d4e89`. **No migration** — `alerts` already has `read_at`, `entity_type`, `entity_id`. Additive only if a later slice adds columns.
+
+Javy ask: top-right Home / shell bell.
+
+- Click the bell → scrollable popover panel (not a jump straight to `/alerts`).
+- **First row:** Notification board (`/notifications`) — full screen of every in-app ping.
+- Below: recent notifications (12). Click a row to deep-link (`recordHref`); no record → stay on the board.
+- **Mark as read** per item + **Mark all as read** on the panel and the board. Visibility stays `alertVisibleWhere` (Admin sees the tenant; agent sees own / agency-wide).
+- `/alerts` 307s to `/notifications`. Left-nav Alerts points at the board. Badge stays on the bell.
+- Internal only. Copy: nothing emails Javy. No email-to-Javy, no SendGrid.
+
+### Click path
+
+1. `javy@fitfirst.local` / `javy` → Home.
+2. Top-right orange bell (next to Mail). Open the panel.
+3. First row → Notification board. Screen changes to `/notifications`.
+4. Back to Home, open the bell again. Click a recent row (policy / claim / playbook) — lands on that record.
+5. **Mark as read** on one row; **Mark all as read** clears the badge.
+6. Do not bind Ana.

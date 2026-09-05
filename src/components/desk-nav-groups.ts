@@ -90,7 +90,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/calendar", label: "Calendar", icon: CalendarDays, match: "/calendar" },
       { href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
       { href: "/inbox", label: "Inbox", icon: Inbox, match: "/inbox" },
-      { href: "/alerts", label: "Alerts", icon: Bell, match: "/alerts" },
+      { href: "/notifications", label: "Alerts", icon: Bell, match: "/notifications" },
     ],
   },
   {
@@ -107,6 +107,9 @@ export const FLAT_NAV = [PINNED_HOME, ...NAV_GROUPS.flatMap((group) => group.ite
 export function pathIsActive(pathname: string, item: NavItem): boolean {
   const match = item.match ?? item.href.split("?")[0];
   if (match === "/" || item.exact) return pathname === match;
+  if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/"))) {
+    return true;
+  }
   return pathname === match || pathname.startsWith(`${match}/`);
 }
 

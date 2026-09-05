@@ -11,6 +11,7 @@ import { currentDeskSession, getActor } from "@/lib/auth/session";
 import type { Actor } from "@/lib/auth/rbac";
 import { AutomationAlertPopup } from "@/components/automations/alert-popup";
 import { isPlaybookAlertKind } from "@/lib/automations/engine";
+import { toHeaderAlert } from "@/lib/desk/header-alerts";
 import { recordHref } from "@/lib/desk/record-href";
 import { listUsers, listAlerts } from "@/lib/db/queries";
 
@@ -40,6 +41,7 @@ export async function AppShell({
     redirect("/enroll-mfa");
   }
   const unread = alertRows.filter((row) => !row.readAt).length;
+  const headerAlerts = alertRows.map(toHeaderAlert);
   const popupAlert = alertRows.find((row) => !row.readAt && isPlaybookAlertKind(row.kind));
   const users: Actor[] = userRows.map((row) => ({
     id: row.id,
@@ -62,7 +64,13 @@ export async function AppShell({
               </Link>
             ))}
           </nav>
-          <DeskHeader title={title} eyebrow={eyebrow} actions={actions ?? columns} unread={unread} />
+          <DeskHeader
+            title={title}
+            eyebrow={eyebrow}
+            actions={actions ?? columns}
+            unread={unread}
+            alerts={headerAlerts}
+          />
           <main className="flex-1 p-5">{children}</main>
         </div>
         <AutomationAlertPopup

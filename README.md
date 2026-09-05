@@ -6,13 +6,13 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Tip branch
 
-**`cursor/feel-pass-consolidate-sep5b-6195`** — post-feel-pass Air tip. Includes AMS wave 8/9, `cursor/error-sweep-sep5-31ef` (Reviews 500 fix), and `cursor/error-sweep-sep5-follow-31ef` (Developer Hub / Automations UUID 404s). Merged branch list is in `COORDINATION.md` (Feel-pass consolidate Sep 5b).
+**`cursor/notif-bell-board-1e01`** — feel-pass notification bell + board on top of `cursor/feel-pass-consolidate-sep5b-6195`. No schema change. Ana stays shopping / unbound / Cov A **$321,000**. Sidebar stays `#1d4e89`.
 
 ## Run locally (Mac Air and Mac mini)
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/feel-pass-consolidate-sep5b-6195 && git pull
+git fetch && git checkout cursor/notif-bell-board-1e01 && git pull
 npm install
 npm run db:migrate
 npm run db:seed
@@ -35,7 +35,20 @@ Home tiles: drag the grip to reorder, size menu **1×1 / 1×2 / 2×1 / 2×2**, s
 
 Today’s batch4 surface: darker blue sidebar (`#1d4e89` / `--ff-sidebar-blue`), admin/agent actor switcher, rich home widgets (contest, lead offers, hit/lost, KPIs, birthdays, renewal risk, mix donut, book scope), Documents / ACORD library, offices + territories, Social/GBP stubs, carrier portal login admin, login/session/MFA.
 
-**Automations** is in-desk only. Playbooks fire Tasks and in-app Alerts (renewal 60/30, Closed Won, Quote Sent, birthday). Template library is EN/ES preview — nothing sends. No Twilio / SendGrid / paid campaign vendors. Admin writes playbooks; agents see their book. Internal pings stay in Alerts / pop-up.
+**Automations** is in-desk only. Playbooks fire Tasks and in-app Alerts (renewal 60/30, Closed Won, Quote Sent, birthday). Template library is EN/ES preview — nothing sends. No Twilio / SendGrid / paid campaign vendors. Admin writes playbooks; agents see their book. Internal pings stay on the top-right **notification bell**, the **Notification board** (`/notifications`), and the playbook pop-up. Nothing emails Javy.
+
+## Notification bell + board (this slice)
+
+Top-right Home / shell **bell** (orange, next to Mail) opens a **scrollable** panel. First row is **Notification board**. Recent in-app alerts sit below. **Mark as read** is per row; **Mark all as read** clears the badge. A row deep-links to the tagged record when one exists (policy, claim, playbook, …). `/alerts` redirects to `/notifications`. No email.
+
+### Click path
+
+1. Sign in as **javy@fitfirst.local** / **javy**.
+2. Home — top-right orange **bell**. Badge is the unread count.
+3. Click the bell. Panel opens. First row: **Notification board**.
+4. Below that, recent pings. Click a title to open the record. **Mark as read** on the row, or **Mark all as read**.
+5. First row (or left-nav Alerts) changes the screen to `/notifications` — every in-app ping, same mark-read actions.
+6. Confirm nothing mailed Javy. Do not bind Ana.
 
 **Import / Export** (Admin only): [http://localhost:43147/settings/import-export](http://localhost:43147/settings/import-export) — CSV export, templates, and dry-run import for Leads, Contacts, Businesses, Deals, Policies, Carriers, plus export (or stub import) for activities, notes, documents, commissions, quotes, users, pipelines, and appetite/decline logs. No paid migration vendor. IVANS/AL3 stays a Not-connected stub.
 

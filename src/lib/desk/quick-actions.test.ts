@@ -24,9 +24,11 @@ describe("header quick actions", () => {
     expect(SUPPORT_COPY).toBe("Coming soon — we'll wire this later.");
     expect(PROFILE_SETTINGS_HREF).toBe("/settings/my-desk");
     expect(NOTIFICATION_LINKS.map((link) => link.href)).toEqual([
+      "/notifications",
       "/work-queue",
       "/tasks",
       "/calendar",
     ]);
+    expect(NOTIFICATION_LINKS[0]?.label).toBe("Notification board");
   });
 });

@@ -2,9 +2,11 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Bell, CalendarDays, CircleHelp, Inbox, Phone } from "lucide-react";
+import { CalendarDays, CircleHelp, Inbox, Phone } from "lucide-react";
+import { NotificationBell } from "@/components/desk/notification-bell";
 import { SmartSearch } from "@/components/smart-search";
 import { useSupport } from "@/components/support/support-context";
+import type { HeaderAlert } from "@/lib/desk/header-alerts";
 import { cn } from "@/lib/utils";
 
 const ICONS = [
@@ -16,7 +18,6 @@ const ICONS = [
     className: "text-[#b45309] hover:bg-[#fef3c7]",
   },
   { href: "/inbox", label: "Mail", icon: Inbox, className: "text-[#1d6fb8] hover:bg-[#dbeafe]" },
-  { href: "/alerts", label: "Alerts", icon: Bell, className: "text-[#c2410c] hover:bg-[#ffedd5]" },
 ];
 
 export function DeskHeader({
@@ -24,11 +25,13 @@ export function DeskHeader({
   eyebrow,
   actions,
   unread,
+  alerts,
 }: {
   title: string;
   eyebrow?: string;
   actions?: ReactNode;
   unread: number;
+  alerts: HeaderAlert[];
 }) {
   const { openSupport } = useSupport();
   return (
@@ -57,12 +60,10 @@ export function DeskHeader({
             >
               <Icon className="size-6" strokeWidth={2.25} />
               <span className="sr-only">{item.label}</span>
-              {item.href === "/alerts" && unread > 0 ? (
-                <span className="absolute top-1 right-1 size-2 rounded-full bg-fit-flag" />
-              ) : null}
             </Link>
           );
         })}
+        <NotificationBell unread={unread} alerts={alerts} />
         <button
           type="button"
           title="Support"

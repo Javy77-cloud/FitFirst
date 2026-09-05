@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Bell,
   Clock,
   LifeBuoy,
   Plus,
@@ -12,8 +11,8 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
-import { markAlertRead } from "@/app/actions/alerts";
 import { logoutDesk } from "@/app/actions/auth";
+import { NotificationBell } from "@/components/desk/notification-bell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,7 +33,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { HeaderAlert } from "@/lib/desk/header-alerts";
 import {
-  NOTIFICATION_LINKS,
   PROFILE_SETTINGS_HREF,
   QUICK_ACTIONS,
   SUPPORT_COPY,
@@ -77,12 +75,6 @@ function roleLabel(session: HeaderSession) {
   if (session.isAdmin) return "Admin";
   if (session.isAgent) return "Agent";
   return "Guest";
-}
-
-async function dismissAlert(alertId: string) {
-  const form = new FormData();
-  form.set("alertId", alertId);
-  await markAlertRead(form);
 }
 
 export function HeaderUtilities({
@@ -140,71 +132,11 @@ export function HeaderUtilities({
         <RefreshCw className={cn("size-3.5", spinning && "animate-spin")} />
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className={chromeButtonClass()}
-              aria-label="Alerts"
-              title="Alerts"
-            />
-          }
-        >
-          <Bell className="size-3.5" />
-          {unread > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 min-w-3.5 rounded-sm bg-fit-flag px-1 text-[9px] font-semibold leading-4 text-white">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          ) : null}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-80 min-w-72">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Alerts</DropdownMenuLabel>
-            {alerts.length === 0 ? (
-              <DropdownMenuItem disabled>No in-app alerts. Nothing emails the agent.</DropdownMenuItem>
-            ) : (
-              alerts.map((alert) => (
-                <DropdownMenuItem
-                  key={alert.id}
-                  className="items-start"
-                  render={<Link href={alert.href ?? "/work-queue"} />}
-                >
-                  <span className="min-w-0">
-                    <span className={cn("block truncate", !alert.read && "font-semibold")}>{alert.title}</span>
-                    <span className="block truncate text-[11px] text-muted-foreground">{alert.body}</span>
-                  </span>
-                </DropdownMenuItem>
-              ))
-            )}
-            {alerts.some((alert) => !alert.read)
-              ? alerts
-                  .filter((alert) => !alert.read)
-                  .map((alert) => (
-                    <DropdownMenuItem
-                      key={`dismiss-${alert.id}`}
-                      onClick={() => {
-                        void dismissAlert(alert.id);
-                      }}
-                    >
-                      Dismiss · {alert.title}
-                    </DropdownMenuItem>
-                  ))
-              : null}
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Quick links</DropdownMenuLabel>
-            {NOTIFICATION_LINKS.map((link) => (
-              <DropdownMenuItem key={link.href} render={<Link href={link.href} />}>
-                {link.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <NotificationBell
+        unread={unread}
+        alerts={alerts}
+        triggerClassName={chromeButtonClass()}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger

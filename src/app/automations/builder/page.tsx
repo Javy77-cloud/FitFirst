@@ -133,8 +133,8 @@ export default async function AutomationsBuilderPage({
           )}
           <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
             Preview an in-app notify, then open{" "}
-            <Link href="/alerts" className="text-primary hover:underline">
-              Alerts
+            <Link href="/notifications" className="text-primary hover:underline">
+              Notification board
             </Link>
             . That is the agent ping.
           </p>

@@ -1,3 +1,7 @@
+import { NOTIFICATION_BOARD_HREF, NOTIFICATION_BOARD_LABEL } from "./notifications";
+
+export { NOTIFICATION_BOARD_HREF, NOTIFICATION_BOARD_LABEL };
+
 export type QuickAction = {
   id: string;
   label: string;
@@ -18,6 +22,7 @@ export const SUPPORT_COPY = "Coming soon — we'll wire this later.";
 export const PROFILE_SETTINGS_HREF = "/settings/my-desk";
 
 export const NOTIFICATION_LINKS = [
+  { href: NOTIFICATION_BOARD_HREF, label: NOTIFICATION_BOARD_LABEL },
   { href: "/work-queue", label: "Work queue" },
   { href: "/tasks", label: "Open tasks" },
   { href: "/calendar", label: "Calendar" },

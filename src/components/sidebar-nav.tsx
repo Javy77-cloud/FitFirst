@@ -42,7 +42,7 @@ const NAV = [
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/carriers", label: "Carriers", icon: Building2 },
-  { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/notifications", label: "Alerts", icon: Bell },
   { href: "/phone", label: "Phone", icon: Phone },
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/settings", label: "Settings", icon: ClipboardList },
@@ -98,7 +98,7 @@ export function SidebarNav({
           >
             <Icon className="size-3.5 opacity-80" />
             <span className="flex-1">{item.label}</span>
-            {item.href === "/alerts" && unread > 0 ? (
+            {item.href === "/notifications" && unread > 0 ? (
               <span className="rounded-sm bg-fit-flag px-1.5 text-[10px] font-semibold text-white">
                 {unread}
               </span>

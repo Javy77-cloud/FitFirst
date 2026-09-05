@@ -668,8 +668,11 @@ export function OwnerDesk({
               ? {
                   alerts: (
                     <div className="overflow-hidden">
-                      <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
-                        In-app alerts
+                      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
+                        <div className="text-sm font-semibold text-navy">In-app alerts</div>
+                        <Link href="/notifications" className="text-xs text-primary hover:underline">
+                          Notification board
+                        </Link>
                       </div>
                       {unread.length === 0 ? (
                         <p className="px-4 py-6 text-sm text-muted-foreground">No unread alerts.</p>
