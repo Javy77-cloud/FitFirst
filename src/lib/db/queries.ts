@@ -901,9 +901,21 @@ export async function getLead(id: string) {
         .orderBy(desc(deals.updatedAt))
         .limit(1);
   const deal = converted ?? byLead ?? null;
+  const docs = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.tenantId, tenant()),
+        eq(documents.leadId, id),
+        ne(documents.status, "hidden"),
+      ),
+    )
+    .orderBy(desc(documents.createdAt));
   return {
     lead,
     deal,
+    docs,
     timeline: await listActivityTimeline({ leadId: id }),
     comms: await listCommsForRecord({ leadId: id }),
   };

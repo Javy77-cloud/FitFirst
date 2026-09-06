@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { getActor } from "@/lib/auth/session";
 import { periodKey, splitCommission } from "@/lib/commissions/math";
 import {
@@ -37,6 +37,7 @@ import {
   contactAccounts,
   contacts,
   deals,
+  documents,
   emailSendJobs,
   emailTriggers,
   leads,
@@ -54,6 +55,7 @@ import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
+import { documentLinesFromDocs, shopLinesForConvertWithDocs } from "@/lib/leads/line-documents";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { isKnownStageToken, nextMorning, resolveStageMove } from "@/lib/wire/pipeline";
@@ -172,6 +174,17 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
 
   const dealLine = resolveConvertLine(line, lead.insuranceTypeDesired);
   const copy = convertFieldCopy(lead, dealLine, state);
+  const leadDocs = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.tenantId, DEFAULT_TENANT_ID),
+        eq(documents.leadId, leadId),
+        ne(documents.status, "hidden"),
+      ),
+    );
+  const shopLines = shopLinesForConvertWithDocs(dealLine, documentLinesFromDocs(leadDocs));
   const [pipeline] = await db
     .select()
     .from(pipelines)
@@ -197,7 +210,7 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
       ownerId: lead.ownerId ?? actor.id ?? null,
       title: copy.title,
       notes: copy.notes,
-      shopLines: copy.shopLines,
+      shopLines,
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
@@ -208,12 +221,15 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     })
     .returning();
 
-  await db.insert(risks).values({
-    tenantId: DEFAULT_TENANT_ID,
-    dealId: deal.id,
-    riskType: dealLine === "AUTO" ? "auto" : "property",
-    ...copy.risk,
-  });
+  const [risk] = await db
+    .insert(risks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      riskType: dealLine === "AUTO" ? "auto" : "property",
+      ...copy.risk,
+    })
+    .returning();
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
@@ -221,7 +237,20 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     line: copy.sheetLine,
     values: copy.sheetValues as typeof quoteSheets.$inferInsert.values,
   });
-  await insertSheetsForDeal(deal.id, copy.shopLines);
+  await insertSheetsForDeal(deal.id, shopLines);
+
+  if (risk && leadDocs.length > 0) {
+    await db
+      .update(documents)
+      .set({ dealId: deal.id, riskId: risk.id })
+      .where(
+        and(
+          eq(documents.tenantId, DEFAULT_TENANT_ID),
+          eq(documents.leadId, leadId),
+          ne(documents.status, "hidden"),
+        ),
+      );
+  }
 
   await db
     .update(leads)

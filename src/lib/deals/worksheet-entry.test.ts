@@ -14,11 +14,16 @@ describe("lead + deal worksheet entry checklist", () => {
     expect(src).not.toMatch(/Start shop/);
     expect(src).not.toMatch(/Convert to deal/);
     expect(src.slice(Math.max(0, convertAt - 180), convertAt)).not.toMatch(/variant="outline"/);
+    expect(src).toMatch(/data-ff-lead-layout="two-col"/);
+    expect(src).toMatch(/View related deal/);
+    expect(src).toMatch(/LeadLineDocuments/);
+    expect(src).not.toMatch(/source docs wait for the deal/i);
   });
 
   it("strips bind chrome from the deal worksheet top strip", () => {
     const src = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(src).toMatch(/data-ff-deal-identity/);
+    expect(src).toMatch(/View source lead/);
     expect(src).toMatch(/utilityChrome/);
     expect(src).toMatch(/QuickCommsBoard/);
     expect(src).not.toMatch(/bindDeal/);

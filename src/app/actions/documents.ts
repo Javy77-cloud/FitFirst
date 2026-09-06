@@ -6,7 +6,8 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
+import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
+import { lineTag } from "@/lib/leads/line-documents";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
 import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
@@ -21,6 +22,7 @@ import {
   fillFeedbackLogs,
   fillLearningLogs,
   formFills,
+  leads,
   policies,
   quoteSheets,
   risks,
@@ -84,6 +86,7 @@ async function resolveFolderId(input: {
 
 export async function persistFile(input: {
   dealId?: string | null;
+  leadId?: string | null;
   riskId?: string | null;
   contactId?: string | null;
   policyId?: string | null;
@@ -99,7 +102,8 @@ export async function persistFile(input: {
   tags?: string[];
 }) {
   const id = randomUUID();
-  const folder = input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? "library";
+  const folder =
+    input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? input.leadId ?? "library";
   const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
   const abs = path.join(uploadRoot, storagePath);
   await mkdir(path.dirname(abs), { recursive: true });
@@ -112,6 +116,7 @@ export async function persistFile(input: {
       tenantId: DEFAULT_TENANT_ID,
       riskId: input.riskId || null,
       dealId: input.dealId || null,
+      leadId: input.leadId || null,
       contactId: input.contactId || null,
       policyId: input.policyId || null,
       filename: input.filename,
@@ -137,12 +142,14 @@ export async function extractDocument(documentId: string, dealId: string) {
 
 function revalidateDocumentPaths(doc: {
   dealId: string | null;
+  leadId?: string | null;
   contactId: string | null;
   policyId: string | null;
 }) {
   revalidatePath("/documents");
   revalidatePath("/esign");
   if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
+  if (doc.leadId) revalidatePath(`/leads/${doc.leadId}`);
   if (doc.contactId) revalidatePath(`/contacts/${doc.contactId}`);
   if (doc.policyId) revalidatePath(`/policies/${doc.policyId}`);
 }
@@ -249,6 +256,77 @@ export async function uploadDocument(formData: FormData) {
   if (formData.get("library")) {
     redirect(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }));
   }
+}
+
+function filesFromSlots(formData: FormData): File[] {
+  const rowCount = Number(formData.get("rowCount") ?? 0);
+  const collected: File[] = [];
+  const push = (item: FormDataEntryValue) => {
+    if (item instanceof File && item.size > 0) collected.push(item);
+  };
+  if (Number.isFinite(rowCount) && rowCount > 0) {
+    for (let i = 0; i < rowCount; i += 1) {
+      formData.getAll(`files_${i}`).forEach(push);
+      formData.getAll(`file_${i}`).forEach(push);
+    }
+  }
+  formData.getAll("files").forEach(push);
+  formData.getAll("file").forEach(push);
+  return collected;
+}
+
+/** Lead files belong to a shop line. Never attach a file to the lead as a whole. */
+export async function uploadLeadLineDocument(formData: FormData) {
+  const leadId = optionalId(formData, "leadId");
+  const lineRaw = String(formData.get("line") ?? "").trim();
+  if (!leadId || !isShopLine(lineRaw)) {
+    throw new Error("Choose a coverage line for this file.");
+  }
+  const files = filesFromSlots(formData);
+  if (files.length === 0) {
+    throw new Error("Choose a file to upload.");
+  }
+
+  const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
+  if (!lead) throw new Error("Lead not found");
+
+  let dealId = optionalId(formData, "dealId") ?? lead.convertedDealId ?? null;
+  if (!dealId) {
+    const [open] = await db
+      .select({ id: deals.id })
+      .from(deals)
+      .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.leadId, leadId)))
+      .limit(1);
+    dealId = open?.id ?? null;
+  }
+  let riskId: string | null = null;
+  if (dealId) {
+    const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+    riskId = risk?.id ?? null;
+  }
+
+  let last = null as Awaited<ReturnType<typeof persistFile>> | null;
+  for (const file of files) {
+    last = await persistFile({
+      leadId,
+      dealId,
+      riskId,
+      filename: file.name,
+      mimeType: file.type || "application/octet-stream",
+      buffer: Buffer.from(await file.arrayBuffer()),
+      docType: coerceDealUploadDocType(inferDocType(file.name)),
+      slot: "source_doc",
+      tags: [lineTag(lineRaw)],
+    });
+    if (last.riskId && last.dealId) {
+      await runExtraction(last.id, last.dealId);
+    }
+  }
+  if (last?.dealId && last.slot === "source_doc") {
+    await fillDealSheetIfReady(last.dealId, lineRaw);
+  }
+  if (last) revalidateDocumentPaths(last);
+  redirect(`/leads/${leadId}`);
 }
 
 function inferFromName(filename: string, library: string): string {

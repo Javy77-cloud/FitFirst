@@ -10,8 +10,8 @@ export default function NewLeadPage() {
     <AppShell title="Add Lead" eyebrow="Quick action">
       <form action={createLead} className="ff-card max-w-xl space-y-3 p-4">
         <p className="text-sm text-muted-foreground">
-          Person record only. Start a shop from the lead when you are ready to quote. Dec pages
-          belong on the Deal.
+          Person and coverage they asked for. After you save, drop files on each line of interest
+          — never on the lead as a whole.
         </p>
         <LeadFormFields />
         <label className="flex items-start gap-2 text-sm">

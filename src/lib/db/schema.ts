@@ -805,6 +805,7 @@ export const documents = pgTable(
     tenantId: tenantCol(),
     riskId: uuid("risk_id").references(() => risks.id),
     dealId: uuid("deal_id").references(() => deals.id),
+    leadId: uuid("lead_id").references(() => leads.id),
     policyId: uuid("policy_id"),
     contactId: uuid("contact_id").references(() => contacts.id),
     accountId: uuid("account_id"),
@@ -826,6 +827,7 @@ export const documents = pgTable(
   (t) => [
     index("documents_tenant_risk_idx").on(t.tenantId, t.riskId),
     index("documents_tenant_deal_slot_idx").on(t.tenantId, t.dealId, t.slot),
+    index("documents_tenant_lead_idx").on(t.tenantId, t.leadId),
     index("documents_tenant_policy_idx").on(t.tenantId, t.policyId),
     index("documents_tenant_folder_idx").on(t.tenantId, t.folderId),
     index("documents_tenant_library_idx").on(t.tenantId, t.library),

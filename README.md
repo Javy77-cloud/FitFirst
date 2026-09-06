@@ -4,7 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6w`)
+## Mac test now (`cursor/live-ff-tip-sep6x`)
+
+Lead detail two-column layout, documents per line of interest, and one-click Lead ↔ Deal links. Rebased onto live clock/follow-up tip `sep6w` (`c42b4e2`) — clock / follow-up / Default templates / notification modal / Operations nav stay theirs. Additive `0079_documents_lead_id` only (nullable `documents.lead_id`). Line is stored on existing `documents.tags` as `line:home`. Their `0078_default_first_step_popup` is already on this branch. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6x && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Open a Lead.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Two-column lead | Left is person + coverage. Right is Documents by line. Address / City / State / ZIP share one row. Email and Phone share one row. |
+| 2 | Per-line cards | Home, Auto, and Flood cards are present (plus the desired line). Each is collapsible, has its own drop zone, starts with one file slot, and **+ Add file** adds another slot. |
+| 3 | Upload + delete | Drop or pick a file on Home. It shows a name or thumbnail with a trash-can on the right. There is **no** global lead upload. |
+| 4 | Convert carry | Convert the lead. The same file is on the deal under that line group. |
+| 5 | Lead ↔ Deal | Lead top shows **View related deal**. Deal top shows **View source lead**. One click each way. |
+
+## Mac test prior (`cursor/live-ff-tip-sep6w`)
 
 Clock + Default-on-contacted + live delays + one app-root modal + snooze on every channel + compact funnel headers + notification checkboxes. Operations stays top-level admin-only; Customize stays free. Additive `0078_default_first_step_popup` only (Default first step → in-app popup). No seed wipe.
 

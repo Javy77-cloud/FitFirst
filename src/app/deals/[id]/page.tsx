@@ -11,6 +11,7 @@ import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
+import { RelatedRecordNav } from "@/components/crm/related-record-nav";
 import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { SectionTabs } from "@/components/section-tabs";
@@ -123,6 +124,13 @@ export default async function DealPage({
         <StagePill stage={deal.pipelineStage} />
         <span>{deal.lineOfBusiness}</span>
         <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
+        {lead ? (
+          <RelatedRecordNav
+            href={`/leads/${lead.id}`}
+            label="View source lead"
+            testId="view-source-lead"
+          />
+        ) : null}
       </div>
 
       {isAna ? (

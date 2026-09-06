@@ -19,6 +19,7 @@ const SURFACES: Array<{ file: string; label: string; stored: boolean }> = [
   { file: "src/components/documents/fill-workspace.tsx", label: "Forms scan source", stored: true },
   { file: "src/components/documents/document-versions.tsx", label: "Document replace / versions", stored: true },
   { file: "src/components/documents/library-upload.tsx", label: "Documents upload preview", stored: false },
+  { file: "src/components/leads/lead-line-documents.tsx", label: "Lead per-line documents", stored: true },
 ];
 
 function source(file: string) {

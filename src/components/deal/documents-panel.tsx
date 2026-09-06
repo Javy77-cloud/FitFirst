@@ -10,6 +10,8 @@ import { DealUploadDesk } from "@/components/deal/deal-upload-desk";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
+import { groupDocsByLine, isImageDoc, lineFromTags } from "@/lib/leads/line-documents";
+import { fileViewHref } from "@/lib/files/urls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { CompletenessReport } from "@/lib/completeness/report";
@@ -38,8 +40,11 @@ export function DocumentsPanel({
 }) {
   const flagged = fields.filter((f) => f.flagged && !f.appliedToRisk);
   const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
+  const lineDocs = sourceDocs.filter((d) => lineFromTags(d.tags));
+  const otherSourceDocs = sourceDocs.filter((d) => !lineFromTags(d.tags));
   const quotePdfs = docs.filter((d) => d.slot === "quote_pdf");
   const sourceDocTypes = sourceDocs.map((doc) => doc.docType);
+  const lineGroups = groupDocsByLine(lineDocs);
 
   return (
     <div className="space-y-4">
@@ -54,7 +59,60 @@ export function DocumentsPanel({
 
           <SourceDocsUpload dealId={dealId} riskId={riskId} />
 
-          <DocTable docs={sourceDocs} dealId={dealId} empty="No source documents yet." />
+          {lineGroups.length > 0 ? (
+            <div className="mb-3 space-y-2" data-ff-deal-docs-by-line>
+              {lineGroups.map((group) => (
+                <details key={group.line} open className="rounded-md border border-border px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-semibold text-navy">
+                    {group.label} · {group.docs.length} file{group.docs.length === 1 ? "" : "s"}
+                  </summary>
+                  <ul className="mt-2 space-y-1.5">
+                    {group.docs.map((doc) => (
+                      <li
+                        key={doc.id}
+                        className="flex items-center gap-2 rounded-md border border-border/70 px-2 py-1.5"
+                      >
+                        {isImageDoc(doc) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={fileViewHref(doc.id)}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-secondary text-[10px] font-semibold uppercase text-muted-foreground">
+                            {doc.filename.split(".").pop()?.slice(0, 4) || "file"}
+                          </span>
+                        )}
+                        <a
+                          href={fileViewHref(doc.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="min-w-0 flex-1 truncate text-sm font-medium text-navy hover:underline"
+                        >
+                          {doc.filename}
+                        </a>
+                        <DeleteUploadedFileButton
+                          documentId={doc.id}
+                          filename={doc.filename}
+                          slot={doc.slot}
+                          docType={doc.docType}
+                          dealId={dealId}
+                          icon
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ))}
+            </div>
+          ) : null}
+
+          <DocTable
+            docs={otherSourceDocs}
+            dealId={dealId}
+            empty={lineGroups.length > 0 ? "" : "No source documents yet."}
+          />
         </section>
 
         <section className="ff-card p-4">
@@ -178,7 +236,7 @@ function DocTable({
   empty: string;
 }) {
   if (docs.length === 0) {
-    return <p className="text-base text-muted-foreground">{empty}</p>;
+    return empty ? <p className="text-base text-muted-foreground">{empty}</p> : null;
   }
   return (
     <table className="ff-table">

@@ -13,6 +13,8 @@ import { formatPersonName } from "@/lib/crm/display";
 import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
+import { LeadLineDocuments } from "@/components/leads/lead-line-documents";
+import { RelatedRecordNav } from "@/components/crm/related-record-nav";
 import { routeLeadNow } from "@/app/actions/lead-routing";
 import { latestRoutingLog } from "@/lib/leads/apply-routing";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -47,7 +49,7 @@ export default async function LeadDetailPage({
       listEnabledScriptsFor("leads", "edit"),
     ]);
   if (!row) notFound();
-  const { lead, deal } = row;
+  const { lead, deal, docs } = row;
   const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
   const lineLabel = lead.insuranceTypeDesired
     ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
@@ -79,7 +81,16 @@ export default async function LeadDetailPage({
         }))}
       />
       <div className="mb-4">
-        <h1 className="text-xl font-semibold text-navy">{formatPersonName(lead)}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-semibold text-navy">{formatPersonName(lead)}</h1>
+          {deal ? (
+            <RelatedRecordNav
+              href={`/deals/${deal.id}`}
+              label="View related deal"
+              testId="view-related-deal"
+            />
+          ) : null}
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
           <span className="uppercase text-muted-foreground">{lead.status}</span>
           {deal ? <StagePill stage={deal.pipelineStage} /> : null}
@@ -125,29 +136,45 @@ export default async function LeadDetailPage({
         </div>
       ) : null}
 
-      <RecordSection id="record" title="This lead" summary="Person and coverage they asked for — source docs wait for the deal">
-        <form action={updateLeadRecord} className="mb-4 space-y-3">
-          <input type="hidden" name="leadId" value={lead.id} />
-          <LeadFormFields lead={lead} />
-          <Button type="submit" size="sm">
-            Save lead
-          </Button>
-        </form>
-        {!deal ? (
-          <form action={createDealFromLead} className="mb-4 flex flex-wrap items-end gap-2">
-            <input type="hidden" name="leadId" value={lead.id} />
-            <input type="hidden" name="state" value={lead.state ?? "FL"} />
-            <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
-            <Button type="submit" data-ff-convert-deal>
-              Convert
-            </Button>
-            <p className="w-full text-helper text-muted-foreground">
-              Convert when ready to shop. Source docs and the master-sheet approve gate live on
-              the Deal — not here.
-            </p>
-          </form>
-        ) : null}
-      </RecordSection>
+      <div
+        className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]"
+        data-ff-lead-layout="two-col"
+      >
+        <div className="min-w-0">
+          <RecordSection
+            id="record"
+            title="This lead"
+            summary="Person and coverage they asked for. Files sit on each line to the right."
+          >
+            <form action={updateLeadRecord} className="mb-4 space-y-3">
+              <input type="hidden" name="leadId" value={lead.id} />
+              <LeadFormFields lead={lead} />
+              <Button type="submit" size="sm">
+                Save lead
+              </Button>
+            </form>
+            {!deal ? (
+              <form action={createDealFromLead} className="mb-4 flex flex-wrap items-end gap-2">
+                <input type="hidden" name="leadId" value={lead.id} />
+                <input type="hidden" name="state" value={lead.state ?? "FL"} />
+                <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
+                <Button type="submit" data-ff-convert-deal>
+                  Convert
+                </Button>
+                <p className="w-full text-helper text-muted-foreground">
+                  Convert when ready to shop. Line files carry onto the deal, grouped the same way.
+                </p>
+              </form>
+            ) : null}
+          </RecordSection>
+        </div>
+        <LeadLineDocuments
+          leadId={lead.id}
+          dealId={deal?.id ?? null}
+          insuranceTypeDesired={lead.insuranceTypeDesired}
+          docs={docs}
+        />
+      </div>
 
       <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">
         {deal ? (
@@ -157,8 +184,8 @@ export default async function LeadDetailPage({
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No deal yet. Convert when you start the shop. Drop a dec, wind mit, or 4-point on the
-            deal — not here.
+            No deal yet. Convert when you start the shop. Line files already on this lead come with
+            it.
           </p>
         )}
       </RecordSection>
