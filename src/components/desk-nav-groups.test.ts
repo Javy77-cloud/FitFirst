@@ -8,7 +8,8 @@ describe("desk settings IA", () => {
   it("keeps agency Settings and Admin as admin-only rail rows", () => {
     expect(NAV_GROUPS.map((group) => group.id)).toContain("settings");
     expect(NAV_GROUPS.map((group) => group.id)).toContain("admin");
-    expect(NAV_GROUPS.at(-1)?.id).toBe("admin");
+    expect(NAV_GROUPS.map((group) => group.id)).toContain("operations");
+    expect(NAV_GROUPS.at(-1)?.id).toBe("operations");
     expect(settings?.label).toBe("Settings");
     expect(admin?.label).toBe("Admin");
   });
@@ -17,7 +18,7 @@ describe("desk settings IA", () => {
     expect(groupIdForPath("/settings")).toBe("settings");
     expect(groupIdForPath("/settings/offices")).toBe("admin");
     expect(groupIdForPath("/settings/phone")).toBe("settings");
-    expect(groupIdForPath("/settings/billing")).toBe("admin");
+    expect(groupIdForPath("/settings/billing")).toBe("operations");
     expect(groupIdForPath("/settings/import-export")).toBe("settings");
     expect(groupIdForPath("/settings/import")).toBe("settings");
     expect(groupIdForPath("/settings/developer-hub")).toBe("settings");
@@ -51,6 +52,7 @@ describe("primary desk nav", () => {
       "reports",
       "settings",
       "admin",
+      "operations",
     ]);
     expect(NAV_GROUPS.some((group) => group.label === "People")).toBe(false);
     expect(NAV_GROUPS.some((group) => group.id === "work")).toBe(false);

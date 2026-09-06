@@ -405,26 +405,58 @@ export function DeskSidebar({
                       {nestedKids.map((child) => {
                         const NestedIcon = child.icon;
                         const nestedActive = pathIsActive(pathname, child);
+                        const beforeNested = dropKey({ type: "before", id: child.id });
+                        const afterNested = dropKey({ type: "after", id: child.id });
+                        const nestedDragging = draggingId === child.id;
                         return (
-                          <Link
-                            key={`${item.id}-${child.id}`}
-                            href={child.href}
-                            title={child.label}
-                            data-nav-id={child.id}
-                            draggable={false}
-                            className={cn(
-                              "flex min-w-0 items-center gap-2 rounded-md py-1.5 pr-2 text-sm",
-                              customizing ? "pl-2" : "pl-2.5",
-                              nestedActive && !customizing
-                                ? "bg-[var(--ff-card)] text-navy"
-                                : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
-                            )}
-                          >
-                            <NestedIcon className="size-3.5 shrink-0 opacity-80" />
-                            <span className="flex-1 truncate">{child.label}</span>
-                          </Link>
+                          <div key={`${item.id}-${child.id}`} className="relative" data-nav-id={child.id}>
+                            {customizing ? (
+                              <div
+                                {...dropHandlers(beforeNested)}
+                                className={cn("mx-2 h-2 rounded-sm", zoneClass(dropTarget === beforeNested, "gap"))}
+                                aria-hidden
+                              />
+                            ) : null}
+                            <div
+                              {...dropHandlers(afterNested)}
+                              {...bindDrag(child.id, child.label)}
+                              data-nav-dragging={nestedDragging ? "1" : undefined}
+                              className={cn(
+                                "flex items-center rounded-md",
+                                zoneClass(dropTarget === afterNested, "gap"),
+                                customizing ? "cursor-grab active:cursor-grabbing" : "",
+                                nestedDragging ? "pointer-events-none opacity-40" : "",
+                              )}
+                            >
+                              <Link
+                                href={child.href}
+                                title={child.label}
+                                draggable={false}
+                                className={cn(
+                                  "flex min-w-0 flex-1 items-center rounded-md py-1.5 pr-2 text-sm",
+                                  customizing ? "pl-2" : "pl-2.5",
+                                  nestedActive && !customizing
+                                    ? "bg-[var(--ff-card)] text-navy"
+                                    : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
+                                )}
+                              >
+                                <NestedIcon className="size-3.5 shrink-0 opacity-80" />
+                                <span className="flex-1 truncate">{child.label}</span>
+                              </Link>
+                            </div>
+                          </div>
                         );
                       })}
+                      {customizing ? (
+                        <div
+                          {...dropHandlers(dropKey({ type: "end-folder", parentId: item.id }))}
+                          className={cn(
+                            "mx-2 h-2 rounded-sm",
+                            zoneClass(dropTarget === dropKey({ type: "end-folder", parentId: item.id }), "gap"),
+                          )}
+                          aria-hidden
+                        />
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

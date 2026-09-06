@@ -9,10 +9,10 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 7 as const;
+export const NAV_LAYOUT_VERSION = 8 as const;
 export const DIVIDER_ID = "divider";
 
-/** Admin-only Operations folder — last child of Admin, never a top-level rail row. */
+/** Admin-only Operations folder. Default rail places it top-level; Customize can nest or promote it. */
 export const OPERATIONS_NAV_IDS = [
   "billing",
   "claims",
@@ -52,11 +52,20 @@ export const DEFAULT_PRIMARY_ORDER = [
   "reports",
   "settings",
   "admin",
+  "operations",
 ] as const;
 
 export const DEFAULT_COLLAPSED_IDS = ["business", "carriers"] as const;
 
-export const UTILITY_PRIMARY_IDS = ["tasks", "calendar", "templates", "reports", "settings", "admin"] as const;
+export const UTILITY_PRIMARY_IDS = [
+  "tasks",
+  "calendar",
+  "templates",
+  "reports",
+  "settings",
+  "admin",
+  "operations",
+] as const;
 
 export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   home: [],
@@ -80,7 +89,6 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
     "lines",
     "offices",
     "agency",
-    "operations",
   ],
   operations: OPERATIONS_NAV_IDS,
 };
@@ -288,40 +296,14 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
     ? parsed.hiddenPrimaryIds.filter((id): id is string => typeof id === "string")
     : [];
   const hiddenPrimaryIds = uniqueKnown(savedHidden.filter((id) => isHidablePrimaryId(id)));
-  const pinned = pinOperationsFolder(primaryOrder, hiddenPrimaryIds, submenus);
 
   return {
     version: NAV_LAYOUT_VERSION,
-    primaryOrder: pinned.primaryOrder,
-    hiddenPrimaryIds: pinned.hiddenPrimaryIds,
-    submenus: pinned.submenus,
+    primaryOrder,
+    hiddenPrimaryIds,
+    submenus,
     personal,
   };
-}
-
-/** Operations is always last under Admin, never a top-level rail row. Prefs cannot hide the folder. */
-function pinOperationsFolder(
-  primaryOrder: string[],
-  hiddenPrimaryIds: string[],
-  submenus: Record<string, string[]>,
-): {
-  primaryOrder: string[];
-  hiddenPrimaryIds: string[];
-  submenus: Record<string, string[]>;
-} {
-  const reserved = new Set<string>(["operations", ...OPERATIONS_NAV_IDS]);
-  const nextPrimary = primaryOrder.filter((id) => !reserved.has(id));
-  const nextHidden = hiddenPrimaryIds.filter((id) => !reserved.has(id));
-  const nextSubs: Record<string, string[]> = {};
-  for (const [parent, children] of Object.entries(submenus)) {
-    if (parent === "operations") continue;
-    nextSubs[parent] = children.filter((id) => !reserved.has(id));
-  }
-  const admin = [...(nextSubs.admin ?? [])].filter((id) => id !== "operations" && !reserved.has(id));
-  admin.push("operations");
-  nextSubs.admin = admin;
-  nextSubs.operations = [...OPERATIONS_NAV_IDS];
-  return { primaryOrder: nextPrimary, hiddenPrimaryIds: nextHidden, submenus: nextSubs };
 }
 
 export function parseStoredNavLayout(raw: string | null | undefined): StoredNavLayout {
@@ -392,12 +374,26 @@ export function splitNavSections(rows: ResolvedNavRow[]): {
   };
 }
 
-export function findParentId(layout: StoredNavLayout, id: string): string | null {
-  const current = normalizeNavLayout(layout);
-  for (const [parent, children] of Object.entries(current.submenus)) {
+function parentIdIn(submenus: Record<string, string[]>, id: string): string | null {
+  for (const [parent, children] of Object.entries(submenus)) {
     if (children.includes(id)) return parent;
   }
   return null;
+}
+
+function folderExists(primaryOrder: string[], submenus: Record<string, string[]>, id: string): boolean {
+  return primaryOrder.includes(id) || parentIdIn(submenus, id) !== null;
+}
+
+function isDescendantOf(submenus: Record<string, string[]>, ancestor: string, id: string): boolean {
+  const kids = submenus[ancestor] ?? [];
+  if (kids.includes(id)) return true;
+  return kids.some((kid) => isDescendantOf(submenus, kid, id));
+}
+
+export function findParentId(layout: StoredNavLayout, id: string): string | null {
+  const current = normalizeNavLayout(layout);
+  return parentIdIn(current.submenus, id);
 }
 
 export function takeItem(
@@ -483,15 +479,15 @@ export function applyNavDrop(layout: StoredNavLayout, draggedId: string, target:
   };
 
   const placeInFolder = (parentId: string, index: number) => {
-    if (!isCatalogId(parentId) || isDividerId(parentId)) return;
-    if (!next.primaryOrder.includes(parentId)) return;
+    if (!isCatalogId(parentId) || isDividerId(parentId) || parentId === draggedId) return;
+    if (!folderExists(next.primaryOrder, next.submenus, parentId)) return;
+    if (isDescendantOf(next.submenus, draggedId, parentId)) return;
     const folder = [...(next.submenus[parentId] ?? [])];
     const withItem = insertAt(folder, index, draggedId);
-    const merged = uniqueKnown([...withItem, ...orphanChildren.filter((id) => id !== parentId)]);
     next = {
       ...next,
       primaryOrder: next.primaryOrder.filter((id) => id !== draggedId),
-      submenus: { ...next.submenus, [parentId]: merged, [draggedId]: [] },
+      submenus: { ...next.submenus, [parentId]: uniqueKnown(withItem), [draggedId]: orphanChildren },
     };
   };
 
@@ -504,11 +500,11 @@ export function applyNavDrop(layout: StoredNavLayout, draggedId: string, target:
     return next;
   }
 
-  const targetParent = findParentId(next, target.id);
+  const targetParent = parentIdIn(next.submenus, target.id);
   const targetIsPrimary = next.primaryOrder.includes(target.id) || isDividerId(target.id);
 
   if (target.type === "into") {
-    const nestedParent = findParentId(next, target.id);
+    const nestedParent = parentIdIn(next.submenus, target.id);
     if (nestedParent) {
       const folder = next.submenus[nestedParent] ?? [];
       const at = folder.indexOf(target.id);

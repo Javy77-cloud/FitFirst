@@ -59,6 +59,7 @@ describe("nav layout defaults", () => {
       "reports",
       "settings",
       "admin",
+      "operations",
     ]);
     const rows = resolveNavLayout(null);
     expect(itemLabels(rows)).toEqual([
@@ -75,19 +76,22 @@ describe("nav layout defaults", () => {
       "Reports",
       "Settings",
       "Admin",
+      "Operations",
     ]);
     expect(rows.some((row) => row.kind === "divider")).toBe(true);
     const settingsRow = rows.find((row) => row.kind === "item" && row.id === "settings");
     const adminRow = rows.find((row) => row.kind === "item" && row.id === "admin");
+    const operationsRow = rows.find((row) => row.kind === "item" && row.id === "operations");
     expect(settingsRow && settingsRow.kind === "item" ? settingsRow.adminOnly : false).toBe(true);
     expect(adminRow && adminRow.kind === "item" ? adminRow.adminOnly : false).toBe(true);
+    expect(operationsRow && operationsRow.kind === "item" ? operationsRow.adminOnly : false).toBe(true);
     expect(isPinnedPrimaryId("settings")).toBe(false);
     expect(isHidablePrimaryId("settings")).toBe(true);
     expect(isHidablePrimaryId("leads")).toBe(true);
   });
 
   it("nests Quotes under Deals and template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(7);
+    expect(NAV_LAYOUT_VERSION).toBe(8);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
@@ -129,7 +133,6 @@ describe("nav layout defaults", () => {
       "lines",
       "offices",
       "agency",
-      "operations",
     ]);
     expect(byId.admin.submenu.map((item) => item.label)).toEqual([
       "People",
@@ -140,15 +143,13 @@ describe("nav layout defaults", () => {
       "Lines of business",
       "Offices",
       "Agency chrome",
-      "Operations",
     ]);
-    expect(byId.admin.submenu.at(-1)?.id).toBe("operations");
+    expect(byId.admin.submenu.map((item) => item.id)).not.toContain("operations");
     expect(byId.admin.submenu.map((item) => item.id)).not.toContain("billing");
     expect(byId.admin.submenu.map((item) => item.id)).not.toContain("compliance");
-    const operations = byId.admin.submenu.find((item) => item.id === "operations");
-    expect(operations?.adminOnly).toBe(true);
-    expect(operations?.children.map((item) => item.id)).toEqual([...OPERATIONS_NAV_IDS]);
-    expect(operations?.children.map((item) => item.label)).toEqual([
+    expect(byId.operations.adminOnly).toBe(true);
+    expect(byId.operations.submenu.map((item) => item.id)).toEqual([...OPERATIONS_NAV_IDS]);
+    expect(byId.operations.submenu.map((item) => item.label)).toEqual([
       "Billing",
       "Claims",
       "Endorsements",
@@ -158,8 +159,9 @@ describe("nav layout defaults", () => {
       "Book of Life",
       "Marketplace",
     ]);
-    expect(operations?.children.every((item) => item.adminOnly)).toBe(true);
+    expect(byId.operations.submenu.every((item) => item.adminOnly && item.children.length === 0)).toBe(true);
     expect(DEFAULT_SUBMENUS.operations).toEqual([...OPERATIONS_NAV_IDS]);
+    expect(DEFAULT_SUBMENUS.admin).not.toContain("operations");
     expect(byId.business.defaultCollapsed).toBe(true);
     expect(byId.carriers.defaultCollapsed).toBe(true);
     expect(byId.home.defaultCollapsed).toBe(false);
@@ -179,7 +181,7 @@ describe("nav layout defaults", () => {
     for (const id of CATALOG_ONLY_DEFAULT_EXTRAS) {
       expect(flat).not.toContain(id);
     }
-    expect(itemIds(rows)).not.toContain("operations");
+    expect(itemIds(rows)).toContain("operations");
     expect(flat).toContain("operations");
     for (const id of OPERATIONS_NAV_IDS) {
       expect(flat).toContain(id);
@@ -239,30 +241,45 @@ describe("nav layout defaults", () => {
     expect(labels.filter((label) => label === "Deals")).toHaveLength(1);
   });
 
-  it("resets v6 prefs so Operations is last under Admin with eight kids", () => {
+  it("resets v7 prefs so Operations is a top-level admin-only row with eight kids", () => {
     const next = normalizeNavLayout({
-      version: 6,
-      primaryOrder: [...DEFAULT_PRIMARY_ORDER, "operations"],
+      version: 7,
+      primaryOrder: [
+        "home",
+        "leads",
+        "deals",
+        "contacts",
+        "policies",
+        "business",
+        "carriers",
+        "divider",
+        "tasks",
+        "calendar",
+        "templates",
+        "reports",
+        "settings",
+        "admin",
+      ],
       hiddenPrimaryIds: ["operations", "billing"],
-      submenus: { admin: ["agents", "billing"], operations: [] },
+      submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(7);
-    expect(next.primaryOrder).not.toContain("operations");
-    expect(next.hiddenPrimaryIds).not.toContain("operations");
-    expect(next.submenus.admin.at(-1)).toBe("operations");
+    expect(next.version).toBe(8);
+    expect(next.primaryOrder.at(-1)).toBe("operations");
+    expect(next.hiddenPrimaryIds).toEqual([]);
+    expect(next.submenus.admin).not.toContain("operations");
     expect(next.submenus.admin).not.toContain("billing");
     expect(next.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
   });
 
-  it("keeps Operations adminOnly and never a top-level rail row", () => {
+  it("keeps Operations adminOnly at top-level so agents never see it", () => {
     const admin = resolveNavLayout(null, { isAdmin: true });
     const agent = resolveNavLayout(null, { isAdmin: false });
-    expect(itemIds(admin)).not.toContain("operations");
+    expect(itemIds(admin)).toContain("operations");
     expect(itemIds(agent)).not.toContain("operations");
     expect(flattenResolvedNav(admin).some((item) => item.id === "operations" && item.adminOnly)).toBe(true);
     expect(flattenResolvedNav(agent).map((item) => item.id)).not.toContain("operations");
     expect(flattenResolvedNav(agent).map((item) => item.label)).not.toContain("Operations");
-    expect(DEFAULT_SUBMENUS.admin.at(-1)).toBe("operations");
+    expect(DEFAULT_SUBMENUS.admin).not.toContain("operations");
     expect(DEFAULT_SUBMENUS.admin).not.toContain("billing");
     expect(DEFAULT_SUBMENUS.admin).not.toContain("compliance");
     expect([...DEFAULT_SUBMENUS.operations]).toEqual([...OPERATIONS_NAV_IDS]);
@@ -272,7 +289,7 @@ describe("nav layout defaults", () => {
   it("splits utility items after the divider so they can stay pinned", () => {
     const { main, utility } = splitNavSections(resolveNavLayout(null));
     expect(itemIds(main)).toEqual(["home", "leads", "deals", "contacts", "policies", "business", "carriers"]);
-    expect(itemIds(utility)).toEqual(["tasks", "calendar", "templates", "reports", "settings", "admin"]);
+    expect(itemIds(utility)).toEqual(["tasks", "calendar", "templates", "reports", "settings", "admin", "operations"]);
   });
 });
 
@@ -297,7 +314,8 @@ describe("normalizeNavLayout", () => {
     expect(stale.hiddenPrimaryIds).toEqual([]);
     expect(stale.submenus.contacts).toEqual([]);
     expect(stale.submenus.policies).toEqual(["my-book", "renewals", "certificates"]);
-    expect(stale.submenus.admin.at(-1)).toBe("operations");
+    expect(stale.primaryOrder.at(-1)).toBe("operations");
+    expect(stale.submenus.admin).not.toContain("operations");
     expect(stale.submenus.admin).not.toContain("billing");
     expect(stale.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
     expect(stale.submenus.tasks).toEqual([]);
@@ -483,6 +501,52 @@ describe("free rearrange", () => {
     const moved = reorderPrimaries(start, "tasks", "home");
     expect(moved.primaryOrder[0]).toBe("tasks");
   });
+
+  it("nests a folder under Admin and keeps its children", () => {
+    const start = defaultStoredNavLayout();
+    const nested = applyNavDrop(start, "operations", { type: "into", id: "admin" });
+    expect(nested.primaryOrder).not.toContain("operations");
+    expect(nested.submenus.admin).toContain("operations");
+    expect(nested.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
+    expect(nested.submenus.admin).not.toContain("billing");
+    const rows = resolveNavLayout(nested);
+    const admin = rows.find((row) => row.kind === "item" && row.id === "admin");
+    const operations = admin && admin.kind === "item" ? admin.submenu.find((item) => item.id === "operations") : undefined;
+    expect(operations?.children.map((item) => item.id)).toEqual([...OPERATIONS_NAV_IDS]);
+  });
+
+  it("drags a nested folder to the top-level rail with kids intact, and persist keeps it", () => {
+    const start = defaultStoredNavLayout();
+    const nested = applyNavDrop(start, "operations", { type: "into", id: "admin" });
+    const promoted = applyNavDrop(nested, "operations", { type: "after", id: "admin" });
+    expect(promoted.primaryOrder).toContain("operations");
+    expect(promoted.primaryOrder.indexOf("operations")).toBe(promoted.primaryOrder.indexOf("admin") + 1);
+    expect(promoted.submenus.admin).not.toContain("operations");
+    expect(promoted.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
+    const persisted = normalizeNavLayout(promoted);
+    expect(persisted.primaryOrder).toContain("operations");
+    expect(persisted.submenus.admin).not.toContain("operations");
+    expect(persisted.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
+    const rows = resolveNavLayout(persisted);
+    expect(itemIds(rows)).toContain("operations");
+    const operations = rows.find((row) => row.kind === "item" && row.id === "operations");
+    expect(operations && operations.kind === "item" ? operations.submenu.map((item) => item.id) : []).toEqual([
+      ...OPERATIONS_NAV_IDS,
+    ]);
+  });
+
+  it("lets any folder move freely after the default rail is applied", () => {
+    const start = defaultStoredNavLayout();
+    const dealsUnderPolicies = applyNavDrop(start, "deals", { type: "into", id: "policies" });
+    expect(dealsUnderPolicies.primaryOrder).not.toContain("deals");
+    expect(dealsUnderPolicies.submenus.policies).toContain("deals");
+    expect(dealsUnderPolicies.submenus.deals).toEqual(["quotes"]);
+    const dealsBack = applyNavDrop(dealsUnderPolicies, "deals", { type: "before", id: "contacts" });
+    expect(dealsBack.primaryOrder).toContain("deals");
+    expect(dealsBack.submenus.deals).toEqual(["quotes"]);
+    expect(dealsBack.submenus.policies).not.toContain("deals");
+    expect(normalizeNavLayout(dealsBack).submenus.deals).toEqual(["quotes"]);
+  });
 });
 
 describe("hide and show primaries", () => {
@@ -526,11 +590,14 @@ describe("primaryIdForPath", () => {
     expect(primaryIdForPath("/policies")).toBe("policies");
     expect(primaryIdForPath("/renewals")).toBe("policies");
     expect(primaryIdForPath("/certificates")).toBe("policies");
-    expect(primaryIdForPath("/settings/billing")).toBe("admin");
-    expect(primaryIdForPath("/book-health")).toBe("admin");
-    expect(primaryIdForPath("/book-life")).toBe("admin");
-    expect(primaryIdForPath("/marketplace")).toBe("admin");
-    expect(primaryIdForPath("/admin/operations")).toBe("admin");
+    expect(primaryIdForPath("/settings/billing")).toBe("operations");
+    expect(primaryIdForPath("/book-health")).toBe("operations");
+    expect(primaryIdForPath("/book-life")).toBe("operations");
+    expect(primaryIdForPath("/marketplace")).toBe("operations");
+    expect(primaryIdForPath("/admin/operations")).toBe("operations");
+    expect(primaryIdForPath("/claims")).toBe("operations");
+    expect(primaryIdForPath("/endorsements")).toBe("operations");
+    expect(primaryIdForPath("/compliance")).toBe("operations");
   });
 
   it("honors a custom submenu placement", () => {

@@ -294,6 +294,9 @@ export function navLinkIsActive(pathname: string, item: Pick<NavLinkDef, "href" 
   const match = item.match ?? item.href.split("?")[0];
   if (match === "/" || item.exact) return pathname === match;
   if (match === "/settings" && isPersonalSettingsPath(pathname)) return false;
+  if (match === "/admin" && (pathname === "/admin/operations" || pathname.startsWith("/admin/operations/"))) {
+    return false;
+  }
   if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/"))) {
     return true;
   }

@@ -13,7 +13,7 @@ export default async function OperationsHubPage() {
   );
 
   return (
-    <AppShell title="Operations" eyebrow="Admin">
+    <AppShell title="Operations">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Agency operations. Agents never see this folder.
       </p>
