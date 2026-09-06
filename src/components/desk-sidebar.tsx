@@ -12,7 +12,7 @@ import {
   PanelLeftOpen,
   Settings2,
 } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { resetNavLayoutAction, saveNavLayoutAction } from "@/app/actions/nav-layout";
 import { pathIsActive } from "@/components/desk-nav-groups";
 import type { Actor } from "@/lib/auth/rbac";
@@ -99,9 +99,10 @@ export function DeskSidebar({
   const [customizing, setCustomizing] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
   const persistEnabled = signedIn && Boolean(actor.id);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistChain = useRef(Promise.resolve());
+  const persistEpoch = useRef(0);
   const dragRef = useRef<DragPayload | null>(null);
   const layoutRef = useRef(layout);
   const narrow = rail === "narrow";
@@ -139,11 +140,13 @@ export function DeskSidebar({
     setSaveError(null);
     if (!persistEnabled) return;
     if (persistTimer.current) clearTimeout(persistTimer.current);
+    const epoch = persistEpoch.current;
     persistTimer.current = setTimeout(() => {
-      startTransition(() => {
-        void saveNavLayoutAction(normalized).then((result) => {
-          if (!result.ok) setSaveError(result.error);
-        });
+      persistChain.current = persistChain.current.then(async () => {
+        if (epoch !== persistEpoch.current) return;
+        const result = await saveNavLayoutAction(normalized);
+        if (epoch !== persistEpoch.current) return;
+        if (!result.ok) setSaveError(result.error);
       });
     }, 200);
   }
@@ -166,16 +169,23 @@ export function DeskSidebar({
   }
 
   function resetLayout() {
+    persistEpoch.current += 1;
+    if (persistTimer.current) {
+      clearTimeout(persistTimer.current);
+      persistTimer.current = null;
+    }
     const next = defaultStoredNavLayout();
     setLayout(next);
     writeCachedLayout(next);
     setSaveError(null);
     if (!persistEnabled) return;
-    startTransition(() => {
-      void resetNavLayoutAction().then((result) => {
-        if (!result.ok) setSaveError(result.error);
-        else setLayout(result.layout);
-      });
+    const epoch = persistEpoch.current;
+    persistChain.current = persistChain.current.then(async () => {
+      if (epoch !== persistEpoch.current) return;
+      const result = await resetNavLayoutAction();
+      if (epoch !== persistEpoch.current) return;
+      if (!result.ok) setSaveError(result.error);
+      else setLayout(result.layout);
     });
   }
 
