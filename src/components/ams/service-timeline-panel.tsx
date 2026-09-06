@@ -6,6 +6,7 @@ import {
   SERVICE_TIMELINE_DISCLAIMER,
   serviceTimelineEventLabel,
 } from "@/lib/domain-ams";
+import { StatusBadge } from "@/components/status-badge";
 
 export type ServiceTimelineItem = {
   id: string;
@@ -49,9 +50,9 @@ export function ServiceTimelinePanel({
           {items.map((item) => (
             <li key={item.id} className="rounded-md border border-border px-3 py-2">
               <div className="flex flex-wrap items-baseline gap-2">
-                <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
+                <StatusBadge status={item.eventType}>
                   {serviceTimelineEventLabel(item.eventType)}
-                </span>
+                </StatusBadge>
                 <span className="text-sm text-muted-foreground">{formatDay(item.occurredAt)}</span>
               </div>
               {item.activityTitle ? (

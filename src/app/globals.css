@@ -471,6 +471,15 @@ body[data-ff-col-resize] {
   border-color: var(--ff-accent);
   background: color-mix(in srgb, var(--ff-check-bg) 40%, transparent);
 }
+.ff-file-drop-disabled {
+  opacity: 0.65;
+}
+.ff-file-drop-disabled .ff-file-choose {
+  cursor: not-allowed;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-color: var(--border);
+}
 .ff-file-choose {
   display: inline-flex;
   height: 2rem;

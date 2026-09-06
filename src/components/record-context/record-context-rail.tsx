@@ -11,6 +11,7 @@ import {
 } from "@/lib/record-context-types";
 import { ACTIVITY_KIND_LABEL, type ActivityKind } from "@/lib/domain";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
+import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 
 export type RailPolicyFacts = {
@@ -33,16 +34,10 @@ function kindLabel(kind: string): string {
 }
 
 function DealStage({ stage }: { stage: string }) {
-  const hot = stage === "quote_sent" || stage === "bound" || stage === "won" || stage === "closed_won";
   return (
-    <span
-      className={cn(
-        "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize text-white",
-        hot ? "bg-fit-green" : "bg-navy",
-      )}
-    >
+    <StatusBadge status={stage} uppercase={false}>
       {stage.replaceAll("_", " ")}
-    </span>
+    </StatusBadge>
   );
 }
 

@@ -9,6 +9,7 @@ export function ChooseFiles({
   required,
   accept,
   multiple,
+  disabled,
   className,
   inputRef,
   onFiles,
@@ -18,6 +19,7 @@ export function ChooseFiles({
   required?: boolean;
   accept?: string;
   multiple?: boolean;
+  disabled?: boolean;
   className?: string;
   inputRef?: React.Ref<HTMLInputElement>;
   onFiles?: (files: File[]) => void;
@@ -52,9 +54,15 @@ export function ChooseFiles({
 
   return (
     <div
-      className={cn("ff-file-drop", dragOver && "ff-file-drop-active", className)}
+      className={cn(
+        "ff-file-drop",
+        dragOver && !disabled && "ff-file-drop-active",
+        disabled && "ff-file-drop-disabled",
+        className,
+      )}
       data-ff-file-drop=""
       onDragOver={(event) => {
+        if (disabled) return;
         event.preventDefault();
         setDragOver(true);
       }}
@@ -62,6 +70,7 @@ export function ChooseFiles({
       onDrop={(event) => {
         event.preventDefault();
         setDragOver(false);
+        if (disabled) return;
         setDropped(event.dataTransfer.files);
       }}
     >
@@ -76,6 +85,7 @@ export function ChooseFiles({
         required={required}
         accept={accept}
         multiple={multiple}
+        disabled={disabled}
         className="sr-only"
         onChange={(event) => applyFiles(event.target.files)}
       />

@@ -73,6 +73,18 @@ const GENERIC_STATUS_COLOR: Record<string, StatusColorKey> = {
   signed: "green",
   sent: "teal",
   draft: "amber",
+  file: "green",
+  start: "amber",
+  note: "slate",
+  waived: "slate",
+  due: "amber",
+  received: "green",
+  moved: "violet",
+  added: "teal",
+  removed: "slate",
+  saved: "green",
+  archived: "slate",
+  won: "green",
 };
 
 const CLIENT_STATUS_COLOR: Record<string, StatusColorKey> = {
@@ -192,6 +204,12 @@ export function statusColorFor(value: string | null | undefined): StatusColorKey
   if (CLIENT_STATUS_COLOR[key]) return CLIENT_STATUS_COLOR[key];
   if (TEMP_STATUS_COLOR[key]) return TEMP_STATUS_COLOR[key];
   if (GENERIC_STATUS_COLOR[key]) return GENERIC_STATUS_COLOR[key];
+  const parts = key.split("_").filter(Boolean);
+  for (let i = 1; i < parts.length; i++) {
+    const slice = parts.slice(i).join("_");
+    if (GENERIC_STATUS_COLOR[slice]) return GENERIC_STATUS_COLOR[slice];
+    if (POLICY_STATUS_COLOR[slice]) return POLICY_STATUS_COLOR[slice];
+  }
   return "slate";
 }
 

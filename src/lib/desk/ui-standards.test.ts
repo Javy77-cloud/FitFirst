@@ -19,6 +19,8 @@ describe("platform UI standards", () => {
     expect(text).toMatch(/Choose files/);
     expect(text).toMatch(/ff-file-drop/);
     expect(text).toMatch(/or drop files here/);
+    expect(source("src/app/settings/import/page.tsx")).toMatch(/ChooseFiles/);
+    expect(source("src/app/settings/import/page.tsx")).not.toMatch(/type=["']file["']/);
   });
 
   it("delete control is a right-side trash icon", () => {
@@ -88,8 +90,20 @@ describe("platform UI standards", () => {
     expect(statusColorFor("quoted")).toBe("teal");
     expect(statusColorFor("declined")).toBe("rose");
     expect(statusColorFor("requested")).toBe("blue");
+    expect(statusColorFor("service_requested")).toBe("blue");
+    expect(statusColorFor("installment_past_due")).toBe("rose");
     expect(source("src/components/quotes/status-badge.tsx")).toMatch(/StatusBadge/);
     expect(source("src/components/claims/status-badge.tsx")).toMatch(/StatusBadge/);
+    for (const file of [
+      "src/components/ams/service-request-panel.tsx",
+      "src/components/ams/claim-diary-panel.tsx",
+      "src/components/ams/service-timeline-panel.tsx",
+      "src/components/record-context/record-context-rail.tsx",
+    ]) {
+      expect(source(file), file).toMatch(/StatusBadge/);
+      expect(source(file), file).not.toMatch(/rounded-full bg-\[var\(--ff-sidebar\)\]/);
+      expect(source(file), file).not.toMatch(/bg-navy/);
+    }
     expect(labeledColumns([["policy", "Policy", true]])[0]).toMatchObject({
       id: "policy",
       locked: true,

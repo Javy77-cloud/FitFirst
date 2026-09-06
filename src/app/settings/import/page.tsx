@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChooseFiles } from "@/components/choose-files";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { requireAdminPage } from "@/lib/auth/guards";
 import {
@@ -37,15 +38,10 @@ export default async function ImportSettingsPage({
         <section className="ff-card mb-4 space-y-3 p-4" data-pack={selected.id}>
           <div className="text-sm font-semibold text-navy">{selected.label}</div>
           <p className="text-sm text-muted-foreground">{selected.blurb}</p>
-          <label className="block text-xs text-muted-foreground">
-            CSV
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              disabled
-              className="mt-1 block text-sm text-muted-foreground"
-            />
-          </label>
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">CSV</p>
+            <ChooseFiles name="file" accept=".csv,text/csv" disabled />
+          </div>
           <button
             type="button"
             disabled

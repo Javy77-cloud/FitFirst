@@ -8,6 +8,7 @@ import type { PolicyServiceRequest, PolicyServiceRequestEvent } from "@/lib/db/s
 import { isInForceStatus } from "@/lib/policy/status";
 import { reasonLabel } from "@/lib/policy/reasons";
 import type { PolicyChangeKind } from "@/lib/policy/status";
+import { StatusBadge } from "@/components/status-badge";
 
 export function ServiceRequestPanel({
   policyId,
@@ -68,9 +69,7 @@ export function ServiceRequestPanel({
               <li key={row.id} className="space-y-2 px-3 py-3">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="font-medium text-navy">{serviceKindLabel(row.kind)}</span>
-                  <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
-                    {statusLabel}
-                  </span>
+                  <StatusBadge status={row.status}>{statusLabel}</StatusBadge>
                   <span className="text-sm text-muted-foreground">
                     effective {formatDay(row.effectiveDate)}
                     {row.workDesk ? ` · ${workDeskLabel(row.workDesk)}` : ""}

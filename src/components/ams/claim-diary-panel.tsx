@@ -11,6 +11,7 @@ import {
   claimDiaryStatusLabel,
 } from "@/lib/domain-ams";
 import type { ClaimDiaryEntry } from "@/lib/db/schema";
+import { StatusBadge } from "@/components/status-badge";
 
 export function ClaimDiaryPanel({
   claimId,
@@ -43,9 +44,7 @@ export function ClaimDiaryPanel({
             <li key={row.id} className="space-y-2 px-3 py-2">
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="font-medium text-navy">{claimDiaryKindLabel(row.kind)}</span>
-                <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
-                  {claimDiaryStatusLabel(row.status)}
-                </span>
+                <StatusBadge status={row.status}>{claimDiaryStatusLabel(row.status)}</StatusBadge>
                 {row.dueAt ? (
                   <span className="text-sm text-muted-foreground">due {formatDay(row.dueAt)}</span>
                 ) : null}
