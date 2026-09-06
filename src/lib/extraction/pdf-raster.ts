@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { looksLikePdf } from "@/lib/files/urls";
 
@@ -70,10 +71,16 @@ type PdfjsPage = {
   getTextContent: () => Promise<{ items: Array<{ str?: string; transform?: number[] }> }>;
 };
 
+function pdfWorkerSrc(): string {
+  return pathToFileURL(
+    path.join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"),
+  ).href;
+}
+
 async function loadPdfjs(): Promise<PdfjsModule> {
   const pdfjs = (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfjsModule;
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "";
+    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc();
   }
   return pdfjs;
 }

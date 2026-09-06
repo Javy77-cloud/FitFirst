@@ -9,7 +9,7 @@ import { HOME_FIELDS, emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { extractFieldsFromText } from "./extract";
 import { extractFromImage, recognizeImageText } from "./ocr";
 import { isPdfUpload, pdfTextLooksEmpty, readUploadText } from "./pdf";
-import { rasterizePdfPages } from "./pdf-raster";
+import { extractTextWithPdfjs, rasterizePdfPages, rasterizeWithPdfjs } from "./pdf-raster";
 
 async function drawPhotoDecPng(): Promise<Buffer> {
   const { createCanvas } = await import("@napi-rs/canvas");
@@ -54,6 +54,20 @@ describe("PDF ingest robustness", () => {
     expect(blocked.status).toBe("failed");
     expect(blocked.text).toBe("");
     expect(blocked.message).toMatch(/Rasterize pages first/i);
+  });
+
+  it("extracts and rasterizes through in-process pdfjs (no poppler required)", async () => {
+    const pdf = await buildTextLayerPdf(
+      "HO",
+      "Named Insured: Ada Lopez\nCoverage A Dwelling: $321,000\nYear Built: 1991",
+    );
+    const text = await extractTextWithPdfjs(pdf);
+    expect(text).toMatch(/Ada Lopez/);
+    expect(text).toMatch(/321,000/);
+    const pages = await rasterizeWithPdfjs(pdf);
+    expect(pages.length).toBe(1);
+    expect(looksLikePdf(pages[0])).toBe(false);
+    expect(looksLikeImageBuffer(pages[0])).toBe(true);
   });
 
   it("reads a text-layer PDF into Quote Sheet fields without Tesseract", async () => {
