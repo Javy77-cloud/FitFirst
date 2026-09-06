@@ -1273,3 +1273,28 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+
+## LIVE-TEST tip Sep 6c (`cursor/live-ff-tip-sep6c`)
+
+Javy’s full rail brief on top of **`cursor/live-ff-tip-sep6b`**. Did **not** seed Ana. Did **not** wipe.
+
+What landed on this tip (`NAV_LAYOUT_VERSION` **5**):
+
+- Default rail: Home, Leads (no kids), Deals(+Quotes only), Contacts (no kids), Policies (no kids), Business collapsed, Carriers collapsed, divider, Tasks (no kids), Calendar (no kids), Templates(+3), Reports (no kids), Settings admin empty kids, Admin admin (People / Billing / Compliance / Integrations / Automations / Triggers / Commission rates / Lines / Offices / Agency chrome).
+- Catalog-only (not default kids): work-queue, phone, scorecards, glance, commissions, plus AMS extras.
+- Customize: drag the row itself — no grip, no chevron while customizing. Nest into a folder and promote a child to top-level both work. Nothing locked. Drop-zone highlight. Reset to default restores the rail above. Per-user `nav_layout`.
+- Collapse control sits between the logo / desk name and the menu list. Utility (Tasks→Admin) + profile stay pinned. Collapsed = icons + tooltips.
+- Profile: Edit Profile, Password, Settings (`/me` personal only), Sign Out. Switch role + `role_switch` audit. Agents never see agency Settings / Admin / billing / credentials.
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6c && git pull
+npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+# skip db:seed — keep the live Zoho-imported book
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.

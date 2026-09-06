@@ -30,7 +30,7 @@ describe("sidebar accordion", () => {
   it("prefers the active route over a remembered section", () => {
     expect(resolveOpenSection("/leads", "settings")).toBe("leads");
     expect(resolveOpenSection("/settings/phone", "contacts")).toBe("settings");
-    expect(resolveOpenSection("/phone", "policies")).toBe("calendar");
+    expect(resolveOpenSection("/phone", "policies")).toBe("policies");
     expect(resolveOpenSection("/pipeline", "contacts")).toBe("deals");
     expect(resolveOpenSection("/deals", "contacts")).toBe("deals");
   });

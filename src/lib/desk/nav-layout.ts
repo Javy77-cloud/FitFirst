@@ -9,8 +9,17 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 4 as const;
+export const NAV_LAYOUT_VERSION = 5 as const;
 export const DIVIDER_ID = "divider";
+
+/** Catalog extras that used to nest in the default rail — Customize can still add them. */
+export const CATALOG_ONLY_DEFAULT_EXTRAS = [
+  "work-queue",
+  "phone",
+  "scorecards",
+  "glance",
+  "commissions",
+] as const;
 
 /** Default rail, top → bottom. Divider splits CRM from utility. */
 export const DEFAULT_PRIMARY_ORDER = [
@@ -42,10 +51,10 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   policies: [],
   business: [],
   carriers: [],
-  tasks: ["work-queue"],
-  calendar: ["phone"],
+  tasks: [],
+  calendar: [],
   templates: ["email-signatures", "email-templates", "document-templates"],
-  reports: ["scorecards", "glance", "commissions"],
+  reports: [],
   settings: [],
   admin: [
     "agents",
@@ -310,7 +319,7 @@ export function splitNavSections(rows: ResolvedNavRow[]): {
   }
   return {
     main: rows.slice(0, dividerAt),
-    utility: rows.slice(dividerAt + 1),
+    utility: rows.slice(dividerAt),
   };
 }
 
@@ -370,6 +379,18 @@ export function dropKey(target: NavDropTarget): string {
   return `${target.type}:${target.id}`;
 }
 
+/** Resolve a drop key from a hit stack, skipping the row currently being dragged. */
+export function dropKeyFromElementStack(stack: Array<Element | null | undefined>): string | null {
+  for (const el of stack) {
+    if (!el) continue;
+    if (el.closest("[data-nav-dragging]")) continue;
+    const target = el.closest("[data-nav-drop]") as HTMLElement | null;
+    const key = target?.dataset.navDrop;
+    if (key) return key;
+  }
+  return null;
+}
+
 /** Free rearrange: top-level ↔ folder, any item can become a folder. Nothing locked. */
 export function applyNavDrop(layout: StoredNavLayout, draggedId: string, target: NavDropTarget | null): StoredNavLayout {
   const current = normalizeNavLayout(layout);
@@ -394,6 +415,7 @@ export function applyNavDrop(layout: StoredNavLayout, draggedId: string, target:
 
   const placeInFolder = (parentId: string, index: number) => {
     if (!isCatalogId(parentId) || isDividerId(parentId)) return;
+    if (!next.primaryOrder.includes(parentId)) return;
     const folder = [...(next.submenus[parentId] ?? [])];
     const withItem = insertAt(folder, index, draggedId);
     const merged = uniqueKnown([...withItem, ...orphanChildren.filter((id) => id !== parentId)]);
@@ -417,6 +439,13 @@ export function applyNavDrop(layout: StoredNavLayout, draggedId: string, target:
   const targetIsPrimary = next.primaryOrder.includes(target.id) || isDividerId(target.id);
 
   if (target.type === "into") {
+    const nestedParent = findParentId(next, target.id);
+    if (nestedParent) {
+      const folder = next.submenus[nestedParent] ?? [];
+      const at = folder.indexOf(target.id);
+      placeInFolder(nestedParent, at < 0 ? folder.length : at + 1);
+      return next;
+    }
     placeInFolder(target.id, (next.submenus[target.id] ?? []).length);
     return next;
   }

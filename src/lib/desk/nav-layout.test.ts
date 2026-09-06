@@ -4,10 +4,12 @@ import {
   addSubmenuLink,
   applyNavDrop,
   availableSubmenuLinks,
+  CATALOG_ONLY_DEFAULT_EXTRAS,
   DEFAULT_PRIMARY_ORDER,
   DEFAULT_SUBMENUS,
   defaultStoredNavLayout,
   DIVIDER_ID,
+  dropKeyFromElementStack,
   NAV_LAYOUT_VERSION,
   flattenResolvedNav,
   hidePrimary,
@@ -81,21 +83,35 @@ describe("nav layout defaults", () => {
     expect(isHidablePrimaryId("leads")).toBe(true);
   });
 
-  it("nests Quotes under Deals and template / report / admin children", () => {
+  it("nests Quotes under Deals and template / admin children only", () => {
+    expect(NAV_LAYOUT_VERSION).toBe(5);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
     );
     expect(byId.deals.submenu.map((item) => item.id)).toEqual(["quotes"]);
+    expect(byId.leads.submenu).toEqual([]);
     expect(byId.contacts.submenu).toEqual([]);
     expect(DEFAULT_SUBMENUS.policies).toEqual([]);
+    expect(DEFAULT_SUBMENUS.tasks).toEqual([]);
+    expect(DEFAULT_SUBMENUS.calendar).toEqual([]);
+    expect(DEFAULT_SUBMENUS.reports).toEqual([]);
+    expect(DEFAULT_SUBMENUS.settings).toEqual([]);
     expect(byId.policies.submenu).toEqual([]);
+    expect(byId.tasks.submenu).toEqual([]);
+    expect(byId.calendar.submenu).toEqual([]);
+    expect(byId.reports.submenu).toEqual([]);
+    expect(byId.settings.submenu).toEqual([]);
+    expect(byId.templates.submenu.map((item) => item.id)).toEqual([
+      "email-signatures",
+      "email-templates",
+      "document-templates",
+    ]);
     expect(byId.templates.submenu.map((item) => item.label)).toEqual([
       "Email signatures",
       "Email templates",
       "Document templates",
     ]);
-    expect(byId.reports.submenu.map((item) => item.id)).toEqual(["scorecards", "glance", "commissions"]);
     expect(byId.admin.submenu.map((item) => item.id)).toEqual([
       "agents",
       "billing",
@@ -108,6 +124,18 @@ describe("nav layout defaults", () => {
       "offices",
       "agency",
     ]);
+    expect(byId.admin.submenu.map((item) => item.label)).toEqual([
+      "People",
+      "Billing",
+      "Compliance",
+      "Integrations",
+      "Automations",
+      "Triggers",
+      "Commission rates",
+      "Lines of business",
+      "Offices",
+      "Agency chrome",
+    ]);
     expect(byId.business.defaultCollapsed).toBe(true);
     expect(byId.carriers.defaultCollapsed).toBe(true);
     expect(byId.home.defaultCollapsed).toBe(false);
@@ -115,10 +143,17 @@ describe("nav layout defaults", () => {
     expect(addable).toContain("merge");
     expect(addable).toContain("social");
     expect(addable).toContain("book-health");
+    for (const id of CATALOG_ONLY_DEFAULT_EXTRAS) {
+      expect(addable).toContain(id);
+    }
     const addableToPolicies = availableSubmenuLinks(defaultStoredNavLayout(), "policies").map((item) => item.id);
     expect(addableToPolicies).toContain("book-health");
     expect(addableToPolicies).toContain("renewals");
     expect(addableToPolicies).toContain("certificates");
+    const flat = flattenResolvedNav(rows).map((item) => item.id);
+    for (const id of CATALOG_ONLY_DEFAULT_EXTRAS) {
+      expect(flat).not.toContain(id);
+    }
   });
 
   it("hides agency Settings, Admin, billing, and people from agents", () => {
@@ -167,10 +202,17 @@ describe("nav layout defaults", () => {
 describe("normalizeNavLayout", () => {
   it("resets stale per-user prefs to the signed default rail", () => {
     const stale = normalizeNavLayout({
-      version: 3,
+      version: 4,
       primaryOrder: ["social", "home", "merge", "leads"],
       hiddenPrimaryIds: ["leads"],
-      submenus: { contacts: ["merge"], home: ["social"], policies: ["book-health", "renewals"] },
+      submenus: {
+        contacts: ["merge"],
+        home: ["social"],
+        policies: ["book-health", "renewals"],
+        tasks: ["work-queue"],
+        calendar: ["phone"],
+        reports: ["scorecards", "glance", "commissions"],
+      },
       personal: { timezone: "America/New_York", notifyInApp: true },
     });
     expect(stale.version).toBe(NAV_LAYOUT_VERSION);
@@ -178,6 +220,9 @@ describe("normalizeNavLayout", () => {
     expect(stale.hiddenPrimaryIds).toEqual([]);
     expect(stale.submenus.contacts).toEqual([]);
     expect(stale.submenus.policies).toEqual([]);
+    expect(stale.submenus.tasks).toEqual([]);
+    expect(stale.submenus.calendar).toEqual([]);
+    expect(stale.submenus.reports).toEqual([]);
     expect(stale.primaryOrder).not.toContain("social");
     expect(stale.primaryOrder).not.toContain("merge");
     expect(stale.personal).toEqual({ timezone: "America/New_York", notifyInApp: true });
@@ -248,12 +293,17 @@ describe("free rearrange", () => {
     expect(next.submenus.deals).not.toContain("quotes");
   });
 
-  it("nests a top-level item into a folder", () => {
+  it("nests a top-level item into a folder and pulls it back out", () => {
     const start = defaultStoredNavLayout();
     const next = applyNavDrop(start, "book-health", { type: "end-primary" });
     const nested = applyNavDrop(next, "book-health", { type: "into", id: "policies" });
     expect(nested.primaryOrder).not.toContain("book-health");
     expect(nested.submenus.policies).toContain("book-health");
+    const promoted = applyNavDrop(nested, "book-health", { type: "before", id: "contacts" });
+    expect(promoted.primaryOrder).toContain("book-health");
+    expect(promoted.primaryOrder.indexOf("book-health")).toBe(promoted.primaryOrder.indexOf("contacts") - 1);
+    expect(promoted.submenus.policies).not.toContain("book-health");
+    expect(promoted.submenus["book-health"] ?? []).toEqual([]);
   });
 
   it("turns any item into a folder when something is dropped onto it", () => {
@@ -299,6 +349,42 @@ describe("free rearrange", () => {
     expect(parseDropKey("end-folder:policies")).toEqual({ type: "end-folder", parentId: "policies" });
     expect(parseDropKey("end-primary")).toEqual({ type: "end-primary" });
     expect(parseDropKey("nope")).toBeNull();
+  });
+
+  it("skips the dragging row when reading a drop key from a hit stack", () => {
+    const dragging = {
+      closest(sel: string) {
+        return sel === "[data-nav-dragging]" ? this : null;
+      },
+    } as unknown as Element;
+    const zone = {
+      dataset: { navDrop: "into:policies" },
+      closest(sel: string) {
+        if (sel === "[data-nav-dragging]") return null;
+        if (sel === "[data-nav-drop]") return this as unknown as HTMLElement;
+        return null;
+      },
+    } as unknown as HTMLElement;
+    expect(dropKeyFromElementStack([dragging, zone])).toBe("into:policies");
+    expect(dropKeyFromElementStack([dragging])).toBeNull();
+  });
+
+  it("does not create a hidden nested folder when dropping into a child", () => {
+    const start = defaultStoredNavLayout();
+    const next = applyNavDrop(start, "leads", { type: "into", id: "quotes" });
+    expect(next.submenus.deals).toContain("leads");
+    expect(next.submenus.quotes ?? []).not.toContain("leads");
+    expect(next.primaryOrder).not.toContain("leads");
+  });
+
+  it("moves the divider and leaves Settings / Admin unlocked", () => {
+    const start = defaultStoredNavLayout();
+    const moved = applyNavDrop(start, DIVIDER_ID, { type: "after", id: "home" });
+    expect(moved.primaryOrder[1]).toBe(DIVIDER_ID);
+    expect(isPinnedPrimaryId("settings")).toBe(false);
+    expect(isPinnedPrimaryId("admin")).toBe(false);
+    expect(isHidablePrimaryId("settings")).toBe(true);
+    expect(applyNavDrop(start, "admin", { type: "into", id: "home" }).submenus.home).toContain("admin");
   });
 
   it("reorders primaries including across the divider", () => {
@@ -349,7 +435,7 @@ describe("primaryIdForPath", () => {
   });
 
   it("honors a custom submenu placement", () => {
-    const custom = addSubmenuLink(removeSubmenuLink(defaultStoredNavLayout(), "calendar", "phone"), "home", "phone");
+    const custom = addSubmenuLink(defaultStoredNavLayout(), "home", "phone");
     expect(primaryIdForPath("/phone", custom)).toBe("home");
   });
 });
@@ -364,6 +450,11 @@ describe("catalog", () => {
     expect(ids).toContain("templates");
     expect(ids).toContain("admin");
     expect(ids).toContain("reports");
+    expect(ids).toContain("work-queue");
+    expect(ids).toContain("phone");
+    expect(ids).toContain("scorecards");
+    expect(ids).toContain("glance");
+    expect(ids).toContain("commissions");
     for (const id of [
       "book-health",
       "renewals",

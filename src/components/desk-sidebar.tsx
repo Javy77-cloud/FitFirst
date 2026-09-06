@@ -2,16 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import {
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  EyeOff,
-  GripVertical,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Settings2,
-} from "lucide-react";
+import { ChevronDown, Eye, EyeOff, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { resetNavLayoutAction, saveNavLayoutAction } from "@/app/actions/nav-layout";
 import { pathIsActive } from "@/components/desk-nav-groups";
@@ -23,16 +14,14 @@ import {
   defaultStoredNavLayout,
   DIVIDER_ID,
   dropKey,
+  dropKeyFromElementStack,
   NAV_LAYOUT_VERSION,
   normalizeNavLayout,
-  nudgePrimary,
-  nudgeSubmenu,
   parseDropKey,
   primaryIdForPath,
   resolveNavLayout,
   splitNavSections,
   togglePrimaryHidden,
-  visibleNavItems,
   type ResolvedNavItem,
   type ResolvedNavRow,
   type StoredNavLayout,
@@ -47,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV_LAYOUT_CACHE = `ff-nav-layout:v${NAV_LAYOUT_VERSION}`;
+const DRAG_THRESHOLD_PX = 4;
 
 type DragPayload = { id: string };
 
@@ -70,9 +60,14 @@ function writeCachedLayout(layout: StoredNavLayout): void {
 }
 
 function dropKeyFromPoint(clientX: number, clientY: number): string | null {
-  const el = document.elementFromPoint(clientX, clientY);
-  const target = el?.closest("[data-nav-drop]") as HTMLElement | null;
-  return target?.dataset.navDrop ?? null;
+  return dropKeyFromElementStack(document.elementsFromPoint(clientX, clientY));
+}
+
+function zoneClass(active: boolean, kind: "gap" | "nest") {
+  if (!active) return kind === "gap" ? "bg-transparent" : "";
+  return kind === "gap"
+    ? "bg-[var(--ff-card)] ring-2 ring-[var(--ff-card)]"
+    : "bg-white/20 ring-2 ring-[var(--ff-card)]";
 }
 
 export function DeskSidebar({
@@ -98,12 +93,15 @@ export function DeskSidebar({
   const [ready, setReady] = useState(false);
   const [customizing, setCustomizing] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const persistEnabled = signedIn && Boolean(actor.id);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistChain = useRef(Promise.resolve());
   const persistEpoch = useRef(0);
   const dragRef = useRef<DragPayload | null>(null);
+  const didDragRef = useRef(false);
+  const originRef = useRef({ x: 0, y: 0 });
   const layoutRef = useRef(layout);
   const narrow = rail === "narrow";
   const allRows = resolveNavLayout(layout, { isAdmin });
@@ -123,10 +121,10 @@ export function DeskSidebar({
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || customizing) return;
     const routePrimary = primaryIdForPath(pathname, layout, isAdmin);
     if (routePrimary) setOpenId(routePrimary);
-  }, [pathname, ready, layout, isAdmin]);
+  }, [pathname, ready, layout, isAdmin, customizing]);
 
   useEffect(() => {
     if (!ready) return;
@@ -154,14 +152,16 @@ export function DeskSidebar({
   function applyDrop(key: string | null) {
     const payload = dragRef.current;
     dragRef.current = null;
+    setDraggingId(null);
     setDropTarget(null);
     if (!payload || !key) return;
-    const target = parseDropKey(key);
-    persist(applyNavDrop(layoutRef.current, payload.id, target));
+    persist(applyNavDrop(layoutRef.current, payload.id, parseDropKey(key)));
   }
 
   function beginDrag(payload: DragPayload) {
     dragRef.current = payload;
+    didDragRef.current = false;
+    setDraggingId(payload.id);
   }
 
   function onChevron(id: string) {
@@ -191,18 +191,20 @@ export function DeskSidebar({
 
   function bindDrag(id: string, label: string) {
     return {
-      draggable: customizing,
       title: customizing ? `Drag to move ${label}` : undefined,
       onPointerDown: (event: React.PointerEvent) => {
         if (!customizing || event.button !== 0) return;
         const target = event.target as HTMLElement;
-        if (target.closest("a, button, select, input")) return;
-        event.preventDefault();
+        if (target.closest("button, select, input")) return;
+        originRef.current = { x: event.clientX, y: event.clientY };
         beginDrag({ id });
         event.currentTarget.setPointerCapture(event.pointerId);
       },
       onPointerMove: (event: React.PointerEvent) => {
         if (!dragRef.current) return;
+        const dx = event.clientX - originRef.current.x;
+        const dy = event.clientY - originRef.current.y;
+        if (Math.hypot(dx, dy) >= DRAG_THRESHOLD_PX) didDragRef.current = true;
         const key = dropKeyFromPoint(event.clientX, event.clientY);
         setDropTarget(key);
         if (key?.startsWith("into:") || key?.startsWith("end-folder:")) {
@@ -212,21 +214,25 @@ export function DeskSidebar({
       },
       onPointerUp: (event: React.PointerEvent) => {
         if (!dragRef.current) return;
-        applyDrop(dropKeyFromPoint(event.clientX, event.clientY));
+        if (didDragRef.current) {
+          event.preventDefault();
+          applyDrop(dropKeyFromPoint(event.clientX, event.clientY));
+          return;
+        }
+        dragRef.current = null;
+        setDraggingId(null);
+        setDropTarget(null);
       },
       onPointerCancel: () => {
         dragRef.current = null;
+        setDraggingId(null);
         setDropTarget(null);
       },
-      onDragStart: (event: React.DragEvent) => {
-        if (!customizing) return;
-        beginDrag({ id });
-        event.dataTransfer.setData("text/plain", id);
-        event.dataTransfer.effectAllowed = "move";
-      },
-      onDragEnd: () => {
-        dragRef.current = null;
-        setDropTarget(null);
+      onClickCapture: (event: React.MouseEvent) => {
+        if (!didDragRef.current) return;
+        event.preventDefault();
+        event.stopPropagation();
+        didDragRef.current = false;
       },
     };
   }
@@ -235,93 +241,53 @@ export function DeskSidebar({
     if (!customizing) return {};
     return {
       "data-nav-drop": key,
-      onDragOver: (event: React.DragEvent) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-        setDropTarget(key);
-      },
-      onDragLeave: () => {
-        setDropTarget((current) => (current === key ? null : current));
-      },
-      onDrop: (event: React.DragEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        applyDrop(key);
-      },
     };
   }
 
-  function renderItem(row: ResolvedNavItem, sectionRows: ResolvedNavItem[]) {
-    const open = openId === row.id;
+  function renderItem(row: ResolvedNavItem, section: "main" | "utility") {
+    const open = customizing || openId === row.id;
     const Icon = row.link.icon;
     const panelId = `ff-nav-${row.id}`;
     const primaryActive = pathIsActive(pathname, row.link);
-    const showChevron = !narrow && (customizing || row.submenu.length > 0);
+    const showChevron = !narrow && !customizing && row.submenu.length > 0;
     const addable = customizing ? availableSubmenuLinks(layout, row.id, { isAdmin }) : [];
     const intoKey = dropKey({ type: "into", id: row.id });
     const beforeKey = dropKey({ type: "before", id: row.id });
     const afterKey = dropKey({ type: "after", id: row.id });
     const endFolderKey = dropKey({ type: "end-folder", parentId: row.id });
-    const rowIndex = sectionRows.findIndex((item) => item.id === row.id);
+    const dragging = draggingId === row.id;
+    const nestActive = dropTarget === intoKey || dropTarget === endFolderKey;
+    const showKids = open && !narrow && (customizing || row.submenu.length > 0);
 
     return (
       <div key={row.id} className="relative">
         {customizing ? (
           <div
             {...dropHandlers(beforeKey)}
-            className={cn(
-              "absolute inset-x-0 -top-1 z-10 h-2 rounded-sm",
-              dropTarget === beforeKey ? "bg-[var(--ff-card)]" : "bg-transparent",
-            )}
+            className={cn("mx-1 h-2.5 rounded-sm", zoneClass(dropTarget === beforeKey, "gap"))}
             aria-hidden
           />
         ) : null}
         <div
           {...dropHandlers(intoKey)}
           {...bindDrag(row.id, row.link.label)}
+          data-nav-dragging={dragging ? "1" : undefined}
           className={cn(
             "flex items-center rounded-md",
-            dropTarget === intoKey ? "bg-white/20 ring-2 ring-[var(--ff-card)]" : "",
+            zoneClass(dropTarget === intoKey, "nest"),
             customizing && row.hidden ? "opacity-55" : "",
             customizing ? "cursor-grab active:cursor-grabbing" : "",
+            dragging ? "pointer-events-none opacity-40" : "",
           )}
         >
-          {customizing && !narrow ? (
-            <>
-              <span className="px-0.5 text-sidebar-foreground/70" aria-hidden>
-                <GripVertical className="size-3.5" />
-              </span>
-              <span className="flex flex-col">
-                <button
-                  type="button"
-                  title={`Move ${row.link.label} up`}
-                  aria-label={`Move ${row.link.label} up`}
-                  disabled={rowIndex <= 0}
-                  onClick={() => persist(nudgePrimary(layout, row.id, -1))}
-                  className="rounded-sm p-0 text-sidebar-foreground/70 hover:text-white disabled:opacity-30"
-                >
-                  <ChevronUp className="size-3" />
-                </button>
-                <button
-                  type="button"
-                  title={`Move ${row.link.label} down`}
-                  aria-label={`Move ${row.link.label} down`}
-                  disabled={rowIndex < 0 || rowIndex >= sectionRows.length - 1}
-                  onClick={() => persist(nudgePrimary(layout, row.id, 1))}
-                  className="rounded-sm p-0 text-sidebar-foreground/70 hover:text-white disabled:opacity-30"
-                >
-                  <ChevronDown className="size-3" />
-                </button>
-              </span>
-            </>
-          ) : null}
           <Link
             href={row.link.href}
             title={row.link.label}
+            draggable={false}
             className={cn(
               "flex min-w-0 flex-1 items-center rounded-md py-2 text-sm font-semibold",
               narrow ? "justify-center px-0" : "gap-2 px-2",
-              primaryActive
+              primaryActive && !customizing
                 ? "bg-[var(--ff-card)] text-navy"
                 : "text-white hover:bg-sidebar-accent hover:text-white",
             )}
@@ -363,9 +329,14 @@ export function DeskSidebar({
             </button>
           ) : null}
         </div>
-        {open && !narrow ? (
-          <div id={panelId} className="mt-0.5 space-y-0.5" role="region" aria-label={row.link.label}>
-            {row.submenu.map((item, itemIndex) => {
+        {showKids ? (
+          <div
+            id={panelId}
+            className={cn("mt-0.5 space-y-0.5", section === "utility" ? "max-h-36 overflow-y-auto" : "")}
+            role="region"
+            aria-label={row.link.label}
+          >
+            {row.submenu.map((item) => {
               const SubIcon = item.icon;
               const settingsSection = search.get("section");
               const active = item.href.includes("section=")
@@ -373,63 +344,35 @@ export function DeskSidebar({
                 : pathIsActive(pathname, item);
               const beforeChild = dropKey({ type: "before", id: item.id });
               const afterChild = dropKey({ type: "after", id: item.id });
+              const childDragging = draggingId === item.id;
               return (
                 <div key={`${row.id}-${item.id}`} className="relative">
                   {customizing ? (
                     <div
                       {...dropHandlers(beforeChild)}
-                      className={cn(
-                        "absolute inset-x-0 -top-1 z-10 h-2 rounded-sm",
-                        dropTarget === beforeChild ? "bg-[var(--ff-card)]" : "bg-transparent",
-                      )}
+                      className={cn("mx-2 h-2 rounded-sm", zoneClass(dropTarget === beforeChild, "gap"))}
                       aria-hidden
                     />
                   ) : null}
                   <div
                     {...dropHandlers(afterChild)}
                     {...bindDrag(item.id, item.label)}
+                    data-nav-dragging={childDragging ? "1" : undefined}
                     className={cn(
                       "flex items-center rounded-md",
-                      dropTarget === afterChild ? "bg-white/20 ring-2 ring-[var(--ff-card)]" : "",
+                      zoneClass(dropTarget === afterChild, "gap"),
                       customizing ? "cursor-grab active:cursor-grabbing" : "",
+                      childDragging ? "pointer-events-none opacity-40" : "",
                     )}
                   >
-                    {customizing ? (
-                      <>
-                        <span className="px-0.5 text-sidebar-foreground/60" aria-hidden>
-                          <GripVertical className="size-3.5" />
-                        </span>
-                        <span className="flex flex-col">
-                          <button
-                            type="button"
-                            title={`Move ${item.label} up`}
-                            aria-label={`Move ${item.label} up`}
-                            disabled={itemIndex === 0}
-                            onClick={() => persist(nudgeSubmenu(layout, row.id, item.id, -1))}
-                            className="rounded-sm p-0 text-sidebar-foreground/60 hover:text-white disabled:opacity-30"
-                          >
-                            <ChevronUp className="size-3" />
-                          </button>
-                          <button
-                            type="button"
-                            title={`Move ${item.label} down`}
-                            aria-label={`Move ${item.label} down`}
-                            disabled={itemIndex === row.submenu.length - 1}
-                            onClick={() => persist(nudgeSubmenu(layout, row.id, item.id, 1))}
-                            className="rounded-sm p-0 text-sidebar-foreground/60 hover:text-white disabled:opacity-30"
-                          >
-                            <ChevronDown className="size-3" />
-                          </button>
-                        </span>
-                      </>
-                    ) : null}
                     <Link
                       href={item.href}
                       title={item.label}
+                      draggable={false}
                       className={cn(
                         "flex min-w-0 flex-1 items-center rounded-md py-1.5 text-sm",
-                        customizing ? "gap-2 px-1.5" : "gap-2 px-2.5",
-                        active
+                        customizing ? "gap-2 px-2" : "gap-2 px-2.5",
+                        active && !customizing
                           ? "bg-[var(--ff-card)] text-navy"
                           : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
                       )}
@@ -451,12 +394,12 @@ export function DeskSidebar({
                 {...dropHandlers(endFolderKey)}
                 className={cn(
                   "mx-2 rounded-md border border-dashed px-2 py-1.5 text-caption",
-                  dropTarget === endFolderKey
+                  nestActive
                     ? "border-[var(--ff-card)] bg-white/15 text-white"
                     : "border-sidebar-border/80 text-sidebar-foreground/70",
                 )}
               >
-                Drop here to nest under {row.link.label}
+                {nestActive ? `Drop to nest under ${row.link.label}` : `Drop here to nest under ${row.link.label}`}
               </div>
             ) : null}
             {customizing ? (
@@ -471,7 +414,6 @@ export function DeskSidebar({
                       const id = event.target.value;
                       if (!id) return;
                       persist(addSubmenuLink(layout, row.id, id));
-                      setOpenId(row.id);
                     }}
                   >
                     <option value="">Add link…</option>
@@ -489,26 +431,11 @@ export function DeskSidebar({
               )
             ) : null}
           </div>
-        ) : customizing && !narrow ? (
-          <div
-            {...dropHandlers(endFolderKey)}
-            className={cn(
-              "mx-2 mt-0.5 rounded-md border border-dashed px-2 py-1 text-caption",
-              dropTarget === endFolderKey
-                ? "border-[var(--ff-card)] bg-white/15 text-white"
-                : "border-transparent text-sidebar-foreground/50",
-            )}
-          >
-            {dropTarget === endFolderKey ? `Drop into ${row.link.label}` : ""}
-          </div>
         ) : null}
-        {customizing && sectionRows.at(-1)?.id === row.id ? (
+        {customizing ? (
           <div
             {...dropHandlers(afterKey)}
-            className={cn(
-              "mt-1 h-2 rounded-sm",
-              dropTarget === afterKey ? "bg-[var(--ff-card)]" : "bg-transparent",
-            )}
+            className={cn("mx-1 h-2.5 rounded-sm", zoneClass(dropTarget === afterKey, "gap"))}
             aria-hidden
           />
         ) : null}
@@ -516,27 +443,39 @@ export function DeskSidebar({
     );
   }
 
-  function renderSection(rows: ResolvedNavRow[], label: string) {
-    const items = visibleNavItems(rows, customizing);
+  function renderSection(rows: ResolvedNavRow[], label: string, section: "main" | "utility") {
     return (
       <div className="space-y-0.5" aria-label={label}>
         {rows.map((row) => {
+          if (row.kind === "item" && row.hidden && !customizing) return null;
           if (row.kind === "divider") {
             const before = dropKey({ type: "before", id: DIVIDER_ID });
+            const after = dropKey({ type: "after", id: DIVIDER_ID });
             return (
-              <div
-                key={DIVIDER_ID}
-                {...(customizing ? { ...dropHandlers(before), ...bindDrag(DIVIDER_ID, "Divider") } : {})}
-                className={cn(
-                  "my-2 border-t border-sidebar-border",
-                  customizing ? "cursor-grab py-1" : "",
-                  dropTarget === before ? "border-[var(--ff-card)] border-t-2" : "",
-                )}
-                role="separator"
-              />
+              <div key={DIVIDER_ID}>
+                {customizing ? (
+                  <div
+                    {...dropHandlers(before)}
+                    className={cn("mx-1 h-2.5 rounded-sm", zoneClass(dropTarget === before, "gap"))}
+                    aria-hidden
+                  />
+                ) : null}
+                <div
+                  {...(customizing ? { ...dropHandlers(after), ...bindDrag(DIVIDER_ID, "Divider") } : {})}
+                  data-nav-dragging={draggingId === DIVIDER_ID ? "1" : undefined}
+                  className={cn(
+                    "my-1 border-t border-sidebar-border",
+                    customizing ? "cursor-grab py-2" : "my-2",
+                    dropTarget === after ? "border-[var(--ff-card)] border-t-2" : "",
+                    draggingId === DIVIDER_ID ? "pointer-events-none opacity-40" : "",
+                  )}
+                  role="separator"
+                  title={customizing ? "Drag to move divider" : undefined}
+                />
+              </div>
             );
           }
-          return renderItem(row, items);
+          return renderItem(row, section);
         })}
       </div>
     );
@@ -545,12 +484,12 @@ export function DeskSidebar({
   return (
     <aside
       className={cn(
-        "ff-no-print sticky top-0 hidden h-screen shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex",
+        "ff-no-print sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground md:flex",
         narrow ? "w-14" : "w-60",
       )}
     >
-      <div className={cn("relative shrink-0 border-b border-sidebar-border", narrow ? "px-2 py-3" : "px-4 py-4")}>
-        <Link href="/" className={cn("block pr-8", narrow ? "pr-0" : "")} title="FitFirst home">
+      <div className={cn("shrink-0", narrow ? "px-1.5 pt-3 pb-1" : "px-4 pt-4 pb-1")}>
+        <Link href="/" className="block" title="FitFirst home">
           <div className={cn("font-semibold tracking-tight text-white", narrow ? "text-center text-sm" : "text-lg")}>
             {narrow ? "FF" : "FitFirst"}
           </div>
@@ -560,6 +499,8 @@ export function DeskSidebar({
             </div>
           )}
         </Link>
+      </div>
+      <div className={cn("shrink-0", narrow ? "px-1.5 pb-2 pt-2" : "px-3 pb-3 pt-3")}>
         <button
           type="button"
           title={narrow ? "Expand sidebar" : "Collapse sidebar to icons"}
@@ -569,27 +510,39 @@ export function DeskSidebar({
             setRail((current) => (current === "narrow" ? "expanded" : "narrow"));
           }}
           className={cn(
-            "absolute top-3 right-2 inline-flex size-8 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white",
-            narrow ? "right-1 top-2" : "",
+            "inline-flex items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white",
+            narrow ? "mx-auto flex size-8" : "h-8 w-full gap-2 px-2",
           )}
         >
           {narrow ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-          <span className="sr-only">{narrow ? "Expand sidebar" : "Collapse sidebar"}</span>
+          {narrow ? (
+            <span className="sr-only">Expand sidebar</span>
+          ) : (
+            <span className="text-caption">Collapse sidebar</span>
+          )}
         </button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto p-2" aria-label="Desk">
-        {renderSection(main, "Primary")}
-        <div
-          {...(customizing ? dropHandlers("end-primary") : {})}
-          className={cn(
-            "min-h-2 rounded-md",
-            customizing && dropTarget === "end-primary" ? "bg-white/20 ring-2 ring-[var(--ff-card)]" : "",
-          )}
-        />
+      <nav className="min-h-0 flex-1 overflow-y-auto border-t border-sidebar-border p-2" aria-label="Desk">
+        {renderSection(main, "Primary", "main")}
+        {customizing ? (
+          <div
+            {...dropHandlers("end-primary")}
+            className={cn(
+              "mt-1 rounded-md border border-dashed px-2 py-2 text-center text-caption",
+              dropTarget === "end-primary"
+                ? "border-[var(--ff-card)] bg-white/15 text-white"
+                : "border-sidebar-border/80 text-sidebar-foreground/70",
+            )}
+          >
+            Drop here as a top-level module
+          </div>
+        ) : (
+          <div className="min-h-1" />
+        )}
       </nav>
       <div className={cn("shrink-0 border-t border-sidebar-border", narrow ? "px-1.5 py-2" : "px-2 py-2")}>
         <nav className="space-y-0.5" aria-label="Utility">
-          {renderSection(utility, "Utility")}
+          {renderSection(utility, "Utility", "utility")}
         </nav>
         {narrow ? null : (
           <div className="mt-2 space-y-1.5 border-t border-sidebar-border pt-2">
@@ -614,8 +567,8 @@ export function DeskSidebar({
             {saveError ? <p className="px-1 text-caption text-amber-200">{saveError}</p> : null}
             {customizing ? (
               <p className="px-1 text-caption text-sidebar-foreground/60">
-                Drag any row. Drop on a folder to nest it, or on the main list to pull it out. Saved
-                to your desk only.
+                Drag any row. Drop on a folder to nest it, or on a gap / the top-level zone to pull
+                it out. Saved to your desk only.
               </p>
             ) : null}
           </div>
