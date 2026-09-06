@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, useTransition } from "react";
 import {
   logLeadQueueContact,
   overrideLeadFollowUpTemplate,
@@ -10,26 +11,40 @@ import { LEAD_QUEUE_STATUS_FILTERS, leadStatusLabel } from "@/lib/leads/queue";
 import { cn } from "@/lib/utils";
 
 export function LeadStatusSelect({ leadId, status }: { leadId: string; status: string }) {
+  const [value, setValue] = useState(status);
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    setValue(status);
+  }, [status]);
+
   return (
-    <form action={updateLeadQueueStatus}>
-      <input type="hidden" name="leadId" value={leadId} />
-      <select
-        name="status"
-        defaultValue={status}
-        aria-label="Lead status"
-        onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        className="h-7 max-w-[8.5rem] rounded-md border border-border bg-card px-1.5 text-xs uppercase text-navy"
-      >
-        {LEAD_QUEUE_STATUS_FILTERS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-        {!LEAD_QUEUE_STATUS_FILTERS.some((option) => option.value === status) ? (
-          <option value={status}>{leadStatusLabel(status)}</option>
-        ) : null}
-      </select>
-    </form>
+    <select
+      name="status"
+      value={value}
+      disabled={pending}
+      aria-label="Lead status"
+      onChange={(event) => {
+        const next = event.target.value;
+        setValue(next);
+        const form = new FormData();
+        form.set("leadId", leadId);
+        form.set("status", next);
+        start(() => {
+          void updateLeadQueueStatus(form);
+        });
+      }}
+      className="h-7 max-w-[8.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
+    >
+      {LEAD_QUEUE_STATUS_FILTERS.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+      {!LEAD_QUEUE_STATUS_FILTERS.some((option) => option.value === value) ? (
+        <option value={value}>{leadStatusLabel(value)}</option>
+      ) : null}
+    </select>
   );
 }
 
@@ -65,24 +80,38 @@ export function LeadTemplateOverride({
   templateId: string | null;
   templates: Array<{ id: string; name: string }>;
 }) {
+  const [value, setValue] = useState(templateId ?? "");
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    setValue(templateId ?? "");
+  }, [templateId]);
+
   return (
-    <form action={overrideLeadFollowUpTemplate}>
-      <input type="hidden" name="leadId" value={leadId} />
-      <select
-        name="templateId"
-        defaultValue={templateId ?? ""}
-        aria-label="Follow-up template override"
-        onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        className="h-7 max-w-[10rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
-      >
-        <option value="">Automatic</option>
-        {templates.map((template) => (
-          <option key={template.id} value={template.id}>
-            {template.name}
-          </option>
-        ))}
-      </select>
-    </form>
+    <select
+      name="templateId"
+      value={value}
+      disabled={pending}
+      aria-label="Follow-up template override"
+      onChange={(event) => {
+        const next = event.target.value;
+        setValue(next);
+        const form = new FormData();
+        form.set("leadId", leadId);
+        form.set("templateId", next);
+        start(() => {
+          void overrideLeadFollowUpTemplate(form);
+        });
+      }}
+      className="h-7 max-w-[10rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
+    >
+      <option value="">Automatic</option>
+      {templates.map((template) => (
+        <option key={template.id} value={template.id}>
+          {template.name}
+        </option>
+      ))}
+    </select>
   );
 }
 
