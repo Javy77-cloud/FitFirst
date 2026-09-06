@@ -1298,3 +1298,24 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+
+## LIVE-TEST tip Sep 6d (`cursor/live-ff-tip-sep6d`)
+
+FAST customize-chrome pass on **`cursor/live-ff-tip-sep6c`** from **`cursor/ff-nav-customize-chrome-d626`**. Did **not** seed Ana. Did **not** wipe. Did **not** change page content.
+
+- Customize: drag the row / tile only. No 9-dot grip. No chevron or nudge arrows while customizing.
+- Collapse / expand sits between the logo / desk name and the menu list, with space so the stack is logo → collapse → menu. Not a corner control on a thin header. Not at the bottom.
+- Same signed rail and `NAV_LAYOUT_VERSION` **5** as sep6c.
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6d && git pull
+npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+# skip db:seed — keep the live Zoho-imported book
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.

@@ -488,7 +488,7 @@ export function DeskSidebar({
         narrow ? "w-14" : "w-60",
       )}
     >
-      <div className={cn("shrink-0", narrow ? "px-1.5 pt-3 pb-1" : "px-4 pt-4 pb-1")}>
+      <div className={cn("shrink-0", narrow ? "px-1.5 pt-4" : "px-4 pt-5")}>
         <Link href="/" className="block" title="FitFirst home">
           <div className={cn("font-semibold tracking-tight text-white", narrow ? "text-center text-sm" : "text-lg")}>
             {narrow ? "FF" : "FitFirst"}
@@ -503,7 +503,7 @@ export function DeskSidebar({
       <div
         className={cn(
           "shrink-0 border-b border-sidebar-border",
-          narrow ? "px-1.5 pb-2 pt-2" : "px-3 pb-3 pt-3",
+          narrow ? "px-1.5 pb-4 pt-5" : "px-3 pb-5 pt-5",
         )}
       >
         <button
@@ -517,7 +517,7 @@ export function DeskSidebar({
           }}
           className={cn(
             "inline-flex items-center justify-center rounded-md border border-sidebar-border/80 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white",
-            narrow ? "mx-auto flex size-8" : "h-8 w-full gap-2 px-2",
+            narrow ? "mx-auto flex size-9" : "h-9 w-full gap-2 px-2",
           )}
         >
           {narrow ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
@@ -528,7 +528,7 @@ export function DeskSidebar({
           )}
         </button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto p-2" aria-label="Desk">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-3" aria-label="Desk">
         {renderSection(main, "Primary", "main")}
         {customizing ? (
           <div
