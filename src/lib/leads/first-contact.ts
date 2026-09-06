@@ -4,13 +4,18 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { leads } from "@/lib/db/schema";
 
-/** Stamp first contact once. Does not change status — status change is the template trigger. */
+/** Stamp first contact once. That stamp starts the response timer and the matching template. */
 export async function markLeadFirstContact(leadId: string, at = new Date()) {
   if (!leadId) return;
-  await db
+  const stamped = await db
     .update(leads)
     .set({ firstContactAt: at, updatedAt: at })
-    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId), isNull(leads.firstContactAt)));
+    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId), isNull(leads.firstContactAt)))
+    .returning({ id: leads.id, status: leads.status });
+  if (stamped[0]) {
+    const { fireLeadFollowUpForStatus } = await import("@/lib/leads/apply-follow-up");
+    await fireLeadFollowUpForStatus(leadId, stamped[0].status, at).catch(() => null);
+  }
   try {
     revalidatePath("/leads");
     revalidatePath(`/leads/${leadId}`);

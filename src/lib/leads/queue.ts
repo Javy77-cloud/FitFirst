@@ -1,16 +1,18 @@
 /** Work-queue rules for the Leads page. Converted leads are Deals-only. */
 
-export const LEAD_QUEUE_STATUSES = ["new", "contacted", "qualified", "lost"] as const;
+export const LEAD_QUEUE_STATUSES = ["new", "contacted", "qualified", "warm", "cold", "lost"] as const;
 export type LeadQueueStatus = (typeof LEAD_QUEUE_STATUSES)[number];
 
 export const LEAD_QUEUE_STATUS_FILTERS = [
   { value: "new", label: "new" },
   { value: "contacted", label: "contacted" },
   { value: "qualified", label: "in-progress" },
+  { value: "warm", label: "warm" },
+  { value: "cold", label: "cold" },
   { value: "lost", label: "recycled" },
 ] as const;
 
-export const LEAD_TEMPERATURES = ["hot", "cold"] as const;
+export const LEAD_TEMPERATURES = ["hot", "warm", "cold"] as const;
 export type LeadTemperature = (typeof LEAD_TEMPERATURES)[number];
 
 export const FIRST_CONTACT_SLA_MS = 5 * 60 * 1000;
@@ -29,7 +31,26 @@ export function leadStatusLabel(status: string | null | undefined): string {
   const value = normalizeLeadStatus(status);
   if (value === "qualified") return "in-progress";
   if (value === "lost") return "recycled";
+  if (value === "cold") return "Cold (not interested)";
   return value || "new";
+}
+
+export function normalizeLeadTemperature(value: string | null | undefined): LeadTemperature {
+  const raw = (value ?? "hot").trim().toLowerCase();
+  if (raw === "warm") return "warm";
+  if (raw === "cold") return "cold";
+  return "hot";
+}
+
+export function temperatureForStatus(
+  status: string | null | undefined,
+  current: string | null | undefined,
+): LeadTemperature {
+  const value = normalizeLeadStatus(status);
+  if (value === "cold" || value === "lost") return "cold";
+  if (value === "warm") return "warm";
+  if (value === "new") return current ? normalizeLeadTemperature(current) : "hot";
+  return current ? normalizeLeadTemperature(current) : "hot";
 }
 
 export function isConvertedLead(lead: { status?: string | null; convertedDealId?: string | null }): boolean {
@@ -72,22 +93,22 @@ export function matchesLeadQueueFilters<
 }
 
 export type ResponseTimerState = {
-  phase: "counting" | "cleared";
+  phase: "idle" | "counting";
   elapsedMs: number;
   overdue: boolean;
 };
 
+/** Clock is dark until first contact is logged. Arrival time is not a start. */
 export function responseTimerState(
-  createdAt: Date | string,
+  _createdAt: Date | string,
   firstContactAt: Date | string | null | undefined,
   now: Date | string = new Date(),
 ): ResponseTimerState {
-  const start = new Date(createdAt).getTime();
-  const current = new Date(now).getTime();
-  if (firstContactAt) {
-    const contact = new Date(firstContactAt).getTime();
-    return { phase: "cleared", elapsedMs: Math.max(0, contact - start), overdue: false };
+  if (!firstContactAt) {
+    return { phase: "idle", elapsedMs: 0, overdue: false };
   }
+  const start = new Date(firstContactAt).getTime();
+  const current = new Date(now).getTime();
   const elapsedMs = Math.max(0, current - start);
   return { phase: "counting", elapsedMs, overdue: elapsedMs >= FIRST_CONTACT_SLA_MS };
 }

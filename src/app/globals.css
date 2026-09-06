@@ -237,6 +237,11 @@
 .ff-table tr:hover td {
   background: var(--ff-wash);
 }
+/* Leads queue only — neutral gray hover, never badge red / amber / blue. */
+.ff-leads-queue .ff-table tbody tr:hover td,
+.ff-leads-queue .ff-table tbody tr:hover td.ff-col-manage {
+  background: #e8eaed;
+}
 .ff-table .ff-col-manage {
   position: sticky;
   right: 0;

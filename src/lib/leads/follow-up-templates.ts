@@ -4,7 +4,20 @@ export type FollowUpMethod = (typeof FOLLOW_UP_METHODS)[number];
 export const FOLLOW_UP_DELAY_UNITS = ["minutes", "hours", "days"] as const;
 export type FollowUpDelayUnit = (typeof FOLLOW_UP_DELAY_UNITS)[number];
 
+export const FOLLOW_UP_DELAY_UNIT_LABELS: Record<FollowUpDelayUnit, string> = {
+  minutes: "min",
+  hours: "hours",
+  days: "days",
+};
+
 export const MAX_FOLLOW_UP_STEPS = 4;
+
+/** Statuses that have a seeded follow-up template. new = Hot. */
+export const TEMPLATE_TRIGGER_STATUSES = [
+  { value: "new", label: "new", templateName: "Hot" },
+  { value: "warm", label: "warm", templateName: "Warm" },
+  { value: "cold", label: "Cold (not interested)", templateName: "Cold" },
+] as const;
 
 export type FollowUpStepInput = {
   method?: string | null;
@@ -76,6 +89,31 @@ export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
     return enabled.find((row) => row.id === lead.followUpTemplateId) ?? null;
   }
   return enabled.find((row) => row.triggerStatus === lead.status) ?? null;
+}
+
+export function shouldHoldFollowUpUntilFirstContact(lead: {
+  status: string;
+  firstContactAt?: Date | string | null;
+}): boolean {
+  return !lead.firstContactAt && lead.status === "new";
+}
+
+export function followUpTemplateChipName(template: {
+  name: string;
+  triggerStatus: string;
+}): string {
+  const trigger = TEMPLATE_TRIGGER_STATUSES.find((row) => row.value === template.triggerStatus);
+  if (trigger) return trigger.templateName;
+  return template.name;
+}
+
+export function followUpTemplateFullName(template: {
+  name: string;
+  triggerStatus: string;
+}): string {
+  if (template.triggerStatus === "cold") return "Cold (not interested)";
+  const chip = followUpTemplateChipName(template);
+  return template.name.trim() || chip;
 }
 
 export function outboundStubLabel(method: FollowUpMethod): string {

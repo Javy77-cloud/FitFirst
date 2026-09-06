@@ -7,7 +7,14 @@ import {
   updateLeadQueueStatus,
   updateLeadTemperature,
 } from "@/app/actions/lead-follow-up";
-import { LEAD_QUEUE_STATUS_FILTERS, leadStatusLabel } from "@/lib/leads/queue";
+import { followUpTemplateChipName } from "@/lib/leads/follow-up-templates";
+import {
+  LEAD_QUEUE_STATUS_FILTERS,
+  LEAD_TEMPERATURES,
+  leadStatusLabel,
+  normalizeLeadTemperature,
+  type LeadTemperature,
+} from "@/lib/leads/queue";
 import { cn } from "@/lib/utils";
 
 export function LeadStatusSelect({ leadId, status }: { leadId: string; status: string }) {
@@ -48,12 +55,27 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
   );
 }
 
+const TEMP_STYLES: Record<LeadTemperature, { selected: string; idle: string }> = {
+  hot: {
+    selected: "bg-fit-red-bg text-fit-red",
+    idle: "text-muted-foreground hover:text-navy",
+  },
+  warm: {
+    selected: "bg-fit-yellow-bg text-fit-yellow",
+    idle: "text-muted-foreground hover:text-navy",
+  },
+  cold: {
+    selected: "bg-fit-check-bg text-fit-check",
+    idle: "text-muted-foreground hover:text-navy",
+  },
+};
+
 export function LeadHeatToggle({ leadId, temperature }: { leadId: string; temperature: string | null }) {
-  const current = temperature === "cold" ? "cold" : "hot";
+  const current = normalizeLeadTemperature(temperature);
   return (
     <form action={updateLeadTemperature} className="inline-flex rounded-md border border-border">
       <input type="hidden" name="leadId" value={leadId} />
-      {(["hot", "cold"] as const).map((value) => (
+      {LEAD_TEMPERATURES.map((value) => (
         <button
           key={value}
           type="submit"
@@ -61,7 +83,7 @@ export function LeadHeatToggle({ leadId, temperature }: { leadId: string; temper
           value={value}
           className={cn(
             "h-6 px-2 text-xs font-medium capitalize",
-            current === value ? "bg-secondary text-navy" : "text-muted-foreground hover:text-navy",
+            current === value ? TEMP_STYLES[value].selected : TEMP_STYLES[value].idle,
           )}
         >
           {value}
@@ -75,10 +97,12 @@ export function LeadTemplateOverride({
   leadId,
   templateId,
   templates,
+  resolvedName,
 }: {
   leadId: string;
   templateId: string | null;
-  templates: Array<{ id: string; name: string }>;
+  templates: Array<{ id: string; name: string; triggerStatus: string }>;
+  resolvedName: string;
 }) {
   const [value, setValue] = useState(templateId ?? "");
   const [pending, start] = useTransition();
@@ -88,30 +112,35 @@ export function LeadTemplateOverride({
   }, [templateId]);
 
   return (
-    <select
-      name="templateId"
-      value={value}
-      disabled={pending}
-      aria-label="Follow-up template override"
-      onChange={(event) => {
-        const next = event.target.value;
-        setValue(next);
-        const form = new FormData();
-        form.set("leadId", leadId);
-        form.set("templateId", next);
-        start(() => {
-          void overrideLeadFollowUpTemplate(form);
-        });
-      }}
-      className="h-7 max-w-[10rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
-    >
-      <option value="">Automatic</option>
-      {templates.map((template) => (
-        <option key={template.id} value={template.id}>
-          {template.name}
-        </option>
-      ))}
-    </select>
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-navy" data-testid="lead-template-name">
+        {resolvedName}
+      </p>
+      <select
+        name="templateId"
+        value={value}
+        disabled={pending}
+        aria-label="Follow-up template override"
+        onChange={(event) => {
+          const next = event.target.value;
+          setValue(next);
+          const form = new FormData();
+          form.set("leadId", leadId);
+          form.set("templateId", next);
+          start(() => {
+            void overrideLeadFollowUpTemplate(form);
+          });
+        }}
+        className="h-7 max-w-[10rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
+      >
+        <option value="">Automatic</option>
+        {templates.map((template) => (
+          <option key={template.id} value={template.id}>
+            {followUpTemplateChipName(template)}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 

@@ -18,6 +18,7 @@ import {
   outboundStubLabel,
   PAID_API_WALL_REASON,
   pickTemplateForLead,
+  shouldHoldFollowUpUntilFirstContact,
   type FollowUpMethod,
 } from "@/lib/leads/follow-up-templates";
 import { leadStatusLabel, normalizeLeadStatus } from "@/lib/leads/queue";
@@ -53,6 +54,10 @@ export async function fireLeadFollowUpForStatus(leadId: string, status: string, 
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!lead) return { scheduled: 0 };
   const normalized = normalizeLeadStatus(status);
+  if (shouldHoldFollowUpUntilFirstContact({ status: normalized, firstContactAt: lead.firstContactAt })) {
+    await cancelLeadFollowUps(leadId);
+    return { scheduled: 0, held: true };
+  }
   await cancelLeadFollowUps(leadId);
   const [templates, steps] = await Promise.all([
     db.select().from(leadFollowUpTemplates).where(eq(leadFollowUpTemplates.tenantId, DEFAULT_TENANT_ID)),

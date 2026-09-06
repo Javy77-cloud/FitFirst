@@ -17,14 +17,23 @@ export function ResponseTimer({
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!firstContactAt) return;
     setNow(Date.now());
-    if (firstContactAt) return;
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(tick);
   }, [firstContactAt]);
 
-  if (firstContactAt) {
-    return <span className="text-xs text-muted-foreground">Contacted</span>;
+  if (!firstContactAt) {
+    return (
+      <span
+        className="font-mono text-xs tabular-nums text-muted-foreground"
+        data-overdue="false"
+        data-timer="idle"
+        title="Timer starts when first contact is logged"
+      >
+        {CLOCK_PLACEHOLDER}
+      </span>
+    );
   }
 
   if (now === null) {
@@ -32,7 +41,8 @@ export function ResponseTimer({
       <span
         className="font-mono text-xs tabular-nums text-navy"
         data-overdue="false"
-        title="Time since arrival"
+        data-timer="pending"
+        title="Time since first contact"
       >
         {CLOCK_PLACEHOLDER}
       </span>
@@ -48,7 +58,8 @@ export function ResponseTimer({
         state.overdue ? "font-semibold text-fit-red" : "text-navy",
       )}
       data-overdue={state.overdue ? "true" : "false"}
-      title={state.overdue ? "No first contact in 5 minutes" : "Time since arrival"}
+      data-timer="counting"
+      title={state.overdue ? "More than 5 minutes since first contact" : "Time since first contact"}
     >
       {formatElapsedClock(state.elapsedMs)}
     </span>

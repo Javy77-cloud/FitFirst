@@ -17,6 +17,7 @@ import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters
 import { haystack } from "@/lib/search/live-query";
 import { listFollowUpTemplates, listLeadFollowUps } from "@/lib/db/lead-follow-up-queries";
 import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
+import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
 import {
   isLeadOnQueue,
   matchesLeadQueueFilters,
@@ -68,7 +69,7 @@ export default async function LeadsPage({
     <AppShell title="Leads">
       <p className="mb-3 text-base text-muted-foreground">
         Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-        Status change fires the matching follow-up template.
+        First contact starts the timer and the Hot template. Status change swaps Warm or Cold.
       </p>
       <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -121,7 +122,7 @@ export default async function LeadsPage({
           </form>
         </div>
 
-        <section className="ff-card overflow-hidden">
+        <section className="ff-leads-queue ff-card overflow-hidden">
           <ModuleListActions
             module="leads"
             showMacrosLink={false}
@@ -149,6 +150,10 @@ export default async function LeadsPage({
               }
               rows={rows.map((lead) => {
                 const nextDue = nextByLead.get(lead.id);
+                const picked = pickTemplateForLead(templates, {
+                  followUpTemplateId: lead.followUpTemplateId,
+                  status: normalizeLeadStatus(lead.status),
+                });
                 return {
                   key: lead.id,
                   hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
@@ -182,14 +187,13 @@ export default async function LeadsPage({
                           leadId={lead.id}
                           templateId={lead.followUpTemplateId}
                           templates={templates}
+                          resolvedName={picked ? followUpTemplateChipName(picked) : "—"}
                         />
                         {nextDue ? (
                           <div className="text-[11px] text-muted-foreground">
                             Next {nextDue.toLocaleString()}
                           </div>
-                        ) : (
-                          <div className="text-[11px] text-muted-foreground">Automatic</div>
-                        )}
+                        ) : null}
                       </div>
                     ),
                     shop: lead.convertedDealId ? (

@@ -14,7 +14,7 @@ import {
   outboundStubLabel,
   PAID_API_WALL_REASON,
 } from "@/lib/leads/follow-up-templates";
-import { normalizeLeadStatus } from "@/lib/leads/queue";
+import { normalizeLeadStatus, normalizeLeadTemperature, temperatureForStatus } from "@/lib/leads/queue";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -41,7 +41,7 @@ export async function updateLeadQueueStatus(formData: FormData) {
     .update(leads)
     .set({
       status,
-      temperature: status === "lost" ? "cold" : existing.temperature === "cold" && status !== "lost" ? existing.temperature : existing.temperature,
+      temperature: temperatureForStatus(status, existing.temperature),
       updatedAt: new Date(),
     })
     .where(eq(leads.id, leadId));
@@ -51,7 +51,7 @@ export async function updateLeadQueueStatus(formData: FormData) {
 
 export async function updateLeadTemperature(formData: FormData) {
   const leadId = str(formData, "leadId");
-  const temperature = str(formData, "temperature") === "cold" ? "cold" : "hot";
+  const temperature = normalizeLeadTemperature(str(formData, "temperature"));
   if (!leadId) return;
   await db
     .update(leads)

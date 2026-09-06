@@ -7,17 +7,23 @@ import {
   leadStatusLabel,
   matchesLeadQueueFilters,
   normalizeLeadStatus,
+  normalizeLeadTemperature,
   responseTimerState,
   searchMatchLabel,
   sortLeadQueue,
+  temperatureForStatus,
 } from "./queue";
 
 describe("lead queue status", () => {
-  it("maps product names onto existing enums", () => {
+  it("maps product names onto existing enums and adds warm/cold", () => {
     expect(normalizeLeadStatus("in-progress")).toBe("qualified");
     expect(normalizeLeadStatus("recycled")).toBe("lost");
+    expect(normalizeLeadStatus("warm")).toBe("warm");
+    expect(normalizeLeadStatus("cold")).toBe("cold");
     expect(leadStatusLabel("qualified")).toBe("in-progress");
     expect(leadStatusLabel("lost")).toBe("recycled");
+    expect(leadStatusLabel("cold")).toBe("Cold (not interested)");
+    expect(leadStatusLabel("warm")).toBe("warm");
   });
 
   it("removes converted leads from the work queue", () => {
@@ -55,26 +61,38 @@ describe("lead queue sort", () => {
 });
 
 describe("lead queue filters", () => {
-  it("filters status, source, and hot/cold", () => {
+  it("filters status, source, and hot/warm/cold", () => {
     const lead = { status: "qualified", source: "google", temperature: "hot" };
     expect(matchesLeadQueueFilters(lead, { status: "in-progress" })).toBe(true);
     expect(matchesLeadQueueFilters(lead, { source: "referral" })).toBe(false);
     expect(matchesLeadQueueFilters(lead, { temperature: "cold" })).toBe(false);
     expect(matchesLeadQueueFilters(lead, { temperature: "hot", source: "google" })).toBe(true);
+    expect(matchesLeadQueueFilters({ ...lead, temperature: "warm" }, { temperature: "warm" })).toBe(true);
+  });
+
+  it("defaults brand-new leads to Hot and maps warm/cold statuses", () => {
+    expect(normalizeLeadTemperature(null)).toBe("hot");
+    expect(normalizeLeadTemperature("warm")).toBe("warm");
+    expect(temperatureForStatus("new", null)).toBe("hot");
+    expect(temperatureForStatus("warm", "hot")).toBe("warm");
+    expect(temperatureForStatus("cold", "hot")).toBe("cold");
   });
 });
 
 describe("response timer", () => {
-  it("turns overdue after five minutes without contact and clears after a log", () => {
+  it("stays idle until first contact, then counts from that stamp", () => {
     const created = new Date("2026-09-06T12:00:00Z");
-    const fourMin = responseTimerState(created, null, new Date("2026-09-06T12:04:00Z"));
+    const idle = responseTimerState(created, null, new Date("2026-09-06T12:30:00Z"));
+    expect(idle.phase).toBe("idle");
+    expect(idle.elapsedMs).toBe(0);
+    expect(idle.overdue).toBe(false);
+    const contact = new Date("2026-09-06T12:30:00Z");
+    const fourMin = responseTimerState(created, contact, new Date("2026-09-06T12:34:00Z"));
+    expect(fourMin.phase).toBe("counting");
     expect(fourMin.overdue).toBe(false);
     expect(formatElapsedClock(fourMin.elapsedMs)).toBe("4:00");
-    const sixMin = responseTimerState(created, null, new Date("2026-09-06T12:06:00Z"));
+    const sixMin = responseTimerState(created, contact, new Date("2026-09-06T12:36:00Z"));
     expect(sixMin.overdue).toBe(true);
-    const cleared = responseTimerState(created, new Date("2026-09-06T12:02:00Z"), new Date("2026-09-06T12:20:00Z"));
-    expect(cleared.phase).toBe("cleared");
-    expect(cleared.overdue).toBe(false);
   });
 
   it("labels live search matches", () => {

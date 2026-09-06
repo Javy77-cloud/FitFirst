@@ -4,7 +4,38 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6m`)
+## Mac test now (`cursor/live-ff-tip-sep6n`)
+
+Leads follow-up templates on top of sep6m. Timer starts on first contact, not arrival. Temp is Hot / Warm / Cold. Templates are a centered ~600px modal. Additive `0072_lead_follow_up_warm_cold` only. No AMS. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6n && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Timer starts on first contact | New lead in status **new** shows `--:--` — no clock. Wait 30s (or longer). Nothing fires. Log call / text / email on the row — timer starts from that stamp. Hot first step (5 min call) is due from contact, not arrival. No phantom Tasks while the lead sits untouched. |
+| 2 | Temp Hot / Warm / Cold | **Temp** column (not Hot/Cold). Three states: Hot red, Warm amber, Cold blue. Brand-new lead is **Hot**. Row hover is **neutral gray** — never the badge color. Filter chips: All · Hot · Warm · Cold. |
+| 3 | Three status-linked templates | Hot fires when status = **new**. Warm when status = **warm**. Cold (not interested) when status = **cold**. Status change auto-swaps the matching template. Per-lead Template dropdown override; default Automatic. Full name **Cold (not interested)** in the editor; chips stay Cold. Status list is additive (warm / cold added; new / contacted / in-progress / recycled stay). |
+| 4 | Template editor modal | **Follow-up Templates** opens a centered ~600px modal, not a right slide-out. Steps are one row each: Method, Delay, Unit (min / hours / days), Message. Four steps visible without scrolling chrome. Max 4 steps. Save with name; each template maps to one status. Delete still asks twice. |
+| 5 | Column labels | Header **Temp** (was Hot/Cold). Header **Template** (was Follow-up). Cell shows the actual template name (**Hot** / **Warm** / **Cold**), not “Automatic.” |
+
+### Stub walls (paid APIs not wired)
+
+- **Email / text send** — queued or held on `comms_outbound_jobs` with `vendor=stub` / `paid_api_wall`. Nothing leaves the desk.
+- **Call** — in-app task + alert only. No trunk / PSTN.
+- **Agent pings** — `alerts` table only. Nothing emails Javy.
+
+Due follow-ups land on **Tasks** (`activities` kind=task) and the in-app bell. New Lead form, sidebar, and other pages are unchanged.
+
+## Mac test prior (`cursor/live-ff-tip-sep6m`)
 
 Leads overlay fixes on top of sep6l. No `<script>` in the Leads React tree (`ff-sheet.js` loads via `next/script`). Response timer SSRs `--:--` until mount, then ticks on the client — no hydration mismatch on the 5-minute first-contact clock.
 

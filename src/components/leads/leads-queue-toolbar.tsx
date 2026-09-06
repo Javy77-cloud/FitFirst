@@ -85,10 +85,11 @@ export function LeadsQueueToolbar({
           ))}
         </select>
       </label>
-      <div className="inline-flex rounded-md border border-border bg-card p-0.5" role="group" aria-label="Hot or cold">
+      <div className="inline-flex rounded-md border border-border bg-card p-0.5" role="group" aria-label="Temperature">
         {[
           { value: "", label: "All" },
           { value: "hot", label: "Hot" },
+          { value: "warm", label: "Warm" },
           { value: "cold", label: "Cold" },
         ].map((option) => (
           <button

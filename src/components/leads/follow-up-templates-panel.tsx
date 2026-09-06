@@ -3,18 +3,23 @@
 import { useState } from "react";
 import { deleteFollowUpTemplate, saveFollowUpTemplate } from "@/app/actions/lead-follow-up";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
-import { FOLLOW_UP_DELAY_UNITS, FOLLOW_UP_METHODS } from "@/lib/leads/follow-up-templates";
+import {
+  FOLLOW_UP_DELAY_UNIT_LABELS,
+  FOLLOW_UP_DELAY_UNITS,
+  FOLLOW_UP_METHODS,
+  TEMPLATE_TRIGGER_STATUSES,
+  followUpTemplateFullName,
+} from "@/lib/leads/follow-up-templates";
 import { LEAD_QUEUE_STATUS_FILTERS, leadStatusLabel } from "@/lib/leads/queue";
 
 export type FollowUpTemplateView = {
@@ -39,6 +44,17 @@ function emptySteps() {
     delayUnit: "minutes",
     message: "",
   }));
+}
+
+function triggerOptions() {
+  const seeded = TEMPLATE_TRIGGER_STATUSES.map((row) => ({
+    value: row.value,
+    label: row.label,
+  }));
+  const extra = LEAD_QUEUE_STATUS_FILTERS.filter(
+    (option) => !seeded.some((row) => row.value === option.value),
+  ).map((option) => ({ value: option.value, label: option.label }));
+  return [...seeded, ...extra];
 }
 
 export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTemplateView[] }) {
@@ -73,111 +89,114 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
       <Button type="button" size="xs" variant="outline" onClick={() => setOpen(true)}>
         Follow-up Templates
       </Button>
-      <Sheet
+      <Dialog
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
           if (!next) setEditingId(null);
         }}
       >
-        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>Follow-up Templates</SheetTitle>
-            <SheetDescription>
-              Linked to a lead status. Changing status fires the matching template — no manual
-              attach. Override stays on the lead row. Email and text stop at the paid API wall.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="space-y-4 px-4 pb-6">
+        <DialogContent className="w-[min(100%-2rem,600px)] max-w-[600px] gap-3 p-5 sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Follow-up Templates</DialogTitle>
+            <DialogDescription>
+              Each template maps to one status. New is Hot. Status change swaps the matching
+              template. Override stays on the lead row.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
             {editing ? (
               <form
                 action={async (formData) => {
                   await saveFollowUpTemplate(formData);
                   setEditingId(null);
                 }}
-                className="space-y-3 rounded-md border border-border bg-card p-3"
+                className="space-y-3"
               >
                 {editing.id ? <input type="hidden" name="templateId" value={editing.id} /> : null}
-                <div>
-                  <Label htmlFor="template-name" className="text-xs">
-                    Name
-                  </Label>
-                  <Input
-                    id="template-name"
-                    name="name"
-                    required
-                    defaultValue={editing.name}
-                    className="mt-1 h-8"
-                  />
+                <div className="grid gap-2 sm:grid-cols-[1fr_11rem]">
+                  <div>
+                    <Label htmlFor="template-name" className="text-xs">
+                      Name
+                    </Label>
+                    <Input
+                      id="template-name"
+                      name="name"
+                      required
+                      defaultValue={editing.name}
+                      className="mt-1 h-8"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="template-status" className="text-xs">
+                      Status
+                    </Label>
+                    <select
+                      id="template-status"
+                      name="triggerStatus"
+                      defaultValue={editing.triggerStatus}
+                      className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
+                    >
+                      {triggerOptions().map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="template-status" className="text-xs">
-                    Fires when status becomes
-                  </Label>
-                  <select
-                    id="template-status"
-                    name="triggerStatus"
-                    defaultValue={editing.triggerStatus}
-                    className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
-                  >
-                    {LEAD_QUEUE_STATUS_FILTERS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-navy">Up to four steps</p>
+                <div className="space-y-1.5">
+                  <div className="grid grid-cols-[5.5rem_3.75rem_5.25rem_minmax(0,1fr)] gap-1.5 text-[11px] font-medium text-muted-foreground">
+                    <span>Method</span>
+                    <span>Delay</span>
+                    <span>Unit</span>
+                    <span>Message</span>
+                  </div>
                   {stepDefaults.map((step, index) => (
-                    <div key={index} className="grid gap-2 rounded-md border border-border p-2 sm:grid-cols-4">
-                      <label className="text-xs text-muted-foreground">
-                        Method
-                        <select
-                          name={`stepMethod${index}`}
-                          defaultValue={step.method}
-                          className="mt-1 h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
-                        >
-                          <option value="">Skip</option>
-                          {FOLLOW_UP_METHODS.map((method) => (
-                            <option key={method} value={method}>
-                              {method}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="text-xs text-muted-foreground">
-                        Delay
-                        <Input
-                          name={`stepDelay${index}`}
-                          type="number"
-                          min={0}
-                          defaultValue={step.delayAmount}
-                          className="mt-1 h-8"
-                        />
-                      </label>
-                      <label className="text-xs text-muted-foreground">
-                        Unit
-                        <select
-                          name={`stepUnit${index}`}
-                          defaultValue={step.delayUnit}
-                          className="mt-1 h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
-                        >
-                          {FOLLOW_UP_DELAY_UNITS.map((unit) => (
-                            <option key={unit} value={unit}>
-                              {unit}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="text-xs text-muted-foreground sm:col-span-4">
-                        Message (optional)
-                        <Textarea
-                          name={`stepMessage${index}`}
-                          defaultValue={step.message}
-                          className="mt-1 min-h-16"
-                        />
-                      </label>
+                    <div
+                      key={index}
+                      className="grid grid-cols-[5.5rem_3.75rem_5.25rem_minmax(0,1fr)] items-center gap-1.5"
+                    >
+                      <select
+                        name={`stepMethod${index}`}
+                        defaultValue={step.method}
+                        aria-label={`Step ${index + 1} method`}
+                        className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
+                      >
+                        <option value="">Skip</option>
+                        {FOLLOW_UP_METHODS.map((method) => (
+                          <option key={method} value={method}>
+                            {method}
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        name={`stepDelay${index}`}
+                        type="number"
+                        min={0}
+                        defaultValue={step.delayAmount}
+                        aria-label={`Step ${index + 1} delay`}
+                        className="h-8"
+                      />
+                      <select
+                        name={`stepUnit${index}`}
+                        defaultValue={step.delayUnit}
+                        aria-label={`Step ${index + 1} unit`}
+                        className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
+                      >
+                        {FOLLOW_UP_DELAY_UNITS.map((unit) => (
+                          <option key={unit} value={unit}>
+                            {FOLLOW_UP_DELAY_UNIT_LABELS[unit]}
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        name={`stepMessage${index}`}
+                        defaultValue={step.message}
+                        placeholder="optional"
+                        aria-label={`Step ${index + 1} message`}
+                        className="h-8"
+                      />
                     </div>
                   ))}
                 </div>
@@ -203,7 +222,9 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                       <li key={template.id} className="rounded-md border border-border bg-card p-3">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div>
-                            <p className="text-sm font-semibold text-navy">{template.name}</p>
+                            <p className="text-sm font-semibold text-navy">
+                              {followUpTemplateFullName(template)}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               Fires on {leadStatusLabel(template.triggerStatus)} · {template.steps.length}{" "}
                               {template.steps.length === 1 ? "step" : "steps"}
@@ -231,7 +252,10 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                         <ol className="mt-2 space-y-1 text-xs text-muted-foreground">
                           {template.steps.map((step) => (
                             <li key={step.id}>
-                              {step.method} · {step.delayAmount} {step.delayUnit}
+                              {step.method} · {step.delayAmount}{" "}
+                              {FOLLOW_UP_DELAY_UNIT_LABELS[
+                                step.delayUnit as keyof typeof FOLLOW_UP_DELAY_UNIT_LABELS
+                              ] ?? step.delayUnit}
                               {step.message ? ` — ${step.message}` : ""}
                             </li>
                           ))}
@@ -243,8 +267,8 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
               </>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

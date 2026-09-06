@@ -505,6 +505,13 @@
       "when": 1788630000000,
       "tag": "0071_lead_follow_up_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1788640000000,
+      "tag": "0072_lead_follow_up_warm_cold",
+      "breakpoints": true
     }
   ]
 }

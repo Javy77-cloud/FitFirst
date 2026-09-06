@@ -3,13 +3,17 @@ import {
   delayMs,
   dueAtFromStep,
   followUpMethodToActivityKind,
+  followUpTemplateChipName,
+  followUpTemplateFullName,
   normalizeFollowUpSteps,
   outboundStubLabel,
   pickTemplateForLead,
+  shouldHoldFollowUpUntilFirstContact,
 } from "./follow-up-templates";
 
-const hot = { id: "hot", name: "Hot Lead", triggerStatus: "new", enabled: true };
-const cold = { id: "cold", name: "Not Interested", triggerStatus: "lost", enabled: true };
+const hot = { id: "hot", name: "Hot", triggerStatus: "new", enabled: true };
+const warm = { id: "warm", name: "Warm", triggerStatus: "warm", enabled: true };
+const cold = { id: "cold", name: "Cold (not interested)", triggerStatus: "cold", enabled: true };
 
 describe("follow-up templates", () => {
   it("caps a template at four steps and drops incomplete rows", () => {
@@ -34,10 +38,32 @@ describe("follow-up templates", () => {
   });
 
   it("auto-picks the status template unless the lead overrides", () => {
-    expect(pickTemplateForLead([hot, cold], { status: "new" })?.id).toBe("hot");
-    expect(pickTemplateForLead([hot, cold], { status: "lost" })?.id).toBe("cold");
-    expect(pickTemplateForLead([hot, cold], { status: "new", followUpTemplateId: "cold" })?.id).toBe("cold");
-    expect(pickTemplateForLead([hot, cold], { status: "contacted" })).toBeNull();
+    expect(pickTemplateForLead([hot, warm, cold], { status: "new" })?.id).toBe("hot");
+    expect(pickTemplateForLead([hot, warm, cold], { status: "warm" })?.id).toBe("warm");
+    expect(pickTemplateForLead([hot, warm, cold], { status: "cold" })?.id).toBe("cold");
+    expect(pickTemplateForLead([hot, warm, cold], { status: "new", followUpTemplateId: "cold" })?.id).toBe(
+      "cold",
+    );
+    expect(pickTemplateForLead([hot, warm, cold], { status: "contacted" })).toBeNull();
+  });
+
+  it("holds the new / Hot template until first contact is logged", () => {
+    expect(shouldHoldFollowUpUntilFirstContact({ status: "new", firstContactAt: null })).toBe(true);
+    expect(
+      shouldHoldFollowUpUntilFirstContact({
+        status: "new",
+        firstContactAt: new Date("2026-09-06T12:30:00Z"),
+      }),
+    ).toBe(false);
+    expect(shouldHoldFollowUpUntilFirstContact({ status: "warm", firstContactAt: null })).toBe(false);
+    expect(shouldHoldFollowUpUntilFirstContact({ status: "cold", firstContactAt: null })).toBe(false);
+  });
+
+  it("labels Cold with the full name and chips as Cold", () => {
+    expect(followUpTemplateChipName(hot)).toBe("Hot");
+    expect(followUpTemplateChipName(warm)).toBe("Warm");
+    expect(followUpTemplateChipName(cold)).toBe("Cold");
+    expect(followUpTemplateFullName(cold)).toBe("Cold (not interested)");
   });
 
   it("maps text to sms and labels the paid API wall", () => {
