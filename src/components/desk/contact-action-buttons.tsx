@@ -72,7 +72,6 @@ function ContactActionButton({
     >
       <button
         type="submit"
-        disabled={!href}
         className={cn(
           "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
           contactActionButtonClass(kind),
@@ -83,9 +82,7 @@ function ContactActionButton({
             ? kind === "call"
               ? "Log a call and open tel:. In-app only — no trunk."
               : "Log contact and open the device composer. Send is a stub until a paid API is wired."
-            : kind === "email"
-              ? "No email on this lead"
-              : "No phone on this lead"
+            : "Log this contact in-desk and advance the follow-up clock."
         }
       >
         {label}
