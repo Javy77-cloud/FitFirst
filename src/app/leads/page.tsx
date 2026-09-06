@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { createLead } from "@/app/actions/crm";
-import { ChooseFiles } from "@/components/choose-files";
 import { StartShopForm } from "@/components/leads/start-shop-form";
-import { dropLeadPacket } from "@/app/actions/lifecycle";
 import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
@@ -37,8 +35,8 @@ export default async function LeadsPage({
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-base text-muted-foreground">
-        Create or match by name + phone or email. Never duplicate. A dropped dec becomes a lead
-        first; the deal is the shop. Quotes still do not create a policy.
+        Create or match by name + phone or email. Never duplicate. The deal is the shop. Quotes
+        still do not create a policy.
       </p>
       <SavedFiltersBar
         moduleId="leads"
@@ -100,16 +98,6 @@ export default async function LeadsPage({
             <SourceSelect defaultValue="referral" />
             <Button type="submit" size="sm">
               Save lead
-            </Button>
-          </form>
-          <form action={dropLeadPacket} className="ff-card space-y-3 p-4">
-            <h2 className="text-base font-semibold text-navy">Drop a dec packet</h2>
-            <p className="text-base text-muted-foreground">
-              PDF or text. Named insured + phone or email matches an existing lead.
-            </p>
-            <ChooseFiles name="file" />
-            <Button type="submit" size="sm">
-              Import packet
             </Button>
           </form>
         </div>
