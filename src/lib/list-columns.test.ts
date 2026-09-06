@@ -9,6 +9,10 @@ import {
   columnMenuLabel,
   cycleListSort,
   defaultColumnWidth,
+  isListColumnSortable,
+  isLiveSearchColumn,
+  isValueFilterColumn,
+  listColumnHeaderText,
   LEADS_DEFAULT_WIDTHS,
   listSortForColumn,
   mergeColumnWidths,
@@ -169,5 +173,25 @@ describe("list column visibility", () => {
       widths: { name: 160 },
       sort: { key: "name", dir: "asc" },
     });
+  });
+
+  it("treats Name as live search and every other labeled column as funnel-sortable", () => {
+    const name = LEADS_LIST_COLUMNS.find((column) => column.id === "name")!;
+    const source = LEADS_LIST_COLUMNS.find((column) => column.id === "source")!;
+    const status = CONTACTS_LIST_COLUMNS.find((column) => column.id === "status")!;
+    const pick = LEADS_LIST_COLUMNS.find((column) => column.id === "pick")!;
+    expect(isLiveSearchColumn(name)).toBe(true);
+    expect(isListColumnSortable(name)).toBe(false);
+    expect(isLiveSearchColumn({ id: "title", label: "Name" })).toBe(true);
+    expect(isLiveSearchColumn(source)).toBe(false);
+    expect(isListColumnSortable(source)).toBe(true);
+    expect(isValueFilterColumn(source)).toBe(true);
+    expect(isValueFilterColumn(name)).toBe(false);
+    expect(isValueFilterColumn(status)).toBe(false);
+    expect(isListColumnSortable(status)).toBe(true);
+    expect(isListColumnSortable(pick)).toBe(false);
+    expect(listColumnHeaderText(source)).toBe("Source");
+    expect(listColumnHeaderText(source)).not.toContain("Referral");
+    expect(listColumnHeaderText(source)).not.toMatch(/ASC|DESC/i);
   });
 });

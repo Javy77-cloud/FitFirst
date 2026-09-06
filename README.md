@@ -4,7 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6r`)
+## Mac test now (`cursor/live-ff-tip-sep6s`)
+
+Table header controls only: every sortable list column uses a compact funnel icon (ASC / DESC in a tiny popover). Name stays live search — no funnel. Source header stays **Source** (selected value lives in the popover, not the header). Shared `ColumnTable` path. No sidebar / data-model / page-content change. No migrate. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6s && git pull
+npm install
+# skip db:migrate — header chrome only, no schema
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then **Contacts** or **Deals**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Funnel per column | Sortable headers show a small funnel icon — no **ASC** / **DESC** text sitting in the header. |
+| 2 | Sort popover | Click the icon → tiny **ASC** / **DESC** only. Pick one and the popover closes. Click away also closes. |
+| 3 | Active sort | Idle icon is outline / muted. The sorted column’s icon is subtly filled. Header still shows the column name only. |
+| 4 | Name search | Name has a live search field. Typing filters matching names immediately. No funnel / no ASC/DESC on Name. |
+| 5 | Source | Header text is just **Source**. A selected value (Referral, ASC, …) never appears beside the label — only inside the open popover. |
+| 6 | Other lists | Contacts, Deals, Policies, Business, Carriers use the same header chrome. |
+
+## Mac test prior (`cursor/live-ff-tip-sep6r`)
 
 Color standard plus Leads polish. Call / SMS / E-mail fills stay locked. Additive `0076_leads_sep6r_polish` only (template rename + reset Leads default widths). No AMS. No seed wipe.
 

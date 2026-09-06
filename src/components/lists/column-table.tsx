@@ -2,8 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { isValidElement } from "react";
+import { Filter } from "lucide-react";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
+import { LiveContainsInput } from "@/components/search/live-contains-input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
 import { compareSheetValues } from "@/lib/desk/sheet-layout";
 import {
@@ -11,6 +20,10 @@ import {
   clampColumnWidth,
   defaultColumnWidth,
   defaultVisibleIds,
+  isListColumnSortable,
+  isLiveSearchColumn,
+  isValueFilterColumn,
+  listColumnHeaderText,
   listSortForColumn,
   loadColumnLayout,
   mergeColumnWidths,
@@ -95,6 +108,7 @@ export function ColumnTable({
     mergeColumnWidths(columns, initialWidths ?? {}),
   );
   const [sort, setSort] = useState<ListSort | null>(() => parseListSort(initialSort));
+  const [valueFilters, setValueFilters] = useState<Record<string, string>>({});
   const [draftWidths, setDraftWidths] = useState<Record<string, number> | null>(null);
   const appliedWidths = draftWidths ?? widths;
   const colKey = columns.map((column) => column.id).join(",");
@@ -134,13 +148,38 @@ export function ColumnTable({
   }, [moduleId, colKey, initialKey]);
 
   const shown = useMemo(() => shownColumns(columns, visible), [columns, visible]);
+  const filterValues = useMemo(() => {
+    const next: Record<string, string[]> = {};
+    for (const column of shown) {
+      if (!isValueFilterColumn(column)) continue;
+      const unique = new Set<string>();
+      for (const row of rows) {
+        const text = rowSortValue(row, column.id).trim();
+        if (text) unique.add(text);
+      }
+      next[column.id] = [...unique].sort((a, b) => a.localeCompare(b));
+    }
+    return next;
+  }, [rows, shown]);
+  const filteredRows = useMemo(() => {
+    return visibleRows.filter((row) => {
+      for (const column of shown) {
+        if (!isValueFilterColumn(column)) continue;
+        const selected = valueFilters[column.id];
+        if (!selected) continue;
+        if (rowSortValue(row, column.id).trim() !== selected) return false;
+      }
+      return true;
+    });
+  }, [shown, valueFilters, visibleRows]);
   const sortedRows = useMemo(() => {
-    if (!sort || !shown.some((column) => column.id === sort.key)) return visibleRows;
-    return [...visibleRows].sort((a, b) => {
+    const sortColumn = sort ? shown.find((column) => column.id === sort.key) : null;
+    if (!sort || !sortColumn || isLiveSearchColumn(sortColumn)) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
       const cmp = compareSheetValues(rowSortValue(a, sort.key), rowSortValue(b, sort.key));
       return sort.dir === "asc" ? cmp : -cmp;
     });
-  }, [shown, sort, visibleRows]);
+  }, [filteredRows, shown, sort]);
 
   function persist(next: ListColumnLayout) {
     setVisible(next.columns);
@@ -171,6 +210,8 @@ export function ColumnTable({
   }
 
   function onSort(id: string, dir: ListSortDir | null) {
+    const column = columns.find((item) => item.id === id);
+    if (!column || !isListColumnSortable(column)) return;
     persistPartial({ sort: listSortForColumn(id, dir) });
   }
 
@@ -205,6 +246,18 @@ export function ColumnTable({
                 prev={shown[index - 1] ?? null}
                 widths={appliedWidths}
                 sort={sort}
+                searchModuleId={queryModule}
+                initialQuery={initialQuery}
+                filterOptions={filterValues[column.id] ?? []}
+                filterValue={valueFilters[column.id] ?? ""}
+                onFilterValue={(value) => {
+                  setValueFilters((current) => {
+                    const next = { ...current };
+                    if (value) next[column.id] = value;
+                    else delete next[column.id];
+                    return next;
+                  });
+                }}
                 onSort={(dir) => onSort(column.id, dir)}
                 onWidth={onWidth}
               />
@@ -256,6 +309,11 @@ function ListColumnHeader({
   prev,
   widths,
   sort,
+  searchModuleId,
+  initialQuery,
+  filterOptions,
+  filterValue,
+  onFilterValue,
   onSort,
   onWidth,
 }: {
@@ -263,16 +321,24 @@ function ListColumnHeader({
   prev: ListColumn | null;
   widths: Record<string, number>;
   sort: ListSort | null;
+  searchModuleId: string;
+  initialQuery: string;
+  filterOptions: string[];
+  filterValue: string;
+  onFilterValue: (value: string) => void;
   onSort: (dir: ListSortDir | null) => void;
   onWidth: (id: string, px: number, commit: boolean) => void;
 }) {
-  const sortable = Boolean(column.label.trim());
-  const active = sort?.key === column.id ? sort.dir : null;
+  const liveSearch = isLiveSearchColumn(column);
+  const sortable = isListColumnSortable(column);
+  const headerText = listColumnHeaderText(column);
+  const active = sortable && sort?.key === column.id ? sort.dir : null;
   const ariaSort = active === "asc" ? "ascending" : active === "desc" ? "descending" : "none";
 
   return (
     <th
       data-sheet-col={column.id}
+      data-list-header={column.id}
       aria-sort={sortable ? ariaSort : undefined}
       className={cn("ff-list-th", sortable && "ff-sheet-th")}
     >
@@ -284,22 +350,30 @@ function ListColumnHeader({
           onWidth={onWidth}
         />
       ) : null}
-      {sortable ? (
+      {liveSearch ? (
         <div className="flex min-w-0 max-w-full items-center gap-1">
-          <span className="truncate font-semibold text-inherit">{column.label}</span>
-          <select
-            aria-label={`Sort ${column.label}`}
-            value={active ?? ""}
-            onChange={(event) => {
-              const next = event.target.value;
-              onSort(next === "asc" || next === "desc" ? next : null);
-            }}
-            className="h-6 max-w-[4.75rem] rounded border border-border bg-card px-1 text-[10px] font-semibold uppercase tracking-wide text-navy"
-          >
-            <option value="">{active ? "—" : ""}</option>
-            <option value="asc">ASC</option>
-            <option value="desc">DESC</option>
-          </select>
+          <span className="shrink-0 font-semibold text-inherit">{headerText}</span>
+          <LiveContainsInput
+            moduleId={searchModuleId}
+            initialQuery={initialQuery}
+            placeholder="Search names…"
+            aria-label={`Search ${headerText}`}
+            className="min-w-0 flex-1"
+            inputClassName="h-6 w-full min-w-0"
+            data-list-col-search={column.id}
+          />
+        </div>
+      ) : sortable ? (
+        <div className="flex min-w-0 max-w-full items-center gap-0.5">
+          <span className="truncate font-semibold text-inherit">{headerText}</span>
+          <ColumnSortFilter
+            label={headerText}
+            active={active}
+            filterOptions={filterOptions}
+            filterValue={filterValue}
+            onFilterValue={onFilterValue}
+            onSort={onSort}
+          />
         </div>
       ) : (
         <span className="sr-only">{column.label || "Select"}</span>
@@ -311,6 +385,100 @@ function ListColumnHeader({
         onWidth={onWidth}
       />
     </th>
+  );
+}
+
+function ColumnSortFilter({
+  label,
+  active,
+  filterOptions,
+  filterValue,
+  onFilterValue,
+  onSort,
+}: {
+  label: string;
+  active: ListSortDir | null;
+  filterOptions: string[];
+  filterValue: string;
+  onFilterValue: (value: string) => void;
+  onSort: (dir: ListSortDir | null) => void;
+}) {
+  const marked = Boolean(active || filterValue);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={`Filter ${label}`}
+        data-list-col-filter=""
+        data-sorted={active ?? undefined}
+        data-filtered={filterValue || undefined}
+        className={cn(
+          "inline-flex size-6 shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0",
+          marked
+            ? "text-navy hover:bg-navy/10"
+            : "text-muted-foreground hover:bg-muted hover:text-navy",
+        )}
+      >
+        <Filter
+          aria-hidden
+          data-filter-icon={marked ? "active" : "idle"}
+          className={cn("size-3.5", marked ? "fill-navy/30 text-navy" : "fill-none")}
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[4.25rem] p-0.5">
+        <DropdownMenuItem
+          data-sort-dir="asc"
+          data-selected={active === "asc" ? "true" : undefined}
+          onClick={() => onSort("asc")}
+          className={cn(
+            "justify-center px-2 py-1 text-[11px] font-semibold uppercase tracking-wide",
+            active === "asc" && "bg-secondary text-navy",
+          )}
+        >
+          ASC
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          data-sort-dir="desc"
+          data-selected={active === "desc" ? "true" : undefined}
+          onClick={() => onSort("desc")}
+          className={cn(
+            "justify-center px-2 py-1 text-[11px] font-semibold uppercase tracking-wide",
+            active === "desc" && "bg-secondary text-navy",
+          )}
+        >
+          DESC
+        </DropdownMenuItem>
+        {filterOptions.length > 0 ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              data-filter-value=""
+              data-selected={!filterValue ? "true" : undefined}
+              onClick={() => onFilterValue("")}
+              className={cn(
+                "px-2 py-1 text-[11px] font-medium",
+                !filterValue && "bg-secondary text-navy",
+              )}
+            >
+              All
+            </DropdownMenuItem>
+            {filterOptions.map((option) => (
+              <DropdownMenuItem
+                key={option}
+                data-filter-value={option}
+                data-selected={filterValue === option ? "true" : undefined}
+                onClick={() => onFilterValue(option)}
+                className={cn(
+                  "px-2 py-1 text-[11px] font-medium",
+                  filterValue === option && "bg-secondary text-navy",
+                )}
+              >
+                {option}
+              </DropdownMenuItem>
+            ))}
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

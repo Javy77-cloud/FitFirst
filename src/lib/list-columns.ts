@@ -87,6 +87,28 @@ export function listSortForColumn(key: string, dir: ListSortDir | null): ListSor
   return { key, dir };
 }
 
+/** Name is live contains-search only — never a sort / funnel control. */
+export function isLiveSearchColumn(column: Pick<ListColumn, "id" | "label">): boolean {
+  const label = column.label.trim().toLowerCase();
+  if (!label) return false;
+  return column.id === "name" || label === "name";
+}
+
+export function isListColumnSortable(column: Pick<ListColumn, "id" | "label">): boolean {
+  return Boolean(column.label.trim()) && !isLiveSearchColumn(column);
+}
+
+/** Pick-list columns (Source) filter from the funnel popover — never print the value in the header. */
+export function isValueFilterColumn(column: Pick<ListColumn, "id" | "label">): boolean {
+  const label = column.label.trim().toLowerCase();
+  if (!label) return false;
+  return column.id === "source" || label === "source";
+}
+
+export function listColumnHeaderText(column: Pick<ListColumn, "label">): string {
+  return column.label.trim();
+}
+
 export function mergeColumnWidths(
   columns: ListColumn[],
   stored: unknown,
