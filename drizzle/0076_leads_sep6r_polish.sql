@@ -16,3 +16,24 @@ WHERE "name" IN ('Cold', 'Cold (not interested)');
 UPDATE "desk_column_prefs"
 SET "widths" = '{}'::jsonb, "updated_at" = now()
 WHERE "table_key" = 'leads-queue';
+--> statement-breakpoint
+INSERT INTO "lead_follow_up_templates" ("id", "tenant_id", "name", "trigger_status", "enabled")
+SELECT 'a0710001-a071-4111-8111-a07100000001', '11111111-1111-4111-8111-111111111111', 'Aggressive', 'new', true
+WHERE EXISTS (SELECT 1 FROM "tenants" WHERE "id" = '11111111-1111-4111-8111-111111111111')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000001');
+--> statement-breakpoint
+INSERT INTO "lead_follow_up_templates" ("id", "tenant_id", "name", "trigger_status", "enabled")
+SELECT 'a0710001-a071-4111-8111-a07100000003', '11111111-1111-4111-8111-111111111111', 'Steady', 'warm', true
+WHERE EXISTS (SELECT 1 FROM "tenants" WHERE "id" = '11111111-1111-4111-8111-111111111111')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000003');
+--> statement-breakpoint
+INSERT INTO "lead_follow_up_templates" ("id", "tenant_id", "name", "trigger_status", "enabled")
+SELECT 'a0710001-a071-4111-8111-a07100000002', '11111111-1111-4111-8111-111111111111', 'Drip', 'cold', true
+WHERE EXISTS (SELECT 1 FROM "tenants" WHERE "id" = '11111111-1111-4111-8111-111111111111')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000002');
+--> statement-breakpoint
+INSERT INTO "lead_follow_up_templates" ("id", "tenant_id", "name", "trigger_status", "enabled")
+SELECT 'a0710001-a071-4111-8111-a07100000004', '11111111-1111-4111-8111-111111111111', 'Default', 'default', true
+WHERE EXISTS (SELECT 1 FROM "tenants" WHERE "id" = '11111111-1111-4111-8111-111111111111')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000004');
+
