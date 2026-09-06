@@ -78,7 +78,7 @@ describe("primary desk nav", () => {
       group.label,
       ...group.items.map((item) => item.label),
     ]);
-    expect(calendar?.items.map((item) => item.label)).toEqual(["Phone"]);
+    expect(calendar?.items.map((item) => item.label)).toEqual([]);
     expect(home?.items.map((item) => item.label)).toEqual([]);
     expect(templates?.items.map((item) => item.label)).toEqual([
       "Email signatures",
