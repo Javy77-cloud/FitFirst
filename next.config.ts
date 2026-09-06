@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   // Overnight leftover: asks.updatedAt, contact tags, quote-sheet photo-ocr, email template field names.
   // Turbopack compiles the desk; tsc still drifts. Do not block Mac checkout on that leftover.
   typescript: { ignoreBuildErrors: true },
+  // Default is 1mb. Deal worksheet uploads dec + 4-point + wind mit in one server action.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "20mb",
+    },
+  },
 };
 
 export default nextConfig;
