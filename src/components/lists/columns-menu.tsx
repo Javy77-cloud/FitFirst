@@ -24,7 +24,9 @@ export function ColumnsMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [panel, setPanel] = useState<{ top: number; right: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const visibleSet = new Set(visible);
   const checked = shownColumns(columns, visible).filter((column) => column.label.trim());
   const unchecked = columns.filter((column) => !visibleSet.has(column.id) && column.label.trim());
@@ -32,18 +34,31 @@ export function ColumnsMenu({
 
   useEffect(() => {
     if (!open) return;
+    function place() {
+      const box = buttonRef.current?.getBoundingClientRect();
+      if (!box) return;
+      setPanel({ top: box.bottom + 4, right: window.innerWidth - box.right });
+    }
     function onDoc(event: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
+    place();
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
   }, [open]);
 
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         aria-expanded={open}
         aria-haspopup="true"
@@ -57,8 +72,11 @@ export function ColumnsMenu({
       >
         Columns
       </button>
-      {open ? (
-        <div className="absolute right-0 z-50 mt-1 max-h-80 w-60 overflow-auto rounded-md border border-border bg-card p-1.5 shadow-lg">
+      {open && panel ? (
+        <div
+          className="fixed z-[80] max-h-80 w-60 overflow-auto rounded-md border border-border bg-card p-1.5 shadow-lg"
+          style={{ top: panel.top, right: panel.right }}
+        >
           <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Columns
           </p>

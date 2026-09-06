@@ -276,8 +276,7 @@ body[data-ff-col-resize] {
   right: 0;
   width: auto;
   min-width: 5.75rem;
-  max-width: 6.5rem;
-  overflow: hidden;
+  overflow: visible;
   padding: 0.2rem 0.35rem;
   text-align: right;
   background: var(--ff-wash);
