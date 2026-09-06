@@ -8,7 +8,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **`cursor/desk-nav-shell-1e87`** — navigation / shell only. No CRM page content changes. No migration.
 
-Default rail, top → bottom: **Home**, **Leads**, **Deals** (Quotes nested), **Contacts**, **Policies**, **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks**, **Calendar**, **Templates**, **Reports**, **Settings** (agency, admin only), **Admin** (admin only). Agents never see Settings, Admin, billing, people, or carrier credentials.
+Default rail, top → bottom: **Home**, **Leads**, **Deals** (Quotes nested), **Contacts** (no default submenu), **Policies**, **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks**, **Calendar**, **Templates** (email signatures / email templates / document templates), **Reports**, **Settings** (agency, admin only), **Admin** (admin only). Social, Merge, and other catalog extras stay addable in Customize — they are not default top-level. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **3**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
 
 Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` — personal only), **Sign Out**. **Switch role** stays for Admin view-as and writes `role_switch` to the E&O trail. Collapse control is the top-right of the sidebar header. Utility rows stay pinned so they do not scroll away.
 

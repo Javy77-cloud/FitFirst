@@ -8,7 +8,8 @@ import {
 } from "@/lib/desk/nav-catalog";
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
-export const NAV_LAYOUT_VERSION = 2 as const;
+/** Bump when the signed default rail changes so stale per-user prefs reset. */
+export const NAV_LAYOUT_VERSION = 3 as const;
 export const DIVIDER_ID = "divider";
 
 /** Default rail, top → bottom. Divider splits CRM from utility. */
@@ -37,7 +38,7 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   home: [],
   leads: [],
   deals: ["quotes"],
-  contacts: ["merge"],
+  contacts: [],
   policies: [
     "book-health",
     "renewals",
@@ -203,6 +204,11 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
   const fallback = defaultStoredNavLayout();
   if (!raw || typeof raw !== "object") return fallback;
   const parsed = raw as Partial<StoredNavLayout> & { version?: number };
+  const personal = parsePersonal((parsed as { personal?: unknown }).personal);
+  const savedVersion = typeof parsed.version === "number" ? parsed.version : 0;
+  if (savedVersion < NAV_LAYOUT_VERSION) {
+    return personal ? { ...fallback, personal } : fallback;
+  }
   const savedOrder = Array.isArray(parsed.primaryOrder)
     ? remapNavIds(parsed.primaryOrder.filter((id): id is string => typeof id === "string"))
     : [];
@@ -257,7 +263,6 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
     ? parsed.hiddenPrimaryIds.filter((id): id is string => typeof id === "string")
     : [];
   const hiddenPrimaryIds = uniqueKnown(savedHidden.filter((id) => isHidablePrimaryId(id)));
-  const personal = parsePersonal((parsed as { personal?: unknown }).personal);
 
   return { version: NAV_LAYOUT_VERSION, primaryOrder, hiddenPrimaryIds, submenus, personal };
 }

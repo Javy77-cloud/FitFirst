@@ -23,6 +23,7 @@ import {
   defaultStoredNavLayout,
   DIVIDER_ID,
   dropKey,
+  NAV_LAYOUT_VERSION,
   normalizeNavLayout,
   nudgePrimary,
   nudgeSubmenu,
@@ -45,7 +46,7 @@ import {
 } from "@/lib/desk/sidebar-accordion";
 import { cn } from "@/lib/utils";
 
-const NAV_LAYOUT_CACHE = "ff-nav-layout:v2";
+const NAV_LAYOUT_CACHE = `ff-nav-layout:v${NAV_LAYOUT_VERSION}`;
 
 type DragPayload = { id: string };
 

@@ -7,6 +7,7 @@ import {
   DEFAULT_PRIMARY_ORDER,
   defaultStoredNavLayout,
   DIVIDER_ID,
+  NAV_LAYOUT_VERSION,
   flattenResolvedNav,
   hidePrimary,
   isHidablePrimaryId,
@@ -85,6 +86,7 @@ describe("nav layout defaults", () => {
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
     );
     expect(byId.deals.submenu.map((item) => item.id)).toEqual(["quotes"]);
+    expect(byId.contacts.submenu).toEqual([]);
     expect(byId.templates.submenu.map((item) => item.label)).toEqual([
       "Email signatures",
       "Email templates",
@@ -106,6 +108,9 @@ describe("nav layout defaults", () => {
     expect(byId.business.defaultCollapsed).toBe(true);
     expect(byId.carriers.defaultCollapsed).toBe(true);
     expect(byId.home.defaultCollapsed).toBe(false);
+    const addable = availableSubmenuLinks(defaultStoredNavLayout(), "contacts").map((item) => item.id);
+    expect(addable).toContain("merge");
+    expect(addable).toContain("social");
   });
 
   it("hides agency Settings, Admin, billing, and people from agents", () => {
@@ -123,9 +128,12 @@ describe("nav layout defaults", () => {
 
   it("keeps live desk destinations reachable and omits stubs", () => {
     const hrefs = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.href);
+    const ids = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.id);
     for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/quotes", "/tasks", "/calendar", "/settings", "/admin", "/templates", "/reports"]) {
       expect(hrefs).toContain(href);
     }
+    expect(ids).not.toContain("merge");
+    expect(ids).not.toContain("social");
     expect(hrefs).not.toContain("/get-started");
     expect(hrefs).not.toContain("/inbox");
     expect(hrefs).not.toContain("/support");
@@ -146,9 +154,26 @@ describe("nav layout defaults", () => {
 });
 
 describe("normalizeNavLayout", () => {
+  it("resets stale per-user prefs to the signed default rail", () => {
+    const stale = normalizeNavLayout({
+      version: 2,
+      primaryOrder: ["social", "home", "merge", "leads"],
+      hiddenPrimaryIds: ["leads"],
+      submenus: { contacts: ["merge"], home: ["social"] },
+      personal: { timezone: "America/New_York", notifyInApp: true },
+    });
+    expect(stale.version).toBe(NAV_LAYOUT_VERSION);
+    expect(stale.primaryOrder).toEqual([...DEFAULT_PRIMARY_ORDER]);
+    expect(stale.hiddenPrimaryIds).toEqual([]);
+    expect(stale.submenus.contacts).toEqual([]);
+    expect(stale.primaryOrder).not.toContain("social");
+    expect(stale.primaryOrder).not.toContain("merge");
+    expect(stale.personal).toEqual({ timezone: "America/New_York", notifyInApp: true });
+  });
+
   it("drops unknown ids and appends new default primaries", () => {
     const next = normalizeNavLayout({
-      version: 1,
+      version: NAV_LAYOUT_VERSION,
       primaryOrder: ["policies", "bogus", "leads"],
       submenus: { policies: ["renewals", "nope", "policies"], leads: ["quotes"] },
     });
@@ -166,14 +191,14 @@ describe("normalizeNavLayout", () => {
 
   it("drops retired stub submenu ids and remaps Pipeline to Deals", () => {
     const dropped = normalizeNavLayout({
-      version: 1,
+      version: NAV_LAYOUT_VERSION,
       primaryOrder: [...DEFAULT_PRIMARY_ORDER],
       submenus: { home: ["get-started", "social", "support"], calendar: ["phone", "inbox", "alerts"] },
     });
     expect(dropped.submenus.home).toEqual(["social"]);
     expect(dropped.submenus.calendar).toEqual(["phone", "alerts"]);
     const remapped = normalizeNavLayout({
-      version: 1,
+      version: NAV_LAYOUT_VERSION,
       primaryOrder: ["home", "pipeline", "leads"],
       hiddenPrimaryIds: ["pipeline", "leads"],
       submenus: { pipeline: ["quotes"], deals: ["quotes"] },
@@ -186,7 +211,7 @@ describe("normalizeNavLayout", () => {
 
   it("lets Settings be hidden and does not pin it", () => {
     const next = normalizeNavLayout({
-      version: 2,
+      version: NAV_LAYOUT_VERSION,
       primaryOrder: ["leads", "home"],
       hiddenPrimaryIds: ["leads", "settings", "bogus", "leads"],
       submenus: {},
