@@ -11,12 +11,26 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { LEADS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { LEAD_STATUSES } from "@/lib/domain";
 import { SourceSelect } from "@/components/crm/source-select";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
-import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
+import { listFollowUpTemplates, listLeadFollowUps } from "@/lib/db/lead-follow-up-queries";
+import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
+import {
+  isLeadOnQueue,
+  matchesLeadQueueFilters,
+  normalizeLeadStatus,
+  sortLeadQueue,
+} from "@/lib/leads/queue";
+import { LeadsQueueToolbar } from "@/components/leads/leads-queue-toolbar";
+import { ResponseTimer } from "@/components/leads/response-timer";
+import {
+  LeadHeatToggle,
+  LeadLogContact,
+  LeadStatusSelect,
+  LeadTemplateOverride,
+} from "@/components/leads/lead-queue-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -26,39 +40,44 @@ export default async function LeadsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const filter = pickFilterParams(params, ["status", "source"]);
+  const filter = pickFilterParams(params, ["status", "source", "temperature"]);
   const q = firstParam(params.q) ?? "";
-  const all = await listLeads();
-  const rows = all.filter(
-    (lead) => matchesField(lead.status, filter.status) && matchesField(lead.source, filter.source),
+  await releaseDueLeadFollowUps().catch(() => null);
+  const [all, templates] = await Promise.all([listLeads(), listFollowUpTemplates()]);
+  const queue = sortLeadQueue(all.filter((lead) => isLeadOnQueue(lead)));
+  const rows = queue.filter((lead) =>
+    matchesLeadQueueFilters(
+      {
+        status: normalizeLeadStatus(lead.status),
+        source: lead.source,
+        temperature: lead.temperature,
+      },
+      filter,
+    ),
   );
+  const followUps = await listLeadFollowUps(rows.map((lead) => lead.id));
+  const dueCount = followUps.filter((row) => row.status === "queued" && row.dueAt.getTime() <= Date.now()).length;
+  const nextByLead = new Map<string, Date>();
+  for (const item of followUps) {
+    if (item.status !== "queued") continue;
+    const current = nextByLead.get(item.leadId);
+    if (!current || item.dueAt < current) nextByLead.set(item.leadId, item.dueAt);
+  }
+
   return (
     <AppShell title="Leads">
       <p className="mb-3 text-base text-muted-foreground">
-        Create or match by name + phone or email. Never duplicate. The deal is the shop. Quotes
-        still do not create a policy.
+        Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
+        Status change fires the matching follow-up template.
       </p>
-      <SavedFiltersBar
-        moduleId="leads"
-        searchPlaceholder="Contains name, phone, email…"
-        fields={[
-          {
-            key: "status",
-            label: "Status",
-            options: uniqueOptions(
-              all.map((lead) => lead.status),
-              LEAD_STATUSES.map((value) => ({ value, label: value })),
-            ),
-          },
-          {
-            key: "source",
-            label: "Source",
-            options: uniqueOptions(
-              all.map((lead) => lead.source),
-              sourceFilterOptions(),
-            ),
-          },
-        ]}
+      <LeadsQueueToolbar
+        sources={uniqueOptions(
+          queue.map((lead) => lead.source),
+          sourceFilterOptions(),
+        )}
+        haystacks={rows.map((lead) => haystack([lead.firstName, lead.lastName]))}
+        templates={templates}
+        dueCount={dueCount}
       />
       <div className="mb-4 flex flex-wrap gap-2">
         <Link href="/leads/new">
@@ -105,6 +124,8 @@ export default async function LeadsPage({
         <section className="ff-card overflow-hidden">
           <ModuleListActions
             module="leads"
+            showMacrosLink={false}
+            showFollowUp={false}
             recordIds={rows.map((lead) => lead.id)}
             records={rows.map((lead) => ({
               id: lead.id,
@@ -117,40 +138,70 @@ export default async function LeadsPage({
             }))}
           >
             <DeskColumnTable
-              moduleId="leads"
+              moduleId="leads-queue"
+              searchModuleId="leads"
               initialQuery={q}
               columns={LEADS_LIST_COLUMNS}
               empty={
-                firstParam(params.status) || firstParam(params.source)
+                firstParam(params.status) || firstParam(params.source) || firstParam(params.temperature)
                   ? "No leads match this filter."
-                  : "No leads yet."
+                  : "No open leads. Converted records are on Deals."
               }
-              rows={rows.map((lead) => ({
-                key: lead.id,
-                hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
-                cells: {
-                  pick: <SelectRowCheckbox id={lead.id} />,
-                  name: (
-                    <div className="font-medium">
-                      <RecordLink href={`/leads/${lead.id}`}>
-                        {lead.lastName}, {lead.firstName}
-                      </RecordLink>
-                      <div className="text-base text-muted-foreground">
-                        {lead.phone ?? lead.email}
+              rows={rows.map((lead) => {
+                const nextDue = nextByLead.get(lead.id);
+                return {
+                  key: lead.id,
+                  hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
+                  cells: {
+                    pick: <SelectRowCheckbox id={lead.id} />,
+                    name: (
+                      <div className="font-medium">
+                        <RecordLink href={`/leads/${lead.id}`}>
+                          {lead.lastName}, {lead.firstName}
+                        </RecordLink>
+                        <div className="text-base text-muted-foreground">
+                          {lead.phone ?? lead.email}
+                        </div>
+                        <LeadLogContact leadId={lead.id} />
                       </div>
-                    </div>
-                  ),
-                  status: <span className="uppercase">{lead.status}</span>,
-                  source: sourceLabel(lead.source),
-                  shop: lead.convertedDealId ? (
-                    <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
-                      Open deal
-                    </Link>
-                  ) : (
-                    <StartShopForm leadId={lead.id} />
-                  ),
-                },
-              }))}
+                    ),
+                    status: (
+                      <LeadStatusSelect leadId={lead.id} status={normalizeLeadStatus(lead.status)} />
+                    ),
+                    source: sourceLabel(lead.source),
+                    timer: (
+                      <ResponseTimer
+                        createdAt={lead.createdAt.toISOString()}
+                        firstContactAt={lead.firstContactAt ? lead.firstContactAt.toISOString() : null}
+                      />
+                    ),
+                    heat: <LeadHeatToggle leadId={lead.id} temperature={lead.temperature} />,
+                    followUp: (
+                      <div className="space-y-1">
+                        <LeadTemplateOverride
+                          leadId={lead.id}
+                          templateId={lead.followUpTemplateId}
+                          templates={templates}
+                        />
+                        {nextDue ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            Next {nextDue.toLocaleString()}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-muted-foreground">Automatic</div>
+                        )}
+                      </div>
+                    ),
+                    shop: lead.convertedDealId ? (
+                      <Link href={`/deals/${lead.convertedDealId}`} className="text-xs text-primary">
+                        Open deal
+                      </Link>
+                    ) : (
+                      <StartShopForm leadId={lead.id} />
+                    ),
+                  },
+                };
+              })}
             />
           </ModuleListActions>
         </section>

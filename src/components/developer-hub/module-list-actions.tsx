@@ -14,11 +14,15 @@ export async function ModuleListActions({
   recordIds,
   records = [],
   children,
+  showMacrosLink = true,
+  showFollowUp,
 }: {
   module: CrmListModule;
   recordIds: string[];
   records?: SelectionRecord[];
   children: ReactNode;
+  showMacrosLink?: boolean;
+  showFollowUp?: boolean;
 }) {
   const [macros, buttons] = isDevHubModule(module)
     ? await Promise.all([
@@ -33,7 +37,8 @@ export async function ModuleListActions({
           module={module}
           recordIds={recordIds}
           records={records.map(serializeSelectionRecord)}
-          showFollowUp={module === "leads"}
+          showFollowUp={showFollowUp ?? module === "leads"}
+          showMacrosLink={showMacrosLink}
           macros={macros.map((macro) => ({
             id: macro.id,
             name: macro.name,

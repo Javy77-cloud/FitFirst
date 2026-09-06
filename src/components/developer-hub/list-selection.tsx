@@ -72,6 +72,7 @@ export function ListMassBar({
   buttons = [],
   recordIds = [],
   records = [],
+  showMacrosLink = true,
 }: {
   module: CrmListModule;
   macros: MacroOption[];
@@ -79,6 +80,7 @@ export function ListMassBar({
   recordIds?: string[];
   records?: SelectionRecord[];
   showFollowUp?: boolean;
+  showMacrosLink?: boolean;
 }) {
   const { selected, clear } = useSelection();
   const [message, setMessage] = useState<string | null>(null);
@@ -121,12 +123,14 @@ export function ListMassBar({
             Clear
           </button>
         ) : null}
-        <a
-          href="/settings/developer-hub/macros"
-          className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline"
-        >
-          Settings · Macros
-        </a>
+        {showMacrosLink ? (
+          <a
+            href="/settings/developer-hub/macros"
+            className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline"
+          >
+            Settings · Macros
+          </a>
+        ) : null}
       </div>
       {message ? <p className="text-sm text-navy">{message}</p> : null}
       {widget ? <WidgetHost name={widget.name} url={widget.url} onClose={() => setWidget(null)} /> : null}

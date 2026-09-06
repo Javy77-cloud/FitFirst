@@ -498,6 +498,13 @@
       "when": 1788620000000,
       "tag": "0070_nav_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1788630000000,
+      "tag": "0071_lead_follow_up_queue",
+      "breakpoints": true
     }
   ]
 }

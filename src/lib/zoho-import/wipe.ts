@@ -69,6 +69,8 @@ export const KEEP_TABLES = new Set([
   "desk_custom_buttons",
   "desk_client_scripts",
   "desk_widgets",
+  "lead_follow_up_templates",
+  "lead_follow_up_steps",
   "import_export_jobs",
   "email_campaigns",
   "campaign_sequences",

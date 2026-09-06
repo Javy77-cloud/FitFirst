@@ -137,12 +137,17 @@ export async function findOrCreateLead(
       source: input.source || "manual",
       notes: input.notes || null,
       status: "new",
+      temperature: "hot",
     })
     .returning();
   if (lead && !lead.ownerId && route) {
     const { applyLeadRouting } = await import("@/lib/leads/apply-routing");
     const routed = await applyLeadRouting(lead.id);
     if (routed?.ownerId) lead.ownerId = routed.ownerId;
+  }
+  if (lead) {
+    const { fireLeadFollowUpForStatus } = await import("@/lib/leads/apply-follow-up");
+    await fireLeadFollowUpForStatus(lead.id, lead.status).catch(() => null);
   }
   return { lead, created: true };
 }
@@ -222,6 +227,9 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
     .update(leads)
     .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, leadId));
+
+  const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
+  await cancelLeadFollowUps(leadId).catch(() => null);
 
   await writeDeskComms({
     kind: "task",
@@ -348,6 +356,9 @@ export async function createDeal(formData: FormData) {
     .update(leads)
     .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, lead.id));
+
+  const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
+  await cancelLeadFollowUps(lead.id).catch(() => null);
 
   const fromLead = leadOntoRisk(lead, deal.state);
   await db.insert(risks).values({

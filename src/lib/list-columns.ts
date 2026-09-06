@@ -108,6 +108,9 @@ export const LEADS_LIST_COLUMNS: ListColumn[] = [
   { id: "name", label: "Name", locked: true },
   { id: "status", label: "Status" },
   { id: "source", label: "Source" },
+  { id: "timer", label: "Response" },
+  { id: "heat", label: "Hot/Cold" },
+  { id: "followUp", label: "Follow-up" },
   { id: "shop", label: "Shop" },
 ];
 

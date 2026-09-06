@@ -345,6 +345,8 @@ function mapLeadStatus(raw: string | null): string {
   const text = (raw ?? "").toLowerCase();
   if (!text) return "new";
   if (text.includes("convert")) return "converted";
+  if (text.includes("progress")) return "qualified";
+  if (text.includes("recycl")) return "lost";
   if (text.includes("qualif")) return "qualified";
   if (text.includes("contact")) return "contacted";
   if (text.includes("lost") || text.includes("junk") || text.includes("unqual")) return "lost";

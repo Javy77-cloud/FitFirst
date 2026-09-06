@@ -115,6 +115,11 @@ export async function writeDeskComms(input: WriteCommsInput) {
     toAddress: input.toAddress || null,
   });
 
+  if ((kind === "call" || kind === "email" || kind === "sms") && related.leadId) {
+    const { markLeadFirstContact } = await import("@/lib/leads/first-contact");
+    await markLeadFirstContact(related.leadId, input.occurredAt ?? new Date()).catch(() => null);
+  }
+
   if (input.logEmailJob !== false && kind === "email") {
     await db.insert(emailSendJobs).values({
       tenantId: DEFAULT_TENANT_ID,

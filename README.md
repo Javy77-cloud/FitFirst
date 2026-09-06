@@ -4,7 +4,37 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6k`)
+## Mac test now (`cursor/live-ff-tip-sep6l`)
+
+Leads is a work queue. Converted leads leave this page and live on Deals only. Follow-up templates fire on status change. Additive migration `0071_lead_follow_up_queue` — no seed, no Zoho wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6l && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Converted off Leads | Convert a lead. It disappears from Leads immediately and is only on Deals. No “show converted” toggle. Queue shows new / contacted / in-progress / recycled only. |
+| 2 | Sort + filters | Untouched (new, no contact) sit first, then newest arrival. Status, Source, and Hot/Cold replace saved-filter macros. Type a name — list filters live and shows “N matches”. No Settings · Macros link. |
+| 3 | Follow-up templates | **Follow-up Templates** opens a right slide-out. Seeded: Hot Lead (call 5m, text 30m, email 2h, call 1d) on **new**; Not Interested (email 30d / 60d / 90d) on **recycled**. Change status — matching template queues Tasks automatically. Override per lead with the Follow-up dropdown. Delete template asks twice. |
+| 4 | Response timer | New lead shows elapsed time from arrival. Turns **red after 5:00** with no first contact. Log call / text / email on the row — timer clears. |
+
+### Stub walls (paid APIs not wired)
+
+- **Email / text send** — queued or held on `comms_outbound_jobs` with `vendor=stub` / `paid_api_wall`. Nothing leaves the desk.
+- **Call** — in-app task + alert only. No trunk / PSTN.
+- **Agent pings** — `alerts` table only. Nothing emails Javy.
+
+Due follow-ups land on **Tasks** (`activities` kind=task) and the in-app bell. New Lead form, sidebar, and other pages are unchanged.
+
+## Mac test prior (`cursor/live-ff-tip-sep6k`)
 
 Same as sep6j plus no top-level Flood chip. Flood stays a P&C subtype only.
 

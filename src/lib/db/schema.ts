@@ -385,6 +385,9 @@ export const leads = pgTable(
     ownerId: uuid("owner_id"),
     zohoId: text("zoho_id"),
     sourceId: text("source_id"),
+    temperature: text("temperature"),
+    firstContactAt: timestamp("first_contact_at", { withTimezone: true }),
+    followUpTemplateId: uuid("follow_up_template_id"),
     ...timestamps,
   },
   (t) => [
@@ -3249,3 +3252,66 @@ export type DeskMacroRun = typeof deskMacroRuns.$inferSelect;
 export type DeskCustomButton = typeof deskCustomButtons.$inferSelect;
 export type DeskClientScript = typeof deskClientScripts.$inferSelect;
 export type DeskWidget = typeof deskWidgets.$inferSelect;
+
+/** Status-triggered follow-up playbooks for the Leads work queue. */
+export const leadFollowUpTemplates = pgTable(
+  "lead_follow_up_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    triggerStatus: text("trigger_status").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("lead_follow_up_templates_tenant_idx").on(t.tenantId, t.triggerStatus)],
+);
+
+export const leadFollowUpSteps = pgTable(
+  "lead_follow_up_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => leadFollowUpTemplates.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    method: text("method").notNull(),
+    delayAmount: integer("delay_amount").notNull(),
+    delayUnit: text("delay_unit").notNull(),
+    message: text("message"),
+    ...timestamps,
+  },
+  (t) => [index("lead_follow_up_steps_template_idx").on(t.templateId, t.sortOrder)],
+);
+
+export const leadFollowUpQueue = pgTable(
+  "lead_follow_up_queue",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id, { onDelete: "cascade" }),
+    templateId: uuid("template_id").references(() => leadFollowUpTemplates.id, { onDelete: "set null" }),
+    stepId: uuid("step_id").references(() => leadFollowUpSteps.id, { onDelete: "set null" }),
+    method: text("method").notNull(),
+    message: text("message"),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    status: text("status").notNull().default("queued"),
+    activityId: uuid("activity_id"),
+    alertId: uuid("alert_id"),
+    outboundJobId: uuid("outbound_job_id"),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("lead_follow_up_queue_due_idx").on(t.tenantId, t.status, t.dueAt),
+    index("lead_follow_up_queue_lead_idx").on(t.leadId, t.status),
+  ],
+);
+
+export type LeadFollowUpTemplate = typeof leadFollowUpTemplates.$inferSelect;
+export type LeadFollowUpStep = typeof leadFollowUpSteps.$inferSelect;
+export type LeadFollowUpQueueRow = typeof leadFollowUpQueue.$inferSelect;
