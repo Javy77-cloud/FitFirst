@@ -20,6 +20,7 @@ import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
 import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
 import {
   isLeadOnQueue,
+  isParkedFromDefaultLeadsView,
   matchesLeadQueueFilters,
   normalizeLeadStatus,
   sortLeadQueue,
@@ -70,13 +71,25 @@ export default async function LeadsPage({
       <p className="mb-3 text-base text-muted-foreground">
         Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
         First contact starts the timer and the Hot template. Status change swaps Warm or Cold.
+        Lost stays off this list until you search. Nurture parks until the contact-again date.
       </p>
       <LeadsQueueToolbar
         sources={uniqueOptions(
           queue.map((lead) => lead.source),
           sourceFilterOptions(),
         )}
-        haystacks={rows.map((lead) => haystack([lead.firstName, lead.lastName]))}
+        haystacks={queue
+          .filter((lead) =>
+            matchesLeadQueueFilters(
+              {
+                status: normalizeLeadStatus(lead.status),
+                source: lead.source,
+                temperature: lead.temperature,
+              },
+              filter,
+            ),
+          )
+          .map((lead) => haystack([lead.firstName, lead.lastName]))}
         templates={templates}
         dueCount={dueCount}
       />
@@ -156,6 +169,7 @@ export default async function LeadsPage({
                 });
                 return {
                   key: lead.id,
+                  parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
                   hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
                   cells: {
                     pick: <SelectRowCheckbox id={lead.id} />,

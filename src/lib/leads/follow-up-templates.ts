@@ -4,6 +4,16 @@ export type FollowUpMethod = (typeof FOLLOW_UP_METHODS)[number];
 export const FOLLOW_UP_DELAY_UNITS = ["minutes", "hours", "days"] as const;
 export type FollowUpDelayUnit = (typeof FOLLOW_UP_DELAY_UNITS)[number];
 
+/** How the agent is notified when a template step fires. */
+export const REMIND_VIA_CHANNELS = ["task", "popup", "email"] as const;
+export type RemindViaChannel = (typeof REMIND_VIA_CHANNELS)[number];
+
+export const REMIND_VIA_LABELS: Record<RemindViaChannel, string> = {
+  task: "Task",
+  popup: "Pop-up",
+  email: "Email",
+};
+
 export const FOLLOW_UP_DELAY_UNIT_LABELS: Record<FollowUpDelayUnit, string> = {
   minutes: "min",
   hours: "hours",
@@ -19,11 +29,19 @@ export const TEMPLATE_TRIGGER_STATUSES = [
   { value: "cold", label: "Cold (not interested)", templateName: "Cold" },
 ] as const;
 
+/** Per-lead Follow-up dropdown: Hot / Warm / Cold, then Default at the bottom. */
+export const FOLLOW_UP_OVERRIDE_OPTIONS = [
+  { triggerStatus: "new", label: "Hot" },
+  { triggerStatus: "warm", label: "Warm" },
+  { triggerStatus: "cold", label: "Cold (not interested)" },
+] as const;
+
 export type FollowUpStepInput = {
   method?: string | null;
   delayAmount?: number | string | null;
   delayUnit?: string | null;
   message?: string | null;
+  remindVia?: string | null;
 };
 
 export type FollowUpStepDraft = {
@@ -31,6 +49,7 @@ export type FollowUpStepDraft = {
   delayAmount: number;
   delayUnit: FollowUpDelayUnit;
   message: string;
+  remindVia: RemindViaChannel;
 };
 
 export type FollowUpTemplateRecord = {
@@ -46,6 +65,26 @@ export function isFollowUpMethod(value: string | null | undefined): value is Fol
 
 export function isFollowUpDelayUnit(value: string | null | undefined): value is FollowUpDelayUnit {
   return Boolean(value && (FOLLOW_UP_DELAY_UNITS as readonly string[]).includes(value));
+}
+
+export function isRemindViaChannel(value: string | null | undefined): value is RemindViaChannel {
+  return Boolean(value && (REMIND_VIA_CHANNELS as readonly string[]).includes(value));
+}
+
+export function normalizeRemindVia(value: string | null | undefined): RemindViaChannel {
+  return isRemindViaChannel(value) ? value : "task";
+}
+
+export function remindViaLabel(value: string | null | undefined): string {
+  return REMIND_VIA_LABELS[normalizeRemindVia(value)];
+}
+
+/** Never email Javy for internal agent pings — in-app instead. */
+export function shouldEmailAgentReminder(agentEmail: string | null | undefined): boolean {
+  const email = (agentEmail ?? "").trim().toLowerCase();
+  if (!email) return false;
+  if (email === "javy@fitfirst.local") return false;
+  return true;
 }
 
 export function followUpMethodToActivityKind(method: FollowUpMethod): "call" | "sms" | "email" {
@@ -75,6 +114,7 @@ export function normalizeFollowUpSteps(steps: FollowUpStepInput[]): FollowUpStep
       delayAmount,
       delayUnit: step.delayUnit,
       message: (step.message ?? "").trim(),
+      remindVia: normalizeRemindVia(step.remindVia),
     });
   }
   return next;

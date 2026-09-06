@@ -1,6 +1,6 @@
 /** Work-queue rules for the Leads page. Converted leads are Deals-only. */
 
-export const LEAD_QUEUE_STATUSES = ["new", "contacted", "qualified", "warm", "cold", "lost"] as const;
+export const LEAD_QUEUE_STATUSES = ["new", "contacted", "qualified", "warm", "cold", "nurture", "lost"] as const;
 export type LeadQueueStatus = (typeof LEAD_QUEUE_STATUSES)[number];
 
 export const LEAD_QUEUE_STATUS_FILTERS = [
@@ -9,8 +9,15 @@ export const LEAD_QUEUE_STATUS_FILTERS = [
   { value: "qualified", label: "in-progress" },
   { value: "warm", label: "warm" },
   { value: "cold", label: "cold" },
-  { value: "lost", label: "recycled" },
+  { value: "nurture", label: "Nurture" },
+  { value: "lost", label: "Lost" },
 ] as const;
+
+export const NURTURE_DELAY_UNITS = ["days", "months"] as const;
+export type NurtureDelayUnit = (typeof NURTURE_DELAY_UNITS)[number];
+
+export const MAX_NURTURE_DAYS = 365;
+export const MAX_NURTURE_MONTHS = 12;
 
 export const LEAD_TEMPERATURES = ["hot", "warm", "cold"] as const;
 export type LeadTemperature = (typeof LEAD_TEMPERATURES)[number];
@@ -23,6 +30,7 @@ export function normalizeLeadStatus(status: string | null | undefined): string {
   const raw = (status ?? "new").trim().toLowerCase();
   if (raw === "in_progress" || raw === "in-progress" || raw === "in progress") return "qualified";
   if (raw === "recycled" || raw === "junk" || raw === "unqualified") return "lost";
+  if (raw === "nurture" || raw === "nurturing") return "nurture";
   if (raw === "qualif" || raw.includes("qualif")) return raw.includes("unqual") ? "lost" : "qualified";
   return raw || "new";
 }
@@ -30,9 +38,49 @@ export function normalizeLeadStatus(status: string | null | undefined): string {
 export function leadStatusLabel(status: string | null | undefined): string {
   const value = normalizeLeadStatus(status);
   if (value === "qualified") return "in-progress";
-  if (value === "lost") return "recycled";
+  if (value === "lost") return "Lost";
+  if (value === "nurture") return "Nurture";
   if (value === "cold") return "Cold (not interested)";
   return value || "new";
+}
+
+export function isNurtureDelayUnit(value: string | null | undefined): value is NurtureDelayUnit {
+  return Boolean(value && (NURTURE_DELAY_UNITS as readonly string[]).includes(value));
+}
+
+export function clampNurtureDelay(
+  amount: number,
+  unit: NurtureDelayUnit,
+): { amount: number; unit: NurtureDelayUnit } {
+  if (unit === "months") {
+    return { amount: Math.min(MAX_NURTURE_MONTHS, Math.max(1, Math.round(amount))), unit: "months" };
+  }
+  return { amount: Math.min(MAX_NURTURE_DAYS, Math.max(1, Math.round(amount))), unit: "days" };
+}
+
+export function nurtureDueAt(now: Date, amount: number, unit: NurtureDelayUnit): Date {
+  const clamped = clampNurtureDelay(amount, unit);
+  const next = new Date(now);
+  if (clamped.unit === "months") {
+    next.setMonth(next.getMonth() + clamped.amount);
+  } else {
+    next.setDate(next.getDate() + clamped.amount);
+  }
+  const cap = new Date(now);
+  cap.setFullYear(cap.getFullYear() + 1);
+  return next.getTime() > cap.getTime() ? cap : next;
+}
+
+/** Lost stays off the default queue. Nurture parks until the contact-again date. */
+export function isParkedFromDefaultLeadsView(
+  lead: { status?: string | null; nurtureUntil?: Date | string | null },
+  now: Date | string = new Date(),
+): boolean {
+  const status = normalizeLeadStatus(lead.status);
+  if (status === "lost") return true;
+  if (status !== "nurture") return false;
+  if (!lead.nurtureUntil) return true;
+  return new Date(lead.nurtureUntil).getTime() > new Date(now).getTime();
 }
 
 export function normalizeLeadTemperature(value: string | null | undefined): LeadTemperature {

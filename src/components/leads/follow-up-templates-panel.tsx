@@ -17,8 +17,11 @@ import {
   FOLLOW_UP_DELAY_UNIT_LABELS,
   FOLLOW_UP_DELAY_UNITS,
   FOLLOW_UP_METHODS,
+  REMIND_VIA_CHANNELS,
+  REMIND_VIA_LABELS,
   TEMPLATE_TRIGGER_STATUSES,
   followUpTemplateFullName,
+  remindViaLabel,
 } from "@/lib/leads/follow-up-templates";
 import { LEAD_QUEUE_STATUS_FILTERS, leadStatusLabel } from "@/lib/leads/queue";
 
@@ -34,6 +37,7 @@ export type FollowUpTemplateView = {
     delayAmount: number;
     delayUnit: string;
     message: string | null;
+    remindVia: string;
   }>;
 };
 
@@ -43,6 +47,7 @@ function emptySteps() {
     delayAmount: index === 0 ? "5" : "",
     delayUnit: "minutes",
     message: "",
+    remindVia: "task",
   }));
 }
 
@@ -80,6 +85,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
           delayAmount: step ? String(step.delayAmount) : "",
           delayUnit: step?.delayUnit ?? "minutes",
           message: step?.message ?? "",
+          remindVia: step?.remindVia ?? "task",
         };
       })
     : emptySteps();
@@ -96,12 +102,13 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
           if (!next) setEditingId(null);
         }}
       >
-        <DialogContent className="w-[min(100%-2rem,600px)] max-w-[600px] gap-3 p-5 sm:max-w-[600px]">
+        <DialogContent className="w-[min(100%-2rem,680px)] max-w-[680px] gap-3 p-5 sm:max-w-[680px]">
           <DialogHeader>
             <DialogTitle>Follow-up Templates</DialogTitle>
             <DialogDescription>
               Each template maps to one status. New is Hot. Status change swaps the matching
-              template. Override stays on the lead row.
+              template. Each step has Remind via (Task, Pop-up, or Email). Override stays on
+              the lead row; Default uses the status template.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -146,16 +153,17 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <div className="grid grid-cols-[5.5rem_3.75rem_5.25rem_minmax(0,1fr)] gap-1.5 text-[11px] font-medium text-muted-foreground">
+                  <div className="grid grid-cols-[5.5rem_3.75rem_5.25rem_6.25rem_minmax(0,1fr)] gap-1.5 text-[11px] font-medium text-muted-foreground">
                     <span>Method</span>
                     <span>Delay</span>
                     <span>Unit</span>
+                    <span>Remind via</span>
                     <span>Message</span>
                   </div>
                   {stepDefaults.map((step, index) => (
                     <div
                       key={index}
-                      className="grid grid-cols-[5.5rem_3.75rem_5.25rem_minmax(0,1fr)] items-center gap-1.5"
+                      className="grid grid-cols-[5.5rem_3.75rem_5.25rem_6.25rem_minmax(0,1fr)] items-center gap-1.5"
                     >
                       <select
                         name={`stepMethod${index}`}
@@ -187,6 +195,18 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                         {FOLLOW_UP_DELAY_UNITS.map((unit) => (
                           <option key={unit} value={unit}>
                             {FOLLOW_UP_DELAY_UNIT_LABELS[unit]}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        name={`stepRemindVia${index}`}
+                        defaultValue={step.remindVia}
+                        aria-label={`Step ${index + 1} remind via`}
+                        className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
+                      >
+                        {REMIND_VIA_CHANNELS.map((channel) => (
+                          <option key={channel} value={channel}>
+                            {REMIND_VIA_LABELS[channel]}
                           </option>
                         ))}
                       </select>
@@ -255,7 +275,8 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                               {step.method} · {step.delayAmount}{" "}
                               {FOLLOW_UP_DELAY_UNIT_LABELS[
                                 step.delayUnit as keyof typeof FOLLOW_UP_DELAY_UNIT_LABELS
-                              ] ?? step.delayUnit}
+                              ] ?? step.delayUnit}{" "}
+                              · Remind via {remindViaLabel(step.remindVia)}
                               {step.message ? ` — ${step.message}` : ""}
                             </li>
                           ))}

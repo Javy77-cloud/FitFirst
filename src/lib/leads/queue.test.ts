@@ -3,11 +3,13 @@ import {
   formatElapsedClock,
   isConvertedLead,
   isLeadOnQueue,
+  isParkedFromDefaultLeadsView,
   isUntouchedLead,
   leadStatusLabel,
   matchesLeadQueueFilters,
   normalizeLeadStatus,
   normalizeLeadTemperature,
+  nurtureDueAt,
   responseTimerState,
   searchMatchLabel,
   sortLeadQueue,
@@ -21,9 +23,11 @@ describe("lead queue status", () => {
     expect(normalizeLeadStatus("warm")).toBe("warm");
     expect(normalizeLeadStatus("cold")).toBe("cold");
     expect(leadStatusLabel("qualified")).toBe("in-progress");
-    expect(leadStatusLabel("lost")).toBe("recycled");
+    expect(leadStatusLabel("lost")).toBe("Lost");
+    expect(leadStatusLabel("nurture")).toBe("Nurture");
     expect(leadStatusLabel("cold")).toBe("Cold (not interested)");
     expect(leadStatusLabel("warm")).toBe("warm");
+    expect(normalizeLeadStatus("nurture")).toBe("nurture");
   });
 
   it("removes converted leads from the work queue", () => {
@@ -31,6 +35,29 @@ describe("lead queue status", () => {
     expect(isLeadOnQueue({ status: "converted" })).toBe(false);
     expect(isConvertedLead({ status: "contacted", convertedDealId: "deal-1" })).toBe(true);
     expect(isLeadOnQueue({ status: "lost" })).toBe(true);
+    expect(isParkedFromDefaultLeadsView({ status: "lost" })).toBe(true);
+    expect(isParkedFromDefaultLeadsView({ status: "new" })).toBe(false);
+    expect(
+      isParkedFromDefaultLeadsView({
+        status: "nurture",
+        nurtureUntil: new Date("2026-12-01T12:00:00Z"),
+      }, new Date("2026-09-06T12:00:00Z")),
+    ).toBe(true);
+    expect(
+      isParkedFromDefaultLeadsView({
+        status: "nurture",
+        nurtureUntil: new Date("2026-09-01T12:00:00Z"),
+      }, new Date("2026-09-06T12:00:00Z")),
+    ).toBe(false);
+    const start = new Date(Date.UTC(2026, 8, 6, 12));
+    const inThirtyDays = nurtureDueAt(start, 30, "days");
+    expect(inThirtyDays.getUTCFullYear()).toBe(2026);
+    expect(inThirtyDays.getUTCMonth()).toBe(9);
+    expect(inThirtyDays.getUTCDate()).toBe(6);
+    const inTwoMonths = nurtureDueAt(start, 2, "months");
+    expect(inTwoMonths.getUTCFullYear()).toBe(2026);
+    expect(inTwoMonths.getUTCMonth()).toBe(10);
+    expect(inTwoMonths.getUTCDate()).toBe(6);
   });
 });
 

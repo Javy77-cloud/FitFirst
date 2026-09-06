@@ -1,32 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { fetchListColumnPrefs, saveListColumnPrefs } from "@/app/actions/desk-prefs";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ColumnsMenu } from "@/components/lists/columns-menu";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
 import {
   allColumnIds,
-  columnMenuLabel,
   defaultVisibleIds,
   loadVisibleColumns,
   mergeVisibleColumns,
+  reorderVisibleColumns,
   saveVisibleColumns,
   shownColumns,
   toggleColumnVisibility,
   type ListColumn,
 } from "@/lib/list-columns";
 import { matchesContains } from "@/lib/search/live-query";
-import { cn } from "@/lib/utils";
 
 export type { ListColumn };
 
@@ -34,6 +23,8 @@ export type ColumnRow = {
   key: string;
   id?: string;
   hay?: string;
+  /** Hidden on the default list; still searchable. Used for Lost / parked Nurture. */
+  parked?: boolean;
   cells: Record<string, ReactNode>;
 };
 
@@ -58,8 +49,11 @@ export function ColumnTable({
   const queryModule = searchModuleId ?? moduleId;
   const liveQuery = useLiveContainsQuery(queryModule, initialQuery);
   const visibleRows = useMemo(() => {
-    if (!rows.some((row) => row.hay != null)) return rows;
-    return rows.filter((row) => matchesContains(liveQuery, row.hay));
+    return rows.filter((row) => {
+      if (row.parked && !liveQuery.trim()) return false;
+      if (row.hay != null) return matchesContains(liveQuery, row.hay);
+      return true;
+    });
   }, [liveQuery, rows]);
   const [visible, setVisible] = useState(() =>
     initialVisible
@@ -92,7 +86,6 @@ export function ColumnTable({
   }, [moduleId, colKey, initialKey]);
 
   const shown = useMemo(() => shownColumns(columns, visible), [columns, visible]);
-  const visibleSet = useMemo(() => new Set(visible), [visible]);
 
   function persist(next: string[]) {
     setVisible(next);
@@ -104,12 +97,12 @@ export function ColumnTable({
     persist(toggleColumnVisibility(columns, visible, id));
   }
 
-  function reset() {
-    persist(allColumnIds(columns));
+  function reorder(fromId: string, toId: string) {
+    persist(reorderVisibleColumns(visible, fromId, toId));
   }
 
-  function cellHidden(id: string) {
-    return !visibleSet.has(id);
+  function reset() {
+    persist(allColumnIds(columns));
   }
 
   return (
@@ -117,59 +110,17 @@ export function ColumnTable({
       <table className="ff-table">
         <thead>
           <tr>
-            {columns.map((column) => (
-              <th
-                key={column.id}
-                hidden={cellHidden(column.id)}
-                className={cn(cellHidden(column.id) && "hidden")}
-              >
-                {column.label}
-              </th>
+            {shown.map((column) => (
+              <th key={column.id}>{column.label}</th>
             ))}
             <th className="ff-col-manage">
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  aria-label="Manage columns"
-                  title="Manage columns"
-                  className={cn(
-                    "inline-flex size-7 items-center justify-center rounded text-muted-foreground",
-                    "hover:bg-card hover:text-foreground",
-                  )}
-                >
-                  <SlidersHorizontal className="size-3.5" strokeWidth={1.75} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="bottom" className="w-56 min-w-56">
-                  {/* Base UI GroupLabel throws unless it sits inside Menu.Group. */}
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Columns</DropdownMenuLabel>
-                    {columns.map((column) => {
-                      const itemLabel = columnMenuLabel(column);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          checked={visibleSet.has(column.id)}
-                          disabled={column.locked}
-                          label={itemLabel}
-                          closeOnClick={false}
-                          onCheckedChange={() => toggle(column.id)}
-                        >
-                          {itemLabel}
-                          {column.locked ? (
-                            <span className="ml-auto text-[10px] text-muted-foreground">
-                              required
-                            </span>
-                          ) : null}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={reset}>
-                    <RotateCcw className="size-3.5" />
-                    Show all
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <ColumnsMenu
+                columns={columns}
+                visible={visible}
+                onToggle={toggle}
+                onReorder={reorder}
+                onReset={reset}
+              />
             </th>
           </tr>
         </thead>
@@ -185,14 +136,8 @@ export function ColumnTable({
           ) : (
             visibleRows.map((row) => (
               <tr key={row.key} id={row.id}>
-                {columns.map((column) => (
-                  <td
-                    key={column.id}
-                    hidden={cellHidden(column.id)}
-                    className={cn(cellHidden(column.id) && "hidden")}
-                  >
-                    {row.cells[column.id]}
-                  </td>
+                {shown.map((column) => (
+                  <td key={column.id}>{row.cells[column.id]}</td>
                 ))}
                 <td className="ff-col-manage" aria-hidden />
               </tr>

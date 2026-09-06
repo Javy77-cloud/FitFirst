@@ -8,6 +8,7 @@ import {
   leadFollowUpSteps,
   leadFollowUpTemplates,
   leads,
+  users,
 } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import {
@@ -15,11 +16,15 @@ import {
   followUpMethodToActivityKind,
   isFollowUpDelayUnit,
   isFollowUpMethod,
+  normalizeRemindVia,
   outboundStubLabel,
   PAID_API_WALL_REASON,
   pickTemplateForLead,
+  remindViaLabel,
+  shouldEmailAgentReminder,
   shouldHoldFollowUpUntilFirstContact,
   type FollowUpMethod,
+  type RemindViaChannel,
 } from "@/lib/leads/follow-up-templates";
 import { leadStatusLabel, normalizeLeadStatus } from "@/lib/leads/queue";
 
@@ -54,6 +59,10 @@ export async function fireLeadFollowUpForStatus(leadId: string, status: string, 
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!lead) return { scheduled: 0 };
   const normalized = normalizeLeadStatus(status);
+  if (normalized === "lost" || normalized === "nurture" || normalized === "converted") {
+    await cancelLeadFollowUps(leadId);
+    return { scheduled: 0 };
+  }
   if (shouldHoldFollowUpUntilFirstContact({ status: normalized, firstContactAt: lead.firstContactAt })) {
     await cancelLeadFollowUps(leadId);
     return { scheduled: 0, held: true };
@@ -83,19 +92,26 @@ export async function fireLeadFollowUpForStatus(leadId: string, status: string, 
     if (!isFollowUpMethod(step.method) || !isFollowUpDelayUnit(step.delayUnit)) continue;
     const dueAt = dueAtFromStep(now, step.delayAmount, step.delayUnit);
     const method = step.method;
+    const remindVia = normalizeRemindVia(step.remindVia);
     const kind = followUpMethodToActivityKind(method);
     const title = `Follow-up · ${method} · ${leadName}`;
-    const notes = [step.message, outboundStubLabel(method)].filter(Boolean).join("\n\n");
-    const written = await writeDeskComms({
-      kind: "task",
-      title,
-      notes,
-      status: "open",
-      dueAt,
-      leadId,
-      eventType: "created",
-      logEmailJob: false,
-    });
+    const notes = [step.message, outboundStubLabel(method), `Remind via ${remindViaLabel(remindVia)}.`]
+      .filter(Boolean)
+      .join("\n\n");
+    let activityId: string | null = null;
+    if (remindVia === "task") {
+      const written = await writeDeskComms({
+        kind: "task",
+        title,
+        notes,
+        status: "open",
+        dueAt,
+        leadId,
+        eventType: "created",
+        logEmailJob: false,
+      });
+      activityId = written.activity.id;
+    }
     await db.insert(leadFollowUpQueue).values({
       tenantId: DEFAULT_TENANT_ID,
       leadId,
@@ -103,9 +119,10 @@ export async function fireLeadFollowUpForStatus(leadId: string, status: string, 
       stepId: step.id,
       method,
       message: step.message,
+      remindVia,
       dueAt,
       status: "queued",
-      activityId: written.activity.id,
+      activityId,
     });
     void kind;
     scheduled += 1;
@@ -138,59 +155,138 @@ export async function releaseDueLeadFollowUps(now = new Date()) {
       ),
     );
   const byId = new Map(leadRows.map((row) => [row.id, row]));
+  const ownerIds = [...new Set(leadRows.map((row) => row.ownerId).filter((id): id is string => Boolean(id)))];
+  const ownerRows = ownerIds.length
+    ? await db
+        .select()
+        .from(users)
+        .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), inArray(users.id, ownerIds)))
+    : [];
+  const ownerById = new Map(ownerRows.map((row) => [row.id, row]));
   let released = 0;
   for (const item of due) {
     const lead = byId.get(item.leadId);
     if (!lead) continue;
     const method = (isFollowUpMethod(item.method) ? item.method : "call") as FollowUpMethod;
+    const remindVia = normalizeRemindVia(item.remindVia) as RemindViaChannel;
     const leadName = `${lead.lastName}, ${lead.firstName}`;
-    const [alert] = await db
-      .insert(alerts)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        kind: "lead_follow_up",
-        title: `Follow-up due · ${method} · ${leadName}`,
-        body: `${item.message || `A ${method} follow-up is due.`} In-app only — nothing emailed Javy. ${outboundStubLabel(method)}`,
-        severity: "warning",
-        entityType: "lead",
-        entityId: lead.id,
-        userId: lead.ownerId,
-        recipientUserId: lead.ownerId,
-      })
-      .returning();
-    let outboundJobId: string | null = null;
-    if (method === "email" || method === "text") {
-      const [job] = await db
-        .insert(commsOutboundJobs)
-        .values({
-          tenantId: DEFAULT_TENANT_ID,
-          channel: method === "text" ? "sms" : "email",
-          status: "held",
-          toAddress: method === "text" ? lead.phone : lead.email,
-          subject: method === "email" ? `Follow-up · ${leadName}` : null,
-          body: `${item.message || ""}\n\n${outboundStubLabel(method)}`,
-          leadId: lead.id,
-          activityId: item.activityId,
-          holdReason: PAID_API_WALL_REASON,
-          vendor: "stub",
-          scheduledFor: item.dueAt,
-        })
-        .returning();
-      outboundJobId = job.id;
-    }
+    const owner = lead.ownerId ? ownerById.get(lead.ownerId) : undefined;
+    const result = await notifyAgentFollowUpDue({
+      lead,
+      leadName,
+      method,
+      remindVia,
+      message: item.message,
+      activityId: item.activityId,
+      dueAt: item.dueAt,
+      ownerEmail: owner?.email ?? null,
+    });
     await db
       .update(leadFollowUpQueue)
       .set({
         status: "released",
         releasedAt: now,
-        alertId: alert.id,
-        outboundJobId,
+        alertId: result.alertId,
+        outboundJobId: result.outboundJobId,
         updatedAt: now,
       })
       .where(eq(leadFollowUpQueue.id, item.id));
     released += 1;
   }
   return { released };
+}
+
+async function notifyAgentFollowUpDue(input: {
+  lead: { id: string; ownerId: string | null };
+  leadName: string;
+  method: FollowUpMethod;
+  remindVia: RemindViaChannel;
+  message: string | null;
+  activityId: string | null;
+  dueAt: Date;
+  ownerEmail: string | null;
+}): Promise<{ alertId: string | null; outboundJobId: string | null }> {
+  const title = `Follow-up due · ${input.method} · ${input.leadName}`;
+  const body = `${input.message || `A ${input.method} follow-up is due.`} Remind via ${remindViaLabel(input.remindVia)}. In-app preferred — nothing emailed Javy. ${outboundStubLabel(input.method)}`;
+  if (input.remindVia === "email" && shouldEmailAgentReminder(input.ownerEmail)) {
+    const [job] = await db
+      .insert(commsOutboundJobs)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        channel: "email",
+        status: "held",
+        toAddress: input.ownerEmail,
+        subject: `Agent reminder · ${input.leadName}`,
+        body,
+        leadId: input.lead.id,
+        activityId: input.activityId,
+        holdReason: PAID_API_WALL_REASON,
+        vendor: "stub",
+        scheduledFor: input.dueAt,
+      })
+      .returning();
+    return { alertId: null, outboundJobId: job.id };
+  }
+  const [alert] = await db
+    .insert(alerts)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      kind: "lead_follow_up",
+      title,
+      body,
+      severity: "warning",
+      entityType: "lead",
+      entityId: input.lead.id,
+      userId: input.lead.ownerId,
+      recipientUserId: input.lead.ownerId,
+    })
+    .returning();
+  return { alertId: alert.id, outboundJobId: null };
+}
+
+export async function scheduleLeadNurtureReminder(
+  leadId: string,
+  dueAt: Date,
+  remindVia: RemindViaChannel,
+  now = new Date(),
+) {
+  const [lead] = await db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
+  if (!lead) return { scheduled: 0 };
+  await cancelLeadFollowUps(leadId);
+  const leadName = `${lead.lastName}, ${lead.firstName}`;
+  const notes = `Contact again ${dueAt.toLocaleString()}. Remind via ${remindViaLabel(remindVia)}.`;
+  let activityId: string | null = null;
+  if (remindVia === "task") {
+    const written = await writeDeskComms({
+      kind: "task",
+      title: `Nurture · ${leadName}`,
+      notes,
+      status: "open",
+      dueAt,
+      leadId,
+      eventType: "created",
+      logEmailJob: false,
+    });
+    activityId = written.activity.id;
+  }
+  await db.insert(leadFollowUpQueue).values({
+    tenantId: DEFAULT_TENANT_ID,
+    leadId,
+    templateId: null,
+    stepId: null,
+    method: "call",
+    message: notes,
+    remindVia,
+    dueAt,
+    status: "queued",
+    activityId,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return { scheduled: 1 };
 }
 
 export function followUpDueSummary(count: number): string {

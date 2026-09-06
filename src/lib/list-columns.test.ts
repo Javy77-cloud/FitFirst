@@ -10,6 +10,7 @@ import {
   defaultVisibleIds,
   fromDeskColumns,
   mergeVisibleColumns,
+  reorderVisibleColumns,
   shownColumns,
   toggleColumnVisibility,
   type ListColumn,
@@ -110,5 +111,25 @@ describe("list column visibility", () => {
   it("gives empty locked columns a menu label so Base UI can name the checkbox", () => {
     expect(columnMenuLabel({ id: "pick", label: "", locked: true })).toBe("Select");
     expect(columnMenuLabel({ id: "status", label: "Status" })).toBe("Status");
+  });
+
+  it("renames Leads Template/Shop and keeps user column order", () => {
+    expect(LEADS_LIST_COLUMNS.find((column) => column.id === "followUp")?.label).toBe("Follow-up");
+    expect(LEADS_LIST_COLUMNS.find((column) => column.id === "shop")?.label).toBe("Convert");
+    expect(reorderVisibleColumns(["pick", "name", "status", "source"], "status", "name")).toEqual([
+      "pick",
+      "status",
+      "name",
+      "source",
+    ]);
+    expect(shownColumns(COLUMNS, ["source", "name"]).map((column) => column.id)).toEqual([
+      "source",
+      "name",
+    ]);
+    expect(mergeVisibleColumns(COLUMNS, ["phone", "status", "name"])).toEqual([
+      "phone",
+      "status",
+      "name",
+    ]);
   });
 });

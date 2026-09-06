@@ -3,11 +3,13 @@ import {
   delayMs,
   dueAtFromStep,
   followUpMethodToActivityKind,
+  FOLLOW_UP_OVERRIDE_OPTIONS,
   followUpTemplateChipName,
   followUpTemplateFullName,
   normalizeFollowUpSteps,
   outboundStubLabel,
   pickTemplateForLead,
+  shouldEmailAgentReminder,
   shouldHoldFollowUpUntilFirstContact,
 } from "./follow-up-templates";
 
@@ -27,6 +29,13 @@ describe("follow-up templates", () => {
     ]);
     expect(steps).toHaveLength(4);
     expect(steps.map((step) => step.method)).toEqual(["call", "text", "email", "call"]);
+    expect(steps.every((step) => step.remindVia === "task")).toBe(true);
+    expect(
+      normalizeFollowUpSteps([
+        { method: "call", delayAmount: 5, delayUnit: "minutes", remindVia: "popup" },
+        { method: "email", delayAmount: 1, delayUnit: "days", remindVia: "email" },
+      ]).map((step) => step.remindVia),
+    ).toEqual(["popup", "email"]);
   });
 
   it("computes Hot Lead and Not Interested delays", () => {
@@ -59,6 +68,14 @@ describe("follow-up templates", () => {
     expect(shouldHoldFollowUpUntilFirstContact({ status: "cold", firstContactAt: null })).toBe(false);
   });
 
+  it("orders Follow-up override options Hot, Warm, Cold (not interested), then Default", () => {
+    expect(FOLLOW_UP_OVERRIDE_OPTIONS.map((row) => row.label)).toEqual([
+      "Hot",
+      "Warm",
+      "Cold (not interested)",
+    ]);
+  });
+
   it("labels Cold with the full name and chips as Cold", () => {
     expect(followUpTemplateChipName(hot)).toBe("Hot");
     expect(followUpTemplateChipName(warm)).toBe("Warm");
@@ -70,5 +87,12 @@ describe("follow-up templates", () => {
     expect(followUpMethodToActivityKind("text")).toBe("sms");
     expect(outboundStubLabel("email")).toMatch(/no paid email API/i);
     expect(outboundStubLabel("text")).toMatch(/no paid SMS API/i);
+  });
+
+  it("never emails Javy for an agent reminder channel", () => {
+    expect(shouldEmailAgentReminder("javy@fitfirst.local")).toBe(false);
+    expect(shouldEmailAgentReminder("Javy@FitFirst.local")).toBe(false);
+    expect(shouldEmailAgentReminder(null)).toBe(false);
+    expect(shouldEmailAgentReminder("agent@agency.test")).toBe(true);
   });
 });

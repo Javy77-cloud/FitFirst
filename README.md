@@ -4,7 +4,39 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6n`)
+## Mac test now (`cursor/live-ff-tip-sep6o`)
+
+Leads follow-up + column picker standard on top of sep6n. Hot / Warm / Cold temp and timer-on-first-contact stay. Additive `0073_lead_follow_up_remind_nurture` only. No AMS. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6o && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then the other list pages.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Rename columns | Leads headers are **Follow-up** (was Template) and **Convert** (was Shop). Convert button still starts the shop. |
+| 2 | Remind via on every template step | **Follow-up Templates** → edit Hot, Warm, or Cold (not interested). Each step has **Remind via**: Task · Pop-up · Email. Save persists. Task / Pop-up notify in-app when the step fires. Email is an agent-reminder stub held at the send wall — nothing emails Javy. |
+| 3 | Follow-up dropdown | Row **Follow-up** select has exactly four options, in this order: **Hot**, **Warm**, **Cold (not interested)**, **Default** (bottom). No “Automatic.” Default uses the template linked to the lead’s current status. Hot / Warm / Cold are a per-lead override. |
+| 4 | Nurture status + date picker | Status list includes **Nurture**. Choosing it opens a pop-up: when to contact again (number + days/months, max 1 year) and how to remind (Task / Pop-up / Email). Lead leaves the default queue and resurfaces on that date with the chosen reminder. |
+| 5 | Lost status | Status list includes **Lost** (bad number, not a fit, never responds). Lost leads are hidden from the default Leads view. Type a name in Search — they still appear. Global search still finds them. |
+| 6 | Column picker standard | Every list (Leads, Deals table, Contacts, Policies, Businesses, Carriers, plus Tasks / Claims / Quotes table / Pipeline table / Commissions / Reviews / Work queue / Glance / Merge) shows a **Columns** button (not “Manage columns”). Checkbox list. Checked items drag to reorder. Order is saved per user. |
+
+### Stub walls (paid APIs not wired)
+
+- **Email / text send** — queued or held on `comms_outbound_jobs` with `vendor=stub` / `paid_api_wall`. Nothing leaves the desk.
+- **Call** — in-app task + alert only. No trunk / PSTN.
+- **Agent pings** — `alerts` table only. Email remind-via is an agent stub and never emails Javy.
+
+Due follow-ups land on **Tasks** (`activities` kind=task) and the in-app bell. New Lead form, sidebar, and other pages are unchanged except the shared Columns control on lists.
+
+## Mac test prior (`cursor/live-ff-tip-sep6n`)
 
 Leads follow-up templates on top of sep6m. Timer starts on first contact, not arrival. Temp is Hot / Warm / Cold. Templates are a centered ~600px modal. Additive `0072_lead_follow_up_warm_cold` only. No AMS. No seed wipe.
 

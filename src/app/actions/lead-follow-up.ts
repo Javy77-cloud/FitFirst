@@ -7,14 +7,25 @@ import { db } from "@/lib/db";
 import { leadFollowUpSteps, leadFollowUpTemplates, leads } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { enqueueOutboundJob } from "@/lib/desk/outbound-queue";
-import { cancelLeadFollowUps, fireLeadFollowUpForStatus } from "@/lib/leads/apply-follow-up";
+import {
+  cancelLeadFollowUps,
+  fireLeadFollowUpForStatus,
+  scheduleLeadNurtureReminder,
+} from "@/lib/leads/apply-follow-up";
 import {
   isFollowUpMethod,
   normalizeFollowUpSteps,
+  normalizeRemindVia,
   outboundStubLabel,
   PAID_API_WALL_REASON,
 } from "@/lib/leads/follow-up-templates";
-import { normalizeLeadStatus, normalizeLeadTemperature, temperatureForStatus } from "@/lib/leads/queue";
+import {
+  isNurtureDelayUnit,
+  normalizeLeadStatus,
+  normalizeLeadTemperature,
+  nurtureDueAt,
+  temperatureForStatus,
+} from "@/lib/leads/queue";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -37,15 +48,45 @@ export async function updateLeadQueueStatus(formData: FormData) {
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!existing) return;
   if (normalizeLeadStatus(existing.status) === status) return;
+  if (status === "nurture") return;
   await db
     .update(leads)
     .set({
       status,
       temperature: temperatureForStatus(status, existing.temperature),
+      nurtureUntil: null,
+      nurtureRemindVia: null,
       updatedAt: new Date(),
     })
     .where(eq(leads.id, leadId));
   await fireLeadFollowUpForStatus(leadId, status);
+  revalidateLeads(leadId);
+}
+
+export async function scheduleLeadNurture(formData: FormData) {
+  const leadId = str(formData, "leadId");
+  const amount = Number(str(formData, "nurtureAmount"));
+  const unitRaw = str(formData, "nurtureUnit");
+  const remindVia = normalizeRemindVia(str(formData, "remindVia"));
+  if (!leadId || !Number.isFinite(amount) || !isNurtureDelayUnit(unitRaw)) return;
+  const [existing] = await db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
+  if (!existing) return;
+  const now = new Date();
+  const dueAt = nurtureDueAt(now, amount, unitRaw);
+  await db
+    .update(leads)
+    .set({
+      status: "nurture",
+      temperature: temperatureForStatus("nurture", existing.temperature),
+      nurtureUntil: dueAt,
+      nurtureRemindVia: remindVia,
+      updatedAt: now,
+    })
+    .where(eq(leads.id, leadId));
+  await scheduleLeadNurtureReminder(leadId, dueAt, remindVia, now);
   revalidateLeads(leadId);
 }
 
@@ -128,6 +169,7 @@ export async function saveFollowUpTemplate(formData: FormData) {
       delayAmount: str(formData, `stepDelay${index}`) || null,
       delayUnit: str(formData, `stepUnit${index}`) || null,
       message: str(formData, `stepMessage${index}`) || null,
+      remindVia: str(formData, `stepRemindVia${index}`) || null,
     })),
   );
   const now = new Date();
@@ -160,6 +202,7 @@ export async function saveFollowUpTemplate(formData: FormData) {
         delayAmount: step.delayAmount,
         delayUnit: step.delayUnit,
         message: step.message || null,
+        remindVia: step.remindVia,
       })),
     );
   }

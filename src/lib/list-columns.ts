@@ -46,7 +46,7 @@ export function mergeVisibleColumns(
 ): string[] {
   const defaults = defaultVisibleIds(columns);
   const locked = columns.filter((column) => column.locked).map((column) => column.id);
-  const allowed = new Set(defaults);
+  const allowed = new Set(allColumnIds(columns));
   if (!Array.isArray(stored)) return defaults;
   const visible = stored.filter(
     (id): id is string => typeof id === "string" && allowed.has(id),
@@ -90,12 +90,24 @@ export function toggleColumnVisibility(
     const next = visible.filter((value) => value !== id);
     return next.length ? next : visible;
   }
-  const order = columns.map((item) => item.id);
-  return order.filter((columnId) => columnId === id || visible.includes(columnId));
+  return [...visible, id];
+}
+
+export function reorderVisibleColumns(visible: string[], fromId: string, toId: string): string[] {
+  const from = visible.indexOf(fromId);
+  const to = visible.indexOf(toId);
+  if (from < 0 || to < 0 || from === to) return visible;
+  const next = [...visible];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
 }
 
 export function shownColumns(columns: ListColumn[], visible: string[]): ListColumn[] {
-  return columns.filter((column) => visible.includes(column.id));
+  const byId = new Map(columns.map((column) => [column.id, column]));
+  return visible
+    .map((id) => byId.get(id))
+    .filter((column): column is ListColumn => Boolean(column));
 }
 
 /** Accessible name for the manage-columns checkbox (empty labels are invalid). */
@@ -110,8 +122,8 @@ export const LEADS_LIST_COLUMNS: ListColumn[] = [
   { id: "source", label: "Source" },
   { id: "timer", label: "Response" },
   { id: "heat", label: "Temp" },
-  { id: "followUp", label: "Template" },
-  { id: "shop", label: "Shop" },
+  { id: "followUp", label: "Follow-up" },
+  { id: "shop", label: "Convert" },
 ];
 
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = [

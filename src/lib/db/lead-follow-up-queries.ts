@@ -16,6 +16,7 @@ export type FollowUpTemplateWithSteps = {
     delayAmount: number;
     delayUnit: string;
     message: string | null;
+    remindVia: string;
   }>;
 };
 
@@ -46,6 +47,7 @@ export async function listFollowUpTemplates(): Promise<FollowUpTemplateWithSteps
         delayAmount: step.delayAmount,
         delayUnit: step.delayUnit,
         message: step.message,
+        remindVia: step.remindVia,
       })),
   }));
 }
