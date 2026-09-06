@@ -1321,3 +1321,24 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+
+## LIVE-TEST tip Sep 6e (`cursor/live-ff-tip-sep6e`)
+
+Consolidate **`cursor/live-ff-tip-sep6d`** @ `bc1ae13` + **`cursor/ff-lead-deal-worksheet-2338`** @ `8504988` only. Did **not** seed Ana. Did **not** wipe. Did **not** change the signed rail.
+
+- Same sep6d customizer and rail. **Policies default submenu stays empty.** Admin folder stays. Deals → Quotes. `NAV_LAYOUT_VERSION` **5**.
+- Lead detail Convert-first (no Ask a teammate / activity timeline). Deal worksheet header is name / stage / line / source. Multi-file source docs + sheet-health Confirmed / Needs review / Missing.
+- Quotes never create a Policy. Ana stays unbound Cov A **$321,000**.
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
+npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+# skip db:seed — keep the live Zoho-imported book
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.

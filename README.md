@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Signed default rail + free customizer (this tip)
 
-**`cursor/live-ff-tip-sep6d`** tips from **`cursor/live-ff-tip-sep6c`**. Same rail as sep6c. Customize is row-drag only (no grip, no chevron). One **Add link** at the bottom; the rail scrolls so **Done customizing** stays on screen. Collapse sits between the logo / desk name and the menu. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
+**`cursor/live-ff-tip-sep6e`** consolidates **`cursor/live-ff-tip-sep6d`** (`bc1ae13`) plus **`cursor/ff-lead-deal-worksheet-2338`** (`8504988`) only. Same rail as sep6d — **Policies default submenu is empty**. Customize is row-drag only (no grip, no chevron). One **Add link** at the bottom; the rail scrolls so **Done customizing** stays on screen. Collapse sits between the logo / desk name and the menu. Lead + deal worksheet declutter is on. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
 
 Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (Quotes only), **Contacts** (no kids), **Policies** (no kids), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Billing, Compliance, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome). Work queue, Phone, Scorecards, Glance, and Commissions stay in the Customize catalog — they are not default children. Social, Merge, Book health, and other AMS extras stay addable. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **5**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
 
@@ -29,7 +29,7 @@ Customize menu: drag the **row itself** (no grip, no chevron while customizing).
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep6d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -58,7 +58,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep6d`** — follow tip on **`cursor/live-ff-tip-sep6c`**. Same live CRM+Quote desk. Signed default rail (`NAV_LAYOUT_VERSION` **5**): Tasks / Calendar / Reports have no default kids; work-queue / phone / scorecards / glance / commissions stay catalog-only. Customize is row-drag only (no grip, no chevron). Collapse sits between the logo and the list, with space so it is not a corner control on a thin header. Do **not** run `db:seed`. Still includes:
+**`cursor/live-ff-tip-sep6e`** — `cursor/live-ff-tip-sep6d` @ `bc1ae13` plus **`cursor/ff-lead-deal-worksheet-2338`** @ `8504988` only. Same signed rail (`NAV_LAYOUT_VERSION` **5**): **Policies kids stay empty**. Tasks / Calendar / Reports have no default kids; work-queue / phone / scorecards / glance / commissions stay catalog-only. Customize is row-drag only (no grip, no chevron). Collapse sits between the logo and the list. Do **not** run `db:seed`. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
@@ -75,8 +75,9 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 13. **`cursor/ff-leads-remove-dec-drop-a688`** — Leads list no longer has Drop a dec packet. Create or match a lead on `/leads`; dec / wind mit / 4-point drops stay on Deals.
 14. **`cursor/live-ff-tip-sep6c`** — `NAV_LAYOUT_VERSION` **5**. Default Tasks / Calendar / Reports have no kids. Customize: drag the row (no grip / no chevron). Nest and promote both work. Collapse control is between the logo and the menu. Utility + profile stay pinned.
 15. **`cursor/ff-nav-customize-chrome-d626`** / **`cursor/live-ff-tip-sep6d`** — Customize list scrolls (Done + Reset pinned). One Add link at the bottom. No nest banners, no per-folder Add-link dropdowns. Drag the tile; white highlight only. No grip, no customize chevrons. Collapse between logo and menu.
+16. **`cursor/ff-lead-deal-worksheet-2338`** — Lead detail is Convert-first (no Ask a teammate / activity timeline). Deal worksheet header is name / stage / line / source. Source docs accept multiple files; sheet-health strip is Confirmed / Needs review / Missing.
 
-Skipped for the next tip: AMS waves 10–16. No AMS on this merge.
+Skipped for the next tip: AMS waves 10–16. No AMS on this merge. No Policies submenu guess.
 
 Demo theater is off. Paid APIs (IVANS, Twilio SMS, email/social OAuth, Stripe) are honest Connect / Settings walls — no fake Connect toggles. CRM, Quote, Settings, Import/Export + Zoho JSONL, and macros stay. Sidebar stays `#1d4e89` with off-white active rows. Notification bell stays in top chrome. Live Zoho is book of record — no live Zoho writes. Quotes never create a Policy. After wipe+import, Ana is usually gone; if demo Ana remains, Cov A stays **$321,000** unbound.
 
@@ -94,7 +95,7 @@ Social stays under Home as a BYO connect wall (Settings → Social). Phone stays
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep6d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -135,7 +136,7 @@ Default rail: **Home · Leads · Deals · Contacts · Policies · Business · Ca
 ### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep6d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -367,7 +368,7 @@ On Deal detail → **Documents**, source-doc upload is **half width** (`lg:grid-
 Extracted fields stay under the split. Page-right context rail is unchanged. No wipe.
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep6d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
 npm install
 npm run db:migrate
 npm run dev -- --port 43147
