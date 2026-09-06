@@ -8,6 +8,7 @@ export const SESSION_COOKIES = {
   modules: "ff_modules",
   mfa: "ff_mfa",
   mfaPending: "ff_mfa_pending",
+  impersonatorId: "ff_impersonator_id",
 } as const;
 
 export const ACTOR_COOKIE = SESSION_COOKIES.actorId;

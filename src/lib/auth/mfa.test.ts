@@ -67,6 +67,7 @@ describe("MFA helpers", () => {
     expect(isMfaMethod("voice")).toBe(false);
     expect(isMfaSetupPath("/enroll-mfa")).toBe(true);
     expect(isMfaSetupPath("/settings/security")).toBe(true);
+    expect(isMfaSetupPath("/me")).toBe(true);
     expect(isMfaSetupPath("/pipeline")).toBe(false);
     expect(isMfaChallengePath("/login/mfa")).toBe(true);
     expect(isMfaChallengePath("/login")).toBe(false);

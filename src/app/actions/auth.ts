@@ -28,6 +28,7 @@ export async function establishSession(user: User, mfaStatus: MfaStatus) {
   jar.set(SESSION_COOKIES.modules, user.canAccessModules === false ? "0" : "1", SESSION_COOKIE_OPTS);
   jar.set(DESK_ROLE_COOKIE, role === "agent" ? "agent" : "admin", SESSION_COOKIE_OPTS);
   jar.set(DESK_AGENT_COOKIE, user.id, SESSION_COOKIE_OPTS);
+  jar.delete(SESSION_COOKIES.impersonatorId);
   if (mfaStatus === "ok") jar.delete(SESSION_COOKIES.mfaPending);
 }
 

@@ -36,6 +36,10 @@ export type DeskSession = {
   mfaEnrolled: boolean;
   mfaMethod: string | null;
   mfaDemoBypass: boolean;
+  canSwitchRole: boolean;
+  impersonatorId: string | null;
+  impersonatorName: string | null;
+  isImpersonating: boolean;
 };
 
 const DEMO_PASSWORDS: Record<string, string> = {
@@ -111,12 +115,21 @@ function guestSession(): DeskSession {
     mfaEnrolled: false,
     mfaMethod: null,
     mfaDemoBypass: false,
+    canSwitchRole: false,
+    impersonatorId: null,
+    impersonatorName: null,
+    isImpersonating: false,
   };
 }
 
-function sessionFromUser(user: User, mfaCookie?: string): DeskSession {
+function sessionFromUser(
+  user: User,
+  mfaCookie?: string,
+  impersonator?: { id: string; name: string } | null,
+): DeskSession {
   const role = normalizeRole(user.role);
   const isAdminRole = role === "admin" || role === "owner";
+  const impersonating = Boolean(impersonator && impersonator.id !== user.id);
   return {
     user,
     role,
@@ -131,6 +144,10 @@ function sessionFromUser(user: User, mfaCookie?: string): DeskSession {
     mfaEnrolled: Boolean(user.mfaEnrolled),
     mfaMethod: user.mfaMethod,
     mfaDemoBypass: Boolean(user.mfaDemoBypass),
+    canSwitchRole: isAdminRole || Boolean(impersonator),
+    impersonatorId: impersonator?.id ?? null,
+    impersonatorName: impersonator?.name ?? null,
+    isImpersonating: impersonating,
   };
 }
 
@@ -145,7 +162,16 @@ export async function currentDeskSession(): Promise<DeskSession> {
       .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
     if (!user) return guestSession();
     if (!isDeskLoginAllowed(user.accessStatus ?? "active")) return guestSession();
-    return sessionFromUser(user, jar.get(SESSION_COOKIES.mfa)?.value);
+    const impersonatorId = jar.get(SESSION_COOKIES.impersonatorId)?.value ?? null;
+    let impersonator: { id: string; name: string } | null = null;
+    if (impersonatorId && impersonatorId !== user.id) {
+      const source = await findUser(impersonatorId);
+      const sourceRole = source ? normalizeRole(source.role) : "agent";
+      if (source && (sourceRole === "admin" || sourceRole === "owner")) {
+        impersonator = { id: source.id, name: source.name };
+      }
+    }
+    return sessionFromUser(user, jar.get(SESSION_COOKIES.mfa)?.value, impersonator);
   } catch {
     return guestSession();
   }

@@ -38,7 +38,7 @@ export async function AppShell({
     listAlerts(),
   ]);
   const navLayout = await getStoredNavLayout(session.userId);
-  const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout));
+  const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout, { isAdmin: session.isAdmin }));
   if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
   if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {
     redirect("/enroll-mfa");
@@ -60,8 +60,8 @@ export async function AppShell({
           <DeskSidebar
             unread={unread}
             actor={actor}
-            users={users}
             signedIn={session.signedIn}
+            isAdmin={session.isAdmin}
             initialLayout={navLayout}
           />
         </Suspense>
@@ -80,6 +80,12 @@ export async function AppShell({
             actions={actions ?? columns}
             unread={unread}
             alerts={headerAlerts}
+            actor={actor}
+            users={users}
+            signedIn={session.signedIn}
+            canSwitchRole={session.canSwitchRole}
+            impersonatorName={session.impersonatorName}
+            isImpersonating={session.isImpersonating}
           />
           <main className="flex-1 p-5">{children}</main>
         </div>

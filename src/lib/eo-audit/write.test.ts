@@ -8,7 +8,7 @@ import {
 
 describe("E&O audit actions", () => {
   it("covers every client interaction the pack logs", () => {
-    for (const action of ["email", "sms", "call", "meeting", "doc_view", "reveal_pii", "policy_change"]) {
+    for (const action of ["email", "sms", "call", "meeting", "doc_view", "reveal_pii", "policy_change", "role_switch"]) {
       expect(isEoAuditAction(action)).toBe(true);
     }
     expect(isEoAuditAction("task")).toBe(false);

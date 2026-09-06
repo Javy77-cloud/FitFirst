@@ -29,5 +29,8 @@ export const DESK_NAV_ITEMS = [
   { href: "/calendar", label: "Calendar" },
   { href: "/carriers", label: "Carriers" },
   { href: "/phone", label: "Phone" },
+  { href: "/templates", label: "Templates" },
+  { href: "/reports", label: "Reports" },
   { href: "/settings", label: "Settings" },
+  { href: "/admin", label: "Admin" },
 ] as const;

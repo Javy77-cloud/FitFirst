@@ -1,5 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BadgeDollarSign,
+  BarChart3,
   Bell,
   Briefcase,
   Building2,
@@ -8,13 +10,20 @@ import {
   Contact,
   FileStack,
   FileWarning,
+  FolderOpen,
   Home,
+  Landmark,
   ListChecks,
+  PenLine,
   Phone,
+  Plug,
   Settings,
   Shield,
+  ShieldCheck,
   Timer,
   Users,
+  Workflow,
+  Zap,
 } from "lucide-react";
 
 export type NavLinkDef = {
@@ -24,9 +33,11 @@ export type NavLinkDef = {
   icon: LucideIcon;
   match?: string;
   exact?: boolean;
+  /** Agency chrome, credentials, billing, people. Hidden from agents. */
+  adminOnly?: boolean;
 };
 
-/** Every destination Javy can pin under a primary. Ids are stable for prefs. */
+/** Every destination that can sit on the rail or inside a folder. Ids are stable for prefs. */
 export const NAV_LINK_CATALOG: NavLinkDef[] = [
   { id: "home", href: "/", label: "Home", icon: Home, match: "/", exact: true },
   { id: "social", href: "/social", label: "Social", icon: Users, match: "/social" },
@@ -84,6 +95,13 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     match: "/installments",
   },
   { id: "documents", href: "/documents", label: "Documents", icon: FileStack, match: "/documents" },
+  {
+    id: "document-templates",
+    href: "/documents",
+    label: "Document templates",
+    icon: FileStack,
+    match: "/documents",
+  },
   { id: "forms", href: "/forms", label: "Forms", icon: FileStack, match: "/forms" },
   { id: "claims", href: "/claims", label: "Claims log", icon: FileStack, match: "/claims" },
   { id: "commissions", href: "/commissions", label: "Commissions", icon: Briefcase, match: "/commissions" },
@@ -97,8 +115,9 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     id: "automations",
     href: "/automations",
     label: "Automations",
-    icon: ListChecks,
+    icon: Workflow,
     match: "/automations",
+    adminOnly: true,
   },
   { id: "calendar", href: "/calendar", label: "Calendar", icon: CalendarDays, match: "/calendar" },
   { id: "phone", href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
@@ -109,7 +128,112 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     icon: Bell,
     match: "/notifications",
   },
-  { id: "settings", href: "/settings", label: "Settings", icon: Settings, match: "/settings" },
+  { id: "templates", href: "/templates", label: "Templates", icon: FolderOpen, match: "/templates" },
+  {
+    id: "email-signatures",
+    href: "/me?section=signature",
+    label: "Email signatures",
+    icon: PenLine,
+    match: "/me",
+  },
+  {
+    id: "email-templates",
+    href: "/automations/templates",
+    label: "Email templates",
+    icon: FileStack,
+    match: "/automations/templates",
+  },
+  { id: "reports", href: "/reports", label: "Reports", icon: BarChart3, match: "/reports" },
+  {
+    id: "settings",
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+    match: "/settings",
+    adminOnly: true,
+  },
+  { id: "admin", href: "/admin", label: "Admin", icon: ShieldCheck, match: "/admin", adminOnly: true },
+  {
+    id: "agents",
+    href: "/settings/agents",
+    label: "People",
+    icon: Users,
+    match: "/settings/agents",
+    adminOnly: true,
+  },
+  {
+    id: "billing",
+    href: "/settings/billing",
+    label: "Billing",
+    icon: Landmark,
+    match: "/settings/billing",
+    adminOnly: true,
+  },
+  {
+    id: "compliance",
+    href: "/compliance",
+    label: "Compliance",
+    icon: ShieldCheck,
+    match: "/compliance",
+    adminOnly: true,
+  },
+  {
+    id: "integrations",
+    href: "/settings/integrations",
+    label: "Integrations",
+    icon: Plug,
+    match: "/settings/integrations",
+    adminOnly: true,
+  },
+  {
+    id: "triggers",
+    href: "/settings/email-triggers",
+    label: "Triggers",
+    icon: Zap,
+    match: "/settings/email-triggers",
+    adminOnly: true,
+  },
+  {
+    id: "commission-rates",
+    href: "/settings#commission",
+    label: "Commission rates",
+    icon: BadgeDollarSign,
+    match: "/settings#commission",
+    exact: true,
+    adminOnly: true,
+  },
+  {
+    id: "lines",
+    href: "/settings/lines",
+    label: "Lines of business",
+    icon: ClipboardList,
+    match: "/settings/lines",
+    adminOnly: true,
+  },
+  {
+    id: "offices",
+    href: "/settings/offices",
+    label: "Offices",
+    icon: Building2,
+    match: "/settings/offices",
+    adminOnly: true,
+  },
+  {
+    id: "agency",
+    href: "/settings/agency",
+    label: "Agency chrome",
+    icon: Settings,
+    match: "/settings/agency",
+    adminOnly: true,
+  },
+  {
+    id: "carrier-download",
+    href: "/settings/carrier-download",
+    label: "Carrier download",
+    icon: Building2,
+    match: "/settings/carrier-download",
+    adminOnly: true,
+  },
 ];
 
 export const NAV_LINK_BY_ID: Record<string, NavLinkDef> = Object.fromEntries(
@@ -120,9 +244,20 @@ export function getNavLink(id: string): NavLinkDef | undefined {
   return NAV_LINK_BY_ID[id];
 }
 
+export function isAdminOnlyNavId(id: string): boolean {
+  return Boolean(getNavLink(id)?.adminOnly);
+}
+
+const PERSONAL_SETTINGS_PATHS = ["/me", "/settings/profile", "/settings/security", "/settings/my-desk"];
+
+export function isPersonalSettingsPath(pathname: string): boolean {
+  return PERSONAL_SETTINGS_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
 export function navLinkIsActive(pathname: string, item: Pick<NavLinkDef, "href" | "match" | "exact">): boolean {
   const match = item.match ?? item.href.split("?")[0];
   if (match === "/" || item.exact) return pathname === match;
+  if (match === "/settings" && isPersonalSettingsPath(pathname)) return false;
   if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/"))) {
     return true;
   }
@@ -135,5 +270,6 @@ export function navLinkIsActive(pathname: string, item: Pick<NavLinkDef, "href" 
   if (match === "/deals" && (pathname === "/pipeline" || pathname.startsWith("/pipeline/"))) {
     return true;
   }
+  if (match === "/me" && pathname === "/me") return true;
   return pathname === match || pathname.startsWith(`${match}/`);
 }

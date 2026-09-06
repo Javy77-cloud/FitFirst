@@ -1,38 +1,26 @@
 import { NextResponse } from "next/server";
-import { ACTOR_COOKIE, currentDeskSession, findUser } from "@/lib/auth/session";
+import { switchDeskRole } from "@/lib/auth/switch-role";
 
 function safeReturnTo(request: Request): string {
   const referer = request.headers.get("referer");
-  if (!referer) return "/commissions";
+  if (!referer) return "/";
   try {
     const url = new URL(referer);
     const here = new URL(request.url);
-    if (url.origin !== here.origin) return "/commissions";
-    return `${url.pathname}${url.search}` || "/commissions";
+    if (url.origin !== here.origin) return "/";
+    return `${url.pathname}${url.search}` || "/";
   } catch {
-    return "/commissions";
+    return "/";
   }
 }
 
 export async function POST(request: Request) {
-  const session = await currentDeskSession();
-  if (!session.isAdmin) {
-    return NextResponse.json({ error: "Admin only." }, { status: 403 });
-  }
   const form = await request.formData();
   const id = String(form.get("userId") ?? "").trim();
-  const user = id ? await findUser(id) : null;
-  const dest = safeReturnTo(request);
-  const res = NextResponse.redirect(new URL(dest, request.url), 303);
-  if (user?.active) {
-    res.cookies.set({
-      name: ACTOR_COOKIE,
-      value: user.id,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
+  const result = await switchDeskRole(id);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error ?? "Admin only." }, { status: 403 });
   }
-  return res;
+  const dest = safeReturnTo(request);
+  return NextResponse.redirect(new URL(dest, request.url), 303);
 }

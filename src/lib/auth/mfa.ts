@@ -83,7 +83,9 @@ export function isMfaSetupPath(pathname: string): boolean {
     path === "/settings/security" ||
     path.startsWith("/settings/security/") ||
     path === "/settings/profile" ||
-    path.startsWith("/settings/profile/")
+    path.startsWith("/settings/profile/") ||
+    path === "/me" ||
+    path.startsWith("/me/")
   );
 }
 

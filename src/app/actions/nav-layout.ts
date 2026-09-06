@@ -32,3 +32,26 @@ export async function resetNavLayoutAction(): Promise<
   refreshNav();
   return { ok: true, layout: defaultStoredNavLayout() };
 }
+
+export async function savePersonalPrefsAction(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn || !session.userId) {
+    return;
+  }
+  const current = await (await import("@/lib/db/nav-prefs")).getStoredNavLayout(session.userId);
+  const timezone = String(formData.get("timezone") ?? "").trim();
+  const emailSignature = String(formData.get("emailSignature") ?? "");
+  const notifyInApp = formData.get("notifyInApp") === "true" || formData.get("notifyInApp") === "on";
+  const next = {
+    ...current,
+    personal: {
+      timezone: timezone || undefined,
+      emailSignature,
+      notifyInApp,
+    },
+  };
+  await upsertStoredNavLayout(session.userId, next);
+  refreshNav();
+  const { redirect } = await import("next/navigation");
+  redirect("/me?saved=1");
+}

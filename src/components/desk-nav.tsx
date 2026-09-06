@@ -56,7 +56,10 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Calendar,
   Carriers: Building2,
   Phone,
+  Templates: FileStack,
+  Reports: BarChart3,
   Settings: ClipboardList,
+  Admin: Shield,
 };
 
 export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {

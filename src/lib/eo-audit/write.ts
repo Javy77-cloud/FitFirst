@@ -72,6 +72,7 @@ const EO_FALLBACK_SUMMARY: Record<EoAuditAction, string> = {
   doc_view: "Document viewed",
   reveal_pii: "PII revealed",
   policy_change: "Policy changed",
+  role_switch: "Role switch",
 };
 
 /** Never block a desk action if the trail write fails. */

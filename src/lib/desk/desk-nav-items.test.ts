@@ -3,7 +3,7 @@ import { DESK_NAV_ITEMS } from "./nav-items";
 
 describe("desk nav chrome", () => {
   it("keeps one Deals row, no Pipeline row, and no stub-only rows", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(labels.filter((label) => label === "Deals")).toHaveLength(1);
@@ -19,7 +19,7 @@ describe("desk nav chrome", () => {
 
   it("moves Alerts and Search out of the left nav into top chrome", () => {
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     expect(hrefs).not.toContain("/alerts");
     expect(hrefs).not.toContain("/search");
     expect(labels).not.toContain("Alerts");
@@ -27,7 +27,7 @@ describe("desk nav chrome", () => {
   });
 
   it("adds Scorecards and Glance without a second Pipeline row", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Scorecards");
     expect(labels).toContain("Glance");
@@ -37,7 +37,7 @@ describe("desk nav chrome", () => {
   });
 
   it("adds Book health, Renewals, and Certificates without a second Pipeline", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Book health");
     expect(labels).toContain("Renewals");
@@ -49,7 +49,7 @@ describe("desk nav chrome", () => {
   });
 
   it("adds Suspense and Notices without a second Pipeline or Alerts row", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Suspense");
     expect(labels).toContain("Notices");
@@ -60,7 +60,7 @@ describe("desk nav chrome", () => {
   });
 
   it("adds Endorsements without a second Pipeline or Alerts row", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Endorsements");
     expect(hrefs).toContain("/endorsements");
@@ -69,7 +69,7 @@ describe("desk nav chrome", () => {
   });
 
   it("adds Service timeline, Inspections, and Installments without a second Pipeline or Alerts row", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Service timeline");
     expect(labels).toContain("Inspections");
@@ -82,7 +82,7 @@ describe("desk nav chrome", () => {
   });
 
   it("uses Documents instead of Forms on the left nav", () => {
-    const labels = DESK_NAV_ITEMS.map((item) => item.label);
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Documents");
     expect(labels).not.toContain("Forms");

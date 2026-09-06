@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { CalendarDays, CircleHelp, Inbox, Phone } from "lucide-react";
 import { NotificationBell } from "@/components/desk/notification-bell";
+import { ProfileMenu } from "@/components/profile-menu";
 import { SmartSearch } from "@/components/smart-search";
 import { useSupport } from "@/components/support/support-context";
+import type { Actor } from "@/lib/auth/rbac";
 import type { HeaderAlert } from "@/lib/desk/header-alerts";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +28,24 @@ export function DeskHeader({
   actions,
   unread,
   alerts,
+  actor,
+  users,
+  signedIn,
+  canSwitchRole,
+  impersonatorName,
+  isImpersonating,
 }: {
   title: string;
   eyebrow?: string;
   actions?: ReactNode;
   unread: number;
   alerts: HeaderAlert[];
+  actor: Actor;
+  users: Actor[];
+  signedIn: boolean;
+  canSwitchRole: boolean;
+  impersonatorName: string | null;
+  isImpersonating: boolean;
 }) {
   const { openSupport } = useSupport();
   return (
@@ -73,6 +87,14 @@ export function DeskHeader({
           <CircleHelp className="size-6" strokeWidth={2.25} />
           <span className="sr-only">Support</span>
         </button>
+        <ProfileMenu
+          actor={actor}
+          users={users}
+          signedIn={signedIn}
+          canSwitchRole={canSwitchRole}
+          impersonatorName={impersonatorName}
+          isImpersonating={isImpersonating}
+        />
         {actions}
       </div>
     </header>

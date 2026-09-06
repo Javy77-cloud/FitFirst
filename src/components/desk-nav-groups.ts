@@ -40,12 +40,14 @@ export const PINNED_HOME: NavItem = asItem(homeLink);
 
 const defaultResolved = resolveNavLayout(null);
 
-export const NAV_GROUPS: NavGroup[] = defaultResolved.map((row) => ({
-  id: row.id,
-  label: row.link.label,
-  icon: row.link.icon,
-  items: row.submenu.map(asItem),
-}));
+export const NAV_GROUPS: NavGroup[] = defaultResolved
+  .filter((row) => row.kind === "item")
+  .map((row) => ({
+    id: row.id,
+    label: row.link.label,
+    icon: row.link.icon,
+    items: row.submenu.map(asItem),
+  }));
 
 export const FLAT_NAV: NavItem[] = flattenResolvedNav(defaultResolved).map(asItem);
 

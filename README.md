@@ -4,6 +4,16 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Left rail + profile menu + customizer (this slice)
+
+**`cursor/desk-nav-shell-1e87`** — navigation / shell only. No CRM page content changes. No migration.
+
+Default rail, top → bottom: **Home**, **Leads**, **Deals** (Quotes nested), **Contacts**, **Policies**, **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks**, **Calendar**, **Templates**, **Reports**, **Settings** (agency, admin only), **Admin** (admin only). Agents never see Settings, Admin, billing, people, or carrier credentials.
+
+Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` — personal only), **Sign Out**. **Switch role** stays for Admin view-as and writes `role_switch` to the E&O trail. Collapse control is the top-right of the sidebar header. Utility rows stay pinned so they do not scroll away.
+
+Customize menu: drag any row either direction (main ↔ folder). Drop-zone highlight shows landing. **Reset to default** restores the structure above. Layout stays per user on `agent_ui_prefs.nav_layout`.
+
 ## Leads Actions Delete + shared menu width (this slice)
 
 **`cursor/ff-leads-actions-delete-fb86`** — folded onto **`cursor/live-ff-tip-sep5f`**. No migration. No seed. No wipe.
@@ -99,13 +109,13 @@ Ana Dib stays locked. No fake “would send” clicks.
 
 ### Left nav customize (this slice)
 
-Primary rail: **Home**, **Leads**, **Deals**, **Contacts**, **Business**, **Policies**, **Carriers**, plus **Tasks** and **Calendar**. **Settings** stays pinned at the bottom and **cannot be hidden** — that is how login, My desk, and sign-out stay reachable. Pipeline is Deals — there is no second rail row. The FitFirst wordmark still opens Home even if Home is hidden.
+Default rail: **Home · Leads · Deals · Contacts · Policies · Business · Carriers**, then a divider, then **Tasks · Calendar · Templates · Reports · Settings · Admin**. Quotes stay under Deals. Business and Carriers start collapsed. Settings and Admin are **admin only**. Personal profile / password / signature live under the top-right avatar, not the rail. Pipeline is Deals — there is no second rail row.
 
 1. Click the **label** to open that module. Click the **chevron** to expand its submenu. Only one submenu is open at a time.
-2. **Customize menu** (gear) at the bottom of the rail. Drag the grip to reorder primaries, or use the up/down arrows. Click the **eye** to hide a primary (or show it again). Hidden modules stay in place while you edit and disappear when you click **Done customizing**.
-3. Open a chevron and drag submenu rows to reorder them. **Add link…** / the **x** add or remove submenu rows from the desk catalog. Get Started, Inbox, and Support are not addable.
-4. **Reset to default** restores the factory order, submenus, and visibility (still no demo stubs).
-5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`, includes `hiddenPrimaryIds`). Survives refresh. Maya’s menu stays hers.
+2. Collapse / expand sits at the **top-right of the sidebar header**. Icon rail shows tooltips. Utility rows (Tasks through Admin) stay pinned at the bottom.
+3. **Customize menu** at the bottom of the rail. Drag any row — nothing is locked. Drop onto a folder to nest; drop on the main list to pull a child out. Clear drop-zone highlight shows where it will land. Eye still hides a primary while you edit.
+4. **Reset to default** restores the factory structure above (still no demo stubs).
+5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
 6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
 
 ### Air checkout (no wipe, skip seed)
@@ -144,7 +154,7 @@ The sliders icon on the last table header is **Manage columns**. Same shared `Co
 
 First-time only: `cp .env.example .env`. Postgres on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`). `docker compose up -d db` if you need the local database.
 
-Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the left-nav footer or `/login`.
+Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the top-right avatar **Switch role** (Admin) or `/login`.
 
 ## Zoho JSONL import (Air desk — records only)
 

@@ -16,6 +16,7 @@ describe("sidebar accordion", () => {
     expect(primaryIdForPath("/quotes")).toBe("deals");
     expect(primaryIdForPath("/policies")).toBe("policies");
     expect(primaryIdForPath("/settings/import-export")).toBe("settings");
+    expect(primaryIdForPath("/settings/agents")).toBe("admin");
     expect(primaryIdForPath("/calendar")).toBe("calendar");
     expect(primaryIdForPath("/")).toBe("");
   });
@@ -29,7 +30,7 @@ describe("sidebar accordion", () => {
   it("prefers the active route over a remembered section", () => {
     expect(resolveOpenSection("/leads", "settings")).toBe("leads");
     expect(resolveOpenSection("/settings/phone", "contacts")).toBe("settings");
-    expect(resolveOpenSection("/notifications", "policies")).toBe("calendar");
+    expect(resolveOpenSection("/phone", "policies")).toBe("calendar");
     expect(resolveOpenSection("/pipeline", "contacts")).toBe("deals");
     expect(resolveOpenSection("/deals", "contacts")).toBe("deals");
   });

@@ -1,4 +1,4 @@
-import { isPrimaryId, primaryIdForPath } from "@/lib/desk/nav-layout";
+import { isCatalogId, primaryIdForPath } from "@/lib/desk/nav-layout";
 
 export const SIDEBAR_PREFS_KEY = "ff-sidebar-accordion:v1";
 
@@ -13,15 +13,15 @@ const EMPTY_PREFS: SidebarPrefs = { openId: "", rail: "expanded" };
 
 /** Accordion: open the clicked primary, or close it if it is already open. */
 export function toggleAccordionId(current: string, clicked: string): string {
-  if (!isPrimaryId(clicked)) return current;
+  if (!isCatalogId(clicked)) return current;
   return current === clicked ? "" : clicked;
 }
 
 /** Active route wins so the current page stays visible; otherwise last-open. */
 export function resolveOpenSection(pathname: string, remembered: string): string {
   const routePrimary = primaryIdForPath(pathname);
-  if (routePrimary && isPrimaryId(routePrimary)) return routePrimary;
-  if (remembered && isPrimaryId(remembered)) return remembered;
+  if (routePrimary && isCatalogId(routePrimary)) return routePrimary;
+  if (remembered && isCatalogId(remembered)) return remembered;
   return "";
 }
 
@@ -29,7 +29,7 @@ export function parseSidebarPrefs(raw: string | null | undefined): SidebarPrefs 
   if (!raw) return { ...EMPTY_PREFS };
   try {
     const parsed = JSON.parse(raw) as Partial<SidebarPrefs>;
-    const openId = typeof parsed.openId === "string" && isPrimaryId(parsed.openId) ? parsed.openId : "";
+    const openId = typeof parsed.openId === "string" && isCatalogId(parsed.openId) ? parsed.openId : "";
     const rail: SidebarRail = parsed.rail === "narrow" ? "narrow" : "expanded";
     return { openId, rail };
   } catch {
@@ -49,7 +49,7 @@ export function readSidebarPrefs(): SidebarPrefs {
 export function writeSidebarPrefs(prefs: SidebarPrefs): void {
   if (typeof window === "undefined") return;
   try {
-    const openId = isPrimaryId(prefs.openId) ? prefs.openId : "";
+    const openId = isCatalogId(prefs.openId) ? prefs.openId : "";
     const rail: SidebarRail = prefs.rail === "narrow" ? "narrow" : "expanded";
     window.localStorage.setItem(SIDEBAR_PREFS_KEY, JSON.stringify({ openId, rail }));
   } catch {

@@ -65,10 +65,14 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/logs/fill-learning")).toBe(true);
     expect(isAdminOnlyPath("/compliance")).toBe(true);
     expect(isAdminOnlyPath("/carriers/logs")).toBe(false);
-    expect(isAdminOnlyPath("/settings")).toBe(false);
+    expect(isAdminOnlyPath("/settings")).toBe(true);
+    expect(isAdminOnlyPath("/admin")).toBe(true);
+    expect(isAdminOnlyPath("/settings/billing")).toBe(true);
+    expect(isAdminOnlyPath("/settings/integrations")).toBe(true);
     expect(isAdminOnlyPath("/settings/my-desk")).toBe(false);
     expect(isAdminOnlyPath("/settings/security")).toBe(false);
     expect(isAdminOnlyPath("/settings/profile")).toBe(false);
+    expect(isAdminOnlyPath("/me")).toBe(false);
     expect(isAdminOnlyPath("/pipeline")).toBe(false);
     expect(isAdminOnlyPath("/calendar")).toBe(false);
   });

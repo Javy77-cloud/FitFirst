@@ -16,8 +16,19 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/developer-hub",
   "/settings/import-export",
   "/settings/import",
+  "/settings/billing",
+  "/settings/integrations",
+  "/settings/carrier-download",
   "/logs/fill-learning",
   "/compliance",
+  "/admin",
+] as const;
+
+const PERSONAL_SETTINGS_PATHS = [
+  "/settings/profile",
+  "/settings/security",
+  "/settings/my-desk",
+  "/me",
 ] as const;
 
 export type AccessRole = "admin" | "agent" | "guest";
@@ -90,6 +101,10 @@ export function capabilitiesFor(role: AccessRole | string | null | undefined): D
 
 export function isAdminOnlyPath(pathname: string): boolean {
   const path = pathname.split("?")[0] ?? pathname;
+  if (PERSONAL_SETTINGS_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+    return false;
+  }
+  if (path === "/settings") return true;
   return ADMIN_ONLY_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
@@ -110,5 +125,5 @@ export function isPublicPath(pathname: string): boolean {
 }
 
 export function adminRedirectPath(): string {
-  return "/settings/my-desk?error=admin-only";
+  return "/me?error=admin-only";
 }

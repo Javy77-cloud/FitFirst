@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { requireSignedIn } from "@/lib/auth/guards";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
 import { getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
@@ -24,7 +24,7 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const session = await requireSignedIn();
+  const session = await requireAdminPage();
   const [brand, templates, triggers, telephony, catalog, query] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),

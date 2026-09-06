@@ -1,29 +1,43 @@
-import { getNavLink, NAV_LINK_CATALOG, navLinkIsActive, type NavLinkDef } from "@/lib/desk/nav-catalog";
+import {
+  getNavLink,
+  isAdminOnlyNavId,
+  isPersonalSettingsPath,
+  NAV_LINK_CATALOG,
+  navLinkIsActive,
+  type NavLinkDef,
+} from "@/lib/desk/nav-catalog";
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
-export const NAV_LAYOUT_VERSION = 1 as const;
+export const NAV_LAYOUT_VERSION = 2 as const;
+export const DIVIDER_ID = "divider";
 
-/** Configurable primaries — drag these. Settings stays pinned at the bottom. */
+/** Default rail, top → bottom. Divider splits CRM from utility. */
 export const DEFAULT_PRIMARY_ORDER = [
   "home",
   "leads",
   "deals",
   "contacts",
-  "business",
   "policies",
+  "business",
   "carriers",
+  DIVIDER_ID,
   "tasks",
   "calendar",
+  "templates",
+  "reports",
+  "settings",
+  "admin",
 ] as const;
 
-export const PINNED_PRIMARY_IDS = ["settings"] as const;
+export const DEFAULT_COLLAPSED_IDS = ["business", "carriers"] as const;
+
+export const UTILITY_PRIMARY_IDS = ["tasks", "calendar", "templates", "reports", "settings", "admin"] as const;
 
 export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
-  home: ["social", "scorecards", "glance"],
+  home: [],
   leads: [],
   deals: ["quotes"],
   contacts: ["merge"],
-  business: [],
   policies: [
     "book-health",
     "renewals",
@@ -35,33 +49,75 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
     "service-timeline",
     "inspections",
     "installments",
-    "documents",
     "claims",
-    "commissions",
     "decline-log",
   ],
+  business: [],
   carriers: [],
-  tasks: ["work-queue", "automations"],
-  calendar: ["phone", "alerts"],
+  tasks: ["work-queue"],
+  calendar: ["phone"],
+  templates: ["email-signatures", "email-templates", "document-templates"],
+  reports: ["scorecards", "glance", "commissions"],
   settings: [],
+  admin: [
+    "agents",
+    "billing",
+    "compliance",
+    "integrations",
+    "automations",
+    "triggers",
+    "commission-rates",
+    "lines",
+    "offices",
+    "agency",
+  ],
+};
+
+export type PersonalDeskPrefs = {
+  timezone?: string;
+  emailSignature?: string;
+  notifyInApp?: boolean;
 };
 
 export type StoredNavLayout = {
-  version: typeof NAV_LAYOUT_VERSION;
+  version: number;
   primaryOrder: string[];
-  /** Hidable primaries the user tucked away. Settings is never stored here. */
   hiddenPrimaryIds: string[];
   submenus: Record<string, string[]>;
+  personal?: PersonalDeskPrefs;
 };
 
-export type ResolvedPrimary = {
+export type ResolvedNavItem = {
+  kind: "item";
   id: string;
-  pinned: boolean;
   hidden: boolean;
   hidable: boolean;
+  defaultCollapsed: boolean;
+  adminOnly: boolean;
   link: NavLinkDef;
   submenu: NavLinkDef[];
+  isFolder: boolean;
 };
+
+export type ResolvedDivider = {
+  kind: "divider";
+  id: typeof DIVIDER_ID;
+};
+
+export type ResolvedNavRow = ResolvedNavItem | ResolvedDivider;
+
+/** @deprecated Settings is no longer pinned. Kept so older imports compile. */
+export const PINNED_PRIMARY_IDS: readonly string[] = [];
+
+function parsePersonal(raw: unknown): PersonalDeskPrefs | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const value = raw as Record<string, unknown>;
+  const personal: PersonalDeskPrefs = {};
+  if (typeof value.timezone === "string") personal.timezone = value.timezone;
+  if (typeof value.emailSignature === "string") personal.emailSignature = value.emailSignature;
+  if (typeof value.notifyInApp === "boolean") personal.notifyInApp = value.notifyInApp;
+  return Object.keys(personal).length ? personal : undefined;
+}
 
 export function defaultStoredNavLayout(): StoredNavLayout {
   return {
@@ -74,47 +130,83 @@ export function defaultStoredNavLayout(): StoredNavLayout {
   };
 }
 
-export function isPrimaryId(id: string): boolean {
-  return (DEFAULT_PRIMARY_ORDER as readonly string[]).includes(id) || isPinnedPrimaryId(id);
-}
-
-export function isPinnedPrimaryId(id: string): boolean {
-  return (PINNED_PRIMARY_IDS as readonly string[]).includes(id);
-}
-
-/** Settings stays on the rail so login / My desk / sign-out stay reachable. */
-export function isHidablePrimaryId(id: string): boolean {
-  return isPrimaryId(id) && !isPinnedPrimaryId(id);
+export function isDividerId(id: string): boolean {
+  return id === DIVIDER_ID;
 }
 
 export function isCatalogId(id: string): boolean {
   return Boolean(getNavLink(id));
 }
 
+export function isNavItemId(id: string): boolean {
+  return isCatalogId(id) || isDividerId(id);
+}
+
+/** Any catalog row can sit at top level or inside a folder. */
+export function isPrimaryId(id: string): boolean {
+  return isCatalogId(id);
+}
+
+export function isPinnedPrimaryId(_id: string): boolean {
+  return false;
+}
+
+export function isHidablePrimaryId(id: string): boolean {
+  return isCatalogId(id);
+}
+
+export function isDefaultCollapsedId(id: string): boolean {
+  return (DEFAULT_COLLAPSED_IDS as readonly string[]).includes(id);
+}
+
 function uniqueKnown(ids: string[], extraSkip?: Set<string>): string[] {
   const seen = extraSkip ? new Set(extraSkip) : new Set<string>();
   const out: string[] = [];
   for (const id of ids) {
-    if (!isCatalogId(id) || seen.has(id)) continue;
+    if (!isNavItemId(id) || seen.has(id)) continue;
     seen.add(id);
     out.push(id);
   }
   return out;
 }
 
+function allUsedIds(primaryOrder: string[], submenus: Record<string, string[]>): Set<string> {
+  const used = new Set(primaryOrder);
+  for (const children of Object.values(submenus)) {
+    for (const id of children) used.add(id);
+  }
+  return used;
+}
+
+function insertMissingDefaults(primaryOrder: string[], used: Set<string>): string[] {
+  const next = [...primaryOrder];
+  for (const id of DEFAULT_PRIMARY_ORDER) {
+    if (used.has(id)) continue;
+    const defaultIndex = DEFAULT_PRIMARY_ORDER.indexOf(id);
+    let insertAt = next.length;
+    for (let i = defaultIndex - 1; i >= 0; i--) {
+      const neighbor = DEFAULT_PRIMARY_ORDER[i];
+      const pos = next.indexOf(neighbor);
+      if (pos >= 0) {
+        insertAt = pos + 1;
+        break;
+      }
+    }
+    next.splice(insertAt, 0, id);
+    used.add(id);
+  }
+  return next;
+}
+
 /** Merge a saved JSON blob with today's catalog so new modules still appear. */
 export function normalizeNavLayout(raw: unknown): StoredNavLayout {
   const fallback = defaultStoredNavLayout();
   if (!raw || typeof raw !== "object") return fallback;
-  const parsed = raw as Partial<StoredNavLayout>;
+  const parsed = raw as Partial<StoredNavLayout> & { version?: number };
   const savedOrder = Array.isArray(parsed.primaryOrder)
     ? remapNavIds(parsed.primaryOrder.filter((id): id is string => typeof id === "string"))
     : [];
-  const knownSaved = uniqueKnown(
-    savedOrder.filter((id) => (DEFAULT_PRIMARY_ORDER as readonly string[]).includes(id)),
-  );
-  const missing = DEFAULT_PRIMARY_ORDER.filter((id) => !knownSaved.includes(id));
-  const primaryOrder = [...knownSaved, ...missing];
+  const knownSaved = uniqueKnown(savedOrder);
 
   const savedSubs =
     parsed.submenus && typeof parsed.submenus === "object" && !Array.isArray(parsed.submenus)
@@ -126,19 +218,48 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
           ),
         )
       : {};
+
+  const used = new Set(knownSaved);
   const submenus: Record<string, string[]> = {};
-  for (const id of [...primaryOrder, ...PINNED_PRIMARY_IDS]) {
-    const stored = Array.isArray(savedSubs[id]) ? savedSubs[id] : undefined;
-    const source = stored ?? [...(DEFAULT_SUBMENUS[id] ?? [])];
-    submenus[id] = uniqueKnown(source.filter((item) => item !== id));
+  for (const [parent, children] of Object.entries(savedSubs)) {
+    if (!isCatalogId(parent) && !knownSaved.includes(parent)) continue;
+    const cleaned = uniqueKnown(
+      (children ?? []).filter((item) => item !== parent && !isDividerId(item)),
+      used,
+    );
+    for (const id of cleaned) used.add(id);
+    submenus[parent] = cleaned;
+  }
+
+  let primaryOrder = insertMissingDefaults(knownSaved.filter((id) => !isDividerId(id) || true), used);
+  primaryOrder = uniqueKnown(primaryOrder);
+
+  if (!primaryOrder.includes(DIVIDER_ID)) {
+    const carriersAt = primaryOrder.indexOf("carriers");
+    const tasksAt = primaryOrder.indexOf("tasks");
+    const insertAt = carriersAt >= 0 ? carriersAt + 1 : tasksAt >= 0 ? tasksAt : primaryOrder.length;
+    primaryOrder.splice(insertAt, 0, DIVIDER_ID);
+  }
+
+  for (const id of primaryOrder) {
+    if (isDividerId(id)) continue;
+    if (!submenus[id]) {
+      const defaults = DEFAULT_SUBMENUS[id] ?? [];
+      submenus[id] = uniqueKnown(
+        defaults.filter((item) => item !== id && !used.has(item)),
+        used,
+      );
+      for (const child of submenus[id]) used.add(child);
+    }
   }
 
   const savedHidden = Array.isArray(parsed.hiddenPrimaryIds)
     ? parsed.hiddenPrimaryIds.filter((id): id is string => typeof id === "string")
     : [];
   const hiddenPrimaryIds = uniqueKnown(savedHidden.filter((id) => isHidablePrimaryId(id)));
+  const personal = parsePersonal((parsed as { personal?: unknown }).personal);
 
-  return { version: NAV_LAYOUT_VERSION, primaryOrder, hiddenPrimaryIds, submenus };
+  return { version: NAV_LAYOUT_VERSION, primaryOrder, hiddenPrimaryIds, submenus, personal };
 }
 
 export function parseStoredNavLayout(raw: string | null | undefined): StoredNavLayout {
@@ -150,26 +271,180 @@ export function parseStoredNavLayout(raw: string | null | undefined): StoredNavL
   }
 }
 
-export function resolveNavLayout(stored: StoredNavLayout | null | undefined): ResolvedPrimary[] {
+export function resolveNavLayout(
+  stored: StoredNavLayout | null | undefined,
+  options: { isAdmin?: boolean } = {},
+): ResolvedNavRow[] {
   const layout = normalizeNavLayout(stored);
-  const ids = [...layout.primaryOrder, ...PINNED_PRIMARY_IDS];
-  return ids
-    .map((id) => {
+  const isAdmin = options.isAdmin !== false;
+  return layout.primaryOrder
+    .map((id): ResolvedNavRow | null => {
+      if (isDividerId(id)) return { kind: "divider", id: DIVIDER_ID };
       const link = getNavLink(id);
       if (!link) return null;
+      if (!isAdmin && link.adminOnly) return null;
       const submenu = (layout.submenus[id] ?? [])
         .map((itemId) => getNavLink(itemId))
-        .filter((item): item is NavLinkDef => Boolean(item));
+        .filter((item): item is NavLinkDef => {
+          if (!item) return false;
+          return isAdmin || !item.adminOnly;
+        });
       return {
+        kind: "item",
         id,
-        pinned: isPinnedPrimaryId(id),
         hidden: layout.hiddenPrimaryIds.includes(id),
         hidable: isHidablePrimaryId(id),
+        defaultCollapsed: isDefaultCollapsedId(id),
+        adminOnly: Boolean(link.adminOnly),
         link,
         submenu,
-      } satisfies ResolvedPrimary;
+        isFolder: submenu.length > 0,
+      };
     })
-    .filter((row): row is ResolvedPrimary => Boolean(row));
+    .filter((row): row is ResolvedNavRow => Boolean(row));
+}
+
+export function visibleNavItems(rows: ResolvedNavRow[], customizing: boolean): ResolvedNavItem[] {
+  return rows.filter((row): row is ResolvedNavItem => row.kind === "item" && (customizing || !row.hidden));
+}
+
+export function splitNavSections(rows: ResolvedNavRow[]): {
+  main: ResolvedNavRow[];
+  utility: ResolvedNavRow[];
+} {
+  const dividerAt = rows.findIndex((row) => row.kind === "divider");
+  if (dividerAt < 0) {
+    return { main: rows, utility: [] };
+  }
+  return {
+    main: rows.slice(0, dividerAt),
+    utility: rows.slice(dividerAt + 1),
+  };
+}
+
+export function findParentId(layout: StoredNavLayout, id: string): string | null {
+  const current = normalizeNavLayout(layout);
+  for (const [parent, children] of Object.entries(current.submenus)) {
+    if (children.includes(id)) return parent;
+  }
+  return null;
+}
+
+export function takeItem(
+  layout: StoredNavLayout,
+  id: string,
+): { layout: StoredNavLayout; children: string[] } {
+  const current = normalizeNavLayout(layout);
+  const children = [...(current.submenus[id] ?? [])];
+  const primaryOrder = current.primaryOrder.filter((item) => item !== id);
+  const submenus: Record<string, string[]> = {};
+  for (const [parent, items] of Object.entries(current.submenus)) {
+    if (parent === id) continue;
+    submenus[parent] = items.filter((item) => item !== id);
+  }
+  return {
+    layout: { ...current, primaryOrder, submenus },
+    children,
+  };
+}
+
+function insertAt<T>(list: T[], index: number, value: T): T[] {
+  const next = [...list];
+  const clamped = Math.max(0, Math.min(next.length, index));
+  next.splice(clamped, 0, value);
+  return next;
+}
+
+export type NavDropTarget =
+  | { type: "before"; id: string }
+  | { type: "after"; id: string }
+  | { type: "into"; id: string }
+  | { type: "end-primary" }
+  | { type: "end-folder"; parentId: string };
+
+export function parseDropKey(key: string | null | undefined): NavDropTarget | null {
+  if (!key) return null;
+  if (key === "end-primary") return { type: "end-primary" };
+  if (key.startsWith("end-folder:")) return { type: "end-folder", parentId: key.slice("end-folder:".length) };
+  if (key.startsWith("before:")) return { type: "before", id: key.slice("before:".length) };
+  if (key.startsWith("after:")) return { type: "after", id: key.slice("after:".length) };
+  if (key.startsWith("into:")) return { type: "into", id: key.slice("into:".length) };
+  return null;
+}
+
+export function dropKey(target: NavDropTarget): string {
+  if (target.type === "end-primary") return "end-primary";
+  if (target.type === "end-folder") return `end-folder:${target.parentId}`;
+  return `${target.type}:${target.id}`;
+}
+
+/** Free rearrange: top-level ↔ folder, any item can become a folder. Nothing locked. */
+export function applyNavDrop(layout: StoredNavLayout, draggedId: string, target: NavDropTarget | null): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (!target || !isNavItemId(draggedId)) return current;
+  if (target.type === "before" || target.type === "after" || target.type === "into") {
+    if (target.id === draggedId) return current;
+  }
+  if (target.type === "into" && (isDividerId(target.id) || target.id === draggedId)) return current;
+  if (target.type === "end-folder" && target.parentId === draggedId) return current;
+
+  const removed = takeItem(current, draggedId);
+  let next = removed.layout;
+  const orphanChildren = removed.children.filter((id) => id !== draggedId);
+
+  const placeOnPrimary = (index: number) => {
+    next = {
+      ...next,
+      primaryOrder: insertAt(next.primaryOrder, index, draggedId),
+      submenus: { ...next.submenus, [draggedId]: orphanChildren },
+    };
+  };
+
+  const placeInFolder = (parentId: string, index: number) => {
+    if (!isCatalogId(parentId) || isDividerId(parentId)) return;
+    const folder = [...(next.submenus[parentId] ?? [])];
+    const withItem = insertAt(folder, index, draggedId);
+    const merged = uniqueKnown([...withItem, ...orphanChildren.filter((id) => id !== parentId)]);
+    next = {
+      ...next,
+      primaryOrder: next.primaryOrder.filter((id) => id !== draggedId),
+      submenus: { ...next.submenus, [parentId]: merged, [draggedId]: [] },
+    };
+  };
+
+  if (target.type === "end-primary") {
+    placeOnPrimary(next.primaryOrder.length);
+    return next;
+  }
+  if (target.type === "end-folder") {
+    placeInFolder(target.parentId, (next.submenus[target.parentId] ?? []).length);
+    return next;
+  }
+
+  const targetParent = findParentId(next, target.id);
+  const targetIsPrimary = next.primaryOrder.includes(target.id) || isDividerId(target.id);
+
+  if (target.type === "into") {
+    placeInFolder(target.id, (next.submenus[target.id] ?? []).length);
+    return next;
+  }
+
+  if (targetIsPrimary && !targetParent) {
+    const at = next.primaryOrder.indexOf(target.id);
+    if (at < 0) return current;
+    placeOnPrimary(target.type === "before" ? at : at + 1);
+    return next;
+  }
+
+  if (targetParent) {
+    const folder = next.submenus[targetParent] ?? [];
+    const at = folder.indexOf(target.id);
+    if (at < 0) return current;
+    placeInFolder(targetParent, target.type === "before" ? at : at + 1);
+    return next;
+  }
+
+  return current;
 }
 
 export function moveId(order: string[], fromId: string, toId: string): string[] {
@@ -192,7 +467,6 @@ export function moveByDelta(order: string[], id: string, delta: number): string[
 
 export function nudgePrimary(layout: StoredNavLayout, id: string, delta: number): StoredNavLayout {
   const current = normalizeNavLayout(layout);
-  if (isPinnedPrimaryId(id)) return current;
   return { ...current, primaryOrder: moveByDelta(current.primaryOrder, id, delta) };
 }
 
@@ -203,7 +477,6 @@ export function nudgeSubmenu(
   delta: number,
 ): StoredNavLayout {
   const current = normalizeNavLayout(layout);
-  if (!isPrimaryId(primaryId)) return current;
   const submenu = current.submenus[primaryId] ?? [];
   return {
     ...current,
@@ -213,7 +486,6 @@ export function nudgeSubmenu(
 
 export function reorderPrimaries(layout: StoredNavLayout, fromId: string, toId: string): StoredNavLayout {
   const current = normalizeNavLayout(layout);
-  if (isPinnedPrimaryId(fromId) || isPinnedPrimaryId(toId)) return current;
   return { ...current, primaryOrder: moveId(current.primaryOrder, fromId, toId) };
 }
 
@@ -224,7 +496,6 @@ export function reorderSubmenu(
   toId: string,
 ): StoredNavLayout {
   const current = normalizeNavLayout(layout);
-  if (!isPrimaryId(primaryId)) return current;
   const submenu = current.submenus[primaryId] ?? [];
   return {
     ...current,
@@ -255,14 +526,7 @@ export function addSubmenuLink(
   primaryId: string,
   linkId: string,
 ): StoredNavLayout {
-  const current = normalizeNavLayout(layout);
-  if (!isPrimaryId(primaryId) || !isCatalogId(linkId) || linkId === primaryId) return current;
-  const submenu = current.submenus[primaryId] ?? [];
-  if (submenu.includes(linkId)) return current;
-  return {
-    ...current,
-    submenus: { ...current.submenus, [primaryId]: [...submenu, linkId] },
-  };
+  return applyNavDrop(layout, linkId, { type: "into", id: primaryId });
 }
 
 export function removeSubmenuLink(
@@ -271,26 +535,32 @@ export function removeSubmenuLink(
   linkId: string,
 ): StoredNavLayout {
   const current = normalizeNavLayout(layout);
-  if (!isPrimaryId(primaryId)) return current;
   const submenu = current.submenus[primaryId] ?? [];
-  return {
-    ...current,
-    submenus: { ...current.submenus, [primaryId]: submenu.filter((id) => id !== linkId) },
-  };
+  if (!submenu.includes(linkId)) return current;
+  return applyNavDrop(current, linkId, { type: "end-primary" });
 }
 
-export function availableSubmenuLinks(layout: StoredNavLayout, primaryId: string): NavLinkDef[] {
+export function availableSubmenuLinks(
+  layout: StoredNavLayout,
+  primaryId: string,
+  options: { isAdmin?: boolean } = {},
+): NavLinkDef[] {
   const current = normalizeNavLayout(layout);
-  const taken = new Set(current.submenus[primaryId] ?? []);
+  const taken = allUsedIds(current.primaryOrder, current.submenus);
   taken.add(primaryId);
-  return NAV_LINK_CATALOG.filter((link) => !taken.has(link.id));
+  const isAdmin = options.isAdmin !== false;
+  return NAV_LINK_CATALOG.filter((link) => {
+    if (taken.has(link.id)) return false;
+    if (!isAdmin && link.adminOnly) return false;
+    return true;
+  });
 }
 
-export function flattenResolvedNav(rows: ResolvedPrimary[]): NavLinkDef[] {
+export function flattenResolvedNav(rows: ResolvedNavRow[]): NavLinkDef[] {
   const seen = new Set<string>();
   const out: NavLinkDef[] = [];
   for (const row of rows) {
-    if (row.hidden) continue;
+    if (row.kind !== "item" || row.hidden) continue;
     const pack = [row.link, ...row.submenu];
     for (const link of pack) {
       const key = `${link.href}::${link.label}`;
@@ -302,12 +572,12 @@ export function flattenResolvedNav(rows: ResolvedPrimary[]): NavLinkDef[] {
   return out;
 }
 
-/** Primary that owns this path (submenu first). Home exact-match returns "". */
-export function primaryIdForPath(pathname: string, layout?: StoredNavLayout | null): string {
-  const rows = resolveNavLayout(layout);
+/** Primary that owns this path (submenu first). Home exact-match and personal settings return "". */
+export function primaryIdForPath(pathname: string, layout?: StoredNavLayout | null, isAdmin = true): string {
+  if (isPersonalSettingsPath(pathname)) return "";
+  const rows = resolveNavLayout(layout, { isAdmin }).filter((row): row is ResolvedNavItem => row.kind === "item");
   const home = rows.find((row) => row.id === "home");
   if (home && navLinkIsActive(pathname, home.link)) return "";
-  if (pathname === "/settings" || pathname.startsWith("/settings/")) return "settings";
   for (const row of rows) {
     if (row.submenu.some((item) => navLinkIsActive(pathname, item))) return row.id;
   }
@@ -319,4 +589,12 @@ export function primaryIdForPath(pathname: string, layout?: StoredNavLayout | nu
 
 export function navActorKey(userId: string): string {
   return `user:${userId}`;
+}
+
+export function visibleForRole<T extends { adminOnly?: boolean; id?: string }>(
+  items: T[],
+  isAdmin: boolean,
+): T[] {
+  if (isAdmin) return items;
+  return items.filter((item) => !item.adminOnly && !isAdminOnlyNavId(item.id ?? ""));
 }
