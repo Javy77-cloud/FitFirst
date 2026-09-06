@@ -6,9 +6,9 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Signed default rail + free customizer (this tip)
 
-**`cursor/live-ff-tip-sep6e`** consolidates **`cursor/live-ff-tip-sep6d`** (`bc1ae13`) plus **`cursor/ff-lead-deal-worksheet-2338`** (`8504988`) only. Same rail as sep6d — **Policies default submenu is empty**. Customize is row-drag only (no grip, no chevron). One **Add link** at the bottom; the rail scrolls so **Done customizing** stays on screen. Collapse sits between the logo / desk name and the menu. Lead + deal worksheet declutter is on. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
+**`cursor/live-ff-tip-sep6f`** is **`cursor/live-ff-tip-sep6e`** (`1ab3f69`) plus menu-structure only: Policies kids and Admin → Operations. No page redesign. No AMS. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
 
-Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (Quotes only), **Contacts** (no kids), **Policies** (no kids), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Billing, Compliance, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome). Work queue, Phone, Scorecards, Glance, and Commissions stay in the Customize catalog — they are not default children. Social, Merge, Book health, and other AMS extras stay addable. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **5**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
+Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (Quotes only), **Contacts** (no kids), **Policies** (My Book / Renewals / Certificates — parent click lands on My Book), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome, then **Operations** last). Operations children (admin only): Billing, Claims, Endorsements, Compliance, Carrier Downloads, Book of Health, Book of Life, Marketplace. Operations is **not** a top-level rail row. Agents never see Settings, Admin, Operations, or anything inside Operations. `NAV_LAYOUT_VERSION` is **6**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
 
 Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` — personal only), **Sign Out**. **Switch role** stays for Admin view-as and writes `role_switch` to the E&O trail.
 
@@ -29,7 +29,7 @@ Customize menu: drag the **row itself** (no grip, no chevron while customizing).
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6f && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -58,7 +58,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep6e`** — `cursor/live-ff-tip-sep6d` @ `bc1ae13` plus **`cursor/ff-lead-deal-worksheet-2338`** @ `8504988` only. Same signed rail (`NAV_LAYOUT_VERSION` **5**): **Policies kids stay empty**. Tasks / Calendar / Reports have no default kids; work-queue / phone / scorecards / glance / commissions stay catalog-only. Customize is row-drag only (no grip, no chevron). Collapse sits between the logo and the list. Do **not** run `db:seed`. Still includes:
+**`cursor/live-ff-tip-sep6f`** — `cursor/live-ff-tip-sep6e` @ `1ab3f69` plus Admin **Operations** folder (last under Admin, admin only) and Policies kids **My Book / Renewals / Certificates**. `NAV_LAYOUT_VERSION` **6**. No AMS. No seed. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
@@ -95,7 +95,7 @@ Social stays under Home as a BYO connect wall (Settings → Social). Phone stays
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6f && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -129,14 +129,14 @@ Default rail: **Home · Leads · Deals · Contacts · Policies · Business · Ca
 1. Click the **label** to open that module. Outside Customize, click the **chevron** to expand a folder that has kids. Only one submenu is open at a time.
 2. Collapse / expand sits **between the logo / desk name and the menu list**. Icon rail shows tooltips. Utility rows (Tasks through Admin) stay pinned at the bottom.
 3. **Customize menu** at the bottom of the rail. Drag the **row** — no grip, no chevron while customizing. One **Add link** next to Done; the list scrolls so Done stays visible. Nothing is locked. Drop onto a folder (highlight) to nest; drop on a white bar to place between or promote. Eye still hides a primary while you edit.
-4. **Reset to default** restores the factory structure above (still no demo stubs). `NAV_LAYOUT_VERSION` **5** resets older saved rails.
+4. **Reset to default** restores the factory structure above (still no demo stubs). `NAV_LAYOUT_VERSION` **6** resets older saved rails.
 5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
 6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. Work queue, Phone, Scorecards, Glance, Commissions, and AMS rows stay in the catalog — they are **not** default children.
 
 ### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6f && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -368,7 +368,7 @@ On Deal detail → **Documents**, source-doc upload is **half width** (`lg:grid-
 Extracted fields stay under the split. Page-right context rail is unchanged. No wipe.
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep6e && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6f && git pull
 npm install
 npm run db:migrate
 npm run dev -- --port 43147

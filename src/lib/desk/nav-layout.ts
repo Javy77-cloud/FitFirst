@@ -9,8 +9,23 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 5 as const;
+export const NAV_LAYOUT_VERSION = 6 as const;
 export const DIVIDER_ID = "divider";
+
+/** Admin-only Operations folder — last child of Admin, never a top-level rail row. */
+export const OPERATIONS_NAV_IDS = [
+  "billing",
+  "claims",
+  "endorsements",
+  "compliance",
+  "carrier-download",
+  "book-health",
+  "book-of-life",
+  "marketplace",
+] as const;
+
+/** Flat Policies kids. Parent href lands on My Book. */
+export const POLICIES_DEFAULT_KIDS = ["my-book", "renewals", "certificates"] as const;
 
 /** Catalog extras that used to nest in the default rail — Customize can still add them. */
 export const CATALOG_ONLY_DEFAULT_EXTRAS = [
@@ -48,7 +63,7 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   leads: [],
   deals: ["quotes"],
   contacts: [],
-  policies: [],
+  policies: POLICIES_DEFAULT_KIDS,
   business: [],
   carriers: [],
   tasks: [],
@@ -58,8 +73,6 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   settings: [],
   admin: [
     "agents",
-    "billing",
-    "compliance",
     "integrations",
     "automations",
     "triggers",
@@ -67,7 +80,9 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
     "lines",
     "offices",
     "agency",
+    "operations",
   ],
+  operations: OPERATIONS_NAV_IDS,
 };
 
 export type PersonalDeskPrefs = {
@@ -84,6 +99,10 @@ export type StoredNavLayout = {
   personal?: PersonalDeskPrefs;
 };
 
+export type ResolvedSubmenuItem = NavLinkDef & {
+  children: NavLinkDef[];
+};
+
 export type ResolvedNavItem = {
   kind: "item";
   id: string;
@@ -92,7 +111,7 @@ export type ResolvedNavItem = {
   defaultCollapsed: boolean;
   adminOnly: boolean;
   link: NavLinkDef;
-  submenu: NavLinkDef[];
+  submenu: ResolvedSubmenuItem[];
   isFolder: boolean;
 };
 
@@ -255,6 +274,16 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
     }
   }
 
+  for (const [parent, defaults] of Object.entries(DEFAULT_SUBMENUS)) {
+    if (submenus[parent]) continue;
+    if (!used.has(parent) && !primaryOrder.includes(parent)) continue;
+    submenus[parent] = uniqueKnown(
+      defaults.filter((item) => item !== parent && !used.has(item)),
+      used,
+    );
+    for (const child of submenus[parent]) used.add(child);
+  }
+
   const savedHidden = Array.isArray(parsed.hiddenPrimaryIds)
     ? parsed.hiddenPrimaryIds.filter((id): id is string => typeof id === "string")
     : [];
@@ -285,11 +314,19 @@ export function resolveNavLayout(
       if (!link) return null;
       if (!isAdmin && link.adminOnly) return null;
       const submenu = (layout.submenus[id] ?? [])
-        .map((itemId) => getNavLink(itemId))
-        .filter((item): item is NavLinkDef => {
-          if (!item) return false;
-          return isAdmin || !item.adminOnly;
-        });
+        .map((itemId): ResolvedSubmenuItem | null => {
+          const item = getNavLink(itemId);
+          if (!item) return null;
+          if (!isAdmin && item.adminOnly) return null;
+          const children = (layout.submenus[itemId] ?? [])
+            .map((childId) => getNavLink(childId))
+            .filter((child): child is NavLinkDef => {
+              if (!child) return false;
+              return isAdmin || !child.adminOnly;
+            });
+          return { ...item, children };
+        })
+        .filter((item): item is ResolvedSubmenuItem => Boolean(item));
       return {
         kind: "item",
         id,
@@ -609,7 +646,7 @@ export function flattenResolvedNav(rows: ResolvedNavRow[]): NavLinkDef[] {
   const out: NavLinkDef[] = [];
   for (const row of rows) {
     if (row.kind !== "item" || row.hidden) continue;
-    const pack = [row.link, ...row.submenu];
+    const pack = [row.link, ...row.submenu.flatMap((item) => [item, ...item.children])];
     for (const link of pack) {
       const key = `${link.href}::${link.label}`;
       if (seen.has(key)) continue;
@@ -627,7 +664,15 @@ export function primaryIdForPath(pathname: string, layout?: StoredNavLayout | nu
   const home = rows.find((row) => row.id === "home");
   if (home && navLinkIsActive(pathname, home.link)) return "";
   for (const row of rows) {
-    if (row.submenu.some((item) => navLinkIsActive(pathname, item))) return row.id;
+    if (
+      row.submenu.some(
+        (item) =>
+          navLinkIsActive(pathname, item) ||
+          item.children.some((child) => navLinkIsActive(pathname, child)),
+      )
+    ) {
+      return row.id;
+    }
   }
   for (const row of rows) {
     if (navLinkIsActive(pathname, row.link)) return row.id;

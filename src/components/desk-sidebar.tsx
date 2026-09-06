@@ -347,6 +347,7 @@ export function DeskSidebar({
               const beforeChild = dropKey({ type: "before", id: item.id });
               const afterChild = dropKey({ type: "after", id: item.id });
               const childDragging = draggingId === item.id;
+              const nestedKids = item.children ?? [];
               return (
                 <div key={`${row.id}-${item.id}`} className="relative">
                   {customizing ? (
@@ -388,6 +389,32 @@ export function DeskSidebar({
                       ) : null}
                     </Link>
                   </div>
+                  {nestedKids.length > 0 ? (
+                    <div className="mt-0.5 space-y-0.5 pl-3" aria-label={`${item.label} folder`}>
+                      {nestedKids.map((child) => {
+                        const NestedIcon = child.icon;
+                        const nestedActive = pathIsActive(pathname, child);
+                        return (
+                          <Link
+                            key={`${item.id}-${child.id}`}
+                            href={child.href}
+                            title={child.label}
+                            draggable={false}
+                            className={cn(
+                              "flex min-w-0 items-center gap-2 rounded-md py-1.5 pr-2 text-sm",
+                              customizing ? "pl-2" : "pl-2.5",
+                              nestedActive && !customizing
+                                ? "bg-[var(--ff-card)] text-navy"
+                                : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-white",
+                            )}
+                          >
+                            <NestedIcon className="size-3.5 shrink-0 opacity-80" />
+                            <span className="flex-1 truncate">{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
