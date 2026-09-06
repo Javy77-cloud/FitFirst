@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import Script from "next/script";
 import { SheetBoot } from "@/components/sheet/sheet-boot";
 import "./globals.css";
 
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full">
         {children}
         <SheetBoot />
-        <script src="/ff-sheet.js" defer />
+        <Script src="/ff-sheet.js" strategy="afterInteractive" />
       </body>
     </html>
   );
