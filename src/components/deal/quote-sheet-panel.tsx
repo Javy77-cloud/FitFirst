@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CopySheetButton } from "@/components/deal/copy-sheet-button";
 import { QuoteSheetForm } from "@/components/deal/quote-sheet-form";
 import { SendFieldSheetButton } from "@/components/deal/sheet-handoff";
-import type { Contact, QuoteSheet } from "@/lib/db/schema";
+import type { Contact, Document, QuoteSheet } from "@/lib/db/schema";
 import {
   SHOP_LINE_LABELS,
   SHOP_LINES,
@@ -31,6 +31,7 @@ export function QuoteSheetPanel({
   riskId,
   sourceDocCount = 0,
   carriers = [],
+  docs = [],
 }: {
   dealId: string;
   dealTitle: string;
@@ -41,6 +42,7 @@ export function QuoteSheetPanel({
   riskId?: string;
   sourceDocCount?: number;
   carriers?: { id: string; name: string }[];
+  docs?: Document[];
 }) {
   const tabs = shopLineTabs(shopLines, line);
   const addable = SHOP_LINES.filter((item) => !tabs.includes(item));
@@ -151,6 +153,7 @@ export function QuoteSheetPanel({
         sourceDocCount={sourceDocCount}
         startEditing={sourceDocCount === 0 && blankSheet}
         carriers={carriers}
+        docs={docs}
       />
     </div>
   );

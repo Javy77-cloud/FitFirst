@@ -1,6 +1,7 @@
 "use client";
 
 import { saveFormFill, scanSuggestForm } from "@/app/actions/form-fill";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,12 +14,16 @@ export function FillWorkspace({
   fields,
   values,
   sourceText,
+  sourceDocumentId = null,
+  sourceFilename = null,
 }: {
   slug: string;
   fillId: string | null;
   fields: FormFieldDef[];
   values: Record<string, string>;
   sourceText: string;
+  sourceDocumentId?: string | null;
+  sourceFilename?: string | null;
 }) {
   const mapping = defaultFieldMap(fields);
   return (
@@ -36,6 +41,18 @@ export function FillWorkspace({
         <div>
           <Label className="text-xs">Source PDF or image</Label>
           <input name="sourceFile" type="file" accept="application/pdf,image/*" className="mt-1 block w-full text-xs" />
+          {sourceDocumentId && sourceFilename ? (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="font-medium text-navy">{sourceFilename}</span>
+              <DeleteUploadedFileButton
+                documentId={sourceDocumentId}
+                filename={sourceFilename}
+                slot="library_file"
+                docType="other"
+                returnTo={`/documents/fill/${slug}${fillId ? `?fillId=${fillId}` : ""}`}
+              />
+            </div>
+          ) : null}
         </div>
         <div>
           <Label className="text-xs">Paste fields (key: value)</Label>

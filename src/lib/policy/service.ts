@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
@@ -257,6 +257,21 @@ export async function attachToPolicy(input: {
     buffer: input.buffer,
     docType: input.docType ?? "other",
   });
+}
+
+export async function removePolicyAttachment(attachmentId: string) {
+  const [row] = await db
+    .select()
+    .from(policyAttachments)
+    .where(and(eq(policyAttachments.tenantId, DEFAULT_TENANT_ID), eq(policyAttachments.id, attachmentId)));
+  if (!row) return null;
+  await db.delete(policyAttachments).where(eq(policyAttachments.id, row.id));
+  try {
+    await unlink(path.join(uploadRoot, row.storagePath));
+  } catch {
+    // Row is gone even if the bytes were already missing.
+  }
+  return row;
 }
 
 function docTypeFor(kind: PolicyChangeInput["kind"]): string {

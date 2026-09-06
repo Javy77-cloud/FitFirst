@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requestInDeskSamplePacket, requestInDeskSignature } from "@/app/actions/in-desk-esign";
 import { ChooseFiles } from "@/components/choose-files";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { InDeskEsignBanner } from "@/components/esign/in-desk-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,10 +141,18 @@ export function InDeskEsignPanel({
       {packets.length > 0 ? (
         <ul className="mt-3 space-y-1 text-sm">
           {packets.slice(0, 6).map((doc) => (
-            <li key={doc.id}>
+            <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
               <Link href={filePreviewHref(doc.id)} className="text-primary hover:underline">
                 {doc.filename}
               </Link>
+              <DeleteUploadedFileButton
+                documentId={doc.id}
+                filename={doc.filename}
+                slot={doc.slot}
+                docType={doc.docType}
+                dealId={doc.dealId}
+                policyId={doc.policyId}
+              />
             </li>
           ))}
         </ul>

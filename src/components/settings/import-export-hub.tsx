@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { ENTITY_PACKS, canImport, type EntityPack } from "@/lib/import-export/catalog";
 import type { CommitResult, PreviewResult } from "@/lib/import-export/types";
 import { cn } from "@/lib/utils";
@@ -235,6 +236,26 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
               }}
               className="block w-full text-sm"
             />
+            {file ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-medium text-navy">{file.name}</span>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="ghost"
+                  data-ff-delete-file
+                  onClick={() => {
+                    if (!confirmHardDelete(`the file “${file.name}”`)) return;
+                    setFile(null);
+                    setPreview(null);
+                    setCommit(null);
+                    setError(null);
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" disabled={!file || busy !== null} onClick={runPreview}>
                 {busy === "preview" ? "Validating…" : "Validate + preview"}

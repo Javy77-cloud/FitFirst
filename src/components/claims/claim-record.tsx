@@ -2,10 +2,12 @@ import Link from "next/link";
 import {
   addClaimAttachment,
   addClaimNote,
+  deleteClaimAttachment,
   notifyClaimProducer,
   updateClaim,
   updateClaimStatus,
 } from "@/app/actions/claims";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import {
   ClaimCauseSelect,
   ClaimChannelSelect,
@@ -282,14 +284,26 @@ export function ClaimRecord({
               <li className="text-xs text-muted-foreground">No files on this notice.</li>
             ) : (
               files.map((file) => (
-                <li key={file.id}>
-                  <Link
-                    href={`/api/claims/attachments/${file.id}`}
-                    className="text-primary hover:underline"
+                <li key={file.id} className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    <Link
+                      href={`/api/claims/attachments/${file.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {file.filename}
+                    </Link>
+                    <span className="ml-2 text-[11px] text-muted-foreground">{file.docType}</span>
+                  </span>
+                  <HardDeleteForm
+                    action={deleteClaimAttachment}
+                    subject={`the file “${file.filename}”`}
+                    className="inline"
                   >
-                    {file.filename}
-                  </Link>
-                  <span className="ml-2 text-[11px] text-muted-foreground">{file.docType}</span>
+                    <input type="hidden" name="fileId" value={file.id} />
+                    <Button type="submit" size="xs" variant="ghost" data-ff-delete-file>
+                      Delete
+                    </Button>
+                  </HardDeleteForm>
                 </li>
               ))
             )}

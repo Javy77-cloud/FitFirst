@@ -1,6 +1,6 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -14,12 +14,22 @@ import {
   alerts,
   deals,
   documentFolders,
+  documentVersions,
   documents,
   extractedFields,
   extractionJobs,
+  fillFeedbackLogs,
+  fillLearningLogs,
+  formFills,
   policies,
+  quoteSheets,
   risks,
+  signatureEnvelopes,
 } from "@/lib/db/schema";
+import {
+  clearExtractedSheetCells,
+  uploadedFileDeleteMode,
+} from "@/lib/documents/delete-file";
 import { inferDocType } from "@/lib/ingest/identity";
 import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import { libraryHref } from "@/lib/documents/library";
@@ -517,4 +527,83 @@ export async function acceptExtractedField(formData: FormData) {
     .where(eq(extractedFields.id, fieldId));
 
   revalidatePath(`/deals/${dealId}`);
+}
+
+async function unlinkStoredPath(storagePath: string) {
+  try {
+    await unlink(path.join(uploadRoot, storagePath));
+  } catch {
+    // Missing file on disk is still a successful row delete.
+  }
+}
+
+/** Double-confirmed in the UI. Hard-deletes shopping/library files. Hides issued policy files. */
+export async function deleteUploadedFile(formData: FormData) {
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc) return;
+
+  const mode = uploadedFileDeleteMode(doc);
+  if (mode === "hide") {
+    await db.update(documents).set({ status: "hidden" }).where(eq(documents.id, documentId));
+    revalidateDocumentPaths(doc);
+    return;
+  }
+
+  const versions = await db
+    .select()
+    .from(documentVersions)
+    .where(eq(documentVersions.documentId, documentId));
+
+  await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
+  await db
+    .update(extractionJobs)
+    .set({ documentId: null })
+    .where(eq(extractionJobs.documentId, documentId));
+  await db
+    .update(fillFeedbackLogs)
+    .set({ documentId: null })
+    .where(eq(fillFeedbackLogs.documentId, documentId));
+  await db
+    .update(fillLearningLogs)
+    .set({ documentId: null })
+    .where(eq(fillLearningLogs.documentId, documentId));
+  await db
+    .update(formFills)
+    .set({ sourceDocumentId: null })
+    .where(eq(formFills.sourceDocumentId, documentId));
+  await db.delete(signatureEnvelopes).where(eq(signatureEnvelopes.documentId, documentId));
+  await db.delete(documentVersions).where(eq(documentVersions.documentId, documentId));
+  await db.delete(documents).where(eq(documents.id, documentId));
+
+  await unlinkStoredPath(doc.storagePath);
+  for (const version of versions) {
+    if (version.storagePath !== doc.storagePath) {
+      await unlinkStoredPath(version.storagePath);
+    }
+  }
+
+  if (doc.dealId) {
+    const sheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, doc.dealId));
+    for (const sheet of sheets) {
+      await db
+        .update(quoteSheets)
+        .set({
+          values: clearExtractedSheetCells(sheet.values),
+          updatedAt: new Date(),
+        })
+        .where(eq(quoteSheets.id, sheet.id));
+    }
+    const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
+    const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
+    if (hasSource) {
+      await fillDealSheetIfReady(doc.dealId, String(formData.get("line") ?? ""));
+    }
+  }
+
+  revalidateDocumentPaths(doc);
+  if (String(formData.get("returnTo") ?? "").trim()) {
+    redirect(String(formData.get("returnTo")).trim());
+  }
 }

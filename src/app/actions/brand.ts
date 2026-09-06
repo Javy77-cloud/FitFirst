@@ -1,6 +1,6 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -149,6 +149,27 @@ export async function uploadAgencyLogo(formData: FormData) {
       .set({ logoStoragePath: rel, logoMime: mime, updatedAt: new Date() })
       .where(eq(agencyBrand.id, existing.id));
   }
+  refreshBrand();
+}
+
+export async function deleteAgencyLogo() {
+  await requireAdmin();
+  const [existing] = await db
+    .select()
+    .from(agencyBrand)
+    .where(eq(agencyBrand.tenantId, DEFAULT_TENANT_ID));
+  if (!existing?.logoStoragePath) return;
+  try {
+    await unlink(
+      path.join(process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads"), existing.logoStoragePath),
+    );
+  } catch {
+    // Clear the pointer even if the file is already gone.
+  }
+  await db
+    .update(agencyBrand)
+    .set({ logoStoragePath: null, logoMime: null, updatedAt: new Date() })
+    .where(eq(agencyBrand.id, existing.id));
   refreshBrand();
 }
 

@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import { uploadDocument } from "@/app/actions/documents";
 import { fillQuoteSheet } from "@/app/actions/quote-sheet";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
+import type { Document } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
@@ -11,10 +13,12 @@ export function SheetDrop({
   dealId,
   riskId,
   line,
+  docs = [],
 }: {
   dealId: string;
   riskId: string;
   line: ShopLine;
+  docs?: Pick<Document, "id" | "filename" | "slot" | "docType">[];
 }) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +84,22 @@ export function SheetDrop({
           Fill from files already on this deal
         </Button>
       </form>
+      {docs.length > 0 ? (
+        <ul className="space-y-1 text-sm" data-ff-sheet-drop-files>
+          {docs.map((doc) => (
+            <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-medium">{doc.filename}</span>
+              <DeleteUploadedFileButton
+                documentId={doc.id}
+                filename={doc.filename}
+                slot={doc.slot}
+                docType={doc.docType}
+                dealId={dealId}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

@@ -5,6 +5,9 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { ChooseFiles } from "@/components/choose-files";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { deletePolicyFilingAttachment } from "@/app/actions/policies";
 import { VehiclesList } from "@/components/desk-ams-panels";
 import { RecordLink } from "@/components/record-links";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -63,8 +66,21 @@ export default async function PolicyDetailPage({
     listPolicyInspections(id),
     listPolicyInstallments(id),
   ]);
-  const { policy, contact, account, carrier, deal, files, timeline, vehicles, changeLogs, terms, work, location } =
-    workspace;
+  const {
+    policy,
+    contact,
+    account,
+    carrier,
+    deal,
+    files,
+    filingAttachments,
+    timeline,
+    vehicles,
+    changeLogs,
+    terms,
+    work,
+    location,
+  } = workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
   const filed = typeof query.filed === "string" ? query.filed : undefined;
   const notice = typeof query.notice === "string" ? query.notice : filed;
@@ -318,6 +334,7 @@ export default async function PolicyDetailPage({
                     <tr>
                       <th>File</th>
                       <th>Type</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -325,11 +342,49 @@ export default async function PolicyDetailPage({
                       <tr key={file.id}>
                         <td className="font-medium">{file.filename}</td>
                         <td className="uppercase">{file.docType.replaceAll("_", " ")}</td>
+                        <td>
+                          <DeleteUploadedFileButton
+                            documentId={file.id}
+                            filename={file.filename}
+                            slot={file.slot}
+                            docType={file.docType}
+                            dealId={policy.dealId}
+                            policyId={policy.id}
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
+              {filingAttachments.length > 0 ? (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-navy">Change / notice files</h3>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {filingAttachments.map((file) => (
+                      <li key={file.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                          <span className="font-medium">{file.filename}</span>
+                          <span className="ml-2 uppercase text-muted-foreground">
+                            {file.docType.replaceAll("_", " ")}
+                          </span>
+                        </span>
+                        <HardDeleteForm
+                          action={deletePolicyFilingAttachment}
+                          subject={`the file “${file.filename}”`}
+                          className="inline"
+                        >
+                          <input type="hidden" name="policyId" value={policy.id} />
+                          <input type="hidden" name="attachmentId" value={file.id} />
+                          <Button type="submit" size="xs" variant="ghost" data-ff-delete-file>
+                            Delete
+                          </Button>
+                        </HardDeleteForm>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </section>
 
             <InDeskEsignPanel

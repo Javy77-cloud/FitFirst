@@ -1,6 +1,6 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -377,6 +377,31 @@ export async function addClaimAttachment(formData: FormData) {
   });
   await recordActivity(claimId, "file_added", `Attached ${filename} (${docType}).`, who);
   revalidateClaimSurfaces(claimId, claim.policyId, claim.contactId);
+}
+
+export async function deleteClaimAttachment(formData: FormData) {
+  const session = await currentDeskSession();
+  const fileId = str(formData, "fileId");
+  const [file] = await db
+    .select()
+    .from(claimAttachments)
+    .where(and(eq(claimAttachments.tenantId, DEFAULT_TENANT_ID), eq(claimAttachments.id, fileId)));
+  if (!file) return;
+  const [claim] = await db
+    .select()
+    .from(claims)
+    .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, file.claimId)));
+  if (!claim) return;
+
+  await db.delete(claimAttachments).where(eq(claimAttachments.id, file.id));
+  try {
+    await unlink(path.join(uploadRoot, file.storagePath));
+  } catch {
+    // Row is gone even if the bytes were already missing.
+  }
+  const who = actorName(formData, session.name);
+  await recordActivity(file.claimId, "file_deleted", `Deleted ${file.filename}.`, who);
+  revalidateClaimSurfaces(file.claimId, claim.policyId, claim.contactId);
 }
 
 export async function updateClaimStatus(formData: FormData) {

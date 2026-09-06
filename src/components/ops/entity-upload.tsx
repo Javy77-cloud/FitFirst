@@ -1,5 +1,6 @@
 import { uploadDocument } from "@/app/actions/documents";
 import { sendDocumentForSignature } from "@/app/actions/esign";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,7 @@ export function DocumentTable({
           <th>Tags</th>
           <th>Status</th>
           <th>E-sign</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -92,6 +94,18 @@ export function DocumentTable({
             <td>{doc.status.replaceAll("_", " ")}</td>
             <td>
               <SendForSignature document={doc} returnTo={returnTo} compact />
+            </td>
+            <td>
+              <DeleteUploadedFileButton
+                documentId={doc.id}
+                filename={doc.filename}
+                slot={doc.slot}
+                docType={doc.docType}
+                dealId={doc.dealId}
+                policyId={doc.policyId}
+                contactId={doc.contactId}
+                returnTo={returnTo}
+              />
             </td>
           </tr>
         ))}

@@ -8,6 +8,7 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { ChooseFiles } from "@/components/choose-files";
 import { DealUploadDesk } from "@/components/deal/deal-upload-desk";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -196,15 +197,24 @@ function DocTable({
             <td className="uppercase">{worksheetDocTypeLabel(doc.docType, true)}</td>
             <td className="text-[11px] uppercase">{doc.slot.replaceAll("_", " ")}</td>
             <td>
-              {doc.slot === "source_doc" ? (
-                <form action={extractExisting}>
-                  <input type="hidden" name="documentId" value={doc.id} />
-                  <input type="hidden" name="dealId" value={dealId} />
-                  <Button type="submit" variant="ghost" size="xs">
-                    Re-extract
-                  </Button>
-                </form>
-              ) : null}
+              <div className="flex flex-wrap items-center justify-end gap-1">
+                {doc.slot === "source_doc" ? (
+                  <form action={extractExisting}>
+                    <input type="hidden" name="documentId" value={doc.id} />
+                    <input type="hidden" name="dealId" value={dealId} />
+                    <Button type="submit" variant="ghost" size="xs">
+                      Re-extract
+                    </Button>
+                  </form>
+                ) : null}
+                <DeleteUploadedFileButton
+                  documentId={doc.id}
+                  filename={doc.filename}
+                  slot={doc.slot}
+                  docType={doc.docType}
+                  dealId={dealId}
+                />
+              </div>
             </td>
           </tr>
         ))}

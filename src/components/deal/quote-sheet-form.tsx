@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Contact, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
+import type { Contact, Document, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
@@ -35,6 +35,7 @@ export function QuoteSheetForm({
   sourceDocCount = 0,
   startEditing = false,
   carriers = [],
+  docs = [],
 }: {
   dealId: string;
   dealTitle: string;
@@ -46,6 +47,7 @@ export function QuoteSheetForm({
   sourceDocCount?: number;
   startEditing?: boolean;
   carriers?: { id: string; name: string }[];
+  docs?: Document[];
 }) {
   const counts = sheetCounts(sheet.values);
   const blankSheet = counts.confirmed === 0 && counts.check === 0;
@@ -123,7 +125,7 @@ export function QuoteSheetForm({
       </div>
 
       {printable || !riskId ? null : (
-        <SheetDrop dealId={dealId} riskId={riskId} line={line} />
+        <SheetDrop dealId={dealId} riskId={riskId} line={line} docs={docs} />
       )}
 
       <form key={formKey} action={printable ? undefined : saveQuoteSheet} className="space-y-4">

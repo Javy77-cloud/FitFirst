@@ -4,7 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Quote Sheet PDF ingest (this tip)
+## Delete file on every upload surface (this tip)
+
+**`cursor/live-ff-tip-sep6i`** is **`cursor/live-ff-tip-sep6h`** (`5cda4fc`) plus Delete on every upload surface. No page redesign. Menu unchanged. No AMS. No seed. No wipe. PDF ingest from sep6h is unchanged.
+
+Every upload surface that keeps a file now has **Delete** (or **Hide** on issued policy files) on the same row. Hard delete always asks twice: `Are you sure you want to delete …?` ×2. After a shopping-doc delete the file leaves storage and the DB row, extract rows for that file are removed, and Quote Sheet cells that only came from extract / photo-OCR clear, then fill re-runs from remaining source docs.
+
+Issued policy files (`policy_file` / issued dec / complete / ID) are **hidden for retention**, not wiped.
+
+### Air checkout (skip seed)
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6i && git pull
+npm install
+# optional but faster rasterize on the Mac mini:
+# brew install poppler
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Open a Deal → Documents. Each source-doc row has Delete. Confirm twice. The row disappears. Quote Sheet extract cells from that file clear. Re-upload a dec / 4-point / wind mit still fills the sheet (sep6h ingest).
+
+## Quote Sheet PDF ingest (prior tip)
 
 **`cursor/live-ff-tip-sep6h`** is **`cursor/live-ff-tip-sep6g`** (`97c2068`) plus PDF text-layer extract and rasterize-then-OCR. No page redesign. No nav change. No seed. Do not seed Ana. Do not bind Ana. Cov A stays **$321,000**.
 

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "./index";
@@ -149,6 +149,7 @@ export async function listLibraryDocuments(library: string, folderId: string | n
   const filters = [
     eq(documents.tenantId, tenant()),
     eq(documents.library, library),
+    ne(documents.status, "hidden"),
     safeFolder ? eq(documents.folderId, safeFolder) : isNull(documents.folderId),
     safeFolder ? undefined : isNull(documents.dealId),
     safeFolder ? undefined : isNull(documents.contactId),
@@ -162,13 +163,13 @@ export async function listDocumentsInFolder(folderId: string | null) {
     return db
       .select()
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), isNull(documents.folderId)))
+      .where(and(eq(documents.tenantId, tenant()), isNull(documents.folderId), ne(documents.status, "hidden")))
       .orderBy(desc(documents.createdAt));
   }
   return db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, tenant()), eq(documents.folderId, folderId)))
+    .where(and(eq(documents.tenantId, tenant()), eq(documents.folderId, folderId), ne(documents.status, "hidden")))
     .orderBy(desc(documents.createdAt));
 }
 
@@ -196,7 +197,7 @@ export async function listDocumentsWithExtracted() {
   const docs = await db
     .select()
     .from(documents)
-    .where(eq(documents.tenantId, tenant()))
+    .where(and(eq(documents.tenantId, tenant()), ne(documents.status, "hidden")))
     .orderBy(desc(documents.createdAt));
   const fields = await db
     .select()

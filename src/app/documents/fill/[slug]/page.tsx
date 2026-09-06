@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FillWorkspace } from "@/components/documents/fill-workspace";
 import { buttonVariants } from "@/components/ui/button";
+import { db } from "@/lib/db";
+import { documents } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getFormFill, getFormTemplate, latestFormFill } from "@/lib/db/queries";
 import { libraryHref } from "@/lib/documents/library";
 import { cn } from "@/lib/utils";
@@ -21,6 +24,9 @@ export default async function DocumentFillPage({
   const template = await getFormTemplate(slug);
   if (!template) notFound();
   const fill = fillId ? await getFormFill(fillId) : await latestFormFill(template.id);
+  const sourceDoc = fill?.sourceDocumentId
+    ? (await db.select().from(documents).where(eq(documents.id, fill.sourceDocumentId)))[0] ?? null
+    : null;
 
   return (
     <AppShell
@@ -57,6 +63,8 @@ export default async function DocumentFillPage({
         fields={template.fields}
         values={fill?.values ?? {}}
         sourceText={fill?.sourceText ?? ""}
+        sourceDocumentId={sourceDoc?.id ?? null}
+        sourceFilename={sourceDoc?.filename ?? null}
       />
     </AppShell>
   );

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, exists, inArray, isNull, notInArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, inArray, isNull, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
@@ -81,6 +81,7 @@ import {
   pipelineStages,
   pipelines,
   policies,
+  policyAttachments,
   policyChangeLogs,
   policyTerms,
   extractionJobs,
@@ -1164,8 +1165,19 @@ export async function getPolicyWorkspace(id: string) {
   const files = await db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, id)))
+    .where(
+      and(
+        eq(documents.tenantId, tenant()),
+        eq(documents.policyId, id),
+        ne(documents.status, "hidden"),
+      ),
+    )
     .orderBy(desc(documents.createdAt));
+  const filingAttachments = await db
+    .select()
+    .from(policyAttachments)
+    .where(and(eq(policyAttachments.tenantId, tenant()), eq(policyAttachments.policyId, id)))
+    .orderBy(desc(policyAttachments.createdAt));
   const fileVersions = await listDocumentVersionsForIds(files.map((file) => file.id));
   const changeLogs = await listPolicyChangeLogs(id);
   const [risk] = row.policy.riskId
@@ -1201,6 +1213,7 @@ export async function getPolicyWorkspace(id: string) {
     risk: risk ?? null,
     location: location ?? null,
     files,
+    filingAttachments,
     fileVersions,
     changeLogs,
     timeline: await listActivityTimeline({ policyId: id }),
@@ -1382,7 +1395,13 @@ export async function getDealWorkspace(dealId: string) {
   const docs = await db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, tenant()), eq(documents.dealId, dealId)))
+    .where(
+      and(
+        eq(documents.tenantId, tenant()),
+        eq(documents.dealId, dealId),
+        ne(documents.status, "hidden"),
+      ),
+    )
     .orderBy(desc(documents.createdAt));
   const fileVersions = await listDocumentVersionsForIds(docs.map((doc) => doc.id));
 

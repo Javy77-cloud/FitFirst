@@ -77,7 +77,18 @@ export function LibraryUpload({
           {preview.map((file) => (
             <li key={file.name} className="flex items-center justify-between gap-2">
               <span className="truncate font-medium text-navy">{file.name}</span>
-              <span className="shrink-0 text-muted-foreground">{docTypeLabel(file.type)}</span>
+              <span className="flex shrink-0 items-center gap-2">
+                <span className="text-muted-foreground">{docTypeLabel(file.type)}</span>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="ghost"
+                  data-ff-delete-file
+                  onClick={() => setFiles((current) => current.filter((item) => item.name !== file.name))}
+                >
+                  Remove
+                </Button>
+              </span>
             </li>
           ))}
         </ul>

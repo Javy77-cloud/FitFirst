@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { File, FileSpreadsheet, FileText, ImageIcon, Megaphone, Newspaper } from "lucide-react";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import type { Document } from "@/lib/db/schema";
 import { docTypeLabel, fillHref } from "@/lib/documents/library";
 import { fileGlyph } from "@/lib/ops/documents";
@@ -56,6 +57,7 @@ export function FileList({
               <th>Name</th>
               <th>Type</th>
               <th>Fillable</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -88,6 +90,18 @@ export function FileList({
                     ) : (
                       "—"
                     )}
+                  </td>
+                  <td>
+                    <DeleteUploadedFileButton
+                      documentId={doc.id}
+                      filename={doc.filename}
+                      slot={doc.slot}
+                      docType={doc.docType}
+                      dealId={doc.dealId}
+                      policyId={doc.policyId}
+                      contactId={doc.contactId}
+                      returnTo="/documents"
+                    />
                   </td>
                 </tr>
               );

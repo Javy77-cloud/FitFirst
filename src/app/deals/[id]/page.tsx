@@ -205,6 +205,7 @@ export default async function DealPage({
                           contact={contact}
                           riskId={risk.id}
                           sourceDocCount={sourceDocCount}
+                          docs={docs.filter((doc) => doc.slot !== "quote_pdf" && doc.slot !== "policy_file")}
                         />
                         <SheetApproveGate
                           dealId={deal.id}

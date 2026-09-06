@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -66,6 +66,23 @@ export async function uploadAgencyLogo(formData: FormData) {
       logoPath: rel,
     });
   }
+  revalidatePath("/");
+  revalidatePath("/settings");
+}
+
+export async function deleteAgencyLogo() {
+  await assertAdmin();
+  const [existing] = await db
+    .select()
+    .from(agencySettings)
+    .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID));
+  if (!existing?.logoPath) return;
+  try {
+    await unlink(path.join(process.cwd(), "public", existing.logoPath));
+  } catch {
+    // Clear the pointer even if the file is already gone.
+  }
+  await db.update(agencySettings).set({ logoPath: null }).where(eq(agencySettings.id, existing.id));
   revalidatePath("/");
   revalidatePath("/settings");
 }

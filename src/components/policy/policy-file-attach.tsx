@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { attachPolicyFiles } from "@/app/actions/policy-files";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { DocumentVersions } from "@/components/documents/document-versions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -82,10 +83,22 @@ export function PolicyFileAttach({
         <ul className="space-y-3 text-sm">
           {files.map((file) => (
             <li key={file.id} className="rounded-md border border-border p-2">
-              <a href={filePreviewHref(file.id)} className="font-medium text-navy hover:underline">
-                {file.filename}
-              </a>
-              <span className="text-muted-foreground"> · {file.docType.replaceAll("_", " ")}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <a href={filePreviewHref(file.id)} className="font-medium text-navy hover:underline">
+                    {file.filename}
+                  </a>
+                  <span className="text-muted-foreground"> · {file.docType.replaceAll("_", " ")}</span>
+                </div>
+                <DeleteUploadedFileButton
+                  documentId={file.id}
+                  filename={file.filename}
+                  slot="policy_file"
+                  docType={file.docType}
+                  dealId={dealId}
+                  policyId={policyId}
+                />
+              </div>
               <DocumentVersions
                 documentId={file.id}
                 versions={byDoc.get(file.id) ?? []}

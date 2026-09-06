@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
+import { deleteAgencyLogo, saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { saveShowCompanyWidgets } from "@/app/actions/home-dashboard";
 import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
 import { SettingsShell } from "@/components/settings/settings-shell";
@@ -193,12 +194,21 @@ export default async function AgencySettingsPage() {
             <div className="text-sm text-muted-foreground">{desk.agencyName}</div>
           </div>
           {desk.isAdmin ? (
-            <form action={uploadAgencyLogo} className="space-y-2">
-              <Input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
-              <Button type="submit" size="sm" variant="outline">
-                Upload logo
-              </Button>
-            </form>
+            <>
+              <form action={uploadAgencyLogo} className="space-y-2">
+                <Input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+                <Button type="submit" size="sm" variant="outline">
+                  Upload logo
+                </Button>
+              </form>
+              {desk.logoUrl ? (
+                <HardDeleteForm action={deleteAgencyLogo} subject="the agency logo">
+                  <Button type="submit" size="sm" variant="ghost" data-ff-delete-file>
+                    Delete logo
+                  </Button>
+                </HardDeleteForm>
+              ) : null}
+            </>
           ) : null}
         </section>
         </div>

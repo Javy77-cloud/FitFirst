@@ -1,6 +1,7 @@
 "use client";
 
 import { replaceDocument } from "@/app/actions/document-versions";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay } from "@/lib/domain";
@@ -60,6 +61,12 @@ export function DocumentVersions({
           Replace
         </Button>
       </form>
+      <DeleteUploadedFileButton
+        documentId={documentId}
+        filename={versions.find((row) => row.versionNumber === current)?.filename ?? "this file"}
+        dealId={dealId}
+        policyId={policyId}
+      />
     </div>
   );
 }

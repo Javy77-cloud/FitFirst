@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { attachToPolicy, filePolicyChange } from "@/lib/policy/service";
+import { attachToPolicy, filePolicyChange, removePolicyAttachment } from "@/lib/policy/service";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -84,4 +84,12 @@ export async function uploadPolicyAttachment(formData: FormData) {
   });
   revalidatePath(`/policies/${policyId}`);
   bounce(policyId, "attach");
+}
+
+export async function deletePolicyFilingAttachment(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const attachmentId = str(formData, "attachmentId");
+  if (!attachmentId) return;
+  await removePolicyAttachment(attachmentId);
+  revalidatePath(`/policies/${policyId}`);
 }

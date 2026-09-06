@@ -19,7 +19,7 @@ describe("confirmHardDelete", () => {
     vi.stubGlobal("confirm", confirm);
     expect(confirmHardDelete("2 selected tasks")).toBe(false);
     expect(confirm).toHaveBeenCalledTimes(2);
-    expect(confirm.mock.calls[1]?.[0]).toMatch(/permanently/);
+    expect(confirm.mock.calls[1]?.[0]).toBe("Are you sure you want to delete 2 selected tasks?");
   });
 
   it("returns true only after both confirms", () => {
@@ -27,5 +27,15 @@ describe("confirmHardDelete", () => {
     vi.stubGlobal("confirm", confirm);
     expect(confirmHardDelete("this lead")).toBe(true);
     expect(confirm).toHaveBeenCalledTimes(2);
+    expect(confirm.mock.calls[0]?.[0]).toBe(confirm.mock.calls[1]?.[0]);
+  });
+
+  it("asks Are you sure you want to delete … twice for a file", () => {
+    const confirm = vi.fn().mockReturnValue(true);
+    vi.stubGlobal("confirm", confirm);
+    expect(confirmHardDelete('the file “wind-mit.pdf”')).toBe(true);
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(confirm.mock.calls[0]?.[0]).toBe('Are you sure you want to delete the file “wind-mit.pdf”?');
+    expect(confirm.mock.calls[1]?.[0]).toBe('Are you sure you want to delete the file “wind-mit.pdf”?');
   });
 });

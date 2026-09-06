@@ -1,3 +1,4 @@
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { fieldsForLine } from "@/lib/quote-sheet/catalog";
 import type { ShopLine } from "@/lib/domain";
@@ -32,11 +33,19 @@ export function SourceVsSheet({
         ) : (
           <ul className="mt-2 space-y-1 text-sm">
             {sourceDocs.map((doc) => (
-              <li key={doc.id}>
-                <span className="font-medium">{doc.filename}</span>
-                <span className="ml-2 text-caption uppercase text-muted-foreground">
-                  {doc.docType.replaceAll("_", " ")} · {doc.status.replaceAll("_", " ")}
+              <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  <span className="font-medium">{doc.filename}</span>
+                  <span className="ml-2 text-caption uppercase text-muted-foreground">
+                    {doc.docType.replaceAll("_", " ")} · {doc.status.replaceAll("_", " ")}
+                  </span>
                 </span>
+                <DeleteUploadedFileButton
+                  documentId={doc.id}
+                  filename={doc.filename}
+                  slot={doc.slot}
+                  docType={doc.docType}
+                />
               </li>
             ))}
           </ul>

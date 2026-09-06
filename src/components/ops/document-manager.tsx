@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import type { Document, DocumentFolder } from "@/lib/db/schema";
 import { DOC_TYPE_LABELS, DOC_TYPES, FOLDER_KIND_LABELS, FOLDER_KINDS } from "@/lib/domain";
 import { fileGlyph, folderHref } from "@/lib/ops/documents";
+import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { SendForSignature } from "@/components/ops/entity-upload";
 import { cn } from "@/lib/utils";
 
@@ -126,7 +127,19 @@ export function FileGrid({
                 {(doc.tags ?? []).length ? ` · ${(doc.tags ?? []).join(", ")}` : ""}
               </div>
             </div>
-            <SendForSignature document={doc} returnTo={returnTo} compact />
+            <div className="flex flex-wrap items-center gap-2">
+              <SendForSignature document={doc} returnTo={returnTo} compact />
+              <DeleteUploadedFileButton
+                documentId={doc.id}
+                filename={doc.filename}
+                slot={doc.slot}
+                docType={doc.docType}
+                dealId={doc.dealId}
+                policyId={doc.policyId}
+                contactId={doc.contactId}
+                returnTo={returnTo}
+              />
+            </div>
           </div>
         );
       })}
