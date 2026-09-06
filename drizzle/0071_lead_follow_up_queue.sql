@@ -84,28 +84,35 @@ WHERE EXISTS (SELECT 1 FROM "tenants" WHERE "id" = '11111111-1111-4111-8111-1111
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000011', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000001', 0, 'call', 5, 'minutes', 'Call this hot lead now.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000011');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000001')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000011');
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000012', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000001', 1, 'text', 30, 'minutes', 'Text if the first call missed.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000012');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000001')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000012');
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000013', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000001', 2, 'email', 2, 'hours', 'Email a same-day intro if we have not connected.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000013');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000001')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000013');
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000014', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000001', 3, 'call', 1, 'days', 'Second call the next day.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000014');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000001')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000014');
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000015', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000002', 0, 'email', 30, 'days', 'Not-interested check-in at 30 days.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000015');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000002')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000015');
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000016', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000002', 1, 'email', 60, 'days', 'Not-interested check-in at 60 days.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000016');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000002')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000016');
 --> statement-breakpoint
 INSERT INTO "lead_follow_up_steps" ("id", "tenant_id", "template_id", "sort_order", "method", "delay_amount", "delay_unit", "message")
 SELECT 'a0710001-a071-4111-8111-a07100000017', '11111111-1111-4111-8111-111111111111', 'a0710001-a071-4111-8111-a07100000002', 2, 'email', 90, 'days', 'Not-interested check-in at 90 days.'
-WHERE NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000017');
+WHERE EXISTS (SELECT 1 FROM "lead_follow_up_templates" WHERE "id" = 'a0710001-a071-4111-8111-a07100000002')
+	AND NOT EXISTS (SELECT 1 FROM "lead_follow_up_steps" WHERE "id" = 'a0710001-a071-4111-8111-a07100000017');
