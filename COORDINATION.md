@@ -1250,3 +1250,26 @@ npm run dev -- --port 43147
 ```
 
 Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+
+## LIVE-TEST tip Sep 6b (`cursor/live-ff-tip-sep6b`)
+
+One Mac Chrome tip that folds the latest nav fixes. Taken FROM **`cursor/ff-policies-empty-default-c8b0`** (already linear on **`cursor/live-ff-tip-sep6-nav`**), then merged **`cursor/ff-leads-remove-dec-drop-a688`**. Did **not** seed Ana. Did **not** wipe. Zoho `db:wipe-crm` / `db:import-zoho` / `db:assign-owner` stay.
+
+What landed on this tip:
+
+- Policies default submenu is empty (`NAV_LAYOUT_VERSION` **4**). AMS catalog rows stay addable in Customize — they are not nested under Policies by default.
+- Leads list no longer has Drop a dec packet. Create or match on `/leads`; dec / wind mit / 4-point drops stay on Deals.
+- Everything already on sep6-nav / desk-nav-shell / sep5f (signed rail, profile menu, customizer, live typeahead, Leads Actions Delete).
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6b && git pull
+npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+# skip db:seed — keep the live Zoho-imported book
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
