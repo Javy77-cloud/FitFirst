@@ -13,9 +13,9 @@ import {
   shouldHoldFollowUpUntilFirstContact,
 } from "./follow-up-templates";
 
-const hot = { id: "hot", name: "Hot", triggerStatus: "new", enabled: true };
-const warm = { id: "warm", name: "Warm", triggerStatus: "warm", enabled: true };
-const cold = { id: "cold", name: "Cold (not interested)", triggerStatus: "cold", enabled: true };
+const hot = { id: "hot", name: "Aggressive", triggerStatus: "new", enabled: true };
+const warm = { id: "warm", name: "Steady", triggerStatus: "warm", enabled: true };
+const cold = { id: "cold", name: "Drip", triggerStatus: "cold", enabled: true };
 const fallbackDefault = { id: "def", name: "Default", triggerStatus: "default", enabled: true };
 
 describe("follow-up templates", () => {
@@ -59,7 +59,7 @@ describe("follow-up templates", () => {
     expect(pickTemplateForLead([hot, warm, cold], { status: "contacted" })).toBeNull();
   });
 
-  it("holds the new / Hot template until first contact is logged", () => {
+  it("holds the new / Aggressive template until first contact is logged", () => {
     expect(shouldHoldFollowUpUntilFirstContact({ status: "new", firstContactAt: null })).toBe(true);
     expect(
       shouldHoldFollowUpUntilFirstContact({
@@ -71,21 +71,21 @@ describe("follow-up templates", () => {
     expect(shouldHoldFollowUpUntilFirstContact({ status: "cold", firstContactAt: null })).toBe(false);
   });
 
-  it("orders Follow-up override options Hot, Warm, Cold (not interested), then Default", () => {
+  it("orders Follow-up override options Aggressive, Steady, Drip, then Default", () => {
     expect(FOLLOW_UP_OVERRIDE_OPTIONS.map((row) => row.label)).toEqual([
-      "Hot",
-      "Warm",
-      "Cold (not interested)",
+      "Aggressive",
+      "Steady",
+      "Drip",
       "Default",
     ]);
   });
 
-  it("labels Cold with the full name and chips as Cold", () => {
-    expect(followUpTemplateChipName(hot)).toBe("Hot");
-    expect(followUpTemplateChipName(warm)).toBe("Warm");
-    expect(followUpTemplateChipName(cold)).toBe("Cold");
+  it("labels templates Aggressive / Steady / Drip and keeps Default", () => {
+    expect(followUpTemplateChipName(hot)).toBe("Aggressive");
+    expect(followUpTemplateChipName(warm)).toBe("Steady");
+    expect(followUpTemplateChipName(cold)).toBe("Drip");
     expect(followUpTemplateChipName(fallbackDefault)).toBe("Default");
-    expect(followUpTemplateFullName(cold)).toBe("Cold (not interested)");
+    expect(followUpTemplateFullName(cold)).toBe("Drip");
     expect(followUpTemplateFullName(fallbackDefault)).toBe("Default");
   });
 

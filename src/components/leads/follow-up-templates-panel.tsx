@@ -108,8 +108,9 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
           <DialogHeader>
             <DialogTitle>Follow-up Templates</DialogTitle>
             <DialogDescription>
-              Each template maps to one status. New leads run Default until the agent overrides.
-              Status change swaps Warm or Cold. Each step has Remind via (Task, Pop-up, or Email).
+              Each template maps to one status. New leads run Default (Aggressive steps) until the
+              agent overrides. Status change swaps Steady or Drip. Temp badges stay Hot / Warm /
+              Cold. Each step has Remind via (Task, Pop-up, or Email).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

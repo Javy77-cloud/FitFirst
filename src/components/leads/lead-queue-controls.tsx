@@ -265,7 +265,7 @@ export function LeadTemplateOverride({
             void overrideLeadFollowUpTemplate(form);
           });
         }}
-        className="h-7 max-w-[10rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
+        className="h-7 max-w-[11.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
       >
         {overrides.map((option) => (
           <option key={option.triggerStatus} value={option.templateId} disabled={!option.templateId}>

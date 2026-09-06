@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { isValidElement } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
@@ -10,9 +9,9 @@ import { compareSheetValues } from "@/lib/desk/sheet-layout";
 import {
   allColumnIds,
   clampColumnWidth,
-  cycleListSort,
   defaultColumnWidth,
   defaultVisibleIds,
+  listSortForColumn,
   loadColumnLayout,
   mergeColumnWidths,
   mergeVisibleColumns,
@@ -24,6 +23,7 @@ import {
   type ListColumn,
   type ListColumnLayout,
   type ListSort,
+  type ListSortDir,
 } from "@/lib/list-columns";
 import { matchesContains } from "@/lib/search/live-query";
 import { cn } from "@/lib/utils";
@@ -170,8 +170,8 @@ export function ColumnTable({
     persist({ columns: allColumnIds(columns), widths: {}, sort: null });
   }
 
-  function onSort(id: string) {
-    persistPartial({ sort: cycleListSort(sort, id) });
+  function onSort(id: string, dir: ListSortDir | null) {
+    persistPartial({ sort: listSortForColumn(id, dir) });
   }
 
   function onWidth(id: string, px: number, commit: boolean) {
@@ -205,7 +205,7 @@ export function ColumnTable({
                 prev={shown[index - 1] ?? null}
                 widths={appliedWidths}
                 sort={sort}
-                onSort={() => onSort(column.id)}
+                onSort={(dir) => onSort(column.id, dir)}
                 onWidth={onWidth}
               />
             ))}
@@ -263,7 +263,7 @@ function ListColumnHeader({
   prev: ListColumn | null;
   widths: Record<string, number>;
   sort: ListSort | null;
-  onSort: () => void;
+  onSort: (dir: ListSortDir | null) => void;
   onWidth: (id: string, px: number, commit: boolean) => void;
 }) {
   const sortable = Boolean(column.label.trim());
@@ -285,25 +285,22 @@ function ListColumnHeader({
         />
       ) : null}
       {sortable ? (
-        <button
-          type="button"
-          onClick={onSort}
-          className="inline-flex min-w-0 max-w-full items-center gap-1 text-left font-semibold text-inherit hover:text-navy"
-          aria-label={`Sort by ${column.label}`}
-        >
-          <span className="truncate">{column.label}</span>
-          <span data-sheet-glyph className="inline-flex shrink-0" aria-hidden>
-            <ArrowUpDown
-              data-icon="none"
-              className={cn("size-3 text-muted-foreground/70", active && "hidden")}
-            />
-            <ArrowUp data-icon="asc" className={cn("size-3 text-navy", active !== "asc" && "hidden")} />
-            <ArrowDown
-              data-icon="desc"
-              className={cn("size-3 text-navy", active !== "desc" && "hidden")}
-            />
-          </span>
-        </button>
+        <div className="flex min-w-0 max-w-full items-center gap-1">
+          <span className="truncate font-semibold text-inherit">{column.label}</span>
+          <select
+            aria-label={`Sort ${column.label}`}
+            value={active ?? ""}
+            onChange={(event) => {
+              const next = event.target.value;
+              onSort(next === "asc" || next === "desc" ? next : null);
+            }}
+            className="h-6 max-w-[4.75rem] rounded border border-border bg-card px-1 text-[10px] font-semibold uppercase tracking-wide text-navy"
+          >
+            <option value="">{active ? "—" : ""}</option>
+            <option value="asc">ASC</option>
+            <option value="desc">DESC</option>
+          </select>
+        </div>
       ) : (
         <span className="sr-only">{column.label || "Select"}</span>
       )}

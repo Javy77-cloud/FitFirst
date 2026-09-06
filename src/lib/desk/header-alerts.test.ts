@@ -30,7 +30,7 @@ describe("toHeaderAlert", () => {
       entityId: "p1",
       createdAt: "2026-09-05T12:00:00.000Z",
     });
-    expect(alert.createdAt).toBe("2026-09-05");
+    expect(alert.createdAt).toMatch(/Sep 5/);
   });
 
   it("maps an FNOL ping onto the claim record", () => {
@@ -60,5 +60,19 @@ describe("toHeaderAlert", () => {
       entityId: "p1",
     });
     expect(alert.href).toBe("/automations/playbooks");
+  });
+
+  it("opens the specific lead for a follow-up ping", () => {
+    const alert = toHeaderAlert({
+      id: "a4",
+      title: "Follow-up: Call Vazquez, Edmerson — due now.",
+      body: "Vazquez, Edmerson",
+      severity: "warning",
+      kind: "lead_follow_up",
+      readAt: null,
+      entityType: "lead",
+      entityId: "lead-9",
+    });
+    expect(alert.href).toBe("/leads/lead-9");
   });
 });

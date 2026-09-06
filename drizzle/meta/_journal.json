@@ -533,6 +533,13 @@
       "when": 1788670000000,
       "tag": "0075_list_column_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1788680000000,
+      "tag": "0076_leads_sep6r_polish",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { notificationWhen } from "@/lib/desk/notifications";
+import { followUpLeadHref, notificationWhen } from "@/lib/desk/notifications";
 import { recordHref } from "@/lib/desk/record-href";
 
 export type HeaderAlert = {
@@ -30,7 +30,9 @@ export function toHeaderAlert(row: {
     severity: row.severity,
     kind: row.kind,
     read: Boolean(row.readAt),
-    href: recordHref(row.entityType, row.entityId),
+    href:
+      recordHref(row.entityType, row.entityId) ??
+      (row.kind === "lead_follow_up" ? followUpLeadHref(row.entityId) : null),
     createdAt: notificationWhen(row.createdAt),
   };
 }

@@ -161,7 +161,7 @@ export async function createLead(formData: FormData) {
     autoRoute,
   });
   revalidatePath("/leads");
-  redirect(`/leads/${lead.id}`);
+  redirect("/leads?saved=1");
 }
 
 export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL") {

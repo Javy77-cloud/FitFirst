@@ -9,6 +9,8 @@ import {
   columnMenuLabel,
   cycleListSort,
   defaultColumnWidth,
+  LEADS_DEFAULT_WIDTHS,
+  listSortForColumn,
   mergeColumnWidths,
   parseListSort,
   parseStoredColumnLayout,
@@ -145,6 +147,12 @@ describe("list column visibility", () => {
     expect(clampColumnWidth(10)).toBe(56);
     expect(clampColumnWidth(900)).toBe(720);
     expect(defaultColumnWidth({ id: "pick", label: "" })).toBe(44);
+    expect(defaultColumnWidth(LEADS_LIST_COLUMNS.find((column) => column.id === "name")!)).toBe(
+      LEADS_DEFAULT_WIDTHS.name,
+    );
+    expect(LEADS_DEFAULT_WIDTHS.name).toBeGreaterThanOrEqual(280);
+    expect(listSortForColumn("status", "desc")).toEqual({ key: "status", dir: "desc" });
+    expect(listSortForColumn("status", null)).toBeNull();
     expect(mergeColumnWidths(COLUMNS, { status: 200, gone: 180, name: "120" })).toEqual({
       status: 200,
       name: 120,

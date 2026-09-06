@@ -20,7 +20,7 @@ export function ContactActionButtons({
   email?: string | null;
 }) {
   return (
-    <div className="mt-1 flex flex-wrap gap-1" data-testid="lead-contact-actions">
+    <div className="mt-1 flex flex-nowrap gap-1" data-testid="lead-contact-actions">
       {CONTACT_ACTION_BUTTONS.map((action) => {
         const href = contactActionHref(action.kind, { phone, email });
         return (

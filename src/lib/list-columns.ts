@@ -8,6 +8,8 @@ export type ListColumn = {
   locked?: boolean;
   /** When false, hidden until the user turns it on. Default true. */
   defaultOn?: boolean;
+  /** Platform starting width. Per-user drag-resize overrides and persists. */
+  defaultWidth?: number;
 };
 
 export type ListSortDir = "asc" | "desc";
@@ -74,9 +76,15 @@ export function clampColumnWidth(px: number): number {
 }
 
 export function defaultColumnWidth(column: ListColumn): number {
+  if (column.defaultWidth != null) return clampColumnWidth(column.defaultWidth);
   if (column.id === "pick" || !column.label.trim()) return 44;
   const fromLabel = column.label.trim().length * 9 + 56;
   return clampColumnWidth(Math.max(112, Math.min(220, fromLabel)));
+}
+
+export function listSortForColumn(key: string, dir: ListSortDir | null): ListSort | null {
+  if (!key || !dir) return null;
+  return { key, dir };
 }
 
 export function mergeColumnWidths(
@@ -208,15 +216,27 @@ export function columnMenuLabel(column: ListColumn): string {
   return column.label.trim() || "Select";
 }
 
+/** Roomy Leads starting layout — name + Call/SMS/E-mail, temp chips, follow-up, clock. */
+export const LEADS_DEFAULT_WIDTHS = {
+  pick: 48,
+  name: 340,
+  status: 170,
+  source: 160,
+  timer: 150,
+  heat: 210,
+  followUp: 200,
+  shop: 140,
+} as const;
+
 export const LEADS_LIST_COLUMNS: ListColumn[] = [
-  { id: "pick", label: "", locked: true },
-  { id: "name", label: "Name", locked: true },
-  { id: "status", label: "Status" },
-  { id: "source", label: "Source" },
-  { id: "timer", label: "Response", locked: true },
-  { id: "heat", label: "Temp" },
-  { id: "followUp", label: "Follow-up" },
-  { id: "shop", label: "Convert" },
+  { id: "pick", label: "", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.pick },
+  { id: "name", label: "Name", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.name },
+  { id: "status", label: "Status", defaultWidth: LEADS_DEFAULT_WIDTHS.status },
+  { id: "source", label: "Source", defaultWidth: LEADS_DEFAULT_WIDTHS.source },
+  { id: "timer", label: "Response", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.timer },
+  { id: "heat", label: "Temp", defaultWidth: LEADS_DEFAULT_WIDTHS.heat },
+  { id: "followUp", label: "Follow-up", defaultWidth: LEADS_DEFAULT_WIDTHS.followUp },
+  { id: "shop", label: "Convert", defaultWidth: LEADS_DEFAULT_WIDTHS.shop },
 ];
 
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = [

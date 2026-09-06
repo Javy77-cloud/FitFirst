@@ -26,17 +26,17 @@ export const MAX_FOLLOW_UP_STEPS = 4;
 export const DEFAULT_FOLLOW_UP_TRIGGER = "default";
 
 export const TEMPLATE_TRIGGER_STATUSES = [
-  { value: "new", label: "new", templateName: "Hot" },
-  { value: "warm", label: "warm", templateName: "Warm" },
-  { value: "cold", label: "Cold (not interested)", templateName: "Cold" },
+  { value: "new", label: "new", templateName: "Aggressive" },
+  { value: "warm", label: "warm", templateName: "Steady" },
+  { value: "cold", label: "Cold (not interested)", templateName: "Drip" },
   { value: DEFAULT_FOLLOW_UP_TRIGGER, label: "Default", templateName: "Default" },
 ] as const;
 
-/** Per-lead Follow-up dropdown: Hot / Warm / Cold, then Default at the bottom. */
+/** Per-lead Follow-up dropdown: Aggressive / Steady / Drip, then Default. */
 export const FOLLOW_UP_OVERRIDE_OPTIONS = [
-  { triggerStatus: "new", label: "Hot" },
-  { triggerStatus: "warm", label: "Warm" },
-  { triggerStatus: "cold", label: "Cold (not interested)" },
+  { triggerStatus: "new", label: "Aggressive" },
+  { triggerStatus: "warm", label: "Steady" },
+  { triggerStatus: "cold", label: "Drip" },
   { triggerStatus: DEFAULT_FOLLOW_UP_TRIGGER, label: "Default" },
 ] as const;
 
@@ -162,7 +162,6 @@ export function followUpTemplateFullName(template: {
   name: string;
   triggerStatus: string;
 }): string {
-  if (template.triggerStatus === "cold") return "Cold (not interested)";
   const chip = followUpTemplateChipName(template);
   return template.name.trim() || chip;
 }

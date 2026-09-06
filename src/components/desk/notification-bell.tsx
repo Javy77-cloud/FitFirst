@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, Check } from "lucide-react";
 import { markAlertRead, markAllAlertsRead } from "@/app/actions/alerts";
 import { Button } from "@/components/ui/button";
 import type { HeaderAlert } from "@/lib/desk/header-alerts";
@@ -13,6 +13,7 @@ import {
   NOTIFICATION_EMPTY_PANEL,
   NOTIFICATION_IN_APP_COPY,
   notificationHref,
+  parseFollowUpNotification,
   recentNotifications,
 } from "@/lib/desk/notifications";
 import { cn } from "@/lib/utils";
@@ -119,40 +120,53 @@ export function NotificationBell({
               <p className="px-3 py-6 text-sm text-muted-foreground">{NOTIFICATION_EMPTY_PANEL}</p>
             ) : (
               <ul>
-                {recent.map((alert) => (
-                  <li
-                    key={alert.id}
-                    className="flex items-start gap-2 border-b border-border px-3 py-2 last:border-b-0"
-                    data-testid="notification-row"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => void openItem(alert)}
-                      className="min-w-0 flex-1 text-left"
+                {recent.map((alert) => {
+                  const copy = parseFollowUpNotification(alert);
+                  return (
+                    <li
+                      key={alert.id}
+                      className="flex items-start gap-2 border-b border-border px-3 py-2 last:border-b-0"
+                      data-testid="notification-row"
                     >
-                      <span className={cn("block truncate text-sm text-navy", !alert.read && "font-semibold")}>
-                        {alert.title}
-                      </span>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">{alert.body}</span>
-                      <span className="mt-0.5 block text-[11px] uppercase tracking-wide text-muted-foreground">
-                        {alert.kind}
-                        {alert.createdAt ? ` · ${alert.createdAt}` : ""}
-                        {alert.read ? " · read" : " · unread"}
-                      </span>
-                    </button>
-                    {!alert.read ? (
-                      <Button
+                      <button
                         type="button"
-                        size="xs"
-                        variant="ghost"
-                        className="shrink-0"
+                        aria-label={alert.read ? "Read" : "Mark as read"}
+                        disabled={alert.read}
                         onClick={() => void markOne(alert.id)}
+                        className={cn(
+                          "mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-sm",
+                          alert.read
+                            ? "text-fit-red/40"
+                            : "text-fit-red hover:bg-fit-red-bg",
+                        )}
                       >
-                        Mark as read
-                      </Button>
-                    ) : null}
-                  </li>
-                ))}
+                        <Check className="size-4" strokeWidth={2.75} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void openItem(alert)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span
+                          className={cn(
+                            "block truncate text-sm text-navy",
+                            !alert.read && "font-semibold",
+                          )}
+                        >
+                          {copy.action}
+                        </span>
+                        <span className="mt-0.5 block truncate text-sm text-navy/80">
+                          {copy.leadName}
+                        </span>
+                        {alert.createdAt ? (
+                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            {alert.createdAt}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

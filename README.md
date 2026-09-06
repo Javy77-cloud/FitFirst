@@ -4,7 +4,38 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6q`)
+## Mac test now (`cursor/live-ff-tip-sep6r`)
+
+Color standard plus Leads polish. Call / SMS / E-mail fills stay locked. Additive `0076_leads_sep6r_polish` only (template rename + reset Leads default widths). No AMS. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6r && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then the bell.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Locked fills | **Call** `#7A5C18` mustard, **SMS** `#AC401C` rust, **E-mail / Email** `#101C34` navy. White labels. Same tokens on Leads and Calendar toolbar. Not the green / orange / teal legend. |
+| 2 | Row dividers | Every Leads row has a light horizontal border. Rows do not blend. |
+| 3 | Default widths | Fresh session (or after migrate) starts roomy — name + Call/SMS/E-mail, Temp, Follow-up, Response, Status are not crammed left. Drag-resize still persists per user. |
+| 4 | Sort menu | Each sortable header has a small **ASC / DESC** dropdown. No up/down arrows. Idle shows no direction; picking one marks that column. |
+| 5 | Template names | Follow-up dropdown: **Aggressive**, **Steady**, **Drip**, **Default**. Default uses Aggressive steps. Temp badges and chips stay **Hot** (red), **Warm** (amber), **Cold** (blue). |
+| 6 | Notifications | Bell row: red check to mark read. Click a follow-up opens **that lead**. Copy like `Follow-up: Call Vazquez, Edmerson — due now.` Action line, lead name, timestamp. |
+| 7 | Save lead | Save lead shows **Lead saved.** then lands on the Leads list — not the new-lead form and not the detail page. |
+
+### Stub walls (paid APIs not wired)
+
+- **Email / text send** — queued or held on `comms_outbound_jobs` with `vendor=stub` / `paid_api_wall`. Nothing leaves the desk.
+- **Call** — in-app task + alert only. No trunk / PSTN. `tel:` opens the device dialer.
+- **Agent pings** — `alerts` table only. Email remind-via is an agent stub and never emails Javy.
+
+## Mac test prior (`cursor/live-ff-tip-sep6q`)
 
 Platform-standard Call / SMS / E-mail action fills. Leads row buttons and Calendar toolbar Call / Email / SMS share `CONTACT_ACTION_COLORS` so they cannot drift. No schema or migrate.
 

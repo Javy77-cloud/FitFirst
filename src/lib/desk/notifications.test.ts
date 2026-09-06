@@ -6,8 +6,11 @@ import {
   NOTIFICATION_EMPTY_PANEL,
   NOTIFICATION_IN_APP_COPY,
   RECENT_NOTIFICATION_LIMIT,
+  followUpLeadHref,
+  followUpNotificationTitle,
   notificationHref,
   notificationWhen,
+  parseFollowUpNotification,
   recentNotifications,
   unreadNotificationCount,
 } from "./notifications";
@@ -39,9 +42,36 @@ describe("notification board helpers", () => {
     expect(notificationHref("")).toBe(NOTIFICATION_BOARD_HREF);
   });
 
-  it("formats a day stamp for the panel and board", () => {
-    expect(notificationWhen("2026-09-05T14:00:00.000Z")).toBe("2026-09-05");
-    expect(notificationWhen(new Date("2026-08-01T00:00:00.000Z"))).toBe("2026-08-01");
+  it("formats a timestamp for the panel and board", () => {
+    expect(notificationWhen("2026-09-05T14:00:00.000Z")).toMatch(/Sep 5/);
+    expect(notificationWhen(new Date("2026-08-01T00:00:00.000Z"))).toMatch(/Aug 1/);
     expect(notificationWhen(null)).toBe("");
+  });
+
+  it("builds follow-up copy and opens that lead", () => {
+    expect(followUpNotificationTitle("call", "Vazquez, Edmerson")).toBe(
+      "Follow-up: Call Vazquez, Edmerson — due now.",
+    );
+    expect(followUpLeadHref("lead-1")).toBe("/leads/lead-1");
+    expect(
+      parseFollowUpNotification({
+        title: "Follow-up: Call Vazquez, Edmerson — due now.",
+        body: "Vazquez, Edmerson",
+        kind: "lead_follow_up",
+      }),
+    ).toEqual({
+      action: "Follow-up: Call — due now.",
+      leadName: "Vazquez, Edmerson",
+    });
+    expect(
+      parseFollowUpNotification({
+        title: "Follow-up due · text · Ruiz, Elena",
+        body: "old body",
+        kind: "lead_follow_up",
+      }),
+    ).toEqual({
+      action: "Follow-up: SMS — due now.",
+      leadName: "Ruiz, Elena",
+    });
   });
 });

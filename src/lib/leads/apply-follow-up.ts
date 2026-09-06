@@ -10,6 +10,7 @@ import {
   leads,
   users,
 } from "@/lib/db/schema";
+import { followUpNotificationTitle } from "@/lib/desk/notifications";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import {
   dueAtFromStep,
@@ -206,8 +207,9 @@ async function notifyAgentFollowUpDue(input: {
   dueAt: Date;
   ownerEmail: string | null;
 }): Promise<{ alertId: string | null; outboundJobId: string | null }> {
-  const title = `Follow-up due · ${input.method} · ${input.leadName}`;
-  const body = `${input.message || `A ${input.method} follow-up is due.`} Remind via ${remindViaLabel(input.remindVia)}. In-app preferred — nothing emailed Javy. ${outboundStubLabel(input.method)}`;
+  const title = followUpNotificationTitle(input.method, input.leadName);
+  const body = input.leadName;
+  const emailBody = `${input.message || `A ${input.method} follow-up is due.`} Remind via ${remindViaLabel(input.remindVia)}. In-app preferred — nothing emailed Javy. ${outboundStubLabel(input.method)}`;
   if (input.remindVia === "email" && shouldEmailAgentReminder(input.ownerEmail)) {
     const [job] = await db
       .insert(commsOutboundJobs)
@@ -217,7 +219,7 @@ async function notifyAgentFollowUpDue(input: {
         status: "held",
         toAddress: input.ownerEmail,
         subject: `Agent reminder · ${input.leadName}`,
-        body,
+        body: emailBody,
         leadId: input.lead.id,
         activityId: input.activityId,
         holdReason: PAID_API_WALL_REASON,

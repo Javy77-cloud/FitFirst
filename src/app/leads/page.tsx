@@ -35,6 +35,7 @@ import {
   LeadStatusSelect,
   LeadTemplateOverride,
 } from "@/components/leads/lead-queue-controls";
+import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function LeadsPage({
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "source", "temperature"]);
   const q = firstParam(params.q) ?? "";
+  const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
   const [all, templates] = await Promise.all([listLeads(), listFollowUpTemplates()]);
@@ -71,10 +73,11 @@ export default async function LeadsPage({
 
   return (
     <AppShell title="Leads">
+      <LeadSavedToast show={saved} />
       <p className="mb-3 text-base text-muted-foreground">
         Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-        First contact starts the timer and the Default template. Override stays on the row.
-        Status change swaps Warm or Cold.
+        First contact starts the timer and the Default template (Aggressive steps). Override stays
+        on the row. Status change swaps Steady or Drip. Temp badges stay Hot / Warm / Cold.
         Lost stays off this list until you search. Nurture parks until the contact-again date.
       </p>
       <LeadsQueueToolbar

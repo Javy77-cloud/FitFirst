@@ -270,7 +270,10 @@ body[data-ff-col-resize] {
 .ff-table tr:hover td {
   background: var(--ff-wash);
 }
-/* Leads queue only — neutral gray hover, never badge red / amber / blue. */
+/* Leads queue only — light row dividers + neutral gray hover, never badge colors. */
+.ff-leads-queue .ff-table tbody td {
+  border-bottom: 1px solid #cfc3b0;
+}
 .ff-leads-queue .ff-table tbody tr:hover td,
 .ff-leads-queue .ff-table tbody tr:hover td.ff-col-manage {
   background: #e8eaed;
