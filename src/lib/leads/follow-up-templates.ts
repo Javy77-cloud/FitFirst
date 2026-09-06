@@ -20,11 +20,26 @@ export const FOLLOW_UP_DELAY_UNIT_LABELS: Record<FollowUpDelayUnit, string> = {
   days: "days",
 };
 
-/** Snooze on the follow-up pop-up lightbox — hours or days only. */
-export const SNOOZE_DELAY_UNITS = ["hours", "days"] as const;
+/** Snooze presets on every reminder channel — 15 min / 1 hour / 1 day, plus Custom. */
+export const SNOOZE_DELAY_UNITS = ["minutes", "hours", "days"] as const;
 export type SnoozeDelayUnit = (typeof SNOOZE_DELAY_UNITS)[number];
+export const MAX_SNOOZE_MINUTES = 24 * 60 * 30;
 export const MAX_SNOOZE_HOURS = 24 * 30;
 export const MAX_SNOOZE_DAYS = 30;
+export const FOLLOW_UP_MODAL_REOPEN_MS = 10 * 60 * 1000;
+export const FOLLOW_UP_HIDE_COOKIE = "ff_follow_up_modal_hide";
+
+export const SNOOZE_PRESETS = [
+  { label: "15 min", amount: 15, unit: "minutes" as const },
+  { label: "1 hour", amount: 1, unit: "hours" as const },
+  { label: "1 day", amount: 1, unit: "days" as const },
+] as const;
+
+/**
+ * Future SMS vendor: inbound reply keyword `Snooze 1h` (also `Snooze 15m` / `Snooze 1d`)
+ * should call the same snooze path. Do not build an SMS vendor in this desk.
+ */
+export const SMS_SNOOZE_KEYWORD = "Snooze 1h";
 
 export function isSnoozeDelayUnit(value: string | null | undefined): value is SnoozeDelayUnit {
   return Boolean(value && (SNOOZE_DELAY_UNITS as readonly string[]).includes(value));
@@ -32,6 +47,10 @@ export function isSnoozeDelayUnit(value: string | null | undefined): value is Sn
 
 export function snoozeDueAt(now: Date, amount: number, unit: SnoozeDelayUnit): Date {
   const raw = Number.isFinite(amount) ? Math.round(amount) : 1;
+  if (unit === "minutes") {
+    const n = Math.min(MAX_SNOOZE_MINUTES, Math.max(1, raw));
+    return new Date(now.getTime() + n * 60 * 1000);
+  }
   if (unit === "days") {
     const n = Math.min(MAX_SNOOZE_DAYS, Math.max(1, raw));
     return new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
@@ -42,17 +61,17 @@ export function snoozeDueAt(now: Date, amount: number, unit: SnoozeDelayUnit): D
 
 export const MAX_FOLLOW_UP_STEPS = 4;
 
-/** Statuses that have a seeded follow-up template. new leads use Default until override. */
-export const DEFAULT_FOLLOW_UP_TRIGGER = "default";
+/** Default playbook is mapped to status contacted — not new, not a manual pick. */
+export const DEFAULT_FOLLOW_UP_TRIGGER = "contacted";
 
 export const TEMPLATE_TRIGGER_STATUSES = [
   { value: "new", label: "new", templateName: "Aggressive" },
   { value: "warm", label: "warm", templateName: "Steady" },
   { value: "cold", label: "Cold (not interested)", templateName: "Drip" },
-  { value: DEFAULT_FOLLOW_UP_TRIGGER, label: "Default", templateName: "Default" },
+  { value: DEFAULT_FOLLOW_UP_TRIGGER, label: "contacted", templateName: "Default" },
 ] as const;
 
-/** Per-lead Follow-up dropdown: Aggressive / Steady / Drip, then Default. */
+/** Per-lead Follow-up dropdown: Aggressive / Steady / Drip override Default. */
 export const FOLLOW_UP_OVERRIDE_OPTIONS = [
   { triggerStatus: "new", label: "Aggressive" },
   { triggerStatus: "warm", label: "Steady" },
@@ -144,35 +163,97 @@ export function normalizeFollowUpSteps(steps: FollowUpStepInput[]): FollowUpStep
   return next;
 }
 
+export function isDefaultFollowUpTrigger(value: string | null | undefined): boolean {
+  const raw = (value ?? "").trim().toLowerCase();
+  return raw === DEFAULT_FOLLOW_UP_TRIGGER || raw === "default";
+}
+
+export function isDefaultFollowUpTemplate(template: {
+  name?: string | null;
+  triggerStatus?: string | null;
+}): boolean {
+  if (isDefaultFollowUpTrigger(template.triggerStatus)) return true;
+  return (template.name ?? "").trim().toLowerCase() === "default";
+}
+
+export function findDefaultFollowUpTemplate<T extends FollowUpTemplateRecord>(templates: T[]): T | null {
+  const enabled = templates.filter((row) => row.enabled);
+  return (
+    enabled.find((row) => row.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER) ??
+    enabled.find((row) => isDefaultFollowUpTemplate(row)) ??
+    null
+  );
+}
+
+/** Clock and first Default step start only when status is contacted. */
+export function canStartFollowUpClock(status: string | null | undefined): boolean {
+  return (status ?? "").trim().toLowerCase() === "contacted";
+}
+
 export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
   templates: T[],
   lead: { followUpTemplateId?: string | null; status: string },
 ): T | null {
   const enabled = templates.filter((row) => row.enabled);
   if (lead.followUpTemplateId) {
-    return enabled.find((row) => row.id === lead.followUpTemplateId) ?? null;
+    const override = enabled.find((row) => row.id === lead.followUpTemplateId);
+    if (override && !isDefaultFollowUpTemplate(override)) return override;
   }
-  if (lead.status === "new") {
-    return (
-      enabled.find((row) => row.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER) ??
-      enabled.find((row) => row.triggerStatus === "new") ??
-      null
-    );
-  }
-  return enabled.find((row) => row.triggerStatus === lead.status) ?? null;
+  return findDefaultFollowUpTemplate(enabled);
 }
 
+/** Hold until status is contacted. Arrival, save, and first-contact stamps do not start the clock. */
 export function shouldHoldFollowUpUntilFirstContact(lead: {
   status: string;
   firstContactAt?: Date | string | null;
 }): boolean {
-  return !lead.firstContactAt && lead.status === "new";
+  return !canStartFollowUpClock(lead.status);
+}
+
+export function nextTemplateStep<T extends { sortOrder: number }>(
+  steps: T[],
+  afterSortOrder = -1,
+): T | null {
+  return [...steps].sort((a, b) => a.sortOrder - b.sortOrder).find((step) => step.sortOrder > afterSortOrder) ?? null;
+}
+
+export function followUpEmailSnoozeBody(basePath: string, queueId: string): string {
+  const root = basePath.replace(/\/$/, "");
+  return [
+    "Snooze this reminder:",
+    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=15&unit=minutes  (15 min)`,
+    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=1&unit=hours  (1 hour)`,
+    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=1&unit=days  (1 day)`,
+  ].join("\n");
+}
+
+export function parseFollowUpHideCookie(
+  value: string | null | undefined,
+): { alertId: string; until: number; leadId: string | null } | null {
+  if (!value) return null;
+  const [alertId, untilRaw, leadId] = value.split(":");
+  const until = Number(untilRaw);
+  if (!alertId || !Number.isFinite(until)) return null;
+  return { alertId, until, leadId: leadId || null };
+}
+
+export function shouldShowFollowUpModal(
+  alert: { id: string; readAt?: Date | string | null; entityId?: string | null },
+  hide: { alertId: string; until: number } | null,
+  pathname: string | null | undefined,
+  now = Date.now(),
+): boolean {
+  if (alert.readAt) return false;
+  if (hide && hide.alertId === alert.id && now < hide.until) return false;
+  if (alert.entityId && pathname === `/leads/${alert.entityId}`) return false;
+  return true;
 }
 
 export function followUpTemplateChipName(template: {
   name: string;
   triggerStatus: string;
 }): string {
+  if (isDefaultFollowUpTemplate(template)) return "Default";
   const trigger = TEMPLATE_TRIGGER_STATUSES.find((row) => row.value === template.triggerStatus);
   if (trigger) return trigger.templateName;
   return template.name;

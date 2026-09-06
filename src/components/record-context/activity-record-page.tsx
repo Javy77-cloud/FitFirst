@@ -5,6 +5,7 @@ import { RecordModuleMacros } from "@/components/developer-hub/record-module-mac
 import { AppShell } from "@/components/app-shell";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { FollowUpTaskSnooze } from "@/components/leads/follow-up-task-snooze";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,6 +105,9 @@ export async function ActivityRecordPage({
                     </dd>
                   </div>
                 </dl>
+                {activity.kind === "task" && /follow-up/i.test(activity.title) ? (
+                  <FollowUpTaskSnooze activityId={activity.id} />
+                ) : null}
                 <div className="mt-4">
                   <div className="text-caption uppercase text-muted-foreground">Description</div>
                   <p className="mt-1 whitespace-pre-wrap text-base text-muted-foreground">

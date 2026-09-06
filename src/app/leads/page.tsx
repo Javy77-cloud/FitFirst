@@ -65,10 +65,16 @@ export default async function LeadsPage({
   const followUps = await listLeadFollowUps(rows.map((lead) => lead.id));
   const dueCount = followUps.filter((row) => row.status === "queued" && row.dueAt.getTime() <= Date.now()).length;
   const nextByLead = new Map<string, Date>();
+  const releasedByLead = new Map<string, Date>();
   for (const item of followUps) {
-    if (item.status !== "queued") continue;
-    const current = nextByLead.get(item.leadId);
-    if (!current || item.dueAt < current) nextByLead.set(item.leadId, item.dueAt);
+    if (item.status === "queued") {
+      const current = nextByLead.get(item.leadId);
+      if (!current || item.dueAt < current) nextByLead.set(item.leadId, item.dueAt);
+    }
+    if (item.status === "released") {
+      const current = releasedByLead.get(item.leadId);
+      if (!current || item.dueAt > current) releasedByLead.set(item.leadId, item.dueAt);
+    }
   }
 
   return (
@@ -76,9 +82,9 @@ export default async function LeadsPage({
       <LeadSavedToast show={saved} />
       <p className="mb-3 text-base text-muted-foreground">
         Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-        First contact starts the timer and the Default template (Aggressive steps). Override stays
-        on the row. Status change swaps Steady or Drip. Temp badges stay Hot / Warm / Cold.
-        Lost stays off this list until you search. Nurture parks until the contact-again date.
+        Status contacted starts the Response clock and Default. Aggressive / Steady / Drip override
+        that lead. Temp badges stay Hot / Warm / Cold. Lost stays off this list until you search.
+        Nurture parks until the contact-again date.
       </p>
       <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -169,7 +175,7 @@ export default async function LeadsPage({
                   : "No open leads. Converted records are on Deals."
               }
               rows={rows.map((lead) => {
-                const nextDue = nextByLead.get(lead.id);
+                const nextDue = nextByLead.get(lead.id) ?? releasedByLead.get(lead.id);
                 const picked = pickTemplateForLead(templates, {
                   followUpTemplateId: lead.followUpTemplateId,
                   status: normalizeLeadStatus(lead.status),
@@ -182,9 +188,7 @@ export default async function LeadsPage({
                     name: `${lead.lastName}, ${lead.firstName}`,
                     status: normalizeLeadStatus(lead.status),
                     source: sourceLabel(lead.source),
-                    timer: lead.firstContactAt
-                      ? String(new Date(lead.firstContactAt).getTime())
-                      : "0",
+                    timer: nextDue ? String(nextDue.getTime()) : "0",
                     heat: lead.temperature ?? "hot",
                     followUp: picked ? followUpTemplateChipName(picked) : "",
                     shop: lead.convertedDealId ? "open" : "convert",
@@ -206,12 +210,7 @@ export default async function LeadsPage({
                       <LeadStatusSelect leadId={lead.id} status={normalizeLeadStatus(lead.status)} />
                     ),
                     source: sourceLabel(lead.source),
-                    timer: (
-                      <ResponseTimer
-                        createdAt={toIsoString(lead.createdAt) ?? new Date().toISOString()}
-                        firstContactAt={toIsoString(lead.firstContactAt)}
-                      />
-                    ),
+                    timer: <ResponseTimer dueAt={toIsoString(nextDue)} />,
                     heat: <LeadHeatToggle leadId={lead.id} temperature={lead.temperature} />,
                     followUp: (
                       <div className="space-y-1">

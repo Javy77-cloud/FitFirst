@@ -21,6 +21,7 @@ import { ContactActionButtons } from "@/components/desk/contact-action-buttons";
 import {
   DEFAULT_FOLLOW_UP_TRIGGER,
   FOLLOW_UP_OVERRIDE_OPTIONS,
+  isDefaultFollowUpTemplate,
   REMIND_VIA_CHANNELS,
   REMIND_VIA_LABELS,
 } from "@/lib/leads/follow-up-templates";
@@ -238,11 +239,15 @@ export function LeadTemplateOverride({
     setValue(templateId ?? "");
   }, [templateId]);
 
+  const defaultTemplate = templates.find((row) => isDefaultFollowUpTemplate(row));
   const overrides = FOLLOW_UP_OVERRIDE_OPTIONS.map((option) => {
-    const template = templates.find((row) => row.triggerStatus === option.triggerStatus);
+    const template =
+      option.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER
+        ? defaultTemplate
+        : templates.find((row) => row.triggerStatus === option.triggerStatus);
     return { ...option, templateId: template?.id ?? "" };
   });
-  const defaultId = overrides.find((row) => row.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER)?.templateId ?? "";
+  const defaultId = defaultTemplate?.id ?? "";
   const selected = value || defaultId;
 
   return (

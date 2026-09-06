@@ -141,24 +141,38 @@ export function matchesLeadQueueFilters<
 }
 
 export type ResponseTimerState = {
-  phase: "idle" | "counting";
+  phase: "idle" | "counting" | "overdue";
+  remainingMs: number;
   elapsedMs: number;
   overdue: boolean;
 };
 
-/** Clock is dark until first contact is logged. Arrival time is not a start. */
+/** Countdown to the live pending step. Red only after the deadline with no agent action. */
 export function responseTimerState(
-  _createdAt: Date | string,
-  firstContactAt: Date | string | null | undefined,
+  dueAt: Date | string | null | undefined,
   now: Date | string = new Date(),
 ): ResponseTimerState {
-  if (!firstContactAt) {
-    return { phase: "idle", elapsedMs: 0, overdue: false };
+  const due = dueAt ? new Date(dueAt).getTime() : Number.NaN;
+  if (!dueAt || Number.isNaN(due)) {
+    return { phase: "idle", remainingMs: 0, elapsedMs: 0, overdue: false };
   }
-  const start = new Date(firstContactAt).getTime();
   const current = new Date(now).getTime();
-  const elapsedMs = Math.max(0, current - start);
-  return { phase: "counting", elapsedMs, overdue: elapsedMs >= FIRST_CONTACT_SLA_MS };
+  const remainingMs = due - current;
+  if (remainingMs <= 0) {
+    return { phase: "overdue", remainingMs: 0, elapsedMs: Math.max(0, current - due), overdue: true };
+  }
+  return { phase: "counting", remainingMs, elapsedMs: 0, overdue: false };
+}
+
+export function formatCountdownClock(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 export function toIsoString(value: Date | string | null | undefined): string | null {

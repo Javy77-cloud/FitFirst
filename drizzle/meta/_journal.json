@@ -540,6 +540,13 @@
       "when": 1788680000000,
       "tag": "0076_leads_sep6r_polish",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1788690000000,
+      "tag": "0077_lead_follow_up_contacted",
+      "breakpoints": true
     }
   ]
 }

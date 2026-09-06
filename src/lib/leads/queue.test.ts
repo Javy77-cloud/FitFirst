@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatCountdownClock,
   formatElapsedClock,
   toIsoString,
   isConvertedLead,
@@ -108,20 +109,23 @@ describe("lead queue filters", () => {
 });
 
 describe("response timer", () => {
-  it("stays idle until first contact, then counts from that stamp", () => {
-    const created = new Date("2026-09-06T12:00:00Z");
-    const idle = responseTimerState(created, null, new Date("2026-09-06T12:30:00Z"));
+  it("counts down the live step delay and is red only when overdue", () => {
+    const due = new Date("2026-09-06T12:35:00Z");
+    const idle = responseTimerState(null, new Date("2026-09-06T12:30:00Z"));
     expect(idle.phase).toBe("idle");
-    expect(idle.elapsedMs).toBe(0);
     expect(idle.overdue).toBe(false);
-    const contact = new Date("2026-09-06T12:30:00Z");
-    const fourMin = responseTimerState(created, contact, new Date("2026-09-06T12:34:00Z"));
+    const fourMin = responseTimerState(due, new Date("2026-09-06T12:30:00Z"));
     expect(fourMin.phase).toBe("counting");
     expect(fourMin.overdue).toBe(false);
-    expect(formatElapsedClock(fourMin.elapsedMs)).toBe("4:00");
-    const sixMin = responseTimerState(created, contact, new Date("2026-09-06T12:36:00Z"));
-    expect(sixMin.overdue).toBe(true);
-    expect(toIsoString(contact)).toBe("2026-09-06T12:30:00.000Z");
+    expect(formatCountdownClock(fourMin.remainingMs)).toBe("5:00");
+    const oneSec = responseTimerState(due, new Date("2026-09-06T12:34:59Z"));
+    expect(formatCountdownClock(oneSec.remainingMs)).toBe("0:01");
+    const late = responseTimerState(due, new Date("2026-09-06T12:36:00Z"));
+    expect(late.overdue).toBe(true);
+    expect(late.phase).toBe("overdue");
+    expect(formatCountdownClock(late.remainingMs)).toBe("0:00");
+    expect(formatElapsedClock(4 * 60 * 1000)).toBe("4:00");
+    expect(toIsoString(due)).toBe("2026-09-06T12:35:00.000Z");
     expect(toIsoString("2026-09-06T12:30:00.000Z")).toBe("2026-09-06T12:30:00.000Z");
     expect(toIsoString(null)).toBeNull();
     expect(toIsoString("not-a-date")).toBeNull();

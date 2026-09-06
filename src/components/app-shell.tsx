@@ -10,12 +10,7 @@ import { SupportLauncher } from "@/components/support/help-center";
 import { SupportProvider } from "@/components/support/support-context";
 import { currentDeskSession, getActor } from "@/lib/auth/session";
 import type { Actor } from "@/lib/auth/rbac";
-import { AutomationAlertPopup } from "@/components/automations/alert-popup";
-import { FollowUpReminderPopup } from "@/components/leads/follow-up-reminder-popup";
-import { isPlaybookAlertKind } from "@/lib/automations/engine";
 import { toHeaderAlert } from "@/lib/desk/header-alerts";
-import { isFollowUpPopupKind } from "@/lib/desk/notifications";
-import { recordHref } from "@/lib/desk/record-href";
 import { listUsers, listAlerts } from "@/lib/db/queries";
 import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
 
@@ -52,10 +47,6 @@ export async function AppShell({
   }
   const unread = alertRows.filter((row) => !row.readAt).length;
   const headerAlerts = alertRows.map(toHeaderAlert);
-  const followUpPopup = alertRows.find((row) => !row.readAt && isFollowUpPopupKind(row.kind));
-  const popupAlert = followUpPopup
-    ? null
-    : alertRows.find((row) => !row.readAt && isPlaybookAlertKind(row.kind));
   const users: Actor[] = userRows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -100,30 +91,6 @@ export async function AppShell({
           />
           <main className="flex-1 p-5">{children}</main>
         </div>
-        <FollowUpReminderPopup
-          alert={
-            followUpPopup
-              ? {
-                  id: followUpPopup.id,
-                  title: followUpPopup.title,
-                  body: followUpPopup.body,
-                  leadId: followUpPopup.entityId,
-                }
-              : null
-          }
-        />
-        <AutomationAlertPopup
-          alert={
-            popupAlert
-              ? {
-                  id: popupAlert.id,
-                  title: popupAlert.title,
-                  body: popupAlert.body,
-                  href: recordHref(popupAlert.entityType, popupAlert.entityId),
-                }
-              : null
-          }
-        />
         <Suspense fallback={null}>
           <SupportLauncher />
         </Suspense>

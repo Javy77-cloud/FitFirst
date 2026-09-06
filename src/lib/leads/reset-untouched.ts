@@ -40,7 +40,7 @@ export async function resetLeadsWithoutLoggedContact() {
     WHERE tenant_id = ${DEFAULT_TENANT_ID}
       AND first_contact_at IS NULL
       AND converted_deal_id IS NULL
-      AND lower(coalesce(status, '')) NOT IN ('new', 'converted')
+      AND lower(coalesce(status, '')) NOT IN ('new', 'converted', 'contacted')
       AND NOT EXISTS (
         SELECT 1 FROM activities a
         WHERE a.lead_id = leads.id

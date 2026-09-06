@@ -151,6 +151,11 @@ export async function completeDeskActivity(formData: FormData) {
     durationSeconds,
   });
 
+  if (activity.leadId && /follow-up/i.test(activity.title)) {
+    const { completeLeadFollowUpAndAdvance } = await import("@/lib/leads/apply-follow-up");
+    await completeLeadFollowUpAndAdvance(activity.leadId).catch(() => null);
+  }
+
   revalidateRelated(activity);
   revalidatePath(`/tasks/${id}`);
   revalidatePath(`/meetings/${id}`);

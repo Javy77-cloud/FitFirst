@@ -1,19 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { leadFollowUpSteps, leadFollowUpTemplates, leads } from "@/lib/db/schema";
+import { leadFollowUpQueue, leadFollowUpSteps, leadFollowUpTemplates, leads } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { enqueueOutboundJob } from "@/lib/desk/outbound-queue";
 import {
   cancelLeadFollowUps,
+  completeLeadFollowUpAndAdvance,
   fireLeadFollowUpForStatus,
+  releaseDueLeadFollowUps,
+  rescheduleQueuedFromLiveTemplate,
   scheduleLeadNurtureReminder,
   snoozeLeadFollowUpAlert,
+  snoozeLeadFollowUpByActivity,
+  snoozeLeadFollowUpByQueue,
 } from "@/lib/leads/apply-follow-up";
 import {
+  canStartFollowUpClock,
+  FOLLOW_UP_HIDE_COOKIE,
+  FOLLOW_UP_MODAL_REOPEN_MS,
+  isDefaultFollowUpTemplate,
   isFollowUpMethod,
   isSnoozeDelayUnit,
   normalizeFollowUpSteps,
@@ -112,11 +122,19 @@ export async function overrideLeadFollowUpTemplate(formData: FormData) {
     .from(leads)
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!existing) return;
+  let nextId = templateId;
+  if (nextId) {
+    const [picked] = await db
+      .select()
+      .from(leadFollowUpTemplates)
+      .where(and(eq(leadFollowUpTemplates.tenantId, DEFAULT_TENANT_ID), eq(leadFollowUpTemplates.id, nextId)));
+    if (picked && isDefaultFollowUpTemplate(picked)) nextId = null;
+  }
   await db
     .update(leads)
-    .set({ followUpTemplateId: templateId, updatedAt: new Date() })
+    .set({ followUpTemplateId: nextId, updatedAt: new Date() })
     .where(eq(leads.id, leadId));
-  if (templateId) {
+  if (canStartFollowUpClock(existing.status)) {
     await fireLeadFollowUpForStatus(leadId, existing.status);
   }
   revalidateLeads(leadId);
@@ -157,13 +175,15 @@ export async function logLeadQueueContact(formData: FormData) {
     });
   }
   void PAID_API_WALL_REASON;
+  await completeLeadFollowUpAndAdvance(leadId);
   revalidateLeads(leadId);
 }
 
 export async function saveFollowUpTemplate(formData: FormData) {
   const id = str(formData, "templateId") || null;
   const name = str(formData, "name") || "Untitled template";
-  const triggerStatus = normalizeLeadStatus(str(formData, "triggerStatus") || "new");
+  const triggerRaw = str(formData, "triggerStatus") || "new";
+  const triggerStatus = triggerRaw === "default" || triggerRaw === "contacted" ? "contacted" : normalizeLeadStatus(triggerRaw);
   const enabled = str(formData, "enabled") !== "0";
   const steps = normalizeFollowUpSteps(
     [0, 1, 2, 3].map((index) => ({
@@ -176,6 +196,22 @@ export async function saveFollowUpTemplate(formData: FormData) {
   );
   const now = new Date();
   let templateId = id;
+  const sortOrderByQueueId = new Map<string, number>();
+  if (id) {
+    const [queued, existingSteps] = await Promise.all([
+      db
+        .select()
+        .from(leadFollowUpQueue)
+        .where(and(eq(leadFollowUpQueue.tenantId, DEFAULT_TENANT_ID), eq(leadFollowUpQueue.templateId, id))),
+      db.select().from(leadFollowUpSteps).where(eq(leadFollowUpSteps.templateId, id)),
+    ]);
+    const orderByStep = new Map(existingSteps.map((step) => [step.id, step.sortOrder]));
+    for (const item of queued) {
+      if (item.stepId && orderByStep.has(item.stepId)) {
+        sortOrderByQueueId.set(item.id, orderByStep.get(item.stepId)!);
+      }
+    }
+  }
   if (id) {
     await db
       .update(leadFollowUpTemplates)
@@ -208,6 +244,7 @@ export async function saveFollowUpTemplate(formData: FormData) {
       })),
     );
   }
+  if (templateId) await rescheduleQueuedFromLiveTemplate(templateId, now, sortOrderByQueueId);
   revalidateLeads();
 }
 
@@ -242,4 +279,51 @@ export async function deleteFollowUpTemplate(formData: FormData) {
     .delete(leadFollowUpTemplates)
     .where(and(eq(leadFollowUpTemplates.tenantId, DEFAULT_TENANT_ID), eq(leadFollowUpTemplates.id, id)));
   revalidateLeads();
+}
+
+export async function releaseDueLeadFollowUpsNow() {
+  const result = await releaseDueLeadFollowUps();
+  if (result.released > 0) {
+    revalidatePath("/");
+    revalidatePath("/leads");
+    revalidatePath("/notifications");
+  }
+  return result;
+}
+
+export async function hideFollowUpModalForLead(formData: FormData) {
+  const alertId = str(formData, "alertId");
+  const leadId = str(formData, "leadId");
+  if (!alertId) return;
+  const until = Date.now() + FOLLOW_UP_MODAL_REOPEN_MS;
+  const jar = await cookies();
+  jar.set(FOLLOW_UP_HIDE_COOKIE, `${alertId}:${until}:${leadId}`, {
+    path: "/",
+    maxAge: Math.ceil(FOLLOW_UP_MODAL_REOPEN_MS / 1000),
+    sameSite: "lax",
+  });
+}
+
+export async function snoozeLeadFollowUpFromQueue(formData: FormData) {
+  const queueId = str(formData, "queueId");
+  const amount = Number(str(formData, "amount"));
+  const unitRaw = str(formData, "unit");
+  if (!queueId || !Number.isFinite(amount) || !isSnoozeDelayUnit(unitRaw)) return;
+  const result = await snoozeLeadFollowUpByQueue(queueId, amount, unitRaw);
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/tasks");
+  if (result.leadId) revalidatePath(`/leads/${result.leadId}`);
+}
+
+export async function snoozeLeadFollowUpFromTask(formData: FormData) {
+  const activityId = str(formData, "activityId");
+  const amount = Number(str(formData, "amount"));
+  const unitRaw = str(formData, "unit");
+  if (!activityId || !Number.isFinite(amount) || !isSnoozeDelayUnit(unitRaw)) return;
+  const result = await snoozeLeadFollowUpByActivity(activityId, amount, unitRaw);
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/tasks");
+  if (result.leadId) revalidatePath(`/leads/${result.leadId}`);
 }
