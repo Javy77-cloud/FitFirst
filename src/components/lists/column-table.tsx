@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { isValidElement } from "react";
-import { Filter } from "lucide-react";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
@@ -358,8 +357,8 @@ function ListColumnHeader({
             initialQuery={initialQuery}
             placeholder="Search names…"
             aria-label={`Search ${headerText}`}
-            className="min-w-0 flex-1"
-            inputClassName="h-6 w-full min-w-0"
+            className="min-w-[7rem] flex-1"
+            inputClassName="h-6 w-full min-w-[7rem]"
             data-list-col-search={column.id}
           />
         </div>
@@ -412,17 +411,13 @@ function ColumnSortFilter({
         data-sorted={active ?? undefined}
         data-filtered={filterValue || undefined}
         className={cn(
-          "inline-flex size-6 shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0",
+          "inline-flex size-6 shrink-0 items-center justify-center rounded-md border-0 p-0",
           marked
-            ? "text-navy hover:bg-navy/10"
-            : "text-muted-foreground hover:bg-muted hover:text-navy",
+            ? "bg-navy/15 text-navy ring-1 ring-navy/40 hover:bg-navy/20"
+            : "bg-transparent text-muted-foreground hover:bg-muted hover:text-navy",
         )}
       >
-        <Filter
-          aria-hidden
-          data-filter-icon={marked ? "active" : "idle"}
-          className={cn("size-3.5", marked ? "fill-navy/30 text-navy" : "fill-none")}
-        />
+        <FunnelIcon active={marked} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[4.25rem] p-0.5">
         <DropdownMenuItem
@@ -479,6 +474,28 @@ function ColumnSortFilter({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function FunnelIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      aria-hidden
+      data-filter-icon={active ? "active" : "idle"}
+      className="size-4"
+    >
+      <path
+        d="M2.25 2.4h11.5L9.4 8.05v4.15L6.6 13.7V8.05L2.25 2.4Z"
+        fill={active ? "currentColor" : "none"}
+        fillOpacity={active ? 0.55 : 0}
+        stroke="currentColor"
+        strokeWidth="1.45"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

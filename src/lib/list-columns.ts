@@ -78,6 +78,7 @@ export function clampColumnWidth(px: number): number {
 export function defaultColumnWidth(column: ListColumn): number {
   if (column.defaultWidth != null) return clampColumnWidth(column.defaultWidth);
   if (column.id === "pick" || !column.label.trim()) return 44;
+  if (isLiveSearchColumn(column)) return 260;
   const fromLabel = column.label.trim().length * 9 + 56;
   return clampColumnWidth(Math.max(112, Math.min(220, fromLabel)));
 }

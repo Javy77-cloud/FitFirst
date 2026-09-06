@@ -151,6 +151,7 @@ describe("list column visibility", () => {
     expect(clampColumnWidth(10)).toBe(56);
     expect(clampColumnWidth(900)).toBe(720);
     expect(defaultColumnWidth({ id: "pick", label: "" })).toBe(44);
+    expect(defaultColumnWidth({ id: "name", label: "Name" })).toBe(260);
     expect(defaultColumnWidth(LEADS_LIST_COLUMNS.find((column) => column.id === "name")!)).toBe(
       LEADS_DEFAULT_WIDTHS.name,
     );
