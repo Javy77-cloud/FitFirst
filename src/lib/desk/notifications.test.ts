@@ -7,7 +7,9 @@ import {
   NOTIFICATION_IN_APP_COPY,
   RECENT_NOTIFICATION_LIMIT,
   followUpLeadHref,
+  followUpMethodFromTitle,
   followUpNotificationTitle,
+  isFollowUpPopupKind,
   notificationHref,
   notificationWhen,
   parseFollowUpNotification,
@@ -53,6 +55,10 @@ describe("notification board helpers", () => {
       "Follow-up: Call Vazquez, Edmerson — due now.",
     );
     expect(followUpLeadHref("lead-1")).toBe("/leads/lead-1");
+    expect(followUpMethodFromTitle("Follow-up: Call Vazquez, Edmerson — due now.")).toBe("call");
+    expect(followUpMethodFromTitle("Follow-up: SMS Ruiz, Elena — due now.")).toBe("text");
+    expect(isFollowUpPopupKind("lead_follow_up")).toBe(true);
+    expect(isFollowUpPopupKind("playbook")).toBe(false);
     expect(
       parseFollowUpNotification({
         title: "Follow-up: Call Vazquez, Edmerson — due now.",

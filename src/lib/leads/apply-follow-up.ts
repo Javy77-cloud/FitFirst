@@ -10,14 +10,16 @@ import {
   leads,
   users,
 } from "@/lib/db/schema";
-import { followUpNotificationTitle } from "@/lib/desk/notifications";
+import { followUpMethodFromTitle, followUpNotificationTitle } from "@/lib/desk/notifications";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import {
   dueAtFromStep,
   followUpMethodToActivityKind,
   isFollowUpDelayUnit,
   isFollowUpMethod,
+  isSnoozeDelayUnit,
   normalizeRemindVia,
+  snoozeDueAt,
   outboundStubLabel,
   PAID_API_WALL_REASON,
   pickTemplateForLead,
@@ -26,6 +28,7 @@ import {
   shouldHoldFollowUpUntilFirstContact,
   type FollowUpMethod,
   type RemindViaChannel,
+  type SnoozeDelayUnit,
 } from "@/lib/leads/follow-up-templates";
 import { leadStatusLabel, normalizeLeadStatus } from "@/lib/leads/queue";
 
@@ -289,6 +292,51 @@ export async function scheduleLeadNurtureReminder(
     updatedAt: now,
   });
   return { scheduled: 1 };
+}
+
+export async function snoozeLeadFollowUpAlert(
+  alertId: string,
+  amount: number,
+  unit: SnoozeDelayUnit,
+  now = new Date(),
+): Promise<{ queued: boolean; dueAt: Date | null; leadId: string | null }> {
+  if (!alertId || !isSnoozeDelayUnit(unit)) return { queued: false, dueAt: null, leadId: null };
+  const dueAt = snoozeDueAt(now, amount, unit);
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), eq(alerts.id, alertId)));
+  if (!alert || alert.kind !== "lead_follow_up") return { queued: false, dueAt: null, leadId: null };
+
+  const [released] = await db
+    .select()
+    .from(leadFollowUpQueue)
+    .where(and(eq(leadFollowUpQueue.tenantId, DEFAULT_TENANT_ID), eq(leadFollowUpQueue.alertId, alertId)));
+
+  const leadId = released?.leadId ?? alert.entityId;
+  if (!leadId) return { queued: false, dueAt: null, leadId: null };
+
+  const method = (
+    released && isFollowUpMethod(released.method) ? released.method : followUpMethodFromTitle(alert.title)
+  ) as FollowUpMethod;
+  const remindVia = normalizeRemindVia(released?.remindVia ?? "popup");
+
+  await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, alertId));
+  await db.insert(leadFollowUpQueue).values({
+    tenantId: DEFAULT_TENANT_ID,
+    leadId,
+    templateId: released?.templateId ?? null,
+    stepId: released?.stepId ?? null,
+    method,
+    message: released?.message ?? alert.body,
+    remindVia,
+    dueAt,
+    status: "queued",
+    activityId: released?.activityId ?? null,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return { queued: true, dueAt, leadId };
 }
 
 export function followUpDueSummary(count: number): string {

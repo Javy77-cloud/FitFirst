@@ -11,6 +11,7 @@ import {
   pickTemplateForLead,
   shouldEmailAgentReminder,
   shouldHoldFollowUpUntilFirstContact,
+  snoozeDueAt,
 } from "./follow-up-templates";
 
 const hot = { id: "hot", name: "Aggressive", triggerStatus: "new", enabled: true };
@@ -93,6 +94,13 @@ describe("follow-up templates", () => {
     expect(followUpMethodToActivityKind("text")).toBe("sms");
     expect(outboundStubLabel("email")).toMatch(/no paid email API/i);
     expect(outboundStubLabel("text")).toMatch(/no paid SMS API/i);
+  });
+
+  it("snoozes a follow-up by hours or days without losing the delay", () => {
+    const now = new Date("2026-09-06T12:00:00Z");
+    expect(snoozeDueAt(now, 2, "hours").toISOString()).toBe("2026-09-06T14:00:00.000Z");
+    expect(snoozeDueAt(now, 1, "days").toISOString()).toBe("2026-09-07T12:00:00.000Z");
+    expect(snoozeDueAt(now, 0, "hours").toISOString()).toBe("2026-09-06T13:00:00.000Z");
   });
 
   it("never emails Javy for an agent reminder channel", () => {

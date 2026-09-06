@@ -82,3 +82,15 @@ export function parseFollowUpNotification(alert: {
 export function followUpLeadHref(entityId?: string | null): string | null {
   return entityId?.trim() ? `/leads/${entityId}` : null;
 }
+
+export function followUpMethodFromTitle(title: string): "call" | "text" | "email" {
+  const parsed = parseFollowUpNotification({ title, body: "" });
+  const word = parsed.action.match(/^Follow-up:\s+(\S+)/)?.[1]?.toLowerCase() ?? "";
+  if (word === "sms" || word === "text") return "text";
+  if (word === "email" || word === "e-mail") return "email";
+  return "call";
+}
+
+export function isFollowUpPopupKind(kind: string | null | undefined): boolean {
+  return kind === "lead_follow_up";
+}

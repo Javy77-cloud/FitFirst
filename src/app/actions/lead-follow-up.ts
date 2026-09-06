@@ -11,9 +11,11 @@ import {
   cancelLeadFollowUps,
   fireLeadFollowUpForStatus,
   scheduleLeadNurtureReminder,
+  snoozeLeadFollowUpAlert,
 } from "@/lib/leads/apply-follow-up";
 import {
   isFollowUpMethod,
+  isSnoozeDelayUnit,
   normalizeFollowUpSteps,
   normalizeRemindVia,
   outboundStubLabel,
@@ -207,6 +209,19 @@ export async function saveFollowUpTemplate(formData: FormData) {
     );
   }
   revalidateLeads();
+}
+
+export async function snoozeLeadFollowUpReminder(formData: FormData) {
+  const alertId = str(formData, "alertId");
+  const amount = Number(str(formData, "amount"));
+  const unitRaw = str(formData, "unit");
+  if (!alertId || !Number.isFinite(amount) || !isSnoozeDelayUnit(unitRaw)) return;
+  const result = await snoozeLeadFollowUpAlert(alertId, amount, unitRaw);
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/notifications");
+  revalidatePath("/alerts");
+  if (result.leadId) revalidatePath(`/leads/${result.leadId}`);
 }
 
 export async function deleteFollowUpTemplate(formData: FormData) {

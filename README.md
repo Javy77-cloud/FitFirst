@@ -28,6 +28,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then the bell.
 | 5 | Template names | Follow-up dropdown: **Aggressive**, **Steady**, **Drip**, **Default**. Default uses Aggressive steps. Temp badges and chips stay **Hot** (red), **Warm** (amber), **Cold** (blue). |
 | 6 | Notifications | Bell row: red check to mark read. Click a follow-up opens **that lead**. Copy like `Follow-up: Call Vazquez, Edmerson — due now.` Action line, lead name, timestamp. |
 | 7 | Save lead | Save lead shows **Lead saved.** then lands on the Leads list — not the new-lead form and not the detail page. |
+| 8 | Snooze lightbox | An in-app follow-up pop-up shows **Snooze** (number + hours/days). Confirm dismisses the lightbox and reschedules the same reminder. Refresh does not lose the snooze. Mark as read and Open lead still work. |
 
 ### Stub walls (paid APIs not wired)
 

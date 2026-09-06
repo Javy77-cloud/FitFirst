@@ -20,6 +20,26 @@ export const FOLLOW_UP_DELAY_UNIT_LABELS: Record<FollowUpDelayUnit, string> = {
   days: "days",
 };
 
+/** Snooze on the follow-up pop-up lightbox — hours or days only. */
+export const SNOOZE_DELAY_UNITS = ["hours", "days"] as const;
+export type SnoozeDelayUnit = (typeof SNOOZE_DELAY_UNITS)[number];
+export const MAX_SNOOZE_HOURS = 24 * 30;
+export const MAX_SNOOZE_DAYS = 30;
+
+export function isSnoozeDelayUnit(value: string | null | undefined): value is SnoozeDelayUnit {
+  return Boolean(value && (SNOOZE_DELAY_UNITS as readonly string[]).includes(value));
+}
+
+export function snoozeDueAt(now: Date, amount: number, unit: SnoozeDelayUnit): Date {
+  const raw = Number.isFinite(amount) ? Math.round(amount) : 1;
+  if (unit === "days") {
+    const n = Math.min(MAX_SNOOZE_DAYS, Math.max(1, raw));
+    return new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
+  }
+  const n = Math.min(MAX_SNOOZE_HOURS, Math.max(1, raw));
+  return new Date(now.getTime() + n * 60 * 60 * 1000);
+}
+
 export const MAX_FOLLOW_UP_STEPS = 4;
 
 /** Statuses that have a seeded follow-up template. new leads use Default until override. */
