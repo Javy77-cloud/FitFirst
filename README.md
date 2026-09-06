@@ -4,9 +4,9 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Left rail + profile menu + customizer (this slice)
+## Left rail + profile menu + customizer (this tip)
 
-**`cursor/desk-nav-shell-1e87`** — navigation / shell only. No CRM page content changes. No migration.
+**`cursor/live-ff-tip-sep6-nav`** tips from **`cursor/desk-nav-shell-1e87`**, which already contains **`cursor/live-ff-tip-sep5f`**. Navigation / shell only on top of the live CRM+Quote desk. No CRM page content changes. No new migration. No seed. Do not seed Ana.
 
 Default rail, top → bottom: **Home**, **Leads**, **Deals** (Quotes nested), **Contacts** (no default submenu), **Policies**, **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks**, **Calendar**, **Templates** (email signatures / email templates / document templates), **Reports**, **Settings** (agency, admin only), **Admin** (admin only). Social, Merge, and other catalog extras stay addable in Customize — they are not default top-level. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **3**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
 
@@ -16,7 +16,7 @@ Customize menu: drag any row either direction (main ↔ folder). Drop-zone highl
 
 ## Leads Actions Delete + shared menu width (this slice)
 
-**`cursor/ff-leads-actions-delete-fb86`** — folded onto **`cursor/live-ff-tip-sep5f`**. No migration. No seed. No wipe.
+**`cursor/ff-leads-actions-delete-fb86`** — folded onto **`cursor/live-ff-tip-sep5f`**, then carried onto **`cursor/live-ff-tip-sep6-nav`**. No migration. No seed. No wipe.
 
 1. **Leads selection Actions** includes **Delete** (same list menu as Tasks). Double-confirm, then the lead row is removed. Linked shops stay (deal `lead_id` is cleared). Ana stays locked.
 2. **Actions dropdown** is `w-max` / `min-w-max` with no wrap on items, so every option sits on one line. Shared `DropdownMenu` + `SelectionActionsMenu` — every module list, not only Leads.
@@ -27,7 +27,7 @@ Customize menu: drag any row either direction (main ↔ folder). Drop-zone highl
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep5f && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6-nav && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -49,7 +49,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 
 ## Tip branch
 
-**`cursor/live-ff-tip-sep5f`** — follow tip on **`cursor/live-ff-tip-sep5e`**. Same live CRM+Quote desk, plus Leads Actions Delete and a wide Actions menu. Still includes:
+**`cursor/live-ff-tip-sep6-nav`** — follow tip on **`cursor/live-ff-tip-sep5f`**. Fast-forwarded from **`cursor/desk-nav-shell-1e87`** (sep5f is already an ancestor). Same live CRM+Quote desk, plus the signed left-rail / profile / customizer shell. Do **not** run `db:seed`. Still includes:
 
 1. **`cursor/ff-manage-columns-everywhere-8fac`** — Manage columns on every CRM data sheet (`DeskColumnTable` / `desk_column_prefs`).
 2. **`cursor/ff-remove-stubs-6086`** — drop demo theater (Get Started / Inbox / Support out of the rail; honest Connect walls).
@@ -61,6 +61,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 8. **`cursor/ff-nav-hide-items-d507`** — hide or show any primary rail module. Settings stays pinned and unhidable. Visibility lives on the same `nav_layout` blob as reorder.
 9. **`cursor/ff-live-typeahead-search-d2d4`** — header Smart Search typeaheads the book as you type. Module list filters use the same live-contains box.
 10. **`cursor/ff-leads-actions-delete-fb86`** — Leads list Delete (double confirm; shops stay; Ana locked). Shared Actions dropdown is `w-max` so labels do not wrap. Hard delete asks twice everywhere.
+11. **`cursor/desk-nav-shell-1e87`** — signed default rail (`NAV_LAYOUT_VERSION` **3**): Home, Leads, Deals(+Quotes), Contacts, Policies, Business collapsed, Carriers collapsed, divider, Tasks, Calendar, Templates(+3), Reports, Settings admin, Admin admin. Profile dropdown personal settings, Switch role audit, free DnD customizer, Reset to default, collapse top-right.
 
 Skipped for the next tip: AMS waves 10–16. No AMS on this merge.
 
@@ -80,7 +81,7 @@ Social stays under Home as a BYO connect wall (Settings → Social). Phone stays
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep5f && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6-nav && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -121,7 +122,7 @@ Default rail: **Home · Leads · Deals · Contacts · Policies · Business · Ca
 ### Air checkout (no wipe, skip seed)
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep5f && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6-nav && git pull
 npm install
 npm run db:migrate
 # if owners still null after prior import:
@@ -353,7 +354,7 @@ On Deal detail → **Documents**, source-doc upload is **half width** (`lg:grid-
 Extracted fields stay under the split. Page-right context rail is unchanged. No wipe.
 
 ```bash
-git fetch && git checkout cursor/live-ff-tip-sep5f && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6-nav && git pull
 npm install
 npm run db:migrate
 npm run dev -- --port 43147

@@ -1220,3 +1220,33 @@ npm run dev -- --port 43147
 ```
 
 Login **javy@fitfirst.local** / **javy**. Wipe keeps that user. Do not run `db:seed` after wipe.
+
+## LIVE-TEST tip Sep 6 nav (`cursor/live-ff-tip-sep6-nav`)
+
+One Mac Chrome tip for Javy’s Air nav-shell test. **`cursor/desk-nav-shell-1e87` already contains `cursor/live-ff-tip-sep5f`**, so this tip is taken FROM desk-nav-shell (no merge needed). Local and origin desk-nav-shell were the same commit (`b83daaf`). Did **not** seed Ana. Did **not** wipe. Zoho `db:wipe-crm` / `db:import-zoho` / `db:assign-owner` stay as on sep5f.
+
+Nav shell that landed on this tip (`NAV_LAYOUT_VERSION` **3**):
+
+- Default rail: Home, Leads, Deals(+Quotes), Contacts, Policies, Business collapsed, Carriers collapsed, divider, Tasks, Calendar, Templates(+ email signatures / email templates / document templates), Reports, Settings (admin), Admin (admin).
+- Profile avatar: Edit Profile, Password, Settings (`/me` personal only), Sign Out. Switch role stays Admin view-as and writes `role_switch` to the E&O trail.
+- Customize: free DnD either direction (main ↔ folder). Reset to default restores the signed rail (ahead of a pending save). Collapse control is top-right of the sidebar header.
+- Social / Merge stay catalog extras, not default top-level.
+
+Mac Chrome hygiene (unchanged):
+
+- No duplicate re-exports in `domain.ts`. No duplicate `OWNER_*` in `fixtures/ids.ts`.
+- Sidebar `#1d4e89` — never `#d6e8f8` / `#c5ddf4`.
+- Additive migrations only. Latest is `0070_nav_layout` (already on sep5f). This tip adds no SQL.
+
+```
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6-nav && git pull
+npm install
+npm run db:migrate
+# if owners still null after prior import:
+npm run db:assign-owner
+# skip db:seed — keep the live Zoho-imported book
+npm run dev -- --port 43147
+```
+
+Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
