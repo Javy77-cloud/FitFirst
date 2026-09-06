@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getActor } from "@/lib/auth/session";
 import { canAssignOwner } from "@/lib/auth/rbac";
-import { OWNER_ENTITY_TYPES, type OwnerEntityType } from "@/lib/domain";
+import { canTransferDeal, dealTransferNotification } from "@/lib/deals/transfer";
+import { DEFAULT_TENANT_ID, OWNER_ENTITY_TYPES, type OwnerEntityType } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { contacts, deals, leads, policies } from "@/lib/db/schema";
+import { alerts, contacts, deals, leads, policies, users } from "@/lib/db/schema";
 
 export async function assignOwner(formData: FormData) {
   const actor = await getActor();
@@ -34,4 +35,52 @@ export async function assignOwner(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath("/policies");
   if (entityType === "deal") revalidatePath(`/deals/${entityId}`);
+}
+
+/** Agents can hand a deal to a teammate. Receiver gets an in-app ping with one tap to open. */
+export async function transferDealOwner(formData: FormData) {
+  const actor = await getActor();
+  if (!canTransferDeal(actor)) return;
+
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const ownerId = String(formData.get("ownerId") ?? "").trim();
+  if (!dealId || !ownerId) return;
+
+  const [deal] = await db
+    .select()
+    .from(deals)
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, dealId)));
+  if (!deal) return;
+
+  const [target] = await db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, ownerId)));
+  if (!target) return;
+
+  await db
+    .update(deals)
+    .set({ ownerId: target.id, updatedAt: new Date() })
+    .where(eq(deals.id, deal.id));
+
+  if (target.id !== actor.id) {
+    const ping = dealTransferNotification({ dealTitle: deal.title, fromName: actor.name });
+    await db.insert(alerts).values({
+      tenantId: DEFAULT_TENANT_ID,
+      kind: "deal_transfer",
+      title: ping.title,
+      body: ping.body,
+      severity: "info",
+      entityType: "deal",
+      entityId: deal.id,
+      userId: target.id,
+      recipientUserId: target.id,
+    });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${deal.id}`);
+  revalidatePath("/notifications");
+  revalidatePath("/alerts");
 }

@@ -71,14 +71,15 @@ describe("list column visibility", () => {
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")?.locked).toBe(true);
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "stage", "esign", "comms"]),
+      expect.arrayContaining(["pick", "title", "stage", "esign", "comms", "value"]),
     );
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")?.label).toBe("Value");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("city");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("premium");
     expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "actions")?.locked).toBe(true);
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "city", "premium", "esign"]),
+      expect.arrayContaining(["pick", "title", "city", "value", "premium", "esign"]),
     );
   });
 

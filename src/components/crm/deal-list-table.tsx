@@ -170,7 +170,13 @@ export function DealListTable({
                     </td>
                     <td data-col="state" data-sheet-col="state">{deal.state}</td>
                     <td data-col="city" data-sheet-col="city">{risk?.city ?? contact?.city ?? "—"}</td>
-                    <td data-col="coverageA" data-sheet-col="coverageA" data-sort={risk?.coverageA ?? ""}>
+                    <td
+                      data-col="coverageA"
+                      data-sheet-col="coverageA"
+                      data-sort={risk?.coverageA == null ? "" : String(risk.coverageA)}
+                      data-sheet-cell={risk?.coverageA == null ? "" : String(risk.coverageA)}
+                      data-sheet-table-tax=""
+                    >
                       {risk?.coverageA != null ? formatMoney(risk.coverageA) : "—"}
                     </td>
                     <td data-col="updated" data-sheet-col="updated">{formatIsoDate(deal.updatedAt)}</td>

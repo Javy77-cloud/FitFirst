@@ -5,6 +5,7 @@ import { PipelineFunnelView } from "@/components/pipeline/funnel-view";
 import { PipelineKanban } from "@/components/pipeline/kanban";
 import { PipelineStageEditor } from "@/components/pipeline/stage-editor";
 import { PipelineTableView } from "@/components/pipeline/table-view";
+import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { PipelineViewId } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
@@ -14,12 +15,14 @@ export function PipelineWorkspace({
   view,
   stageFilter,
   canEditStages = false,
+  agents = [],
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   view: PipelineViewId;
   stageFilter?: string | null;
   canEditStages?: boolean;
+  agents?: DeskUserOption[];
 }) {
   const hint =
     board.slug === "won-lost"
@@ -40,11 +43,11 @@ export function PipelineWorkspace({
       </div>
       {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
       {view === "table" ? (
-        <PipelineTableView board={board} cards={cards} stageFilter={stageFilter} />
+        <PipelineTableView board={board} cards={cards} stageFilter={stageFilter} agents={agents} />
       ) : view === "funnel" ? (
         <PipelineFunnelView board={board} cards={cards} />
       ) : (
-        <PipelineKanban board={board} cards={cards} />
+        <PipelineKanban board={board} cards={cards} agents={agents} />
       )}
     </div>
   );

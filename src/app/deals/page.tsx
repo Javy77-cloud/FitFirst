@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
-import { DealStageChips, DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
+import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealsTable } from "@/components/deals/deals-table";
 import { PipelineCreateDealForm } from "@/components/pipeline/create-deal-form";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
@@ -13,7 +13,7 @@ import {
   listDealLookup,
   listDeals,
   listPartyTypeahead,
-  listUsersById,
+  listUsers,
   type DealListFilter,
 } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -55,7 +55,7 @@ export default async function DealsPage({
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || (view === "table" ? undefined : "p-c");
-  const [boardData, listRows, users, lineSettings, lookup, parties] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, lookup, parties] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
@@ -67,7 +67,7 @@ export default async function DealsPage({
       : view === "table" && !pipeline
         ? listDeals(filter)
         : Promise.resolve(null),
-    listUsersById(),
+    listUsers(),
     loadDeskLineSettings(),
     listDealLookup(),
     listPartyTypeahead(),
@@ -80,6 +80,8 @@ export default async function DealsPage({
       : view === "table" && boardData
         ? boardData.cards
         : [];
+  const users = new Map(userRows.map((user) => [user.id, user.name]));
+  const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
   const presented = (boardData?.cards ?? []).map(presentPipelineCard);
   const board = boardData?.board ?? null;
   const notice = first(params.notice);
@@ -103,6 +105,7 @@ export default async function DealsPage({
   return (
     <AppShell
       title="Deals"
+      eyebrow=""
       actions={
         <Link href="/deals/new" className={cn(buttonVariants())}>
           New shopping deal
@@ -132,7 +135,6 @@ export default async function DealsPage({
         healthSub={filter.healthSub}
         attention={filter.attention}
         settings={settings}
-        initialQuery={q}
       />
 
       {board && board.kind === "shopping" && (pipeline || view !== "table") ? (
@@ -146,18 +148,9 @@ export default async function DealsPage({
         />
       ) : null}
 
-      {board && pipeline ? (
-        <DealStageChips
-          stages={board.stages}
-          pipeline={board.slug}
-          stage={stage}
-          lifeSub={filter.lifeSub}
-          healthSub={filter.healthSub}
-          pcSub={filter.pcSub}
-          family={filter.family}
-          attention={filter.attention}
-        />
-      ) : null}
+      <div className="mb-4">
+        <DealDocsUpload deals={lookup} parties={parties} />
+      </div>
 
       {view === "table" ? (
         <>
@@ -174,14 +167,12 @@ export default async function DealsPage({
               </Link>
             </p>
           ) : null}
-          <div className="mb-4">
-            <DealDocsUpload deals={lookup} parties={parties} />
-          </div>
-          <DealsTable rows={tableRows} users={users} initialQuery={q} />
+          <DealsTable rows={tableRows} users={users} agents={agents} initialQuery={q} />
         </>
       ) : board ? (
         <PipelineWorkspace
           canEditStages={session.isAdmin}
+          agents={agents}
           board={{
             id: board.id,
             slug: board.slug,

@@ -1,8 +1,5 @@
 import Link from "next/link";
-import { LiveContainsInput } from "@/components/search/live-contains-input";
-import { StagePill } from "@/components/fit-badge";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
-import { cn } from "@/lib/utils";
 import {
   dealsHref,
   parsePipelineView,
@@ -45,7 +42,6 @@ export function DealWorkspaceBar({
   healthSub,
   attention,
   settings,
-  initialQuery = "",
 }: {
   boards: BoardTab[];
   pipeline?: string | null;
@@ -57,7 +53,6 @@ export function DealWorkspaceBar({
   healthSub?: string | null;
   attention?: string | null;
   settings: DeskLineSettings;
-  initialQuery?: string;
 }) {
   const parsedView = parsePipelineView(view);
   const extras = {
@@ -120,7 +115,10 @@ export function DealWorkspaceBar({
             {pipelineTabLabel(item)}
           </Link>
         ))}
-        <span className="ml-auto flex gap-3">
+        <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="Pipeline">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Pipeline
+          </span>
           {VIEWS.map(([id, label]) => (
             <Link
               key={id}
@@ -165,62 +163,6 @@ export function DealWorkspaceBar({
           })}
         </div>
       ) : null}
-      <div className="flex flex-wrap items-end gap-2">
-        <LiveContainsInput
-          moduleId="deals"
-          initialQuery={initialQuery}
-          placeholder="Contains deal, contact, phone…"
-          aria-label="Search deals"
-          inputClassName="h-8 w-56 text-sm"
-        />
-      </div>
-    </div>
-  );
-}
-
-export function DealStageChips({
-  stages,
-  pipeline,
-  stage,
-  lifeSub,
-  healthSub,
-  pcSub,
-  family,
-  attention,
-}: {
-  stages: Array<{ id: string; slug: string; name: string; color?: string | null }>;
-  pipeline: string;
-  stage?: string | null;
-  lifeSub?: string | null;
-  healthSub?: string | null;
-  pcSub?: string | null;
-  family?: string | null;
-  attention?: string | null;
-}) {
-  if (stages.length === 0) return null;
-  return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Stages
-      </span>
-      {stages.map((item) => (
-        <Link
-          key={item.id}
-          href={dealsHref({
-            pipeline,
-            view: "table",
-            stage: item.slug,
-            lifeSub,
-            healthSub,
-            pcSub,
-            family,
-            attention,
-          })}
-          className={cn(stage === item.slug && "rounded-sm ring-2 ring-primary")}
-        >
-          <StagePill stage={item.name} color={item.color} />
-        </Link>
-      ))}
     </div>
   );
 }

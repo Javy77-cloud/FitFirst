@@ -8,14 +8,17 @@ import { PipelineDealCard } from "@/components/pipeline/deal-card";
 import { StagePill } from "@/components/fit-badge";
 import { cn } from "@/lib/utils";
 import { collapsedStorageKey, dealMatchesStage, parseCollapsedStages } from "@/lib/wire/pipeline";
+import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineKanban({
   board,
   cards,
+  agents = [],
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
+  agents?: DeskUserOption[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -116,6 +119,7 @@ export function PipelineKanban({
                       stageName={stage.name}
                       stageColor={"color" in stage ? stage.color : undefined}
                       showArchive={board.slug !== "archive"}
+                      agents={agents}
                     />
                   ))
                 )}

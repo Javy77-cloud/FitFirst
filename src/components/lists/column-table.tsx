@@ -38,6 +38,7 @@ import {
   type ListSortDir,
 } from "@/lib/list-columns";
 import { matchesContains } from "@/lib/search/live-query";
+import { sheetAttr, sheetCellProps } from "@/lib/desk/sheet-attr";
 import { cn } from "@/lib/utils";
 
 export type { ListColumn };
@@ -288,7 +289,8 @@ export function ColumnTable({
                   <td
                     key={column.id}
                     data-sheet-col={column.id}
-                    data-sort={rowSortValue(row, column.id) || undefined}
+                    data-sort={sheetAttr(rowSortValue(row, column.id))}
+                    {...sheetCellProps(moduleId, rowSortValue(row, column.id))}
                   >
                     {row.cells[column.id]}
                   </td>

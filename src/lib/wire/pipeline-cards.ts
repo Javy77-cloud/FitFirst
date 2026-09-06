@@ -20,6 +20,7 @@ export type PipelineCardView = {
   contactId: string | null;
   leadId: string | null;
   accountId: string | null;
+  ownerId: string | null;
   updatedAt: string | null;
   boundAt: string | null;
   archivedAt: string | null;
@@ -56,6 +57,7 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
     contactId: deal.contactId,
     leadId: deal.leadId,
     accountId: deal.accountId,
+    ownerId: deal.ownerId,
     updatedAt: iso(deal.updatedAt),
     boundAt: iso(deal.boundAt),
     archivedAt: iso(deal.archivedAt),

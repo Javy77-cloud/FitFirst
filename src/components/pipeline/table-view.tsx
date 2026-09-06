@@ -9,6 +9,8 @@ import { ColumnTable } from "@/components/lists/column-table";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
+import type { DeskUserOption } from "@/lib/deals/transfer";
+import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { PIPELINE_LIST_COLUMNS } from "@/lib/list-columns";
 import { dealMatchesStage, pipelineHref } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
@@ -17,10 +19,12 @@ export function PipelineTableView({
   board,
   cards,
   stageFilter,
+  agents = [],
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   stageFilter?: string | null;
+  agents?: DeskUserOption[];
 }) {
   const labels = new Map(board.stages.map((stage) => [stage.slug, stage.name]));
   const colors = new Map(board.stages.map((stage) => [stage.slug, stage.color]));
@@ -51,6 +55,22 @@ export function PipelineTableView({
         }
         rows={filtered.map((deal) => ({
           key: deal.id,
+          sort: {
+            title: sheetAttr(deal.title),
+            insured: sheetAttr(deal.insured),
+            phone: sheetAttr(deal.phone),
+            email: sheetAttr(deal.email),
+            address: sheetAttr(deal.address),
+            line: sheetAttr(deal.lineOfBusiness),
+            state: sheetAttr(deal.state),
+            city: sheetAttr(deal.city),
+            coverageA: sheetAttr(deal.coverageA),
+            carrier: sheetAttr(deal.carrier),
+            stage: sheetAttr(deal.pipelineStage),
+            updated: sheetAttr(deal.updatedAt),
+            bound: sheetAttr(deal.boundAt),
+            actions: "",
+          },
           cells: {
             title: (
               <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
@@ -81,7 +101,10 @@ export function PipelineTableView({
                 email={deal.email}
                 homeAddress={deal.address}
                 contactId={deal.contactId}
+                accountId={deal.accountId}
                 leadId={deal.leadId}
+                ownerId={deal.ownerId}
+                users={agents}
               />
             ),
           },

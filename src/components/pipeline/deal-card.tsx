@@ -11,6 +11,7 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
 import { isClosedWonStage } from "@/lib/wire/pipeline";
+import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineDealCard({
@@ -18,11 +19,13 @@ export function PipelineDealCard({
   stageName,
   stageColor,
   showArchive,
+  agents = [],
 }: {
   deal: PipelineCardView;
   stageName?: string;
   stageColor?: string | null;
   showArchive?: boolean;
+  agents?: DeskUserOption[];
 }) {
   const line =
     LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness;
@@ -84,7 +87,10 @@ export function PipelineDealCard({
           email={deal.email}
           homeAddress={deal.address}
           contactId={deal.contactId}
+          accountId={deal.accountId}
           leadId={deal.leadId}
+          ownerId={deal.ownerId}
+          users={agents}
         />
       </div>
       {showArchive && isClosedWonStage(deal.pipelineStageSlug ?? deal.pipelineStage) ? (

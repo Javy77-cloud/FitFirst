@@ -4,7 +4,39 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6x`)
+## Mac test now (`cursor/live-ff-tip-sep6z`)
+
+Deals page only. Rebased onto lead-detail tip `sep6x` (`93e6178`) which already sits on clock/follow-up `sep6w`. Do not retouch lead detail, documents-per-line, or the clock. Title is **Deals** (no Personal Lines Worksheet). Stage chips above the table are gone. Upload block is on Table, Board, and Funnel: **Search deals** typeahead, **Choose file** button, filename + trash, **+ Add file**. P&C / Health / Life chips stay with expandable subs. Settings · Macros is off the deals toolbar. Row actions light Call / SMS / Text only with a phone, Email only with an email. Agents get **Change owner** with `Transfer this deal to {name}? They'll own all follow-ups from now on.` — receiver gets an in-app ping (deal name, who handed it over, tap to open). **Send quote** and **Add task** sit on the row. **Value** column uses premium / coverage amount. `data-sort`, `data-sheet-cell`, and `data-sheet-table-tax` are always strings (`""` when empty). View switcher is labeled **Pipeline** (Table / Board / Funnel). No new migrate on this tip. Their `0079_documents_lead_id` is already on the branch. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6z && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Title | Header says **Deals**. No “Personal lines worksheet” caption on this page. |
+| 2 | Stages row | No Stages chip row above the table. Stage still shows in each row’s Stage column. |
+| 3 | Upload on every view | Table, Board, and Funnel all show the same Upload documents block in the same place. |
+| 4 | Choose file | Control is a **Choose file** button — not “Choose Files” text. Picked file shows name + trash can. **+ Add file** adds another file on the same deal. |
+| 5 | Search deals | Field labeled **Search deals**. Type a deal name, pick it, files attach. Filters this page only — not the global top-bar search. |
+| 6 | LOB chips | P&C / Health / Life still expand (Home, Auto, Flood under P&C, etc.). |
+| 7 | Toolbar | Settings and Macros are gone from the deals table toolbar. |
+| 8 | Comms | Call / SMS / Text light only when the deal has a phone. Email lights only when an email exists. |
+| 9 | Change owner | Agents see **Change owner**. Confirm reads `Transfer this deal to {name}? They'll own all follow-ups from now on.` |
+| 10 | Transfer ping | Receiving agent gets a notification: deal name, who handed it over, one tap opens the deal. |
+| 11 | Extra actions | **Send quote** and **Add task** are on the row. |
+| 12 | Value | Table has a **Value** column (premium or estimated value). |
+| 13 | Hydration | No null `data-sort` / `data-sheet-cell` / `data-sheet-table-tax`. Empty cells are `""`. |
+| 14 | Pipeline | View switcher is labeled **Pipeline** with Table / Board / Funnel. |
+
+## Mac test prior (`cursor/live-ff-tip-sep6x`)
 
 Lead detail two-column layout, documents per line of interest, and one-click Lead ↔ Deal links. Rebased onto live clock/follow-up tip `sep6w` (`c42b4e2`) — clock / follow-up / Default templates / notification modal / Operations nav stay theirs. Additive `0079_documents_lead_id` only (nullable `documents.lead_id`). Line is stored on existing `documents.tags` as `line:home`. Their `0078_default_first_step_popup` is already on this branch. No seed wipe.
 

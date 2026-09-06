@@ -1,5 +1,6 @@
 import { logDeskActivity } from "@/app/actions/activities-desk";
 import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
+import { cn } from "@/lib/utils";
 
 export function DealRowComms({
   dealId,
@@ -14,6 +15,8 @@ export function DealRowComms({
   phone?: string | null;
   email?: string | null;
 }) {
+  const hasPhone = Boolean(phone?.trim());
+  const hasEmail = Boolean(email?.trim());
   return (
     <div className="flex flex-wrap gap-1">
       <CommsButton
@@ -23,19 +26,43 @@ export function DealRowComms({
         dealId={dealId}
         contactId={contactId}
         accountId={accountId}
-        notes={phone ? `Dial ${phone} (logged note — no live trunk).` : "Logged call from deals list."}
+        enabled={hasPhone}
+        notes={hasPhone ? `Dial ${phone} (logged note — no live trunk).` : "Logged call from deals list."}
       />
       <SmsButton
-        label="SMS task"
+        label="SMS"
         dealId={dealId}
         contactId={contactId}
         accountId={accountId}
         phone={phone}
+        enabled={hasPhone}
         asTask
       />
-      <SmsButton label="Text" dealId={dealId} contactId={contactId} accountId={accountId} phone={phone} />
-      <EmailButton dealId={dealId} contactId={contactId} accountId={accountId} email={email} />
+      <SmsButton
+        label="Text"
+        dealId={dealId}
+        contactId={contactId}
+        accountId={accountId}
+        phone={phone}
+        enabled={hasPhone}
+      />
+      <EmailButton
+        dealId={dealId}
+        contactId={contactId}
+        accountId={accountId}
+        email={email}
+        enabled={hasEmail}
+      />
     </div>
+  );
+}
+
+function actionClass(enabled: boolean) {
+  return cn(
+    "rounded border px-1.5 py-0.5 text-[11px]",
+    enabled
+      ? "border-primary/40 bg-primary/10 font-medium text-primary hover:bg-primary/15"
+      : "cursor-not-allowed border-border text-muted-foreground opacity-50",
   );
 }
 
@@ -47,6 +74,7 @@ function CommsButton({
   contactId,
   accountId,
   notes,
+  enabled,
 }: {
   kind: string;
   label: string;
@@ -55,6 +83,7 @@ function CommsButton({
   contactId?: string | null;
   accountId?: string | null;
   notes: string;
+  enabled: boolean;
 }) {
   return (
     <form action={logDeskActivity}>
@@ -66,7 +95,7 @@ function CommsButton({
       <input type="hidden" name="dealId" value={dealId} />
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
-      <button type="submit" className="rounded border border-border px-1.5 py-0.5 text-[11px] text-primary hover:bg-secondary">
+      <button type="submit" disabled={!enabled} className={actionClass(enabled)}>
         {label}
       </button>
     </form>
@@ -80,6 +109,7 @@ function SmsButton({
   accountId,
   phone,
   asTask,
+  enabled,
 }: {
   label: string;
   dealId: string;
@@ -87,6 +117,7 @@ function SmsButton({
   accountId?: string | null;
   phone?: string | null;
   asTask?: boolean;
+  enabled: boolean;
 }) {
   const body = phone ? `Texted ${phone}` : "Text message logged from deals list.";
   if (asTask) {
@@ -98,7 +129,7 @@ function SmsButton({
         <input type="hidden" name="dealId" value={dealId} />
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
-        <button type="submit" className="rounded border border-border px-1.5 py-0.5 text-[11px] text-primary hover:bg-secondary">
+        <button type="submit" disabled={!enabled} className={actionClass(enabled)}>
           {label}
         </button>
       </form>
@@ -112,7 +143,7 @@ function SmsButton({
       <input type="hidden" name="dealId" value={dealId} />
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
-      <button type="submit" className="rounded border border-border px-1.5 py-0.5 text-[11px] text-primary hover:bg-secondary">
+      <button type="submit" disabled={!enabled} className={actionClass(enabled)}>
         {label}
       </button>
     </form>
@@ -124,11 +155,13 @@ function EmailButton({
   contactId,
   accountId,
   email,
+  enabled,
 }: {
   dealId: string;
   contactId?: string | null;
   accountId?: string | null;
   email?: string | null;
+  enabled: boolean;
 }) {
   return (
     <form action={sendDeskEmail}>
@@ -138,7 +171,7 @@ function EmailButton({
       <input type="hidden" name="dealId" value={dealId} />
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
-      <button type="submit" className="rounded border border-border px-1.5 py-0.5 text-[11px] text-primary hover:bg-secondary">
+      <button type="submit" disabled={!enabled} className={actionClass(enabled)}>
         Email
       </button>
     </form>

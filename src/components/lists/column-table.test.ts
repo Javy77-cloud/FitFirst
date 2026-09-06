@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { cellSortText, rowSortValue, type ColumnRow } from "./column-table";
 
 describe("shared list table sort values", () => {
@@ -12,5 +13,7 @@ describe("shared list table sort values", () => {
     expect(rowSortValue(row, "status")).toBe("new");
     expect(rowSortValue(row, "extra")).toBe("12");
     expect(cellSortText(["Last", "First"])).toBe("Last First");
+    expect(sheetAttr(rowSortValue(row, "missing"))).toBe("");
+    expect(sheetAttr(null)).toBe("");
   });
 });

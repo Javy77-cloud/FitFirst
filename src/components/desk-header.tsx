@@ -61,9 +61,11 @@ export function DeskHeader({
         </Link>
       ) : (
         <div className="min-w-0 shrink-0">
-          <div className="text-caption uppercase tracking-wide text-muted-foreground">
-            {eyebrow ?? "Personal lines worksheet"}
-          </div>
+          {eyebrow === "" ? null : (
+            <div className="text-caption uppercase tracking-wide text-muted-foreground">
+              {eyebrow ?? "Personal lines worksheet"}
+            </div>
+          )}
           <h1 className="text-xl font-semibold text-navy">{title}</h1>
         </div>
       )}
