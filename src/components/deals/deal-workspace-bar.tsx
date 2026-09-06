@@ -18,9 +18,9 @@ const VIEWS: Array<[PipelineViewId, string]> = [
   ["funnel", "Funnel"],
 ];
 
-const ACTIVE_SLUGS = ["p-c", "health", "life", "flood"] as const;
+const ACTIVE_SLUGS = ["p-c", "health", "life"] as const;
 const CLOSED_SLUGS = ["won-lost", "archive"] as const;
-const SKIP_SLUGS = new Set(["law", "legal"]);
+const SKIP_SLUGS = new Set(["law", "legal", "flood"]);
 const PC_SUBS = [
   { id: "home", label: "Home" },
   { id: "auto", label: "Auto" },

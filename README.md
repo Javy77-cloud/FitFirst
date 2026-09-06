@@ -4,20 +4,20 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6j`)
+## Mac test now (`cursor/live-ff-tip-sep6k`)
 
-Menu + Deals filter only. No AMS. No seed. No wipe. `NAV_LAYOUT_VERSION` **7** resets saved rails so Admin → **Operations** is last with eight kids.
+Same as sep6j plus no top-level Flood chip. Flood stays a P&C subtype only.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep6j && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6k && git pull
 npm install
 npm run db:migrate
 # skip db:seed — keep the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Hard refresh. Login **javy@fitfirst.local** / **javy**. Expand **Admin** (bottom of the rail). **Operations** is last. Expand it / scroll: Billing, Claims, Endorsements, Compliance, Carrier Downloads, Book of Health, Book of Life, Marketplace. Maya must not see Operations. Deals chips: All · P&C · Health · Life · Flood | Won-Lost · Archive. P&C opens Home / Auto / Flood / Commercial chips. Lead detail **Convert** is primary.
+Hard refresh. Deals chips: All · P&C · Health · Life | Won-Lost · Archive. P&C opens Home / Auto / Flood / Commercial. No primary Flood chip.
 
 ## Delete file on every upload surface (prior tip)
 
