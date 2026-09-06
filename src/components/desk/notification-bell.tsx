@@ -134,13 +134,13 @@ export function NotificationBell({
                         disabled={alert.read}
                         onClick={() => void markOne(alert.id)}
                         className={cn(
-                          "mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-sm",
+                          "mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-sm border",
                           alert.read
-                            ? "text-fit-red/40"
-                            : "text-fit-red hover:bg-fit-red-bg",
+                            ? "border-fit-red/30 text-fit-red/40"
+                            : "border-fit-red text-fit-red hover:bg-fit-red-bg",
                         )}
                       >
-                        <Check className="size-4" strokeWidth={2.75} />
+                        <Check className="size-4" strokeWidth={3} />
                       </button>
                       <button
                         type="button"

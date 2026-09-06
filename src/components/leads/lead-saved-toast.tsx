@@ -13,7 +13,7 @@ export function LeadSavedToast({ show }: { show: boolean }) {
     const hide = window.setTimeout(() => {
       setOpen(false);
       router.replace("/leads", { scroll: false });
-    }, 2200);
+    }, 4000);
     return () => window.clearTimeout(hide);
   }, [show, router]);
 
@@ -23,7 +23,7 @@ export function LeadSavedToast({ show }: { show: boolean }) {
     <div
       role="status"
       data-testid="lead-saved-toast"
-      className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md bg-navy px-4 py-2 text-sm font-semibold text-white shadow-md"
+      className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md bg-navy px-5 py-3 text-base font-semibold text-white shadow-lg ring-1 ring-white/20"
     >
       Lead saved.
     </div>

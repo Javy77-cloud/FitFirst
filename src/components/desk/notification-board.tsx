@@ -61,11 +61,11 @@ export function NotificationBoard({ rows }: { rows: BoardAlert[] }) {
                     disabled={read}
                     aria-label={read ? "Read" : "Mark as read"}
                     className={cn(
-                      "mt-0.5 inline-flex size-7 items-center justify-center rounded-sm",
-                      read ? "text-fit-red/40" : "text-fit-red hover:bg-fit-red-bg",
+                      "mt-0.5 inline-flex size-7 items-center justify-center rounded-sm border",
+                      read ? "border-fit-red/30 text-fit-red/40" : "border-fit-red text-fit-red hover:bg-fit-red-bg",
                     )}
                   >
-                    <Check className="size-4" strokeWidth={2.75} />
+                    <Check className="size-4" strokeWidth={3} />
                   </button>
                 </form>
                 <Link href={href} className="min-w-0 flex-1 text-left">

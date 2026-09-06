@@ -272,7 +272,7 @@ body[data-ff-col-resize] {
 }
 /* Leads queue only — light row dividers + neutral gray hover, never badge colors. */
 .ff-leads-queue .ff-table tbody td {
-  border-bottom: 1px solid #cfc3b0;
+  border-bottom: 1px solid #b9ad9a;
 }
 .ff-leads-queue .ff-table tbody tr:hover td,
 .ff-leads-queue .ff-table tbody tr:hover td.ff-col-manage {
