@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6z`)
+## Mac test now (`cursor/live-ff-tip-sep6y`)
+
+Platform-wide UI standards only: same upload drop-zone, trash delete, save toast → list, primary action, Columns picker, leftover funnel sort, row dividers, and status/temp badges. Rebased onto `cursor/live-ff-tip-sep6z` (`27a9ba3`), which already sits on `sep6x` / `sep6w`. No clock / follow-up / Operations nav / lead-detail docs / Deals checklist work. Leave sep6z Deals upload (`Choose file` + Add file) as-is. This tip adds no schema; `0079_documents_lead_id` is already on the branch from sep6x — migrate only if this desk is behind. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6y && git pull
+npm install
+# skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then **Contacts** or **Documents**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Upload | Leftover file fields are **Choose files** plus a dashed drop-zone. Deals page upload stays sep6z **Choose file** / + Add file. Do not restyle lead-detail per-line cards. |
+| 2 | Delete | File rows use the same trash-can on the right. Hover tints red. |
+| 3 | Save | Save lead / contact / deal / business / claim shows the navy toast, then lands on that module’s list — never stays on the form. |
+| 4 | Primary action | Save buttons are the same full-width primary. Secondary actions are text links under the button. |
+| 5 | Columns | Leftover lists (Inspections, Campaigns, Logs, …) have the same **Columns** picker: checkboxes, drag-to-reorder, per-user widths. Existing Manage Columns still works. |
+| 6 | Sort leftovers | Sheet leftovers use the same funnel → ASC/DESC popover. Name stays live search. Clock / follow-up unchanged. |
+| 7 | Row dividers | Every `ff-table` row has a light horizontal border. Rows do not blend. |
+| 8 | Badges | Status and Temp chips share one rounded-sm palette (Hot red, Warm amber, Cold blue). No leftover navy pills. |
+
+## Mac test prior (`cursor/live-ff-tip-sep6z`)
 
 Deals page only. Rebased onto lead-detail tip `sep6x` (`93e6178`) which already sits on clock/follow-up `sep6w`. Do not retouch lead detail, documents-per-line, or the clock. Title is **Deals** (no Personal Lines Worksheet). Stage chips above the table are gone. Upload block is on Table, Board, and Funnel: **Search deals** typeahead, **Choose file** button, filename + trash, **+ Add file**. P&C / Health / Life chips stay with expandable subs. Settings · Macros is off the deals toolbar. Row actions light Call / SMS / Text only with a phone, Email only with an email. Agents get **Change owner** with `Transfer this deal to {name}? They'll own all follow-ups from now on.` — receiver gets an in-app ping (deal name, who handed it over, tap to open). **Send quote** and **Add task** sit on the row. **Value** column uses premium / coverage amount. `data-sort`, `data-sheet-cell`, and `data-sheet-table-tax` are always strings (`""` when empty). View switcher is labeled **Pipeline** (Table / Board / Funnel). No new migrate on this tip. Their `0079_documents_lead_id` is already on the branch. No seed wipe.
 

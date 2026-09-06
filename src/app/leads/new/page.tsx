@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { createLead } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { LeadFormFields } from "@/components/crm/lead-form-fields";
-import { Button } from "@/components/ui/button";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,10 @@ export default function NewLeadPage() {
             Home lead-offer board.
           </span>
         </label>
-        <Button type="submit" size="sm">
-          Save lead
-        </Button>
+        <FormPrimaryActions
+          submitLabel="Save lead"
+          secondary={<Link href="/leads">Back to leads</Link>}
+        />
       </form>
     </AppShell>
   );

@@ -38,11 +38,11 @@ export async function upsertCampaign(formData: FormData) {
     redirect(`/campaigns/${id}`);
   }
 
-  const [row] = await db.insert(emailCampaigns).values(values).returning();
+  await db.insert(emailCampaigns).values(values);
   revalidatePath("/campaigns");
   revalidatePath("/automations");
   revalidatePath("/automations/campaigns");
-  redirect(`/campaigns/${row.id}`);
+  redirect("/campaigns?saved=1");
 }
 
 export async function stubSendCampaign(formData: FormData) {

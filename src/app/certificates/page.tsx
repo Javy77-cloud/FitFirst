@@ -2,7 +2,9 @@ import Link from "next/link";
 import { advanceCertificateRequest } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
 import { CertificateRequestForm } from "@/components/ams/certificate-request-form";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
+import { CERTIFICATES_LIST_COLUMNS } from "@/lib/list-columns";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
 import { certificateFlagLabels } from "@/lib/ams/certificate-holders";
@@ -113,43 +115,30 @@ export default async function CertificatesPage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Issued stubs
         </div>
-        {issued.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">No certificate stubs issued yet.</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Number</th>
-                <th>Holder</th>
-                <th>Business</th>
-                <th>Issued</th>
-                <th>Flags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {issued.map(({ certificate, account }) => (
-                <tr key={certificate.id}>
-                  <td className="font-medium">
-                    {account ? (
-                      <Link
-                        href={`/businesses/${account.id}/certificates/${certificate.id}`}
-                        className="text-primary hover:underline"
-                      >
-                        {certificate.certificateNumber}
-                      </Link>
-                    ) : (
-                      certificate.certificateNumber
-                    )}
-                  </td>
-                  <td>{certificate.holderName}</td>
-                  <td>{account?.name ?? "—"}</td>
-                  <td>{formatDay(certificate.issuedAt)}</td>
-                  <td>{certificateFlagLabels(certificate).join(" · ") || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="certificates-issued"
+          columns={CERTIFICATES_LIST_COLUMNS}
+          empty="No certificate stubs issued yet."
+          rows={issued.map(({ certificate, account }) => ({
+            key: certificate.id,
+            cells: {
+              number: account ? (
+                <Link
+                  href={`/businesses/${account.id}/certificates/${certificate.id}`}
+                  className="text-primary hover:underline"
+                >
+                  {certificate.certificateNumber}
+                </Link>
+              ) : (
+                certificate.certificateNumber
+              ),
+              holder: certificate.holderName,
+              business: account?.name ?? "—",
+              issued: formatDay(certificate.issuedAt),
+              flags: certificateFlagLabels(certificate).join(" · ") || "—",
+            },
+          }))}
+        />
       </section>
 
       {requests.some((row) => row.request.status !== "requested") ? (

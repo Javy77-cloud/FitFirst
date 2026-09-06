@@ -1,8 +1,11 @@
 import { completeClaimDiary } from "@/app/actions/claims";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
+import { CLAIMS_DIARY_COLUMNS } from "@/lib/list-columns";
 import {
   CLAIM_DIARY_DISCLAIMER,
   claimDiaryKindLabel,
@@ -40,57 +43,38 @@ export default async function ClaimDiaryPage({
         <p className="mb-3 text-sm text-navy">Diary {notice.replaceAll("_", " ")}.</p>
       ) : null}
       <section className="ff-card overflow-hidden">
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No claim diary rows in this view. Add one from a claim — it does not file FNOL.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Claim / Policy</th>
-                <th>Kind</th>
-                <th>Status</th>
-                <th>Party</th>
-                <th>Due</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ entry, claim, policy, contact, account }) => (
-                <tr key={entry.id}>
-                  <td className="font-medium">
-                    <RecordLink href={`/claims/${claim.id}`}>
-                      {policy?.policyNumber ?? "Unlinked claim"}
-                    </RecordLink>
-                    <div className="text-sm text-muted-foreground">{entry.body}</div>
-                  </td>
-                  <td>{claimDiaryKindLabel(entry.kind)}</td>
-                  <td>
-                    <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
-                      {claimDiaryStatusLabel(entry.status)}
-                    </span>
-                  </td>
-                  <td>
-                    {contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—"}
-                  </td>
-                  <td>{formatDay(entry.dueAt)}</td>
-                  <td>
-                    {entry.status === "open" ? (
-                      <form action={completeClaimDiary}>
-                        <input type="hidden" name="entryId" value={entry.id} />
-                        <input type="hidden" name="returnTo" value="/claims/diary" />
-                        <Button type="submit" size="sm" variant="outline">
-                          Mark done
-                        </Button>
-                      </form>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="claims-diary"
+          columns={CLAIMS_DIARY_COLUMNS}
+          empty="No claim diary rows in this view. Add one from a claim — it does not file FNOL."
+          rows={rows.map(({ entry, claim, policy, contact, account }) => ({
+            key: entry.id,
+            cells: {
+              claim: (
+                <>
+                  <RecordLink href={`/claims/${claim.id}`}>
+                    {policy?.policyNumber ?? "Unlinked claim"}
+                  </RecordLink>
+                  <div className="text-sm text-muted-foreground">{entry.body}</div>
+                </>
+              ),
+              kind: claimDiaryKindLabel(entry.kind),
+              status: <StatusBadge status={entry.status}>{claimDiaryStatusLabel(entry.status)}</StatusBadge>,
+              party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
+              due: formatDay(entry.dueAt),
+              actions:
+                entry.status === "open" ? (
+                  <form action={completeClaimDiary}>
+                    <input type="hidden" name="entryId" value={entry.id} />
+                    <input type="hidden" name="returnTo" value="/claims/diary" />
+                    <Button type="submit" size="sm" variant="outline">
+                      Mark done
+                    </Button>
+                  </form>
+                ) : null,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

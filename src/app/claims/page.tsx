@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { SavedToast } from "@/components/desk/saved-toast";
 import { ClaimList } from "@/components/claims/claim-list";
 import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
 import { ClaimStatusPipeline } from "@/components/claims/status-pipeline";
@@ -21,6 +22,7 @@ export default async function ClaimsPage({
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "cause"]);
   const q = firstParam(params.q) ?? "";
+  const saved = firstParam(params.saved) === "1";
   const all = await listDeskClaims();
   const rows = all.filter(
     ({ claim }) =>
@@ -29,6 +31,7 @@ export default async function ClaimsPage({
 
   return (
     <AppShell title="Claims log">
+      <SavedToast show={saved} message="Claim saved." listHref="/claims" />
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-base text-muted-foreground">
           FNOL desk intake and timeline. Inquiry → referred to carrier → closed. Handle the claim

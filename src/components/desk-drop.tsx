@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ingestDroppedDocuments } from "@/app/actions/ingest";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -41,15 +42,14 @@ export function DeskDrop({ compact = false }: { compact?: boolean }) {
       </p>
       <input type="hidden" name="docType" value="dec" />
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          ref={inputRef}
+        <ChooseFiles
+          inputRef={inputRef}
           id="deskFiles"
           name="files"
-          type="file"
           multiple
           required
           accept=".pdf,.txt,.md,image/*"
-          className="block text-xs"
+          className="min-w-[16rem] flex-1"
         />
         <Button type="submit" size="sm">
           Upload and open the sheet

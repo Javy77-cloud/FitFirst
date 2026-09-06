@@ -1,4 +1,5 @@
 import { createDealFromDecDrop } from "@/app/actions/crm";
+import { ChooseFiles } from "@/components/choose-files";
 import { LineSelect } from "@/components/crm/line-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,13 +50,7 @@ export function DecDropForm() {
           <Label htmlFor="decFile" className="text-xs">
             Dec PDF or text
           </Label>
-          <input
-            id="decFile"
-            name="file"
-            type="file"
-            required
-            className="mt-1 block w-full text-xs"
-          />
+          <ChooseFiles id="decFile" name="file" required className="mt-1" />
         </div>
       </div>
       <Button type="submit" size="sm">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { SavedToast } from "@/components/desk/saved-toast";
 import { buttonVariants } from "@/components/ui/button";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
@@ -85,6 +86,7 @@ export default async function DealsPage({
   const presented = (boardData?.cards ?? []).map(presentPipelineCard);
   const board = boardData?.board ?? null;
   const notice = first(params.notice);
+  const saved = first(params.saved) === "1";
   const hint =
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
@@ -112,6 +114,7 @@ export default async function DealsPage({
         </Link>
       }
     >
+      <SavedToast show={saved} message="Deal saved." listHref="/deals" />
       <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
       {notice === "need-deal" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">

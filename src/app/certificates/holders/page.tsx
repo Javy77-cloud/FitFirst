@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { archiveHolderContact } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { CERTIFICATE_HOLDERS_COLUMNS } from "@/lib/list-columns";
 import { HolderContactForm } from "@/components/ams/holder-contact-form";
 import { Button } from "@/components/ui/button";
 import { certificateFlagLabels } from "@/lib/ams/certificate-holders";
@@ -130,38 +132,22 @@ export default async function CertificateHoldersPage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Holders already on commercial Policies
         </div>
-        {holders.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No certificate holders on file. Queue a Harbor COI and optionally add the holder as AI.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Holder</th>
-                <th>Kind</th>
-                <th>Business</th>
-                <th>Policies</th>
-                <th>Open / issued</th>
-                <th>Stub flags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {holders.map((row) => (
-                <tr key={row.name}>
-                  <td className="font-medium">{row.name}</td>
-                  <td>{row.kinds.join(" · ") || "—"}</td>
-                  <td>{row.accountName ?? "—"}</td>
-                  <td>{row.policyNumbers.join(" · ") || "—"}</td>
-                  <td>
-                    {row.openCoi} open · {row.issuedStubs} issued
-                  </td>
-                  <td>{certificateFlagLabels(row).join(" · ") || "None on the stub"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="certificate-holders"
+          columns={CERTIFICATE_HOLDERS_COLUMNS}
+          empty="No certificate holders on file. Queue a Harbor COI and optionally add the holder as AI."
+          rows={holders.map((row) => ({
+            key: row.name,
+            cells: {
+              holder: row.name,
+              kind: row.kinds.join(" · ") || "—",
+              business: row.accountName ?? "—",
+              policies: row.policyNumbers.join(" · ") || "—",
+              counts: `${row.openCoi} open · ${row.issuedStubs} issued`,
+              flags: certificateFlagLabels(row).join(" · ") || "None on the stub",
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

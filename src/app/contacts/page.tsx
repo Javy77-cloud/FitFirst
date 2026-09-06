@@ -1,7 +1,8 @@
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
+import { SavedToast } from "@/components/desk/saved-toast";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
@@ -26,6 +27,7 @@ export default async function ContactsPage({
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "source"]);
   const q = firstParam(params.q) ?? "";
+  const saved = firstParam(params.saved) === "1";
   const all = await listContacts();
   const rows = all.filter(
     (contact) =>
@@ -33,6 +35,7 @@ export default async function ContactsPage({
   );
   return (
     <AppShell title="Contacts">
+      <SavedToast show={saved} message="Contact saved." listHref="/contacts" />
       <p className="mb-3 text-base text-muted-foreground">
         Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
         policy is Active, Bound, or Pending.
@@ -83,9 +86,7 @@ export default async function ContactsPage({
             <Input name="healthNotes" className="mt-1 h-8" />
           </div>
           <SourceSelect defaultValue="referral" />
-          <Button type="submit" size="sm">
-            Save contact
-          </Button>
+          <FormPrimaryActions submitLabel="Save contact" />
         </form>
         <section className="ff-card overflow-hidden">
           <ModuleListActions

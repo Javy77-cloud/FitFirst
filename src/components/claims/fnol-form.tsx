@@ -9,7 +9,7 @@ import {
   fieldClass,
 } from "@/components/claims/field";
 import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
-import { Button } from "@/components/ui/button";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -179,9 +179,7 @@ export function FnolIntakeForm({
           </span>
         </span>
       </label>
-      <Button type="submit" size="lg">
-        Save FNOL to the claims log
-      </Button>
+      <FormPrimaryActions submitLabel="Save FNOL to the claims log" />
     </form>
   );
 }

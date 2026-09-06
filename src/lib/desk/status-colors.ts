@@ -45,6 +45,36 @@ const POLICY_STATUS_COLOR: Record<string, StatusColorKey> = {
   expired: "slate",
 };
 
+const TEMP_STATUS_COLOR: Record<string, StatusColorKey> = {
+  hot: "rose",
+  warm: "amber",
+  cold: "blue",
+};
+
+const GENERIC_STATUS_COLOR: Record<string, StatusColorKey> = {
+  requested: "blue",
+  scheduled: "teal",
+  completed: "green",
+  drafted: "amber",
+  ready: "teal",
+  mailed: "violet",
+  withdrawn: "slate",
+  in_progress: "amber",
+  filed: "green",
+  past_due: "rose",
+  quoted: "teal",
+  declined: "rose",
+  skip: "slate",
+  open: "blue",
+  closed: "slate",
+  inquiry: "blue",
+  referred: "violet",
+  issued: "green",
+  signed: "green",
+  sent: "teal",
+  draft: "amber",
+};
+
 const CLIENT_STATUS_COLOR: Record<string, StatusColorKey> = {
   client: "green",
   former_client: "orange",
@@ -148,6 +178,21 @@ export function policyStatusColor(status: string | null | undefined): StatusColo
 export function clientStatusColor(status: string | null | undefined): StatusColorKey {
   const key = normalizeKey(status);
   return CLIENT_STATUS_COLOR[key] ?? "slate";
+}
+
+export function tempColor(temperature: string | null | undefined): StatusColorKey {
+  const key = normalizeKey(temperature);
+  return TEMP_STATUS_COLOR[key] ?? "rose";
+}
+
+export function statusColorFor(value: string | null | undefined): StatusColorKey {
+  const key = normalizeKey(value);
+  if (isStatusColorKey(key)) return key;
+  if (POLICY_STATUS_COLOR[key]) return POLICY_STATUS_COLOR[key];
+  if (CLIENT_STATUS_COLOR[key]) return CLIENT_STATUS_COLOR[key];
+  if (TEMP_STATUS_COLOR[key]) return TEMP_STATUS_COLOR[key];
+  if (GENERIC_STATUS_COLOR[key]) return GENERIC_STATUS_COLOR[key];
+  return "slate";
 }
 
 export function displayStatusLabel(value: string | null | undefined): string {

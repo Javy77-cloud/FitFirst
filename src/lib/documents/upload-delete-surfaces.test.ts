@@ -30,7 +30,9 @@ describe("upload surfaces offer delete + double confirm", () => {
   it("every stored-file upload surface has a Delete/Hide control gated by confirmHardDelete", () => {
     for (const row of SURFACES.filter((item) => item.stored)) {
       const text = source(row.file);
-      expect(text, row.label).toMatch(/DeleteUploadedFileButton|data-ff-delete-file|HardDeleteForm/);
+      expect(text, row.label).toMatch(
+        /DeleteUploadedFileButton|FileDeleteIcon|data-ff-delete-file|HardDeleteForm/,
+      );
       expect(text, `${row.label} confirm gate`).toMatch(
         /DeleteUploadedFileButton|confirmHardDelete|HardDeleteForm/,
       );

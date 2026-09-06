@@ -1,9 +1,8 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import { deleteUploadedFile } from "@/app/actions/documents";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
-import { Button } from "@/components/ui/button";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
 
 export function DeleteUploadedFileButton({
@@ -17,7 +16,7 @@ export function DeleteUploadedFileButton({
   leadId,
   returnTo,
   label,
-  icon = false,
+  icon: _icon = false,
 }: {
   documentId: string;
   filename: string;
@@ -44,15 +43,7 @@ export function DeleteUploadedFileButton({
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
       {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-      <Button
-        type="submit"
-        size={icon ? "icon-xs" : "xs"}
-        variant="ghost"
-        data-ff-delete-file
-        aria-label={label ?? (mode === "hide" ? `Hide ${filename}` : `Delete ${filename}`)}
-      >
-        {icon ? <Trash2 /> : (label ?? (mode === "hide" ? "Hide" : "Delete"))}
-      </Button>
+      <FileDeleteIcon label={label ?? (mode === "hide" ? "Hide" : "Delete")} />
     </HardDeleteForm>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createFolder } from "@/app/actions/folders";
 import { uploadDocument } from "@/app/actions/documents";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -255,7 +256,7 @@ export function ManagerToolbar({
           </select>
           <Input name="tags" className="h-8" placeholder="tags" />
         </div>
-        <input name="file" type="file" required className="block w-full text-xs" />
+        <ChooseFiles name="file" required />
         <Button type="submit" size="sm">
           Upload
         </Button>

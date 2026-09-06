@@ -1,6 +1,7 @@
 "use client";
 
 import { saveFormFill, scanSuggestForm } from "@/app/actions/form-fill";
+import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,9 +41,9 @@ export function FillWorkspace({
         {fillId ? <input type="hidden" name="fillId" value={fillId} /> : null}
         <div>
           <Label className="text-xs">Source PDF or image</Label>
-          <input name="sourceFile" type="file" accept="application/pdf,image/*" className="mt-1 block w-full text-xs" />
+          <ChooseFiles name="sourceFile" accept="application/pdf,image/*" className="mt-1" />
           {sourceDocumentId && sourceFilename ? (
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div className="ff-file-row mt-2 text-sm">
               <span className="font-medium text-navy">{sourceFilename}</span>
               <DeleteUploadedFileButton
                 documentId={sourceDocumentId}

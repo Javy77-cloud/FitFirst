@@ -3,7 +3,12 @@ import { upsertCampaign } from "@/app/actions/campaigns";
 import { AppShell } from "@/components/app-shell";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
+import { SavedToast } from "@/components/desk/saved-toast";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { StatusBadge } from "@/components/status-badge";
+import { buttonVariants } from "@/components/ui/button";
+import { CAMPAIGNS_LIST_COLUMNS } from "@/lib/list-columns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listCampaigns, listContactTags } from "@/lib/db/ops-queries";
@@ -44,6 +49,7 @@ export default async function CampaignsPage({
   const params = await searchParams;
   const [rows, tags] = await Promise.all([listCampaigns(), listContactTags()]);
   const templateName = typeof params.template === "string" ? params.template : "";
+  const saved = params.saved === "1" || (Array.isArray(params.saved) && params.saved[0] === "1");
   const preset = TEMPLATES.find((t) => t.name === templateName) ?? TEMPLATES[0];
 
   return (
@@ -60,6 +66,7 @@ export default async function CampaignsPage({
         </div>
       }
     >
+      <SavedToast show={saved} message="Campaign saved." listHref="/campaigns" />
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         Draft lists and templates. Sending waits until work email is connected under Settings →
         Email. No SMTP from this desk today.
@@ -133,55 +140,39 @@ export default async function CampaignsPage({
               {DEAL_STAGES.join(", ")}.
             </p>
           </div>
-          <Button type="submit" size="sm">
-            Save draft
-          </Button>
+          <FormPrimaryActions submitLabel="Save draft" />
         </form>
         <section className="ff-card overflow-hidden">
-          {rows.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
-              No campaigns yet. Compose a draft and pick an audience by tag or pipeline stage.
-            </p>
-          ) : (
-            <ModuleListActions
-              module="campaigns"
-              recordIds={rows.map((row) => row.id)}
-              records={rows.map((row) => ({
-                id: row.id,
-                label: row.name,
-              }))}
-            >
-            <table className="ff-table">
-              <thead>
-                <tr>
-                  <th />
-                  <th>Campaign</th>
-                  <th>Audience</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <SelectRowCheckbox id={row.id} />
-                    </td>
-                    <td>
+          <ModuleListActions
+            module="campaigns"
+            recordIds={rows.map((row) => row.id)}
+            records={rows.map((row) => ({
+              id: row.id,
+              label: row.name,
+            }))}
+          >
+            <DeskColumnTable
+              moduleId="campaigns"
+              columns={CAMPAIGNS_LIST_COLUMNS}
+              empty="No campaigns yet. Compose a draft and pick an audience by tag or pipeline stage."
+              rows={rows.map((row) => ({
+                key: row.id,
+                cells: {
+                  pick: <SelectRowCheckbox id={row.id} />,
+                  campaign: (
+                    <>
                       <Link href={`/campaigns/${row.id}`} className="font-medium text-primary hover:underline">
                         {row.name}
                       </Link>
                       <div className="text-[11px] text-muted-foreground">{row.subject}</div>
-                    </td>
-                    <td className="text-xs">
-                      {row.audienceType.replace("_", " ")} · {row.audienceValue}
-                    </td>
-                    <td className="capitalize">{row.status.replace("_", " ")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </ModuleListActions>
-          )}
+                    </>
+                  ),
+                  audience: `${row.audienceType.replace("_", " ")} · ${row.audienceValue}`,
+                  status: <StatusBadge status={row.status}>{row.status.replace("_", " ")}</StatusBadge>,
+                },
+              }))}
+            />
+          </ModuleListActions>
         </section>
       </div>
     </AppShell>

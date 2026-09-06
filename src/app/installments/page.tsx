@@ -1,9 +1,12 @@
 import { createPolicyInstallment } from "@/app/actions/ams";
 import { InstallmentActions } from "@/components/ams/installment-actions";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { INSTALLMENTS_LIST_COLUMNS } from "@/lib/list-columns";
 import {
   BILL_TYPES,
   INSTALLMENT_DISCLAIMER,
@@ -82,53 +85,31 @@ export default async function InstallmentsPage({
       </section>
 
       <section className="ff-card overflow-hidden">
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No installments in this view. Elena October is scheduled; Hale August is past due.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Amount</th>
-                <th>Bill</th>
-                <th>Status</th>
-                <th>Next step</th>
-                <th>Party</th>
-                <th>Due</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ installment, policy, contact, account }) => (
-                <tr key={installment.id}>
-                  <td className="font-medium">
-                    <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                    {installment.notes ? (
-                      <div className="text-sm text-muted-foreground">{installment.notes}</div>
-                    ) : null}
-                  </td>
-                  <td>{formatMoney(installment.amount)}</td>
-                  <td>{billTypeLabel(installment.billType)}</td>
-                  <td>
-                    <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
-                      {installmentStatusLabel(installment.status)}
-                    </span>
-                  </td>
-                  <td className="text-sm text-muted-foreground">
-                    {installmentNextStep(installment.status)}
-                  </td>
-                  <td>{contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—"}</td>
-                  <td>{formatDay(installment.dueOn)}</td>
-                  <td>
-                    <InstallmentActions installmentId={installment.id} status={installment.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="installments"
+          columns={INSTALLMENTS_LIST_COLUMNS}
+          empty="No installments in this view. Elena October is scheduled; Hale August is past due."
+          rows={rows.map(({ installment, policy, contact, account }) => ({
+            key: installment.id,
+            cells: {
+              policy: (
+                <>
+                  <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
+                  {installment.notes ? (
+                    <div className="text-sm text-muted-foreground">{installment.notes}</div>
+                  ) : null}
+                </>
+              ),
+              amount: formatMoney(installment.amount),
+              bill: billTypeLabel(installment.billType),
+              status: <StatusBadge status={installment.status}>{installmentStatusLabel(installment.status)}</StatusBadge>,
+              next: installmentNextStep(installment.status),
+              party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
+              due: formatDay(installment.dueOn),
+              actions: <InstallmentActions installmentId={installment.id} status={installment.status} />,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

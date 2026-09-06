@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { SavedToast } from "@/components/desk/saved-toast";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
@@ -20,10 +21,12 @@ export default async function AccountsPage({
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status"]);
   const q = firstParam(params.q) ?? "";
+  const saved = firstParam(params.saved) === "1";
   const all = await listAccounts();
   const rows = all.filter((account) => matchesField(account.clientStatus, filter.status));
   return (
     <AppShell title="Businesses">
+      <SavedToast show={saved} message="Business saved." listHref="/accounts" />
       <p className="mb-3 text-base text-muted-foreground">
         Commercial bind creates a Business (Account). Personal HO stays on a Contact. The same
         person can be linked here without moving their personal policies.

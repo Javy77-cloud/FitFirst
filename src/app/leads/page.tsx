@@ -35,6 +35,7 @@ import {
   LeadStatusSelect,
   LeadTemplateOverride,
 } from "@/components/leads/lead-queue-controls";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
 
 export const dynamic = "force-dynamic";
@@ -142,9 +143,7 @@ export default async function LeadsPage({
               <Input id="email" name="email" type="email" className="mt-1 h-8" />
             </div>
             <SourceSelect defaultValue="referral" />
-            <Button type="submit" size="sm">
-              Save lead
-            </Button>
+            <FormPrimaryActions submitLabel="Save lead" />
           </form>
         </div>
 

@@ -7,6 +7,7 @@ import { RecordModuleMacros } from "@/components/developer-hub/record-module-mac
 import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { deletePolicyFilingAttachment } from "@/app/actions/policies";
 import { VehiclesList } from "@/components/desk-ams-panels";
 import { RecordLink } from "@/components/record-links";
@@ -362,7 +363,7 @@ export default async function PolicyDetailPage({
                   <h3 className="text-sm font-semibold text-navy">Change / notice files</h3>
                   <ul className="mt-2 space-y-1 text-sm">
                     {filingAttachments.map((file) => (
-                      <li key={file.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <li key={file.id} className="ff-file-row">
                         <span>
                           <span className="font-medium">{file.filename}</span>
                           <span className="ml-2 uppercase text-muted-foreground">
@@ -376,9 +377,7 @@ export default async function PolicyDetailPage({
                         >
                           <input type="hidden" name="policyId" value={policy.id} />
                           <input type="hidden" name="attachmentId" value={file.id} />
-                          <Button type="submit" size="xs" variant="ghost" data-ff-delete-file>
-                            Delete
-                          </Button>
+                          <FileDeleteIcon />
                         </HardDeleteForm>
                       </li>
                     ))}

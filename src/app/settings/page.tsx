@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { deleteAgencyLogo, saveAgencyBrand, saveEmailTemplate, uploadAgencyLogo } from "@/app/actions/agency";
+import { ChooseFiles } from "@/components/choose-files";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { saveCommissionRate } from "@/app/actions/pipeline-admin";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SettingsAccordion } from "@/components/settings/settings-accordion";
@@ -231,16 +233,14 @@ export default async function SettingsPage({
                   {brand.logoUrl ? (
                     <p className="text-xs text-muted-foreground">Current logo is on file.</p>
                   ) : null}
-                  <input name="logo" type="file" accept="image/*" className="block text-xs" />
+                  <ChooseFiles name="logo" accept="image/*" />
                   <Button type="submit" size="sm" variant="outline">
                     Upload logo
                   </Button>
                 </form>
                 {brand.logoUrl ? (
                   <HardDeleteForm action={deleteAgencyLogo} subject="the agency logo">
-                    <Button type="submit" size="sm" variant="ghost" data-ff-delete-file>
-                      Delete logo
-                    </Button>
+                    <FileDeleteIcon label="Delete logo" />
                   </HardDeleteForm>
                 ) : null}
                 <Link href="/settings/agency" className="block text-sm text-primary hover:underline">

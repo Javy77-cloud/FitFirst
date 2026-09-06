@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { markEnvelopeSigned } from "@/app/actions/esign";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { StatusBadge } from "@/components/status-badge";
+import { ESIGN_LIST_COLUMNS } from "@/lib/list-columns";
 import { InDeskEsignBanner } from "@/components/esign/in-desk-banner";
 import { Notice } from "@/components/ops/stub-banner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -41,62 +44,48 @@ export default async function EsignPage({
 
       <section className="ff-card mb-4 overflow-hidden p-4">
         <h2 className="mb-2 text-sm font-semibold text-navy">In-desk envelopes</h2>
-        {inDesk.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            None yet. Open a Deal Documents tab or a Policy, then Request signature.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Packet</th>
-                <th>Record</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {inDesk.map(({ envelope, document }) => (
-                <tr key={envelope.id}>
-                  <td>
-                    <div className="font-medium">{document.filename}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {envelope.signerName ?? "No signer"}
-                      {envelope.signedAt ? ` · ${formatInDeskEsignTimestamp(envelope.signedAt)}` : ""}
-                    </div>
-                  </td>
-                  <td>
-                    {envelope.policyId ? (
-                      <Link href={`/policies/${envelope.policyId}`} className="text-primary hover:underline">
-                        Policy
-                      </Link>
-                    ) : envelope.dealId ? (
-                      <Link
-                        href={`/deals/${envelope.dealId}?tab=documents`}
-                        className="text-primary hover:underline"
-                      >
-                        Deal
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="capitalize">{envelope.status}</td>
-                  <td>
-                    {envelope.publicToken ? (
-                      <Link
-                        href={inDeskSignHref(envelope.publicToken, "agent_demo")}
-                        className={cn(buttonVariants({ size: "xs", variant: "outline" }))}
-                      >
-                        Open to sign
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="esign-in-desk"
+          columns={ESIGN_LIST_COLUMNS}
+          empty="None yet. Open a Deal Documents tab or a Policy, then Request signature."
+          rows={inDesk.map(({ envelope, document }) => ({
+            key: envelope.id,
+            cells: {
+              packet: (
+                <>
+                  <div className="font-medium">{document.filename}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {envelope.signerName ?? "No signer"}
+                    {envelope.signedAt ? ` · ${formatInDeskEsignTimestamp(envelope.signedAt)}` : ""}
+                  </div>
+                </>
+              ),
+              record: envelope.policyId ? (
+                <Link href={`/policies/${envelope.policyId}`} className="text-primary hover:underline">
+                  Policy
+                </Link>
+              ) : envelope.dealId ? (
+                <Link
+                  href={`/deals/${envelope.dealId}?tab=documents`}
+                  className="text-primary hover:underline"
+                >
+                  Deal
+                </Link>
+              ) : (
+                "—"
+              ),
+              status: <StatusBadge status={envelope.status}>{envelope.status}</StatusBadge>,
+              actions: envelope.publicToken ? (
+                <Link
+                  href={inDeskSignHref(envelope.publicToken, "agent_demo")}
+                  className={cn(buttonVariants({ size: "xs", variant: "outline" }))}
+                >
+                  Open to sign
+                </Link>
+              ) : null,
+            },
+          }))}
+        />
       </section>
 
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">

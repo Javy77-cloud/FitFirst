@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { uploadDocument } from "@/app/actions/documents";
 import { fillQuoteSheet } from "@/app/actions/quote-sheet";
+import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import type { Document } from "@/lib/db/schema";
@@ -63,14 +64,13 @@ export function SheetDrop({
         <input type="hidden" name="after" value="fill-sheet" />
         <input type="hidden" name="returnTab" value="quote-sheet" />
         <div className="flex flex-wrap items-center gap-3">
-          <input
-            ref={inputRef}
+          <ChooseFiles
+            inputRef={inputRef}
             id="sheet-file"
             name="file"
-            type="file"
             accept=".pdf,.txt,.md,image/*"
             required
-            className="block text-xs"
+            className="min-w-[16rem] flex-1"
           />
           <Button type="submit" size="sm">
             Upload and fill
@@ -87,7 +87,7 @@ export function SheetDrop({
       {docs.length > 0 ? (
         <ul className="space-y-1 text-sm" data-ff-sheet-drop-files>
           {docs.map((doc) => (
-            <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
+            <li key={doc.id} className="ff-file-row">
               <span className="font-medium">{doc.filename}</span>
               <DeleteUploadedFileButton
                 documentId={doc.id}

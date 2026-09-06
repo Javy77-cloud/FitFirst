@@ -1,8 +1,10 @@
 import { completeSuspenseTask } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { formatDay, SERVICING_DOC_LABELS } from "@/lib/domain";
+import { SUSPENSE_LIST_COLUMNS } from "@/lib/list-columns";
 import { loadSuspenseBoard } from "@/lib/ams/queries";
 import { isSuspenseDocKey } from "@/lib/ams/suspense";
 import { countSuspenseByAge } from "@/lib/ams/suspense-aging";
@@ -61,52 +63,30 @@ export default async function SuspenseBoardPage({
         <p className="mb-3 text-sm text-navy">Suspense row marked collected. Policy unchanged.</p>
       ) : null}
       <section className="ff-card overflow-hidden">
-        {board.rows.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No open AOR or ID-card suspense
-            {age && isSuspenseAgeBucket(age) ? ` in ${suspenseAgeLabel(age).toLowerCase()}` : ""}.
-            Missing dec still lives on Book health as a manual collect.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Party</th>
-                <th>Missing</th>
-                <th>Age</th>
-                <th>Due</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {board.rows.map((row) => (
-                <tr key={row.taskId}>
-                  <td className="font-medium">
-                    <RecordLink href={`/policies/${row.policyId}`}>{row.policyNumber}</RecordLink>
-                  </td>
-                  <td>{row.partyName}</td>
-                  <td>
-                    {isSuspenseDocKey(row.docKey) ? SERVICING_DOC_LABELS[row.docKey] : row.title}
-                  </td>
-                  <td>
-                    {row.daysOpen ?? 0}d · {suspenseAgeLabel(row.age ?? "current").split(" (")[0]}
-                  </td>
-                  <td>{formatDay(row.dueDate)}</td>
-                  <td>
-                    <form action={completeSuspenseTask}>
-                      <input type="hidden" name="taskId" value={row.taskId} />
-                      <input type="hidden" name="returnTo" value="/suspense" />
-                      <Button type="submit" size="sm" variant="outline">
-                        Mark collected
-                      </Button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="suspense"
+          columns={SUSPENSE_LIST_COLUMNS}
+          empty={`No open AOR or ID-card suspense${age && isSuspenseAgeBucket(age) ? ` in ${suspenseAgeLabel(age).toLowerCase()}` : ""}. Missing dec still lives on Book health as a manual collect.`}
+          rows={board.rows.map((row) => ({
+            key: row.taskId,
+            cells: {
+              policy: <RecordLink href={`/policies/${row.policyId}`}>{row.policyNumber}</RecordLink>,
+              party: row.partyName,
+              missing: isSuspenseDocKey(row.docKey) ? SERVICING_DOC_LABELS[row.docKey] : row.title,
+              age: `${row.daysOpen ?? 0}d · ${suspenseAgeLabel(row.age ?? "current").split(" (")[0]}`,
+              due: formatDay(row.dueDate),
+              actions: (
+                <form action={completeSuspenseTask}>
+                  <input type="hidden" name="taskId" value={row.taskId} />
+                  <input type="hidden" name="returnTo" value="/suspense" />
+                  <Button type="submit" size="sm" variant="outline">
+                    Mark collected
+                  </Button>
+                </form>
+              ),
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

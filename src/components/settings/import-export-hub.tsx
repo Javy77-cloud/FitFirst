@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import {
   Dialog,
   DialogContent,
@@ -225,25 +227,20 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <input
-              type="file"
+            <ChooseFiles
               accept=".csv,text/csv"
-              onChange={(event) => {
-                setFile(event.target.files?.[0] ?? null);
+              onFiles={(files) => {
+                setFile(files[0] ?? null);
                 setPreview(null);
                 setCommit(null);
                 setError(null);
               }}
-              className="block w-full text-sm"
             />
             {file ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <div className="ff-file-row text-sm">
                 <span className="font-medium text-navy">{file.name}</span>
-                <Button
+                <FileDeleteIcon
                   type="button"
-                  size="xs"
-                  variant="ghost"
-                  data-ff-delete-file
                   onClick={() => {
                     if (!confirmHardDelete(`the file “${file.name}”`)) return;
                     setFile(null);
@@ -251,9 +248,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
                     setCommit(null);
                     setError(null);
                   }}
-                >
-                  Delete
-                </Button>
+                />
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">

@@ -386,3 +386,138 @@ export const WORK_QUEUE_POLICIES_COLUMNS: ListColumn[] = [
   { id: "party", label: "Party" },
   { id: "expires", label: "Expires" },
 ];
+
+export function labeledColumns(
+  items: Array<[id: string, label: string, locked?: boolean]>,
+): ListColumn[] {
+  return items.map(([id, label, locked]) => ({ id, label, locked: Boolean(locked) }));
+}
+
+export const INSPECTIONS_LIST_COLUMNS = labeledColumns([
+  ["policy", "Policy", true],
+  ["kind", "Kind"],
+  ["status", "Status"],
+  ["next", "Next step"],
+  ["party", "Party"],
+  ["when", "When"],
+  ["actions", ""],
+]);
+
+export const ENDORSEMENTS_LIST_COLUMNS = labeledColumns([
+  ["policy", "Policy", true],
+  ["form", "Form"],
+  ["status", "Status"],
+  ["next", "Next step"],
+  ["party", "Party"],
+  ["effective", "Effective"],
+  ["actions", ""],
+]);
+
+export const SERVICE_REQUESTS_LIST_COLUMNS = labeledColumns([
+  ["policy", "Policy", true],
+  ["kind", "Kind"],
+  ["status", "Status"],
+  ["next", "Next step"],
+  ["desk", "Desk"],
+  ["party", "Party"],
+  ["effective", "Effective"],
+  ["actions", ""],
+]);
+
+export const NOTICES_LIST_COLUMNS = labeledColumns([
+  ["policy", "Policy", true],
+  ["kind", "Kind"],
+  ["status", "Status"],
+  ["next", "Next step"],
+  ["party", "Party"],
+  ["effective", "Effective"],
+  ["actions", ""],
+]);
+
+export const SUSPENSE_LIST_COLUMNS = labeledColumns([
+  ["policy", "Policy", true],
+  ["party", "Party"],
+  ["missing", "Missing"],
+  ["age", "Age"],
+  ["due", "Due"],
+  ["actions", ""],
+]);
+
+export const INSTALLMENTS_LIST_COLUMNS = labeledColumns([
+  ["policy", "Policy", true],
+  ["amount", "Amount"],
+  ["bill", "Bill"],
+  ["status", "Status"],
+  ["next", "Next step"],
+  ["party", "Party"],
+  ["due", "Due"],
+  ["actions", ""],
+]);
+
+export const CAMPAIGNS_LIST_COLUMNS = labeledColumns([
+  ["pick", "", true],
+  ["campaign", "Campaign", true],
+  ["audience", "Audience"],
+  ["status", "Status"],
+]);
+
+export const CERTIFICATE_HOLDERS_COLUMNS = labeledColumns([
+  ["holder", "Holder", true],
+  ["kind", "Kind"],
+  ["business", "Business"],
+  ["policies", "Policies"],
+  ["counts", "Open / issued"],
+  ["flags", "Stub flags"],
+]);
+
+export const LOGS_LIST_COLUMNS = labeledColumns([
+  ["date", "Date", true],
+  ["carrier", "Carrier"],
+  ["deal", "Deal"],
+  ["result", "Result"],
+  ["bindable", "Bindable"],
+  ["premium", "Premium"],
+  ["covA", "Cov A tried"],
+  ["why", "Why"],
+  ["snapshot", "Snapshot"],
+]);
+
+export const CLAIMS_DIARY_COLUMNS = labeledColumns([
+  ["claim", "Claim / Policy", true],
+  ["kind", "Kind"],
+  ["status", "Status"],
+  ["party", "Party"],
+  ["due", "Due"],
+  ["actions", ""],
+]);
+
+export const SERVICE_TIMELINE_COLUMNS = labeledColumns([
+  ["when", "When", true],
+  ["event", "Event"],
+  ["policy", "Policy"],
+  ["party", "Party"],
+  ["log", "Log"],
+]);
+
+export const CERTIFICATES_LIST_COLUMNS = labeledColumns([
+  ["number", "Number", true],
+  ["holder", "Holder"],
+  ["business", "Business"],
+  ["issued", "Issued"],
+  ["flags", "Flags"],
+]);
+
+export const ESIGN_LIST_COLUMNS = labeledColumns([
+  ["packet", "Packet", true],
+  ["record", "Record"],
+  ["status", "Status"],
+  ["actions", ""],
+]);
+
+export const HOLDER_CONTACTS_COLUMNS = labeledColumns([
+  ["name", "Name", true],
+  ["status", "Status"],
+  ["address", "Address"],
+  ["flags", "Flags"],
+  ["actions", ""],
+]);

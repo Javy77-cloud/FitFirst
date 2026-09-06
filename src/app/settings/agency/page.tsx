@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { deleteAgencyLogo, saveAgencyBrand, uploadAgencyLogo } from "@/app/actions/brand";
+import { ChooseFiles } from "@/components/choose-files";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { saveShowCompanyWidgets } from "@/app/actions/home-dashboard";
 import { ColumnLayoutFields } from "@/components/brand/column-layout-fields";
 import { SettingsShell } from "@/components/settings/settings-shell";
@@ -196,16 +198,14 @@ export default async function AgencySettingsPage() {
           {desk.isAdmin ? (
             <>
               <form action={uploadAgencyLogo} className="space-y-2">
-                <Input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+                <ChooseFiles name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
                 <Button type="submit" size="sm" variant="outline">
                   Upload logo
                 </Button>
               </form>
               {desk.logoUrl ? (
                 <HardDeleteForm action={deleteAgencyLogo} subject="the agency logo">
-                  <Button type="submit" size="sm" variant="ghost" data-ff-delete-file>
-                    Delete logo
-                  </Button>
+                    <FileDeleteIcon label="Delete logo" />
                 </HardDeleteForm>
               ) : null}
             </>

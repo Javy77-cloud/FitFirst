@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { saveColumnPrefs } from "@/app/actions/desk-prefs";
 import { SheetHeader } from "@/components/sheet/sheet-header";
 import { TABLE_COLUMNS, parseColumns } from "@/lib/desk/columns";
@@ -28,8 +28,6 @@ export function ColumnPicker({
     }
   }, [defs, selected, tableKey]);
 
-  const label = useMemo(() => `${selected.length} columns`, [selected.length]);
-
   function toggle(key: string) {
     const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
     const locked = defs[0] ? Array.from(new Set([defs[0].key, ...next])) : next;
@@ -43,8 +41,12 @@ export function ColumnPicker({
 
   return (
     <details className="relative">
-      <summary className="inline-flex cursor-pointer list-none items-center rounded-md border border-border bg-card px-2.5 py-1 text-sm text-navy hover:border-primary [&::-webkit-details-marker]:hidden">
-        Columns · {label}
+      <summary
+        aria-label="Columns"
+        title="Columns"
+        className="inline-flex h-7 cursor-pointer list-none items-center rounded-md border border-border bg-card px-2 text-xs font-medium text-navy hover:bg-muted [&::-webkit-details-marker]:hidden"
+      >
+        Columns
       </summary>
       <div className="absolute right-0 z-50 mt-1 max-h-80 w-56 overflow-auto rounded-md border border-border bg-card p-2 shadow-lg">
         {defs.map((col) => (

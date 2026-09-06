@@ -139,7 +139,7 @@ export async function createBusiness(formData: FormData) {
     .returning();
   revalidatePath("/accounts");
   revalidatePath("/businesses");
-  redirect(`/accounts/${row.id}`);
+  redirect("/accounts?saved=1");
 }
 
 export async function currentDeskActor() {

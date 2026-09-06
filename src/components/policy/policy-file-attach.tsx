@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { attachPolicyFiles } from "@/app/actions/policy-files";
+import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { DocumentVersions } from "@/components/documents/document-versions";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ export function PolicyFileAttach({
             </div>
             <div>
               <Label className="text-xs">{index === 0 ? "File" : `File ${index + 1}`}</Label>
-              <input name="file" type="file" className="mt-1 block w-full text-xs" />
+              <ChooseFiles name="file" className="mt-1" />
             </div>
           </div>
         ))}

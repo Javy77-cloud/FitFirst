@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createDeal } from "@/app/actions/crm";
 import { PartyTypeahead } from "@/components/crm/party-typeahead";
 import { SourceSelect } from "@/components/crm/source-select";
 import { LinePicker } from "@/components/deal/line-picker";
-import { Button } from "@/components/ui/button";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PartyHit, PartyRecord } from "@/lib/crm/party-typeahead";
@@ -67,9 +68,10 @@ export function CreateDealForm({ parties }: { parties: PartyRecord[] }) {
       </div>
       <SourceSelect defaultValue="referral" />
       <LinePicker defaultCode="HO" />
-      <Button type="submit" size="sm">
-        Create deal
-      </Button>
+      <FormPrimaryActions
+        submitLabel="Create deal"
+        secondary={<Link href="/deals">Back to deals</Link>}
+      />
     </form>
   );
 }

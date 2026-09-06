@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
+import { StatusBadge } from "@/components/status-badge";
 import { formatDay } from "@/lib/domain";
+import { SERVICE_TIMELINE_COLUMNS } from "@/lib/list-columns";
 import { SERVICE_TIMELINE_DISCLAIMER, serviceTimelineEventLabel } from "@/lib/domain-ams";
 import { listServiceTimeline } from "@/lib/ams/queries";
 
@@ -50,48 +53,25 @@ export default async function ServiceTimelinePage({
         </Link>
       </p>
       <section className="ff-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No servicing activity on the book. Open a Policy and log a note, or work a request.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Event</th>
-                <th>Policy</th>
-                <th>Party</th>
-                <th>Log</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(({ log, activity, policy, contact, account }) => (
-                <tr key={log.id}>
-                  <td>{formatDay(log.occurredAt)}</td>
-                  <td>
-                    <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
-                      {serviceTimelineEventLabel(log.eventType)}
-                    </span>
-                  </td>
-                  <td className="font-medium">
-                    {policy ? (
-                      <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                    ) : (
-                      activity.title
-                    )}
-                  </td>
-                  <td>
-                    {contact
-                      ? `${contact.lastName}, ${contact.firstName}`
-                      : account?.name ?? "—"}
-                  </td>
-                  <td className="text-sm text-muted-foreground">{log.body}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="service-timeline"
+          columns={SERVICE_TIMELINE_COLUMNS}
+          empty="No servicing activity on the book. Open a Policy and log a note, or work a request."
+          rows={filtered.map(({ log, activity, policy, contact, account }) => ({
+            key: log.id,
+            cells: {
+              when: formatDay(log.occurredAt),
+              event: <StatusBadge status={log.eventType}>{serviceTimelineEventLabel(log.eventType)}</StatusBadge>,
+              policy: policy ? (
+                <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
+              ) : (
+                activity.title
+              ),
+              party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
+              log: log.body,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

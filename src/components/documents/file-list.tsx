@@ -91,7 +91,7 @@ export function FileList({
                       "—"
                     )}
                   </td>
-                  <td>
+                  <td className="text-right">
                     <DeleteUploadedFileButton
                       documentId={doc.id}
                       filename={doc.filename}

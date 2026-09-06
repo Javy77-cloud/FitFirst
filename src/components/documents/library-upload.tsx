@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { uploadDocument } from "@/app/actions/documents";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { docTypeLabel, inferDocTypeFromName, libraryDocTypes } from "@/lib/documents/library";
@@ -64,30 +66,24 @@ export function LibraryUpload({
           <Input name="tags" className="mt-1 h-8" placeholder="optional tags" />
         </div>
       </div>
-      <input
+      <ChooseFiles
         name="files"
-        type="file"
         multiple
         required
-        className="block w-full text-xs"
-        onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
+        onFiles={setFiles}
       />
       {preview.length > 0 ? (
         <ul className="space-y-1 rounded-md border border-border bg-muted px-2 py-2 text-xs">
           {preview.map((file) => (
-            <li key={file.name} className="flex items-center justify-between gap-2">
+            <li key={file.name} className="ff-file-row">
               <span className="truncate font-medium text-navy">{file.name}</span>
               <span className="flex shrink-0 items-center gap-2">
                 <span className="text-muted-foreground">{docTypeLabel(file.type)}</span>
-                <Button
+                <FileDeleteIcon
                   type="button"
-                  size="xs"
-                  variant="ghost"
-                  data-ff-delete-file
+                  label="Remove"
                   onClick={() => setFiles((current) => current.filter((item) => item.name !== file.name))}
-                >
-                  Remove
-                </Button>
+                />
               </span>
             </li>
           ))}

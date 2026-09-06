@@ -1,9 +1,12 @@
 import { createPolicyInspection } from "@/app/actions/ams";
 import { InspectionActions } from "@/components/ams/inspection-actions";
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
+import { INSPECTIONS_LIST_COLUMNS } from "@/lib/list-columns";
 import {
   INSPECTION_DISCLAIMER,
   INSPECTION_KINDS,
@@ -82,49 +85,30 @@ export default async function InspectionsPage({
       </section>
 
       <section className="ff-card overflow-hidden">
-        {rows.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No inspections in this view. Elena roof is scheduled; Hale wind mit is requested.
-          </p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Policy</th>
-                <th>Kind</th>
-                <th>Status</th>
-                <th>Next step</th>
-                <th>Party</th>
-                <th>When</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ inspection, policy, contact, account }) => (
-                <tr key={inspection.id}>
-                  <td className="font-medium">
-                    <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                    {inspection.notes ? (
-                      <div className="text-sm text-muted-foreground">{inspection.notes}</div>
-                    ) : null}
-                  </td>
-                  <td>{inspectionKindLabel(inspection.kind)}</td>
-                  <td>
-                    <span className="rounded-full bg-[var(--ff-sidebar)] px-2 py-0.5 text-xs font-semibold text-white">
-                      {inspectionStatusLabel(inspection.status)}
-                    </span>
-                  </td>
-                  <td className="text-sm text-muted-foreground">{inspectionNextStep(inspection.status)}</td>
-                  <td>{contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—"}</td>
-                  <td>{inspection.scheduledOn ? formatDay(inspection.scheduledOn) : "—"}</td>
-                  <td>
-                    <InspectionActions inspectionId={inspection.id} status={inspection.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DeskColumnTable
+          moduleId="inspections"
+          columns={INSPECTIONS_LIST_COLUMNS}
+          empty="No inspections in this view. Elena roof is scheduled; Hale wind mit is requested."
+          rows={rows.map(({ inspection, policy, contact, account }) => ({
+            key: inspection.id,
+            cells: {
+              policy: (
+                <>
+                  <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
+                  {inspection.notes ? (
+                    <div className="text-sm text-muted-foreground">{inspection.notes}</div>
+                  ) : null}
+                </>
+              ),
+              kind: inspectionKindLabel(inspection.kind),
+              status: <StatusBadge status={inspection.status}>{inspectionStatusLabel(inspection.status)}</StatusBadge>,
+              next: inspectionNextStep(inspection.status),
+              party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
+              when: inspection.scheduledOn ? formatDay(inspection.scheduledOn) : "—",
+              actions: <InspectionActions inspectionId={inspection.id} status={inspection.status} />,
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

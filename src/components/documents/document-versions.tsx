@@ -1,6 +1,7 @@
 "use client";
 
 import { replaceDocument } from "@/app/actions/document-versions";
+import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -55,7 +56,7 @@ export function DocumentVersions({
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         <div>
           <Label className="text-[11px]">Replace (keeps prior)</Label>
-          <input name="file" type="file" required className="mt-1 block w-full max-w-[220px] text-[11px]" />
+          <ChooseFiles name="file" required className="mt-1 max-w-[22rem]" />
         </div>
         <Button type="submit" size="xs" variant="outline">
           Replace

@@ -7,7 +7,9 @@ import {
   updateClaim,
   updateClaimStatus,
 } from "@/app/actions/claims";
+import { ChooseFiles } from "@/components/choose-files";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import {
   ClaimCauseSelect,
   ClaimChannelSelect,
@@ -273,7 +275,7 @@ export function ClaimRecord({
           <form action={addClaimAttachment} className="mt-2 space-y-2">
             <input type="hidden" name="claimId" value={claim.id} />
             <input type="hidden" name="postedBy" value={postedBy} />
-            <Input name="file" type="file" className="h-8" />
+            <ChooseFiles name="file" />
             <input type="hidden" name="docType" value="photo" />
             <Button type="submit" size="sm" variant="outline">
               Attach file
@@ -284,7 +286,7 @@ export function ClaimRecord({
               <li className="text-xs text-muted-foreground">No files on this notice.</li>
             ) : (
               files.map((file) => (
-                <li key={file.id} className="flex flex-wrap items-center justify-between gap-2">
+                <li key={file.id} className="ff-file-row">
                   <span>
                     <Link
                       href={`/api/claims/attachments/${file.id}`}
@@ -300,9 +302,7 @@ export function ClaimRecord({
                     className="inline"
                   >
                     <input type="hidden" name="fileId" value={file.id} />
-                    <Button type="submit" size="xs" variant="ghost" data-ff-delete-file>
-                      Delete
-                    </Button>
+                    <FileDeleteIcon />
                   </HardDeleteForm>
                 </li>
               ))

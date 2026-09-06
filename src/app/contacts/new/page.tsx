@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { SourceSelect } from "@/components/crm/source-select";
-import { Button } from "@/components/ui/button";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -32,9 +33,10 @@ export default function NewContactPage() {
           <Input name="email" type="email" className="mt-1 h-8" />
         </div>
         <SourceSelect defaultValue="referral" />
-        <Button type="submit" size="sm">
-          Save contact
-        </Button>
+        <FormPrimaryActions
+          submitLabel="Save contact"
+          secondary={<Link href="/contacts">Back to contacts</Link>}
+        />
       </form>
     </AppShell>
   );

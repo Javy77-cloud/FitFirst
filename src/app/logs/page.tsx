@@ -1,6 +1,9 @@
 import { AppShell } from "@/components/app-shell";
+import { DeskColumnTable } from "@/components/lists/desk-column-table";
+import { StatusBadge } from "@/components/status-badge";
 import { formatMoney } from "@/lib/domain";
 import { listQuoteLogs } from "@/lib/db/queries";
+import { LOGS_LIST_COLUMNS } from "@/lib/list-columns";
 
 export const dynamic = "force-dynamic";
 
@@ -13,49 +16,34 @@ export default async function LogsPage() {
         can skip a lookalike decline.
       </p>
       <section className="ff-card overflow-x-auto">
-        <table className="ff-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Carrier</th>
-              <th>Deal</th>
-              <th>Result</th>
-              <th>Bindable</th>
-              <th>Premium</th>
-              <th>Cov A tried</th>
-              <th>Why</th>
-              <th>Snapshot</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ log, carrier, deal }) => (
-              <tr key={log.id}>
-                <td className="whitespace-nowrap text-xs">
-                  {log.attemptedAt.toISOString().slice(0, 10)}
-                </td>
-                <td>{carrier.name}</td>
-                <td>{deal.title}</td>
-                <td className="uppercase">{log.result.replaceAll("_", " ")}</td>
-                <td>{log.bindable ? "Y" : "N"}</td>
-                <td>{formatMoney(log.premium)}</td>
-                <td>{formatMoney(log.covATried)}</td>
-                <td className="text-xs">{log.why}</td>
-                <td className="text-base text-muted-foreground">
-                  {[
-                    log.snapYearBuilt,
-                    log.snapConstruction,
-                    log.snapRoofCovering,
-                    log.snapCity,
-                    log.snapCounty,
-                    log.snapMilesToCoast != null ? `${log.snapMilesToCoast} mi` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DeskColumnTable
+          moduleId="quote-logs"
+          columns={LOGS_LIST_COLUMNS}
+          empty="No appetite or decline rows yet."
+          rows={rows.map(({ log, carrier, deal }) => ({
+            key: log.id,
+            cells: {
+              date: log.attemptedAt.toISOString().slice(0, 10),
+              carrier: carrier.name,
+              deal: deal.title,
+              result: <StatusBadge status={log.result}>{log.result.replaceAll("_", " ")}</StatusBadge>,
+              bindable: log.bindable ? "Y" : "N",
+              premium: formatMoney(log.premium),
+              covA: formatMoney(log.covATried),
+              why: log.why,
+              snapshot: [
+                log.snapYearBuilt,
+                log.snapConstruction,
+                log.snapRoofCovering,
+                log.snapCity,
+                log.snapCounty,
+                log.snapMilesToCoast != null ? `${log.snapMilesToCoast} mi` : null,
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            },
+          }))}
+        />
       </section>
     </AppShell>
   );

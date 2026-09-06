@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { createBusiness } from "@/app/actions/activities";
 import { AppShell } from "@/components/app-shell";
-import { Button } from "@/components/ui/button";
+import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -31,9 +32,10 @@ export default function NewBusinessPage() {
             <Input name="state" defaultValue="FL" className="mt-1 h-8" />
           </div>
         </div>
-        <Button type="submit" size="sm">
-          Save business
-        </Button>
+        <FormPrimaryActions
+          submitLabel="Save business"
+          secondary={<Link href="/accounts">Back to businesses</Link>}
+        />
       </form>
     </AppShell>
   );

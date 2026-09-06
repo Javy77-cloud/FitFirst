@@ -1,5 +1,6 @@
 import { uploadDocument } from "@/app/actions/documents";
 import { sendDocumentForSignature } from "@/app/actions/esign";
+import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,7 @@ export function EntityUpload({
       </div>
       <div>
         <Label className="text-xs">File</Label>
-        <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+        <ChooseFiles name="file" required className="mt-1" />
       </div>
       <Button type="submit" size="sm">
         Upload
@@ -95,7 +96,7 @@ export function DocumentTable({
             <td>
               <SendForSignature document={doc} returnTo={returnTo} compact />
             </td>
-            <td>
+            <td className="text-right">
               <DeleteUploadedFileButton
                 documentId={doc.id}
                 filename={doc.filename}

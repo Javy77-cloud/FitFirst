@@ -341,7 +341,7 @@ export async function createDeal(formData: FormData) {
   });
   if (lead.convertedDealId) {
     revalidatePath("/deals");
-    redirect(`/deals/${lead.convertedDealId}`);
+    redirect("/deals?saved=1");
   }
 
   const line = LINES.includes(str(formData, "line") as (typeof LINES)[number])
@@ -411,7 +411,7 @@ export async function createDeal(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/deals");
-  redirect(`/deals/${deal.id}`);
+  redirect("/deals?saved=1");
 }
 
 export async function createDealFromDecDrop(formData: FormData) {
@@ -743,7 +743,7 @@ export async function createContact(formData: FormData) {
     name: `${row.firstName} ${row.lastName}`.trim(),
   });
   revalidatePath("/contacts");
-  redirect(`/contacts/${row.id}`);
+  redirect("/contacts?saved=1");
 }
 
 async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteSheetFieldValue>> {

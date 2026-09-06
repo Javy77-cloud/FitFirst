@@ -1,4 +1,5 @@
 import { uploadDocument } from "@/app/actions/documents";
+import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,7 +69,7 @@ export function LibraryUpload({
       </div>
       <div>
         <Label className="text-xs">File</Label>
-        <input name="file" type="file" required className="mt-1 block w-full text-xs" />
+        <ChooseFiles name="file" required className="mt-1" />
       </div>
       <Button type="submit" size="sm">
         Upload

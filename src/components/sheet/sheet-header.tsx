@@ -1,4 +1,6 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal, Pin } from "lucide-react";
+import { MoreHorizontal, Pin } from "lucide-react";
+import { FunnelIcon } from "@/components/lists/funnel-icon";
+import { isLiveSearchColumn } from "@/lib/list-columns";
 import { cn } from "@/lib/utils";
 
 export function SheetHeader({
@@ -16,6 +18,8 @@ export function SheetHeader({
   dataCol?: string;
 }) {
   const label = typeof children === "string" ? children : "Column";
+  const liveSearch = isLiveSearchColumn({ id: col, label });
+
   return (
     <th
       data-col={dataCol ?? `${table}.${col}`}
@@ -27,18 +31,44 @@ export function SheetHeader({
       <div className="flex items-center gap-0.5">
         <button
           type="button"
-          data-sheet-cycle
+          data-sheet-cycle={liveSearch ? undefined : ""}
           data-sheet-table={table}
           data-sheet-col={col}
           className="inline-flex min-w-0 items-center gap-1 text-left font-semibold text-inherit hover:text-navy"
         >
           <span className="truncate">{children}</span>
-          <span data-sheet-glyph className="inline-flex">
-            <ArrowUpDown data-icon="none" className="size-3 shrink-0 text-muted-foreground/70" aria-hidden />
-            <ArrowUp data-icon="asc" className="hidden size-3 shrink-0 text-navy" aria-hidden />
-            <ArrowDown data-icon="desc" className="hidden size-3 shrink-0 text-navy" aria-hidden />
-          </span>
         </button>
+        {liveSearch ? null : (
+          <details data-sheet-funnel className="relative">
+            <summary
+              className="inline-flex size-6 shrink-0 cursor-pointer list-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-navy [&::-webkit-details-marker]:hidden"
+              aria-label={`Filter ${label}`}
+              data-list-col-filter=""
+            >
+              <FunnelIcon />
+            </summary>
+            <div className="absolute right-0 z-80 mt-1 min-w-[4.25rem] rounded-md border border-border bg-card p-0.5 text-sm shadow-lg">
+              <button
+                type="button"
+                data-sheet-sort="asc"
+                data-sheet-table={table}
+                data-sheet-col={col}
+                className="flex w-full justify-center rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-navy hover:bg-muted"
+              >
+                ASC
+              </button>
+              <button
+                type="button"
+                data-sheet-sort="desc"
+                data-sheet-table={table}
+                data-sheet-col={col}
+                className="flex w-full justify-center rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-navy hover:bg-muted"
+              >
+                DESC
+              </button>
+            </div>
+          </details>
+        )}
         <Pin data-icon="pin" className="hidden size-3 shrink-0 text-navy" aria-hidden />
         <details data-sheet-menu className="relative">
           <summary
@@ -54,34 +84,6 @@ export function SheetHeader({
             <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Organize
             </p>
-            <button
-              type="button"
-              data-sheet-sort="asc"
-              data-sheet-table={table}
-              data-sheet-col={col}
-              className="flex w-full rounded-md px-2 py-1.5 text-left text-navy hover:bg-muted"
-            >
-              Sort A → Z
-            </button>
-            <button
-              type="button"
-              data-sheet-sort="desc"
-              data-sheet-table={table}
-              data-sheet-col={col}
-              className="flex w-full rounded-md px-2 py-1.5 text-left text-navy hover:bg-muted"
-            >
-              Sort Z → A
-            </button>
-            <button
-              type="button"
-              data-sheet-sort="clear"
-              data-sheet-table={table}
-              data-sheet-col={col}
-              className="flex w-full rounded-md px-2 py-1.5 text-left text-navy hover:bg-muted"
-            >
-              Clear sort
-            </button>
-            <div className="my-1 h-px bg-border" />
             <button
               type="button"
               data-sheet-pin
