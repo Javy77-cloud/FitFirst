@@ -12,7 +12,7 @@ describe("lead detail layout + per-line documents", () => {
     expect(page).not.toMatch(/uploadDocument/);
     expect(form).toMatch(/data-ff-lead-contact-row/);
     expect(form).toMatch(/data-ff-lead-address-row/);
-    expect(form).toMatch(/sm:grid-cols-\[minmax\(0,2\.2fr\)_minmax\(0,1\.1fr\)_4\.5rem_5\.5rem\]/);
+    expect(form).toMatch(/grid-cols-\[minmax\(0,2\.2fr\)_minmax\(0,1\.1fr\)_4\.5rem_5\.5rem\]/);
     expect(panel).toMatch(/data-ff-lead-line-docs/);
     expect(panel).toMatch(/data-ff-line-dropzone/);
     expect(panel).toMatch(/\+ Add file/);

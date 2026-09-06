@@ -35,7 +35,7 @@ export function LeadFormFields({
 
   return (
     <div className="grid gap-3">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <Label htmlFor="firstName" className="text-xs">
             First name
@@ -79,7 +79,7 @@ export function LeadFormFields({
           />
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2" data-ff-lead-contact-row>
+      <div className="grid grid-cols-2 gap-3" data-ff-lead-contact-row>
         <div>
           <Label htmlFor="email" className="text-xs">
             Email
@@ -94,7 +94,7 @@ export function LeadFormFields({
         </div>
       </div>
       <div
-        className="grid gap-2 sm:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_4.5rem_5.5rem]"
+        className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_4.5rem_5.5rem] gap-2"
         data-ff-lead-address-row
       >
         <div className="min-w-0">
@@ -127,7 +127,7 @@ export function LeadFormFields({
           <Input id="zip" name="zip" defaultValue={lead?.zip ?? ""} className="mt-1 h-8" />
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <Label htmlFor="insuranceTypeDesired" className="text-xs">
             Insurance type desired
