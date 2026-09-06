@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { bindDeal } from "@/app/actions/crm";
 import { updateDealRecord } from "@/app/actions/record-edit";
 import { SourceSelect } from "@/components/crm/source-select";
 import { sourceLabel } from "@/lib/crm/sources";
@@ -13,9 +12,7 @@ import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { StagePill } from "@/components/fit-badge";
-import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
@@ -64,11 +61,9 @@ export default async function DealPage({
     logs,
     lead,
     contact,
-    account,
     quoteSheet,
     sheets,
     jobs,
-    boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
   const [comms, macros, buttons, scripts, relatedWidgets] = await Promise.all([
@@ -104,31 +99,7 @@ export default async function DealPage({
   const unlocked = quotingUnlockedForDeal(deal);
 
   return (
-    <AppShell
-      title={deal.title}
-      actions={
-        deal.pipelineStage !== "bound" && !isAna ? (
-          <form action={bindDeal} className="flex flex-wrap items-center gap-2">
-            <input type="hidden" name="dealId" value={deal.id} />
-            <select
-              name="bindTarget"
-              defaultValue={deal.bindTarget}
-              className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-            >
-              <option value="contact">Personal — create Contact</option>
-              <option value="account">Commercial — create Business</option>
-            </select>
-            <Input name="businessName" placeholder="Business name (commercial)" className="h-8 w-44" />
-            <Input name="ein" placeholder="EIN / FEIN" className="h-8 w-32" />
-            <Input name="policyNumber" placeholder="Policy # at bind" className="h-8 w-36" />
-            <Input name="premium" placeholder="Premium" className="h-8 w-24" />
-            <Button type="submit" size="sm" variant="secondary">
-              Bind (creates contact/business + policy)
-            </Button>
-          </form>
-        ) : null
-      }
-    >
+    <AppShell title={deal.title} utilityChrome>
       <RecordDeveloperActions
         module="deals"
         recordId={deal.id}
@@ -147,32 +118,11 @@ export default async function DealPage({
           body: script.body,
         }))}
       />
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm" data-ff-deal-identity>
+        <h1 className="text-xl font-semibold text-navy">{deal.title}</h1>
         <StagePill stage={deal.pipelineStage} />
-        <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
         <span>{deal.lineOfBusiness}</span>
-        <span className="text-muted-foreground">{deal.state}</span>
-        {lead ? (
-          <RecordLink href={`/leads/${lead.id}`}>
-            Lead {lead.lastName}, {lead.firstName}
-          </RecordLink>
-        ) : null}
-        {contact ? (
-          <RecordLink href={`/contacts/${contact.id}`}>
-            Contact {contact.lastName}, {contact.firstName}
-          </RecordLink>
-        ) : null}
-        {account ? <RecordLink href={`/accounts/${account.id}`}>Business {account.name}</RecordLink> : null}
-        {boundPolicies.map((policy) => (
-          <RecordLink key={policy.id} href={`/policies/${policy.id}`}>
-            Policy {policy.policyNumber}
-          </RecordLink>
-        ))}
-        {risk?.city ? (
-          <span className="text-muted-foreground">
-            {risk.city}, {risk.county} · Cov A {risk.coverageA ?? "—"}
-          </span>
-        ) : null}
+        <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
       </div>
 
       {isAna ? (
@@ -196,7 +146,7 @@ export default async function DealPage({
         <>
           <HealthStrip
             report={health}
-            title={`Sheet health · ${health.confirmed} confirmed / ${health.missing} missing`}
+            title="Sheet health"
             href={`/deals/${deal.id}?tab=quote-sheet&line=${sheetLine}`}
             dealId={deal.id}
           />

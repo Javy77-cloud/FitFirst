@@ -22,6 +22,14 @@ describe("photo OCR ingest", () => {
       engine: "ocr",
       implemented: true,
     });
+    expect(classifyIngest("image/webp", "scan.webp")).toEqual({
+      engine: "ocr",
+      implemented: true,
+    });
+    expect(classifyIngest("image/png", "dec.png")).toEqual({
+      engine: "ocr",
+      implemented: true,
+    });
     expect(classifyIngest("application/pdf", "dec.pdf")).toEqual({
       engine: "pdf_text",
       implemented: true,

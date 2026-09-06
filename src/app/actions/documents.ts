@@ -166,10 +166,29 @@ export async function uploadDocument(formData: FormData) {
   }
   const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
   const fillable = String(formData.get("fillable") ?? "") === "on" || String(formData.get("fillable") ?? "") === "true";
-  const files = formData
-    .getAll("files")
-    .concat(formData.getAll("file"))
-    .filter((item): item is File => item instanceof File && item.size > 0);
+  const rowCount = Number(formData.get("rowCount") ?? 0);
+  const typedRows: Array<{ docType: string; files: File[] }> = [];
+  if (Number.isFinite(rowCount) && rowCount > 0) {
+    for (let i = 0; i < rowCount; i += 1) {
+      const files = formData
+        .getAll(`files_${i}`)
+        .concat(formData.getAll(`file_${i}`))
+        .filter((item): item is File => item instanceof File && item.size > 0);
+      typedRows.push({
+        docType: String(formData.get(`docType_${i}`) ?? formData.get("docType") ?? "").trim(),
+        files,
+      });
+    }
+  } else {
+    typedRows.push({
+      docType: String(formData.get("docType") ?? "").trim(),
+      files: formData
+        .getAll("files")
+        .concat(formData.getAll("file"))
+        .filter((item): item is File => item instanceof File && item.size > 0),
+    });
+  }
+  const files = typedRows.flatMap((row) => row.files);
   if (files.length === 0) {
     throw new Error("Choose a file to upload.");
   }
@@ -178,33 +197,35 @@ export async function uploadDocument(formData: FormData) {
   }
   const resolvedFolder = await resolveFolderId({ folderId, dealId, contactId });
   let last = null as Awaited<ReturnType<typeof persistFile>> | null;
-  for (const file of files) {
-    const rawType = String(formData.get("docType") ?? "").trim();
-    const docType = rawType && rawType !== "auto"
-      ? coerceDealUploadDocType(rawType)
-      : coerceDealUploadDocType(
-          dealId ? inferDocType(file.name, rawType) : inferFromName(file.name, library),
-        );
-    const slot = String(formData.get("slot") ?? "") || (resolvedFolder ? "library_file" : slotForDocType(docType));
-    const doc = await persistFile({
-      dealId,
-      riskId,
-      contactId,
-      policyId,
-      folderId: resolvedFolder,
-      library,
-      fillable: fillable || library === "forms",
-      filename: file.name,
-      mimeType: file.type || "application/octet-stream",
-      buffer: Buffer.from(await file.arrayBuffer()),
-      docType,
-      slot,
-      tags: parseTags(formData.get("tags")),
-    });
-    if (doc.riskId) {
-      await runExtraction(doc.id, doc.dealId ?? "");
+  for (const row of typedRows) {
+    for (const file of row.files) {
+      const rawType = row.docType;
+      const docType = rawType && rawType !== "auto"
+        ? coerceDealUploadDocType(rawType)
+        : coerceDealUploadDocType(
+            dealId ? inferDocType(file.name, rawType) : inferFromName(file.name, library),
+          );
+      const slot = String(formData.get("slot") ?? "") || (resolvedFolder ? "library_file" : slotForDocType(docType));
+      const doc = await persistFile({
+        dealId,
+        riskId,
+        contactId,
+        policyId,
+        folderId: resolvedFolder,
+        library,
+        fillable: fillable || library === "forms",
+        filename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        buffer: Buffer.from(await file.arrayBuffer()),
+        docType,
+        slot,
+        tags: parseTags(formData.get("tags")),
+      });
+      if (doc.riskId) {
+        await runExtraction(doc.id, doc.dealId ?? "");
+      }
+      last = doc;
     }
-    last = doc;
   }
   if (last?.dealId && last.slot === "source_doc") {
     await fillDealSheetIfReady(last.dealId, String(formData.get("line") ?? ""));

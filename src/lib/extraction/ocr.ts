@@ -96,7 +96,7 @@ export async function extractFromImage(
       message:
         keys.length === 0
           ? `Photo OCR read ${name} but found no labeled Quote Sheet fields. Type the blanks or try a clearer photo. ${PHOTO_OCR_ENGINE}`
-          : `Photo OCR mapped ${keys.join(", ")} from ${name}. CHECK fields need a glance. ${PHOTO_OCR_ENGINE}`,
+          : `Photo OCR mapped ${keys.join(", ")} from ${name}. Needs review fields need a glance. ${PHOTO_OCR_ENGINE}`,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Photo OCR failed";

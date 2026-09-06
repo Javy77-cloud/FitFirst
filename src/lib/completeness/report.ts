@@ -85,6 +85,13 @@ export function reportFromSheet(
   };
 }
 
+/** Deal worksheet strip labels. Status key `check` stays in data; UI says Needs review. */
+export function sheetHealthLabel(status: CompletenessStatus): string {
+  if (status === "check") return "Needs review";
+  if (status === "confirmed") return "Confirmed";
+  return "Missing";
+}
+
 export function healthierThan(a: CompletenessReport, b: CompletenessReport): boolean {
   if (a.confirmed !== b.confirmed) return a.confirmed > b.confirmed;
   if (a.check !== b.check) return a.check < b.check;

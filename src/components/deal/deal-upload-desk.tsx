@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HealthStrip } from "@/components/completeness/health-strip";
-import { RailOpenActivities, RailPersonCard } from "@/components/record-context/record-context-rail";
+import { RailPersonCard } from "@/components/record-context/record-context-rail";
 import { collectDocHints } from "@/lib/deals/upload-desk";
 import type { CompletenessReport } from "@/lib/completeness/report";
 import type { ShopLine } from "@/lib/domain";
@@ -97,7 +97,6 @@ export function DealUploadDesk({
         ) : null}
       </section>
 
-      <RailOpenActivities items={context.openActivities} newHref={context.newActivityHref} />
     </aside>
   );
 }

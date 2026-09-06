@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
 import { createDealFromLead } from "@/app/actions/crm";
 import { updateLeadRecord } from "@/app/actions/record-edit";
-import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { ClickToCall } from "@/components/click-to-call";
 import { LeadFormFields } from "@/components/crm/lead-form-fields";
 import { LineSelect } from "@/components/crm/line-select";
 import { StagePill } from "@/components/fit-badge";
-import { RecordAskPanel } from "@/components/record-ask";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
@@ -21,7 +19,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
 import { RecordDeveloperActions } from "@/components/developer-hub/record-actions";
 import { parseMacroKind } from "@/lib/developer-hub/macros";
-import { getLead, listEmailTemplates, listRecordAsks } from "@/lib/db/queries";
+import { getLead } from "@/lib/db/queries";
 import { listEnabledMacrosFor, listEnabledScriptsFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
@@ -37,11 +35,9 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, templates, asks, users, session, agents, routingLog, macros, buttons, scripts] =
+  const [row, users, session, agents, routingLog, macros, buttons, scripts] =
     await Promise.all([
       getLead(id),
-      listEmailTemplates(),
-      listRecordAsks("lead", id),
       listDeskUsers(),
       currentDeskSession(),
       listAwardableAgents(),
@@ -51,14 +47,14 @@ export default async function LeadDetailPage({
       listEnabledScriptsFor("leads", "edit"),
     ]);
   if (!row) notFound();
-  const { lead, deal, timeline } = row;
+  const { lead, deal } = row;
   const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
   const lineLabel = lead.insuranceTypeDesired
     ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
     : null;
 
   return (
-    <AppShell title={formatPersonName(lead)}>
+    <AppShell title={formatPersonName(lead)} utilityChrome>
       <RecordDeveloperActions
         module="leads"
         recordId={lead.id}
@@ -82,23 +78,26 @@ export default async function LeadDetailPage({
           body: script.body,
         }))}
       />
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <span className="uppercase text-muted-foreground">{lead.status}</span>
-        {deal ? <StagePill stage={deal.pipelineStage} /> : null}
-        <span className="text-muted-foreground">{sourceLabel(lead.source ?? "manual")}</span>
-        <span className="text-muted-foreground">
-          {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
-        </span>
-        {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
-        {lead.preferredLanguage ? (
-          <span className="uppercase text-muted-foreground">{lead.preferredLanguage}</span>
-        ) : null}
-        <ClickToCall
-          entityType="lead"
-          entityId={lead.id}
-          name={formatPersonName(lead)}
-          phone={lead.phone}
-        />
+      <div className="mb-4">
+        <h1 className="text-xl font-semibold text-navy">{formatPersonName(lead)}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+          <span className="uppercase text-muted-foreground">{lead.status}</span>
+          {deal ? <StagePill stage={deal.pipelineStage} /> : null}
+          <span className="text-muted-foreground">{sourceLabel(lead.source ?? "manual")}</span>
+          <span className="text-muted-foreground">
+            {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
+          </span>
+          {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
+          {lead.preferredLanguage ? (
+            <span className="uppercase text-muted-foreground">{lead.preferredLanguage}</span>
+          ) : null}
+          <ClickToCall
+            entityType="lead"
+            entityId={lead.id}
+            name={formatPersonName(lead)}
+            phone={lead.phone}
+          />
+        </div>
       </div>
 
       {routingLog ? (
@@ -139,7 +138,7 @@ export default async function LeadDetailPage({
             <input type="hidden" name="leadId" value={lead.id} />
             <input type="hidden" name="state" value={lead.state ?? "FL"} />
             <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
-            <Button type="submit" size="sm" variant="outline">
+            <Button type="submit" data-ff-convert-deal>
               Convert to deal
             </Button>
             <p className="w-full text-helper text-muted-foreground">
@@ -148,22 +147,6 @@ export default async function LeadDetailPage({
             </p>
           </form>
         ) : null}
-        <RecordAskPanel
-          entityType="lead"
-          entityId={lead.id}
-          asks={asks}
-          users={users}
-          leadId={lead.id}
-          dealId={deal?.id}
-        />
-        <ActivityTimeline
-          items={timeline}
-          leadId={lead.id}
-          dealId={deal?.id}
-          phone={lead.phone}
-          email={lead.email}
-          templates={templates}
-        />
       </RecordSection>
 
       <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">

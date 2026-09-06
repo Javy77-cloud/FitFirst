@@ -37,6 +37,7 @@ const EXT_MIME: Record<string, string> = {
   gif: "image/gif",
   webp: "image/webp",
   heic: "image/heic",
+  heif: "image/heif",
   csv: "text/csv; charset=utf-8",
   html: "text/html; charset=utf-8",
 };

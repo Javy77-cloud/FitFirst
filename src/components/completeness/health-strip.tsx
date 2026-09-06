@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { sheetBlankHref } from "@/lib/completeness/fix-href";
-import type { CompletenessReport } from "@/lib/completeness/report";
+import { sheetHealthLabel, type CompletenessReport } from "@/lib/completeness/report";
 import { cn } from "@/lib/utils";
 
 function pct(part: number, total: number): number {
@@ -24,18 +24,12 @@ export function HealthStrip({
   const confirmedW = pct(report.confirmed, report.total);
   const checkW = pct(report.check, report.total);
   const missingW = pct(report.missing, report.total);
-  const shopText = report.shopReady
-    ? "Shop fields are filled"
-    : `${report.shopBlockers.length} blocking shop`;
-  const bindText = report.bindReady
-    ? "Bind fields are filled"
-    : `${report.bindBlockers.length} blocking bind`;
   const heading = href ? (
-    <Link href={href} className="text-sm font-semibold text-[var(--ff-terracotta)] hover:underline">
+    <Link href={href} className="text-sm font-semibold text-navy hover:underline">
       {title}
     </Link>
   ) : (
-    <h3 className="text-sm font-semibold text-[var(--ff-terracotta)]">{title}</h3>
+    <h3 className="text-sm font-semibold text-navy">{title}</h3>
   );
 
   return (
@@ -48,23 +42,17 @@ export function HealthStrip({
       data-shop-ready={report.shopReady ? "true" : "false"}
       data-bind-ready={report.bindReady ? "true" : "false"}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          {heading}
-          <p className="mt-0.5 text-base text-muted-foreground">
-            {report.confirmed} of {report.total} confirmed · yellow missing · blue CHECK. Not a
-            bind probability.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1.5 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {heading}
+        <div className="flex flex-wrap gap-1.5 text-sm" data-ff-sheet-health-counts>
           <span className="rounded-sm bg-fit-green-bg px-2 py-0.5 text-fit-green">
-            {report.confirmed} confirmed
+            {report.confirmed} {sheetHealthLabel("confirmed")}
           </span>
           <span className="rounded-sm bg-fit-check-bg px-2 py-0.5 text-fit-check">
-            {report.check} CHECK
+            {report.check} {sheetHealthLabel("check")}
           </span>
           <span className="rounded-sm bg-fit-yellow-bg px-2 py-0.5 text-fit-yellow">
-            {report.missing} missing
+            {report.missing} {sheetHealthLabel("missing")}
           </span>
         </div>
       </div>
@@ -72,22 +60,14 @@ export function HealthStrip({
       <div
         className="ff-completeness-bar"
         role="img"
-        aria-label={`${report.confirmed} confirmed, ${report.check} CHECK, ${report.missing} missing`}
+        aria-label={`${report.confirmed} ${sheetHealthLabel("confirmed")}, ${report.check} ${sheetHealthLabel("check")}, ${report.missing} ${sheetHealthLabel("missing")}`}
       >
         <span className="ff-completeness-confirmed" style={{ width: `${confirmedW}%` }} />
         <span className="ff-completeness-check" style={{ width: `${checkW}%` }} />
         <span className="ff-completeness-missing" style={{ width: `${missingW}%` }} />
       </div>
 
-      <p className="text-base text-muted-foreground">
-        {shopText}
-        {" · "}
-        {bindText}
-      </p>
-
-      {compact ? null : (
-        <BlockerList report={report} dealId={dealId} />
-      )}
+      {compact ? null : <BlockerList report={report} dealId={dealId} />}
     </section>
   );
 }
@@ -114,7 +94,7 @@ function BlockerList({ report, dealId }: { report: CompletenessReport; dealId?: 
                 : "text-fit-yellow"
             }
           >
-            {row.status === "check" ? "CHECK" : "missing"}
+            {sheetHealthLabel(row.status)}
           </span>
           {dealId ? (
             <Link

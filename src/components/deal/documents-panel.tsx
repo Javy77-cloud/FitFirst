@@ -3,11 +3,12 @@ import type { Document, ExtractedFieldRow } from "@/lib/db/schema";
 import {
   acceptExtractedField,
   extractExisting,
-  uploadDocument,
 } from "@/app/actions/documents";
 import { uploadDealSlot } from "@/app/actions/lifecycle";
 import { ChooseFiles } from "@/components/choose-files";
 import { DealUploadDesk } from "@/components/deal/deal-upload-desk";
+import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
+import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { CompletenessReport } from "@/lib/completeness/report";
@@ -50,45 +51,7 @@ export function DocumentsPanel({
             Sheet. They are not issued policies.
           </p>
 
-          <form action={uploadDocument} className="mb-3 space-y-2 rounded-md border border-border p-3">
-            <input type="hidden" name="dealId" value={dealId} />
-            <input type="hidden" name="riskId" value={riskId} />
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="docType" className="text-xs">
-                  Type
-                </Label>
-                <select
-                  id="docType"
-                  name="docType"
-                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-                  defaultValue="dec"
-                >
-                  <option value="dec">Declarations</option>
-                  <option value="wind_mit">Wind mitigation</option>
-                  <option value="four_point">4-point</option>
-                  <option value="inspection">Inspection</option>
-                  <option value="photo">Photo</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="file" className="text-xs">
-                  File (PDF, photo, or text)
-                </Label>
-                <ChooseFiles
-                  id="file"
-                  name="file"
-                  accept=".pdf,.txt,.md,image/*"
-                  required
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <Button type="submit" size="sm">
-              Create
-            </Button>
-          </form>
+          <SourceDocsUpload dealId={dealId} riskId={riskId} />
 
           <DocTable docs={sourceDocs} dealId={dealId} empty="No source documents yet." />
         </section>
@@ -128,7 +91,7 @@ export function DocumentsPanel({
         <p className="mb-3 text-base text-muted-foreground">
           High-confidence values apply to the worksheet automatically. Flagged rows wait for a
           human glance. Use <span className="font-medium">Fill blanks from source docs</span> on
-          the Quote Sheet to copy these into missing cells (yellow / blue CHECK).
+          the Quote Sheet to copy these into missing cells (yellow missing / Needs review).
         </p>
         {flagged.length > 0 ? (
           <div className="mb-3 rounded-md bg-fit-flag-bg px-3 py-2 text-base text-fit-flag">
@@ -230,7 +193,7 @@ function DocTable({
         {docs.map((doc) => (
           <tr key={doc.id}>
             <td className="font-medium">{doc.filename}</td>
-            <td className="uppercase">{doc.docType.replaceAll("_", " ")}</td>
+            <td className="uppercase">{worksheetDocTypeLabel(doc.docType, true)}</td>
             <td className="text-[11px] uppercase">{doc.slot.replaceAll("_", " ")}</td>
             <td>
               {doc.slot === "source_doc" ? (

@@ -23,6 +23,7 @@ export async function AppShell({
   actions,
   columns,
   allowMfaPending = false,
+  utilityChrome = false,
 }: {
   children: ReactNode;
   title: string;
@@ -30,6 +31,8 @@ export async function AppShell({
   actions?: ReactNode;
   columns?: ReactNode;
   allowMfaPending?: boolean;
+  /** Lead + deal worksheet only: logo, search, notifications, profile. */
+  utilityChrome?: boolean;
 }) {
   const [session, actor, userRows, alertRows] = await Promise.all([
     currentDeskSession(),
@@ -77,7 +80,7 @@ export async function AppShell({
           <DeskHeader
             title={title}
             eyebrow={eyebrow}
-            actions={actions ?? columns}
+            actions={utilityChrome ? undefined : actions ?? columns}
             unread={unread}
             alerts={headerAlerts}
             actor={actor}
@@ -86,6 +89,7 @@ export async function AppShell({
             canSwitchRole={session.canSwitchRole}
             impersonatorName={session.impersonatorName}
             isImpersonating={session.isImpersonating}
+            utilityChrome={utilityChrome}
           />
           <main className="flex-1 p-5">{children}</main>
         </div>

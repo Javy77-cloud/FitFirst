@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import fixture from "@/lib/fixtures/ana-dib-ho3-2026-09-02.json";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { anaHomeSheetValues } from "@/lib/quote-sheet/ana-home";
-import { reportFromSheet, healthierThan } from "./report";
+import { reportFromSheet, healthierThan, sheetHealthLabel } from "./report";
 import { ruizHomeSheetValues } from "./ruiz-home";
 
 describe("completeness strip — blank vs filled, not a score", () => {
@@ -55,6 +55,12 @@ describe("completeness strip — blank vs filled, not a score", () => {
     expect(dealPage).toMatch(/tab=quote-sheet/);
     expect(sheetPanel).toMatch(/QuoteSheetForm/);
     expect(sheetPanel).toMatch(/FILL_FROM_DOCS_LABEL/);
+  });
+
+  it("labels check status Needs review on the deal worksheet strip", () => {
+    expect(sheetHealthLabel("check")).toBe("Needs review");
+    expect(sheetHealthLabel("confirmed")).toBe("Confirmed");
+    expect(sheetHealthLabel("missing")).toBe("Missing");
   });
 
   it("treats CHECK as blue, not confirmed, and blanks as yellow missing", () => {

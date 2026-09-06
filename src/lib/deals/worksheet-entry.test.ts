@@ -1,0 +1,49 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+describe("lead + deal worksheet entry checklist", () => {
+  it("removes Ask a teammate and Activity timeline from the lead page", () => {
+    const src = readFileSync("src/app/leads/[id]/page.tsx", "utf8");
+    expect(src).not.toMatch(/RecordAskPanel|AskOnRecord|ActivityTimeline/);
+    expect(src).not.toMatch(/Ask a teammate/);
+    expect(src).not.toMatch(/Activity timeline/);
+    expect(src).toMatch(/utilityChrome/);
+    const convertAt = src.indexOf("Convert to deal");
+    expect(convertAt).toBeGreaterThan(0);
+    expect(src.slice(convertAt - 180, convertAt)).not.toMatch(/variant="outline"/);
+    expect(src.slice(convertAt - 180, convertAt)).toMatch(/data-ff-convert-deal/);
+  });
+
+  it("strips bind chrome from the deal worksheet top strip", () => {
+    const src = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
+    expect(src).toMatch(/data-ff-deal-identity/);
+    expect(src).toMatch(/utilityChrome/);
+    expect(src).toMatch(/QuickCommsBoard/);
+    expect(src).not.toMatch(/bindDeal/);
+    expect(src).not.toMatch(/Create personal contact|create Contact/);
+    expect(src).not.toMatch(/Create commercial business|create Business/);
+    expect(src).not.toMatch(/Business name|EIN \/ FEIN|Policy # at bind/);
+    expect(src).not.toMatch(/Bind \(creates/);
+  });
+
+  it("keeps Open activities on the rail and off the documents main column", () => {
+    const desk = readFileSync("src/components/deal/deal-upload-desk.tsx", "utf8");
+    const rail = readFileSync("src/components/record-context/record-context-rail.tsx", "utf8");
+    const deal = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
+    expect(desk).not.toMatch(/RailOpenActivities/);
+    expect(desk).not.toMatch(/Open activities/);
+    expect(rail).toMatch(/Open activities/);
+    expect(deal).toMatch(/RecordContextRail/);
+    expect(deal).toMatch(/QuickCommsBoard/);
+  });
+
+  it("uses a utility header flag instead of stripping chrome app-wide", () => {
+    const shell = readFileSync("src/components/app-shell.tsx", "utf8");
+    const header = readFileSync("src/components/desk-header.tsx", "utf8");
+    const contacts = readFileSync("src/app/contacts/[id]/page.tsx", "utf8");
+    expect(shell).toMatch(/utilityChrome/);
+    expect(header).toMatch(/utilityChrome/);
+    expect(header).toMatch(/data-ff-utility-chrome/);
+    expect(contacts).not.toMatch(/utilityChrome/);
+  });
+});
