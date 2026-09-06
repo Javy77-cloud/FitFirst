@@ -4,6 +4,7 @@ import { logLeadQueueContact } from "@/app/actions/lead-follow-up";
 import {
   CONTACT_ACTION_BUTTONS,
   contactActionButtonClass,
+  contactActionButtonStyle,
   contactActionHref,
   type ContactActionKind,
 } from "@/lib/desk/contact-actions";
@@ -70,6 +71,7 @@ function ContactActionButton({
           "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
           contactActionButtonClass(kind),
         )}
+        style={contactActionButtonStyle(kind)}
         title={
           href
             ? kind === "call"

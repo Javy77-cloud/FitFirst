@@ -1,8 +1,14 @@
-import { kindClass } from "@/lib/ops/calendar";
+/** Call / SMS / E-mail — one platform fill set. Calendar toolbar + Leads both use these. */
 
-/** Call / SMS / E-mail — calendar `ff-cal-*` colors are the desk standard. */
 export const CONTACT_ACTION_KINDS = ["call", "sms", "email"] as const;
 export type ContactActionKind = (typeof CONTACT_ACTION_KINDS)[number];
+
+/** KEEP palette from the Calendar Call / Email / SMS row (white labels). Not the green / orange / teal legend. */
+export const CONTACT_ACTION_COLORS = {
+  call: "#7A5C18",
+  sms: "#AC401C",
+  email: "#101C34",
+} as const;
 
 export const CONTACT_ACTION_BUTTONS = [
   { kind: "call" as const, method: "call" as const, label: "Call" },
@@ -14,9 +20,16 @@ export function isContactActionKind(value: string): value is ContactActionKind {
   return (CONTACT_ACTION_KINDS as readonly string[]).includes(value);
 }
 
-/** Same classes Calendar uses for Call / SMS / Email chips and event blocks. */
+/** Shared class name. Fill hex lives in CONTACT_ACTION_COLORS and --ff-action-*. */
 export function contactActionButtonClass(kind: ContactActionKind): string {
-  return kindClass(kind);
+  return `ff-cal-${kind}`;
+}
+
+export function contactActionButtonStyle(kind: ContactActionKind): {
+  backgroundColor: (typeof CONTACT_ACTION_COLORS)[ContactActionKind];
+  color: "#ffffff";
+} {
+  return { backgroundColor: CONTACT_ACTION_COLORS[kind], color: "#ffffff" };
 }
 
 export function telHref(phone?: string | null): string | null {

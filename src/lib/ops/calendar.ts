@@ -1,3 +1,4 @@
+import { contactActionButtonClass, isContactActionKind } from "@/lib/desk/contact-actions";
 import type { ActivityKind } from "@/lib/domain";
 
 export type CalendarActivity = {
@@ -231,9 +232,7 @@ export function kindClass(kind: string, meetingType?: string | null): string {
   if (meetingType === "training") return "ff-cal-training";
   if (meetingType === "company") return "ff-cal-company";
   if (kind === "meeting") return "ff-cal-meeting";
-  if (kind === "call") return "ff-cal-call";
-  if (kind === "sms") return "ff-cal-sms";
-  if (kind === "email") return "ff-cal-email";
+  if (isContactActionKind(kind)) return contactActionButtonClass(kind);
   return "ff-cal-task";
 }
 

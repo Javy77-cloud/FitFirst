@@ -45,6 +45,10 @@
   --ff-red-bg: #fde8e6;
   --ff-flag: #c2410c;
   --ff-flag-bg: #ffedd5;
+  /* Call / SMS / E-mail action fills — lock with CONTACT_ACTION_COLORS. */
+  --ff-action-call: #7A5C18;
+  --ff-action-sms: #AC401C;
+  --ff-action-email: #101C34;
   --ff-check: #1d4e89;
   --ff-check-bg: #dbeafe;
   --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
@@ -378,15 +382,15 @@ body[data-ff-col-resize] {
   color: #ffffff;
 }
 .ff-cal-call {
-  background: var(--ff-yellow);
+  background: var(--ff-action-call);
   color: #ffffff;
 }
 .ff-cal-sms {
-  background: var(--ff-flag);
+  background: var(--ff-action-sms);
   color: #ffffff;
 }
 .ff-cal-email {
-  background: var(--ff-navy);
+  background: var(--ff-action-email);
   color: #ffffff;
 }
 .ff-cal-company {

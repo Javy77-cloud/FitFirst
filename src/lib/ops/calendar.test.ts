@@ -72,7 +72,7 @@ describe("calendar helpers", () => {
     expect(activityOnDay(task, new Date(2026, 8, 3))).toBe(false);
   });
 
-  it("maps kinds to --ff-* calendar classes", () => {
+  it("maps kinds to --ff-* calendar classes and shares Call / SMS / Email with CONTACT_ACTION_COLORS", () => {
     expect(kindClass("task")).toBe("ff-cal-task");
     expect(kindClass("meeting")).toBe("ff-cal-meeting");
     expect(kindClass("meeting", "company")).toBe("ff-cal-company");

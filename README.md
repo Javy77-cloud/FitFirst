@@ -4,7 +4,35 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6p`)
+## Mac test now (`cursor/live-ff-tip-sep6q`)
+
+Platform-standard Call / SMS / E-mail action fills. Leads row buttons and Calendar toolbar Call / Email / SMS share `CONTACT_ACTION_COLORS` so they cannot drift. No schema or migrate.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6q && git pull
+npm install
+# skip db:migrate — colors only, no schema
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads** and **Calendar**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Locked fills | **Call** `#7A5C18` mustard, **SMS** `#AC401C` rust, **E-mail / Email** `#101C34` navy. White labels. Not the green / orange / teal Calendar legend. |
+| 2 | Leads row | Under the name / phone: **Call**, **SMS**, **E-mail** use those fills. Missing phone disables Call / SMS. Missing email disables E-mail. |
+| 3 | Calendar toolbar | Row 3 **Call** / **Email** / **SMS** use the same tokens as Leads. Day / Today chrome stays unchanged. |
+| 4 | One source | `CONTACT_ACTION_COLORS` + `contactActionButtonStyle` / `contactActionButtonClass`. Calendar `kindClass` for those three kinds points at the same class names. |
+
+### Stub walls (paid APIs not wired)
+
+- **Email / text send** — queued or held on `comms_outbound_jobs` with `vendor=stub` / `paid_api_wall`. Nothing leaves the desk.
+- **Call** — in-app task + alert only. No trunk / PSTN. `tel:` opens the device dialer.
+- **Agent pings** — `alerts` table only. Email remind-via is an agent stub and never emails Javy.
+
+## Mac test prior (`cursor/live-ff-tip-sep6p`)
 
 Leads overlay on sep6o plus the shared list-table standard (resize + sort). Follow-up editor is a 900px table. Default template is fourth. Response clock starts on first logged contact. Additive `0074_lead_follow_up_default` and `0075_list_column_layout` only. No AMS. No seed wipe.
 
