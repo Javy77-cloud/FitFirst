@@ -500,17 +500,23 @@ export function DeskSidebar({
           )}
         </Link>
       </div>
-      <div className={cn("shrink-0", narrow ? "px-1.5 pb-2 pt-2" : "px-3 pb-3 pt-3")}>
+      <div
+        className={cn(
+          "shrink-0 border-b border-sidebar-border",
+          narrow ? "px-1.5 pb-2 pt-2" : "px-3 pb-3 pt-3",
+        )}
+      >
         <button
           type="button"
           title={narrow ? "Expand sidebar" : "Collapse sidebar to icons"}
+          aria-label={narrow ? "Expand sidebar" : "Collapse sidebar"}
           aria-pressed={narrow}
           onClick={() => {
             setCustomizing(false);
             setRail((current) => (current === "narrow" ? "expanded" : "narrow"));
           }}
           className={cn(
-            "inline-flex items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white",
+            "inline-flex items-center justify-center rounded-md border border-sidebar-border/80 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white",
             narrow ? "mx-auto flex size-8" : "h-8 w-full gap-2 px-2",
           )}
         >
@@ -522,7 +528,7 @@ export function DeskSidebar({
           )}
         </button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto border-t border-sidebar-border p-2" aria-label="Desk">
+      <nav className="min-h-0 flex-1 overflow-y-auto p-2" aria-label="Desk">
         {renderSection(main, "Primary", "main")}
         {customizing ? (
           <div
@@ -540,17 +546,23 @@ export function DeskSidebar({
           <div className="min-h-1" />
         )}
       </nav>
-      <div className={cn("shrink-0 border-t border-sidebar-border", narrow ? "px-1.5 py-2" : "px-2 py-2")}>
-        <nav className="space-y-0.5" aria-label="Utility">
+      <div
+        className={cn(
+          "flex shrink-0 flex-col border-t border-sidebar-border pb-10",
+          narrow ? "px-1.5 pt-2" : "px-2 pt-2",
+        )}
+      >
+        <nav className="min-h-0 space-y-0.5 overflow-y-auto" aria-label="Utility">
           {renderSection(utility, "Utility", "utility")}
         </nav>
         {narrow ? null : (
-          <div className="mt-2 space-y-1.5 border-t border-sidebar-border pt-2">
+          <div className="mt-2 shrink-0 space-y-1.5 border-t border-sidebar-border pt-2">
             <button
               type="button"
+              data-nav-customize="1"
               aria-pressed={customizing}
               onClick={() => setCustomizing((current) => !current)}
-              className="flex w-full items-center gap-1.5 rounded-md px-1 py-1.5 text-caption text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white"
+              className="flex w-full items-center gap-1.5 rounded-md bg-sidebar-accent/50 px-1 py-1.5 text-caption text-white hover:bg-sidebar-accent"
             >
               <Settings2 className="size-3.5 shrink-0" />
               {customizing ? "Done customizing" : "Customize menu"}
