@@ -5,6 +5,7 @@ import {
   applyNavDrop,
   availableSubmenuLinks,
   DEFAULT_PRIMARY_ORDER,
+  DEFAULT_SUBMENUS,
   defaultStoredNavLayout,
   DIVIDER_ID,
   NAV_LAYOUT_VERSION,
@@ -87,6 +88,8 @@ describe("nav layout defaults", () => {
     );
     expect(byId.deals.submenu.map((item) => item.id)).toEqual(["quotes"]);
     expect(byId.contacts.submenu).toEqual([]);
+    expect(DEFAULT_SUBMENUS.policies).toEqual([]);
+    expect(byId.policies.submenu).toEqual([]);
     expect(byId.templates.submenu.map((item) => item.label)).toEqual([
       "Email signatures",
       "Email templates",
@@ -111,6 +114,11 @@ describe("nav layout defaults", () => {
     const addable = availableSubmenuLinks(defaultStoredNavLayout(), "contacts").map((item) => item.id);
     expect(addable).toContain("merge");
     expect(addable).toContain("social");
+    expect(addable).toContain("book-health");
+    const addableToPolicies = availableSubmenuLinks(defaultStoredNavLayout(), "policies").map((item) => item.id);
+    expect(addableToPolicies).toContain("book-health");
+    expect(addableToPolicies).toContain("renewals");
+    expect(addableToPolicies).toContain("certificates");
   });
 
   it("hides agency Settings, Admin, billing, and people from agents", () => {
@@ -134,6 +142,9 @@ describe("nav layout defaults", () => {
     }
     expect(ids).not.toContain("merge");
     expect(ids).not.toContain("social");
+    expect(ids).not.toContain("book-health");
+    expect(ids).not.toContain("renewals");
+    expect(ids).not.toContain("certificates");
     expect(hrefs).not.toContain("/get-started");
     expect(hrefs).not.toContain("/inbox");
     expect(hrefs).not.toContain("/support");
@@ -156,16 +167,17 @@ describe("nav layout defaults", () => {
 describe("normalizeNavLayout", () => {
   it("resets stale per-user prefs to the signed default rail", () => {
     const stale = normalizeNavLayout({
-      version: 2,
+      version: 3,
       primaryOrder: ["social", "home", "merge", "leads"],
       hiddenPrimaryIds: ["leads"],
-      submenus: { contacts: ["merge"], home: ["social"] },
+      submenus: { contacts: ["merge"], home: ["social"], policies: ["book-health", "renewals"] },
       personal: { timezone: "America/New_York", notifyInApp: true },
     });
     expect(stale.version).toBe(NAV_LAYOUT_VERSION);
     expect(stale.primaryOrder).toEqual([...DEFAULT_PRIMARY_ORDER]);
     expect(stale.hiddenPrimaryIds).toEqual([]);
     expect(stale.submenus.contacts).toEqual([]);
+    expect(stale.submenus.policies).toEqual([]);
     expect(stale.primaryOrder).not.toContain("social");
     expect(stale.primaryOrder).not.toContain("merge");
     expect(stale.personal).toEqual({ timezone: "America/New_York", notifyInApp: true });
@@ -352,5 +364,21 @@ describe("catalog", () => {
     expect(ids).toContain("templates");
     expect(ids).toContain("admin");
     expect(ids).toContain("reports");
+    for (const id of [
+      "book-health",
+      "renewals",
+      "certificates",
+      "service-requests",
+      "suspense",
+      "notices",
+      "endorsements",
+      "service-timeline",
+      "inspections",
+      "installments",
+      "claims",
+      "decline-log",
+    ]) {
+      expect(ids).toContain(id);
+    }
   });
 });

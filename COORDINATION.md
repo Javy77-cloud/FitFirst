@@ -1225,9 +1225,9 @@ Login **javy@fitfirst.local** / **javy**. Wipe keeps that user. Do not run `db:s
 
 One Mac Chrome tip for Javy’s Air nav-shell test. **`cursor/desk-nav-shell-1e87` already contains `cursor/live-ff-tip-sep5f`**, so this tip is taken FROM desk-nav-shell (no merge needed). Local and origin desk-nav-shell were the same commit (`b83daaf`). Did **not** seed Ana. Did **not** wipe. Zoho `db:wipe-crm` / `db:import-zoho` / `db:assign-owner` stay as on sep5f.
 
-Nav shell that landed on this tip (`NAV_LAYOUT_VERSION` **3**):
+Nav shell that landed on this tip (`NAV_LAYOUT_VERSION` **4**):
 
-- Default rail: Home, Leads, Deals(+Quotes), Contacts, Policies, Business collapsed, Carriers collapsed, divider, Tasks, Calendar, Templates(+ email signatures / email templates / document templates), Reports, Settings (admin), Admin (admin).
+- Default rail: Home, Leads, Deals(+Quotes), Contacts, Policies (no default submenu), Business collapsed, Carriers collapsed, divider, Tasks, Calendar, Templates(+ email signatures / email templates / document templates), Reports, Settings (admin), Admin (admin). AMS catalog rows (Book health, Renewals, Certificates, …) stay addable in Customize — they are not nested under Policies by default.
 - Profile avatar: Edit Profile, Password, Settings (`/me` personal only), Sign Out. Switch role stays Admin view-as and writes `role_switch` to the E&O trail.
 - Customize: free DnD either direction (main ↔ folder). Reset to default restores the signed rail (ahead of a pending save). Collapse control is top-right of the sidebar header.
 - Social / Merge stay catalog extras, not default top-level.

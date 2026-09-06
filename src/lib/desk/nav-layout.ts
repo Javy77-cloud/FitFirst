@@ -9,7 +9,7 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 3 as const;
+export const NAV_LAYOUT_VERSION = 4 as const;
 export const DIVIDER_ID = "divider";
 
 /** Default rail, top → bottom. Divider splits CRM from utility. */
@@ -39,20 +39,7 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   leads: [],
   deals: ["quotes"],
   contacts: [],
-  policies: [
-    "book-health",
-    "renewals",
-    "certificates",
-    "service-requests",
-    "suspense",
-    "notices",
-    "endorsements",
-    "service-timeline",
-    "inspections",
-    "installments",
-    "claims",
-    "decline-log",
-  ],
+  policies: [],
   business: [],
   carriers: [],
   tasks: ["work-queue"],

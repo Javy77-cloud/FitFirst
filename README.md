@@ -8,7 +8,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 **`cursor/live-ff-tip-sep6-nav`** tips from **`cursor/desk-nav-shell-1e87`**, which already contains **`cursor/live-ff-tip-sep5f`**. Navigation / shell only on top of the live CRM+Quote desk. No CRM page content changes. No new migration. No seed. Do not seed Ana.
 
-Default rail, top → bottom: **Home**, **Leads**, **Deals** (Quotes nested), **Contacts** (no default submenu), **Policies**, **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks**, **Calendar**, **Templates** (email signatures / email templates / document templates), **Reports**, **Settings** (agency, admin only), **Admin** (admin only). Social, Merge, and other catalog extras stay addable in Customize — they are not default top-level. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **3**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
+Default rail, top → bottom: **Home**, **Leads**, **Deals** (Quotes nested), **Contacts** (no default submenu), **Policies** (no default submenu), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks**, **Calendar**, **Templates** (email signatures / email templates / document templates), **Reports**, **Settings** (agency, admin only), **Admin** (admin only). Social, Merge, Book health, and other catalog extras stay addable in Customize — they are not default top-level. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **4**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
 
 Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` — personal only), **Sign Out**. **Switch role** stays for Admin view-as and writes `role_switch` to the E&O trail. Collapse control is the top-right of the sidebar header. Utility rows stay pinned so they do not scroll away.
 
@@ -61,7 +61,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 8. **`cursor/ff-nav-hide-items-d507`** — hide or show any primary rail module. Settings stays pinned and unhidable. Visibility lives on the same `nav_layout` blob as reorder.
 9. **`cursor/ff-live-typeahead-search-d2d4`** — header Smart Search typeaheads the book as you type. Module list filters use the same live-contains box.
 10. **`cursor/ff-leads-actions-delete-fb86`** — Leads list Delete (double confirm; shops stay; Ana locked). Shared Actions dropdown is `w-max` so labels do not wrap. Hard delete asks twice everywhere.
-11. **`cursor/desk-nav-shell-1e87`** — signed default rail (`NAV_LAYOUT_VERSION` **3**): Home, Leads, Deals(+Quotes), Contacts, Policies, Business collapsed, Carriers collapsed, divider, Tasks, Calendar, Templates(+3), Reports, Settings admin, Admin admin. Profile dropdown personal settings, Switch role audit, free DnD customizer, Reset to default, collapse top-right.
+11. **`cursor/desk-nav-shell-1e87`** — signed default rail (`NAV_LAYOUT_VERSION` **4**): Home, Leads, Deals(+Quotes), Contacts, Policies (empty), Business collapsed, Carriers collapsed, divider, Tasks, Calendar, Templates(+3), Reports, Settings admin, Admin admin. Profile dropdown personal settings, Switch role audit, free DnD customizer, Reset to default, collapse top-right. AMS catalog rows stay addable; they are not nested under Policies by default.
 
 Skipped for the next tip: AMS waves 10–16. No AMS on this merge.
 
@@ -117,7 +117,7 @@ Default rail: **Home · Leads · Deals · Contacts · Policies · Business · Ca
 3. **Customize menu** at the bottom of the rail. Drag any row — nothing is locked. Drop onto a folder to nest; drop on the main list to pull a child out. Clear drop-zone highlight shows where it will land. Eye still hides a primary while you edit.
 4. **Reset to default** restores the factory structure above (still no demo stubs).
 5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
-6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog (default under Policies) — this slice is nav chrome only.
+6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. AMS rows stay in the catalog so Customize can add them anywhere — they are **not** nested under Policies by default.
 
 ### Air checkout (no wipe, skip seed)
 

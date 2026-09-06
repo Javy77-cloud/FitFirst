@@ -92,6 +92,7 @@ describe("primary desk nav", () => {
     expect(NAV_GROUPS.find((group) => group.id === "contacts")?.items).toEqual([]);
     expect(labels).not.toContain("Merge");
     expect(labels).not.toContain("Social");
+    expect(NAV_GROUPS.find((group) => group.id === "policies")?.items).toEqual([]);
     expect(deals?.items.some((item) => item.label === "Quotes")).toBe(true);
     expect(pathIsActive("/deals", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
     expect(pathIsActive("/pipeline", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
