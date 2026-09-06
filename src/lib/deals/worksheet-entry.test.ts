@@ -8,10 +8,12 @@ describe("lead + deal worksheet entry checklist", () => {
     expect(src).not.toMatch(/Ask a teammate/);
     expect(src).not.toMatch(/Activity timeline/);
     expect(src).toMatch(/utilityChrome/);
-    const convertAt = src.indexOf("Convert to deal");
+    const convertAt = src.indexOf("data-ff-convert-deal");
     expect(convertAt).toBeGreaterThan(0);
-    expect(src.slice(convertAt - 180, convertAt)).not.toMatch(/variant="outline"/);
-    expect(src.slice(convertAt - 180, convertAt)).toMatch(/data-ff-convert-deal/);
+    expect(src.slice(convertAt, convertAt + 220)).toMatch(/>\s*Convert\s*</);
+    expect(src).not.toMatch(/Start shop/);
+    expect(src).not.toMatch(/Convert to deal/);
+    expect(src.slice(Math.max(0, convertAt - 180), convertAt)).not.toMatch(/variant="outline"/);
   });
 
   it("strips bind chrome from the deal worksheet top strip", () => {

@@ -87,7 +87,7 @@ describe("nav layout defaults", () => {
   });
 
   it("nests Quotes under Deals and template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(6);
+    expect(NAV_LAYOUT_VERSION).toBe(7);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
@@ -237,6 +237,21 @@ describe("nav layout defaults", () => {
     const labels = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.label);
     expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(labels.filter((label) => label === "Deals")).toHaveLength(1);
+  });
+
+  it("resets v6 prefs so Operations is last under Admin with eight kids", () => {
+    const next = normalizeNavLayout({
+      version: 6,
+      primaryOrder: [...DEFAULT_PRIMARY_ORDER, "operations"],
+      hiddenPrimaryIds: ["operations", "billing"],
+      submenus: { admin: ["agents", "billing"], operations: [] },
+    });
+    expect(next.version).toBe(7);
+    expect(next.primaryOrder).not.toContain("operations");
+    expect(next.hiddenPrimaryIds).not.toContain("operations");
+    expect(next.submenus.admin.at(-1)).toBe("operations");
+    expect(next.submenus.admin).not.toContain("billing");
+    expect(next.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
   });
 
   it("keeps Operations adminOnly and never a top-level rail row", () => {

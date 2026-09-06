@@ -9,7 +9,7 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 6 as const;
+export const NAV_LAYOUT_VERSION = 7 as const;
 export const DIVIDER_ID = "divider";
 
 /** Admin-only Operations folder — last child of Admin, never a top-level rail row. */
@@ -288,8 +288,40 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
     ? parsed.hiddenPrimaryIds.filter((id): id is string => typeof id === "string")
     : [];
   const hiddenPrimaryIds = uniqueKnown(savedHidden.filter((id) => isHidablePrimaryId(id)));
+  const pinned = pinOperationsFolder(primaryOrder, hiddenPrimaryIds, submenus);
 
-  return { version: NAV_LAYOUT_VERSION, primaryOrder, hiddenPrimaryIds, submenus, personal };
+  return {
+    version: NAV_LAYOUT_VERSION,
+    primaryOrder: pinned.primaryOrder,
+    hiddenPrimaryIds: pinned.hiddenPrimaryIds,
+    submenus: pinned.submenus,
+    personal,
+  };
+}
+
+/** Operations is always last under Admin, never a top-level rail row. Prefs cannot hide the folder. */
+function pinOperationsFolder(
+  primaryOrder: string[],
+  hiddenPrimaryIds: string[],
+  submenus: Record<string, string[]>,
+): {
+  primaryOrder: string[];
+  hiddenPrimaryIds: string[];
+  submenus: Record<string, string[]>;
+} {
+  const reserved = new Set<string>(["operations", ...OPERATIONS_NAV_IDS]);
+  const nextPrimary = primaryOrder.filter((id) => !reserved.has(id));
+  const nextHidden = hiddenPrimaryIds.filter((id) => !reserved.has(id));
+  const nextSubs: Record<string, string[]> = {};
+  for (const [parent, children] of Object.entries(submenus)) {
+    if (parent === "operations") continue;
+    nextSubs[parent] = children.filter((id) => !reserved.has(id));
+  }
+  const admin = [...(nextSubs.admin ?? [])].filter((id) => id !== "operations" && !reserved.has(id));
+  admin.push("operations");
+  nextSubs.admin = admin;
+  nextSubs.operations = [...OPERATIONS_NAV_IDS];
+  return { primaryOrder: nextPrimary, hiddenPrimaryIds: nextHidden, submenus: nextSubs };
 }
 
 export function parseStoredNavLayout(raw: string | null | undefined): StoredNavLayout {

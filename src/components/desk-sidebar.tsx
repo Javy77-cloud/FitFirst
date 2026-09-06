@@ -245,11 +245,22 @@ export function DeskSidebar({
     };
   }
 
-  function renderItem(row: ResolvedNavItem, section: "main" | "utility") {
+  function renderItem(row: ResolvedNavItem, _section: "main" | "utility") {
     const open = customizing ? row.submenu.length > 0 : openId === row.id;
     const Icon = row.link.icon;
     const panelId = `ff-nav-${row.id}`;
-    const primaryActive = pathIsActive(pathname, row.link);
+    const submenuItemActive = (item: ResolvedNavItem["submenu"][number]) => {
+      const settingsSection = search.get("section");
+      if (item.href.includes("section=")) {
+        return pathname === "/me" && settingsSection === "signature" && item.href.includes("section=signature");
+      }
+      return pathIsActive(pathname, item);
+    };
+    const deepestActive = row.submenu.some(
+      (item) =>
+        submenuItemActive(item) || (item.children ?? []).some((child) => pathIsActive(pathname, child)),
+    );
+    const primaryActive = pathIsActive(pathname, row.link) && !deepestActive;
     const showChevron = !narrow && !customizing && row.submenu.length > 0;
     const intoKey = dropKey({ type: "into", id: row.id });
     const beforeKey = dropKey({ type: "before", id: row.id });
@@ -259,7 +270,7 @@ export function DeskSidebar({
     const showKids = open && !narrow && row.submenu.length > 0;
 
     return (
-      <div key={row.id} className="relative">
+      <div key={row.id} className="relative" data-nav-id={row.id} data-nav-primary={row.id}>
         {customizing ? (
           <div
             {...dropHandlers(beforeKey)}
@@ -331,25 +342,21 @@ export function DeskSidebar({
         {showKids ? (
           <div
             id={panelId}
-            className={cn(
-              "mt-0.5 space-y-0.5",
-              !customizing && section === "utility" ? "max-h-36 overflow-y-auto" : "",
-            )}
+            className="mt-0.5 space-y-0.5"
             role="region"
             aria-label={row.link.label}
+            data-nav-parent={row.id}
           >
             {row.submenu.map((item) => {
               const SubIcon = item.icon;
-              const settingsSection = search.get("section");
-              const active = item.href.includes("section=")
-                ? pathname === "/me" && settingsSection === "signature" && item.href.includes("section=signature")
-                : pathIsActive(pathname, item);
+              const nestedKids = item.children ?? [];
+              const nestedKidActive = nestedKids.some((child) => pathIsActive(pathname, child));
+              const active = submenuItemActive(item) && !nestedKidActive;
               const beforeChild = dropKey({ type: "before", id: item.id });
               const afterChild = dropKey({ type: "after", id: item.id });
               const childDragging = draggingId === item.id;
-              const nestedKids = item.children ?? [];
               return (
-                <div key={`${row.id}-${item.id}`} className="relative">
+                <div key={`${row.id}-${item.id}`} className="relative" data-nav-id={item.id}>
                   {customizing ? (
                     <div
                       {...dropHandlers(beforeChild)}
@@ -390,7 +397,11 @@ export function DeskSidebar({
                     </Link>
                   </div>
                   {nestedKids.length > 0 ? (
-                    <div className="mt-0.5 space-y-0.5 pl-3" aria-label={`${item.label} folder`}>
+                    <div
+                      className="mt-0.5 space-y-0.5 pl-3"
+                      aria-label={`${item.label} folder`}
+                      data-nav-folder={item.id}
+                    >
                       {nestedKids.map((child) => {
                         const NestedIcon = child.icon;
                         const nestedActive = pathIsActive(pathname, child);
@@ -399,6 +410,7 @@ export function DeskSidebar({
                             key={`${item.id}-${child.id}`}
                             href={child.href}
                             title={child.label}
+                            data-nav-id={child.id}
                             draggable={false}
                             className={cn(
                               "flex min-w-0 items-center gap-2 rounded-md py-1.5 pr-2 text-sm",

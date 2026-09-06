@@ -139,7 +139,7 @@ export default async function LeadDetailPage({
             <input type="hidden" name="state" value={lead.state ?? "FL"} />
             <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
             <Button type="submit" data-ff-convert-deal>
-              Convert to deal
+              Convert
             </Button>
             <p className="w-full text-helper text-muted-foreground">
               Convert when ready to shop. Source docs and the master-sheet approve gate live on

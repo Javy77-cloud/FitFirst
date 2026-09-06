@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function StartShopForm({
   leadId,
-  label = "Start shop",
+  label = "Convert",
   showLine = false,
   size = "xs",
 }: {
@@ -31,8 +31,8 @@ export function StartShopForm({
     >
       <input type="hidden" name="leadId" value={leadId} />
       {showLine ? <LinePicker defaultCode="HO" /> : <input type="hidden" name="line" value="HO" />}
-      <Button type="submit" size={size} disabled={pending}>
-        {pending ? "Starting…" : label}
+      <Button type="submit" size={size}>
+        {pending ? "Converting…" : label}
       </Button>
       {error ? <p className="mt-1 text-xs text-fit-red">{error}</p> : null}
     </form>

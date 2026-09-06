@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BookFilterBar } from "@/components/desk/book-filter-bar";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { StagePill } from "@/components/fit-badge";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
@@ -18,6 +17,22 @@ const VIEWS: Array<[PipelineViewId, string]> = [
   ["board", "Board"],
   ["funnel", "Funnel"],
 ];
+
+const ACTIVE_SLUGS = ["p-c", "health", "life", "flood"] as const;
+const CLOSED_SLUGS = ["won-lost", "archive"] as const;
+const SKIP_SLUGS = new Set(["law", "legal"]);
+const PC_SUBS = [
+  { id: "home", label: "Home" },
+  { id: "auto", label: "Auto" },
+  { id: "flood", label: "Flood" },
+  { id: "commercial", label: "Commercial" },
+] as const;
+
+function chipClass(on: boolean) {
+  return on
+    ? "rounded-md bg-primary px-2.5 py-1 text-primary-foreground"
+    : "rounded-md border border-border bg-card px-2.5 py-1 text-navy hover:border-primary";
+}
 
 export function DealWorkspaceBar({
   boards,
@@ -54,40 +69,53 @@ export function DealWorkspaceBar({
     healthSub,
     attention,
   };
-  const showBookBar =
-    !pipeline || pipeline === "p-c" || pipeline === "life" || pipeline === "health" || pipeline === "flood";
-  const hideFamily = Boolean(pipeline);
-  const boardFamily = pipeline === "life" || pipeline === "health" ? pipeline : family;
+  const bySlug = new Map(boards.filter((item) => !SKIP_SLUGS.has(item.slug)).map((item) => [item.slug, item]));
+  const left = ACTIVE_SLUGS.map((slug) => bySlug.get(slug)).filter((item): item is BoardTab => Boolean(item));
+  const right = CLOSED_SLUGS.map((slug) => bySlug.get(slug)).filter((item): item is BoardTab => Boolean(item));
+  const subtypeChips =
+    pipeline === "p-c"
+      ? PC_SUBS.map((item) => ({ id: item.id, label: item.label, key: "pcSub" as const }))
+      : pipeline === "health"
+        ? settings.healthOptions.map((item) => ({ id: item.slug, label: item.label, key: "healthSub" as const }))
+        : pipeline === "life"
+          ? settings.lifeOptions.map((item) => ({ id: item.slug, label: item.label, key: "lifeSub" as const }))
+          : [];
 
   return (
     <div className="mb-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Link
-          href={dealsHref({ ...extras, pipeline: null })}
-          className={
-            !pipeline
-              ? "rounded-md bg-primary px-2.5 py-1 text-primary-foreground"
-              : "rounded-md border border-border bg-card px-2.5 py-1 text-navy hover:border-primary"
-          }
-        >
+        <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)}>
           All
         </Link>
-        {boards.map((item) => (
+        {left.map((item) => (
           <Link
             key={item.slug}
             href={dealsHref({
               ...extras,
               pipeline: item.slug,
               family: null,
-              lifeSub: item.slug === pipeline ? lifeSub : null,
-              healthSub: item.slug === pipeline ? healthSub : null,
-              pcSub: item.slug === "p-c" || item.slug === pipeline ? pcSub : null,
+              lifeSub: item.slug === "life" ? lifeSub : null,
+              healthSub: item.slug === "health" ? healthSub : null,
+              pcSub: item.slug === "p-c" ? pcSub : null,
             })}
-            className={
-              item.slug === pipeline
-                ? "rounded-md bg-primary px-2.5 py-1 text-primary-foreground"
-                : "rounded-md border border-border bg-card px-2.5 py-1 text-navy hover:border-primary"
-            }
+            className={chipClass(item.slug === pipeline)}
+          >
+            {pipelineTabLabel(item)}
+          </Link>
+        ))}
+        {right.length > 0 ? <span className="mx-1 h-6 w-px self-center bg-border" aria-hidden /> : null}
+        {right.map((item) => (
+          <Link
+            key={item.slug}
+            href={dealsHref({
+              ...extras,
+              pipeline: item.slug,
+              family: null,
+              lifeSub: null,
+              healthSub: null,
+              pcSub: null,
+            })}
+            className={chipClass(item.slug === pipeline)}
           >
             {pipelineTabLabel(item)}
           </Link>
@@ -109,6 +137,34 @@ export function DealWorkspaceBar({
           ))}
         </span>
       </div>
+      {subtypeChips.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm" aria-label="Subtype">
+          {subtypeChips.map((item) => {
+            const on =
+              item.key === "pcSub"
+                ? pcSub === item.id
+                : item.key === "healthSub"
+                  ? healthSub === item.id
+                  : lifeSub === item.id;
+            return (
+              <Link
+                key={`${item.key}-${item.id}`}
+                href={dealsHref({
+                  ...extras,
+                  pipeline,
+                  family: null,
+                  pcSub: item.key === "pcSub" && !on ? item.id : null,
+                  healthSub: item.key === "healthSub" && !on ? item.id : null,
+                  lifeSub: item.key === "lifeSub" && !on ? item.id : null,
+                })}
+                className={chipClass(on)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-end gap-2">
         <LiveContainsInput
           moduleId="deals"
@@ -117,24 +173,6 @@ export function DealWorkspaceBar({
           aria-label="Search deals"
           inputClassName="h-8 w-56 text-sm"
         />
-        {showBookBar ? (
-          <BookFilterBar
-            action="/deals"
-            settings={settings}
-            family={boardFamily ?? undefined}
-            pcSub={pcSub ?? undefined}
-            lifeSub={lifeSub ?? undefined}
-            healthSub={healthSub ?? undefined}
-            hideFamily={hideFamily}
-            searchModuleId="deals"
-            hidden={{
-              ...(pipeline ? { pipeline } : {}),
-              ...(parsedView !== "table" ? { view: parsedView } : {}),
-              ...(stage ? { stage } : {}),
-              ...(attention ? { attention } : {}),
-            }}
-          />
-        ) : null}
       </div>
     </div>
   );
