@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   overrideLeadFollowUpTemplate,
   scheduleLeadNurture,
   updateLeadQueueStatus,
   updateLeadTemperature,
 } from "@/app/actions/lead-follow-up";
+import { publishLeadClock, subscribeLeadClock } from "@/lib/leads/clock-sync";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function LeadStatusSelect({ leadId, status }: { leadId: string; status: string }) {
+  const router = useRouter();
   const [value, setValue] = useState(status);
   const [pending, start] = useTransition();
   const [nurtureOpen, setNurtureOpen] = useState(false);
@@ -49,8 +52,14 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
     const form = new FormData();
     form.set("leadId", leadId);
     form.set("status", next);
-    start(() => {
-      void updateLeadQueueStatus(form);
+    start(async () => {
+      const result = await updateLeadQueueStatus(form);
+      publishLeadClock({
+        leadId,
+        dueAt: result?.dueAt ?? null,
+        followUpName: result?.followUpName ?? "",
+      });
+      router.refresh();
     });
   }
 
@@ -232,12 +241,26 @@ export function LeadTemplateOverride({
   templates: Array<{ id: string; name: string; triggerStatus: string }>;
   resolvedName: string;
 }) {
+  const router = useRouter();
   const [value, setValue] = useState(templateId ?? "");
+  const [name, setName] = useState(resolvedName);
   const [pending, start] = useTransition();
 
   useEffect(() => {
     setValue(templateId ?? "");
   }, [templateId]);
+
+  useEffect(() => {
+    setName(resolvedName);
+  }, [resolvedName]);
+
+  useEffect(() => {
+    return subscribeLeadClock((patch) => {
+      if (patch.leadId === leadId && patch.followUpName != null) {
+        setName(patch.followUpName || "—");
+      }
+    });
+  }, [leadId]);
 
   const defaultTemplate = templates.find((row) => isDefaultFollowUpTemplate(row));
   const overrides = FOLLOW_UP_OVERRIDE_OPTIONS.map((option) => {
@@ -253,7 +276,7 @@ export function LeadTemplateOverride({
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-navy" data-testid="lead-template-name">
-        {resolvedName}
+        {name}
       </p>
       <select
         name="templateId"
@@ -266,8 +289,14 @@ export function LeadTemplateOverride({
           const form = new FormData();
           form.set("leadId", leadId);
           form.set("templateId", next);
-          start(() => {
-            void overrideLeadFollowUpTemplate(form);
+          start(async () => {
+            const result = await overrideLeadFollowUpTemplate(form);
+            publishLeadClock({
+              leadId,
+              dueAt: result?.dueAt ?? null,
+              followUpName: result?.followUpName ?? "",
+            });
+            router.refresh();
           });
         }}
         className="h-7 max-w-[11.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"

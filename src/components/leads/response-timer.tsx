@@ -1,41 +1,62 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { releaseDueLeadFollowUpsNow } from "@/app/actions/lead-follow-up";
+import { subscribeLeadClock } from "@/lib/leads/clock-sync";
 import { formatCountdownClock, responseTimerState } from "@/lib/leads/queue";
 import { cn } from "@/lib/utils";
 
 /** Same on server and first client paint — live clock starts after mount. */
 const CLOCK_PLACEHOLDER = "--:--";
 
-export function ResponseTimer({ dueAt }: { dueAt: string | null }) {
+export function ResponseTimer({ leadId, dueAt }: { leadId?: string; dueAt: string | null }) {
+  const router = useRouter();
+  const [localDue, setLocalDue] = useState<string | null>(dueAt);
   const [now, setNow] = useState<number | null>(null);
   const fired = useRef(false);
 
   useEffect(() => {
-    if (!dueAt) return;
+    setLocalDue(dueAt);
+  }, [dueAt]);
+
+  useEffect(() => {
+    if (!leadId) return;
+    return subscribeLeadClock((patch) => {
+      if (patch.leadId === leadId) setLocalDue(patch.dueAt);
+    });
+  }, [leadId]);
+
+  useEffect(() => {
+    if (!localDue) {
+      setNow(null);
+      return;
+    }
     setNow(Date.now());
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(tick);
-  }, [dueAt]);
+  }, [localDue]);
 
   useEffect(() => {
     fired.current = false;
-  }, [dueAt]);
+  }, [localDue]);
 
   useEffect(() => {
-    if (!dueAt || now === null || fired.current) return;
-    if (now < new Date(dueAt).getTime()) return;
+    if (!localDue || now === null || fired.current) return;
+    if (now < new Date(localDue).getTime()) return;
     fired.current = true;
-    void releaseDueLeadFollowUpsNow();
-  }, [dueAt, now]);
+    void releaseDueLeadFollowUpsNow().then(() => {
+      router.refresh();
+    });
+  }, [localDue, now, router]);
 
-  if (!dueAt) {
+  if (!localDue) {
     return (
       <span
         className="font-mono text-xs tabular-nums text-muted-foreground"
         data-overdue="false"
         data-timer="idle"
+        data-testid="response-timer"
         title="Timer starts when status changes to contacted"
       >
         {CLOCK_PLACEHOLDER}
@@ -49,6 +70,7 @@ export function ResponseTimer({ dueAt }: { dueAt: string | null }) {
         className="font-mono text-xs tabular-nums text-navy"
         data-overdue="false"
         data-timer="pending"
+        data-testid="response-timer"
         title="Next follow-up step"
       >
         {CLOCK_PLACEHOLDER}
@@ -56,7 +78,7 @@ export function ResponseTimer({ dueAt }: { dueAt: string | null }) {
     );
   }
 
-  const state = responseTimerState(dueAt, new Date(now));
+  const state = responseTimerState(localDue, new Date(now));
 
   return (
     <span
@@ -66,6 +88,7 @@ export function ResponseTimer({ dueAt }: { dueAt: string | null }) {
       )}
       data-overdue={state.overdue ? "true" : "false"}
       data-timer={state.overdue ? "overdue" : "counting"}
+      data-testid="response-timer"
       title={state.overdue ? "Step overdue — act on this lead" : "Time until the next follow-up step"}
     >
       {formatCountdownClock(state.remainingMs)}

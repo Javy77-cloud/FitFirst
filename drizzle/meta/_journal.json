@@ -547,6 +547,13 @@
       "when": 1788690000000,
       "tag": "0077_lead_follow_up_contacted",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1788730000000,
+      "tag": "0078_default_first_step_popup",
+      "breakpoints": true
     }
   ]
 }

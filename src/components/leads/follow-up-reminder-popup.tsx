@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { followUpLeadHref, parseFollowUpNotification } from "@/lib/desk/notifications";
+import { publishLeadClock } from "@/lib/leads/clock-sync";
 import type { SnoozeDelayUnit } from "@/lib/leads/follow-up-templates";
 
 export type FollowUpPopupAlert = {
@@ -74,7 +75,13 @@ export function FollowUpReminderPopup({
     form.set("alertId", shown.id);
     form.set("amount", String(amount));
     form.set("unit", unit);
-    await snoozeLeadFollowUpReminder(form);
+    const result = await snoozeLeadFollowUpReminder(form);
+    if (result.leadId) {
+      publishLeadClock({
+        leadId: result.leadId,
+        dueAt: result.dueAt ? new Date(result.dueAt).toISOString() : null,
+      });
+    }
     setPending(false);
     setOpen(false);
   }

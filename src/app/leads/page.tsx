@@ -17,7 +17,7 @@ import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters
 import { haystack } from "@/lib/search/live-query";
 import { listFollowUpTemplates, listLeadFollowUps } from "@/lib/db/lead-follow-up-queries";
 import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
-import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
+import { canStartFollowUpClock, followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
 import { resetLeadsWithoutLoggedContact } from "@/lib/leads/reset-untouched";
 import {
   isLeadOnQueue,
@@ -175,10 +175,13 @@ export default async function LeadsPage({
                   : "No open leads. Converted records are on Deals."
               }
               rows={rows.map((lead) => {
-                const nextDue = nextByLead.get(lead.id) ?? releasedByLead.get(lead.id);
+                const status = normalizeLeadStatus(lead.status);
+                const nextDue =
+                  nextByLead.get(lead.id) ??
+                  (canStartFollowUpClock(status) ? releasedByLead.get(lead.id) : undefined);
                 const picked = pickTemplateForLead(templates, {
                   followUpTemplateId: lead.followUpTemplateId,
-                  status: normalizeLeadStatus(lead.status),
+                  status,
                 });
                 return {
                   key: lead.id,
@@ -186,7 +189,7 @@ export default async function LeadsPage({
                   hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
                   sort: {
                     name: `${lead.lastName}, ${lead.firstName}`,
-                    status: normalizeLeadStatus(lead.status),
+                    status,
                     source: sourceLabel(lead.source),
                     timer: nextDue ? String(nextDue.getTime()) : "0",
                     heat: lead.temperature ?? "hot",
@@ -206,11 +209,9 @@ export default async function LeadsPage({
                         <LeadLogContact leadId={lead.id} phone={lead.phone} email={lead.email} />
                       </div>
                     ),
-                    status: (
-                      <LeadStatusSelect leadId={lead.id} status={normalizeLeadStatus(lead.status)} />
-                    ),
+                    status: <LeadStatusSelect leadId={lead.id} status={status} />,
                     source: sourceLabel(lead.source),
-                    timer: <ResponseTimer dueAt={toIsoString(nextDue)} />,
+                    timer: <ResponseTimer leadId={lead.id} dueAt={toIsoString(nextDue)} />,
                     heat: <LeadHeatToggle leadId={lead.id} temperature={lead.temperature} />,
                     followUp: (
                       <div className="space-y-1">

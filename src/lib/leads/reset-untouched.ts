@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { ensureFollowUpPlaybooks } from "@/lib/leads/ensure-playbooks";
 
 /**
  * One-time / idempotent Leads clock fix.
@@ -14,6 +15,7 @@ let ranOnce = false;
 export async function resetLeadsWithoutLoggedContact() {
   if (ranOnce) return;
   ranOnce = true;
+  await ensureFollowUpPlaybooks();
   await db.execute(sql`
     UPDATE leads AS l
     SET first_contact_at = first.occurred, updated_at = now()
@@ -57,5 +59,12 @@ export async function resetLeadsWithoutLoggedContact() {
       AND l.first_contact_at IS NULL
       AND lower(l.status) = 'new'
       AND l.tenant_id = ${DEFAULT_TENANT_ID}
+  `);
+
+  await db.execute(sql`
+    UPDATE lead_follow_up_steps
+    SET remind_via = 'popup'
+    WHERE id = 'a0710001-a071-4111-8111-a07100000031'
+      AND remind_via IS DISTINCT FROM 'popup'
   `);
 }

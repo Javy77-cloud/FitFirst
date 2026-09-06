@@ -57,9 +57,12 @@ describe("follow-up templates", () => {
   });
 
   it("maps Default to contacted and uses Aggressive / Steady / Drip only as overrides", () => {
-    expect(pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new" })?.id).toBe("def");
+    expect(pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new" })).toBeNull();
     expect(pickTemplateForLead([hot, warm, cold, contactedDefault], { status: "contacted" })?.id).toBe("cdef");
     expect(pickTemplateForLead([hot, warm, cold], { status: "new" })).toBeNull();
+    expect(
+      pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new", followUpTemplateId: "hot" })?.id,
+    ).toBe("hot");
     expect(
       pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "contacted", followUpTemplateId: "hot" })
         ?.id,
@@ -69,6 +72,7 @@ describe("follow-up templates", () => {
         ?.id,
     ).toBe("def");
     expect(canStartFollowUpClock("contacted")).toBe(true);
+    expect(canStartFollowUpClock("Contacted")).toBe(true);
     expect(canStartFollowUpClock("new")).toBe(false);
     expect(canStartFollowUpClock("warm")).toBe(false);
   });

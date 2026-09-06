@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Bell, Check } from "lucide-react";
-import { markAlertRead, markAllAlertsRead } from "@/app/actions/alerts";
-import { Button } from "@/components/ui/button";
+import { Bell } from "lucide-react";
+import { NotificationChecklist } from "@/components/desk/notification-checklist";
 import type { HeaderAlert } from "@/lib/desk/header-alerts";
 import {
   NOTIFICATION_BOARD_HREF,
@@ -13,7 +11,6 @@ import {
   NOTIFICATION_EMPTY_PANEL,
   NOTIFICATION_IN_APP_COPY,
   notificationHref,
-  parseFollowUpNotification,
   recentNotifications,
 } from "@/lib/desk/notifications";
 import { cn } from "@/lib/utils";
@@ -27,11 +24,9 @@ export function NotificationBell({
   alerts: HeaderAlert[];
   triggerClassName?: string;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const recent = recentNotifications(alerts);
-  const unreadInPanel = recent.some((alert) => !alert.read) || unread > 0;
 
   useEffect(() => {
     if (!open) return;
@@ -48,24 +43,6 @@ export function NotificationBell({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
-
-  async function markOne(id: string) {
-    const form = new FormData();
-    form.set("alertId", id);
-    await markAlertRead(form);
-    router.refresh();
-  }
-
-  async function markAll() {
-    await markAllAlertsRead();
-    router.refresh();
-  }
-
-  async function openItem(alert: HeaderAlert) {
-    if (!alert.read) await markOne(alert.id);
-    setOpen(false);
-    router.push(notificationHref(alert.href));
-  }
 
   return (
     <div className="relative" ref={rootRef} data-testid="notification-bell">
@@ -105,70 +82,23 @@ export function NotificationBell({
           >
             {NOTIFICATION_BOARD_LABEL}
           </Link>
-
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
-            <p className="text-xs text-muted-foreground">{NOTIFICATION_IN_APP_COPY}</p>
-            {unreadInPanel ? (
-              <Button type="button" size="xs" variant="ghost" onClick={() => void markAll()}>
-                Mark all as read
-              </Button>
-            ) : null}
-          </div>
-
+          <p className="shrink-0 border-b border-border px-3 py-2 text-xs text-muted-foreground">
+            {NOTIFICATION_IN_APP_COPY}
+          </p>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {recent.length === 0 ? (
-              <p className="px-3 py-6 text-sm text-muted-foreground">{NOTIFICATION_EMPTY_PANEL}</p>
-            ) : (
-              <ul>
-                {recent.map((alert) => {
-                  const copy = parseFollowUpNotification(alert);
-                  return (
-                    <li
-                      key={alert.id}
-                      className="flex items-start gap-2 border-b border-border px-3 py-2 last:border-b-0"
-                      data-testid="notification-row"
-                    >
-                      <button
-                        type="button"
-                        aria-label={alert.read ? "Read" : "Mark as read"}
-                        disabled={alert.read}
-                        onClick={() => void markOne(alert.id)}
-                        className={cn(
-                          "mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-sm border",
-                          alert.read
-                            ? "border-fit-red/30 text-fit-red/40"
-                            : "border-fit-red text-fit-red hover:bg-fit-red-bg",
-                        )}
-                      >
-                        <Check className="size-4" strokeWidth={3} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void openItem(alert)}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <span
-                          className={cn(
-                            "block truncate text-sm text-navy",
-                            !alert.read && "font-semibold",
-                          )}
-                        >
-                          {copy.action}
-                        </span>
-                        <span className="mt-0.5 block truncate text-sm text-navy/80">
-                          {copy.leadName}
-                        </span>
-                        {alert.createdAt ? (
-                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                            {alert.createdAt}
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <NotificationChecklist
+              resetKey={open}
+              empty={NOTIFICATION_EMPTY_PANEL}
+              alerts={recent.map((alert) => ({
+                id: alert.id,
+                title: alert.title,
+                body: alert.body,
+                kind: alert.kind,
+                read: alert.read,
+                href: notificationHref(alert.href),
+                when: alert.createdAt,
+              }))}
+            />
           </div>
         </div>
       ) : null}

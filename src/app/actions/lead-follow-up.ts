@@ -23,6 +23,7 @@ import {
   canStartFollowUpClock,
   FOLLOW_UP_HIDE_COOKIE,
   FOLLOW_UP_MODAL_REOPEN_MS,
+  followUpTemplateChipName,
   isDefaultFollowUpTemplate,
   isFollowUpMethod,
   isSnoozeDelayUnit,
@@ -30,6 +31,7 @@ import {
   normalizeRemindVia,
   outboundStubLabel,
   PAID_API_WALL_REASON,
+  pickTemplateForLead,
 } from "@/lib/leads/follow-up-templates";
 import {
   isNurtureDelayUnit,
@@ -50,29 +52,77 @@ function revalidateLeads(leadId?: string) {
   if (leadId) revalidatePath(`/leads/${leadId}`);
 }
 
+async function followUpResultForLead(
+  _leadId: string,
+  status: string,
+  followUpTemplateId: string | null,
+  scheduled?: { dueAt?: Date; templateName?: string },
+) {
+  const templates = await db
+    .select()
+    .from(leadFollowUpTemplates)
+    .where(eq(leadFollowUpTemplates.tenantId, DEFAULT_TENANT_ID));
+  const picked = pickTemplateForLead(
+    templates.map((row) => ({
+      id: row.id,
+      name: row.name,
+      triggerStatus: row.triggerStatus,
+      enabled: row.enabled,
+    })),
+    { followUpTemplateId, status },
+  );
+  const followUpName = picked ? followUpTemplateChipName(picked) : "";
+  if (!canStartFollowUpClock(status)) {
+    return { dueAt: null as string | null, followUpName };
+  }
+  if (scheduled?.dueAt) {
+    return {
+      dueAt: scheduled.dueAt.toISOString(),
+      followUpName: scheduled.templateName || followUpName || "Default",
+    };
+  }
+  return { dueAt: null as string | null, followUpName };
+}
+
 export async function updateLeadQueueStatus(formData: FormData) {
   const leadId = str(formData, "leadId");
   const status = normalizeLeadStatus(str(formData, "status"));
-  if (!leadId || !status) return;
+  if (!leadId || !status) return { dueAt: null as string | null, followUpName: "" };
   const [existing] = await db
     .select()
     .from(leads)
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
-  if (!existing) return;
-  if (normalizeLeadStatus(existing.status) === status) return;
-  if (status === "nurture") return;
-  await db
-    .update(leads)
-    .set({
-      status,
-      temperature: temperatureForStatus(status, existing.temperature),
-      nurtureUntil: null,
-      nurtureRemindVia: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(leads.id, leadId));
-  await fireLeadFollowUpForStatus(leadId, status);
+  if (!existing) return { dueAt: null, followUpName: "" };
+  if (status === "nurture") return { dueAt: null, followUpName: "" };
+  const statusChanged = normalizeLeadStatus(existing.status) !== status;
+  if (statusChanged) {
+    await db
+      .update(leads)
+      .set({
+        status,
+        temperature: temperatureForStatus(status, existing.temperature),
+        nurtureUntil: null,
+        nurtureRemindVia: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(leads.id, leadId));
+  }
+  const open = await db
+    .select()
+    .from(leadFollowUpQueue)
+    .where(
+      and(
+        eq(leadFollowUpQueue.tenantId, DEFAULT_TENANT_ID),
+        eq(leadFollowUpQueue.leadId, leadId),
+        eq(leadFollowUpQueue.status, "queued"),
+      ),
+    );
+  const needsSchedule = statusChanged || (canStartFollowUpClock(status) && open.length === 0);
+  const scheduled = needsSchedule
+    ? await fireLeadFollowUpForStatus(leadId, status)
+    : { dueAt: open[0]?.dueAt };
   revalidateLeads(leadId);
+  return followUpResultForLead(leadId, status, existing.followUpTemplateId, scheduled);
 }
 
 export async function scheduleLeadNurture(formData: FormData) {
@@ -134,10 +184,11 @@ export async function overrideLeadFollowUpTemplate(formData: FormData) {
     .update(leads)
     .set({ followUpTemplateId: nextId, updatedAt: new Date() })
     .where(eq(leads.id, leadId));
-  if (canStartFollowUpClock(existing.status)) {
-    await fireLeadFollowUpForStatus(leadId, existing.status);
-  }
+  const scheduled = canStartFollowUpClock(existing.status)
+    ? await fireLeadFollowUpForStatus(leadId, existing.status)
+    : undefined;
   revalidateLeads(leadId);
+  return followUpResultForLead(leadId, existing.status, nextId, scheduled);
 }
 
 export async function logLeadQueueContact(formData: FormData) {
@@ -175,8 +226,9 @@ export async function logLeadQueueContact(formData: FormData) {
     });
   }
   void PAID_API_WALL_REASON;
-  await completeLeadFollowUpAndAdvance(leadId);
+  const scheduled = await completeLeadFollowUpAndAdvance(leadId);
   revalidateLeads(leadId);
+  return followUpResultForLead(leadId, lead.status, lead.followUpTemplateId, scheduled);
 }
 
 export async function saveFollowUpTemplate(formData: FormData) {

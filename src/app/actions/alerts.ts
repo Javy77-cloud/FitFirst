@@ -36,6 +36,29 @@ export async function markAllAlertsRead() {
   revalidateNotificationSurfaces();
 }
 
+export async function markSelectedAlertsRead(formData: FormData) {
+  const raw = String(formData.get("alertIds") ?? "");
+  const ids = raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (ids.length === 0) return { updated: 0 };
+  const session = await currentDeskSession();
+  const visible = alertVisibleWhere(session, DEFAULT_TENANT_ID);
+  const now = new Date();
+  let updated = 0;
+  for (const id of ids) {
+    const result = await db
+      .update(alerts)
+      .set({ readAt: now })
+      .where(and(eq(alerts.id, id), visible, isNull(alerts.readAt)))
+      .returning({ id: alerts.id });
+    updated += result.length;
+  }
+  revalidateNotificationSurfaces();
+  return { updated };
+}
+
 export async function completeTask(formData: FormData) {
   const id = String(formData.get("taskId") ?? "");
   await db

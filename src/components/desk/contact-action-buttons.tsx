@@ -1,6 +1,7 @@
 "use client";
 
 import { logLeadQueueContact } from "@/app/actions/lead-follow-up";
+import { publishLeadClock } from "@/lib/leads/clock-sync";
 import {
   CONTACT_ACTION_BUTTONS,
   contactActionButtonClass,
@@ -57,7 +58,12 @@ function ContactActionButton({
         const form = new FormData();
         form.set("leadId", leadId);
         form.set("method", method);
-        await logLeadQueueContact(form);
+        const result = await logLeadQueueContact(form);
+        publishLeadClock({
+          leadId,
+          dueAt: result?.dueAt ?? null,
+          followUpName: result?.followUpName ?? "",
+        });
         if (href && typeof window !== "undefined") {
           window.location.href = href;
         }

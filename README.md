@@ -4,7 +4,36 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6t`)
+## Mac test now (`cursor/live-ff-tip-sep6w`)
+
+Clock + Default-on-contacted + live delays + one app-root modal + snooze on every channel + compact funnel headers + notification checkboxes. Operations stays top-level admin-only; Customize stays free. Additive `0078_default_first_step_popup` only (Default first step → in-app popup). No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6w && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Clock starts on contacted | New lead stays `--:--`. Change status to **contacted** — within ~1s Response counts down `5:00`, `4:59`… and Follow-up shows **Default**. Do not pick Default first. |
+| 2 | Countdown / red | Clock is black while counting. It turns **red only** at `0:00` if the agent has not acted. Completing or snoozing starts the next step and turns it black again. |
+| 3 | Step fire + next | At zero the Default first step fires an in-app popup. Clock stays red at `0:00` until you complete or snooze — then it resets to the next live delay (30 min, then 2 hours, then 1 day). |
+| 4 | Overrides | Aggressive / Steady / Drip replace Default for that lead. Switching back to Default restores contacted-linked Default. |
+| 5 | Live delay | Edit Default first step 5 → 3 min and save. Pending Default clocks reschedule to **3:00** from now. |
+| 6 | One modal | One notification modal at app root. New ping replaces content — never stacks, never a second copy after navigation. |
+| 7 | Open lead | **Open lead** closes the modal and goes to that lead. Modal does **not** reappear on the lead page. Notification is not cleared. Leave without acting — it returns after **10 minutes**. |
+| 8 | Mark as read | Closes completely. No blur / ghost on other pages. |
+| 9 | Snooze | Pop-up, email stub, and follow-up task all have **15 min / 1 hour / 1 day** plus Custom. SMS keyword `Snooze 1h` is documented only. |
+| 10 | Funnel headers | Leads, Deals, Contacts, Policies, Business, Carriers: small funnel → ASC/DESC popover. No ASC/DESC text in the header. Active funnel is filled. Name is live search only. |
+| 11 | Notification checks | Bell panel and `/notifications`: every row checkbox and Select all start **unchecked**. Open lead / Mark as read do not check them. Bulk Mark selected as read is disabled until you check a box. |
+
+## Mac test prior (`cursor/live-ff-tip-sep6t`)
 
 Clock engine + one follow-up modal + Default mapped to **contacted** + live template delays. Table headers stay the compact funnel from sep6s. No sidebar / Deals / Contacts content change. Additive `0077_lead_follow_up_contacted` only (Default trigger → contacted). No seed wipe.
 

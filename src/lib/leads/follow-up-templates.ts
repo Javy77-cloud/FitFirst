@@ -199,6 +199,7 @@ export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
     const override = enabled.find((row) => row.id === lead.followUpTemplateId);
     if (override && !isDefaultFollowUpTemplate(override)) return override;
   }
+  if (!canStartFollowUpClock(lead.status)) return null;
   return findDefaultFollowUpTemplate(enabled);
 }
 

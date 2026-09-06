@@ -17,6 +17,7 @@ import {
   dueAtFromStep,
   followUpEmailSnoozeBody,
   followUpMethodToActivityKind,
+  followUpTemplateChipName,
   isFollowUpDelayUnit,
   isFollowUpMethod,
   isSnoozeDelayUnit,
@@ -33,6 +34,7 @@ import {
   type RemindViaChannel,
   type SnoozeDelayUnit,
 } from "@/lib/leads/follow-up-templates";
+import { ensureFollowUpPlaybooks } from "@/lib/leads/ensure-playbooks";
 import { leadStatusLabel, normalizeLeadStatus } from "@/lib/leads/queue";
 
 export async function cancelLeadFollowUps(leadId: string) {
@@ -110,7 +112,7 @@ async function scheduleNextLiveStep(input: {
   templateId: string | null;
   afterSortOrder: number;
   now: Date;
-}): Promise<{ scheduled: number; dueAt?: Date; templateId?: string }> {
+}): Promise<{ scheduled: number; dueAt?: Date; templateId?: string; templateName?: string }> {
   const [lead] = await db
     .select()
     .from(leads)
@@ -132,7 +134,7 @@ async function scheduleNextLiveStep(input: {
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .slice(0, 4);
   const next = nextTemplateStep(templateSteps, input.afterSortOrder);
-  if (!next) return { scheduled: 0, templateId: picked.id };
+  if (!next) return { scheduled: 0, templateId: picked.id, templateName: followUpTemplateChipName(picked) };
   const leadName = `${lead.lastName}, ${lead.firstName}`;
   const queued = await enqueueLiveStep({
     leadId: lead.id,
@@ -141,10 +143,16 @@ async function scheduleNextLiveStep(input: {
     step: next,
     now: input.now,
   });
-  return { scheduled: queued.scheduled, dueAt: queued.dueAt, templateId: picked.id };
+  return {
+    scheduled: queued.scheduled,
+    dueAt: queued.dueAt,
+    templateId: picked.id,
+    templateName: followUpTemplateChipName(picked),
+  };
 }
 
 export async function fireLeadFollowUpForStatus(leadId: string, status: string, now = new Date()) {
+  await ensureFollowUpPlaybooks();
   const [lead] = await db
     .select()
     .from(leads)
@@ -284,13 +292,6 @@ export async function releaseDueLeadFollowUps(now = new Date()) {
         updatedAt: now,
       })
       .where(eq(leadFollowUpQueue.id, item.id));
-    const sortOrder = await sortOrderForQueueItem(item);
-    await scheduleNextLiveStep({
-      leadId: item.leadId,
-      templateId: item.templateId ?? lead.followUpTemplateId,
-      afterSortOrder: sortOrder,
-      now,
-    });
     released += 1;
   }
   return { released };

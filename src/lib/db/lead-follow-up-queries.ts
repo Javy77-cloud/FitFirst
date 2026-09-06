@@ -2,6 +2,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { leadFollowUpQueue, leadFollowUpSteps, leadFollowUpTemplates } from "@/lib/db/schema";
+import { ensureFollowUpPlaybooks } from "@/lib/leads/ensure-playbooks";
 import { normalizeLeadStatus } from "@/lib/leads/queue";
 
 export type FollowUpTemplateWithSteps = {
@@ -21,6 +22,7 @@ export type FollowUpTemplateWithSteps = {
 };
 
 export async function listFollowUpTemplates(): Promise<FollowUpTemplateWithSteps[]> {
+  await ensureFollowUpPlaybooks();
   const [templates, steps] = await Promise.all([
     db
       .select()
