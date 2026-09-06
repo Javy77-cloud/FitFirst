@@ -4,20 +4,20 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6l`)
+## Mac test now (`cursor/live-ff-tip-sep6m`)
 
-Leads is a work queue. Converted leads leave this page and live on Deals only. Follow-up templates fire on status change. Additive migration `0071_lead_follow_up_queue` — no seed, no Zoho wipe.
+Leads overlay fixes on top of sep6l. No `<script>` in the Leads React tree (`ff-sheet.js` loads via `next/script`). Response timer SSRs `--:--` until mount, then ticks on the client — no hydration mismatch on the 5-minute first-contact clock.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep6l && git pull
+git fetch && git checkout cursor/live-ff-tip-sep6m && git pull
 npm install
 npm run db:migrate
 # skip db:seed — keep the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**. Confirm no script-tag console error and no hydration overlay on the response timer.
 
 | # | Check | Pass when |
 | --- | --- | --- |
