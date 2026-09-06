@@ -542,6 +542,33 @@ export function togglePrimaryHidden(layout: StoredNavLayout, id: string): Stored
   return current.hiddenPrimaryIds.includes(id) ? showPrimary(current, id) : hidePrimary(current, id);
 }
 
+export function unusedCatalogLinks(
+  layout: StoredNavLayout,
+  options: { isAdmin?: boolean } = {},
+): NavLinkDef[] {
+  const current = normalizeNavLayout(layout);
+  const taken = allUsedIds(current.primaryOrder, current.submenus);
+  const isAdmin = options.isAdmin !== false;
+  return NAV_LINK_CATALOG.filter((link) => {
+    if (taken.has(link.id)) return false;
+    if (!isAdmin && link.adminOnly) return false;
+    return true;
+  });
+}
+
+/** Place an unused catalog row on the rail, just above the divider (end of primary). */
+export function addCatalogLink(layout: StoredNavLayout, linkId: string): StoredNavLayout {
+  const current = normalizeNavLayout(layout);
+  if (!isCatalogId(linkId) || allUsedIds(current.primaryOrder, current.submenus).has(linkId)) {
+    return current;
+  }
+  const dividerAt = current.primaryOrder.indexOf(DIVIDER_ID);
+  if (dividerAt >= 0) {
+    return applyNavDrop(current, linkId, { type: "before", id: DIVIDER_ID });
+  }
+  return applyNavDrop(current, linkId, { type: "end-primary" });
+}
+
 export function addSubmenuLink(
   layout: StoredNavLayout,
   primaryId: string,

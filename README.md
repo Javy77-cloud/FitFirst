@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Signed default rail + free customizer (this tip)
 
-**`cursor/live-ff-tip-sep6d`** tips from **`cursor/live-ff-tip-sep6c`** plus **`cursor/ff-nav-customize-chrome-d626`**. Same rail as sep6c. Customize is row-drag only (no grip, no chevron). Collapse sits between the logo / desk name and the menu with space so the stack is logo → collapse → menu. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
+**`cursor/live-ff-tip-sep6d`** tips from **`cursor/live-ff-tip-sep6c`**. Same rail as sep6c. Customize is row-drag only (no grip, no chevron). One **Add link** at the bottom; the rail scrolls so **Done customizing** stays on screen. Collapse sits between the logo / desk name and the menu. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
 
 Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (Quotes only), **Contacts** (no kids), **Policies** (no kids), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Billing, Compliance, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome). Work queue, Phone, Scorecards, Glance, and Commissions stay in the Customize catalog — they are not default children. Social, Merge, Book health, and other AMS extras stay addable. Agents never see Settings, Admin, billing, people, or carrier credentials. `NAV_LAYOUT_VERSION` is **5**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept).
 
@@ -14,7 +14,7 @@ Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` 
 
 Collapse control sits **between the logo / desk name and the menu list**. Utility rows (Tasks → Admin) stay pinned so they do not scroll away. Collapsed rail is icon-only with tooltips.
 
-Customize menu: drag the **row itself** (no grip, no chevron while customizing). Drop onto a folder to nest; drop on a gap or the top-level zone to pull a child out. Any item can become a folder; any folder can become standalone. Nothing is locked. Drop-zone highlight shows landing. **Reset to default** restores the structure above. Layout stays per user on `agent_ui_prefs.nav_layout`.
+Customize menu: drag the **row itself** (no grip, no chevron while customizing). **Add link** is one control next to **Done customizing** — new rows land at the end of primary, then drag them. White bar / folder highlight is the only drop chrome (no per-folder nest banners or Add-link dropdowns). The customize list scrolls; Done and Reset stay pinned. **Reset to default** restores the structure above. Layout stays per user on `agent_ui_prefs.nav_layout`.
 
 ## Leads Actions Delete + shared menu width (this slice)
 
@@ -74,7 +74,7 @@ Try: type `javy` in the header. Book names appear live. Same box on Contacts / D
 12. **`cursor/ff-policies-empty-default-c8b0`** — Policies has no default submenu. AMS destinations stay in the Customize catalog.
 13. **`cursor/ff-leads-remove-dec-drop-a688`** — Leads list no longer has Drop a dec packet. Create or match a lead on `/leads`; dec / wind mit / 4-point drops stay on Deals.
 14. **`cursor/live-ff-tip-sep6c`** — `NAV_LAYOUT_VERSION` **5**. Default Tasks / Calendar / Reports have no kids. Customize: drag the row (no grip / no chevron). Nest and promote both work. Collapse control is between the logo and the menu. Utility + profile stay pinned.
-15. **`cursor/ff-nav-customize-chrome-d626`** — FAST UX: no 9-dot grip, no customize chevrons, collapse between logo and menu with vertical space. Drag the tile. Folded onto **`cursor/live-ff-tip-sep6d`**.
+15. **`cursor/ff-nav-customize-chrome-d626`** / **`cursor/live-ff-tip-sep6d`** — Customize list scrolls (Done + Reset pinned). One Add link at the bottom. No nest banners, no per-folder Add-link dropdowns. Drag the tile; white highlight only. No grip, no customize chevrons. Collapse between logo and menu.
 
 Skipped for the next tip: AMS waves 10–16. No AMS on this merge.
 
@@ -127,7 +127,7 @@ Default rail: **Home · Leads · Deals · Contacts · Policies · Business · Ca
 
 1. Click the **label** to open that module. Outside Customize, click the **chevron** to expand a folder that has kids. Only one submenu is open at a time.
 2. Collapse / expand sits **between the logo / desk name and the menu list**. Icon rail shows tooltips. Utility rows (Tasks through Admin) stay pinned at the bottom.
-3. **Customize menu** at the bottom of the rail. Drag the **row** — no grip, no chevron while customizing. Nothing is locked. Drop onto a folder to nest; drop on a gap or the top-level zone to pull a child out. Clear drop-zone highlight shows where it will land. Eye still hides a primary while you edit.
+3. **Customize menu** at the bottom of the rail. Drag the **row** — no grip, no chevron while customizing. One **Add link** next to Done; the list scrolls so Done stays visible. Nothing is locked. Drop onto a folder (highlight) to nest; drop on a white bar to place between or promote. Eye still hides a primary while you edit.
 4. **Reset to default** restores the factory structure above (still no demo stubs). `NAV_LAYOUT_VERSION` **5** resets older saved rails.
 5. Layout is per signed-in user on `agent_ui_prefs.nav_layout` (`actor_key = user:<id>`). Survives refresh. Maya’s menu stays hers.
 6. Last-open + icon rail still use `localStorage` (`ff-sidebar-accordion:v1`). Color stays `#1d4e89`. Work queue, Phone, Scorecards, Glance, Commissions, and AMS rows stay in the catalog — they are **not** default children.

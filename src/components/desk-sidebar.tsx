@@ -8,9 +8,8 @@ import { resetNavLayoutAction, saveNavLayoutAction } from "@/app/actions/nav-lay
 import { pathIsActive } from "@/components/desk-nav-groups";
 import type { Actor } from "@/lib/auth/rbac";
 import {
-  addSubmenuLink,
+  addCatalogLink,
   applyNavDrop,
-  availableSubmenuLinks,
   defaultStoredNavLayout,
   DIVIDER_ID,
   dropKey,
@@ -22,6 +21,7 @@ import {
   resolveNavLayout,
   splitNavSections,
   togglePrimaryHidden,
+  unusedCatalogLinks,
   type ResolvedNavItem,
   type ResolvedNavRow,
   type StoredNavLayout,
@@ -106,6 +106,7 @@ export function DeskSidebar({
   const narrow = rail === "narrow";
   const allRows = resolveNavLayout(layout, { isAdmin });
   const { main, utility } = splitNavSections(allRows);
+  const addableLinks = customizing && !narrow ? unusedCatalogLinks(layout, { isAdmin }) : [];
   layoutRef.current = layout;
 
   useEffect(() => {
@@ -245,19 +246,17 @@ export function DeskSidebar({
   }
 
   function renderItem(row: ResolvedNavItem, section: "main" | "utility") {
-    const open = customizing || openId === row.id;
+    const open = customizing ? row.submenu.length > 0 : openId === row.id;
     const Icon = row.link.icon;
     const panelId = `ff-nav-${row.id}`;
     const primaryActive = pathIsActive(pathname, row.link);
     const showChevron = !narrow && !customizing && row.submenu.length > 0;
-    const addable = customizing ? availableSubmenuLinks(layout, row.id, { isAdmin }) : [];
     const intoKey = dropKey({ type: "into", id: row.id });
     const beforeKey = dropKey({ type: "before", id: row.id });
     const afterKey = dropKey({ type: "after", id: row.id });
     const endFolderKey = dropKey({ type: "end-folder", parentId: row.id });
     const dragging = draggingId === row.id;
-    const nestActive = dropTarget === intoKey || dropTarget === endFolderKey;
-    const showKids = open && !narrow && (customizing || row.submenu.length > 0);
+    const showKids = open && !narrow && row.submenu.length > 0;
 
     return (
       <div key={row.id} className="relative">
@@ -332,7 +331,10 @@ export function DeskSidebar({
         {showKids ? (
           <div
             id={panelId}
-            className={cn("mt-0.5 space-y-0.5", section === "utility" ? "max-h-36 overflow-y-auto" : "")}
+            className={cn(
+              "mt-0.5 space-y-0.5",
+              !customizing && section === "utility" ? "max-h-36 overflow-y-auto" : "",
+            )}
             role="region"
             aria-label={row.link.label}
           >
@@ -392,43 +394,9 @@ export function DeskSidebar({
             {customizing ? (
               <div
                 {...dropHandlers(endFolderKey)}
-                className={cn(
-                  "mx-2 rounded-md border border-dashed px-2 py-1.5 text-caption",
-                  nestActive
-                    ? "border-[var(--ff-card)] bg-white/15 text-white"
-                    : "border-sidebar-border/80 text-sidebar-foreground/70",
-                )}
-              >
-                {nestActive ? `Drop to nest under ${row.link.label}` : `Drop here to nest under ${row.link.label}`}
-              </div>
-            ) : null}
-            {customizing ? (
-              addable.length > 0 ? (
-                <label className="block px-2.5 py-1 text-caption text-sidebar-foreground/80">
-                  <span className="sr-only">Add a link under {row.link.label}</span>
-                  <select
-                    aria-label={`Add a link under ${row.link.label}`}
-                    className="h-7 w-full rounded-md border border-sidebar-border bg-sidebar-accent/40 px-1 text-caption text-white"
-                    value=""
-                    onChange={(event) => {
-                      const id = event.target.value;
-                      if (!id) return;
-                      persist(addSubmenuLink(layout, row.id, id));
-                    }}
-                  >
-                    <option value="">Add link…</option>
-                    {addable.map((link) => (
-                      <option key={link.id} value={link.id}>
-                        {link.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <div className="px-2.5 py-1 text-caption text-sidebar-foreground/60">
-                  Every unused desk link is already placed.
-                </div>
-              )
+                className={cn("mx-2 h-2 rounded-sm", zoneClass(dropTarget === endFolderKey, "gap"))}
+                aria-hidden
+              />
             ) : null}
           </div>
         ) : null}
@@ -528,35 +496,62 @@ export function DeskSidebar({
           )}
         </button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-3" aria-label="Desk">
-        {renderSection(main, "Primary", "main")}
-        {customizing ? (
+      {customizing ? (
+        <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-3" aria-label="Desk">
+          {renderSection(main, "Primary", "main")}
+          {renderSection(utility, "Utility", "utility")}
           <div
             {...dropHandlers("end-primary")}
-            className={cn(
-              "mt-1 rounded-md border border-dashed px-2 py-2 text-center text-caption",
-              dropTarget === "end-primary"
-                ? "border-[var(--ff-card)] bg-white/15 text-white"
-                : "border-sidebar-border/80 text-sidebar-foreground/70",
-            )}
-          >
-            Drop here as a top-level module
-          </div>
-        ) : (
-          <div className="min-h-1" />
-        )}
-      </nav>
+            className={cn("mx-1 mt-1 h-2.5 rounded-sm", zoneClass(dropTarget === "end-primary", "gap"))}
+            aria-hidden
+          />
+        </nav>
+      ) : (
+        <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-3" aria-label="Desk">
+          {renderSection(main, "Primary", "main")}
+        </nav>
+      )}
       <div
         className={cn(
-          "flex shrink-0 flex-col border-t border-sidebar-border pb-10",
-          narrow ? "px-1.5 pt-2" : "px-2 pt-2",
+          "flex shrink-0 flex-col border-t border-sidebar-border",
+          narrow ? "px-1.5 pt-2 pb-3" : "px-2 pt-2 pb-3",
         )}
       >
-        <nav className="min-h-0 space-y-0.5 overflow-y-auto" aria-label="Utility">
-          {renderSection(utility, "Utility", "utility")}
-        </nav>
+        {customizing ? null : (
+          <nav className="min-h-0 space-y-0.5 overflow-y-auto" aria-label="Utility">
+            {renderSection(utility, "Utility", "utility")}
+          </nav>
+        )}
         {narrow ? null : (
-          <div className="mt-2 shrink-0 space-y-1.5 border-t border-sidebar-border pt-2">
+          <div className={cn("shrink-0 space-y-1.5", customizing ? "" : "mt-2 border-t border-sidebar-border pt-2")}>
+            {customizing ? (
+              addableLinks.length > 0 ? (
+                <label className="block text-caption text-sidebar-foreground/80">
+                  <span className="sr-only">Add a link to the menu</span>
+                  <select
+                    aria-label="Add a link to the menu"
+                    className="h-8 w-full rounded-md border border-sidebar-border bg-sidebar-accent/40 px-1 text-caption text-white"
+                    value=""
+                    onChange={(event) => {
+                      const id = event.target.value;
+                      if (!id) return;
+                      persist(addCatalogLink(layout, id));
+                    }}
+                  >
+                    <option value="">Add link…</option>
+                    {addableLinks.map((link) => (
+                      <option key={link.id} value={link.id}>
+                        {link.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="px-1 text-caption text-sidebar-foreground/60">
+                  Every unused desk link is already on the rail.
+                </p>
+              )
+            ) : null}
             <button
               type="button"
               data-nav-customize="1"
@@ -577,12 +572,6 @@ export function DeskSidebar({
               </button>
             ) : null}
             {saveError ? <p className="px-1 text-caption text-amber-200">{saveError}</p> : null}
-            {customizing ? (
-              <p className="px-1 text-caption text-sidebar-foreground/60">
-                Drag any row. Drop on a folder to nest it, or on a gap / the top-level zone to pull
-                it out. Saved to your desk only.
-              </p>
-            ) : null}
           </div>
         )}
       </div>

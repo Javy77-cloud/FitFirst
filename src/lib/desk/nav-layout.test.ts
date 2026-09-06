@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV_LINK_CATALOG } from "./nav-catalog";
 import {
+  addCatalogLink,
   addSubmenuLink,
   applyNavDrop,
   availableSubmenuLinks,
@@ -318,6 +319,17 @@ describe("free rearrange", () => {
     const moved = applyNavDrop(start, "settings", { type: "before", id: "home" });
     expect(moved.primaryOrder[0]).toBe("settings");
     expect(applyNavDrop(start, "admin", { type: "before", id: "tasks" }).primaryOrder).toContain("admin");
+  });
+
+  it("adds unused catalog links on the primary rail from one Add link control", () => {
+    const start = defaultStoredNavLayout();
+    const added = addCatalogLink(start, "phone");
+    expect(added.primaryOrder).toContain("phone");
+    expect(added.primaryOrder.indexOf("phone")).toBe(added.primaryOrder.indexOf(DIVIDER_ID) - 1);
+    expect(addCatalogLink(added, "phone")).toEqual(added);
+    const second = addCatalogLink(added, "work-queue");
+    expect(second.primaryOrder.indexOf("work-queue")).toBe(second.primaryOrder.indexOf(DIVIDER_ID) - 1);
+    expect(second.primaryOrder.indexOf("phone")).toBeLessThan(second.primaryOrder.indexOf("work-queue"));
   });
 
   it("reorders, adds, and removes submenu links", () => {

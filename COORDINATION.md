@@ -1301,10 +1301,12 @@ Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do no
 
 ## LIVE-TEST tip Sep 6d (`cursor/live-ff-tip-sep6d`)
 
-FAST customize-chrome pass on **`cursor/live-ff-tip-sep6c`** from **`cursor/ff-nav-customize-chrome-d626`**. Did **not** seed Ana. Did **not** wipe. Did **not** change page content.
+CRITICAL customizer redesign on **`cursor/live-ff-tip-sep6c`**. Did **not** seed Ana. Did **not** wipe. Did **not** change page content.
 
-- Customize: drag the row / tile only. No 9-dot grip. No chevron or nudge arrows while customizing.
-- Collapse / expand sits between the logo / desk name and the menu list, with space so the stack is logo → collapse → menu. Not a corner control on a thin header. Not at the bottom.
+- Customize list (main + utility) scrolls (`min-h-0` / `overflow-y-auto`). **Done customizing** + **Reset to default** stay pinned at the bottom.
+- One **Add link** control next to Done. No per-folder Add-link dropdowns. No “Drop here to nest under …” banners.
+- Drag the row / tile only. White bar / folder highlight is the only drop chrome. No 9-dot grip. No customize chevrons.
+- Collapse / expand sits between the logo / desk name and the menu list.
 - Same signed rail and `NAV_LAYOUT_VERSION` **5** as sep6c.
 
 ```
