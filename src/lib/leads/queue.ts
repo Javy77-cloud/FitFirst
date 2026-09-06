@@ -161,6 +161,12 @@ export function responseTimerState(
   return { phase: "counting", elapsedMs, overdue: elapsedMs >= FIRST_CONTACT_SLA_MS };
 }
 
+export function toIsoString(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 export function formatElapsedClock(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);

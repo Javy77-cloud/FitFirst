@@ -1,0 +1,61 @@
+import { sql } from "drizzle-orm";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { db } from "@/lib/db";
+
+/**
+ * One-time / idempotent Leads clock fix.
+ * 1. Stamp first_contact_at from the earliest logged call / email / sms when missing.
+ * 2. Reset status to `new` only for leads with no first-contact stamp and no logged comms.
+ *    Skips converted leads. Does not wipe or reseed the book.
+ * 3. Cancel queued follow-ups on those untouched new leads so the clock can be tested cleanly.
+ */
+let ranOnce = false;
+
+export async function resetLeadsWithoutLoggedContact() {
+  if (ranOnce) return;
+  ranOnce = true;
+  await db.execute(sql`
+    UPDATE leads AS l
+    SET first_contact_at = first.occurred, updated_at = now()
+    FROM (
+      SELECT a.lead_id AS lead_id, MIN(COALESCE(al.occurred_at, a.created_at)) AS occurred
+      FROM activities a
+      LEFT JOIN activity_logs al ON al.activity_id = a.id
+      WHERE a.lead_id IS NOT NULL
+        AND a.kind IN ('call', 'email', 'sms')
+      GROUP BY a.lead_id
+    ) first
+    WHERE l.id = first.lead_id
+      AND l.first_contact_at IS NULL
+      AND l.tenant_id = ${DEFAULT_TENANT_ID}
+  `);
+
+  await db.execute(sql`
+    UPDATE leads
+    SET
+      status = 'new',
+      nurture_until = NULL,
+      nurture_remind_via = NULL,
+      updated_at = now()
+    WHERE tenant_id = ${DEFAULT_TENANT_ID}
+      AND first_contact_at IS NULL
+      AND converted_deal_id IS NULL
+      AND lower(coalesce(status, '')) NOT IN ('new', 'converted')
+      AND NOT EXISTS (
+        SELECT 1 FROM activities a
+        WHERE a.lead_id = leads.id
+          AND a.kind IN ('call', 'email', 'sms')
+      )
+  `);
+
+  await db.execute(sql`
+    UPDATE lead_follow_up_queue AS q
+    SET status = 'cancelled', cancelled_at = now(), updated_at = now()
+    FROM leads AS l
+    WHERE q.lead_id = l.id
+      AND q.status = 'queued'
+      AND l.first_contact_at IS NULL
+      AND lower(l.status) = 'new'
+      AND l.tenant_id = ${DEFAULT_TENANT_ID}
+  `);
+}

@@ -519,6 +519,20 @@
       "when": 1788650000000,
       "tag": "0073_lead_follow_up_remind_nurture",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1788660000000,
+      "tag": "0074_lead_follow_up_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1788670000000,
+      "tag": "0075_list_column_layout",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,13 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { parseColumns } from "@/lib/desk/columns";
-import { loadListColumnPrefs, upsertListColumnPrefs } from "@/lib/desk/column-prefs";
+import {
+  loadListColumnLayout,
+  loadListColumnPrefs,
+  upsertListColumnPrefs,
+  type StoredListColumnPrefs,
+} from "@/lib/desk/column-prefs";
+import type { ListSort } from "@/lib/list-columns";
 
 export async function saveColumnPrefs(formData: FormData) {
   const tableKey = String(formData.get("tableKey") ?? "").trim();
@@ -16,11 +22,19 @@ export async function saveColumnPrefs(formData: FormData) {
   revalidatePath("/");
 }
 
-/** Persist ColumnTable visibility. IDs are stored as-is for that module. */
-export async function saveListColumnPrefs(tableKey: string, columns: string[]) {
-  await upsertListColumnPrefs(tableKey, columns);
+/** Persist ColumnTable visibility / widths / sort on the same desk_column_prefs row. */
+export async function saveListColumnPrefs(
+  tableKey: string,
+  columns: string[],
+  extras?: { widths?: Record<string, number>; sort?: ListSort | null },
+) {
+  await upsertListColumnPrefs(tableKey, columns, extras);
 }
 
 export async function fetchListColumnPrefs(tableKey: string): Promise<string[] | null> {
   return loadListColumnPrefs(tableKey);
+}
+
+export async function fetchListColumnLayout(tableKey: string): Promise<StoredListColumnPrefs | null> {
+  return loadListColumnLayout(tableKey);
 }

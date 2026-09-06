@@ -87,10 +87,10 @@ export function LeadsQueueToolbar({
       </label>
       <div className="inline-flex rounded-md border border-border bg-card p-0.5" role="group" aria-label="Temperature">
         {[
-          { value: "", label: "All" },
-          { value: "hot", label: "Hot" },
-          { value: "warm", label: "Warm" },
-          { value: "cold", label: "Cold" },
+          { value: "", label: "All", selected: "bg-secondary text-navy ring-1 ring-navy/25", idle: "text-muted-foreground hover:text-navy" },
+          { value: "hot", label: "Hot", selected: "bg-fit-red-bg text-fit-red ring-1 ring-fit-red", idle: "text-fit-red hover:bg-fit-red-bg/70" },
+          { value: "warm", label: "Warm", selected: "bg-fit-yellow-bg text-fit-yellow ring-1 ring-fit-yellow", idle: "text-fit-yellow hover:bg-fit-yellow-bg/70" },
+          { value: "cold", label: "Cold", selected: "bg-fit-check-bg text-fit-check ring-1 ring-fit-check", idle: "text-fit-check hover:bg-fit-check-bg/70" },
         ].map((option) => (
           <button
             key={option.label}
@@ -98,9 +98,7 @@ export function LeadsQueueToolbar({
             onClick={() => setParam("temperature", option.value)}
             className={cn(
               "h-6 rounded px-2 text-xs font-medium",
-              temperature === option.value
-                ? "bg-secondary text-navy"
-                : "text-muted-foreground hover:text-navy",
+              temperature === option.value ? option.selected : option.idle,
             )}
           >
             {option.label}

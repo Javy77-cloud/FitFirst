@@ -4,7 +4,42 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6o`)
+## Mac test now (`cursor/live-ff-tip-sep6p`)
+
+Leads overlay on sep6o plus the shared list-table standard (resize + sort). Follow-up editor is a 900px table. Default template is fourth. Response clock starts on first logged contact. Additive `0074_lead_follow_up_default` and `0075_list_column_layout` only. No AMS. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6p && git pull
+npm install
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+
+**Migrate only after checkout.** `0074_lead_follow_up_default` inserts the Default template (same four Hot steps + Remind via Task) and runs a scoped one-time data fix: stamp `first_contact_at` from the earliest logged call / email / sms when missing; reset status to `new` only for leads with no first-contact stamp and no logged comms (converted leads stay put); cancel queued follow-ups on those untouched new leads. The Leads page also runs the same fix idempotently. `0075_list_column_layout` adds `desk_column_prefs.widths` and `.sort` on the same per-user row as Manage Columns — no second prefs system. Do **not** `db:seed` or wipe the Zoho book.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Follow-up template editor table | **Follow-up Templates** → Edit. Modal is ~900px. Steps are a **table**: Method · Delay · Unit · Remind via · Message. Four steps = four rows. No Skip field. No inner scroll for the steps. |
+| 2 | Response clock | Every lead row has a **Response** clock. Idle is `--:--` until you log Call / SMS / E-mail. After first logged contact the clock counts from that stamp, not arrival. Leads with zero logged contacts and no first-contact stamp are status **new**. |
+| 3 | Default template | Follow-up dropdown is **Hot**, **Warm**, **Cold (not interested)**, **Default** (fourth, bottom). New leads run Default until the agent overrides. Default steps match Hot: call 5 min, text 30 min, email 2 hours, call 1 day. |
+| 4 | Filter chips | Top chips All · Hot · Warm · Cold. Hot is red, Warm amber, Cold blue — same as Temp badges. Selected chip has a stronger fill + ring. |
+| 5 | Column picker | **Columns** on the right reads as **Columns**, not a stray **CO**. Checkbox labels are clean column names only (Name, Status, Source, Response, Temp, Follow-up, Convert). No empty / Select artifact. |
+| 6 | Lead row contact buttons | Under the name / phone: three real buttons **Call** (yellow), **SMS** (flag orange), **E-mail** (navy) — same `ff-cal-*` colors as Calendar. Missing phone disables Call / SMS. Missing email disables E-mail. Click logs first contact and opens tel: / sms: / mailto:. |
+| 7 | Shared table resize + sort | On **Leads** and every other list that uses the shared Columns table (Deals, Contacts, Policies, Carriers, Tasks, …): drag either header border to resize; widths persist per user on `desk_column_prefs`. Every labeled header has an asc/desc mark on the right. Click cycles inactive → A→Z → Z→A → clear (same as existing sheet sort). Prove it on Leads **and** Contacts or Deals — one chrome, not a Leads fork. |
+
+### Stub walls (paid APIs not wired)
+
+- **Email / text send** — queued or held on `comms_outbound_jobs` with `vendor=stub` / `paid_api_wall`. Nothing leaves the desk.
+- **Call** — in-app task + alert only. No trunk / PSTN. `tel:` opens the device dialer.
+- **Agent pings** — `alerts` table only. Email remind-via is an agent stub and never emails Javy.
+
+Due follow-ups land on **Tasks** (`activities` kind=task) and the in-app bell. Sidebar and nav are unchanged. Calendar Call / SMS / Email toolbar buttons use the same shared color source as Leads. Deals / Contacts / Policies list chrome picks up resize + sort from the shared `ColumnTable` — not a Leads fork. Sheet/`Col` tables already had header sort via `ff-sheet`; they are not the Leads-style Columns table.
+
+## Mac test prior (`cursor/live-ff-tip-sep6o`)
 
 Leads follow-up + column picker standard on top of sep6n. Hot / Warm / Cold temp and timer-on-first-contact stay. Additive `0073_lead_follow_up_remind_nurture` only. No AMS. No seed wipe.
 
@@ -26,7 +61,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then the other
 | 3 | Follow-up dropdown | Row **Follow-up** select has exactly four options, in this order: **Hot**, **Warm**, **Cold (not interested)**, **Default** (bottom). No “Automatic.” Default uses the template linked to the lead’s current status. Hot / Warm / Cold are a per-lead override. |
 | 4 | Nurture status + date picker | Status list includes **Nurture**. Choosing it opens a pop-up: when to contact again (number + days/months, max 1 year) and how to remind (Task / Pop-up / Email). Lead leaves the default queue and resurfaces on that date with the chosen reminder. |
 | 5 | Lost status | Status list includes **Lost** (bad number, not a fit, never responds). Lost leads are hidden from the default Leads view. Type a name in Search — they still appear. Global search still finds them. |
-| 6 | Column picker standard | Every list (Leads, Deals table, Contacts, Policies, Businesses, Carriers, plus Tasks / Claims / Quotes table / Pipeline table / Commissions / Reviews / Work queue / Glance / Merge) shows a **Columns** button (not “Manage columns”). Checkbox list. Checked items drag to reorder. Order is saved per user. |
+| 6 | Column picker | Every list (Leads, Deals table, Contacts, Policies, Businesses, Carriers, plus Tasks / Claims / Quotes table / Pipeline table / Commissions / Reviews / Work queue / Glance / Merge) shows a **Columns** button (not “Manage columns”). Checkbox list. Checked items drag to reorder. Order is saved per user. |
 
 ### Stub walls (paid APIs not wired)
 

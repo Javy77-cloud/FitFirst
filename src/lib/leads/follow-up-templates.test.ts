@@ -16,6 +16,7 @@ import {
 const hot = { id: "hot", name: "Hot", triggerStatus: "new", enabled: true };
 const warm = { id: "warm", name: "Warm", triggerStatus: "warm", enabled: true };
 const cold = { id: "cold", name: "Cold (not interested)", triggerStatus: "cold", enabled: true };
+const fallbackDefault = { id: "def", name: "Default", triggerStatus: "default", enabled: true };
 
 describe("follow-up templates", () => {
   it("caps a template at four steps and drops incomplete rows", () => {
@@ -46,13 +47,15 @@ describe("follow-up templates", () => {
     expect(dueAtFromStep(now, 1, "days").toISOString()).toBe("2026-09-07T12:00:00.000Z");
   });
 
-  it("auto-picks the status template unless the lead overrides", () => {
+  it("auto-picks Default for new leads, then status templates, unless the lead overrides", () => {
+    expect(pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new" })?.id).toBe("def");
     expect(pickTemplateForLead([hot, warm, cold], { status: "new" })?.id).toBe("hot");
-    expect(pickTemplateForLead([hot, warm, cold], { status: "warm" })?.id).toBe("warm");
+    expect(pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "warm" })?.id).toBe("warm");
     expect(pickTemplateForLead([hot, warm, cold], { status: "cold" })?.id).toBe("cold");
-    expect(pickTemplateForLead([hot, warm, cold], { status: "new", followUpTemplateId: "cold" })?.id).toBe(
-      "cold",
-    );
+    expect(
+      pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new", followUpTemplateId: "cold" })
+        ?.id,
+    ).toBe("cold");
     expect(pickTemplateForLead([hot, warm, cold], { status: "contacted" })).toBeNull();
   });
 
@@ -73,6 +76,7 @@ describe("follow-up templates", () => {
       "Hot",
       "Warm",
       "Cold (not interested)",
+      "Default",
     ]);
   });
 
@@ -80,7 +84,9 @@ describe("follow-up templates", () => {
     expect(followUpTemplateChipName(hot)).toBe("Hot");
     expect(followUpTemplateChipName(warm)).toBe("Warm");
     expect(followUpTemplateChipName(cold)).toBe("Cold");
+    expect(followUpTemplateChipName(fallbackDefault)).toBe("Default");
     expect(followUpTemplateFullName(cold)).toBe("Cold (not interested)");
+    expect(followUpTemplateFullName(fallbackDefault)).toBe("Default");
   });
 
   it("maps text to sms and labels the paid API wall", () => {

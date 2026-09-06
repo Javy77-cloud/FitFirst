@@ -10,7 +10,19 @@ export type ListColumn = {
   defaultOn?: boolean;
 };
 
+export type ListSortDir = "asc" | "desc";
+export type ListSort = { key: string; dir: ListSortDir };
+
+export type ListColumnLayout = {
+  columns: string[];
+  widths: Record<string, number>;
+  sort: ListSort | null;
+};
+
 export const COLUMN_STORAGE_PREFIX = "ff-list-columns:v1";
+export const MIN_COLUMN_WIDTH = 56;
+export const MAX_COLUMN_WIDTH = 720;
+export const DEFAULT_COLUMN_WIDTH = 148;
 
 export function columnStorageKey(moduleId: string): string {
   return `${COLUMN_STORAGE_PREFIX}:${moduleId}`;
@@ -56,27 +68,108 @@ export function mergeVisibleColumns(
   return next.length ? next : defaults;
 }
 
+export function clampColumnWidth(px: number): number {
+  if (!Number.isFinite(px)) return DEFAULT_COLUMN_WIDTH;
+  return Math.min(MAX_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, Math.round(px)));
+}
+
+export function defaultColumnWidth(column: ListColumn): number {
+  if (column.id === "pick" || !column.label.trim()) return 44;
+  const fromLabel = column.label.trim().length * 9 + 56;
+  return clampColumnWidth(Math.max(112, Math.min(220, fromLabel)));
+}
+
+export function mergeColumnWidths(
+  columns: ListColumn[],
+  stored: unknown,
+): Record<string, number> {
+  const allowed = new Set(allColumnIds(columns));
+  const next: Record<string, number> = {};
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) return next;
+  for (const [id, value] of Object.entries(stored as Record<string, unknown>)) {
+    if (!allowed.has(id)) continue;
+    const n = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(n)) continue;
+    next[id] = clampColumnWidth(n);
+  }
+  return next;
+}
+
+export function parseListSort(raw: unknown): ListSort | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const key = "key" in raw && typeof raw.key === "string" ? raw.key.trim() : "";
+  const dir = "dir" in raw && (raw.dir === "asc" || raw.dir === "desc") ? raw.dir : null;
+  if (!key || !dir) return null;
+  return { key, dir };
+}
+
+export function cycleListSort(current: ListSort | null, key: string): ListSort | null {
+  if (!key) return current;
+  if (!current || current.key !== key) return { key, dir: "asc" };
+  if (current.dir === "asc") return { key, dir: "desc" };
+  return null;
+}
+
+export function parseStoredColumnLayout(raw: unknown): {
+  columns: unknown;
+  widths: unknown;
+  sort: unknown;
+} {
+  if (Array.isArray(raw)) return { columns: raw, widths: {}, sort: null };
+  if (!raw || typeof raw !== "object") return { columns: null, widths: {}, sort: null };
+  const record = raw as Record<string, unknown>;
+  return {
+    columns: record.columns ?? record.visible ?? null,
+    widths: record.widths ?? {},
+    sort: record.sort ?? null,
+  };
+}
+
+export function loadColumnLayout(moduleId: string, columns: ListColumn[]): ListColumnLayout {
+  const defaults = defaultVisibleIds(columns);
+  if (typeof window === "undefined") {
+    return { columns: defaults, widths: {}, sort: null };
+  }
+  try {
+    const raw = window.localStorage.getItem(columnStorageKey(moduleId));
+    if (!raw) return { columns: defaults, widths: {}, sort: null };
+    const parsed = parseStoredColumnLayout(JSON.parse(raw));
+    return {
+      columns: mergeVisibleColumns(columns, parsed.columns),
+      widths: mergeColumnWidths(columns, parsed.widths),
+      sort: parseListSort(parsed.sort),
+    };
+  } catch {
+    return { columns: defaults, widths: {}, sort: null };
+  }
+}
+
 export function loadVisibleColumns(
   moduleId: string,
   columns: ListColumn[],
 ): string[] {
-  const defaults = defaultVisibleIds(columns);
-  if (typeof window === "undefined") return defaults;
+  return loadColumnLayout(moduleId, columns).columns;
+}
+
+export function saveColumnLayout(moduleId: string, layout: ListColumnLayout) {
   try {
-    const raw = window.localStorage.getItem(columnStorageKey(moduleId));
-    if (!raw) return defaults;
-    return mergeVisibleColumns(columns, JSON.parse(raw));
+    window.localStorage.setItem(
+      columnStorageKey(moduleId),
+      JSON.stringify({
+        columns: layout.columns,
+        widths: layout.widths,
+        sort: layout.sort,
+      }),
+    );
   } catch {
-    return defaults;
+    /* ignore quota / private mode */
   }
 }
 
 export function saveVisibleColumns(moduleId: string, ids: string[]) {
-  try {
-    window.localStorage.setItem(columnStorageKey(moduleId), JSON.stringify(ids));
-  } catch {
-    /* ignore quota / private mode */
-  }
+  if (typeof window === "undefined") return;
+  const current = loadColumnLayout(moduleId, ids.map((id) => ({ id, label: id })));
+  saveColumnLayout(moduleId, { ...current, columns: ids });
 }
 
 export function toggleColumnVisibility(
@@ -120,7 +213,7 @@ export const LEADS_LIST_COLUMNS: ListColumn[] = [
   { id: "name", label: "Name", locked: true },
   { id: "status", label: "Status" },
   { id: "source", label: "Source" },
-  { id: "timer", label: "Response" },
+  { id: "timer", label: "Response", locked: true },
   { id: "heat", label: "Temp" },
   { id: "followUp", label: "Follow-up" },
   { id: "shop", label: "Convert" },

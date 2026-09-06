@@ -41,14 +41,15 @@ export type FollowUpTemplateView = {
   }>;
 };
 
+const EMPTY_STEP_DEFAULTS = [
+  { method: "call", delayAmount: "5", delayUnit: "minutes", message: "", remindVia: "task" },
+  { method: "text", delayAmount: "30", delayUnit: "minutes", message: "", remindVia: "task" },
+  { method: "email", delayAmount: "2", delayUnit: "hours", message: "", remindVia: "task" },
+  { method: "call", delayAmount: "1", delayUnit: "days", message: "", remindVia: "task" },
+] as const;
+
 function emptySteps() {
-  return [0, 1, 2, 3].map((index) => ({
-    method: index === 0 ? "call" : "",
-    delayAmount: index === 0 ? "5" : "",
-    delayUnit: "minutes",
-    message: "",
-    remindVia: "task",
-  }));
+  return EMPTY_STEP_DEFAULTS.map((step) => ({ ...step }));
 }
 
 function triggerOptions() {
@@ -80,12 +81,13 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
   const stepDefaults = editing
     ? [0, 1, 2, 3].map((index) => {
         const step = editing.steps[index];
+        const fallback = EMPTY_STEP_DEFAULTS[index];
         return {
-          method: step?.method ?? "",
-          delayAmount: step ? String(step.delayAmount) : "",
-          delayUnit: step?.delayUnit ?? "minutes",
+          method: step?.method || fallback.method,
+          delayAmount: step ? String(step.delayAmount) : fallback.delayAmount,
+          delayUnit: step?.delayUnit ?? fallback.delayUnit,
           message: step?.message ?? "",
-          remindVia: step?.remindVia ?? "task",
+          remindVia: step?.remindVia ?? fallback.remindVia,
         };
       })
     : emptySteps();
@@ -102,13 +104,12 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
           if (!next) setEditingId(null);
         }}
       >
-        <DialogContent className="w-[min(100%-2rem,680px)] max-w-[680px] gap-3 p-5 sm:max-w-[680px]">
+        <DialogContent className="w-[min(100%-2rem,900px)] max-w-[900px] gap-3 overflow-visible p-5 sm:max-w-[900px]">
           <DialogHeader>
             <DialogTitle>Follow-up Templates</DialogTitle>
             <DialogDescription>
-              Each template maps to one status. New is Hot. Status change swaps the matching
-              template. Each step has Remind via (Task, Pop-up, or Email). Override stays on
-              the lead row; Default uses the status template.
+              Each template maps to one status. New leads run Default until the agent overrides.
+              Status change swaps Warm or Cold. Each step has Remind via (Task, Pop-up, or Email).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -152,74 +153,84 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                     </select>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="grid grid-cols-[5.5rem_3.75rem_5.25rem_6.25rem_minmax(0,1fr)] gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <span>Method</span>
-                    <span>Delay</span>
-                    <span>Unit</span>
-                    <span>Remind via</span>
-                    <span>Message</span>
-                  </div>
-                  {stepDefaults.map((step, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-[5.5rem_3.75rem_5.25rem_6.25rem_minmax(0,1fr)] items-center gap-1.5"
-                    >
-                      <select
-                        name={`stepMethod${index}`}
-                        defaultValue={step.method}
-                        aria-label={`Step ${index + 1} method`}
-                        className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
-                      >
-                        <option value="">Skip</option>
-                        {FOLLOW_UP_METHODS.map((method) => (
-                          <option key={method} value={method}>
-                            {method}
-                          </option>
-                        ))}
-                      </select>
-                      <Input
-                        name={`stepDelay${index}`}
-                        type="number"
-                        min={0}
-                        defaultValue={step.delayAmount}
-                        aria-label={`Step ${index + 1} delay`}
-                        className="h-8"
-                      />
-                      <select
-                        name={`stepUnit${index}`}
-                        defaultValue={step.delayUnit}
-                        aria-label={`Step ${index + 1} unit`}
-                        className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
-                      >
-                        {FOLLOW_UP_DELAY_UNITS.map((unit) => (
-                          <option key={unit} value={unit}>
-                            {FOLLOW_UP_DELAY_UNIT_LABELS[unit]}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        name={`stepRemindVia${index}`}
-                        defaultValue={step.remindVia}
-                        aria-label={`Step ${index + 1} remind via`}
-                        className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
-                      >
-                        {REMIND_VIA_CHANNELS.map((channel) => (
-                          <option key={channel} value={channel}>
-                            {REMIND_VIA_LABELS[channel]}
-                          </option>
-                        ))}
-                      </select>
-                      <Input
-                        name={`stepMessage${index}`}
-                        defaultValue={step.message}
-                        placeholder="optional"
-                        aria-label={`Step ${index + 1} message`}
-                        className="h-8"
-                      />
-                    </div>
-                  ))}
-                </div>
+                <table className="w-full table-fixed border-collapse">
+                  <thead>
+                    <tr className="text-left text-[11px] font-medium text-muted-foreground">
+                      <th className="w-[7.25rem] pb-1.5 pr-1.5 font-medium">Method</th>
+                      <th className="w-[4.5rem] pb-1.5 pr-1.5 font-medium">Delay</th>
+                      <th className="w-[5.75rem] pb-1.5 pr-1.5 font-medium">Unit</th>
+                      <th className="w-[6.75rem] pb-1.5 pr-1.5 font-medium">Remind via</th>
+                      <th className="pb-1.5 font-medium">Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stepDefaults.map((step, index) => (
+                      <tr key={index}>
+                        <td className="py-1 pr-1.5 align-middle">
+                          <select
+                            name={`stepMethod${index}`}
+                            defaultValue={step.method || "call"}
+                            aria-label={`Step ${index + 1} method`}
+                            className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
+                          >
+                            {FOLLOW_UP_METHODS.map((method) => (
+                              <option key={method} value={method}>
+                                {method}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-1 pr-1.5 align-middle">
+                          <Input
+                            name={`stepDelay${index}`}
+                            type="number"
+                            min={0}
+                            defaultValue={step.delayAmount}
+                            aria-label={`Step ${index + 1} delay`}
+                            className="h-8"
+                          />
+                        </td>
+                        <td className="py-1 pr-1.5 align-middle">
+                          <select
+                            name={`stepUnit${index}`}
+                            defaultValue={step.delayUnit}
+                            aria-label={`Step ${index + 1} unit`}
+                            className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
+                          >
+                            {FOLLOW_UP_DELAY_UNITS.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {FOLLOW_UP_DELAY_UNIT_LABELS[unit]}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-1 pr-1.5 align-middle">
+                          <select
+                            name={`stepRemindVia${index}`}
+                            defaultValue={step.remindVia}
+                            aria-label={`Step ${index + 1} remind via`}
+                            className="h-8 w-full rounded-md border border-border bg-background px-1 text-xs"
+                          >
+                            {REMIND_VIA_CHANNELS.map((channel) => (
+                              <option key={channel} value={channel}>
+                                {REMIND_VIA_LABELS[channel]}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-1 align-middle">
+                          <Input
+                            name={`stepMessage${index}`}
+                            defaultValue={step.message}
+                            placeholder="optional"
+                            aria-label={`Step ${index + 1} message`}
+                            className="h-8"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 <div className="flex flex-wrap gap-2">
                   <Button type="submit" size="sm">
                     Save template

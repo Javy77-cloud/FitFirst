@@ -5,7 +5,13 @@ import {
   LEADS_LIST_COLUMNS,
   PIPELINE_LIST_COLUMNS,
   allColumnIds,
+  clampColumnWidth,
   columnMenuLabel,
+  cycleListSort,
+  defaultColumnWidth,
+  mergeColumnWidths,
+  parseListSort,
+  parseStoredColumnLayout,
   columnStorageKey,
   defaultVisibleIds,
   fromDeskColumns,
@@ -88,6 +94,8 @@ describe("list column visibility", () => {
     const afterStatus = toggleColumnVisibility(LEADS_LIST_COLUMNS, leadsVisible, "status");
     expect(afterStatus).toEqual(["pick", "name", "source", "timer", "heat", "followUp", "shop"]);
     expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterStatus, "pick")).toEqual(afterStatus);
+    expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterStatus, "timer")).toEqual(afterStatus);
+    expect(LEADS_LIST_COLUMNS.find((column) => column.id === "timer")?.locked).toBe(true);
     expect(shownColumns(LEADS_LIST_COLUMNS, afterStatus).map((column) => column.id)).toEqual([
       "pick",
       "name",
@@ -131,5 +139,27 @@ describe("list column visibility", () => {
       "status",
       "name",
     ]);
+  });
+
+  it("clamps widths and cycles sort inactive → asc → desc → clear", () => {
+    expect(clampColumnWidth(10)).toBe(56);
+    expect(clampColumnWidth(900)).toBe(720);
+    expect(defaultColumnWidth({ id: "pick", label: "" })).toBe(44);
+    expect(mergeColumnWidths(COLUMNS, { status: 200, gone: 180, name: "120" })).toEqual({
+      status: 200,
+      name: 120,
+    });
+    expect(parseListSort({ key: "status", dir: "desc" })).toEqual({ key: "status", dir: "desc" });
+    expect(parseListSort({ key: "status", dir: "sideways" })).toBeNull();
+    expect(cycleListSort(null, "name")).toEqual({ key: "name", dir: "asc" });
+    expect(cycleListSort({ key: "name", dir: "asc" }, "name")).toEqual({ key: "name", dir: "desc" });
+    expect(cycleListSort({ key: "name", dir: "desc" }, "name")).toBeNull();
+    expect(cycleListSort({ key: "name", dir: "asc" }, "status")).toEqual({ key: "status", dir: "asc" });
+    expect(parseStoredColumnLayout(["name", "status"]).columns).toEqual(["name", "status"]);
+    expect(parseStoredColumnLayout({ columns: ["name"], widths: { name: 160 }, sort: { key: "name", dir: "asc" } })).toEqual({
+      columns: ["name"],
+      widths: { name: 160 },
+      sort: { key: "name", dir: "asc" },
+    });
   });
 });

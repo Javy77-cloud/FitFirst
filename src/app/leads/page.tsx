@@ -18,12 +18,14 @@ import { haystack } from "@/lib/search/live-query";
 import { listFollowUpTemplates, listLeadFollowUps } from "@/lib/db/lead-follow-up-queries";
 import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
 import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
+import { resetLeadsWithoutLoggedContact } from "@/lib/leads/reset-untouched";
 import {
   isLeadOnQueue,
   isParkedFromDefaultLeadsView,
   matchesLeadQueueFilters,
   normalizeLeadStatus,
   sortLeadQueue,
+  toIsoString,
 } from "@/lib/leads/queue";
 import { LeadsQueueToolbar } from "@/components/leads/leads-queue-toolbar";
 import { ResponseTimer } from "@/components/leads/response-timer";
@@ -44,6 +46,7 @@ export default async function LeadsPage({
   const params = await searchParams;
   const filter = pickFilterParams(params, ["status", "source", "temperature"]);
   const q = firstParam(params.q) ?? "";
+  await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
   const [all, templates] = await Promise.all([listLeads(), listFollowUpTemplates()]);
   const queue = sortLeadQueue(all.filter((lead) => isLeadOnQueue(lead)));
@@ -70,7 +73,8 @@ export default async function LeadsPage({
     <AppShell title="Leads">
       <p className="mb-3 text-base text-muted-foreground">
         Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-        First contact starts the timer and the Hot template. Status change swaps Warm or Cold.
+        First contact starts the timer and the Default template. Override stays on the row.
+        Status change swaps Warm or Cold.
         Lost stays off this list until you search. Nurture parks until the contact-again date.
       </p>
       <LeadsQueueToolbar
@@ -171,6 +175,17 @@ export default async function LeadsPage({
                   key: lead.id,
                   parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
                   hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
+                  sort: {
+                    name: `${lead.lastName}, ${lead.firstName}`,
+                    status: normalizeLeadStatus(lead.status),
+                    source: sourceLabel(lead.source),
+                    timer: lead.firstContactAt
+                      ? String(new Date(lead.firstContactAt).getTime())
+                      : "0",
+                    heat: lead.temperature ?? "hot",
+                    followUp: picked ? followUpTemplateChipName(picked) : "",
+                    shop: lead.convertedDealId ? "open" : "convert",
+                  },
                   cells: {
                     pick: <SelectRowCheckbox id={lead.id} />,
                     name: (
@@ -181,7 +196,7 @@ export default async function LeadsPage({
                         <div className="text-base text-muted-foreground">
                           {lead.phone ?? lead.email}
                         </div>
-                        <LeadLogContact leadId={lead.id} />
+                        <LeadLogContact leadId={lead.id} phone={lead.phone} email={lead.email} />
                       </div>
                     ),
                     status: (
@@ -190,8 +205,8 @@ export default async function LeadsPage({
                     source: sourceLabel(lead.source),
                     timer: (
                       <ResponseTimer
-                        createdAt={lead.createdAt.toISOString()}
-                        firstContactAt={lead.firstContactAt ? lead.firstContactAt.toISOString() : null}
+                        createdAt={toIsoString(lead.createdAt) ?? new Date().toISOString()}
+                        firstContactAt={toIsoString(lead.firstContactAt)}
                       />
                     ),
                     heat: <LeadHeatToggle leadId={lead.id} temperature={lead.temperature} />,

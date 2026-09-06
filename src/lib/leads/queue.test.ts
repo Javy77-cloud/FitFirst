@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatElapsedClock,
+  toIsoString,
   isConvertedLead,
   isLeadOnQueue,
   isParkedFromDefaultLeadsView,
@@ -120,6 +121,10 @@ describe("response timer", () => {
     expect(formatElapsedClock(fourMin.elapsedMs)).toBe("4:00");
     const sixMin = responseTimerState(created, contact, new Date("2026-09-06T12:36:00Z"));
     expect(sixMin.overdue).toBe(true);
+    expect(toIsoString(contact)).toBe("2026-09-06T12:30:00.000Z");
+    expect(toIsoString("2026-09-06T12:30:00.000Z")).toBe("2026-09-06T12:30:00.000Z");
+    expect(toIsoString(null)).toBeNull();
+    expect(toIsoString("not-a-date")).toBeNull();
   });
 
   it("labels live search matches", () => {

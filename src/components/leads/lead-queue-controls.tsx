@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-  logLeadQueueContact,
   overrideLeadFollowUpTemplate,
   scheduleLeadNurture,
   updateLeadQueueStatus,
@@ -18,7 +17,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ContactActionButtons } from "@/components/desk/contact-action-buttons";
 import {
+  DEFAULT_FOLLOW_UP_TRIGGER,
   FOLLOW_UP_OVERRIDE_OPTIONS,
   REMIND_VIA_CHANNELS,
   REMIND_VIA_LABELS,
@@ -241,6 +242,8 @@ export function LeadTemplateOverride({
     const template = templates.find((row) => row.triggerStatus === option.triggerStatus);
     return { ...option, templateId: template?.id ?? "" };
   });
+  const defaultId = overrides.find((row) => row.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER)?.templateId ?? "";
+  const selected = value || defaultId;
 
   return (
     <div className="space-y-1">
@@ -249,7 +252,7 @@ export function LeadTemplateOverride({
       </p>
       <select
         name="templateId"
-        value={value}
+        value={selected}
         disabled={pending}
         aria-label="Follow-up template override"
         onChange={(event) => {
@@ -269,32 +272,19 @@ export function LeadTemplateOverride({
             {option.label}
           </option>
         ))}
-        <option value="">Default</option>
       </select>
     </div>
   );
 }
 
-export function LeadLogContact({ leadId }: { leadId: string }) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {(["call", "text", "email"] as const).map((method) => (
-        <form key={method} action={logLeadQueueContact}>
-          <input type="hidden" name="leadId" value={leadId} />
-          <input type="hidden" name="method" value={method} />
-          <button
-            type="submit"
-            className="text-xs text-primary hover:underline"
-            title={
-              method === "call"
-                ? "Log a call. In-app only — no trunk."
-                : "Log contact. Client send is a stub until a paid API is wired."
-            }
-          >
-            {method}
-          </button>
-        </form>
-      ))}
-    </div>
-  );
+export function LeadLogContact({
+  leadId,
+  phone,
+  email,
+}: {
+  leadId: string;
+  phone?: string | null;
+  email?: string | null;
+}) {
+  return <ContactActionButtons leadId={leadId} phone={phone} email={email} />;
 }

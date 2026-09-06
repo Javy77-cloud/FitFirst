@@ -26,8 +26,8 @@ export function ColumnsMenu({
   const [dragId, setDragId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const visibleSet = new Set(visible);
-  const checked = shownColumns(columns, visible);
-  const unchecked = columns.filter((column) => !visibleSet.has(column.id));
+  const checked = shownColumns(columns, visible).filter((column) => column.label.trim());
+  const unchecked = columns.filter((column) => !visibleSet.has(column.id) && column.label.trim());
   const items = [...checked, ...unchecked];
 
   useEffect(() => {

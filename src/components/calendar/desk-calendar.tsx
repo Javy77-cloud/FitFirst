@@ -18,7 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { contactActionButtonClass, isContactActionKind } from "@/lib/desk/contact-actions";
 import { ACTIVITY_COLORS } from "@/lib/desk/comms";
+import { cn } from "@/lib/utils";
 import { CALL_OUTCOMES } from "@/lib/domain";
 import { isCompanyEventType, videoHrefFromEvent, type CompanyEventType } from "@/lib/meetings/company";
 import {
@@ -228,7 +230,11 @@ export function DeskCalendar({
               key={kind}
               type="button"
               size="sm"
-              variant="outline"
+              variant={isContactActionKind(kind) ? "ghost" : "outline"}
+              className={cn(
+                isContactActionKind(kind) && contactActionButtonClass(kind),
+                isContactActionKind(kind) && "text-white hover:opacity-90 hover:text-white",
+              )}
               onClick={() => openNew(undefined, kind)}
             >
               {CALENDAR_TOOLBAR_ROWS[2][index]}

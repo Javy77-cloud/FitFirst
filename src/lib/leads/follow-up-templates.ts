@@ -22,11 +22,14 @@ export const FOLLOW_UP_DELAY_UNIT_LABELS: Record<FollowUpDelayUnit, string> = {
 
 export const MAX_FOLLOW_UP_STEPS = 4;
 
-/** Statuses that have a seeded follow-up template. new = Hot. */
+/** Statuses that have a seeded follow-up template. new leads use Default until override. */
+export const DEFAULT_FOLLOW_UP_TRIGGER = "default";
+
 export const TEMPLATE_TRIGGER_STATUSES = [
   { value: "new", label: "new", templateName: "Hot" },
   { value: "warm", label: "warm", templateName: "Warm" },
   { value: "cold", label: "Cold (not interested)", templateName: "Cold" },
+  { value: DEFAULT_FOLLOW_UP_TRIGGER, label: "Default", templateName: "Default" },
 ] as const;
 
 /** Per-lead Follow-up dropdown: Hot / Warm / Cold, then Default at the bottom. */
@@ -34,6 +37,7 @@ export const FOLLOW_UP_OVERRIDE_OPTIONS = [
   { triggerStatus: "new", label: "Hot" },
   { triggerStatus: "warm", label: "Warm" },
   { triggerStatus: "cold", label: "Cold (not interested)" },
+  { triggerStatus: DEFAULT_FOLLOW_UP_TRIGGER, label: "Default" },
 ] as const;
 
 export type FollowUpStepInput = {
@@ -127,6 +131,13 @@ export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
   const enabled = templates.filter((row) => row.enabled);
   if (lead.followUpTemplateId) {
     return enabled.find((row) => row.id === lead.followUpTemplateId) ?? null;
+  }
+  if (lead.status === "new") {
+    return (
+      enabled.find((row) => row.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER) ??
+      enabled.find((row) => row.triggerStatus === "new") ??
+      null
+    );
   }
   return enabled.find((row) => row.triggerStatus === lead.status) ?? null;
 }

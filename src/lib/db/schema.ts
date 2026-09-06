@@ -1730,6 +1730,8 @@ export const deskColumnPrefs = pgTable(
     userId: uuid("user_id"),
     tableKey: text("table_key").notNull(),
     columns: jsonb("columns").$type<string[]>().notNull().default([]),
+    widths: jsonb("widths").$type<Record<string, number>>().notNull().default({}),
+    sort: jsonb("sort").$type<{ key: string; dir: "asc" | "desc" } | null>(),
     ...timestamps,
   },
   (t) => [uniqueIndex("desk_column_prefs_uidx").on(t.tenantId, t.userId, t.tableKey)],

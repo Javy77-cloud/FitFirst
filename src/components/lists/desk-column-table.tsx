@@ -1,5 +1,5 @@
-import { loadListColumnPrefs } from "@/lib/desk/column-prefs";
-import { mergeVisibleColumns, type ListColumn } from "@/lib/list-columns";
+import { loadListColumnLayout } from "@/lib/desk/column-prefs";
+import { mergeColumnWidths, mergeVisibleColumns, type ListColumn } from "@/lib/list-columns";
 import { ColumnTable, type ColumnRow } from "@/components/lists/column-table";
 import type { ReactNode } from "react";
 
@@ -18,8 +18,9 @@ export async function DeskColumnTable({
   rows: ColumnRow[];
   empty?: ReactNode;
 }) {
-  const stored = await loadListColumnPrefs(moduleId);
-  const initialVisible = stored ? mergeVisibleColumns(columns, stored) : undefined;
+  const stored = await loadListColumnLayout(moduleId);
+  const initialVisible = stored?.columns ? mergeVisibleColumns(columns, stored.columns) : undefined;
+  const initialWidths = stored ? mergeColumnWidths(columns, stored.widths) : undefined;
   return (
     <ColumnTable
       moduleId={moduleId}
@@ -29,6 +30,8 @@ export async function DeskColumnTable({
       rows={rows}
       empty={empty}
       initialVisible={initialVisible}
+      initialWidths={initialWidths}
+      initialSort={stored?.sort ?? null}
     />
   );
 }

@@ -220,6 +220,35 @@
   border-collapse: collapse;
   font-size: 1rem;
 }
+.ff-list-table {
+  table-layout: fixed;
+  min-width: 100%;
+}
+.ff-list-th {
+  position: relative;
+}
+.ff-col-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 2;
+}
+.ff-col-resize-left {
+  left: -4px;
+}
+.ff-col-resize-right {
+  right: -4px;
+}
+.ff-col-resize:hover,
+body[data-ff-col-resize] .ff-col-resize {
+  background: color-mix(in srgb, var(--ff-accent) 35%, transparent);
+}
+body[data-ff-col-resize] {
+  cursor: col-resize;
+  user-select: none;
+}
 .ff-table th {
   text-align: left;
   font-weight: 600;
@@ -245,9 +274,11 @@
 .ff-table .ff-col-manage {
   position: sticky;
   right: 0;
-  width: 2rem;
-  min-width: 2rem;
-  padding: 0.2rem 0.15rem;
+  width: auto;
+  min-width: 5.75rem;
+  max-width: 6.5rem;
+  overflow: hidden;
+  padding: 0.2rem 0.35rem;
   text-align: right;
   background: var(--ff-wash);
 }
