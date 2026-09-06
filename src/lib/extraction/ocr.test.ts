@@ -34,6 +34,12 @@ describe("photo OCR ingest", () => {
       engine: "pdf_text",
       implemented: true,
     });
+    expect(
+      classifyIngest("image/jpeg", "scan.jpg", Buffer.from("%PDF-1.7\n%\xE2\xE3\xCF\xD3")),
+    ).toEqual({
+      engine: "pdf_text",
+      implemented: true,
+    });
     expect(isImageUpload("application/octet-stream", "scan.png")).toBe(true);
     expect(isHeicUpload("image/heic", "iphone.heic")).toBe(true);
   });

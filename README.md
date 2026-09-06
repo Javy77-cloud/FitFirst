@@ -4,6 +4,40 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Quote Sheet PDF ingest (this tip)
+
+**`cursor/live-ff-tip-sep6h`** is **`cursor/live-ff-tip-sep6g`** (`97c2068`) plus PDF text-layer extract and rasterize-then-OCR. No page redesign. No nav change. No seed. Do not seed Ana. Do not bind Ana. Cov A stays **$321,000**.
+
+Upload of a former dec + 4-point + wind mit was leaving the HO Quote Sheet almost empty (`Pdf reading is not supported` / Tesseract fed raw PDF bytes). Ingest now:
+
+1. Detects PDF by mime, `.pdf`, or `%PDF` magic — even if the browser labeled it an image.
+2. Extracts the text layer first (`pdf-parse` implementation file, pdfjs `getTextContent`, `pdftotext` when installed).
+3. If the layer is empty (scan), rasterizes pages (`pdftoppm` or pdfjs + canvas) and OCRs the **PNG**s. Raw PDF never goes to Tesseract.
+4. Same fillDealSheet / yellow-blue glance UX. CHECK = use the value. Only genuine low-confidence fields stay Needs review.
+
+### Re-test on the live deal
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep6h && git pull
+npm install
+# optional but faster rasterize on the Mac mini:
+# brew install poppler
+npm run db:migrate
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+1. Sign in **javy@fitfirst.local** / **javy**.
+2. Open deal `f2b63b87-c183-4681-8469-3072455b6dd1` → Documents (or Quote Sheet).
+3. Re-upload the former dec + 4-point + wind mit, **or** on each source file use extract / Fill from source docs.
+4. Quote Sheet should show a **majority** of HO fields as Confirmed or Needs review with real values — not almost-all Missing.
+5. Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Do not bind.
+
+```bash
+npm test
+```
+
 ## Signed default rail + free customizer (this tip)
 
 **`cursor/live-ff-tip-sep6f`** is **`cursor/live-ff-tip-sep6e`** (`1ab3f69`) plus menu-structure only: Policies kids and Admin → Operations. No page redesign. No AMS. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.

@@ -28,6 +28,17 @@ export function looksLikePdf(bytes: Uint8Array | Buffer): boolean {
   );
 }
 
+/** JPEG / PNG / GIF / BMP / WEBP magic — used so a misnamed image never goes through pdf-parse. */
+export function looksLikeImageBuffer(bytes: Uint8Array | Buffer): boolean {
+  if (bytes.length < 12) return false;
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true;
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return true;
+  if (bytes[0] === 0x42 && bytes[1] === 0x4d) return true;
+  const head = Buffer.from(bytes.subarray(0, 12)).toString("ascii");
+  return head.startsWith("RIFF") && head.includes("WEBP");
+}
+
 const EXT_MIME: Record<string, string> = {
   pdf: "application/pdf",
   txt: "text/plain; charset=utf-8",

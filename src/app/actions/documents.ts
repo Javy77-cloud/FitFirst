@@ -30,8 +30,8 @@ import {
   fieldKeyToRiskColumn,
 } from "@/lib/extraction/extract";
 import { inferMimeFromName } from "@/lib/files/urls";
-import { classifyIngest, extractFromImage } from "@/lib/extraction/ocr";
-import { pdfTextLooksEmpty, textFromUpload } from "@/lib/extraction/pdf";
+import { classifyIngest } from "@/lib/extraction/ocr";
+import { readUploadText } from "@/lib/extraction/pdf";
 import {
   CLEAN_DEC_FILENAME,
   CLEAN_DEC_TEXT,
@@ -407,25 +407,13 @@ async function runExtraction(documentId: string, dealId: string) {
     return;
   }
   let text = "";
-  let engine: "pdf_text" | "ocr" = "pdf_text";
-  const plan = classifyIngest(doc.mimeType, doc.filename);
+  let engine: "pdf_text" | "ocr" = classifyIngest(doc.mimeType, doc.filename, buffer).engine;
   try {
-    if (plan.engine === "ocr") {
-      const ocr = await extractFromImage(buffer, doc.filename, doc.mimeType);
-      text = ocr.text;
-      engine = "ocr";
-      if (ocr.status === "failed" && !text.trim()) {
-        throw new Error(ocr.message);
-      }
-    } else {
-      text = await textFromUpload(buffer, doc.mimeType, doc.filename);
-      if (pdfTextLooksEmpty(text)) {
-        const ocr = await extractFromImage(buffer, doc.filename, doc.mimeType);
-        if (!pdfTextLooksEmpty(ocr.text)) {
-          text = ocr.text;
-          engine = "ocr";
-        }
-      }
+    const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
+    text = uploaded.text;
+    engine = uploaded.engine === "ocr" ? "ocr" : "pdf_text";
+    if (!text.trim()) {
+      throw new Error(`Could not read text from ${doc.filename}.`);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not read document";

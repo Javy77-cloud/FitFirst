@@ -1,4 +1,5 @@
 import path from "node:path";
+import { looksLikePdf } from "@/lib/files/urls";
 import { extractFieldsFromText, type ExtractedField } from "./extract";
 
 export type IngestEngine = "pdf_text" | "ocr";
@@ -31,7 +32,13 @@ export function isHeicUpload(mimeType: string, filename: string): boolean {
   return HEIC_EXT.test(filename);
 }
 
-export function classifyIngest(mimeType: string, filename: string): IngestPlan {
+export function classifyIngest(mimeType: string, filename: string, buffer?: Buffer): IngestPlan {
+  if (buffer && looksLikePdf(buffer)) {
+    return { engine: "pdf_text", implemented: true };
+  }
+  if (mimeType === "application/pdf" || filename.toLowerCase().endsWith(".pdf")) {
+    return { engine: "pdf_text", implemented: true };
+  }
   if (isImageUpload(mimeType, filename)) {
     return { engine: "ocr", implemented: true };
   }
@@ -61,6 +68,11 @@ export async function prepareImageBuffer(
 }
 
 export async function recognizeImageText(buffer: Buffer): Promise<string> {
+  if (looksLikePdf(buffer)) {
+    throw new Error(
+      "PDF bytes cannot go to Tesseract (Pdf reading is not supported). Rasterize pages first.",
+    );
+  }
   const Tesseract = await import("tesseract.js");
   const result = await Tesseract.recognize(buffer, "eng", {
     logger: () => undefined,
@@ -77,6 +89,14 @@ export async function extractFromImage(
 ): Promise<OcrResult> {
   const name = filename ?? "photo";
   try {
+    if (looksLikePdf(buffer) || (mimeType === "application/pdf" && !/\.(png|jpe?g|gif|webp)$/i.test(name))) {
+      return {
+        status: "failed",
+        fields: [],
+        text: "",
+        message: `PDF bytes cannot go to Tesseract (${name}). Rasterize pages first. ${PHOTO_OCR_ENGINE}`,
+      };
+    }
     const prepared = await prepareImageBuffer(buffer, mimeType ?? "", name);
     const text = await recognizeImageText(prepared);
     if (!text) {
