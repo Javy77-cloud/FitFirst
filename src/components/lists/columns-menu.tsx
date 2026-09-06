@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { GripVertical } from "lucide-react";
 import {
   columnMenuLabel,
@@ -27,6 +28,7 @@ export function ColumnsMenu({
   const [panel, setPanel] = useState<{ top: number; right: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const visibleSet = new Set(visible);
   const checked = shownColumns(columns, visible).filter((column) => column.label.trim());
   const unchecked = columns.filter((column) => !visibleSet.has(column.id) && column.label.trim());
@@ -40,9 +42,11 @@ export function ColumnsMenu({
       setPanel({ top: box.bottom + 4, right: window.innerWidth - box.right });
     }
     function onDoc(event: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     }
     place();
     document.addEventListener("mousedown", onDoc);
@@ -72,8 +76,10 @@ export function ColumnsMenu({
       >
         Columns
       </button>
-      {open && panel ? (
+      {open && panel && typeof document !== "undefined"
+        ? createPortal(
         <div
+          ref={panelRef}
           className="fixed z-[80] max-h-80 w-60 overflow-auto rounded-md border border-border bg-card p-1.5 shadow-lg"
           style={{ top: panel.top, right: panel.right }}
         >
@@ -142,8 +148,10 @@ export function ColumnsMenu({
           >
             Show all
           </button>
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }
