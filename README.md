@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bi`)
 
-Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank until the agent adds a carrier or shops — auto `evaluateDeal` matches do not count. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank until the agent adds a carrier or shops — auto `evaluateDeal` matches do not count. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `100241de`.
 
 ```bash
 cd ~/FitFirst
