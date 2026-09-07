@@ -79,6 +79,7 @@ export async function saveDealFieldLayout(formData: FormData) {
   }
   await saveLayoutForEveryLine(layout);
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line);
+  flashAction("/settings/field-builder", "layout-saved");
 }
 
 export async function addDealLayoutSection(formData: FormData) {

@@ -12,6 +12,7 @@ import {
   hasRelatedRecord,
 } from "@/lib/lifecycle/activity";
 import { and, eq } from "drizzle-orm";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -198,6 +199,7 @@ export async function updateDeskActivity(formData: FormData) {
   revalidateRelated(activity);
   revalidatePath(`/tasks/${id}`);
   revalidatePath(`/meetings/${id}`);
+  flashAction(activity.kind === "meeting" ? `/meetings/${id}` : `/tasks/${id}`, "changes-saved");
 }
 
 export async function rescheduleDeskActivity(formData: FormData) {

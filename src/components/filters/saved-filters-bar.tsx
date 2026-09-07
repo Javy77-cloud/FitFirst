@@ -12,6 +12,7 @@ import {
   type SavedNamedFilter,
 } from "@/lib/saved-filters";
 import { getLiveQuery, setLiveQuery } from "@/lib/search/live-query";
+import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
 function readSaved(moduleId: string): SavedNamedFilter[] {
@@ -88,6 +89,7 @@ export function SavedFiltersBar({
     writeSaved(moduleId, next);
     setName("");
     setNaming(false);
+    flashAction("filter-saved");
   }
 
   function remove(id: string) {

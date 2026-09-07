@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { requireAdminAction, requireSignedInAction } from "@/lib/auth/guards";
+import { flashAction } from "@/lib/flash-action";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { emailSignatures } from "@/lib/db/schema";
@@ -65,11 +66,7 @@ export async function saveSignatureDraft(formData: FormData) {
   }
 
   refreshSignatures();
-  redirect(
-    submit
-      ? "/automations/signatures?notice=signature-submitted"
-      : "/automations/signatures?notice=signature-draft",
-  );
+  flashAction("/automations/signatures", submit ? "signature-saved" : "draft-saved");
 }
 
 export async function approveSignatureDraft(formData: FormData) {

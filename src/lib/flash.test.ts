@@ -42,10 +42,19 @@ function mockSessionStorage() {
 describe("flash helper", () => {
   it("resolves known keys to confirmation copy", () => {
     expect(resolveFlashMessage("deal-details-saved")).toBe("Deal details saved");
+    expect(resolveFlashMessage("layout-saved")).toBe("Deal layout saved");
+    expect(resolveFlashMessage("home-layout-saved")).toBe("Layout saved");
+    expect(resolveFlashMessage("settings-saved")).toBe("Settings saved");
     expect(resolveFlashMessage("sheet-saved")).toBe("Sheet saved");
     expect(resolveFlashMessage("tag-added")).toBe("Tag added");
     expect(resolveFlashMessage("document-deleted")).toBe("Document deleted");
     expect(FLASH_COPY["deal-details-saved"]).toBe("Deal details saved");
+    expect(FLASH_COPY["layout-saved"]).toBe("Deal layout saved");
+    expect(FLASH_COPY["lead-saved"]).toBe("Lead saved");
+    expect(FLASH_COPY["policy-saved"]).toBe("Policy saved");
+    expect(FLASH_COPY["meeting-saved"]).toBe("Meeting saved");
+    expect(FLASH_COPY["outcome-saved"]).toBe("Outcome saved");
+    expect(FLASH_COPY["consent-saved"]).toBe("Consent saved");
   });
 
   it("accepts a short raw phrase and ignores blanks", () => {

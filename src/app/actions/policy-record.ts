@@ -22,6 +22,7 @@ import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { currentDeskSession } from "@/lib/auth/session";
 import { withHistoryDefaults } from "@/lib/policy/change-log";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -140,6 +141,7 @@ export async function updatePolicyRecord(formData: FormData) {
   revalidatePath(`/policies/${id}`);
   revalidatePath("/policies");
   revalidatePath("/tasks");
+  flashAction(`/policies/${id}`, "policy-saved");
 }
 
 export async function syncPolicyDateAutomations(policyId: string) {

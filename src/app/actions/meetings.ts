@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
+import { flashAction } from "@/lib/flash-action";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { agencySettings, contacts, deals, leads, risks, users } from "@/lib/db/schema";
@@ -211,4 +212,5 @@ export async function saveCommunicationsSettings(formData: FormData) {
   revalidatePath("/settings");
   revalidatePath("/settings/communications");
   revalidatePath("/deals");
+  flashAction("/settings/communications", "communications-saved");
 }

@@ -6,6 +6,7 @@ import { DEFAULT_TENANT_ID, OCCUPANCIES, type Occupancy } from "@/lib/domain";
 import { defaultOccupancyForLine } from "@/lib/locations";
 import { db } from "@/lib/db";
 import { locations } from "@/lib/db/schema";
+import { flashStay } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -54,6 +55,7 @@ export async function createLocation(formData: FormData) {
   revalidatePath("/accounts");
   revalidatePath("/businesses");
   revalidatePath("/policies");
+  flashStay(formData, contactId ? `/contacts/${contactId}` : `/accounts/${accountId}`, "location-saved");
 }
 
 export async function findOrCreateLocationFromAddress(input: {

@@ -6,6 +6,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { drivers, policies, vehicles } from "@/lib/db/schema";
 import { writeLicense } from "@/lib/pii/write";
+import { flashStay } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -72,6 +73,12 @@ export async function addVehicle(formData: FormData) {
   });
 
   revalidateSchedule(formData);
+  const dest =
+    str(formData, "returnTo") ||
+    (optionalId(formData, "policyId")
+      ? `/policies/${optionalId(formData, "policyId")}`
+      : `/deals/${optionalId(formData, "dealId")}`);
+  flashStay(formData, dest, "vehicle-saved");
 }
 
 export async function deleteVehicle(formData: FormData) {
@@ -123,6 +130,12 @@ export async function addDriver(formData: FormData) {
   });
 
   revalidateSchedule(formData);
+  const dest =
+    str(formData, "returnTo") ||
+    (optionalId(formData, "policyId")
+      ? `/policies/${optionalId(formData, "policyId")}`
+      : `/deals/${optionalId(formData, "dealId")}`);
+  flashStay(formData, dest, "driver-saved");
 }
 
 export async function deleteDriver(formData: FormData) {

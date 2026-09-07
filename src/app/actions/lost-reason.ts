@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, isLostBusinessReason } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { quoteAttemptLogs, quotes } from "@/lib/db/schema";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -38,4 +39,5 @@ export async function setLostReason(formData: FormData) {
   revalidatePath(`/deals/${dealId}/compare`);
   revalidatePath("/quotes");
   revalidatePath("/");
+  flashAction(`/deals/${dealId}`, "lost-reason-saved");
 }

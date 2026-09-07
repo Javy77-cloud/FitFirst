@@ -7,6 +7,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { leadFollowUpQueue, leadFollowUpSteps, leadFollowUpTemplates, leads } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
+import { flashAction } from "@/lib/flash-action";
 import { enqueueOutboundJob } from "@/lib/desk/outbound-queue";
 import {
   cancelFollowUpsForTemplate,
@@ -149,6 +150,7 @@ export async function scheduleLeadNurture(formData: FormData) {
     .where(eq(leads.id, leadId));
   await scheduleLeadNurtureReminder(leadId, dueAt, remindVia, now);
   revalidateLeads(leadId);
+  flashAction(`/leads/${leadId}`, "nurture-saved");
 }
 
 export async function updateLeadTemperature(formData: FormData) {
@@ -298,6 +300,7 @@ export async function saveFollowUpTemplate(formData: FormData) {
     else await cancelFollowUpsForTemplate(templateId);
   }
   revalidateLeads();
+  flashAction("/leads", "template-saved");
 }
 
 export async function setFollowUpTemplateEnabled(formData: FormData) {

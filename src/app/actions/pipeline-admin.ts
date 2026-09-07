@@ -13,6 +13,7 @@ import { defaultStageColor } from "@/lib/desk/status-colors";
 import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { listDealLookup } from "@/lib/db/queries";
+import { flashAction } from "@/lib/flash-action";
 import { dealStageForPipeline } from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
@@ -253,6 +254,7 @@ export async function saveCommissionRate(formData: FormData) {
   }
   revalidatePath("/settings");
   revalidatePath("/policies");
+  flashAction("/settings", "settings-saved");
 }
 
 export async function updateCarrierContact(formData: FormData) {
@@ -325,4 +327,5 @@ export async function updateCarrierContact(formData: FormData) {
     .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, id)));
   revalidatePath("/carriers");
   revalidatePath(`/carriers/${id}`);
+  flashAction(`/carriers/${id}`, "carrier-saved");
 }

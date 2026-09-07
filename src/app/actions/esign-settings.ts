@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { esignSettings } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
 import { sendEnvelope } from "@/lib/integrations/esign";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -73,7 +74,7 @@ export async function saveEsignStub(formData: FormData) {
   revalidatePath("/settings");
   revalidatePath("/settings/esign");
   revalidatePath("/esign");
-  redirect("/settings/esign?notice=esign-stub");
+  flashAction("/settings/esign", "esign-saved");
 }
 
 export async function disconnectEsignStub() {

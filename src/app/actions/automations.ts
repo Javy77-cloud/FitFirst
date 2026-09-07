@@ -8,6 +8,7 @@ import { demoTargetForPlaybook } from "@/lib/automations/demo-targets";
 import { firePlaybook } from "@/lib/automations/fire";
 import { normalizeVisibility } from "@/lib/automations/engine";
 import { validateGuidedAutomation } from "@/lib/automations/types";
+import { flashAction } from "@/lib/flash-action";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, bulkSmsDrafts, guidedAutomations } from "@/lib/db/schema";
@@ -76,7 +77,7 @@ export async function saveGuidedAutomation(formData: FormData) {
   }
 
   refreshAutomations();
-  redirect("/automations/builder?notice=automation-saved");
+  flashAction("/automations/builder", "automation-saved");
 }
 
 export async function toggleGuidedAutomation(formData: FormData) {

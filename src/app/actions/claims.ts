@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
+import { flashAction } from "@/lib/flash-action";
 import {
   claimNotifyCopy,
   claimStatusLabel,
@@ -230,8 +231,8 @@ export async function logClaim(formData: FormData) {
 
   revalidateClaimSurfaces(claim.id, policy?.id, contact?.id);
   const returnTo = str(formData, "returnTo");
-  if (returnTo.startsWith("/policies/")) redirect(returnTo);
-  redirect("/claims?saved=1");
+  if (returnTo.startsWith("/policies/")) flashAction(returnTo, "fnol-saved");
+  flashAction("/claims", "claim-saved");
 }
 
 export async function updateClaim(formData: FormData) {
@@ -319,6 +320,7 @@ export async function updateClaim(formData: FormData) {
   }
 
   revalidateClaimSurfaces(claimId, policy?.id ?? existing.policyId, contact?.id ?? existing.contactId);
+  flashAction(`/claims/${claimId}`, "changes-saved");
 }
 
 export async function addClaimNote(formData: FormData) {

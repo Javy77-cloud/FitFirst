@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bq`)
+## Mac test now (`cursor/live-ff-tip-sep7bu`)
+
+Sitewide Save toasts — every successful Save uses the durable top-center `ActionToastHost` (`flashAction` / `flashStay` / sessionStorage), from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder → Save** shows **Deal layout saved**. The same host covers Save deal details, Save sheet, Save layout, Save settings, Save policy, Save lead, Save meeting, Save task, Save password, and the rest of the desk Save / Save changes / form submit-save paths. Failed saves do not claim success. No second toast system. No `db:seed`. Ana unbound. Cov A **$321,000**.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bu-e29e && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Settings → Deal field builder**, change a field or leave it, click **Save**. A top-center **Deal layout saved** toast should appear every time. Then spot-check another Save (Save deal details, Save sheet, Save policy, Save lead, Save settings). Fail a save (or a validation miss) and you should not see a success toast. Same host as **Save deal details**. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BU — Sitewide Save toast
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BU1 | Builder Save | Settings → Deal field builder → Save shows top-center **Deal layout saved** every successful save. |
+| BU2 | Other Saves | Save deal details, Save sheet, Save layout, Save settings, Save policy, Save lead, and other Save buttons use the same `ActionToastHost`. |
+| BU3 | Failed save | A failed persist does not show a success toast. |
+| BU4 | Durable | Toast survives remount/replace (sessionStorage `ff-action-toast`). |
+| BU5 | Scope | No builder DnD redesign, no Pipeline/Markets/bell work, no `db:seed`. Ana unbound, Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bq`)
 
 Table Stage colors, `First Last / Lob` deal names, and Settings → Picklists starter catalog, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** Stage uses the same colors as Board (Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive, …) on a compact inline `DealStageSelect` (`text-xs` / `h-7` — table only; Board pills stay). Deal titles are **First Last / Lob** — `Javier Canales / Home` — one slash only. Existing deals retitle via additive migrate `0088_stage_title_picklists` + boot backfill. **Settings → Picklists** seeds US states, lines of business, and common carriers so **Use a global list** on a picklist field has lists to choose. No `db:seed` wipe. Ana unbound. Cov A **$321,000**. Tip SHA `221dd224`.
 

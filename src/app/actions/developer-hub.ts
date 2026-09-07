@@ -16,6 +16,7 @@ import {
 import { mergeTokens, type MergeRecord } from "@/lib/developer-hub/merge";
 import { parseJsonInput } from "@/lib/developer-hub/runner";
 import { applyMacroToRecords } from "@/lib/developer-hub/run-macro";
+import { flashAction } from "@/lib/flash-action";
 import {
   createDeveloperConnection,
   createDeveloperFunction,
@@ -180,7 +181,7 @@ export async function saveDeveloperFunction(formData: FormData) {
       const row = await updateDeveloperFunction(id, payload);
       if (!row) redirect("/automations/functions?error=missing");
       refreshHub([`/automations/functions/${id}`]);
-      redirect(`/automations/functions/${id}?notice=saved`);
+      flashAction(`/automations/functions/${id}`, "function-saved");
     }
     const row = await createDeveloperFunction({ ...payload, createdBy: session.userId });
     refreshHub();
@@ -253,7 +254,7 @@ export async function saveDeveloperWebhook(formData: FormData) {
       const row = await updateDeveloperWebhook(id, payload);
       if (!row) redirect("/automations/webhooks?error=missing");
       refreshHub([`/automations/webhooks/${id}`]);
-      redirect(`/automations/webhooks/${id}?notice=saved`);
+      flashAction(`/automations/webhooks/${id}`, "webhook-saved");
     }
     const row = await createDeveloperWebhook(payload);
     refreshHub();
@@ -320,7 +321,7 @@ export async function saveDeveloperConnection(formData: FormData) {
       const row = await updateDeveloperConnection(id, payload);
       if (!row) redirect("/automations/connections?error=missing");
       refreshHub([`/automations/connections/${id}`]);
-      redirect(`/automations/connections/${id}?notice=saved`);
+      flashAction(`/automations/connections/${id}`, "connector-saved");
     }
     const row = await createDeveloperConnection({ ...payload, createdBy: session.userId });
     refreshHub();
@@ -364,14 +365,14 @@ export async function saveDeskMacro(formData: FormData) {
       .set(values)
       .where(and(eq(deskMacros.tenantId, DEFAULT_TENANT_ID), eq(deskMacros.id, id)));
     refreshHub([`/automations/macros/${id}`, `/settings/developer-hub/macros/${id}`]);
-    redirect(`/settings/developer-hub/macros/${id}?notice=saved`);
+    flashAction(`/settings/developer-hub/macros/${id}`, "macro-saved");
   }
   const [created] = await db
     .insert(deskMacros)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskMacros.id });
   refreshHub([`/automations/macros/${created.id}`, `/settings/developer-hub/macros/${created.id}`]);
-  redirect(`/settings/developer-hub/macros/${created.id}?notice=saved`);
+  flashAction(`/settings/developer-hub/macros/${created.id}`, "macro-saved");
 }
 
 export async function deleteDeskMacro(formData: FormData) {
@@ -450,14 +451,14 @@ export async function saveDeskButton(formData: FormData) {
       .set(values)
       .where(and(eq(deskCustomButtons.tenantId, DEFAULT_TENANT_ID), eq(deskCustomButtons.id, id)));
     refreshHub([`/automations/buttons/${id}`, `/settings/developer-hub/custom-buttons/${id}`]);
-    redirect(`/settings/developer-hub/custom-buttons/${id}?notice=saved`);
+    flashAction(`/settings/developer-hub/custom-buttons/${id}`, "button-saved");
   }
   const [created] = await db
     .insert(deskCustomButtons)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskCustomButtons.id });
   refreshHub();
-  redirect(`/settings/developer-hub/custom-buttons/${created.id}?notice=saved`);
+  flashAction(`/settings/developer-hub/custom-buttons/${created.id}`, "button-saved");
 }
 
 export async function deleteDeskButton(formData: FormData) {
@@ -545,14 +546,14 @@ export async function saveDeskScript(formData: FormData) {
       .set(values)
       .where(and(eq(deskClientScripts.tenantId, DEFAULT_TENANT_ID), eq(deskClientScripts.id, id)));
     refreshHub([`/automations/client-scripts/${id}`, `/settings/developer-hub/client-scripts/${id}`]);
-    redirect(`/settings/developer-hub/client-scripts/${id}?notice=saved`);
+    flashAction(`/settings/developer-hub/client-scripts/${id}`, "script-saved");
   }
   const [created] = await db
     .insert(deskClientScripts)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskClientScripts.id });
   refreshHub();
-  redirect(`/settings/developer-hub/client-scripts/${created.id}?notice=saved`);
+  flashAction(`/settings/developer-hub/client-scripts/${created.id}`, "script-saved");
 }
 
 export async function deleteDeskScript(formData: FormData) {
@@ -597,14 +598,14 @@ export async function saveDeskWidget(formData: FormData) {
       .set(values)
       .where(and(eq(deskWidgets.tenantId, DEFAULT_TENANT_ID), eq(deskWidgets.id, id)));
     refreshHub([`/settings/developer-hub/widgets/${id}`]);
-    redirect(`/settings/developer-hub/widgets/${id}?notice=saved`);
+    flashAction(`/settings/developer-hub/widgets/${id}`, "widget-saved");
   }
   const [created] = await db
     .insert(deskWidgets)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskWidgets.id });
   refreshHub();
-  redirect(`/settings/developer-hub/widgets/${created.id}?notice=saved`);
+  flashAction(`/settings/developer-hub/widgets/${created.id}`, "widget-saved");
 }
 
 export async function deleteDeskWidget(formData: FormData) {

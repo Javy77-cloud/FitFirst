@@ -8,6 +8,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documents, formFills, formTemplates } from "@/lib/db/schema";
 import { fillHref } from "@/lib/documents/library";
+import { flashAction } from "@/lib/flash-action";
 import { applyScanToForm, defaultFieldMap, mergeFillValues, suggestScanFields } from "@/lib/documents/scan";
 
 function str(form: FormData, key: string) {
@@ -50,10 +51,16 @@ export async function saveFormFill(formData: FormData) {
       })
       .returning();
     revalidatePath("/documents");
-    redirect(fillHref(slug, { folderId: template.folderId, library: "forms" }) + `&fillId=${row.id}`);
+    flashAction(
+      fillHref(slug, { folderId: template.folderId, library: "forms" }) + `&fillId=${row.id}`,
+      "draft-saved",
+    );
   }
   revalidatePath("/documents");
-  redirect(fillHref(slug, { folderId: template.folderId, library: "forms" }) + (fillId ? `&fillId=${fillId}` : ""));
+  flashAction(
+    fillHref(slug, { folderId: template.folderId, library: "forms" }) + (fillId ? `&fillId=${fillId}` : ""),
+    "draft-saved",
+  );
 }
 
 export async function scanSuggestForm(formData: FormData) {

@@ -12,6 +12,7 @@ import { alerts, deskMessages, users } from "@/lib/db/schema";
 import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { flagsForStatus, normalizeAccessStatus } from "@/lib/people/status";
 import { parsePrivilegeForm } from "@/lib/people/privileges";
+import { flashAction } from "@/lib/flash-action";
 import { ensureDeskAgentRow, findPersonByLogin, getPerson } from "@/lib/people/store";
 import { startMfaPending } from "@/app/actions/mfa";
 import {
@@ -144,7 +145,7 @@ export async function saveAgentPrivileges(formData: FormData) {
     })
     .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, id)));
   revalidatePeople(id);
-  redirect(`/settings/agents/${id}?saved=1`);
+  flashAction(`/settings/agents/${id}`, "privileges-saved");
 }
 
 export async function notifyAgent(formData: FormData) {
@@ -237,7 +238,7 @@ export async function completeInvitePassword(formData: FormData) {
     })
     .where(eq(users.id, person.id));
   await startMfaPending({ ...person, mustSetPassword: false, mustEnrollMfa: true, passwordHash: "set" });
-  redirect("/enroll-mfa");
+  flashAction("/enroll-mfa", "password-saved");
 }
 
 export async function completeResetPassword(formData: FormData) {
@@ -267,7 +268,7 @@ export async function completeResetPassword(formData: FormData) {
     })
     .where(eq(users.id, person.id));
   await startMfaPending({ ...person, mustSetPassword: false, passwordHash: "set" });
-  redirect(person.mfaEnrolled && !person.mustEnrollMfa ? "/login/mfa" : "/enroll-mfa");
+  flashAction(person.mfaEnrolled && !person.mustEnrollMfa ? "/login/mfa" : "/enroll-mfa", "password-saved");
 }
 
 export async function issueMfaRecovery(formData: FormData) {
