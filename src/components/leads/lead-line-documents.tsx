@@ -146,7 +146,7 @@ function LineCard({
   }
 
   return (
-    <article className="min-w-0 overflow-hidden rounded-md border border-border" data-ff-line-card={line}>
+    <article className="min-w-0 rounded-md border border-border" data-ff-line-card={line}>
       <div className="flex items-center gap-1 pr-1">
         <button
           type="button"
@@ -154,17 +154,14 @@ function LineCard({
           className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2 text-left hover:bg-secondary/60"
           aria-expanded={open}
         >
-          <span className="text-sm font-semibold text-navy">{label}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="truncate text-sm font-semibold text-navy">{label}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">
             {countLabel} · {open ? "Collapse" : "Expand"}
           </span>
         </button>
-        <FileDeleteIcon
-          type="button"
-          label={`Remove ${label}`}
-          data-ff-line-card-delete={line}
-          onClick={onRemove}
-        />
+        <span className="shrink-0" data-ff-line-card-delete={line}>
+          <FileDeleteIcon type="button" label={`Remove ${label}`} onClick={onRemove} />
+        </span>
       </div>
       {open ? (
         <div className="space-y-3 border-t border-border px-3 py-3">
