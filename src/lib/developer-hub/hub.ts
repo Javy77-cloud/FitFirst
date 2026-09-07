@@ -1,5 +1,13 @@
 export const DEV_HUB_SECTIONS = [
   {
+    id: "api-vault",
+    href: "/settings/developer-hub/api-vault",
+    label: "API vault",
+    hint: "FedEx Address API. Site developers enter the agency key. Admins see a mask only.",
+    ownedHere: true,
+    badge: "Vault",
+  },
+  {
     id: "functions",
     href: "/settings/developer-hub/functions",
     label: "Functions",

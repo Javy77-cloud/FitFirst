@@ -362,6 +362,15 @@ export function PolicyRecordForm({
               fill={{ city: "premisesCity", state: "premisesState", zip: "premisesZip" }}
               className="mt-1 h-8"
               readOnly={sameAs}
+              onConfirm={(parsed) =>
+                setAddress((prev) => ({
+                  ...prev,
+                  address: parsed.street || prev.address,
+                  city: parsed.city || prev.city,
+                  state: parsed.state || prev.state,
+                  zip: parsed.zip || prev.zip,
+                }))
+              }
             />
           </div>
           <div>

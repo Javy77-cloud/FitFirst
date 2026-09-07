@@ -8,6 +8,7 @@ import { verifyPassword } from "@/lib/auth/password";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
+import { userIsSiteDeveloper } from "@/lib/developer/site-developer";
 import { normalizeRole, type DeskRole } from "@/lib/home/scope";
 import { isDeskLoginAllowed, normalizeAccessStatus } from "@/lib/people/status";
 import { normalizeLogin } from "@/lib/people/tokens";
@@ -30,6 +31,7 @@ export type DeskSession = {
   email: string | null;
   isAdmin: boolean;
   isAgent: boolean;
+  isSiteDeveloper: boolean;
   signedIn: boolean;
   capabilities: DeskCapabilities;
   mfaStatus: MfaStatus;
@@ -109,6 +111,7 @@ function guestSession(): DeskSession {
     email: null,
     isAdmin: false,
     isAgent: false,
+    isSiteDeveloper: false,
     signedIn: false,
     capabilities: capabilitiesFor("guest"),
     mfaStatus: "pending",
@@ -138,6 +141,7 @@ function sessionFromUser(
     email: user.email,
     isAdmin: isAdminRole,
     isAgent: role === "agent",
+    isSiteDeveloper: userIsSiteDeveloper(user),
     signedIn: true,
     capabilities: capabilitiesFor(isAdminRole ? "admin" : "agent"),
     mfaStatus: resolveMfaStatus(user, mfaCookie),

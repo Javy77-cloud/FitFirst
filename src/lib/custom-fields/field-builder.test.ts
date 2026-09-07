@@ -46,6 +46,7 @@ describe("deal field builder", () => {
       "multi_line",
       "email",
       "phone",
+      "address",
       "picklist",
       "multi_select",
       "date",
@@ -160,6 +161,7 @@ describe("deal field builder", () => {
     expect(FIELD_TYPE_ICON_NAMES.multi_line).toBe("AlignLeft");
     expect(FIELD_TYPE_ICON_NAMES.email).toBe("Mail");
     expect(FIELD_TYPE_ICON_NAMES.phone).toBe("Phone");
+    expect(FIELD_TYPE_ICON_NAMES.address).toBe("MapPin");
     expect(FIELD_TYPE_ICON_NAMES.picklist).toBe("List");
     expect(FIELD_TYPE_ICON_NAMES.multi_select).toBe("ListChecks");
     expect(FIELD_TYPE_ICON_NAMES.date).toBe("Calendar");

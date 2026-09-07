@@ -4,7 +4,39 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bw`)
+## Mac test now (`cursor/live-ff-tip-sep7ca-59d4`)
+
+Platform-wide **FedEx address autocomplete** plus a **site-developer API vault**. Every address field (Lead, Deal, Contact, Business, Policy, Quote Sheet, Settings, custom Address-type fields) uses one `AddressAutocomplete` control. Without a configured FedEx key the field is plain text — no stub that pretends FedEx works. With a key: typeahead → select/confirm fills street, city, state, ZIP and marks confirmed.
+
+**Site developer ≠ Admin.** Admins may open Settings → Developer Hub → **API vault** and see FedEx Address API as Configured / Not configured with `****************`. They cannot reveal or edit the raw key. Only a **site developer** can unlock, rotate, or clear. Grant with `users.is_site_developer` or `FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local` (no `db:seed` wipe). Secrets encrypt at rest with the existing carrier/PII AES-256-GCM key. Agency BYO — FitFirst does not subscribe.
+
+No Pipeline chip, Markets empty, bell, or rail 320 redesign. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ca-59d4 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+# optional, to unlock the vault as Javy without a SQL flag:
+# echo 'FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local' >> .env
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a Lead or Deal Details address field — type freely (plain input) if no FedEx key is saved. Settings → Developer Hub → **API vault**: Javy-as-admin sees the mask only. After adding `FF_SITE_DEVELOPER_EMAILS`, Unlock vault, paste sandbox API key + secret, Save. Return to an address field and type a street — suggestions appear; picking one fills city / state / ZIP and shows **Address confirmed**. Do not bind or edit Ana Cov A (**$321,000**).
+
+### CA — FedEx address + developer vault
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| CA1 | Shared control | Lead, Deal Details, Quote Sheet, Policy, Settings office / meeting, and an Address-type field all use `data-ff-address-autocomplete`. |
+| CA2 | Key missing | No FedEx key → address is a normal text box. No “add a key” stub theater on the field. |
+| CA3 | Confirm fill | With a key, pick a suggestion → street / city / state / ZIP fill and **Address confirmed** shows. |
+| CA4 | Admin mask | Settings → Developer Hub → API vault shows Configured/`****************` (or Not configured). No reveal. Unlock is hidden for Javy unless he is a site developer. |
+| CA5 | Site developer | `FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local` (or `is_site_developer`) shows Unlock vault. Save / Clear rotate the encrypted key. Never see the old secret. |
+| CA6 | Scope | Pipeline chips, Markets empty, bell, and the 320px deal rail are unchanged. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bw`)
 
 Rename left-nav **Home** to **Dashboard**. Same `/` route and house icon. Page chrome title and nav customizer / catalog for that top item also say **Dashboard**. Merged onto `cursor/live-ff-tip-sep7az`. No sidebar redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `c1127d91`. Head `46217c28`.
 

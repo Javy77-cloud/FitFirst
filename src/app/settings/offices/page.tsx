@@ -4,6 +4,7 @@ import { AgentAssign } from "@/components/org/agent-assign";
 import { StatePicker } from "@/components/org/state-picker";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,11 +125,12 @@ export default async function OfficesSettingsPage({
             <Label htmlFor="office-address" className="text-xs">
               Address
             </Label>
-            <Input
+            <AddressAutocomplete
               id="office-address"
               name="address"
               defaultValue={editing?.address ?? ""}
               placeholder="2100 Palm Bay Rd NE, Palm Bay, FL 32905"
+              composeOnConfirm
               className="mt-1 h-8"
             />
           </div>

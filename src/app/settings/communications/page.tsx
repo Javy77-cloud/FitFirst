@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { saveCommunicationsSettings } from "@/app/actions/meetings";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { Button } from "@/components/ui/button";
@@ -166,12 +167,13 @@ export default async function CommunicationsSettingsPage() {
           <h2 className="text-sm font-semibold text-navy">Meeting addresses</h2>
           <div>
             <Label className="text-xs">Agency office (In-Office)</Label>
-            <Input
+            <AddressAutocomplete
               name="officeAddress"
               defaultValue={"officeAddress" in agency ? (agency.officeAddress ?? "") : ""}
               className="mt-1 h-8"
               placeholder="2100 Palm Bay Rd NE, Palm Bay, FL 32905"
               disabled={!session.isAdmin}
+              composeOnConfirm
             />
             {!session.isAdmin ? (
               <p className="mt-1 text-helper text-muted-foreground">Only Admin can edit the agency office.</p>
@@ -179,11 +181,12 @@ export default async function CommunicationsSettingsPage() {
           </div>
           <div>
             <Label className="text-xs">Your meeting address</Label>
-            <Input
+            <AddressAutocomplete
               name="meetingAddress"
               defaultValue={actor?.meetingAddress ?? session.user?.meetingAddress ?? ""}
               className="mt-1 h-8"
               placeholder="Suite 112 · same building"
+              composeOnConfirm
             />
             <p className="mt-1 text-helper text-muted-foreground">
               Added to In-Office meetings for {session.name}. Agents edit only this line.

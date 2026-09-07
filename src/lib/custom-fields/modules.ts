@@ -53,6 +53,10 @@ const LEAD_FIELDS: CustomFieldDef[] = [
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "source", label: "Source", type: "single_line", systemKey: "source" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
+  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
+  { key: "city", label: "City", type: "single_line", systemKey: "city" },
+  { key: "state", label: "State", type: "single_line", systemKey: "state" },
+  { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
 ];
 
 const CONTACT_FIELDS: CustomFieldDef[] = [
@@ -60,7 +64,7 @@ const CONTACT_FIELDS: CustomFieldDef[] = [
   { key: "last_name", label: "Last name", type: "single_line", systemKey: "lastName" },
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
-  { key: "mailing_address", label: "Address", type: "single_line", systemKey: "mailingAddress" },
+  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
@@ -79,6 +83,7 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "business_name", label: "Business name", type: "single_line", systemKey: "name" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "email", label: "Email", type: "email", systemKey: "email" },
+  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
 ];
@@ -150,7 +155,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
   if (module === "businesses") {
     return twoCol(
       [section("business", "Business", ["business_name", "phone", "email"])],
-      [section("location", "Location", ["city", "state"])],
+      [section("location", "Location", ["mailing_address", "city", "state"])],
     );
   }
   if (module === "carriers") {
