@@ -11,11 +11,12 @@ function source(file: string) {
 }
 
 describe("deal detail final rebuild", () => {
-  it("shows only the deal name in the header and keeps FitFirst off the title", () => {
+  it("keeps Deals as the header module label and the deal name in the page stack", () => {
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/title=\{deal\.title\}/);
+    expect(page).toMatch(/title="Deals"/);
+    expect(page).not.toMatch(/title=\{deal\.title\}/);
+    expect(page).not.toMatch(/hideHeaderTitle/);
     expect(page).toMatch(/data-ff-deal-title/);
-    expect(page).toMatch(/hideHeaderTitle/);
     expect(page).toMatch(/showBrand=\{false\}/);
     expect(page).toMatch(/utilityChrome/);
     expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{deal\.title\}/);

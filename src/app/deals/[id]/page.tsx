@@ -143,10 +143,9 @@ export default async function DealPage({
 
   return (
     <AppShell
-      title={deal.title}
+      title="Deals"
       utilityChrome
       showBrand={false}
-      hideHeaderTitle
       recordContext={{
         dealId: deal.id,
         leadId: deal.leadId,

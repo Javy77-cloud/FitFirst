@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aq`)
 
-Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `bd164f2`.
+Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header module label is **Deals**, then the global search bar — not empty, not `deal.title` in the header. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
 
 ```bash
 cd ~/FitFirst
@@ -28,6 +28,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AO3 | Flush stack | Top → bottom, minimal gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → Upload / sheet / Markets / Quotes. No dead band under the shell header. |
 | AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
 | AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
+| AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
 
 ### AH — Pipeline list (sep7ah, locked)
 
