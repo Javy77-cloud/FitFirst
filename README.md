@@ -4,7 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7by`)
+## Mac test now (`cursor/live-ff-tip-sep7bw`)
+
+Rename left-nav **Home** to **Dashboard**. Same `/` route and house icon. Page chrome title and nav customizer / catalog for that top item also say **Dashboard**. Merged onto `cursor/live-ff-tip-sep7az`. No sidebar redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `c1127d91`. Head `46217c28`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Left nav first item is **Dashboard**, not Home. Dashboard page title matches. Customize nav catalog shows Dashboard for that row. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BW — Home → Dashboard
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BW1 | Left nav | First rail item label is **Dashboard**. Route stays `/`. Icon unchanged. |
+| BW2 | Page title | Dashboard chrome title is **Dashboard**, not Home. |
+| BW3 | Customizer | Nav catalog / customize list shows **Dashboard** for that top item. |
+| BW4 | Scope | Sidebar layout, Pipeline, builder, Markets, and bell unchanged. |
+
+## Previous tip (`cursor/live-ff-tip-sep7by`)
 
 **Only** the Deal detail right rail is **exactly 320px**. Everything else on the deal page (title, tabs, Details / Documents / Markets / Quotes) takes the leftover `flex-1` row. Merged onto `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w/min/max-[320px] shrink-0` plus CSS `flex: 0 0 320px !important`. Left `data-ff-deal-top-left` is `flex: 1 1 0%` — no 72% fight. No Tags / Quick Comms / tabs / Pipeline redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `79ff5af2`.
 
