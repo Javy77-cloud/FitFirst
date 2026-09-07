@@ -104,6 +104,6 @@ describe("primary desk nav", () => {
     expect(pathIsActive("/deals", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
     expect(pathIsActive("/pipeline", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
     expect(groupIdForPath("/pipeline")).toBe("deals");
-    expect(PINNED_HOME.label).toBe("Home");
+    expect(PINNED_HOME.label).toBe("Dashboard");
   });
 });

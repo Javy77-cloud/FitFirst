@@ -42,7 +42,7 @@ export type NavLinkDef = {
 
 /** Every destination that can sit on the rail or inside a folder. Ids are stable for prefs. */
 export const NAV_LINK_CATALOG: NavLinkDef[] = [
-  { id: "home", href: "/", label: "Home", icon: Home, match: "/", exact: true },
+  { id: "home", href: "/", label: "Dashboard", icon: Home, match: "/", exact: true },
   { id: "social", href: "/social", label: "Social", icon: Users, match: "/social" },
   { id: "leads", href: "/leads", label: "Leads", icon: Users, match: "/leads" },
   { id: "deals", href: "/deals", label: "Deals", icon: ClipboardList, match: "/deals" },

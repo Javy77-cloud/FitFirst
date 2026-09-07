@@ -1,6 +1,6 @@
 /** Left-nav rows. One Deals module. One Settings. Stub-only rows (Get Started, Support, Inbox) are gone. */
 export const DESK_NAV_ITEMS = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Dashboard" },
   { href: "/social", label: "Social" },
   { href: "/leads", label: "Leads" },
   { href: "/deals", label: "Deals" },

@@ -22,7 +22,7 @@ import { isNavActive } from "@/lib/desk/nav";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Dashboard", icon: Home },
   { href: "/social", label: "Social", icon: Share2 },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/deals", label: "Deals", icon: ClipboardList },

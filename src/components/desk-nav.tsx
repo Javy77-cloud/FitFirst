@@ -27,7 +27,7 @@ import { DESK_NAV_ITEMS } from "@/lib/desk/nav-items";
 import { navItemIsActive } from "@/lib/desk/nav-active";
 
 const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = {
-  Home,
+  Dashboard: Home,
   Social: Share2,
   Leads: Users,
   Deals: ClipboardList,

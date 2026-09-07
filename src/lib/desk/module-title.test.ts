@@ -3,7 +3,7 @@ import { moduleTitleFromPath, recordSubtitle } from "./module-title";
 
 describe("moduleTitleFromPath", () => {
   it("matches list and record routes to the nav module", () => {
-    expect(moduleTitleFromPath("/")).toBe("Home");
+    expect(moduleTitleFromPath("/")).toBe("Dashboard");
     expect(moduleTitleFromPath("/pipeline?pipeline=p-c")).toBe("Deals");
     expect(moduleTitleFromPath("/leads")).toBe("Leads");
     expect(moduleTitleFromPath("/leads/new")).toBe("Leads");
@@ -32,7 +32,7 @@ describe("moduleTitleFromPath", () => {
 
   it("keeps a record name as subtitle when it differs from the module", () => {
     expect(recordSubtitle("Contacts", "Ruiz, Elena")).toBe("Ruiz, Elena");
-    expect(recordSubtitle("Home", "Home")).toBeNull();
+    expect(recordSubtitle("Dashboard", "Dashboard")).toBeNull();
     expect(recordSubtitle("Deals", "P&C pipeline")).toBe("P&C pipeline");
   });
 });

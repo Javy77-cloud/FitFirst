@@ -35,7 +35,7 @@ function asItem(link: NavLinkDef): NavItem {
 
 const homeLink = getNavLink("home")!;
 
-/** Home is a reorderable primary now; kept for older callers. */
+/** Dashboard (id `home`) is a reorderable primary now; kept for older callers. */
 export const PINNED_HOME: NavItem = asItem(homeLink);
 
 const defaultResolved = resolveNavLayout(null);

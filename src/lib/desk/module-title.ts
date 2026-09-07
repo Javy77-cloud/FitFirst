@@ -42,11 +42,11 @@ const MODULE_PREFIXES: readonly [string, string][] = [
 
 export function moduleTitleFromPath(pathname: string): string {
   const path = (pathname.split("?")[0] || "/").replace(/\/$/, "") || "/";
-  if (path === "/") return "Home";
+  if (path === "/") return "Dashboard";
   for (const [prefix, label] of MODULE_PREFIXES) {
     if (path === prefix || path.startsWith(`${prefix}/`)) return label;
   }
-  return "Home";
+  return "Dashboard";
 }
 
 export function recordSubtitle(moduleTitle: string, pageTitle?: string | null): string | null {

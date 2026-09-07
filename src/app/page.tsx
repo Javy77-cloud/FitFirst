@@ -35,7 +35,7 @@ export default async function HomePage({
 
   return (
     <AppShell
-      title="Home"
+      title="Dashboard"
       actions={<HomeNewMenu />}
     >
       {params.locked === "modules" ? (

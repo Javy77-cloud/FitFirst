@@ -63,7 +63,7 @@ describe("nav layout defaults", () => {
     ]);
     const rows = resolveNavLayout(null);
     expect(itemLabels(rows)).toEqual([
-      "Home",
+      "Dashboard",
       "Leads",
       "Deals",
       "Contacts",

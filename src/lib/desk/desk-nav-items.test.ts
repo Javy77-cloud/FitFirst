@@ -5,6 +5,9 @@ describe("desk nav chrome", () => {
   it("keeps one Deals row, no Pipeline row, and no stub-only rows", () => {
     const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
+    expect(DESK_NAV_ITEMS[0]).toEqual({ href: "/", label: "Dashboard" });
+    expect(labels).toContain("Dashboard");
+    expect(labels).not.toContain("Home");
     expect(labels.filter((label) => label === "Pipeline")).toHaveLength(0);
     expect(labels.filter((label) => label === "Deals")).toHaveLength(1);
     expect(DESK_NAV_ITEMS.some((item) => item.href === "/deals")).toBe(true);
