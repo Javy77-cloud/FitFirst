@@ -18,7 +18,8 @@ import { updateContactRecord } from "@/app/actions/record-edit";
 import { sourceLabel } from "@/lib/crm/sources";
 import { Button } from "@/components/ui/button";
 import { RecordTags } from "@/components/tags/record-tags";
-import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,7 @@ export default async function ContactDetailPage({
   const latestPolicyId = policies[0]?.policy.id ?? null;
   const [templates, tagExtra] = await Promise.all([
     listEmailTemplates(),
-    listModuleTagSuggestions("contacts").catch(() => [] as string[]),
+    listModuleTags("contacts").catch(() => [] as { name: string; color: string | null }[]),
   ]);
   const context = await loadRecordContext({
     contactId: contact.id,
@@ -76,7 +77,8 @@ export default async function ContactDetailPage({
           module="contacts"
           recordId={contact.id}
           tags={contact.tags}
-          suggestions={suggestedTagsFor("contacts", tagExtra)}
+          suggestions={suggestedTagsFor("contacts", tagExtra.map((row) => row.name))}
+          colors={colorsFromModuleTags(tagExtra)}
         />
       </div>
 

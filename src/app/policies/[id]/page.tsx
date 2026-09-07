@@ -45,7 +45,8 @@ import { loadRecordContext } from "@/lib/record-context";
 import { parseMoney, premiumChange } from "@/lib/renewal/compare";
 import { isInForceStatus } from "@/lib/policy/status";
 import { RecordTags } from "@/components/tags/record-tags";
-import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +70,7 @@ export default async function PolicyDetailPage({
     listServiceTimeline(id),
     listPolicyInspections(id),
     listPolicyInstallments(id),
-    listModuleTagSuggestions("policies").catch(() => [] as string[]),
+    listModuleTags("policies").catch(() => [] as { name: string; color: string | null }[]),
   ]);
   const {
     policy,
@@ -128,7 +129,8 @@ export default async function PolicyDetailPage({
           module="policies"
           recordId={policy.id}
           tags={policy.tags}
-          suggestions={suggestedTagsFor("policies", tagExtra)}
+          suggestions={suggestedTagsFor("policies", tagExtra.map((row) => row.name))}
+          colors={colorsFromModuleTags(tagExtra)}
         />
       </div>
       <div className="mb-4 flex flex-wrap gap-3 text-sm">

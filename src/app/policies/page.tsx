@@ -14,6 +14,7 @@ import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { TagChips } from "@/components/tags/tag-chips";
+import { listModuleTagColors } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,10 @@ export default async function PoliciesPage({
     carrier: firstParam(params.carrier),
     attention: firstParam(params.attention),
   };
-  const rows = await listPolicies(filter);
+  const [rows, tagColors] = await Promise.all([
+    listPolicies(filter),
+    listModuleTagColors("policies").catch(() => ({})),
+  ]);
   const key = Object.entries(filter)
     .filter(([, value]) => value)
     .map(([name, value]) => `${name}:${value}`)
@@ -166,7 +170,7 @@ export default async function PoliciesPage({
                 policy.esignSignedAt,
                 policy.esignRequestedAt,
               ),
-              tags: <TagChips tags={policy.tags} />,
+              tags: <TagChips tags={policy.tags} colors={tagColors} />,
             },
           }))}
         />

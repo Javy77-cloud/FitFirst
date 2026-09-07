@@ -234,6 +234,8 @@ export const deskModuleTags = pgTable(
     tenantId: tenantCol(),
     module: text("module").notNull(),
     name: text("name").notNull(),
+    /** Agent-picked hex. Null keeps the default secondary chip. */
+    color: text("color"),
     createdBy: uuid("created_by"),
     ...timestamps,
   },

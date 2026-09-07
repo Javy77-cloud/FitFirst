@@ -25,7 +25,8 @@ import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
 import type { LineOfBusiness } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { RecordTags } from "@/components/tags/record-tags";
-import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export default async function LeadDetailPage({
       listEnabledMacrosFor("leads"),
       listVisibleButtons({ module: "leads", placement: "detail" }),
       listEnabledScriptsFor("leads", "edit"),
-      listModuleTagSuggestions("leads").catch(() => [] as string[]),
+      listModuleTags("leads").catch(() => [] as { name: string; color: string | null }[]),
     ]);
   if (!row) notFound();
   const { lead, deal, docs } = row;
@@ -126,7 +127,8 @@ export default async function LeadDetailPage({
             module="leads"
             recordId={lead.id}
             tags={lead.tags}
-            suggestions={suggestedTagsFor("leads", tagExtra)}
+            suggestions={suggestedTagsFor("leads", tagExtra.map((row) => row.name))}
+            colors={colorsFromModuleTags(tagExtra)}
           />
         </div>
       </div>

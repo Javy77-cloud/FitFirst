@@ -12,6 +12,8 @@ describe("module tag manage + deal chip remove", () => {
     expect(chips).toMatch(/data-ff-tag-remove/);
     expect(chips).toMatch(/group-hover:inline/);
     expect(chips).toMatch(/data-ff-manage-tags/);
+    expect(chips).toMatch(/data-ff-tag-color-picker/);
+    expect(chips).toMatch(/data-ff-tag-color-edit/);
     expect(chips).toMatch(/\/settings\/tags\?module=/);
     expect(chips).not.toMatch(/onClick=\{\(\) => remove\(tag\)\}[\s\S]*\{formatTagLabel\(tag\)\} ×/);
   });
@@ -22,6 +24,8 @@ describe("module tag manage + deal chip remove", () => {
     expect(page).toMatch(/mergeModuleTag/);
     expect(page).toMatch(/deleteModuleTag/);
     expect(page).toMatch(/data-ff-tag-manager/);
+    expect(page).toMatch(/updateModuleTagColor/);
+    expect(page).toMatch(/Save color/);
     expect(page).toMatch(/HardDeleteForm/);
     expect(source("src/app/actions/record-tags.ts")).toMatch(/export async function renameModuleTag/);
     expect(source("src/app/actions/record-tags.ts")).toMatch(/export async function mergeModuleTag/);

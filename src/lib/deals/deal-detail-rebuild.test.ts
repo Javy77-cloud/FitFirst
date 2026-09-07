@@ -170,8 +170,10 @@ describe("deal detail final rebuild", () => {
     expect(body).toMatch(/Approve & request quotes/);
     expect(body).toMatch(/PaidApiWall/);
     expect(body).toMatch(/dealLine/);
+    expect(body).toMatch(/data-ff-markets-empty/);
+    expect(body.indexOf("data-ff-markets-empty")).toBeLessThan(body.indexOf("Approve & request quotes"));
     expect(body.indexOf("Approve & request quotes")).toBeLessThan(body.indexOf("<MarketTable"));
-    expect(body.indexOf("<MarketTable")).toBeLessThan(body.indexOf("<ManualCarrierAdd"));
+    expect(body.indexOf("<MarketTable")).toBeLessThan(body.lastIndexOf("<ManualCarrierAdd"));
   });
 
   it("removes in-desk signature from Documents", () => {

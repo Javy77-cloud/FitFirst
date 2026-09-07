@@ -39,6 +39,7 @@ import {
 import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
 import { TagChips } from "@/components/tags/tag-chips";
+import { listModuleTagColors } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +54,10 @@ export default async function LeadsPage({
   const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
-  const [all, loadedTemplates] = await Promise.all([
+  const [all, loadedTemplates, tagColors] = await Promise.all([
     listLeads(),
     listFollowUpTemplates().catch(() => []),
+    listModuleTagColors("leads").catch(() => ({})),
   ]);
   const templates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
   const queue = sortLeadQueue(all.filter((lead) => isLeadOnQueue(lead)));
@@ -261,7 +263,7 @@ export default async function LeadsPage({
                     ) : (
                       <StartShopForm leadId={lead.id} />
                     ),
-                    tags: <TagChips tags={lead.tags} />,
+                    tags: <TagChips tags={lead.tags} colors={tagColors} />,
                   },
                 };
               })}

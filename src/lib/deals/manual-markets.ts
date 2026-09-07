@@ -29,3 +29,11 @@ export function marketBucketLabel(bucket: MarketBucket): string {
   if (bucket === "stretch") return "Stretch";
   return "Skip";
 }
+
+/** True only after a lookup returned carriers or the agent added one. */
+export function hasMarketLookupData(
+  matches: { carrierId: string }[],
+  manualIds: string[] = [],
+): boolean {
+  return matches.length > 0 || manualIds.length > 0;
+}

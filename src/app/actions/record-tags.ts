@@ -14,6 +14,11 @@ import {
   type TagModule,
 } from "@/lib/tags/module-tags";
 import { deleteTagFromList, mergeTagInList, renameTagInList } from "@/lib/tags/manage";
+import {
+  normalizeTagColor,
+  parseTagColorsFromForm,
+  type TagColorMap,
+} from "@/lib/tags/tag-colors";
 
 const PATHS: Record<TagModule, { list: string; detail: (id: string) => string }> = {
   leads: { list: "/leads", detail: (id) => `/leads/${id}` },
@@ -27,13 +32,19 @@ export async function saveRecordTags(formData: FormData) {
   const recordId = String(formData.get("recordId") ?? "").trim();
   if (!isTagModule(module) || !recordId) return;
   const tags = parseTagsFromForm(formData);
-  await writeRecordTags(module, recordId, tags);
+  const colors = parseTagColorsFromForm(formData);
+  await writeRecordTags(module, recordId, tags, colors);
   const paths = PATHS[module];
   revalidatePath(paths.list);
   revalidatePath(paths.detail(recordId));
 }
 
-export async function writeRecordTags(module: TagModule, recordId: string, tags: string[]) {
+export async function writeRecordTags(
+  module: TagModule,
+  recordId: string,
+  tags: string[],
+  colors: TagColorMap = {},
+) {
   const next = normalizeTags(tags);
   const actor = await getActor().catch(() => null);
   if (module === "leads") {
@@ -58,17 +69,34 @@ export async function writeRecordTags(module: TagModule, recordId: string, tags:
       .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, recordId)));
   }
   for (const name of next) {
-    await db
-      .insert(deskModuleTags)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        module,
-        name,
-        createdBy: actor?.id ?? null,
-      })
-      .onConflictDoNothing({
-        target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name],
-      });
+    const color = normalizeTagColor(colors[name]);
+    if (color) {
+      await db
+        .insert(deskModuleTags)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          module,
+          name,
+          color,
+          createdBy: actor?.id ?? null,
+        })
+        .onConflictDoUpdate({
+          target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name],
+          set: { color, updatedAt: new Date() },
+        });
+    } else {
+      await db
+        .insert(deskModuleTags)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          module,
+          name,
+          createdBy: actor?.id ?? null,
+        })
+        .onConflictDoNothing({
+          target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name],
+        });
+    }
   }
 }
 
@@ -97,6 +125,8 @@ export async function renameModuleTag(formData: FormData) {
   const to = normalizeTag(String(formData.get("to") ?? ""));
   if (!isTagModule(module) || !from || !to || from === to) return;
   const actor = await getActor().catch(() => null);
+  const existing = await listModuleTags(module);
+  const carried = existing.find((row) => row.name === from)?.color ?? null;
   await rewriteModuleTags(module, (tags) => renameTagInList(tags, from, to));
   await db
     .delete(deskModuleTags)
@@ -105,8 +135,11 @@ export async function renameModuleTag(formData: FormData) {
     );
   await db
     .insert(deskModuleTags)
-    .values({ tenantId: DEFAULT_TENANT_ID, module, name: to, createdBy: actor?.id ?? null })
-    .onConflictDoNothing({ target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name] });
+    .values({ tenantId: DEFAULT_TENANT_ID, module, name: to, color: carried, createdBy: actor?.id ?? null })
+    .onConflictDoUpdate({
+      target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name],
+      set: carried ? { color: carried, updatedAt: new Date() } : { updatedAt: new Date() },
+    });
   revalidatePath(PATHS[module].list);
   revalidatePath("/settings/tags");
 }
@@ -146,13 +179,50 @@ export async function deleteModuleTag(formData: FormData) {
 }
 
 export async function listModuleTagSuggestions(module: TagModule): Promise<string[]> {
+  const rows = await listModuleTags(module);
+  return rows.map((row) => row.name);
+}
+
+export async function listModuleTags(module: TagModule): Promise<{ name: string; color: string | null }[]> {
   try {
     const rows = await db
-      .select({ name: deskModuleTags.name })
+      .select({ name: deskModuleTags.name, color: deskModuleTags.color })
       .from(deskModuleTags)
       .where(and(eq(deskModuleTags.tenantId, DEFAULT_TENANT_ID), eq(deskModuleTags.module, module)));
-    return rows.map((row) => row.name);
+    return rows.map((row) => ({ name: row.name, color: normalizeTagColor(row.color) }));
   } catch {
     return [];
   }
+}
+
+export async function listModuleTagColors(module: TagModule): Promise<TagColorMap> {
+  const rows = await listModuleTags(module);
+  const out: TagColorMap = {};
+  for (const row of rows) {
+    if (row.color) out[row.name] = row.color;
+  }
+  return out;
+}
+
+export async function updateModuleTagColor(formData: FormData) {
+  const module = String(formData.get("module") ?? "");
+  const name = normalizeTag(String(formData.get("name") ?? ""));
+  const color = normalizeTagColor(String(formData.get("color") ?? ""));
+  if (!isTagModule(module) || !name || !color) return;
+  const actor = await getActor().catch(() => null);
+  await db
+    .insert(deskModuleTags)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      module,
+      name,
+      color,
+      createdBy: actor?.id ?? null,
+    })
+    .onConflictDoUpdate({
+      target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name],
+      set: { color, updatedAt: new Date() },
+    });
+  revalidatePath(PATHS[module].list);
+  revalidatePath("/settings/tags");
 }
