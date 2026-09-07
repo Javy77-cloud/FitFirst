@@ -53,6 +53,7 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/items-center/);
     expect(strip).toMatch(/justify-center/);
     expect(strip).toMatch(/hover:-translate-y/);
+    expect(strip).toMatch(/border-black/);
     expect(strip).toMatch(/text-\[16px\]/);
     expect(strip).not.toMatch(/bg-card/);
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);

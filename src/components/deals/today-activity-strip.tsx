@@ -39,7 +39,7 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className="inline-flex shrink-0 flex-col items-center rounded-md px-2.5 py-1.5 transition-transform hover:-translate-y-1"
+              className="inline-flex shrink-0 flex-col items-center rounded-md border border-black px-2.5 py-1.5 transition-transform hover:-translate-y-1"
               style={{
                 backgroundColor: tone.chipBg,
                 color: tone.chipFg,
