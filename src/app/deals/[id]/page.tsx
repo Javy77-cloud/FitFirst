@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { sourceLabel } from "@/lib/crm/sources";
 import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
 import { DealLineSelector } from "@/components/deal/deal-line-selector";
@@ -10,7 +9,6 @@ import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { SheetHealthToggle } from "@/components/deal/sheet-health-toggle";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
-import { StagePill } from "@/components/fit-badge";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
@@ -170,9 +168,21 @@ export default async function DealPage({
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
         <div className="-mt-5 space-y-1" data-ff-deal-flush-tabs>
-        <h1 className="text-xl font-semibold text-navy" data-ff-deal-title>
-          {deal.title}
-        </h1>
+        <div className="flex items-start justify-between gap-3" data-ff-deal-title-row>
+          <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
+            {deal.title}
+          </h1>
+          <div className="flex shrink-0 items-start gap-3" data-ff-deal-title-meta>
+            {health ? (
+              <SheetHealthToggle
+                report={health}
+                href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
+                dealId={deal.id}
+              />
+            ) : null}
+            <DealMotivation stats={motivation} />
+          </div>
+        </div>
         <SectionTabs
           defaultValue="documents"
           active={activeTab}
@@ -275,8 +285,6 @@ export default async function DealPage({
                 rail={
                   <div className="space-y-4 lg:sticky lg:top-4">
                     <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm" data-ff-deal-identity>
-                      <StagePill stage={deal.pipelineStage} />
-                      <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
                       {lead ? (
                         <RelatedRecordNav
                           href={`/leads/${lead.id}`}
@@ -284,14 +292,6 @@ export default async function DealPage({
                           testId="view-source-lead"
                         />
                       ) : null}
-                      {health ? (
-                        <SheetHealthToggle
-                          report={health}
-                          href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
-                          dealId={deal.id}
-                        />
-                      ) : null}
-                      <DealMotivation stats={motivation} />
                     </div>
                     <div className="ff-card p-3">
                       <RecordTags
