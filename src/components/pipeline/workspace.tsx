@@ -44,12 +44,12 @@ export function PipelineWorkspace({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{hint}</p>
         <div className="flex items-center gap-2">
-          {view === "table" ? null : <PipelineFieldPicker />}
+          {view === "list" || view === "grid" ? null : <PipelineFieldPicker />}
           <SheetSettingsMenu tagModule="deals" />
         </div>
       </div>
       {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
-      {view === "table" ? (
+      {view === "list" || view === "grid" ? (
         <PipelineTableView
           board={board}
           cards={cards}

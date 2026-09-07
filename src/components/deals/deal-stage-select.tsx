@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import type { DealStageOption } from "@/lib/deals/deal-columns";
 import { stageColorFromNameOrSlug, statusColorClass } from "@/lib/desk/status-colors";
+import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
 function colorForStage(stage: DealStageOption) {
@@ -15,11 +16,13 @@ export function DealStageSelect({
   pipelineSlug,
   stageSlug,
   stages,
+  toastOnSave = false,
 }: {
   dealId: string;
   pipelineSlug: string;
   stageSlug: string;
   stages: DealStageOption[];
+  toastOnSave?: boolean;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [pending, startTransition] = useTransition();
@@ -49,6 +52,7 @@ export function DealStageSelect({
             pipelineSlug,
             stageSlug: next,
           });
+          if (toastOnSave) flashAction("deal-updated");
         });
       }}
     >

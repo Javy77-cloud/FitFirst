@@ -21,7 +21,7 @@ import {
 } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
-import { parsePipelineView } from "@/lib/wire/pipeline";
+import { isPipelineSheetView, parsePipelineView } from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 import { listModuleTags } from "@/app/actions/record-tags";
 
@@ -58,17 +58,17 @@ export default async function DealsPage({
     healthSub: first(params.healthSub),
   };
   const boardSlug = pipeline || "p-c";
-  const selectedPipeline = pipeline || (view === "table" ? undefined : "p-c");
+  const selectedPipeline = pipeline || (isPipelineSheetView(view) ? undefined : "p-c");
   const [boardData, listRows, userRows, lineSettings, lookup, parties, desk, tagCatalog] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
       pcSub: pipeline === "p-c" || !pipeline ? filter.pcSub : undefined,
-      stage: view === "table" && pipeline ? stage : undefined,
+      stage: isPipelineSheetView(view) && pipeline ? stage : undefined,
     }),
     filter.attention === "bound_pending"
       ? listBoundPendingDeals()
-      : view === "table" && !pipeline
+      : isPipelineSheetView(view) && !pipeline
         ? listDeals(filter)
         : Promise.resolve(null),
     listUsers(),
@@ -81,9 +81,9 @@ export default async function DealsPage({
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
   const tableRows =
-    filter.attention === "bound_pending" || (view === "table" && !pipeline)
+    filter.attention === "bound_pending" || (isPipelineSheetView(view) && !pipeline)
       ? (listRows ?? [])
-      : view === "table" && boardData
+      : isPipelineSheetView(view) && boardData
         ? boardData.cards
         : [];
   const users = new Map(userRows.map((user) => [user.id, user.name]));
@@ -107,7 +107,9 @@ export default async function DealsPage({
                 ? "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card."
                 : filter.stage
                   ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
-                  : "Deals and the pipeline are the same book. Table is the list. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archive. Quotes are not coverage.";
+                  : view === "grid"
+                    ? "Grid edits deal fields in place. Type or pick a value, then blur or Enter. List is click-through. Board and Funnel stay on the same filters."
+                    : "Deals and the pipeline are the same book. List opens the related record. Grid edits cells in place. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archive. Quotes are not coverage.";
 
   return (
     <AppShell
@@ -194,7 +196,7 @@ export default async function DealsPage({
         </div>
       </div>
 
-      {view === "table" ? (
+      {isPipelineSheetView(view) ? (
         <>
           {pipeline ||
           filter.stage ||
@@ -215,6 +217,7 @@ export default async function DealsPage({
             agents={agents}
             initialQuery={q}
             nextByDeal={desk.nextByDeal}
+            mode={view}
           />
         </>
       ) : board ? (

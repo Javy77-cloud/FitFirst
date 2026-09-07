@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7az`)
+## Mac test now (`cursor/live-ff-tip-sep7cc-4dd2`)
+
+Pipeline **List** and **Grid** on the existing Board / Funnel switcher, from latest `cursor/live-ff-tip-sep7az`. The current Pipeline table is **List** — click Deal name, carrier, stage, assigned, phone, email, or other navigable columns to open that record or destination (stage opens the Board filtered to that stage). **Grid** is the same columns with inline edit: type + Enter/blur for text; dropdown for picklists / line / source / assigned / stage; checkbox / date / number / currency where the field type says so. Saves persist without leaving the table and show the sitewide top-center toast (**Deal updated**). Read-only columns (Deal title, Updated, Tags, formulas) stay display-only in Grid. Board is unchanged. `view=table` bookmarks still open List. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7cc-4dd2 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Deals / Pipeline: confirm the switcher reads **List · Grid · Board · Funnel**. Stay on List — click a deal name (opens the deal), a carrier cell if one resolves, and a stage pill (Board for that stage). Switch to **Grid** — edit a text cell (phone or city) and tab/Enter; pick a new stage or source from the dropdown. Confirm the top-center **Deal updated** toast. Open **Board** and confirm cards still drag. Do not bind or edit Ana Cov A (**$321,000**). Do not redesign Attach / Activity chips, Markets empty, bell, or the 320 rail.
+
+### CC — Pipeline List + Grid
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| CC1 | Switcher | Deals / Pipeline shows **List · Grid · Board · Funnel** in the same chip row as before. No third nav. |
+| CC2 | List click | Deal name → deal. Carrier → carrier when the name matches. Stage → Board for that stage. Phone / email still dial or mail. |
+| CC3 | Grid edit | Text cell commit on blur/Enter writes and stays on the table. Picklist / stage / source use a dropdown of allowed values. |
+| CC4 | Toast | Successful Grid save shows the sitewide top-center **Deal updated** toast. Failed save does not claim success. |
+| CC5 | Read-only | Title, Updated, Tags, and formula columns are not inputs in Grid. Board view is unchanged. |
+| CC6 | Scope | Attach/Activity chips, Markets empty, bell, rail 320 stay. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7az`)
 
 Platform-wide **FedEx address autocomplete** plus a **site-developer API vault**, merged from `cursor/live-ff-tip-sep7ca-59d4` onto the desk tip. Every address field (Lead, Deal, Contact, Business, Policy, Quote Sheet, Settings, custom Address-type fields) uses one `AddressAutocomplete` control. Without a configured FedEx key the field is plain text — no stub that pretends FedEx works. With a key: typeahead → select/confirm fills street, city, state, ZIP and marks confirmed.
 

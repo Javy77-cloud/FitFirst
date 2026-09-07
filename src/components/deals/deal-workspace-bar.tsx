@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import {
   dealsHref,
+  isPipelineSheetView,
   parsePipelineView,
   pipelineTabLabel,
   type PipelineViewId,
@@ -10,7 +11,8 @@ import {
 type BoardTab = { slug: string; name: string };
 
 const VIEWS: Array<[PipelineViewId, string]> = [
-  ["table", "Table"],
+  ["list", "List"],
+  ["grid", "Grid"],
   ["board", "Board"],
   ["funnel", "Funnel"],
 ];
@@ -56,7 +58,7 @@ export function DealWorkspaceBar({
 }) {
   const parsedView = parsePipelineView(view);
   const extras = {
-    view: parsedView === "table" ? null : parsedView,
+    view: parsedView === "list" ? null : parsedView,
     stage,
     family: pipeline ? null : family,
     pcSub,
@@ -119,15 +121,15 @@ export function DealWorkspaceBar({
             </Link>
           ))}
         </div>
-        <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="Table Board Funnel">
+        <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="List Grid Board Funnel">
           {VIEWS.map(([id, label]) => (
             <Link
               key={id}
               href={dealsHref({
                 ...extras,
-                pipeline: pipeline || (id === "table" ? null : "p-c"),
+                pipeline: pipeline || (isPipelineSheetView(id) ? null : "p-c"),
                 view: id,
-                stage: id === "table" ? stage : null,
+                stage: isPipelineSheetView(id) ? stage : null,
               })}
               className={parsedView === id ? "font-semibold text-primary" : "text-muted-foreground"}
             >

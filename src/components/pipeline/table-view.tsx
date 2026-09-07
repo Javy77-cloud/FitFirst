@@ -46,7 +46,7 @@ export function PipelineTableView({
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-sm">
           <span className="text-muted-foreground">Stage</span>
           <StagePill stage={filterStage.name} color={filterStage.color} />
-          <Link href={pipelineHref(board.slug, "table")} className="text-primary hover:underline">
+          <Link href={pipelineHref(board.slug, "list")} className="text-primary hover:underline">
             Show all stages
           </Link>
         </div>

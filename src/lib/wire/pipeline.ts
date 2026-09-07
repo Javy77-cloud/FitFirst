@@ -123,12 +123,17 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
   },
 ];
 
-export type PipelineViewId = "board" | "table" | "funnel";
+export type PipelineViewId = "list" | "grid" | "board" | "funnel";
 
-/** Deals owns the workspace. Table is the default (the list Javy already uses). */
+/** Deals owns the workspace. List is the default (the table Javy already uses). */
 export function parsePipelineView(raw?: string | null): PipelineViewId {
-  if (raw === "board" || raw === "funnel") return raw;
-  return "table";
+  if (raw === "board" || raw === "funnel" || raw === "grid") return raw;
+  if (raw === "list" || raw === "table") return "list";
+  return "list";
+}
+
+export function isPipelineSheetView(view: PipelineViewId): boolean {
+  return view === "list" || view === "grid";
 }
 
 export function dealsHref(opts: {
@@ -144,7 +149,7 @@ export function dealsHref(opts: {
   const params = new URLSearchParams();
   if (opts.pipeline && opts.pipeline !== "all") params.set("pipeline", opts.pipeline);
   const parsed = parsePipelineView(opts.view);
-  if (parsed !== "table") params.set("view", parsed);
+  if (parsed !== "list") params.set("view", parsed);
   if (opts.stage) params.set("stage", opts.stage);
   if (opts.lifeSub) params.set("lifeSub", opts.lifeSub);
   if (opts.healthSub) params.set("healthSub", opts.healthSub);

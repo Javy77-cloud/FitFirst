@@ -2,8 +2,11 @@ import Link from "next/link";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealStageSelect } from "@/components/deals/deal-stage-select";
 import { DealStaleBadge } from "@/components/deals/deal-stale-badge";
+import { PipelineGridCell } from "@/components/deals/pipeline-grid-cell";
+import { PipelineListValue } from "@/components/deals/pipeline-list-value";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
+import { StagePill } from "@/components/fit-badge";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { listDealFieldDefs, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { sourceLabel } from "@/lib/crm/sources";
@@ -17,11 +20,19 @@ import {
   formatDealFieldCell,
   type DealPipelineBoard,
 } from "@/lib/deals/deal-columns";
+import {
+  isPipelineGridEditable,
+  nativePicklistOptions,
+  pipelineGridControl,
+  pipelineListNav,
+  type NamedRecord,
+  type PipelineSheetMode,
+} from "@/lib/deals/pipeline-sheet";
 import { isDealStale, nextDealActionAt } from "@/lib/deals/pipeline-desk";
 import { formatDay } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
-import { listPipelines } from "@/lib/db/queries";
+import { listCarriers, listPipelines } from "@/lib/db/queries";
 import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
@@ -59,24 +70,32 @@ export async function DealsTable({
   agents: _agents = [],
   initialQuery = "",
   nextByDeal = new Map(),
+  mode = "list",
 }: {
   rows: DealsSheetRow[];
   users: Map<string, string>;
   agents?: DeskUserOption[];
   initialQuery?: string;
   nextByDeal?: Map<string, string>;
+  mode?: PipelineSheetMode;
 }) {
-  const [tagCatalog, fields, valueMap, pipelines] = await Promise.all([
+  const [tagCatalog, fields, valueMap, pipelines, carrierRows] = await Promise.all([
     listModuleTags("deals").catch(() => []),
     listDealFieldDefs().catch(() => []),
     loadRecordValuesForIds(rows.map(({ deal }) => deal.id)).catch(() => new Map()),
     listPipelines().catch(() => []),
+    listCarriers().catch(() => []),
   ]);
   const boards = boardsFromPipelines(pipelines);
   const columns = dealsListColumnsFromFields(fields);
+  const carriers: NamedRecord[] = carrierRows.map((row) => ({
+    id: row.carrier.id,
+    name: row.carrier.name,
+  }));
+  const userRecords: NamedRecord[] = [...users.entries()].map(([id, name]) => ({ id, name }));
 
   return (
-    <section className="ff-card overflow-x-auto">
+    <section className="ff-card overflow-x-auto" data-ff-pipe-mode={mode}>
       <ModuleListActions
         module="deals"
         showMacrosLink={false}
@@ -135,6 +154,9 @@ export async function DealsTable({
               leadId: deal.leadId,
               stale,
               tagCatalog,
+              mode,
+              carriers,
+              userRecords,
             });
             return {
               key: deal.id,
@@ -183,6 +205,9 @@ function dealRowCells({
   leadId,
   stale,
   tagCatalog,
+  mode,
+  carriers,
+  userRecords,
 }: {
   deal: DealsSheetRow["deal"];
   stored: Record<string, string>;
@@ -198,6 +223,9 @@ function dealRowCells({
   leadId: string | null | undefined;
   stale: boolean;
   tagCatalog: { name: string; color: string | null }[];
+  mode: PipelineSheetMode;
+  carriers: NamedRecord[];
+  userRecords: NamedRecord[];
 }) {
   const sort: Record<string, string> = {
     pick: "",
@@ -233,21 +261,83 @@ function dealRowCells({
         {stale ? <DealStaleBadge dealId={deal.id} contactId={contactId} leadId={leadId} /> : null}
       </div>
     ),
-    stage: (
-      <DealStageSelect
-        dealId={deal.id}
-        pipelineSlug={stage.pipelineSlug}
-        stageSlug={stage.slug}
-        stages={stage.stages}
-      />
-    ),
-    line: dealNativeColumnText("line", deal, users, value) || "—",
-    subType: deal.policySubType ?? "—",
+    stage:
+      mode === "grid" ? (
+        <DealStageSelect
+          dealId={deal.id}
+          pipelineSlug={stage.pipelineSlug}
+          stageSlug={stage.slug}
+          stages={stage.stages}
+          toastOnSave
+        />
+      ) : (
+        <PipelineListValue
+          nav={pipelineListNav({
+            columnId: "stage",
+            dealId: deal.id,
+            pipelineSlug: stage.pipelineSlug,
+            stageSlug: stage.slug,
+          })}
+        >
+          <StagePill stage={stage.name} color={stage.color} />
+        </PipelineListValue>
+      ),
+    line: sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: "line",
+      display: dealNativeColumnText("line", deal, users, value) || "—",
+      raw: deal.lineOfBusiness,
+      label: "Line",
+      userRecords,
+    }),
+    subType: sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: "subType",
+      display: deal.policySubType ?? "—",
+      raw: deal.policySubType ?? "",
+      label: "Life / Health type",
+      userRecords,
+    }),
     shopLines: (deal.shopLines ?? []).join(", ") || "—",
-    source: sourceLabel(deal.source),
-    assigned: deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—",
-    value: dealNativeColumnText("value", deal, users, value) || "—",
-    premium: dealNativeColumnText("premium", deal, users, value) || "—",
+    source: sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: "source",
+      display: sourceLabel(deal.source),
+      raw: deal.source ?? "",
+      label: "Source",
+      userRecords,
+    }),
+    assigned: sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: "assigned",
+      display: deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—",
+      raw: deal.ownerId ?? "",
+      label: "Assigned",
+      ownerId: deal.ownerId,
+      userRecords,
+    }),
+    value: sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: "value",
+      display: dealNativeColumnText("value", deal, users, value) || "—",
+      raw: value == null ? "" : String(value),
+      label: "Value",
+      userRecords,
+    }),
+    premium: sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: "premium",
+      display: dealNativeColumnText("premium", deal, users, value) || "—",
+      raw: deal.coverageAmount == null ? "" : String(deal.coverageAmount),
+      label: "Coverage $",
+      userRecords,
+    }),
     updated: formatDay(deal.updatedAt),
     tags: (
       <AssignRecordTags module="deals" recordId={deal.id} tags={deal.tags} catalog={tagCatalog} />
@@ -258,8 +348,96 @@ function dealRowCells({
     if (cells[field.key] != null) continue;
     const raw = dealFieldRawValue(field, deal, stored);
     sort[field.key] = sheetAttr(raw);
-    cells[field.key] = formatDealFieldCell(field, raw) || "—";
+    cells[field.key] = sheetCell({
+      mode,
+      dealId: deal.id,
+      columnId: field.key,
+      display: formatDealFieldCell(field, raw) || "—",
+      raw,
+      label: field.label,
+      field,
+      contactId,
+      accountId,
+      leadId,
+      ownerId: deal.ownerId,
+      carriers,
+      userRecords,
+    });
   }
 
   return { sort, cells };
+}
+
+function sheetCell({
+  mode,
+  dealId,
+  columnId,
+  display,
+  raw,
+  label,
+  field,
+  contactId,
+  accountId,
+  leadId,
+  ownerId,
+  carriers = [],
+  userRecords,
+  pipelineSlug,
+  stageSlug,
+  stages,
+}: {
+  mode: PipelineSheetMode;
+  dealId: string;
+  columnId: string;
+  display: string;
+  raw: string;
+  label: string;
+  field?: CustomFieldDef;
+  contactId?: string | null;
+  accountId?: string | null;
+  leadId?: string | null;
+  ownerId?: string | null;
+  carriers?: NamedRecord[];
+  userRecords: NamedRecord[];
+  pipelineSlug?: string;
+  stageSlug?: string;
+  stages?: ReturnType<typeof dealStageView>["stages"];
+}) {
+  if (mode === "grid" && isPipelineGridEditable(columnId, field)) {
+    const control = pipelineGridControl(columnId, field);
+    const options =
+      control === "picklist"
+        ? field?.options?.length
+          ? field.options.map((option) => ({ value: option, label: option }))
+          : nativePicklistOptions(columnId, userRecords)
+        : [];
+    return (
+      <PipelineGridCell
+        dealId={dealId}
+        columnId={columnId}
+        control={control}
+        value={raw}
+        options={options}
+        ariaLabel={label}
+        pipelineSlug={pipelineSlug}
+        stageSlug={stageSlug}
+        stages={stages}
+      />
+    );
+  }
+  const nav = pipelineListNav({
+    columnId,
+    dealId,
+    raw,
+    field,
+    pipelineSlug,
+    stageSlug,
+    contactId,
+    accountId,
+    leadId,
+    ownerId,
+    carriers,
+    users: userRecords,
+  });
+  return <PipelineListValue nav={nav}>{display}</PipelineListValue>;
 }
