@@ -34,7 +34,9 @@ describe("Deal Details tab", () => {
     expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(/Edit Layout/);
     expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(/data-ff-open-field-builder/);
     expect(source("src/lib/custom-fields/modules.ts")).toMatch(/\/settings\/field-builder\?/);
-    expect(panel).toMatch(/buttonVariants\(\{ variant: "default", size: "sm" \}\)/);
+    expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(
+      /buttonVariants\(\{ variant: "default", size \}\)/,
+    );
     expect(panel).not.toMatch(/Add field/);
     expect(panel).not.toMatch(/New field/);
     expect(panel).not.toMatch(/Add section/);
