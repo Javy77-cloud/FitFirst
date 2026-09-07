@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aq`)
 
-Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; `data-ff-deal-topband` title left with **Sheet health** + **Quotes pulled today** in `data-ff-deal-top-right`; no StagePill / Source · Referral / RelatedRecordNav rail strip. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
+Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; `data-ff-deal-topband` title left with **Sheet health** + **Quotes pulled today** in `data-ff-deal-top-right`; no StagePill / Source · Referral / RelatedRecordNav rail strip. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `b62215c`.
 
 ```bash
 cd ~/FitFirst
@@ -29,7 +29,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
 | AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
 | AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
-| AQ2 | Title-row meta | **Sheet health** and **Quotes pulled today** sit on the **top-right** of the same band as the deal title. Not mid-page left. Not buried in the rail. |
+| AQ2 | Title-row meta | `data-ff-deal-topband`: deal title left, **Sheet health** + **Quotes pulled today** in `data-ff-deal-top-right`. Not mid-page left. Not buried in the rail. |
 | AQ3 | Motivation right | Motivation stays the **right corner**. Rest of the stack is pulled up under that band. |
 
 ### AH — Pipeline list (sep7ah, locked)
