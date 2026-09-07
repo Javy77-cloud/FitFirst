@@ -114,14 +114,7 @@ export function ColumnTable({
   const [sort, setSort] = useState<ListSort | null>(() => parseListSort(initialSort));
   const [valueFilters, setValueFilters] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSizeOption>(() => {
-    if (typeof window === "undefined") return DEFAULT_PAGE_SIZE;
-    try {
-      return normalizePageSize(window.localStorage.getItem(pageSizeStorageKey(moduleId)));
-    } catch {
-      return DEFAULT_PAGE_SIZE;
-    }
-  });
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE);
   const [draftWidths, setDraftWidths] = useState<Record<string, number> | null>(null);
   const appliedWidths = draftWidths ?? widths;
   const colKey = columns.map((column) => column.id).join(",");
@@ -194,6 +187,14 @@ export function ColumnTable({
     });
   }, [filteredRows, shown, sort]);
   const paged = useMemo(() => paginateRows(sortedRows, page, pageSize), [sortedRows, page, pageSize]);
+
+  useEffect(() => {
+    try {
+      setPageSize(normalizePageSize(window.localStorage.getItem(pageSizeStorageKey(moduleId))));
+    } catch {
+      // private mode
+    }
+  }, [moduleId]);
 
   useEffect(() => {
     setPage(1);

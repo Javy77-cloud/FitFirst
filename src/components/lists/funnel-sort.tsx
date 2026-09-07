@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FunnelIcon } from "@/components/lists/funnel-icon";
+import { useClientMounted } from "@/hooks/use-client-mounted";
 import type { ListSortDir } from "@/lib/list-columns";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,30 @@ export function ColumnSortFilter({
   onFilterValue: (value: string) => void;
   onSort: (dir: ListSortDir | null) => void;
 }) {
+  const mounted = useClientMounted();
   const marked = Boolean(active || filterValue);
+  const triggerClass = cn(
+    "inline-flex size-6 shrink-0 items-center justify-center rounded-md border-0 p-0",
+    marked
+      ? "bg-navy/15 text-navy ring-1 ring-navy/40 hover:bg-navy/20"
+      : "bg-transparent text-muted-foreground hover:bg-muted hover:text-navy",
+  );
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        aria-label={`Filter ${label}`}
+        data-list-col-filter=""
+        data-sorted={active ?? undefined}
+        data-filtered={filterValue || undefined}
+        className={triggerClass}
+      >
+        <FunnelIcon active={marked} />
+      </button>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -34,12 +58,7 @@ export function ColumnSortFilter({
         data-list-col-filter=""
         data-sorted={active ?? undefined}
         data-filtered={filterValue || undefined}
-        className={cn(
-          "inline-flex size-6 shrink-0 items-center justify-center rounded-md border-0 p-0",
-          marked
-            ? "bg-navy/15 text-navy ring-1 ring-navy/40 hover:bg-navy/20"
-            : "bg-transparent text-muted-foreground hover:bg-muted hover:text-navy",
-        )}
+        className={triggerClass}
       >
         <FunnelIcon active={marked} />
       </DropdownMenuTrigger>

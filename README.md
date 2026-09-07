@@ -4,7 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bj`)
+## Mac test now (`cursor/live-ff-tip-sep7bk`)
+
+Deals / Pipeline list hydration, from `cursor/live-ff-tip-sep7az` latest HEAD. Next.js was overlaying **Hydration failed** because Base UI `useId` on column-header funnels and row **Change owner** dialogs minted different `id="base-ui-_R_…"` values on the server vs the client (stack landed on `paged.slice.map` in `column-table.tsx`). `ColumnsMenu`, `ColumnSortFilter`, and `ChangeOwnerDialog` now render a matching plain-button placeholder until `useClientMounted`, then the real menu/dialog. Page size reads `localStorage` after mount so the first paint stays 25 rows. Show / hide / reorder columns is unchanged. No Pipeline layout redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bk && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline** (table view). Confirm there is **no** Next.js hydration overlay. Open **Columns**, hide a column, drag to reorder, **Show all**. Funnel filters still open. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BK — Deals / Pipeline list hydration
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BK1 | List load | Deals / Pipeline table loads with no hydration error overlay. |
+| BK2 | Columns menu | **Columns** still opens; show / hide / reorder / Show all still work. |
+| BK3 | SSR ids | `column-table-hydrate` SSR of ColumnsMenu / ColumnSortFilter emits no `id="base-ui-"` / `data-base-ui-click-trigger`. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bj`)
 
 Durable top-center action toast, from `cursor/live-ff-tip-sep7az` latest HEAD. **Save deal details** must show **Deal details saved** every time — the prior host read `?flash=` then `router.replace` stripped it, and a Suspense remount wiped the toast before paint. `ActionToastHost` now persists message+kind in `sessionStorage`, paints the toast, then strips the query after rAF; on remount it restores from storage. Save Deal Details lands on `/deals/{id}?tab=details&flash=deal-details-saved` (keeps line/product when the form sent them). Same host covers Save sheet and every other `flashAction`. Center top, ~2.5s dismiss. No layout redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 

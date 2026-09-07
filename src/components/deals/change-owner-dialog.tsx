@@ -12,7 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useClientMounted } from "@/hooks/use-client-mounted";
 import { dealTransferConfirmCopy, type DeskUserOption } from "@/lib/deals/transfer";
+
+const changeOwnerTriggerClass =
+  "rounded border border-border px-1.5 py-0.5 text-[11px] text-primary hover:bg-secondary";
 
 export function ChangeOwnerDialog({
   dealId,
@@ -23,6 +27,7 @@ export function ChangeOwnerDialog({
   ownerId?: string | null;
   users: DeskUserOption[];
 }) {
+  const mounted = useClientMounted();
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState(ownerId ?? "");
   const target = useMemo(
@@ -31,6 +36,14 @@ export function ChangeOwnerDialog({
   );
 
   if (users.length === 0) return null;
+
+  if (!mounted) {
+    return (
+      <button type="button" className={changeOwnerTriggerClass}>
+        Change owner
+      </button>
+    );
+  }
 
   return (
     <Dialog
@@ -44,7 +57,7 @@ export function ChangeOwnerDialog({
         render={
           <button
             type="button"
-            className="rounded border border-border px-1.5 py-0.5 text-[11px] text-primary hover:bg-secondary"
+            className={changeOwnerTriggerClass}
           />
         }
       >

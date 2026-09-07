@@ -3,12 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GripVertical } from "lucide-react";
+import { useClientMounted } from "@/hooks/use-client-mounted";
 import {
   columnMenuLabel,
   shownColumns,
   type ListColumn,
 } from "@/lib/list-columns";
 import { cn } from "@/lib/utils";
+
+const columnsTriggerClass = cn(
+  "inline-flex h-7 items-center rounded-md border border-border bg-card px-2 text-xs font-medium text-navy",
+  "hover:bg-muted",
+);
 
 export function ColumnsMenu({
   columns,
@@ -23,6 +29,7 @@ export function ColumnsMenu({
   onReorder: (fromId: string, toId: string) => void;
   onReset: () => void;
 }) {
+  const mounted = useClientMounted();
   const [open, setOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ top: number; right: number } | null>(null);
@@ -59,6 +66,23 @@ export function ColumnsMenu({
     };
   }, [open]);
 
+  if (!mounted) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          aria-expanded={false}
+          aria-haspopup="true"
+          aria-label="Columns"
+          title="Columns"
+          className={columnsTriggerClass}
+        >
+          Columns
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -69,10 +93,7 @@ export function ColumnsMenu({
         aria-label="Columns"
         title="Columns"
         onClick={() => setOpen((current) => !current)}
-        className={cn(
-          "inline-flex h-7 items-center rounded-md border border-border bg-card px-2 text-xs font-medium text-navy",
-          "hover:bg-muted",
-        )}
+        className={columnsTriggerClass}
       >
         Columns
       </button>
