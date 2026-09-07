@@ -561,6 +561,13 @@
       "when": 1788740000000,
       "tag": "0079_documents_lead_id",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1788798000000,
+      "tag": "0080_record_tags_8x8",
+      "breakpoints": true
     }
   ]
 }

@@ -41,6 +41,9 @@ import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
+import { RecordTags } from "@/components/tags/record-tags";
+import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +74,7 @@ export default async function DealPage({
     boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
-  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation] =
+  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledMacrosFor("deals"),
@@ -81,6 +84,7 @@ export default async function DealPage({
       listCarriers(),
       listQuoteLogs(),
       loadDealMotivationStats(),
+      listModuleTagSuggestions("deals").catch(() => [] as string[]),
     ]);
   const context = await loadRecordContext({
     dealId: deal.id,
@@ -169,47 +173,47 @@ export default async function DealPage({
           body: script.body,
         }))}
       />
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm" data-ff-deal-identity>
-          <StagePill stage={deal.pipelineStage} />
-          <span>{deal.lineOfBusiness}</span>
-          <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
-          {lead ? (
-            <RelatedRecordNav
-              href={`/leads/${lead.id}`}
-              label="View source lead"
-              testId="view-source-lead"
-            />
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-start justify-end gap-2">
-          {health ? (
-            <SheetHealthToggle
-              report={health}
-              href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
-              dealId={deal.id}
-            />
-          ) : null}
-          <DealMotivation stats={motivation} />
-        </div>
-      </div>
       {health ? <SheetFieldFocus field={focusField} /> : null}
-
-      {isAna ? (
-        <div className="mb-3 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
-          Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-          bind this shop. Quotes are not coverage.
-        </div>
-      ) : null}
 
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
+        <div className="-mt-3" data-ff-deal-flush-tabs>
         <SectionTabs
           defaultValue="documents"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
-          panelClassName={activeTab === "markets" ? "mt-1" : "mt-4"}
+          panelClassName="mt-2"
+          toolbar={
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 text-sm" data-ff-deal-identity>
+              <StagePill stage={deal.pipelineStage} />
+              <span>{deal.lineOfBusiness}</span>
+              <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
+              {lead ? (
+                <RelatedRecordNav
+                  href={`/leads/${lead.id}`}
+                  label="View source lead"
+                  testId="view-source-lead"
+                />
+              ) : null}
+              {health ? (
+                <SheetHealthToggle
+                  report={health}
+                  href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
+                  dealId={deal.id}
+                />
+              ) : null}
+              <DealMotivation stats={motivation} />
+            </div>
+          }
+          banner={
+            isAna ? (
+              <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
+                Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
+                bind this shop. Quotes are not coverage.
+              </div>
+            ) : null
+          }
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,
             label: AGENT_DEAL_TAB_LABELS[id],
@@ -285,6 +289,14 @@ export default async function DealPage({
                 }
                 rail={
                   <div className="space-y-4 lg:sticky lg:top-4">
+                    <div className="ff-card p-3">
+                      <RecordTags
+                        module="deals"
+                        recordId={deal.id}
+                        tags={deal.tags}
+                        suggestions={suggestedTagsFor("deals", dealTagExtra)}
+                      />
+                    </div>
                     <div data-ff-deal-quick-comms>
                       <QuickCommsBoard items={comms} dealId={deal.id} />
                     </div>
@@ -295,6 +307,7 @@ export default async function DealPage({
             ),
           }))}
         />
+        </div>
       )}
     </AppShell>
   );

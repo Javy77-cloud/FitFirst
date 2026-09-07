@@ -11,6 +11,8 @@ import {
 import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
 import { MAPS_FREE_LINK_NOTE, socialByoSpec } from "@/lib/social/byo";
 import { isSocialPlatformId } from "@/lib/social/platforms";
+import { MacContinuityToggle } from "@/components/settings/mac-continuity-toggle";
+import { getAgencySettings } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +21,11 @@ export default async function IntegrationsCatalogPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, groups, query] = await Promise.all([
+  const [session, groups, query, agency] = await Promise.all([
     currentDeskSession(),
     listCatalogByCategory(),
     searchParams,
+    getAgencySettings(),
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const provider = typeof query.provider === "string" ? query.provider : undefined;
@@ -105,6 +108,12 @@ export default async function IntegrationsCatalogPage({
                 {INTEGRATION_CATEGORY_BLURB[group.category]}
               </p>
             </div>
+            {group.category === "phone_sms" ? (
+              <MacContinuityToggle
+                enabled={Boolean("macContinuity" in agency && agency.macContinuity)}
+                canEdit={session.isAdmin}
+              />
+            ) : null}
             <div className="grid gap-3 md:grid-cols-2">
               {group.items.map((item) =>
                 group.category === "social" ? (

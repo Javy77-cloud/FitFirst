@@ -29,6 +29,7 @@ describe("deal detail final rebuild", () => {
     expect(page).not.toMatch(/QuoteSheetPanel/);
     expect(page).not.toMatch(/tab=quote-sheet/);
     expect(page).toMatch(/SectionTabs/);
+    expect(page).toMatch(/data-ff-deal-flush-tabs/);
     expect(page.indexOf("SectionTabs")).toBeLessThan(page.indexOf("RecordDetailLayout"));
   });
 
@@ -43,6 +44,8 @@ describe("deal detail final rebuild", () => {
     expect(docs).toMatch(/DeleteUploadedFileButton/);
     expect(docs.indexOf("DealLineSelector")).toBeLessThan(docs.indexOf("SourceDocsUpload"));
     expect(upload).toMatch(/Create/);
+    expect(upload).toMatch(/\+ Add another document/);
+    expect(upload).toMatch(/deal-doc-filename/);
     expect(upload).not.toMatch(/Add another file/);
     expect(sheet).toMatch(/name=\{fieldKey\}/);
     expect(sheet).toMatch(/Confirm extracted/);
@@ -66,6 +69,10 @@ describe("deal detail final rebuild", () => {
     expect(fieldsForLine("auto").map((field) => field.key)).toEqual(
       expect.arrayContaining(["vin", "driver_1_name", "driver_1_license"]),
     );
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    expect(sheet).toMatch(/RepeatableUnitBlocks/);
+    expect(sheet).toMatch(/kind="vehicle"/);
+    expect(sheet).toMatch(/kind="driver"/);
     expect(fieldsForLine("flood").map((field) => field.key)).toContain("flood_zone");
     expect(fieldsForLine("general_liability").map((field) => field.key)).toContain("class_code");
     expect(fieldsForLine("workers_comp").map((field) => field.key)).toContain("payroll");

@@ -24,6 +24,9 @@ import { listDeskUsers } from "@/lib/db/activity-queries";
 import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
 import type { LineOfBusiness } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
+import { RecordTags } from "@/components/tags/record-tags";
+import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +37,7 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, users, session, agents, routingLog, macros, buttons, scripts] =
+  const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra] =
     await Promise.all([
       getLead(id),
       listDeskUsers(),
@@ -44,6 +47,7 @@ export default async function LeadDetailPage({
       listEnabledMacrosFor("leads"),
       listVisibleButtons({ module: "leads", placement: "detail" }),
       listEnabledScriptsFor("leads", "edit"),
+      listModuleTagSuggestions("leads").catch(() => [] as string[]),
     ]);
   if (!row) notFound();
   const { lead, deal, docs } = row;
@@ -115,6 +119,14 @@ export default async function LeadDetailPage({
             entityId={lead.id}
             name={formatPersonName(lead)}
             phone={lead.phone}
+          />
+        </div>
+        <div className="mt-3 max-w-lg">
+          <RecordTags
+            module="leads"
+            recordId={lead.id}
+            tags={lead.tags}
+            suggestions={suggestedTagsFor("leads", tagExtra)}
           />
         </div>
       </div>

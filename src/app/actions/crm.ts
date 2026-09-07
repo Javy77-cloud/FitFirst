@@ -73,6 +73,7 @@ import {
 import { writeEin, writeSsn } from "@/lib/pii/write";
 import { piiLookupHash } from "@/lib/pii/vault";
 import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
+import { carryLeadTagsToContact, mergeTags } from "@/lib/tags/module-tags";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -212,7 +213,16 @@ export async function convertLeadToDeal(
         email: lead.email,
         phone: lead.phone,
       }),
-    ) ?? null;
+    )     ?? null;
+  if (matchedContact) {
+    const nextTags = mergeTags(matchedContact.tags, carryLeadTagsToContact(lead.tags));
+    if (nextTags.join(",") !== (matchedContact.tags ?? []).join(",")) {
+      await db
+        .update(contacts)
+        .set({ tags: nextTags, updatedAt: new Date() })
+        .where(eq(contacts.id, matchedContact.id));
+    }
+  }
 
   const [deal] = await db
     .insert(deals)
@@ -231,6 +241,7 @@ export async function convertLeadToDeal(
       state: copy.dealState,
       primaryNamedInsured: copy.primaryNamedInsured,
       source: copy.source,
+      tags: carryLeadTagsToContact(lead.tags),
     })
     .returning();
 
@@ -880,6 +891,7 @@ export async function bindDeal(formData: FormData) {
           email: filled.email,
           dateOfBirth: filled.dateOfBirth,
           source: existing.source || deal.source || lead?.source || null,
+          tags: mergeTags(existing.tags, carryLeadTagsToContact(lead?.tags)),
           updatedAt: new Date(),
         })
         .where(eq(contacts.id, existing.id));
@@ -890,6 +902,7 @@ export async function bindDeal(formData: FormData) {
           tenantId: DEFAULT_TENANT_ID,
           ...copied,
           source: deal.source || lead?.source || null,
+          tags: carryLeadTagsToContact(lead?.tags),
           tenureStart: new Date(),
         })
         .returning();

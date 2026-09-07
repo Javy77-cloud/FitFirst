@@ -4,7 +4,47 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7aa`)
+## Mac test now (`cursor/live-ff-tip-sep7ab`)
+
+Deal detail + Integrations, from `cursor/live-ff-tip-sep7aa` @ `011c324` / tip SHA `a86a834` (later sep7aa Pipeline band left alone). Vehicle and driver blocks start at **one**. Documents upload is repeatable rows. Tabs sit **flush under the deal header**. Tags on lead / contact / policy / deal sheets and list rows. **8x8** + **Mac Continuity** on Settings → Integrations. No sidebar change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ab && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal detail** (Ana unbound) and **Settings → Integrations**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AB — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB1 | Vehicle blocks | Auto master sheet opens with **Vehicle 1** (VIN, year, make, model, usage, garaging ZIP, address). Vehicle 2 is not alone. **+ Add vehicle** under the last block. Personal lines cap at **five**. Commercial Auto is unlimited. |
+| AB2 | Driver blocks | **Driver 1** by default. **+ Add driver** grows the list. Same personal / commercial cap as vehicles. |
+| AB3 | Upload rows | Each document is its own row with a trash can. **+ Add another document** under the last row. Filename is **plain text**, not a button. |
+| AB4 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+
+### AB — Tags + 8x8
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB5 | Sheet tags | Lead, Contact, Policy, and Deal data sheets show **Tags** with suggested defaults. Agents can add their own. Lead tags that make sense (referral, custom) carry onto the Contact at convert / bind. |
+| AB6 | List tags | Leads, Contacts, Deals, and Policies table rows show the same tags. |
+| AB7 | 8x8 | Settings → Integrations → Phone / SMS lists **8x8** as a Phone and SMS provider, next to the **Mac Continuity** on/off toggle. |
+
+### AA — Pipeline list (sep7aa, unchanged)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AA1 | Same row | Attach LEFT compact (~60%). Today's Activity RIGHT. One horizontal band. No stack. No wrap. |
+| AA2 | Square chips | Each counter is a **72×72 square** (width = height, ≤**4px** radius), solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
+| AA3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). +Add another document still works. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7aa`)
 
 Pipeline band only, from `cursor/live-ff-tip-sep7y` @ `0a8ea92` / tip SHA `48b78b4`. **Attach LEFT** (compact ~60%, not full-page). **Today's Activity RIGHT on the same row** — never under Attach, no wrap. Activity counters are **72×72 squares** (≤4px radius), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Attach multi-row / trash / +Add stay. Deal detail from sep7z/sep7x is untouched. No table / filter / sidebar / seed / Ana changes. Live Zoho stays book of record. Tip SHA `a323bf6`.
 
@@ -26,7 +66,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 | AA2 | Square chips | Each counter is a **72×72 square** (width = height, ≤**4px** radius), solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
 | AA3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). +Add another document still works. |
 
-### B — Deal detail (sep7x @ `6ca87d0`, unchanged)
+### B — Deal detail (sep7x @ `6ca87d0`, unchanged on sep7aa)
 
 | # | Check | Pass when |
 | --- | --- | --- |

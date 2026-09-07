@@ -262,6 +262,7 @@ export const LEADS_DEFAULT_WIDTHS = {
   heat: 210,
   followUp: 200,
   shop: 140,
+  tags: 160,
 } as const;
 
 export const LEADS_LIST_COLUMNS: ListColumn[] = [
@@ -273,6 +274,7 @@ export const LEADS_LIST_COLUMNS: ListColumn[] = [
   { id: "heat", label: "Temp", defaultWidth: LEADS_DEFAULT_WIDTHS.heat },
   { id: "followUp", label: "Follow-up", defaultWidth: LEADS_DEFAULT_WIDTHS.followUp },
   { id: "shop", label: "Convert", defaultWidth: LEADS_DEFAULT_WIDTHS.shop },
+  { id: "tags", label: "Tags", defaultWidth: LEADS_DEFAULT_WIDTHS.tags },
 ];
 
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
@@ -282,6 +284,7 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "source", label: "Source" },
   { id: "lifetime", label: "Lifetime" },
   { id: "inForce", label: "In-force" },
+  { id: "tags", label: "Tags" },
 ];
 
 export const DEALS_LIST_COLUMNS: ListColumn[] = fromDeskColumns(TABLE_COLUMNS.deals ?? [], {
@@ -306,6 +309,7 @@ export const POLICIES_LIST_COLUMNS: ListColumn[] = [
   { id: "premium", label: "Premium" },
   { id: "expires", label: "Expires" },
   { id: "esign", label: "E-sign", locked: true },
+  { id: "tags", label: "Tags" },
 ];
 
 export const CARRIERS_LIST_COLUMNS: ListColumn[] = [

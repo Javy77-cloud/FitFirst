@@ -1,7 +1,7 @@
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
 
 const CAMPAIGN_PROVIDERS = new Set(["mailchimp", "constant_contact", "sendgrid"]);
-const SMS_PROVIDERS = new Set(["twilio", "ringcentral", "lightspeed_voice"]);
+const SMS_PROVIDERS = new Set(["twilio", "eight_by_eight", "ringcentral", "lightspeed_voice"]);
 
 /** In-desk automations. FitFirst does not buy campaign or SMS vendors. */
 export function paidVendorsAllowed(): boolean {

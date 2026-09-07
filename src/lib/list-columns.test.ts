@@ -105,7 +105,7 @@ describe("list column visibility", () => {
   it("lets Leads and Contacts hide optional columns without dropping locked ones", () => {
     const leadsVisible = defaultVisibleIds(LEADS_LIST_COLUMNS);
     const afterStatus = toggleColumnVisibility(LEADS_LIST_COLUMNS, leadsVisible, "status");
-    expect(afterStatus).toEqual(["pick", "name", "source", "timer", "heat", "followUp", "shop"]);
+    expect(afterStatus).toEqual(["pick", "name", "source", "timer", "heat", "followUp", "shop", "tags"]);
     expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterStatus, "pick")).toEqual(afterStatus);
     expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterStatus, "timer")).toEqual(afterStatus);
     expect(LEADS_LIST_COLUMNS.find((column) => column.id === "timer")?.locked).toBe(true);
@@ -117,11 +117,12 @@ describe("list column visibility", () => {
       "heat",
       "followUp",
       "shop",
+      "tags",
     ]);
 
     const contactsVisible = defaultVisibleIds(CONTACTS_LIST_COLUMNS);
     const afterLifetime = toggleColumnVisibility(CONTACTS_LIST_COLUMNS, contactsVisible, "lifetime");
-    expect(afterLifetime).toEqual(["pick", "name", "status", "source", "inForce"]);
+    expect(afterLifetime).toEqual(["pick", "name", "status", "source", "inForce", "tags"]);
     expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])).toEqual([
       "pick",
       "name",

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
+import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
@@ -65,15 +66,33 @@ export function MasterSheetCompare({
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="sheet_product" value={product} />
         <div className="max-h-[36rem] overflow-auto">
-          {groups.map((group) => (
-            <SheetGroup
-              key={group.group}
-              title={group.group}
-              groupFields={group.fields}
-              values={values}
-              extractedByKey={extractedByKey}
-            />
-          ))}
+          {groups.map((group) =>
+            group.group === "Vehicle" && line === "auto" ? (
+              <RepeatableUnitBlocks
+                key={group.group}
+                kind="vehicle"
+                product={product}
+                values={values}
+                extractedByKey={extractedByKey}
+              />
+            ) : group.group === "Drivers" && line === "auto" ? (
+              <RepeatableUnitBlocks
+                key={group.group}
+                kind="driver"
+                product={product}
+                values={values}
+                extractedByKey={extractedByKey}
+              />
+            ) : (
+              <SheetGroup
+                key={group.group}
+                title={group.group}
+                groupFields={group.fields}
+                values={values}
+                extractedByKey={extractedByKey}
+              />
+            ),
+          )}
         </div>
         <div className="border-t border-border px-3 py-2">
           <Button type="submit" size="sm">

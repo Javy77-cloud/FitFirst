@@ -404,6 +404,7 @@ export const INTEGRATION_CATALOG: readonly IntegrationCatalogItem[] = [
   { category: "calendar", provider: "outlook", label: "Outlook Calendar" },
   { category: "calendar", provider: "zoho_calendar", label: "Zoho Calendar" },
   { category: "phone_sms", provider: "twilio", label: "Twilio" },
+  { category: "phone_sms", provider: "eight_by_eight", label: "8x8" },
   { category: "phone_sms", provider: "ringcentral", label: "RingCentral" },
   { category: "phone_sms", provider: "lightspeed_voice", label: "Lightspeed Voice" },
   { category: "phone_sms", provider: "bandwidth", label: "Bandwidth", optional: true },
@@ -800,15 +801,16 @@ export const ESIGN_SETTINGS_PROVIDER_LABEL: Record<EsignSettingsProvider, string
 export const ESIGN_STATUSES = ["draft", "sent", "signed"] as const;
 export type EsignStatus = (typeof ESIGN_STATUSES)[number];
 
-export const SMS_PROVIDERS = ["none", "twilio"] as const;
+export const SMS_PROVIDERS = ["none", "twilio", "eight_by_eight"] as const;
 export type SmsProvider = (typeof SMS_PROVIDERS)[number];
 
-export const TELEPHONY_PROVIDERS = ["none", "twilio", "vonage", "byo"] as const;
+export const TELEPHONY_PROVIDERS = ["none", "twilio", "eight_by_eight", "vonage", "byo"] as const;
 export type TelephonyProvider = (typeof TELEPHONY_PROVIDERS)[number];
 
 export const TELEPHONY_PROVIDER_LABEL: Record<TelephonyProvider, string> = {
   none: "Not connected",
   twilio: "Twilio (agency-paid)",
+  eight_by_eight: "8x8 (agency-paid)",
   vonage: "Vonage (agency-paid)",
   byo: "Bring-your-own SIP / trunk",
 };
