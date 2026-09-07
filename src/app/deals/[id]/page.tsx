@@ -155,16 +155,6 @@ export default async function DealPage({
         email: contact?.email ?? lead?.email,
       }}
     >
-      <RecordDeveloperActions
-        module="deals"
-        recordId={deal.id}
-        macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
-        buttons={buttons.map((button) => ({
-          id: button.id,
-          label: button.label,
-          actionKind: button.actionKind,
-        }))}
-      />
       <ClientScriptRunner
         scripts={scripts.map((script) => ({
           id: script.id,
@@ -207,12 +197,24 @@ export default async function DealPage({
             </div>
           }
           banner={
-            isAna ? (
-              <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
-                Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-                bind this shop. Quotes are not coverage.
-              </div>
-            ) : null
+            <>
+              <RecordDeveloperActions
+                module="deals"
+                recordId={deal.id}
+                macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
+                buttons={buttons.map((button) => ({
+                  id: button.id,
+                  label: button.label,
+                  actionKind: button.actionKind,
+                }))}
+              />
+              {isAna ? (
+                <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
+                  Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
+                  bind this shop. Quotes are not coverage.
+                </div>
+              ) : null}
+            </>
           }
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,

@@ -47,7 +47,7 @@ export function SourceDocsUpload({
       <input type="hidden" name="riskId" value={riskId} />
       <input type="hidden" name="rowCount" value={rows.length} />
       {rows.map((row, index) => (
-        <div key={row.id} className="deal-doc-row flex flex-nowrap items-center gap-2">
+        <div key={row.id} className="deal-doc-row flex w-full flex-nowrap items-center gap-2">
           <select
             name={`docType_${index}`}
             value={row.docType}
@@ -70,18 +70,17 @@ export function SourceDocsUpload({
             onFile={(file) => patchRow(row.id, { fileName: file?.name ?? "" })}
           />
           {row.fileName ? (
-            <span className="deal-doc-filename min-w-0 truncate text-sm text-navy" data-testid="deal-doc-filename">
+            <span className="deal-doc-filename min-w-0 flex-1 truncate text-sm text-navy" data-testid="deal-doc-filename">
               {row.fileName}
             </span>
-          ) : null}
-          {row.fileName || rows.length > 1 ? (
-            <FileDeleteIcon
-              type="button"
-              className="ml-0"
-              label={row.fileName ? `Remove ${row.fileName}` : "Remove file row"}
-              onClick={() => removeRow(row.id)}
-            />
-          ) : null}
+          ) : (
+            <span className="min-w-0 flex-1" aria-hidden />
+          )}
+          <FileDeleteIcon
+            type="button"
+            label={row.fileName ? `Remove ${row.fileName}` : "Remove file row"}
+            onClick={() => removeRow(row.id)}
+          />
         </div>
       ))}
       <div className="flex flex-wrap items-center gap-3">

@@ -54,8 +54,6 @@ export function DocumentsPanel({
             <p className="mb-2 text-helper text-muted-foreground">
               Type, file, create. Source files stay on this deal.
             </p>
-            <SourceDocsUpload dealId={dealId} riskId={riskId} />
-
             {lineGroups.length > 0 ? (
               <div className="mb-2 space-y-2" data-ff-deal-docs-by-line>
                 {lineGroups.map((group) => (
@@ -73,15 +71,15 @@ export function DocumentsPanel({
               </div>
             ) : null}
 
-            {otherSourceDocs.length === 0 && lineGroups.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No source files yet.</p>
-            ) : (
-              <ul className="space-y-1.5">
+            {otherSourceDocs.length > 0 ? (
+              <ul className="mb-2 space-y-1.5">
                 {otherSourceDocs.map((doc) => (
                   <SourceFileRow key={doc.id} doc={doc} dealId={dealId} showType />
                 ))}
               </ul>
-            )}
+            ) : null}
+
+            <SourceDocsUpload dealId={dealId} riskId={riskId} />
           </section>
         </div>
 
@@ -123,7 +121,7 @@ function SourceFileRow({
   showType?: boolean;
 }) {
   return (
-    <li className="flex items-center gap-2 rounded-md border border-border/70 px-2 py-1.5">
+    <li className="deal-doc-row flex w-full items-center gap-2 rounded-md border border-border/70 px-2 py-1.5">
       {isImageDoc(doc) ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={fileViewHref(doc.id)} alt="" className="h-8 w-8 shrink-0 rounded object-cover" />

@@ -4,7 +4,64 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7am`)
+## Mac test now (`cursor/live-ff-tip-sep7an`)
+
+Consolidator: Pipeline from `cursor/live-ff-tip-sep7am` @ `4cb5a00` / tip SHA `8ac20e6` (`.deal-today-chip-count` **24px** / **500**, soft chip-fg mix into white) plus Deal detail from `cursor/live-ff-tip-sep7ak` @ `042632b` / tip SHA `b5cf1a3` (upload trash on every row + Add another, tabs flush under deal header). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7am. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7an && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AH — Pipeline list (sep7ah, locked)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
+| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
+| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
+| AI1 | Count | Chip **number only** is **24px** / **500**. |
+| AM1 | Count color | Chip **number only** keeps chip hue, softer (`color-mix` 55% `--chip-fg` into `#ffffff`). Not navy, not black. |
+
+### AK — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AK1 | Upload trash | Each uploaded file is its own row with a **trash can on the right**. Click removes that file from the deal. **+ Add another document** stays under the last row. |
+| AK2 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the header and the first tab. |
+
+### AG — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AG1 | One button | Documents has **no** separate **Confirm sheet** button. One checkbox: **I visually reviewed this master sheet.** The only action is **Confirm & request quotes**, disabled until the box is ticked. One click confirms the sheet and requests quotes from every in-appetite carrier. |
+| AG2 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+| AG3 | No Quotes folder | Sidebar **Deals** has **no** nested Quotes child. No dead `/deals/quotes` link. Quotes lives only as the Deal detail tab. Customize can still add the catalog Quotes row; it is not a default Deals subfolder. |
+
+### AB — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB1 | Vehicle blocks | Auto master sheet opens with **Vehicle 1** (VIN, year, make, model, usage, garaging ZIP, address). Vehicle 2 is not alone. **+ Add vehicle** under the last block. Personal lines cap at **five**. Commercial Auto is unlimited. |
+| AB2 | Driver blocks | **Driver 1** by default. **+ Add driver** grows the list. Same personal / commercial cap as vehicles. |
+| AB3 | Upload rows | Each document is its own row with a trash can. **+ Add another document** under the last row. Filename is **plain text**, not a button. |
+| AB4 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+
+### AB — Tags + 8x8
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB5 | Sheet tags | Lead, Contact, Policy, and Deal data sheets show **Tags** with suggested defaults. Agents can add their own. Lead tags that make sense (referral, custom) carry onto the Contact at convert / bind. |
+| AB6 | List tags | Leads, Contacts, Deals, and Policies table rows show the same tags. |
+| AB7 | 8x8 | Settings → Integrations → Phone / SMS lists **8x8** as a Phone and SMS provider, next to the **Mac Continuity** on/off toggle. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7am`)
 
 From `cursor/live-ff-tip-sep7al` @ `f55f730` / tip SHA `e12eac9`. MICRO only: `.deal-today-chip-count` numbers are **24px** / **500**, chip hue mixed soft into white (`55%` chip-fg into `#ffffff`). Not navy. Not black. Chip size, placement, labels, Attach, Deal detail, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `8ac20e6`.
 

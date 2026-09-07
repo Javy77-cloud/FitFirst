@@ -23,10 +23,12 @@ describe("deal worksheet source docs", () => {
 
   it("keeps one compact type / file / create zone on the worksheet", () => {
     const form = readFileSync("src/components/deal/source-docs-upload.tsx", "utf8");
-    expect(form).toMatch(/multiple/);
     expect(form).toMatch(/Create/);
-    expect(form).toMatch(/name="files_0"/);
-    expect(form).toMatch(/name="docType_0"/);
+    expect(form).toMatch(/name=\{`files_\$\{index\}`\}/);
+    expect(form).toMatch(/name=\{`docType_\$\{index\}`\}/);
+    expect(form).toMatch(/FileDeleteIcon/);
+    expect(form).toMatch(/\+ Add another document/);
+    expect(form).not.toMatch(/row\.fileName \|\| rows\.length > 1/);
     expect(form).not.toMatch(/Add another file/);
   });
 });

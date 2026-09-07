@@ -33,6 +33,8 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/-mt-5/);
     expect(page).not.toMatch(/-mt-3/);
     expect(page.indexOf("SectionTabs")).toBeLessThan(page.indexOf("RecordDetailLayout"));
+    expect(page.indexOf("data-ff-deal-flush-tabs")).toBeLessThan(page.lastIndexOf("<RecordDeveloperActions"));
+    expect(page.indexOf("data-ff-deal-flush-tabs")).toBeLessThan(page.indexOf("banner="));
   });
 
   it("puts an editable master sheet beside a compact upload on Documents", () => {
@@ -52,9 +54,15 @@ describe("deal detail final rebuild", () => {
     expect(gate).toMatch(/requestQuotes/);
     expect(docs).toMatch(/DeleteUploadedFileButton/);
     expect(docs.indexOf("DealLineSelector")).toBeLessThan(docs.indexOf("SourceDocsUpload"));
+    expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));
+    expect(docs).toMatch(/deal-doc-row flex w-full/);
     expect(upload).toMatch(/Create/);
     expect(upload).toMatch(/\+ Add another document/);
     expect(upload).toMatch(/deal-doc-filename/);
+    expect(upload).toMatch(/FileDeleteIcon/);
+    expect(upload).toMatch(/deal-doc-row flex w-full/);
+    expect(upload).not.toMatch(/row\.fileName \|\| rows\.length > 1/);
+    expect(upload).not.toMatch(/className="ml-0"/);
     expect(upload).not.toMatch(/Add another file/);
     expect(sheet).toMatch(/name=\{fieldKey\}/);
     expect(sheet).toMatch(/Confirm extracted/);
