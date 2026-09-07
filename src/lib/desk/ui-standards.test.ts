@@ -82,6 +82,7 @@ describe("platform UI standards", () => {
     expect(header).toMatch(/isLiveSearchColumn/);
     expect(isLiveSearchColumn({ id: "name", label: "Name" })).toBe(true);
     expect(isLiveSearchColumn({ id: "status", label: "Status" })).toBe(false);
+    expect(isLiveSearchColumn({ id: "title", label: "Deal" })).toBe(false);
   });
 
   it("status and temp badges share one palette", () => {

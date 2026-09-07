@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DEAL_ACTIVITY_TONES, DEAL_MEETING_ACTION_COLOR, DEAL_TASK_ACTION_COLOR } from "./pipeline-desk";
-import { defaultVisibleIds, DEALS_LIST_COLUMNS, allColumnIds } from "@/lib/list-columns";
+import {
+  allColumnIds,
+  DEALS_LIST_COLUMNS,
+  defaultVisibleIds,
+  isListColumnSortable,
+  isLiveSearchColumn,
+} from "@/lib/list-columns";
 import { normalizeDealsVisibleColumns, TABLE_COLUMNS } from "@/lib/desk/columns";
 
 function source(file: string) {
@@ -21,6 +27,11 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/\["table", "Table"\]/);
     expect(bar).toMatch(/\["board", "Board"\]/);
     expect(bar).toMatch(/\["funnel", "Funnel"\]/);
+    expect(bar).toMatch(/deal-line-filters/);
+    expect(bar).toMatch(/deal-closed-filters/);
+    expect(bar).toMatch(/gap-x-4/);
+    expect(bar).toMatch(/gap-x-5/);
+    expect(bar).toMatch(/gap-x-6/);
   });
 
   it("shrinks attach-documents and adds a transparent centered Today's Activity strip", () => {
@@ -126,5 +137,15 @@ describe("Deals page sep7h", () => {
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "nextAction", label: "Next"/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ListPagination/);
     expect(source("src/lib/deals/transfer.ts")).toMatch(/Transfer this deal to \$\{target\}/);
+  });
+
+  it("uses live deal-name search on Deal, not an ASC/DESC funnel", () => {
+    const deal = DEALS_LIST_COLUMNS.find((column) => column.id === "title");
+    expect(deal?.label).toBe("Deal");
+    expect(deal?.liveSearch).toBe(true);
+    expect(isLiveSearchColumn(deal!)).toBe(true);
+    expect(isListColumnSortable(deal!)).toBe(false);
+    expect(source("src/components/lists/column-table.tsx")).toMatch(/LiveContainsInput/);
+    expect(source("src/components/lists/column-table.tsx")).toMatch(/isLiveSearchColumn/);
   });
 });

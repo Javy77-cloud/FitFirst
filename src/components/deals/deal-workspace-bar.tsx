@@ -78,43 +78,47 @@ export function DealWorkspaceBar({
 
   return (
     <div className="mb-4 space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)}>
-          All
-        </Link>
-        {left.map((item) => (
-          <Link
-            key={item.slug}
-            href={dealsHref({
-              ...extras,
-              pipeline: item.slug,
-              family: null,
-              lifeSub: item.slug === "life" ? lifeSub : null,
-              healthSub: item.slug === "health" ? healthSub : null,
-              pcSub: item.slug === "p-c" ? pcSub : null,
-            })}
-            className={chipClass(item.slug === pipeline)}
-          >
-            {pipelineTabLabel(item)}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="deal-line-filters">
+          <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)}>
+            All
           </Link>
-        ))}
-        {right.length > 0 ? <span className="mx-1 h-6 w-px self-center bg-border" aria-hidden /> : null}
-        {right.map((item) => (
-          <Link
-            key={item.slug}
-            href={dealsHref({
-              ...extras,
-              pipeline: item.slug,
-              family: null,
-              lifeSub: null,
-              healthSub: null,
-              pcSub: null,
-            })}
-            className={chipClass(item.slug === pipeline)}
-          >
-            {pipelineTabLabel(item)}
-          </Link>
-        ))}
+          {left.map((item) => (
+            <Link
+              key={item.slug}
+              href={dealsHref({
+                ...extras,
+                pipeline: item.slug,
+                family: null,
+                lifeSub: item.slug === "life" ? lifeSub : null,
+                healthSub: item.slug === "health" ? healthSub : null,
+                pcSub: item.slug === "p-c" ? pcSub : null,
+              })}
+              className={chipClass(item.slug === pipeline)}
+            >
+              {pipelineTabLabel(item)}
+            </Link>
+          ))}
+        </div>
+        {right.length > 0 ? <span className="mx-2 h-6 w-px self-center bg-border" aria-hidden /> : null}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2" data-testid="deal-closed-filters">
+          {right.map((item) => (
+            <Link
+              key={item.slug}
+              href={dealsHref({
+                ...extras,
+                pipeline: item.slug,
+                family: null,
+                lifeSub: null,
+                healthSub: null,
+                pcSub: null,
+              })}
+              className={chipClass(item.slug === pipeline)}
+            >
+              {pipelineTabLabel(item)}
+            </Link>
+          ))}
+        </div>
         <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="Table Board Funnel">
           {VIEWS.map(([id, label]) => (
             <Link
