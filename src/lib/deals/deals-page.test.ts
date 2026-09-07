@@ -46,7 +46,7 @@ describe("Deals page sep7h", () => {
     expect(page).not.toMatch(/lg:col-span-5/);
     expect(page).not.toMatch(/justify-end/);
     expect(page).not.toMatch(/ml-auto/);
-    expect(page.indexOf("<TodayActivityStrip")).toBeLessThan(page.indexOf("<DealDocsUpload"));
+    expect(page.indexOf("<DealDocsUpload")).toBeLessThan(page.indexOf("<TodayActivityStrip"));
     expect(page).toMatch(/<TodayActivityStrip/);
     expect(page).toMatch(/<DealDocsUpload/);
     const upload = source("src/components/deal/deal-docs-upload.tsx");

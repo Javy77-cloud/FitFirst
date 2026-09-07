@@ -173,11 +173,11 @@ export default async function DealsPage({
         className="mb-6 flex flex-col items-stretch gap-x-8 gap-y-8 overflow-visible lg:flex-row lg:flex-wrap lg:items-start lg:justify-start"
         data-testid="deal-upload-activity"
       >
-        <div className="w-fit max-w-full overflow-visible">
-          <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
-        </div>
         <div className="w-full min-w-0 max-w-full lg:min-w-[18rem] lg:max-w-[min(50%,28rem)]">
           <DealDocsUpload deals={lookup} parties={parties} />
+        </div>
+        <div className="w-fit max-w-full overflow-visible">
+          <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
         </div>
       </div>
 

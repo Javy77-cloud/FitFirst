@@ -4,9 +4,34 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7p`)
+## Mac test now (`cursor/live-ff-tip-sep7q`)
 
-Feel-pass layout fix on **Deals / Pipeline list only**. Cut from `cursor/live-ff-tip-sep7o` @ `600c260`. Today's Activity sits on the left of Attach documents; together they occupy the **left band** — Attach is not shoved to the right corner. Attach stays modest, **≤ half page**. Title + date + calendar are **centered over the counters**. Chips are true raised 3D (light from above, darker bottom face, layered drop shadow). No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+Column swap on **Deals / Pipeline list only**. Cut from `cursor/live-ff-tip-sep7p` @ `a37ef2b`. Band order is **Attach documents on the left**, **Today's Activity counters on the right**: `[ Attach docs ] [ Today's Activity counters ]`. Attach stays modest, **≤ half page**. Title + date + calendar stay **centered over the counters**. Chips stay raised 3D. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7q && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### Q — Pipeline list (sep7q)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| Q1 | Band order | Attach documents is on the **left**. Today's Activity counters are to the **right of** Attach. Not Activity-left-of-Attach. Real gap between them. |
+| Q2 | Attach size | Attach card is modest and **≤ half page width**. Search, doc type, file picker, Store still work. |
+| Q3 | Centered title | **Today's Activity** + real date + calendar sit **visually centered** above the chip row. Calendar opens Tasks. |
+| Q4 | Raised 3D chips | Calls / Emails / Tasks / Meetings / Training read as raised buttons: bright top highlight, darker bottom face, layered drop shadow. Hover lifts with a deeper shadow and no clipping. Click opens that type's work queue. |
+| Q5 | Unchanged | Mass update, record picker, Bind, Deal detail, sidebar, and schema are the same as sep7p. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7p`)
+
+Feel-pass layout fix on **Deals / Pipeline list only**. Cut from `cursor/live-ff-tip-sep7o` @ `600c260`. Today's Activity sat on the left of Attach documents (later corrected on sep7q). Attach stays modest, **≤ half page**. Title + date + calendar are **centered over the counters**. Chips are true raised 3D. No mass update / picker / Bind / Deal detail / sidebar / schema changes.
 
 ```bash
 cd ~/FitFirst
