@@ -4,7 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bv`)
+## Mac test now (`cursor/live-ff-tip-sep7by`)
+
+**Only** the Deal detail right rail is **exactly 320px**. Everything else on the deal page (title, tabs, Details / Documents / Markets / Quotes) takes the leftover `flex-1` row. Merged onto `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w/min/max-[320px] shrink-0` plus CSS `flex: 0 0 320px !important`. Left `data-ff-deal-top-left` is `flex: 1 1 0%` — no 72% fight. No Tags / Quick Comms / tabs / Pipeline redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `79ff5af2`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh a deal (Ana Dib is fine). Confirm **TAGS** + **Quick Communications** are visible on the right rail. In DevTools, `document.querySelector('[data-ff-deal-right-rail]').getBoundingClientRect().width` must be **320**. Open Sheet health — still 320. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BY — Deal right rail exactly 320px
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BY1 | Rail width | `data-ff-deal-right-rail` measures **320px** with Tags + Quick Comms visible. |
+| BY2 | Open panels | Sheet health / context open — rail stays 320. No 28rem Sheet health. |
+| BY3 | Left leftover | Title + tabs + panels fill the remaining row. Only the rail is 320. |
+| BY4 | Scope | Tags, Quick Comms, tabs, Pipeline unchanged — width lock only. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bv`)
 
 Equal-width field-type chips + Edit Layout on every CRM module, from `cursor/live-ff-tip-sep7az`. On the field builder, every palette chip is the **same width** — sized to the longest type label (`Image upload` / `Multi-select`), not `w-max` uneven. **Edit Layout** opens the same builder for **Leads, Deals, Policies, Contacts, Business, and Carriers**. Saves persist per module. Pipeline list, Markets, bell, and Stage colors are untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 

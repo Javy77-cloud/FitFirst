@@ -53,9 +53,9 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(health).not.toMatch(/min-w-\[16rem\]/);
     expect(health).not.toMatch(/sm:w-\[28rem\]/);
     expect(css).toMatch(/\[data-ff-deal-right-rail\]/);
-    expect(css).toMatch(/width: 320px;/);
-    expect(css).toMatch(/min-width: 320px;/);
-    expect(css).toMatch(/max-width: 320px;/);
+    expect(css).toMatch(/width: 320px !important;/);
+    expect(css).toMatch(/min-width: 320px !important;/);
+    expect(css).toMatch(/max-width: 320px !important;/);
   });
 
   it("BI4 — empty master sheet ignores leftover matches, logs, and risk-row appetite", () => {

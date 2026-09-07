@@ -689,16 +689,54 @@ body[data-ff-col-resize] {
   text-decoration: underline;
 }
 
-/* Deal right rail is exactly 320px — children must fit inside, never 28rem. */
+/* HARD LOCK: only the deal right rail is 320px. Left column takes leftover flex. */
+[data-ff-deal-topband] {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+}
+[data-ff-deal-top-left] {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+}
 [data-ff-deal-right-rail] {
-  width: 320px;
-  min-width: 320px;
-  max-width: 320px;
-  flex-shrink: 0;
-  overflow-x: hidden;
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  flex: 0 0 320px !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
 }
 [data-ff-deal-right-rail] > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+[data-ff-deal-right-rail] .ff-card,
+[data-ff-deal-right-rail] .ff-completeness,
+[data-ff-deal-right-rail] [data-ff-sheet-health-toggle],
+[data-ff-deal-right-rail] [data-ff-deal-quick-comms],
+[data-ff-deal-right-rail] [data-ff-deal-quotes-corner],
+[data-ff-deal-right-rail] [data-ff-record-tags] {
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+[data-ff-deal-right-rail] input,
+[data-ff-deal-right-rail] select,
+[data-ff-deal-right-rail] textarea,
+[data-ff-deal-right-rail] button,
+[data-ff-deal-right-rail] table {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+[data-ff-deal-right-rail] input[type="datetime-local"] {
+  width: 100%;
   min-width: 0;
 }
 
