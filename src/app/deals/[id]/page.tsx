@@ -36,7 +36,7 @@ import { loadRecordContext } from "@/lib/record-context";
 import { SHOP_LINE_LABELS } from "@/lib/domain";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
-import { manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import { manualCarrierIdsFromLogs, sheetHasMarketFacts } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
@@ -77,7 +77,6 @@ export default async function DealPage({
     jobs,
     boundPolicies,
   } = workspace;
-  const matches = risk ? await evaluateDealMarkets(risk) : [];
   const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra, dealLayout, dealFields, dealValues] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
@@ -111,6 +110,9 @@ export default async function DealPage({
   });
   const activeSheet =
     sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
+  const sheetReady = sheetHasMarketFacts(activeSheet.values);
+  const matches =
+    risk && sheetReady ? await evaluateDealMarkets(risk, activeSheet.values) : [];
   const selectedProduct = resolveDealProduct({
     productParam: product,
     sheetProduct: activeSheet.values.sheet_product?.value,
@@ -193,7 +195,7 @@ export default async function DealPage({
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
         <div className="-mt-5 flex w-full items-start gap-5" data-ff-deal-flush-tabs data-ff-deal-topband>
-          <div className="min-w-0 flex-1 lg:w-[72%] space-y-1" data-ff-deal-top-left>
+          <div className="min-w-0 flex-1 space-y-1" data-ff-deal-top-left>
           <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
             {deal.title}
           </h1>
@@ -253,10 +255,13 @@ export default async function DealPage({
                       />
                     ) : id === "markets" ? (
                       <MarketsPanel
+                        key={sheetReady ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
-                        matches={matches}
+                        matches={sheetReady ? matches : []}
                         unlocked={unlocked}
                         manualIds={manualIds}
+                        explicitLookup={sheetReady && logs.length > 0}
+                        sheetHasValues={sheetReady}
                         carriers={carrierOptions}
                         dealLine={deal.lineOfBusiness}
                       />
@@ -306,10 +311,10 @@ export default async function DealPage({
         />
           </div>
           <aside
-            className="w-full space-y-3 lg:sticky lg:top-4 lg:w-[320px] max-w-[320px] shrink-0"
+            className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden space-y-3 lg:sticky lg:top-4"
             data-ff-deal-right-rail
           >
-            <div className="flex w-full flex-col items-end" data-ff-deal-quotes-corner>
+            <div className="flex w-full min-w-0 max-w-full flex-col items-end" data-ff-deal-quotes-corner>
               {health ? (
                 <SheetHealthToggle
                   report={health}
@@ -319,7 +324,7 @@ export default async function DealPage({
               ) : null}
               <DealMotivation stats={motivation} />
             </div>
-            <div className="ff-card p-3">
+            <div className="ff-card min-w-0 w-full max-w-full p-3">
               <RecordTags
                 module="deals"
                 recordId={deal.id}
@@ -328,7 +333,7 @@ export default async function DealPage({
                 colors={dealTagColors}
               />
             </div>
-            <div data-ff-deal-quick-comms>
+            <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms>
               <QuickCommsBoard items={comms} dealId={deal.id} />
             </div>
             <RecordContextRail context={context} />

@@ -43,14 +43,7 @@ export function QuotesPanel({
   const resultByCarrier = new Map(logs.map((row) => [row.log.carrierId, row.log.result]));
 
   if (sorted.length === 0) {
-    return (
-      <div
-        className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground"
-        data-ff-deal-quotes-empty
-      >
-        Quotes land here after Markets sends them back.
-      </div>
-    );
+    return <div data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
   }
 
   return (

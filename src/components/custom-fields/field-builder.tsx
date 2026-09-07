@@ -220,11 +220,11 @@ export function FieldBuilder({
       </form>
 
       <div
-        className="grid w-full grid-cols-[max-content_minmax(0,1fr)_minmax(0,1fr)] items-start gap-4"
+        className="grid w-full grid-cols-3 items-start gap-4"
         data-ff-builder-lock="three-col"
         data-ff-builder-columns
       >
-        <aside className="w-max max-w-[11rem] space-y-2" data-ff-builder-palette>
+        <aside className="min-w-0 w-full space-y-2" data-ff-builder-palette>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Field types</p>
           <div className="space-y-1 rounded-md border border-dashed border-border p-2">
             {asList([...PALETTE_ITEMS]).map((type) => (
@@ -234,7 +234,7 @@ export function FieldBuilder({
                 onDragStart={(event) =>
                   onDragStart(type === "section" ? { kind: "new-section" } : { kind: "type", type }, event)
                 }
-                className="flex w-max cursor-grab items-center gap-2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1.5 text-sm text-navy"
+                className="flex w-full cursor-grab items-center gap-2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1.5 text-sm text-navy"
                 data-ff-palette-type={type}
               >
                 <FieldTypeIcon type={type} />

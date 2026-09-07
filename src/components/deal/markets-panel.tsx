@@ -13,6 +13,8 @@ export function MarketsPanel({
   matches,
   unlocked = false,
   manualIds = [],
+  explicitLookup = false,
+  sheetHasValues = false,
   carriers = [],
   dealLine = "HO",
 }: {
@@ -20,6 +22,8 @@ export function MarketsPanel({
   matches: CarrierMatch[];
   unlocked?: boolean;
   manualIds?: string[];
+  explicitLookup?: boolean;
+  sheetHasValues?: boolean;
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
 }) {
@@ -44,7 +48,13 @@ export function MarketsPanel({
   const stretch = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "stretch");
   const skip = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "skip");
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
-  const hasData = hasMarketLookupData(matchList, asList(manualIds));
+  const displayMatches = sheetHasValues ? matchList : [];
+  const hasData = hasMarketLookupData(
+    displayMatches,
+    asList(manualIds),
+    sheetHasValues && explicitLookup,
+    sheetHasValues,
+  );
 
   if (!hasData) {
     return (

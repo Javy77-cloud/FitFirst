@@ -1,0 +1,125 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { MarketsPanel } from "@/components/deal/markets-panel";
+import { QuotesPanel } from "@/components/deal/quotes-panel";
+import { hasMarketLookupData } from "./manual-markets";
+
+function source(file: string) {
+  return readFileSync(file, "utf8");
+}
+
+describe("sep7bi builder rail Markets Quotes", () => {
+  it("BI1 — builder is three equal columns with uniform palette chips", () => {
+    const builder = source("src/components/custom-fields/field-builder.tsx");
+    expect(builder).toMatch(/data-ff-builder-lock="three-col"/);
+    expect(builder).toMatch(/grid-cols-3/);
+    expect(builder).toMatch(/items-start/);
+    expect(builder).not.toMatch(/grid-cols-\[max-content/);
+    expect(builder).not.toMatch(/minmax\(0,1fr\)/);
+    expect(builder).not.toMatch(/w-max/);
+    expect(builder).toMatch(/data-ff-builder-palette/);
+    expect(builder).toMatch(/flex w-full cursor-grab/);
+    const chipClass = builder.match(
+      /className="flex w-full cursor-grab items-center gap-2 whitespace-nowrap[^"]+"/,
+    );
+    expect(chipClass).toBeTruthy();
+    expect(chipClass?.[0]).toContain("w-full");
+    expect(chipClass?.[0]).not.toContain("w-max");
+  });
+
+  it("BI2 — no LOB clip filters on the field builder", () => {
+    const page = source("src/app/settings/field-builder/page.tsx");
+    expect(page).not.toMatch(/DEAL_LAYOUT_LINES/);
+    expect(page).not.toMatch(/data-ff-builder-lobs/);
+    expect(page).not.toMatch(/Homeowners/);
+    expect(page).toMatch(/Three equal columns on one row/);
+    expect(source("src/components/custom-fields/field-builder.tsx")).not.toMatch(/data-ff-builder-lobs/);
+  });
+
+  it("BI3 — deal right rail is forced to 320px and Sheet health cannot be 28rem", () => {
+    const page = source("src/app/deals/[id]/page.tsx");
+    const health = source("src/components/deal/sheet-health-toggle.tsx");
+    const css = source("src/app/globals.css");
+    expect(page).toMatch(/data-ff-deal-right-rail/);
+    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
+    expect(page).not.toMatch(/lg:w-\[320px\]/);
+    expect(page).not.toMatch(/lg:w-\[72%\]/);
+    expect(page).toMatch(/min-w-0 flex-1 space-y-1/);
+    expect(health).toMatch(/w-full min-w-0 max-w-full/);
+    expect(health).not.toMatch(/28rem/);
+    expect(health).not.toMatch(/16rem/);
+    expect(health).not.toMatch(/min-w-\[16rem\]/);
+    expect(health).not.toMatch(/sm:w-\[28rem\]/);
+    expect(css).toMatch(/\[data-ff-deal-right-rail\]/);
+    expect(css).toMatch(/width: 320px;/);
+    expect(css).toMatch(/min-width: 320px;/);
+    expect(css).toMatch(/max-width: 320px;/);
+  });
+
+  it("BI4 — empty master sheet ignores leftover matches, logs, and risk-row appetite", () => {
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true, true)).toBe(true);
+    expect(hasMarketLookupData([], ["c1"])).toBe(true);
+    const leftover = {
+      carrierId: "c1",
+      carrierName: "Home Co",
+      band: "green" as const,
+      fitScore: 88,
+      reasons: [],
+      learnedDecline: false,
+      shoppable: true,
+    };
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-auto",
+        matches: [leftover],
+        manualIds: [],
+        explicitLookup: true,
+        sheetHasValues: false,
+        carriers: [],
+      }),
+    );
+    expect(html).toMatch(/data-ff-markets-empty/);
+    expect(html).not.toMatch(/In appetite/);
+    expect(html).not.toMatch(/Home Co/);
+    const filled = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-filled",
+        matches: [leftover],
+        manualIds: [],
+        sheetHasValues: true,
+        carriers: [],
+      }),
+    );
+    expect(filled).toMatch(/In appetite/);
+    expect(filled).toMatch(/Home Co/);
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/sheetHasMarketFacts/);
+    expect(page).toMatch(/sheetReady \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
+    expect(page).toMatch(/sheetHasValues=\{sheetReady\}/);
+    expect(page).toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
+    expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/sheetHasMarketFacts/);
+  });
+
+  it("BI5 — Quotes with no rows is a blank panel", () => {
+    const html = renderToString(
+      createElement(QuotesPanel, {
+        dealId: "deal-empty",
+        quotes: [],
+        logs: [],
+      }),
+    );
+    expect(html).toMatch(/data-ff-quotes-empty/);
+    expect(html).toMatch(/data-ff-deal-quotes-empty/);
+    expect(html).not.toMatch(/Quotes land here/);
+    expect(html).not.toMatch(/No quotes/);
+    expect(html).not.toMatch(/border-dashed/);
+    const quotes = source("src/components/deal/quotes-panel.tsx");
+    expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);
+    expect(quotes).not.toMatch(/border-dashed/);
+  });
+});

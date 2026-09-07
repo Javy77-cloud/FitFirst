@@ -30,7 +30,7 @@ export function QuickCommsBoard({
   const filtered = items.filter((item) => item.kind === kind);
 
   return (
-    <section className="ff-card p-4">
+    <section className="ff-card min-w-0 w-full max-w-full p-4">
       <h2 className="text-base font-semibold text-navy">Quick Communications</h2>
       <p className="mt-1 text-base text-muted-foreground">
         Task, meeting, call, email, and SMS on this {dealId ? "deal" : "lead"}. Not a carrier

@@ -17,14 +17,19 @@ import {
 import { matchCarrier, rankFits, riskFromRecord, type CarrierMatch } from "./match";
 import { evaluateShopFits, type ShopFit } from "./shop-fits";
 import { isMatchPriorResult } from "@/lib/quoting/forms";
-import { hasMarketLookupInput } from "@/lib/deals/manual-markets";
+import { hasMarketLookupInput, sheetHasMarketFacts } from "@/lib/deals/manual-markets";
 
-export async function evaluateDealMarkets(risk: Risk): Promise<CarrierMatch[]> {
-  const fits = await evaluateDealShopFits(risk);
+type SheetValues = Record<string, { value?: string | null } | null> | null;
+
+export async function evaluateDealMarkets(risk: Risk, sheetValues?: SheetValues): Promise<CarrierMatch[]> {
+  if (sheetValues !== undefined && !sheetHasMarketFacts(sheetValues)) {
+    return [];
+  }
+  const fits = await evaluateDealShopFits(risk, sheetValues);
   return fits;
 }
 
-export async function evaluateDealShopFits(risk: Risk): Promise<ShopFit[]> {
+export async function evaluateDealShopFits(risk: Risk, sheetValues?: SheetValues): Promise<ShopFit[]> {
   const rules = await db
     .select({ rule: appetiteRules, carrier: carriers })
     .from(appetiteRules)
@@ -60,8 +65,9 @@ export async function evaluateDealShopFits(risk: Risk): Promise<ShopFit[]> {
     }));
 
   const dealLine = appointmentLine(risk.riskType === "auto" ? "AUTO" : "HO");
-  const sheet = sheets[0]?.values ?? null;
-  if (!hasMarketLookupInput(risk, sheet)) {
+  const loaded = sheets.find((row) => row.line === (risk.riskType === "auto" ? "auto" : "home")) ?? sheets[0];
+  const sheet = sheetValues !== undefined ? sheetValues : (loaded?.values ?? null);
+  if (!hasMarketLookupInput(risk, sheet) || !sheetHasMarketFacts(sheet)) {
     return [];
   }
 

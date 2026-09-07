@@ -49,11 +49,16 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/data-ff-field-builder/);
     expect(builder).toMatch(/data-ff-builder-columns/);
     expect(builder).toMatch(/data-ff-builder-lock="three-col"/);
-    expect(builder).toMatch(/grid-cols-\[max-content_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
+    expect(builder).toMatch(/grid-cols-3/);
+    expect(builder).toMatch(/items-start/);
+    expect(builder).not.toMatch(/grid-cols-\[max-content/);
+    expect(builder).not.toMatch(/grid-cols-\[1fr_1fr_1fr\]/);
     expect(builder).not.toMatch(/max-\[899px\]:grid-cols-1/);
     expect(builder).not.toMatch(/max-\[699px\]:grid-cols-1/);
     expect(builder).toMatch(/data-ff-builder-palette/);
-    expect(builder).toMatch(/w-max max-w-\[11rem\]/);
+    expect(builder).not.toMatch(/w-max/);
+    expect(builder).toMatch(/flex w-full cursor-grab/);
+    expect(builder).toMatch(/min-w-0 w-full space-y-2/);
     expect(builder).toMatch(/insertIndexFromClientY/);
     expect(builder).toMatch(/Save applies to every deal/);
     expect(builder).not.toMatch(/every \{line\} deal/);

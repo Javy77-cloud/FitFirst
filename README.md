@@ -4,56 +4,35 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bk`)
+## Mac test now (`cursor/live-ff-tip-sep7bi`)
 
-Deals / Pipeline list hydration, from `cursor/live-ff-tip-sep7az` latest HEAD. Next.js was overlaying **Hydration failed** because Base UI `useId` on column-header funnels and row **Change owner** dialogs minted different `id="base-ui-_R_…"` values on the server vs the client (stack landed on `paged.slice.map` in `column-table.tsx`). `ColumnsMenu`, `ColumnSortFilter`, and `ChangeOwnerDialog` now render a matching plain-button placeholder until `useClientMounted`, then the real menu/dialog. Page size reads `localStorage` after mount so the first paint stays 25 rows. Show / hide / reorder columns is unchanged. No Pipeline layout redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank when the active master sheet has no saved values — the page does not run `evaluateDealMarkets` and leftover risk-row / log matches are ignored. After the agent saves sheet values (or adds a carrier / shops), Markets may show. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `d1a6a702`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7bk && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7bi-125d && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline** (table view). Confirm there is **no** Next.js hydration overlay. Open **Columns**, hide a column, drag to reorder, **Show all**. Funnel filters still open. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**: three equal columns side by side; every field-type chip the same width. Open a deal: right rail is **320px**; Sheet health does not blow it out. **Markets** with no agent add/shop is completely blank (no "In appetite") even if evaluateDeal would have matches. **Quotes** with no rows is blank — no dashed box. Do not bind or edit Ana Cov A (**$321,000**).
 
-### BK — Deals / Pipeline list hydration
-
-| # | Check | Pass when |
-| --- | --- | --- |
-| BK1 | List load | Deals / Pipeline table loads with no hydration error overlay. |
-| BK2 | Columns menu | **Columns** still opens; show / hide / reorder / Show all still work. |
-| BK3 | SSR ids | `column-table-hydrate` SSR of ColumnsMenu / ColumnSortFilter emits no `id="base-ui-"` / `data-base-ui-click-trigger`. |
-
-## Previous tip (`cursor/live-ff-tip-sep7bj`)
-
-Durable top-center action toast, from `cursor/live-ff-tip-sep7az` latest HEAD. **Save deal details** must show **Deal details saved** every time — the prior host read `?flash=` then `router.replace` stripped it, and a Suspense remount wiped the toast before paint. `ActionToastHost` now persists message+kind in `sessionStorage`, paints the toast, then strips the query after rAF; on remount it restores from storage. Save Deal Details lands on `/deals/{id}?tab=details&flash=deal-details-saved` (keeps line/product when the form sent them). Same host covers Save sheet and every other `flashAction`. Center top, ~2.5s dismiss. No layout redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
-
-```bash
-cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7bj && git pull
-npm install
-npm run db:migrate
-# skip db:seed on the live Zoho book
-npm run dev -- --port 43147
-```
-
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a deal → **Deal Details** → change a field → **Save deal details**. A top-center toast **Deal details saved** must appear every save. Save the master sheet — toast is **Sheet saved**. Do not bind or edit Ana Cov A (**$321,000**).
-
-### BJ — Durable Deal details saved toast
+### BI — Equal builder, 320 rail, empty Markets/Quotes
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| BJ1 | Save deal details | Every **Save deal details** shows a top-center toast **Deal details saved**. |
-| BJ2 | Remount / replace | Suspense remount and `router.replace` stripping `?flash=` do not kill the toast. |
-| BJ3 | Save sheet | **Save sheet** still shows **Sheet saved**. |
-| BJ4 | Tests | `flash` + `action-toast` cover sessionStorage durability, details-tab redirect, and copy. |
+| BI1 | Builder columns | Settings → Deal field builder is `grid-cols-3` — Field types \| Left \| Right on one row. Palette chips are `w-full` (same width). |
+| BI2 | No LOB filters | Field builder has no Homeowners / Auto / Flood clips. One layout for all lines. |
+| BI3 | Rail 320 | `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px]`. Sheet health is not 28rem. Measured 320px. |
+| BI4 | Markets empty | Empty master sheet → Markets completely blank. No evaluateDeal, no leftover In appetite. |
+| BI5 | Quotes empty | Deal with no quotes: blank `data-ff-quotes-empty`. No placeholder text. |
+| BI6 | Tests | `deal-page-sep7bi`, field-builder, manual-markets, and quotes empty assertions cover the lock. |
 
 ## Previous tip (`cursor/live-ff-tip-sep7bh`)
 
-Deal naming rule, search, and drop the Contact column, from `cursor/live-ff-tip-sep7az` latest HEAD. Separate crew from toast (bf) and deal-four-fixes (bg). Every deal auto-names **First Last Lob** — `Javier Canales Home`, `Javier Canales Auto`. Applies on convert and on any line-of-business change. Existing titles backfill (additive migrate `0086_deal_titles` + boot rename). No `… - HO shop` leftovers. Deal search matches first name, last name, or line of business. Pipeline / deals table **has no Contact column**; Contact is not required on the deal. Stages, filters, and other columns stay. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `87d895b2`.
+Deal naming rule, search, and drop the Contact column, from `cursor/live-ff-tip-sep7az` latest HEAD. Separate crew from toast (bf) and deal-four-fixes (bg). Every deal auto-names **First Last Lob** — `Javier Canales Home`, `Javier Canales Auto`. Applies on convert and on any line-of-business change. Existing titles backfill (additive migrate `0086_deal_titles` + boot rename). No `… - HO shop` leftovers. Deal search matches first name, last name, or line of business. Pipeline / deals table **has no Contact column**; Contact is not required on the deal. Stages, filters, and other columns stay. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 
 ```bash
 cd ~/FitFirst
