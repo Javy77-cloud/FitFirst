@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { uploadLeadLineDocument } from "@/app/actions/documents";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { fileViewHref } from "@/lib/files/urls";
 import {
@@ -31,6 +32,8 @@ export function LeadLineDocuments({
   docs,
   extraLines,
   onExtraLines,
+  hiddenLines,
+  onHiddenLines,
 }: {
   leadId: string;
   dealId?: string | null;
@@ -38,13 +41,16 @@ export function LeadLineDocuments({
   docs: LeadLineDoc[];
   extraLines: ShopLine[];
   onExtraLines: (lines: ShopLine[]) => void;
+  hiddenLines: ShopLine[];
+  onHiddenLines: (lines: ShopLine[]) => void;
 }) {
   const documentLines = documentLinesFromDocs(docs);
+  const hidden = new Set(hiddenLines);
   const lines = leadDocumentCardLines({
     insuranceTypeDesired,
     documentLines,
     extraLines,
-  });
+  }).filter((line) => !hidden.has(line));
   const leftover = remainingShopLines(lines);
   const openLine = desiredShopLine(insuranceTypeDesired);
 
@@ -69,6 +75,7 @@ export function LeadLineDocuments({
                 const next = event.target.value as ShopLine;
                 if (!next) return;
                 onExtraLines(extraLines.includes(next) ? extraLines : [...extraLines, next]);
+                onHiddenLines(hiddenLines.filter((line) => line !== next));
                 event.target.value = "";
               }}
             >
@@ -96,6 +103,10 @@ export function LeadLineDocuments({
               dealId={dealId}
               docs={docs.filter((doc) => (doc.tags ?? []).includes(`line:${line}`))}
               defaultOpen={line === openLine}
+              onRemove={() => {
+                onExtraLines(extraLines.filter((item) => item !== line));
+                onHiddenLines(hidden.includes(line) ? hiddenLines : [...hiddenLines, line]);
+              }}
             />
           ))
         )}
@@ -110,12 +121,14 @@ function LineCard({
   dealId,
   docs,
   defaultOpen,
+  onRemove,
 }: {
   line: ShopLine;
   leadId: string;
   dealId?: string | null;
   docs: LeadLineDoc[];
   defaultOpen: boolean;
+  onRemove: () => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [slots, setSlots] = useState([0]);
@@ -134,17 +147,25 @@ function LineCard({
 
   return (
     <article className="min-w-0 overflow-hidden rounded-md border border-border" data-ff-line-card={line}>
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-secondary/60"
-        aria-expanded={open}
-      >
-        <span className="text-sm font-semibold text-navy">{label}</span>
-        <span className="text-xs text-muted-foreground">
-          {countLabel} · {open ? "Collapse" : "Expand"}
-        </span>
-      </button>
+      <div className="flex items-center gap-1 pr-1">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2 text-left hover:bg-secondary/60"
+          aria-expanded={open}
+        >
+          <span className="text-sm font-semibold text-navy">{label}</span>
+          <span className="text-xs text-muted-foreground">
+            {countLabel} · {open ? "Collapse" : "Expand"}
+          </span>
+        </button>
+        <FileDeleteIcon
+          type="button"
+          label={`Remove ${label}`}
+          data-ff-line-card-delete={line}
+          onClick={onRemove}
+        />
+      </div>
       {open ? (
         <div className="space-y-3 border-t border-border px-3 py-3">
           <form ref={formRef} action={uploadLeadLineDocument} className="space-y-2">

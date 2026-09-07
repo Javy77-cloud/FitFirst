@@ -25,11 +25,12 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | 2 | Title | Header title is **Leads**. No “FitFirst Leads” in the top-left. |
 | 3 | Lines | No Home / Auto / Flood card until the agent picks from **Add line**. Empty state reads **Add a line of interest.** |
 | 4 | Documents | Documents-by-line is ~60% of the width, form ~40%. Long filenames truncate with an ellipsis; hover shows the full name. Layout does not wrap. |
-| 5 | Quick actions | Header row, right of the lead name: **Call / SMS / Email / Task**. Same compact pills as Deals `DealQuickActions`. Not inside the form. Not below it. |
+| 5 | Quick actions | Global top bar, next to profile / notifications: **Call / SMS / Email / Task**. Each click opens a working composer (dialer, text, email, task) pre-filled with this lead. No colored pills on the lead form. |
+| 8 | Line trash | Each line-of-interest card has a right-aligned trash can. Click removes the card immediately — no confirm. |
 | 6 | Template on/off | Follow-up Templates list has an on/off toggle per template. Off = that template never fires (no clock / steps / notifications). Aggressive off does not affect Default / Steady / Drip. Toggle back on anytime. |
 | 7 | Skip method | Method dropdown is **Call / Text / Email / Skip**. Skip is a no-op — the clock advances to the next step without contacting the lead. |
 
-**Standing platform rule:** Call / SMS / Email / Task stay on every record/detail header (Leads, Deals, Contacts, Policies, Business). Shared chrome is `RecordQuickActions`. Do not bury or drop them.
+**Standing platform rule:** Call / SMS / Email / Task live in the **global top bar by profile / notifications** on every screen. They are not a colored button strip on the record form. On lead detail they pre-fill this lead. Shared chrome is `HeaderRecordActions`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7f`)
 
