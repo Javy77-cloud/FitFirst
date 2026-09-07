@@ -27,6 +27,11 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/\["table", "Table"\]/);
     expect(bar).toMatch(/\["board", "Board"\]/);
     expect(bar).toMatch(/\["funnel", "Funnel"\]/);
+    expect(bar).toMatch(/deal-line-filters/);
+    expect(bar).toMatch(/deal-closed-filters/);
+    expect(bar).toMatch(/gap-x-4/);
+    expect(bar).toMatch(/gap-x-5/);
+    expect(bar).toMatch(/gap-x-6/);
   });
 
   it("shrinks attach-documents and adds a transparent centered Today's Activity strip", () => {
