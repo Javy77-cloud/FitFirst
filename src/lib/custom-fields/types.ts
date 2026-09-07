@@ -145,24 +145,44 @@ export function emptyLayout(): FieldLayout {
   };
 }
 
+function parseColumn(col: unknown, fallbackId: string): LayoutColumn {
+  if (!col || typeof col !== "object") return { id: fallbackId, sections: [] };
+  const row = col as { id?: unknown; sections?: unknown };
+  const sectionsRaw = Array.isArray(row.sections) ? row.sections : [];
+  const sections = sectionsRaw
+    .filter((section): section is Record<string, unknown> => Boolean(section) && typeof section === "object")
+    .map((section) => ({
+      id: typeof section.id === "string" ? section.id : newSectionId(),
+      label: typeof section.label === "string" ? section.label : "Section",
+      fieldKeys: Array.isArray(section.fieldKeys) ? section.fieldKeys.map((key) => String(key)) : [],
+    }));
+  return { id: typeof row.id === "string" ? row.id : fallbackId, sections };
+}
+
+function columnsFromUnknown(raw: unknown): unknown[] | null {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== "object") return null;
+  const inner = (raw as { columns?: unknown }).columns;
+  if (Array.isArray(inner)) return inner;
+  if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+    const nested = (inner as { columns?: unknown }).columns;
+    if (Array.isArray(nested)) return nested;
+  }
+  return null;
+}
+
 export function parseLayout(raw: unknown): FieldLayout {
   const fallback = emptyLayout();
-  if (!raw || typeof raw !== "object") return fallback;
-  const columnsRaw = (raw as { columns?: unknown }).columns;
-  const columns = Array.isArray(columnsRaw) ? columnsRaw : [];
-  const parseColumn = (col: unknown, fallbackId: string): LayoutColumn => {
-    if (!col || typeof col !== "object") return { id: fallbackId, sections: [] };
-    const row = col as { id?: unknown; sections?: unknown };
-    const sectionsRaw = Array.isArray(row.sections) ? row.sections : [];
-    const sections = sectionsRaw
-      .filter((section): section is Record<string, unknown> => Boolean(section) && typeof section === "object")
-      .map((section) => ({
-        id: typeof section.id === "string" ? section.id : newSectionId(),
-        label: typeof section.label === "string" ? section.label : "Section",
-        fieldKeys: Array.isArray(section.fieldKeys) ? section.fieldKeys.map((key) => String(key)) : [],
-      }));
-    return { id: typeof row.id === "string" ? row.id : fallbackId, sections };
-  };
+  let value: unknown = raw;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+  const columns = columnsFromUnknown(value);
+  if (!columns) return fallback;
   return {
     columns: [parseColumn(columns[0], "left"), parseColumn(columns[1], "right")],
   };

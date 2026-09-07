@@ -10,6 +10,8 @@ import { db } from "@/lib/db";
 import { accounts, contacts, deals, leads } from "@/lib/db/schema";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { replaceEin, replaceSsn } from "@/lib/pii/write";
+import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
@@ -125,6 +127,11 @@ export async function updateLeadRecord(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(leads.id, id));
+  const defs = await listFieldDefs("leads").catch(() => []);
+  const custom = customValuesFromForm(formData, defs);
+  if (Object.keys(custom).length) {
+    await writeRecordValues(id, custom, "leads");
+  }
   revalidatePath(`/leads/${id}`);
   revalidatePath("/leads");
   redirect("/leads?saved=1");

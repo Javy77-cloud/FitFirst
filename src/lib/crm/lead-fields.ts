@@ -36,22 +36,30 @@ export function insuranceTypeFromForm(value: string | null | undefined): LineOfB
   return (LINES as readonly string[]).includes(raw) ? (raw as LineOfBusiness) : null;
 }
 
+function formStr(form: FormData, ...names: string[]) {
+  for (const name of names) {
+    const value = String(form.get(name) ?? "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 export function leadValuesFromForm(form: FormData): LeadFormValues {
   return {
-    firstName: String(form.get("firstName") ?? "").trim() || "Unknown",
-    middleName: emptyToNull(String(form.get("middleName") ?? "")),
-    lastName: String(form.get("lastName") ?? "").trim() || "Lead",
-    dateOfBirth: emptyToNull(String(form.get("dateOfBirth") ?? "")),
-    email: emptyToNull(String(form.get("email") ?? "")),
-    phone: emptyToNull(String(form.get("phone") ?? "")),
-    mailingAddress: emptyToNull(String(form.get("mailingAddress") ?? "")),
-    city: emptyToNull(String(form.get("city") ?? "")),
-    state: emptyToNull(String(form.get("state") ?? "")),
-    zip: emptyToNull(String(form.get("zip") ?? "")),
-    insuranceTypeDesired: insuranceTypeFromForm(String(form.get("insuranceTypeDesired") ?? "")),
-    source: normalizeRecordSource(String(form.get("source") ?? "")),
-    preferredLanguage: emptyToNull(String(form.get("preferredLanguage") ?? "")),
-    notes: emptyToNull(String(form.get("notes") ?? "")),
+    firstName: formStr(form, "firstName", "field_first_name") || "Unknown",
+    middleName: emptyToNull(formStr(form, "middleName", "field_middle_name")),
+    lastName: formStr(form, "lastName", "field_last_name") || "Lead",
+    dateOfBirth: emptyToNull(formStr(form, "dateOfBirth", "field_date_of_birth")),
+    email: emptyToNull(formStr(form, "email", "field_email")),
+    phone: emptyToNull(formStr(form, "phone", "field_phone")),
+    mailingAddress: emptyToNull(formStr(form, "mailingAddress", "field_mailing_address")),
+    city: emptyToNull(formStr(form, "city", "field_city")),
+    state: emptyToNull(formStr(form, "state", "field_state")),
+    zip: emptyToNull(formStr(form, "zip", "field_zip")),
+    insuranceTypeDesired: insuranceTypeFromForm(formStr(form, "insuranceTypeDesired", "field_insurance_type_desired")),
+    source: normalizeRecordSource(formStr(form, "source", "field_source")),
+    preferredLanguage: emptyToNull(formStr(form, "preferredLanguage", "field_preferred_language")),
+    notes: emptyToNull(formStr(form, "notes", "field_notes")),
   };
 }
 

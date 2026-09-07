@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { saveDealFieldLayout } from "@/app/actions/custom-fields";
 import {
@@ -38,6 +38,7 @@ import {
   relabelSection,
   removeFieldFromLayout,
 } from "@/lib/custom-fields/layout";
+import { humanizeFieldKey, layoutHasFields, resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { asList } from "@/lib/safe-list";
 import type { FieldPicklist } from "@/lib/custom-fields/picklists";
 import {
@@ -82,10 +83,15 @@ export function FieldBuilder({
 }) {
   const moduleLabel = fieldLayoutModuleLabel(module);
   const [layout, setLayout] = useState(() => parseLayout(initialLayout));
-  const [fields, setFields] = useState(() => asList(initialFields));
+  const [fields, setFields] = useState(() => resolveLayoutFields(parseLayout(initialLayout), asList(initialFields)));
   const [drag, setDrag] = useState<DragPayload | null>(null);
   const [dialog, setDialog] = useState<FieldDialog>(null);
   const [preview, setPreview] = useState(false);
+  useEffect(() => {
+    const next = parseLayout(initialLayout);
+    setLayout(next);
+    setFields(resolveLayoutFields(next, asList(initialFields)));
+  }, [module]);
   const byKey = useMemo(() => Object.fromEntries(fields.map((field) => [field.key, field])), [fields]);
   const dialogField = dialog ? byKey[dialog.key] : undefined;
 
@@ -219,6 +225,7 @@ export function FieldBuilder({
       className="space-y-4"
       data-ff-field-builder
       data-ff-builder-module={module}
+      data-ff-existing-layout={layoutHasFields(layout) ? "true" : "false"}
       data-ff-builder-preview={preview ? "on" : "off"}
     >
       <form action={saveDealFieldLayout}>
@@ -333,8 +340,11 @@ export function FieldBuilder({
                   </div>
                 )}
                 {asList(section.fieldKeys).map((key) => {
-                  const field = byKey[key];
-                  if (!field) return null;
+                  const field = byKey[key] ?? {
+                    key,
+                    label: humanizeFieldKey(key),
+                    type: "single_line" as const,
+                  };
                   return (
                     <BuilderFieldRow
                       key={key}

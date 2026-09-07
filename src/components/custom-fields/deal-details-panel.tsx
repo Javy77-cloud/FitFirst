@@ -4,6 +4,7 @@ import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
+import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import { asList } from "@/lib/safe-list";
 
@@ -21,7 +22,7 @@ export function DealDetailsPanel({
   values: Record<string, string>;
 }) {
   const safeLayout = parseLayout(layout);
-  const fieldList = asList(fields);
+  const fieldList = resolveLayoutFields(safeLayout, asList(fields));
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
 
   return (
@@ -43,8 +44,7 @@ export function DealDetailsPanel({
               <section key={section.id} className="ff-card space-y-2 p-3" data-ff-deal-section={section.id}>
                 <h3 className="text-xs font-medium text-navy">{section.label}</h3>
                 {asList(section.fieldKeys).map((key) => {
-                  const field = byKey[key];
-                  if (!field) return null;
+                  const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
                   return (
                     <div key={key} className="space-y-1" data-ff-deal-field={key}>
                       <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>

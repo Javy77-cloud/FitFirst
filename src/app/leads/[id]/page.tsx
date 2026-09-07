@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ClickToCall } from "@/components/click-to-call";
-import { LeadFormFields } from "@/components/crm/lead-form-fields";
+import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
@@ -29,6 +29,9 @@ import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +42,7 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra] =
+  const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra, leadLayout] =
     await Promise.all([
       getLead(id),
       listDeskUsers(),
@@ -50,6 +53,7 @@ export default async function LeadDetailPage({
       listVisibleButtons({ module: "leads", placement: "detail" }),
       listEnabledScriptsFor("leads", "edit"),
       listModuleTags("leads").catch(() => [] as { name: string; color: string | null }[]),
+      loadModuleLayoutBundle("leads", id).catch(() => null),
     ]);
   if (!row) notFound();
   const { lead, deal, docs } = row;
@@ -175,7 +179,16 @@ export default async function LeadDetailPage({
           canConvert={!deal}
           docs={docs}
         >
-          <LeadFormFields lead={lead} hideLineSelect />
+          <RecordLayoutFields
+            module="leads"
+            layout={leadLayout?.layout ?? defaultLayoutForModule("leads")}
+            fields={leadLayout?.fields ?? []}
+            values={mergeRecordSystemValues(
+              lead as unknown as Record<string, unknown>,
+              leadLayout?.stored ?? {},
+              leadLayout?.fields ?? [],
+            )}
+          />
         </LeadDetailWorkspace>
       </RecordSection>
 

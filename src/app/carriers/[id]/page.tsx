@@ -5,6 +5,10 @@ import { updateCarrierContact } from "@/app/actions/pipeline-admin";
 import { PortalLoginAdmin } from "@/components/carriers/portal-login-admin";
 import { AppShell } from "@/components/app-shell";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
+import { RecordLayoutForm } from "@/components/custom-fields/record-layout-form";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
@@ -50,11 +54,12 @@ export default async function CarrierRecordPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, asks, users, session] = await Promise.all([
+  const [row, asks, users, session, carrierLayout] = await Promise.all([
     getCarrier(id),
     listRecordAsks("carrier", id),
     listDeskUsers(),
     currentDeskSession(),
+    loadModuleLayoutBundle("carriers", id).catch(() => null),
   ]);
   if (!row) notFound();
   const { carrier, rule } = row;
@@ -71,6 +76,24 @@ export default async function CarrierRecordPage({
     <AppShell title={carrier.name}>
       <div className="mb-3 flex justify-end">
         <EditLayoutLink module="carriers" />
+      </div>
+      <div className="mb-4">
+        <RecordLayoutForm
+          module="carriers"
+          recordId={carrier.id}
+          layout={carrierLayout?.layout ?? defaultLayoutForModule("carriers")}
+          fields={carrierLayout?.fields ?? []}
+          values={mergeRecordSystemValues(
+            {
+              ...carrier,
+              phone: carrier.customerServicePhone,
+              email: carrier.underwriterEmail,
+            } as Record<string, unknown>,
+            carrierLayout?.stored ?? {},
+            carrierLayout?.fields ?? [],
+          )}
+          saveLabel="Save carrier fields"
+        />
       </div>
       <form action={updateCarrierContact} className="space-y-4">
         <input type="hidden" name="carrierId" value={carrier.id} />

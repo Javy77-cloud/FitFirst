@@ -13,6 +13,10 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
+import { RecordLayoutForm } from "@/components/custom-fields/record-layout-form";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 import { AccountGlance } from "@/components/crm/account-glance";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { RecordComms } from "@/components/record-comms";
@@ -39,7 +43,10 @@ export default async function AccountDetailPage({
     locations,
     certificates,
   } = workspace;
-  const templates = await listEmailTemplates();
+  const [templates, accountLayout] = await Promise.all([
+    listEmailTemplates(),
+    loadModuleLayoutBundle("businesses", account.id).catch(() => null),
+  ]);
   const context = await loadRecordContext({
     accountId: account.id,
     contactId: contacts[0]?.id,
@@ -55,6 +62,20 @@ export default async function AccountDetailPage({
     <AppShell title={account.name}>
       <div className="mb-3 flex justify-end">
         <EditLayoutLink module="businesses" />
+      </div>
+      <div className="mb-4">
+        <RecordLayoutForm
+          module="businesses"
+          recordId={account.id}
+          layout={accountLayout?.layout ?? defaultLayoutForModule("businesses")}
+          fields={accountLayout?.fields ?? []}
+          values={mergeRecordSystemValues(
+            { ...account, name: account.name } as Record<string, unknown>,
+            accountLayout?.stored ?? {},
+            accountLayout?.fields ?? [],
+          )}
+          saveLabel="Save business"
+        />
       </div>
       <RecordModuleMacros module="businesses" recordId={account.id} />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">

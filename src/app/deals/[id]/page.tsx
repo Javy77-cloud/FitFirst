@@ -43,8 +43,9 @@ import { listModuleTags } from "@/app/actions/record-tags";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
 import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
-import { listDealFieldDefs, loadLayoutForLine, loadRecordValues } from "@/lib/custom-fields/store";
-import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
+import { listDealFieldDefs, loadLayoutForModule, loadRecordValues } from "@/lib/custom-fields/store";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
@@ -88,7 +89,7 @@ export default async function DealPage({
       listQuoteLogs(),
       loadDealMotivationStats(),
       listModuleTags("deals").catch(() => [] as { name: string; color: string | null }[]),
-      loadLayoutForLine(deal.lineOfBusiness).catch(() => null),
+      loadLayoutForModule("deals").catch(() => null),
       listDealFieldDefs().catch(() => []),
       loadRecordValues(deal.id).catch(() => ({}) as Record<string, string>),
     ]);
@@ -239,8 +240,8 @@ export default async function DealPage({
                       <DealDetailsPanel
                         dealId={deal.id}
                         line={deal.lineOfBusiness}
-                        layout={dealLayout ?? defaultLayoutForLine(deal.lineOfBusiness)}
-                        fields={dealFields}
+                        layout={dealLayout ?? defaultLayoutForModule("deals")}
+                        fields={resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
                         values={mergeDealSystemValues(deal, lead, dealValues)}
                       />
                     ) : id === "documents" ? (

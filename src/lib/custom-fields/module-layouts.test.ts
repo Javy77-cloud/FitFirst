@@ -112,6 +112,7 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
     expect(store).toMatch(/MODULE_LAYOUT_LINE/);
     expect(store).toMatch(/saveLayoutForModule/);
     expect(store).toMatch(/loadLayoutForModule/);
+    expect(store).toMatch(/pickSavedModuleLayout/);
     expect(store).toMatch(/eq\(deskFieldLayouts\.module, module\)/);
     expect(store).toMatch(/eq\(deskCustomFields\.module, module\)/);
     expect(store).not.toMatch(/db:seed/);

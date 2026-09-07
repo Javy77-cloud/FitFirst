@@ -10,6 +10,7 @@ describe("lead detail layout + per-line documents", () => {
     const page = source("src/app/leads/[id]/page.tsx");
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const form = source("src/components/crm/lead-form-fields.tsx");
+    const layoutForm = source("src/components/custom-fields/record-layout-form.tsx");
     expect(page).toMatch(/title="Leads"/);
     expect(page).toMatch(/showBrand=\{false\}/);
     expect(page).not.toMatch(/Personal Lines Worksheet/);
@@ -23,6 +24,9 @@ describe("lead detail layout + per-line documents", () => {
     expect(desk).toMatch(/data-ff-lead-layout="two-col"/);
     expect(desk).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
     expect(desk).not.toMatch(/lg:grid-cols/);
+    expect(page).toMatch(/RecordLayoutFields/);
+    expect(page).toMatch(/loadModuleLayoutBundle\("leads"/);
+    expect(layoutForm).toMatch(/data-ff-record-layout=\{module\}/);
     expect(form).toMatch(/data-ff-lead-contact-row/);
     expect(form).toMatch(/data-ff-lead-address-row/);
     expect(form).toMatch(/grid-cols-\[minmax\(0,2\.2fr\)_minmax\(0,1\.1fr\)_4\.5rem_5\.5rem\]/);
@@ -45,7 +49,7 @@ describe("lead detail layout + per-line documents", () => {
     expect(panel).not.toMatch(/Add another line/);
     expect(page).not.toMatch(/<LineSelect/);
     expect(page).not.toMatch(/from "@\/components\/crm\/line-select"/);
-    expect(page).toMatch(/hideLineSelect/);
+    expect(page).toMatch(/RecordLayoutFields/);
     expect(form).toMatch(/hideLineSelect/);
   });
 

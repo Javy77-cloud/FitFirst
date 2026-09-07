@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bv`)
+## Mac test now (`cursor/live-ff-tip-sep7bz`)
+
+Edit Layout opens the **existing** module layout, and the live record form matches it, from `cursor/live-ff-tip-sep7az`. Clicking a layout chip / **Edit Layout** for Leads, Deals, Policies, Contacts, Business, or Carriers loads that module’s **saved** page layout (sections and fields). It does not open a blank new layout when one already exists, and it does not insert a second empty row. The Deal Details form is the Deal layout from Edit Layouts — same for Lead / Contact / Business / Policy / Carrier record forms. Builder UX from the desk tip stays: one layout for all lines, three locked columns, collapsed rows, equal-width type chips, sitewide save toast on Save. Pipeline, Markets, bell, and rail width untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bz-8816 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a Lead → **Edit Layout** — existing Lead sections/fields appear (not a blank canvas). Same for Deals and at least one other module that already has a layout (Contacts, Business, Policies, or Carriers). Then open that Deal / Lead record: the live form shows the same sections/fields as Edit Layouts. Save a field on Deals in Edit Layouts, reload the Deal — the form matches. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BZ — Open existing layout + live form matches
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BZ1 | Open existing | Edit Layout / layout chip for Leads loads the saved Lead layout. Fields/sections are present. Not a blank new layout. |
+| BZ2 | Other modules | Same for Deals, Contacts, Business, Policies, and Carriers when a layout already exists. |
+| BZ3 | No duplicate | Opening does not wipe the saved layout or create a second empty one. |
+| BZ4 | Live Deal | Deal Details shows the same layout Edit Layouts shows for Deals. |
+| BZ5 | Live Lead + others | Lead / Contact / Business / Policy / Carrier record forms match that module’s Edit Layouts layout. |
+| BZ6 | Scope | Pipeline, Markets, bell, and rail width unchanged. No `db:seed` wipe. Ana unbound. Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bv`)
 
 Equal-width field-type chips + Edit Layout on every CRM module, from `cursor/live-ff-tip-sep7az`. On the field builder, every palette chip is the **same width** — sized to the longest type label (`Image upload` / `Multi-select`), not `w-max` uneven. **Edit Layout** opens the same builder for **Leads, Deals, Policies, Contacts, Business, and Carriers**. Saves persist per module. Pipeline list, Markets, bell, and Stage colors are untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 
