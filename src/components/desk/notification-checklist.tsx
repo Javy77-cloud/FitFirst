@@ -29,10 +29,12 @@ export function NotificationChecklist({
   alerts,
   empty,
   resetKey,
+  onMarkedRead,
 }: {
   alerts: ChecklistAlert[];
   empty: string;
   resetKey: string | number | boolean;
+  onMarkedRead?: (ids: string[]) => void;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>(() => emptyNotificationSelection());
@@ -49,15 +51,19 @@ export function NotificationChecklist({
     const form = new FormData();
     form.set("alertId", id);
     await markAlertRead(form);
+    const wasUnread = alerts.some((alert) => alert.id === id && !alert.read);
+    if (wasUnread) onMarkedRead?.([id]);
     router.refresh();
   }
 
   async function markChecked() {
     if (!bulkEnabled) return;
+    const unreadIds = alerts.filter((alert) => checked.includes(alert.id) && !alert.read).map((alert) => alert.id);
     const form = new FormData();
     form.set("alertIds", checked.join(","));
     await markSelectedAlertsRead(form);
     setSelected(emptyNotificationSelection());
+    if (unreadIds.length) onMarkedRead?.(unreadIds);
     router.refresh();
   }
 

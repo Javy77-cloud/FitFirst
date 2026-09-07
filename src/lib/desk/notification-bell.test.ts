@@ -78,11 +78,13 @@ describe("notification bell unread highlight", () => {
     expect(header).toMatch(/ProfileMenu/);
     expect(shell).toMatch(/alertRows\.filter\(\(row\) => !row\.readAt\)\.length/);
     expect(shell).toMatch(/unread=\{unread\}/);
-    expect(bell).toMatch(/notificationBellHighlighted\(unread\)/);
+    expect(bell).toMatch(/notificationBellHighlighted\(displayUnread\)/);
     expect(bell).toMatch(/data-ff-bell-highlight/);
     expect(bell).toMatch(/data-unread-highlight/);
     expect(checklist).toMatch(/markAlertRead|markSelectedAlertsRead/);
+    expect(checklist).toMatch(/onMarkedRead/);
     expect(checklist).toMatch(/router\.refresh\(\)/);
+    expect(bell).toMatch(/onMarkedRead=\{\(ids\) => setLocalUnread/);
     expect(bell).toMatch(/NOTIFICATION_IN_APP_COPY/);
     expect(bell).not.toMatch(/mailto:/);
   });

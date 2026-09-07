@@ -28,10 +28,16 @@ export function NotificationBell({
   triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [localUnread, setLocalUnread] = useState(unread);
   const rootRef = useRef<HTMLDivElement>(null);
   const recent = recentNotifications(alerts);
-  const highlighted = notificationBellHighlighted(unread);
-  const badge = notificationBellBadge(unread);
+  const displayUnread = localUnread;
+  const highlighted = notificationBellHighlighted(displayUnread);
+  const badge = notificationBellBadge(displayUnread);
+
+  useEffect(() => {
+    setLocalUnread(unread);
+  }, [unread]);
 
   useEffect(() => {
     if (!open) return;
@@ -55,12 +61,12 @@ export function NotificationBell({
       ref={rootRef}
       data-testid="notification-bell"
       data-ff-bell-highlight={highlighted ? "on" : "off"}
-      data-unread-count={unread}
+      data-unread-count={displayUnread}
     >
       <button
         type="button"
-        title={notificationBellUnreadLabel(unread)}
-        aria-label={notificationBellUnreadLabel(unread)}
+        title={notificationBellUnreadLabel(displayUnread)}
+        aria-label={notificationBellUnreadLabel(displayUnread)}
         aria-expanded={open}
         aria-haspopup="dialog"
         data-unread-highlight={highlighted ? "true" : "false"}
@@ -110,6 +116,7 @@ export function NotificationBell({
             <NotificationChecklist
               resetKey={open}
               empty={NOTIFICATION_EMPTY_PANEL}
+              onMarkedRead={(ids) => setLocalUnread((count) => Math.max(0, count - ids.length))}
               alerts={recent.map((alert) => ({
                 id: alert.id,
                 title: alert.title,
