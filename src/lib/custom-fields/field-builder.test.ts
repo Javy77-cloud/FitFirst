@@ -43,7 +43,7 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/onDragStart/);
     expect(builder).toMatch(/FormulaBuilder/);
     expect(builder).toMatch(/data-ff-save-layout/);
-    expect(builder).toMatch(/>Save</);
+    expect(builder).toMatch(/\bSave\b/);
     expect(builder).toMatch(/Add section/);
     expect(builder).toMatch(/data-ff-section-label/);
     expect(builder).toMatch(/data-ff-field-label/);

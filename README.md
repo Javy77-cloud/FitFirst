@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aw`)
 
-Deal Details strip-down + Zoho-style field builder, from `cursor/live-ff-tip-sep7as` @ `e409265` / tip SHA `ce2d72d`. **Deal Details** keeps Contact (first, last, email, phone) + Address (street, city, state, ZIP) and one **Edit layout** button. Property / Photos & calc / Notes / inline add-field are gone — those live on Documents or the rail. Middle name and DOB only appear if the agent adds them on the builder. **Edit layout** opens `/settings/field-builder` (not inline): type palette, two-column drag-and-drop, custom sections, relabel, **Save** per line of business. Documents / Markets / Quotes / sidebar unchanged. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+Deal Details strip-down + Zoho-style field builder, from `cursor/live-ff-tip-sep7as` @ `e409265` / tip SHA `ce2d72d`. **Deal Details** keeps Contact (first, last, email, phone) + Address (street, city, state, ZIP) and one **Edit layout** button. Property / Photos & calc / Notes / inline add-field are gone — those live on Documents or the rail. Middle name and DOB only appear if the agent adds them on the builder. **Edit layout** opens `/settings/field-builder` (not inline): type palette, two-column drag-and-drop, custom sections, relabel, **Save** per line of business. Documents / Markets / Quotes / sidebar unchanged. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `f45c790`.
 
 ```bash
 cd ~/FitFirst

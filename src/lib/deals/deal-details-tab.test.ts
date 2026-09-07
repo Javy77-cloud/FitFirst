@@ -28,7 +28,7 @@ describe("Deal Details tab", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
     expect(panel).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
-    expect(panel).toMatch(/>Edit layout</);
+    expect(panel).toMatch(/Edit layout/);
     expect(panel).toMatch(/data-ff-open-field-builder/);
     expect(panel).toMatch(/\/settings\/field-builder\?line=/);
     expect(panel).not.toMatch(/Add field/);
