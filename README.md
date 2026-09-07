@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7q`)
+## Mac test now (`cursor/live-ff-tip-sep7r`)
+
+Polish on **Deals / Pipeline list only**, on top of `cursor/live-ff-tip-sep7q` @ `9f5e807`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Attach is a little roomier. Chips stay the **same size** with **deeper 3D** only. Title + date + calendar stay **centered over the counters**. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7r && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### R — Pipeline list (sep7r)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| R1 | Band order | Same as `9f5e807`: Attach documents is on the **left**. Today's Activity counters are to the **right of** Attach. |
+| R2 | Attach size | Attach card is a little bigger (padding / control height) and still **≤ half page**. Search, doc type, file picker, Store still work. |
+| R3 | Centered title | **Today's Activity** + real date + calendar sit **visually centered** above the chip row. Calendar opens Tasks. |
+| R4 | Same-size deeper 3D | Chip **size is unchanged**. Stronger top bevel and deeper layered shadow only. Hover lifts with no clipping. |
+| R5 | Unchanged | Mass update, record picker, Bind, Deal detail, sidebar, and schema are the same as sep7q @ `9f5e807`. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7q`)
 
 Column swap on **Deals / Pipeline list only**. Cut from `cursor/live-ff-tip-sep7p` @ `a37ef2b`. Band order is **Attach documents on the left**, **Today's Activity counters on the right**: `[ Attach docs ] [ Today's Activity counters ]`. Attach stays modest, **≤ half page**. Title + date + calendar stay **centered over the counters**. Chips stay raised 3D. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 

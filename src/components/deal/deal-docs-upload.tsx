@@ -77,10 +77,10 @@ export function DealDocsUpload({
   const primary = rows[0]!;
 
   return (
-    <form action={uploadDealDocuments} className="ff-card space-y-2.5 p-3" data-testid="deal-docs-upload">
+    <form action={uploadDealDocuments} className="ff-card space-y-3.5 p-5" data-testid="deal-docs-upload">
       <div>
-        <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">Search this page, pick a deal, then attach files.</p>
+        <h2 className="text-base font-semibold text-navy">Attach documents to a deal</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Search this page, pick a deal, then attach files.</p>
       </div>
 
       <div>
@@ -93,7 +93,7 @@ export function DealDocsUpload({
           required
           value={dealName}
           onChange={(event) => onNameChange(event.target.value)}
-          className="mt-1 h-8"
+          className="mt-1.5 h-9"
           placeholder="Type a deal, contact, or business name"
           autoComplete="off"
           aria-label="Search deals"
@@ -176,7 +176,7 @@ export function DealDocsUpload({
         </ul>
       ) : null}
 
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2.5">
         <div>
           <Label className="text-xs">Doc type</Label>
           <select
@@ -188,7 +188,7 @@ export function DealDocsUpload({
               )
             }
             aria-label="Doc type"
-            className="mt-1 h-8 w-[10rem] rounded-md border border-input bg-card px-2 text-sm"
+            className="mt-1.5 h-9 w-[11rem] rounded-md border border-input bg-card px-2.5 text-sm"
           >
             {DEAL_UPLOAD_DOC_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -199,6 +199,7 @@ export function DealDocsUpload({
         </div>
         <ChooseFileButton
           name="files_0"
+          className="h-9"
           onFile={(file) =>
             setRows((current) =>
               current.map((item) => (item.id === primary.id ? { ...item, fileName: file?.name ?? "" } : item)),
@@ -254,7 +255,7 @@ export function DealDocsUpload({
                 )
               }
               aria-label="Doc type"
-              className="h-8 w-[10rem] rounded-md border border-input bg-card px-2 text-sm"
+              className="h-9 w-[11rem] rounded-md border border-input bg-card px-2.5 text-sm"
             >
               {DEAL_UPLOAD_DOC_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -264,6 +265,7 @@ export function DealDocsUpload({
             </select>
             <ChooseFileButton
               name={`files_${index}`}
+              className="h-9"
               onFile={(file) =>
                 setRows((current) =>
                   current.map((item) => (item.id === row.id ? { ...item, fileName: file?.name ?? "" } : item)),
