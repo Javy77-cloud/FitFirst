@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7be`)
 
-Fit-to-screen, Save sheet, builder redo + Safari `u.map` hotfix, from `cursor/live-ff-tip-sep7az` @ `ea60fa3`. **Fit to screen** on Documents → master sheet scales until there is **no scrollbar** (100% is the only mode that scrolls). **Save sheet** writes every field to the deal's quote sheet and reload returns those values; **Confirm & request quotes** persists the live form first, then shops from the saved sheet. Field builder is **one layout for every deal** — no Homeowners / Auto / Flood clip filters — three locked columns (narrow types, two equal canvases), Section in the palette, drop at the pointer, Save applies globally. Deal page `.map` paths normalize missing columns / sections / fieldKeys / options / matches. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Fit-to-screen, Save sheet, builder redo + Safari `u.map` hotfix, from `cursor/live-ff-tip-sep7az` @ `ea60fa3`. **Fit to screen** on Documents → master sheet scales until there is **no scrollbar** (100% is the only mode that scrolls). **Save sheet** writes every field to the deal's quote sheet and reload returns those values; **Confirm & request quotes** persists the live form first, then shops from the saved sheet. Field builder is **one layout for every deal** — no Homeowners / Auto / Flood clip filters — three locked columns (narrow types, two equal canvases), Section in the palette, drop at the pointer, Save applies globally. Deal page `.map` paths normalize missing columns / sections / fieldKeys / options / matches. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `fefe1c7`.
 
 ```bash
 cd ~/FitFirst
