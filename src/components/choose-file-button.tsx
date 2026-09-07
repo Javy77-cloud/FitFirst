@@ -31,7 +31,8 @@ export function ChooseFileButton({
   return (
     <label
       htmlFor={inputId}
-      className={cn("ff-file-choose", disabled && "pointer-events-none opacity-60", className)}
+      title={fileName || undefined}
+      className={cn("ff-file-choose min-w-0 overflow-hidden", disabled && "pointer-events-none opacity-60", className)}
       data-ff-choose-file=""
     >
       <input

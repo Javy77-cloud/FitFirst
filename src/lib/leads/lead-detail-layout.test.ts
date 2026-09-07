@@ -11,15 +11,17 @@ describe("lead detail layout + per-line documents", () => {
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const form = source("src/components/crm/lead-form-fields.tsx");
     expect(page).toMatch(/title="Leads"/);
+    expect(page).toMatch(/showBrand=\{false\}/);
     expect(page).not.toMatch(/Personal Lines Worksheet/);
     const header = source("src/components/desk-header.tsx");
     expect(header).not.toMatch(/Personal lines worksheet/);
     expect(header).toMatch(/\{title\}/);
+    expect(header).toMatch(/showBrand/);
     expect(page).toMatch(/View related deal/);
     expect(page).toMatch(/LeadDetailWorkspace/);
     expect(page).not.toMatch(/uploadDocument/);
     expect(desk).toMatch(/data-ff-lead-layout="two-col"/);
-    expect(desk).toMatch(/grid-cols-\[minmax\(0,1fr\)_minmax\(18rem,26rem\)\]/);
+    expect(desk).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
     expect(desk).not.toMatch(/lg:grid-cols/);
     expect(form).toMatch(/data-ff-lead-contact-row/);
     expect(form).toMatch(/data-ff-lead-address-row/);
@@ -35,6 +37,8 @@ describe("lead detail layout + per-line documents", () => {
     expect(panel).toMatch(/data-ff-line-card/);
     expect(panel).toMatch(/data-ff-add-line/);
     expect(panel).toMatch(/aria-label="Add line"/);
+    expect(panel).toMatch(/Add a line of interest\./);
+    expect(panel).toMatch(/data-ff-add-line-empty/);
     expect(panel).not.toMatch(/Add another line/);
     expect(page).not.toMatch(/<LineSelect/);
     expect(page).not.toMatch(/from "@\/components\/crm\/line-select"/);
@@ -51,6 +55,8 @@ describe("lead detail layout + per-line documents", () => {
     expect(panel).toMatch(/immediate/);
     expect(panel).toMatch(/FileDeleteIcon|DeleteUploadedFileButton/);
     expect(panel).toMatch(/ff-file-row/);
+    expect(panel).toMatch(/title=\{doc\.filename\}/);
+    expect(panel).toMatch(/truncate whitespace-nowrap/);
     expect(panel).not.toMatch(/uploadDocument/);
     expect(panel).not.toMatch(/>\s*Upload\s*</);
     expect(picker).toMatch(/Choose file/);
@@ -59,18 +65,18 @@ describe("lead detail layout + per-line documents", () => {
     expect(picker).toMatch(/fileName \|\| "Choose file"/);
   });
 
-  it("centers Convert bigger than Save lead, then toasts and leaves the form", () => {
+  it("keeps Save lead and Convert on one compact right-aligned row, then toasts and leaves the form", () => {
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
-    const actions = source("src/components/desk/form-actions.tsx");
-    const css = source("src/app/globals.css");
     const save = source("src/app/actions/record-edit.ts");
-    expect(desk).toMatch(/FormPrimaryActions/);
-    expect(desk).toMatch(/ff-convert-action/);
-    expect(desk).toMatch(/>\s*Convert\s*</);
+    expect(desk).toMatch(/data-ff-lead-actions/);
+    expect(desk).toMatch(/justify-end/);
+    expect(desk).toMatch(/variant="link"/);
     expect(desk).toMatch(/Save lead/);
-    expect(actions).toMatch(/featured/);
-    expect(css).toMatch(/\.ff-convert-action/);
-    expect(css).toMatch(/height:\s*3\.25rem/);
+    expect(desk).toMatch(/data-ff-convert-deal/);
+    expect(desk).toMatch(/>\s*Convert\s*</);
+    expect(desk).not.toMatch(/FormPrimaryActions/);
+    expect(desk).not.toMatch(/ff-convert-action/);
+    expect(desk).not.toMatch(/ff-primary-action/);
     expect(save).toMatch(/redirect\("\/leads\?saved=1"\)/);
   });
 

@@ -53,7 +53,7 @@ export default async function LeadDetailPage({
     : null;
 
   return (
-    <AppShell title="Leads" utilityChrome>
+    <AppShell title="Leads" utilityChrome showBrand={false}>
       <RecordDeveloperActions
         module="leads"
         recordId={lead.id}

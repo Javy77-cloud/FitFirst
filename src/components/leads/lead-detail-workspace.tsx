@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { createDealFromLead } from "@/app/actions/crm";
 import { updateLeadRecord } from "@/app/actions/record-edit";
-import { FormPrimaryActions } from "@/components/desk/form-actions";
+import { Button } from "@/components/ui/button";
 import { LeadLineDocuments, type LeadLineDoc } from "@/components/leads/lead-line-documents";
 import { documentLinesFromDocs, leadDocumentCardLines } from "@/lib/leads/line-documents";
 import type { ShopLine } from "@/lib/domain";
@@ -40,7 +40,7 @@ export function LeadDetailWorkspace({
 
   return (
     <div
-      className="grid grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] gap-4 max-[699px]:grid-cols-1"
+      className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 max-[699px]:grid-cols-1"
       data-ff-lead-layout="two-col"
     >
       <div className="min-w-0">
@@ -49,21 +49,19 @@ export function LeadDetailWorkspace({
           <input type="hidden" name="state" value={state} />
           <input type="hidden" name="shopLines" value={shopLines.join(",")} />
           {children}
-          <FormPrimaryActions
-            submitLabel="Save lead"
-            featured={
-              canConvert ? (
-                <button
-                  type="submit"
-                  formAction={createDealFromLead}
-                  className="ff-primary-action ff-convert-action inline-flex items-center rounded-lg bg-primary px-3 text-primary-foreground hover:bg-primary/80"
-                  data-ff-convert-deal
-                >
-                  Convert
-                </button>
-              ) : null
-            }
-          />
+          <div
+            className="flex items-center justify-end gap-3 pt-1"
+            data-ff-lead-actions=""
+          >
+            <Button type="submit" variant="link" className="h-9 px-0">
+              Save lead
+            </Button>
+            {canConvert ? (
+              <Button type="submit" formAction={createDealFromLead} data-ff-convert-deal>
+                Convert
+              </Button>
+            ) : null}
+          </div>
         </form>
       </div>
       <LeadLineDocuments

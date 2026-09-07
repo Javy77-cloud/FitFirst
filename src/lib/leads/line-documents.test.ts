@@ -23,22 +23,18 @@ describe("lead line documents", () => {
     expect(desiredShopLine(null)).toBe("home");
   });
 
-  it("always shows Home / Auto / Flood and adds the desired line plus any line that already has a file", () => {
+  it("starts with zero cards until the agent picks a line or a file already exists", () => {
     expect(DEFAULT_LEAD_DOC_LINES).toEqual(["home", "auto", "flood"]);
-    expect(leadDocumentCardLines({ insuranceTypeDesired: "HO" })).toEqual(["home", "auto", "flood"]);
-    expect(leadDocumentCardLines({ insuranceTypeDesired: "UMBRELLA" })).toEqual([
-      "home",
-      "auto",
-      "flood",
-      "umbrella",
-    ]);
+    expect(leadDocumentCardLines({ insuranceTypeDesired: "HO" })).toEqual([]);
+    expect(leadDocumentCardLines({ insuranceTypeDesired: "UMBRELLA" })).toEqual([]);
     expect(
       leadDocumentCardLines({
         insuranceTypeDesired: "HO",
         documentLines: ["life"],
         extraLines: ["rec_rv"],
       }),
-    ).toEqual(["home", "auto", "rec_rv", "flood", "life"]);
+    ).toEqual(["rec_rv", "life"]);
+    expect(remainingShopLines([])).toContain("home");
     expect(remainingShopLines(["home", "auto", "flood"])).toContain("umbrella");
     expect(remainingShopLines(["home", "auto", "flood"])).not.toContain("home");
   });

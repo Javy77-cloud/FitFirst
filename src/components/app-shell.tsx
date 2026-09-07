@@ -22,6 +22,7 @@ export async function AppShell({
   columns,
   allowMfaPending = false,
   utilityChrome = false,
+  showBrand = true,
 }: {
   children: ReactNode;
   title: string;
@@ -31,6 +32,8 @@ export async function AppShell({
   allowMfaPending?: boolean;
   /** Lead + deal worksheet only: logo, search, notifications, profile. */
   utilityChrome?: boolean;
+  /** Worksheet chrome can keep the logo off so the page title stands alone. */
+  showBrand?: boolean;
 }) {
   await releaseDueLeadFollowUps().catch(() => null);
   const [session, actor, userRows, alertRows] = await Promise.all([
@@ -88,6 +91,7 @@ export async function AppShell({
             impersonatorName={session.impersonatorName}
             isImpersonating={session.isImpersonating}
             utilityChrome={utilityChrome}
+            showBrand={showBrand}
           />
           <main className="flex-1 p-5">{children}</main>
         </div>

@@ -4,7 +4,29 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7f`)
+## Mac test now (`cursor/live-ff-tip-sep7g`)
+
+Crew H: lead-detail layout polish only. Branched from `cursor/live-ff-tip-sep7f`. Does **not** retouch Deals, Leads list / follow-up / crash engine, sidebar, or schema. Layout and defaults on `/leads/[id]` and shared lead-detail components.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7g && git pull
+npm install
+# skip db:migrate — layout only, no schema
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Buttons | **Save lead** is a text link and **Convert** is a normal-sized primary button. Both sit on one compact right-aligned row. No stacked full-width blocks. |
+| 2 | Title | Header title is **Leads**. No “FitFirst Leads” in the top-left. |
+| 3 | Lines | No Home / Auto / Flood card until the agent picks from **Add line**. Empty state reads **Add a line of interest.** |
+| 4 | Documents | Documents-by-line is ~60% of the width, form ~40%. Long filenames truncate with an ellipsis; hover shows the full name. Layout does not wrap. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7f`)
 
 Consolidator: desk tip `cursor/live-ff-tip-sep7e` @ `c08c406` (Crew G: Leads Load-failed crash fix + Aggressive-on-new null guards; already includes sep7d = sep7a clock/delete + sep7b lead detail) plus Crew F Deals Pipeline (`cursor/live-ff-tip-sep7c` @ `4baf6b6`). Leads / follow-up / templates / list-selection / lead detail stay sep7e. Deals / Pipeline / deal upload / deal row actions / today activity strip stay sep7c. No sidebar changes. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 

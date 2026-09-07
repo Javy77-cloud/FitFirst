@@ -49,7 +49,7 @@ export function LeadLineDocuments({
   const openLine = desiredShopLine(insuranceTypeDesired);
 
   return (
-    <aside className="ff-card p-4" data-ff-lead-line-docs>
+    <aside className="ff-card min-w-0 p-4" data-ff-lead-line-docs>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-navy">Documents by line</h2>
@@ -83,16 +83,22 @@ export function LeadLineDocuments({
         ) : null}
       </div>
       <div className="space-y-2">
-        {lines.map((line) => (
-          <LineCard
-            key={line}
-            line={line}
-            leadId={leadId}
-            dealId={dealId}
-            docs={docs.filter((doc) => (doc.tags ?? []).includes(`line:${line}`))}
-            defaultOpen={line === openLine}
-          />
-        ))}
+        {lines.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border px-3 py-6 text-sm text-muted-foreground" data-ff-add-line-empty="">
+            Add a line of interest.
+          </p>
+        ) : (
+          lines.map((line) => (
+            <LineCard
+              key={line}
+              line={line}
+              leadId={leadId}
+              dealId={dealId}
+              docs={docs.filter((doc) => (doc.tags ?? []).includes(`line:${line}`))}
+              defaultOpen={line === openLine}
+            />
+          ))
+        )}
       </div>
     </aside>
   );
@@ -127,7 +133,7 @@ function LineCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-md border border-border" data-ff-line-card={line}>
+    <article className="min-w-0 overflow-hidden rounded-md border border-border" data-ff-line-card={line}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -168,10 +174,11 @@ function LineCard({
               </p>
               <div className="space-y-2">
                 {slots.map((id, index) => (
-                  <div key={id} className="flex items-center" data-ff-file-slot={index}>
+                  <div key={id} className="flex min-w-0 items-center" data-ff-file-slot={index}>
                     <ChooseFileButton
                       name={`files_${index}`}
                       accept=".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
+                      className="max-w-full min-w-0"
                       onFile={(file) => {
                         if (file) submitSoon();
                       }}
@@ -197,11 +204,11 @@ function LineCard({
           {docs.length === 0 ? (
             <p className="text-xs text-muted-foreground">No files on {label} yet.</p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="min-w-0 space-y-1.5">
               {docs.map((doc) => (
                 <li
                   key={doc.id}
-                  className="ff-file-row rounded-md border border-border/70 px-2 py-1.5"
+                  className="ff-file-row min-w-0 overflow-hidden rounded-md border border-border/70 px-2 py-1.5"
                   data-ff-line-file={doc.id}
                 >
                   {isImageDoc(doc) ? (
@@ -220,7 +227,8 @@ function LineCard({
                     href={fileViewHref(doc.id)}
                     target="_blank"
                     rel="noreferrer"
-                    className="min-w-0 flex-1 truncate text-sm font-medium text-navy hover:underline"
+                    title={doc.filename}
+                    className="min-w-0 flex-1 truncate whitespace-nowrap text-sm font-medium text-navy hover:underline"
                   >
                     {doc.filename}
                   </a>

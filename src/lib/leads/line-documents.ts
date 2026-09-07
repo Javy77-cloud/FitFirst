@@ -9,7 +9,7 @@ import { shopLinesForConvert } from "@/lib/crm/convert";
 
 export const LINE_TAG_PREFIX = "line:";
 
-/** Personal-lines cards that always appear on a lead, plus any other line with files. */
+/** Legacy personal-lines set. Lead cards no longer pre-render these. */
 export const DEFAULT_LEAD_DOC_LINES: readonly ShopLine[] = ["home", "auto", "flood"];
 
 export function lineTag(line: ShopLine): string {
@@ -34,16 +34,18 @@ export function documentLinesFromDocs(docs: Array<{ tags?: string[] | null }>): 
   return SHOP_LINES.filter((line) => found.has(line));
 }
 
-/** Cards on the lead: Home / Auto / Flood, the desired line, and any line that already has a file. */
-export function leadDocumentCardLines(input: {
+/** Cards the agent added, plus any line that already has a file. Nothing is pre-rendered. */
+export function leadDocumentCardLines({
+  documentLines,
+  extraLines,
+}: {
   insuranceTypeDesired?: string | null;
   documentLines?: readonly ShopLine[];
   extraLines?: readonly ShopLine[];
 }): ShopLine[] {
-  const selected = new Set<ShopLine>(DEFAULT_LEAD_DOC_LINES);
-  selected.add(desiredShopLine(input.insuranceTypeDesired));
-  for (const line of input.documentLines ?? []) selected.add(line);
-  for (const line of input.extraLines ?? []) selected.add(line);
+  const selected = new Set<ShopLine>();
+  for (const line of documentLines ?? []) selected.add(line);
+  for (const line of extraLines ?? []) selected.add(line);
   return SHOP_LINES.filter((line) => selected.has(line));
 }
 

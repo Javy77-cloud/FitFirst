@@ -35,6 +35,7 @@ export function DeskHeader({
   impersonatorName,
   isImpersonating,
   utilityChrome = false,
+  showBrand = true,
 }: {
   title: string;
   eyebrow?: string;
@@ -48,6 +49,7 @@ export function DeskHeader({
   impersonatorName: string | null;
   isImpersonating: boolean;
   utilityChrome?: boolean;
+  showBrand?: boolean;
 }) {
   const { openSupport } = useSupport();
   return (
@@ -57,9 +59,11 @@ export function DeskHeader({
     >
       {utilityChrome ? (
         <div className="flex min-w-0 shrink-0 items-baseline gap-3">
-          <Link href="/" className="shrink-0 text-base font-semibold text-navy" title="FitFirst home">
-            FitFirst
-          </Link>
+          {showBrand ? (
+            <Link href="/" className="shrink-0 text-base font-semibold text-navy" title="FitFirst home">
+              FitFirst
+            </Link>
+          ) : null}
           <h1 className="text-xl font-semibold text-navy">{title}</h1>
         </div>
       ) : (
