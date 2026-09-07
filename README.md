@@ -4,7 +4,42 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ao`)
+## Mac test now (`cursor/live-ff-tip-sep7aq`)
+
+Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7aq && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AO — Deal detail layout
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AO1 | Title left | Deal name is the **page title, top-left**. Not in the tabs toolbar. Not hanging mid/right. |
+| AO2 | No right chrome | Stage / LOB / Source / referral text is **off the tabs row right**. Meta lives under the title or in the rail. |
+| AO3 | Flush stack | Top → bottom, minimal gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → Upload / sheet / Markets / Quotes. No dead band under the shell header. |
+| AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
+| AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
+
+### AH — Pipeline list (sep7ah, locked)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
+| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
+| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
+| AI1 | Count | Chip **number only** is **24px** / **500**. |
+| AP1 | Count color | Chip **number only** keeps chip hue, one notch darker (`color-mix` 78% `--chip-fg` into `#ffffff`). Not navy, not black. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ao`)
 
 Deal detail layout only, from `cursor/live-ff-tip-sep7an` @ `1f775c9` / tip SHA `f6603bf`. **Deal title** (`deal.title`) sits **top-left** of the Deal screen (`data-ff-deal-title`). Documents · Markets · Quotes sit **flush under that title**, **right above** Line of business (`DealLineSelector`). Stage / source meta moved to the rail — not hanging on the tabs row right. Middle block pulled up (`-mt-5`). Upload trash + Add another stay. Pipeline Attach/Activity chips **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `df5e03b`.
 
@@ -28,6 +63,31 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Ana Dib** on Deal detai
 | AO3 | Flush stack | Top → bottom, minimal gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → Upload / sheet / Markets / Quotes. No dead band under the shell header. |
 | AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
 | AO5 | Pipeline locked | Attach / Activity chips on Deals / Pipeline are unchanged. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ap`)
+
+From `cursor/live-ff-tip-sep7an` @ `1f775c9` / tip SHA `f6603bf`. MICRO only: `.deal-today-chip-count` numbers stay **24px** / **500**, chip hue mixed one notch darker into white (`78%` chip-fg into `#ffffff`). Not navy. Not black. Chip size, placement, labels, Attach, Deal detail, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `9b1ef9a`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ap && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AH — Pipeline list (sep7ah, locked)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
+| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
+| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
+| AI1 | Count | Chip **number only** is **24px** / **500**. |
+| AP1 | Count color | Chip **number only** keeps chip hue, one notch darker (`color-mix` 78% `--chip-fg` into `#ffffff`). Not navy, not black. |
 
 ## Mac test prior (`cursor/live-ff-tip-sep7an`)
 

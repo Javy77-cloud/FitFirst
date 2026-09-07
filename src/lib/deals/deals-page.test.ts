@@ -138,7 +138,7 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/deal-today-chip-word/);
     expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*font-size: 24px;/);
     expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*font-weight: 500;/);
-    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*color: color-mix\(in srgb, var\(--chip-fg, currentColor\) 55%, #ffffff\);/);
+    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*color: color-mix\(in srgb, var\(--chip-fg, currentColor\) 78%, #ffffff\);/);
     expect(chrome).not.toMatch(/\.deal-today-chip-count \{[\s\S]*font-size: 28px;/);
     expect(chrome).not.toMatch(/\.deal-today-chip-count \{[\s\S]*font-weight: 800;/);
     expect(chrome).not.toMatch(/\.deal-today-chip-count \{[^}]*#101c34/);
