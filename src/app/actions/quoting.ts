@@ -89,7 +89,7 @@ export async function setQuotingLine(formData: FormData) {
     .where(eq(deals.id, dealId));
 
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=quote-sheet&line=${form.shopLine}`);
+  redirect(`/deals/${dealId}?tab=documents&line=${form.shopLine}`);
 }
 
 export async function approveMasterSheet(formData: FormData) {
@@ -143,7 +143,7 @@ export async function approveMasterSheet(formData: FormData) {
   }
 
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=quote-sheet&line=${line}&handoff=1`);
+  redirect(`/deals/${dealId}?tab=documents&line=${line}&handoff=1`);
 }
 
 export async function logAppetiteResult(formData: FormData) {

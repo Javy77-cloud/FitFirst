@@ -9,7 +9,7 @@ describe("missing-data gauge links", () => {
   it("points a blank at the Quote Sheet cell, not a bind path", () => {
     expect(sheetFieldDomId("square_feet")).toBe("sheet-field-square_feet");
     expect(sheetBlankHref(ELENA_DEAL_ID, "square_feet")).toBe(
-      `/deals/${ELENA_DEAL_ID}?tab=quote-sheet&field=square_feet#sheet-field-square_feet`,
+      `/deals/${ELENA_DEAL_ID}?tab=documents&field=square_feet#sheet-field-square_feet`,
     );
     expect(parseSheetFieldParam("coverage_a")).toBe("coverage_a");
   });
@@ -20,6 +20,6 @@ describe("missing-data gauge links", () => {
     const hrefs = report.bindBlockers.map((row) => sheetBlankHref(DEAL_ID, row.key));
     expect(hrefs.some((href) => href.includes("square_feet"))).toBe(true);
     expect(hrefs.join(" ")).not.toMatch(/bind/i);
-    expect(hrefs.every((href) => href.includes("tab=quote-sheet"))).toBe(true);
+    expect(hrefs.every((href) => href.includes("tab=documents"))).toBe(true);
   });
 });

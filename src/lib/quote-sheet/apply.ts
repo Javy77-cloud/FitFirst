@@ -97,6 +97,15 @@ export function applyExtractedToSheet(
     filledKeys.push(key);
   }
 
+  if (fieldIsBlank(values.applicant_name) && values.named_insured?.value?.trim()) {
+    values.applicant_name = { ...values.named_insured };
+    filledKeys.push("applicant_name");
+  }
+  if (fieldIsBlank(values.applicant_address) && values.mailing_address?.value?.trim()) {
+    values.applicant_address = { ...values.mailing_address };
+    filledKeys.push("applicant_address");
+  }
+
   return { values, filledKeys, skippedKeys };
 }
 

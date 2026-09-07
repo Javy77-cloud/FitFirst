@@ -8,13 +8,14 @@ import {
 } from "./tabs";
 
 describe("agent deal tabs", () => {
-  it("does not expose Master Risk on the agent Deal", () => {
-    expect(AGENT_DEAL_TABS).toEqual(["documents", "quote-sheet", "markets", "quotes"]);
+  it("does not expose Master Risk or Quote Sheet on the agent Deal", () => {
+    expect(AGENT_DEAL_TABS).toEqual(["documents", "markets", "quotes"]);
     expect(AGENT_DEAL_TABS).not.toContain("risk");
     expect(AGENT_DEAL_TABS).not.toContain("master-risk");
+    expect(AGENT_DEAL_TABS).not.toContain("quote-sheet");
     expect(parseAgentDealTab("risk")).toBe("documents");
     expect(parseAgentDealTab("master-risk")).toBe("documents");
-    expect(parseAgentDealTab("quote-sheet")).toBe("quote-sheet");
+    expect(parseAgentDealTab("quote-sheet")).toBe("documents");
     expect(parseAgentDealTab("markets")).toBe("markets");
     expect(parseAgentDealTab("quotes")).toBe("quotes");
   });
@@ -25,9 +26,9 @@ describe("agent deal tabs", () => {
     }
   });
 
-  it("keeps email-send and comms logs off Quote Sheet, Markets, and Quotes", () => {
-    expect(dealTabShowsCommsLogs("quote-sheet")).toBe(false);
-    expect(dealTabShowsEmailSend("quote-sheet")).toBe(false);
+  it("keeps email-send and comms logs off Markets and Quotes", () => {
+    expect(dealTabShowsCommsLogs("quote-sheet")).toBe(true);
+    expect(dealTabShowsEmailSend("quote-sheet")).toBe(true);
     expect(dealTabShowsCommsLogs("markets")).toBe(false);
     expect(dealTabShowsCommsLogs("quotes")).toBe(false);
     expect(dealTabShowsCommsLogs("documents")).toBe(true);

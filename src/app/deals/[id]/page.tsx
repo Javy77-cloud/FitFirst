@@ -6,9 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
-import { QuoteSheetPanel } from "@/components/deal/quote-sheet-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
-import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { SheetHealthToggle } from "@/components/deal/sheet-health-toggle";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
@@ -52,10 +50,10 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; notice?: string; field?: string; line?: string }>;
+  searchParams: Promise<{ tab?: string; notice?: string; field?: string; line?: string; product?: string }>;
 }) {
   const { id } = await params;
-  const { tab, notice, field, line: lineParam } = await searchParams;
+  const { tab, notice, field, line: lineParam, product } = await searchParams;
   const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
@@ -104,9 +102,6 @@ export default async function DealPage({
   );
   const activeSheet =
     sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
-  const sourceDocCount = docs.filter(
-    (doc) => doc.slot !== "quote_pdf" && doc.slot !== "policy_file",
-  ).length;
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
   const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const unlocked = quotingUnlockedForDeal(deal);
@@ -114,6 +109,7 @@ export default async function DealPage({
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
     name: row.carrier.name,
+    writtenLines: row.carrier.writtenLines,
   }));
   const bound =
     deal.pipelineStage === "bound" ||
@@ -136,7 +132,20 @@ export default async function DealPage({
       : null;
 
   return (
-    <AppShell title={deal.title} utilityChrome>
+    <AppShell
+      title={deal.title}
+      utilityChrome
+      showBrand={false}
+      recordContext={{
+        dealId: deal.id,
+        leadId: deal.leadId,
+        contactId: deal.contactId,
+        accountId: deal.accountId,
+        name: partyName,
+        phone: contact?.phone ?? lead?.phone,
+        email: contact?.email ?? lead?.email,
+      }}
+    >
       <RecordDeveloperActions
         module="deals"
         recordId={deal.id}
@@ -155,9 +164,8 @@ export default async function DealPage({
           body: script.body,
         }))}
       />
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm" data-ff-deal-identity>
-          <h1 className="text-xl font-semibold text-navy">{deal.title}</h1>
+      <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm" data-ff-deal-identity>
           <StagePill stage={deal.pipelineStage} />
           <span>{deal.lineOfBusiness}</span>
           <span className="text-muted-foreground">Source · {sourceLabel(deal.source ?? lead?.source)}</span>
@@ -173,7 +181,7 @@ export default async function DealPage({
           {health ? (
             <SheetHealthToggle
               report={health}
-              href={`/deals/${deal.id}?tab=quote-sheet&line=${sheetLine}`}
+              href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
               dealId={deal.id}
             />
           ) : null}
@@ -183,27 +191,27 @@ export default async function DealPage({
       {health ? <SheetFieldFocus field={focusField} /> : null}
 
       {isAna ? (
-        <div className="mb-4 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
+        <div className="mb-3 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
           Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
           bind this shop. Quotes are not coverage.
         </div>
       ) : null}
 
-      <RecordDetailLayout
-        main={
-          <div>
-            {!risk ? (
-              <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
-            ) : (
-              <SectionTabs
-                defaultValue="documents"
-                active={activeTab}
-                extraQuery={{ line: sheetLine }}
-                tabs={AGENT_DEAL_TABS.map((id) => ({
-                  id,
-                  label: AGENT_DEAL_TAB_LABELS[id],
-                  content:
-                    id === "documents" ? (
+      {!risk ? (
+        <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
+      ) : (
+        <SectionTabs
+          defaultValue="documents"
+          active={activeTab}
+          extraQuery={{ line: sheetLine, product }}
+          tabs={AGENT_DEAL_TABS.map((id) => ({
+            id,
+            label: AGENT_DEAL_TAB_LABELS[id],
+            content: (
+              <RecordDetailLayout
+                main={
+                  <div>
+                    {id === "documents" ? (
                       <div className="space-y-4">
                         <DocumentsPanel
                           dealId={deal.id}
@@ -217,6 +225,7 @@ export default async function DealPage({
                           formLabel={quotingForm?.label ?? "HO3"}
                           unlocked={unlocked}
                           approvedBy={deal.sheetApprovedBy}
+                          product={product ?? activeSheet.values.sheet_product?.value}
                         />
                         <InDeskEsignPanel
                           recordKind="deal"
@@ -232,27 +241,6 @@ export default async function DealPage({
                           notice={notice}
                         />
                       </div>
-                    ) : id === "quote-sheet" ? (
-                      <div className="space-y-4">
-                        <QuoteSheetPanel
-                          dealId={deal.id}
-                          dealTitle={deal.title}
-                          line={sheetLine}
-                          shopLines={deal.shopLines ?? ["home"]}
-                          sheet={activeSheet}
-                          contact={contact}
-                          riskId={risk.id}
-                          sourceDocCount={sourceDocCount}
-                          docs={docs.filter((doc) => doc.slot !== "quote_pdf" && doc.slot !== "policy_file")}
-                        />
-                        <SheetApproveGate
-                          dealId={deal.id}
-                          line={sheetLine}
-                          formLabel={quotingForm?.label ?? "HO3"}
-                          unlocked={unlocked}
-                          approvedBy={deal.sheetApprovedBy}
-                        />
-                      </div>
                     ) : id === "markets" ? (
                       <MarketsPanel
                         dealId={deal.id}
@@ -260,6 +248,7 @@ export default async function DealPage({
                         unlocked={unlocked}
                         manualIds={manualIds}
                         carriers={carrierOptions}
+                        dealLine={deal.lineOfBusiness}
                       />
                     ) : (
                       <QuotesPanel
@@ -284,37 +273,38 @@ export default async function DealPage({
                           })),
                         }}
                       />
-                    ),
-                }))}
+                    )}
+
+                    {relatedWidgets.length ? (
+                      <div className="mt-4 space-y-3">
+                        {relatedWidgets.map((widget) => (
+                          <WidgetHost key={widget.id} name={widget.name} url={widget.externalUrl} compact />
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <p className="mt-4 text-base text-muted-foreground">
+                      Shopping lives here.{" "}
+                      <Link href="/get-started" className="text-primary hover:underline">
+                        Run the test path
+                      </Link>
+                      .
+                    </p>
+                  </div>
+                }
+                rail={
+                  <div className="space-y-4 lg:sticky lg:top-4">
+                    <div data-ff-deal-quick-comms>
+                      <QuickCommsBoard items={comms} dealId={deal.id} />
+                    </div>
+                    <RecordContextRail context={context} />
+                  </div>
+                }
               />
-            )}
-
-            {relatedWidgets.length ? (
-              <div className="mt-4 space-y-3">
-                {relatedWidgets.map((widget) => (
-                  <WidgetHost key={widget.id} name={widget.name} url={widget.externalUrl} compact />
-                ))}
-              </div>
-            ) : null}
-
-            <p className="mt-4 text-base text-muted-foreground">
-              Shopping lives here.{" "}
-              <Link href="/get-started" className="text-primary hover:underline">
-                Run the test path
-              </Link>
-              .
-            </p>
-          </div>
-        }
-        rail={
-          <div className="space-y-4 lg:sticky lg:top-4">
-            <div data-ff-deal-quick-comms>
-              <QuickCommsBoard items={comms} dealId={deal.id} />
-            </div>
-            <RecordContextRail context={context} />
-          </div>
-        }
-      />
+            ),
+          }))}
+        />
+      )}
     </AppShell>
   );
 }

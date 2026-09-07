@@ -50,11 +50,12 @@ describe("completeness strip — blank vs filled, not a score", () => {
     expect(seed).toMatch(/from "@\/lib\/quote-sheet\/ana-home"/);
 
     const dealPage = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
-    const sheetPanel = readFileSync("src/components/deal/quote-sheet-panel.tsx", "utf8");
-    expect(dealPage).toMatch(/QuoteSheetPanel/);
-    expect(dealPage).toMatch(/tab=quote-sheet/);
-    expect(sheetPanel).toMatch(/QuoteSheetForm/);
-    expect(sheetPanel).toMatch(/FILL_FROM_DOCS_LABEL/);
+    const docs = readFileSync("src/components/deal/documents-panel.tsx", "utf8");
+    expect(dealPage).toMatch(/DocumentsPanel/);
+    expect(dealPage).toMatch(/tab=documents/);
+    expect(dealPage).not.toMatch(/QuoteSheetPanel/);
+    expect(docs).toMatch(/MasterSheetCompare/);
+    expect(docs).toMatch(/SheetApproveGate/);
   });
 
   it("labels check status Needs review on the deal worksheet strip", () => {

@@ -222,7 +222,7 @@ export async function fillQuoteSheetBlanks(formData: FormData) {
   const line = (str(formData, "line") || "home") as ShopLine;
   await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=quote-sheet&line=${line}&notice=filled`);
+  redirect(`/deals/${dealId}?tab=documents&line=${line}&notice=filled`);
 }
 
 export async function ensureLeadNotes(leadId: string, extra: string) {

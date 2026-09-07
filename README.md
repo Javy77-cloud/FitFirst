@@ -4,22 +4,22 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7t`)
+## Mac test now (`cursor/live-ff-tip-sep7u`)
 
-Feel-pass polish on **Deals / Pipeline list only**, on top of `cursor/live-ff-tip-sep7r` @ `cb23a8f`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Attach is **~1.6×** taller and wider. Activity chips keep raised 3D but use **lighter faces** (especially the lower shade) so the count stays readable. Title, chip labels/counts, and the calendar icon are a step larger. Hover lifts farther with a slight scale and deeper shadow. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+Consolidator: live desk tip `cursor/live-ff-tip-sep7t` @ `b9f0521` (Pipeline Attach left / Activity right / ~1.6× attach / lighter chips / bigger type / hover) plus Deal detail final rebuild `cursor/live-ff-tip-sep7s` @ `db18aeb` (3 tabs Documents / Markets / Quotes, deal-name title, master sheet in Documents). Prefer sep7t for Deals / Pipeline list. Prefer sep7s for `/deals/[id]`. Global Call / SMS / Email / Task stay on the profile bar — no local colored strips on lead or deal forms. No sidebar redesign. No schema. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7t && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7u && git pull
 npm install
 # db:migrate / db:seed only if this desk is behind
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
-### T — Pipeline list (sep7t)
+### A — Pipeline list (sep7t @ `b9f0521`)
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -28,7 +28,28 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 | T3 | Readable chips | Chip faces are lighter, especially the **lower shade**. Count and label stay readable at the bottom. Raised 3D is still there. |
 | T4 | Bigger type | **Today's Activity** title, chip labels, and counts are a little bigger. Calendar icon matches. Title + date + calendar stay centered over the counters. |
 | T5 | Hover motion | Hover lifts farther (`translateY` + ~1.04 scale) with a deeper shadow. No clipping. Click still opens that type's work queue. |
-| T6 | Unchanged | Mass update, record picker, Bind, Deal detail, sidebar, and schema are the same as sep7r @ `cb23a8f`. |
+| T6 | Unchanged | Mass update, record picker, Bind, sidebar, and schema are the same as sep7r @ `cb23a8f`. Deal detail is sep7s. |
+
+### B — Deal detail (sep7s @ `db18aeb`)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| S1 | Title | Top-left is **only the deal name** (e.g. `test - HO shop.`). No “FitFirst” in the title. |
+| S2 | Tabs | **Documents · Markets · Quotes** sit directly under the deal name. No empty left gutter. No Quote Sheet tab. Old `?tab=quote-sheet` opens Documents. |
+| S3 | Documents | Left: one compact upload (type, file, create) + source files with trash-cans. Right: editable master sheet. Empty before extract; filled beside the source after. Confirm the sheet at the bottom — then **Approve & request quotes** unlocks. |
+| S4 | Master sheet | Shared applicant core (name, address, phone, email, DOB, entity). HO is a full homeowners inventory (construction / wind mit / 4-point). Auto / flood / GL / WC swap in their sections. One deal, one product. Agent corrections become mapping rules for that form. |
+| S5 | Markets | In appetite / Stretch / Skip. Manual add lists only carriers that write this line. **Approve & request quotes** submits to every in-appetite carrier. IVANS / EZLynx / QuoteRush stay paid stubs. |
+| S6 | Quotes | Per carrier: premium, coverages, deductibles, status. Cheapest on top. First pull from a new carrier confirms; then sample one in five. Bind gate re-checks premium + coverages + deductibles. Ana stays locked / unbound, Cov A **$321,000**. |
+| S7 | Quick comms | Sticky right rail: Task, Meeting, Call, Email, SMS. No local colored Call / SMS / Email / Task strip next to the deal name — those stay on the profile bar. |
+| S8 | Motivation | Corner sparkline: quotes pulled today + bind rate this month. At most one sixth of the screen. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7t`)
+
+Feel-pass polish on **Deals / Pipeline list only**, on top of `cursor/live-ff-tip-sep7r` @ `cb23a8f`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Attach is **~1.6×** taller and wider. Activity chips keep raised 3D but use **lighter faces** (especially the lower shade) so the count stays readable. Title, chip labels/counts, and the calendar icon are a step larger. Hover lifts farther with a slight scale and deeper shadow. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes. Tip SHA `b9f0521`.
+
+## Mac test prior (`cursor/live-ff-tip-sep7s`)
+
+Deal detail final rebuild on **`/deals/[id]` only**. Cut from `cursor/live-ff-tip-sep7r` @ `cb23a8f`. Pipeline list band stays sep7r — do not rewrite Attach / Today's Activity. Title is **the deal name only** (no FitFirst). Tabs sit **directly under the name**: Documents · Markets · Quotes. Quote Sheet tab is gone — the master sheet lives on Documents. No sidebar / data model / other-page changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes. Tip SHA `db18aeb`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7r`)
 

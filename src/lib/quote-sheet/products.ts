@@ -1,0 +1,67 @@
+import type { ShopLine } from "@/lib/domain";
+
+/** One deal, one product. Auto and home are two deals under the same person. */
+export const SHEET_PRODUCTS = [
+  "homeowners",
+  "renters",
+  "landlord",
+  "auto",
+  "motorcycle",
+  "commercial_auto",
+  "rv",
+  "flood",
+  "gl",
+  "workers_comp",
+  "umbrella",
+  "life",
+  "health",
+] as const;
+export type SheetProduct = (typeof SHEET_PRODUCTS)[number];
+
+export const SHEET_PRODUCT_LABELS: Record<SheetProduct, string> = {
+  homeowners: "Homeowners",
+  renters: "Renters",
+  landlord: "Landlord",
+  auto: "Auto",
+  motorcycle: "Motorcycle",
+  commercial_auto: "Commercial auto",
+  rv: "RV",
+  flood: "Flood",
+  gl: "General liability",
+  workers_comp: "Workers' comp",
+  umbrella: "Umbrella",
+  life: "Life",
+  health: "Health",
+};
+
+const LINE_PRODUCTS: Record<ShopLine, SheetProduct[]> = {
+  home: ["homeowners", "renters", "landlord"],
+  auto: ["auto", "motorcycle", "commercial_auto"],
+  rec_rv: ["rv"],
+  flood: ["flood"],
+  umbrella: ["umbrella"],
+  life: ["life"],
+  health: ["health"],
+  workers_comp: ["workers_comp"],
+  general_liability: ["gl"],
+};
+
+export function defaultProductForLine(line: ShopLine): SheetProduct {
+  return LINE_PRODUCTS[line]?.[0] ?? "homeowners";
+}
+
+export function productsForLine(line: ShopLine): SheetProduct[] {
+  return LINE_PRODUCTS[line] ?? [defaultProductForLine(line)];
+}
+
+export function isSheetProduct(value: string | null | undefined): value is SheetProduct {
+  return Boolean(value && (SHEET_PRODUCTS as readonly string[]).includes(value));
+}
+
+export function parseSheetProduct(
+  value: string | null | undefined,
+  line: ShopLine,
+): SheetProduct {
+  if (isSheetProduct(value) && productsForLine(line).includes(value)) return value;
+  return defaultProductForLine(line);
+}
