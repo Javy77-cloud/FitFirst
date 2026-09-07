@@ -14,16 +14,16 @@ export function HardDeleteForm({
   subject: string;
   className?: string;
   children: ReactNode;
-  /** Lead line files can skip. Other hard deletes ask once: Are you sure you want to delete? */
+  /** Lead line files can skip. Other hard deletes ask once inside the form action. */
   confirm?: boolean;
 }) {
   return (
     <form
-      action={action as (formData: FormData) => void | Promise<void>}
-      className={className}
-      onSubmit={(event) => {
-        if (confirm && !confirmHardDelete(subject)) event.preventDefault();
+      action={async (formData) => {
+        if (confirm && !confirmHardDelete(subject)) return;
+        await action(formData);
       }}
+      className={className}
     >
       {children}
     </form>

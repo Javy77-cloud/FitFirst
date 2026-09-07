@@ -25,7 +25,9 @@ describe("lead + deal worksheet entry checklist", () => {
     const src = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(src).toMatch(/data-ff-deal-topband/);
     expect(src).toMatch(/data-ff-deal-top-left/);
-    expect(src).toMatch(/data-ff-deal-top-right/);
+    expect(src).toMatch(/data-ff-deal-right-rail/);
+    expect(src).not.toMatch(/data-ff-deal-top-right/);
+    expect(src).not.toMatch(/RecordDetailLayout/);
     expect(src).not.toMatch(/data-ff-deal-identity/);
     expect(src).not.toMatch(/RelatedRecordNav/);
     expect(src).not.toMatch(/View source lead/);

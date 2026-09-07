@@ -29,7 +29,6 @@ import { AGENT_DEAL_TAB_LABELS, AGENT_DEAL_TABS, parseAgentDealTab } from "@/lib
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
-import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { reportFromSheet } from "@/lib/completeness/report";
 import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
 import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
@@ -166,8 +165,7 @@ export default async function DealPage({
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
-        <div className="-mt-5" data-ff-deal-flush-tabs>
-        <div className="flex items-start justify-between gap-3" data-ff-deal-topband>
+        <div className="-mt-5 flex items-start gap-5" data-ff-deal-flush-tabs data-ff-deal-topband>
           <div className="min-w-0 flex-1 space-y-1" data-ff-deal-top-left>
           <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
             {deal.title}
@@ -202,8 +200,6 @@ export default async function DealPage({
             id,
             label: AGENT_DEAL_TAB_LABELS[id],
             content: (
-              <RecordDetailLayout
-                main={
                   <div>
                     {id === "documents" ? (
                       <DocumentsPanel
@@ -270,29 +266,14 @@ export default async function DealPage({
                       .
                     </p>
                   </div>
-                }
-                rail={
-                  <div className="space-y-4 lg:sticky lg:top-4">
-                    <div className="ff-card p-3">
-                      <RecordTags
-                        module="deals"
-                        recordId={deal.id}
-                        tags={deal.tags}
-                        suggestions={suggestedTagsFor("deals", dealTagExtra)}
-                      />
-                    </div>
-                    <div data-ff-deal-quick-comms>
-                      <QuickCommsBoard items={comms} dealId={deal.id} />
-                    </div>
-                    <RecordContextRail context={context} />
-                  </div>
-                }
-              />
             ),
           }))}
         />
           </div>
-          <div className="flex shrink-0 items-start gap-3" data-ff-deal-top-right>
+          <aside
+            className="w-[300px] shrink-0 space-y-3 lg:sticky lg:top-4"
+            data-ff-deal-right-rail
+          >
             {health ? (
               <SheetHealthToggle
                 report={health}
@@ -301,8 +282,19 @@ export default async function DealPage({
               />
             ) : null}
             <DealMotivation stats={motivation} />
-          </div>
-        </div>
+            <div className="ff-card p-3">
+              <RecordTags
+                module="deals"
+                recordId={deal.id}
+                tags={deal.tags}
+                suggestions={suggestedTagsFor("deals", dealTagExtra)}
+              />
+            </div>
+            <div data-ff-deal-quick-comms>
+              <QuickCommsBoard items={comms} dealId={deal.id} />
+            </div>
+            <RecordContextRail context={context} />
+          </aside>
         </div>
       )}
     </AppShell>

@@ -39,10 +39,13 @@ describe("upload surfaces offer delete + one confirm", () => {
     }
   });
 
-  it("HardDeleteForm still gates submit on confirmHardDelete", () => {
+  it("HardDeleteForm confirms inside the form action before the server action", () => {
     const text = source("src/components/desk/hard-delete-form.tsx");
-    expect(text).toMatch(/confirmHardDelete/);
-    expect(text).toMatch(/event\.preventDefault/);
+    expect(text).toMatch(/action=\{async \(formData\) => \{/);
+    expect(text).toMatch(/if \(confirm && !confirmHardDelete\(subject\)\) return;/);
+    expect(text).toMatch(/await action\(formData\);/);
+    expect(text).not.toMatch(/onSubmit/);
+    expect(text).not.toMatch(/preventDefault/);
   });
 
   it("delete action hard-deletes shopping docs and hides issued policy files", () => {
