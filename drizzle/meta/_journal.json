@@ -610,6 +610,13 @@
       "when": 1788860000000,
       "tag": "0086_deal_titles",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1788870000000,
+      "tag": "0087_deal_title_slashes",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,8 @@ export const DEAL_TITLE_LOB_WORDS: Record<string, string> = {
 const LEGACY_SHOP_TITLE =
   /\s*(?:[·•\-–—]|-)\s*[A-Za-z0-9]+\s+shop\s*$/i;
 
+const TITLE_PART_SEP = " / ";
+
 export function dealTitleLobWord(line: string | null | undefined): string {
   const code = (line ?? "").trim().toUpperCase();
   if (DEAL_TITLE_LOB_WORDS[code]) return DEAL_TITLE_LOB_WORDS[code]!;
@@ -25,6 +27,41 @@ export function dealTitleLobWord(line: string | null | undefined): string {
   if (shop && SHOP_LINE_LABELS[shop]) return SHOP_LINE_LABELS[shop];
   const cleaned = (line ?? "").trim();
   return cleaned || "Home";
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function allDealTitleLobWords() {
+  return [...new Set([...Object.values(DEAL_TITLE_LOB_WORDS), ...Object.values(SHOP_LINE_LABELS)])];
+}
+
+/** Drop shop leftovers and a trailing Home / Auto / Flood word so we can rebuild with slashes. */
+export function stripDealTitleLob(title: string | null | undefined): string {
+  let value = stripLegacyShopSuffix(title);
+  for (const word of allDealTitleLobWords()) {
+    value = value.replace(new RegExp(`(?:\\s+/\\s+|\\s+)${escapeRegExp(word)}\\s*$`, "i"), "").trim();
+  }
+  return value;
+}
+
+export function parseTitlePerson(title: string | null | undefined): {
+  firstName: string;
+  lastName: string;
+} {
+  const stripped = stripDealTitleLob(title);
+  if (!stripped) return { firstName: "", lastName: "" };
+  if (stripped.includes("/")) {
+    const parts = stripped.split("/").map((part) => part.trim()).filter(Boolean);
+    if (parts.length >= 2) return { firstName: parts[0]!, lastName: parts.slice(1).join(" ") };
+    return { firstName: "", lastName: parts[0] ?? "" };
+  }
+  return splitPersonName(stripped);
+}
+
+export function joinDealTitleParts(...parts: Array<string | null | undefined>): string {
+  return parts.map((part) => (part ?? "").trim()).filter(Boolean).join(TITLE_PART_SEP);
 }
 
 export function isLegacyShopTitle(title: string | null | undefined): boolean {
@@ -78,37 +115,38 @@ export function resolveDealPerson(input: {
   existingTitle?: string | null;
 }): { firstName: string; lastName: string; accountName: string } {
   const insured = splitPersonName(input.primaryNamedInsured);
-  const leftover = splitPersonName(stripLegacyShopSuffix(input.existingTitle));
-  const firstName =
+  const leftover = parseTitlePerson(input.existingTitle);
+  const explicitFirst =
     input.firstName?.trim() ||
     input.contact?.firstName?.trim() ||
     input.lead?.firstName?.trim() ||
     insured.firstName ||
-    leftover.firstName ||
     "";
-  const lastName =
+  const explicitLast =
     input.lastName?.trim() ||
     input.contact?.lastName?.trim() ||
     input.lead?.lastName?.trim() ||
     insured.lastName ||
-    leftover.lastName ||
     "";
+  const accountName = input.accountName?.trim() || "";
+  const useLeftover = !explicitFirst && !explicitLast && !accountName;
   return {
-    firstName,
-    lastName,
-    accountName: input.accountName?.trim() || "",
+    firstName: explicitFirst || (useLeftover ? leftover.firstName : ""),
+    lastName: explicitLast || (useLeftover ? leftover.lastName : ""),
+    accountName,
   };
 }
 
-/** First Last Lob — e.g. Javier Canales Home. Falls back to account name for commercial. */
+/** First / Last / Lob — e.g. Javier / Canales / Home. Falls back to account name for commercial. */
 export function formatDealTitle(input: DealTitleInput): string {
   const person = resolveDealPerson(input);
-  const who = [person.firstName, person.lastName].filter(Boolean).join(" ") || person.accountName;
+  const who = [person.firstName, person.lastName].filter(Boolean);
+  const head = who.length ? who : person.accountName ? [person.accountName] : [];
   const lob = dealTitleLobWord(input.line);
-  if (!who) return lob;
-  const already = new RegExp(`\\b${lob.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
-  if (already.test(who)) return who;
-  return `${who} ${lob}`;
+  if (!head.length) return lob;
+  const last = head[head.length - 1] ?? "";
+  if (last.toLowerCase() === lob.toLowerCase()) return joinDealTitleParts(...head);
+  return joinDealTitleParts(...head, lob);
 }
 
 export function dealTitleFromPerson(

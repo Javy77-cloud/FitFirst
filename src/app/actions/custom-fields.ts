@@ -69,6 +69,7 @@ export async function saveDealFieldLayout(formData: FormData) {
             required: Boolean(field.required),
             defaultValue: field.defaultValue ?? null,
             picklistId: field.picklistId ?? null,
+            permissions: field.permissions,
           });
         }
       }

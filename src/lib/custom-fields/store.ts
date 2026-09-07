@@ -12,7 +12,7 @@ import { catalogForLines, CORE_FIELDS, defaultFieldsForLine, defaultLayoutForLin
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import { dealValuesFromLead } from "./transfer";
 import type { CustomFieldDef, FieldLayout } from "./types";
-import { parseLayout } from "./types";
+import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
 import { resolveFieldOptions } from "./picklists";
 
@@ -28,6 +28,7 @@ export function toFieldDef(row: DeskCustomField): CustomFieldDef {
     required: Boolean(row.required),
     defaultValue: row.defaultValue ?? null,
     picklistId: row.picklistId ?? null,
+    permissions: parseFieldPermissions(row.permissions),
   };
 }
 
@@ -48,6 +49,7 @@ async function insertMissingDealFields(fields: CustomFieldDef[]) {
         required: field.required ?? false,
         defaultValue: field.defaultValue ?? null,
         picklistId: field.picklistId ?? null,
+        permissions: field.permissions ?? defaultFieldPermissions(),
       })
       .onConflictDoNothing({
         target: [deskCustomFields.tenantId, deskCustomFields.module, deskCustomFields.key],
@@ -103,6 +105,7 @@ export async function upsertFieldDef(field: CustomFieldDef) {
       required: field.required ?? false,
       defaultValue: field.defaultValue ?? null,
       picklistId: field.picklistId ?? null,
+      permissions: field.permissions ?? defaultFieldPermissions(),
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -117,6 +120,7 @@ export async function upsertFieldDef(field: CustomFieldDef) {
         required: field.required ?? false,
         defaultValue: field.defaultValue ?? null,
         picklistId: field.picklistId ?? null,
+        permissions: field.permissions ?? defaultFieldPermissions(),
         updatedAt: new Date(),
       },
     });
