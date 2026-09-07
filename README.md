@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7k`)
+## Mac test now (`cursor/live-ff-tip-sep7l`)
 
-Consolidator: desk tip `cursor/live-ff-tip-sep7j` plus Today's Activity from `cursor/live-ff-tip-sep7h` @ `0a7ff00` (Call / Email / Task / Meeting colors + order, no SMS, black chip borders). Prefer sep7h for Deals activity strip / pipeline bar. Keep sep7j for everything else. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
+Consolidator: desk tip `cursor/live-ff-tip-sep7k` plus Crew H Leads correction `cursor/live-ff-tip-sep7g` @ `93ee4db` (global top-right Call / SMS / Email / Task for this lead; trash on each line-of-interest card, immediate delete, no confirm; title **Leads**). Prefer sep7g for Leads / lead detail / shell chrome related to those actions. Prefer sep7k for Deals / Pipeline. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7k && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7l && git pull
 npm install
 # skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
 # skip db:seed — keep the live Zoho book
@@ -19,7 +19,7 @@ npm run dev -- --port 43147
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
 
-### A — Leads (sep7g)
+### A — Leads (sep7g @ `93ee4db`)
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -27,15 +27,16 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | A2 | Title | Header title is **Leads**. No “FitFirst Leads” in the top-left. |
 | A3 | Lines | No Home / Auto / Flood card until the agent picks from **Add line**. Empty state reads **Add a line of interest.** |
 | A4 | Documents | Documents-by-line is ~60% of the width, form ~40%. Long filenames truncate with an ellipsis; hover shows the full name. Layout does not wrap. |
-| A5 | Quick actions | Header row, right of the lead name: **Call / SMS / Email / Task**. Compact pills. Not inside the form. Not below it. |
-| A6 | Template on/off | Follow-up Templates list has an on/off toggle per template. Off = that template never fires (no clock / steps / notifications). Aggressive off does not affect Default / Steady / Drip. Toggle back on anytime. |
-| A7 | Skip method | Method dropdown is **Call / Text / Email / Skip**. Skip is a no-op — the clock advances to the next step without contacting the lead. |
-| A8 | Crash / clock | New lead binds **Aggressive** and starts a live Response countdown. Status / clock / template stay per row. No **Load failed**. Snooze / Mark as read / pagination / one-confirm Delete still work. |
-| A9 | Lead detail | Two-column desk (form left, documents-by-line right). One **Add line** control. Per-line **Choose file** + trash. **View related deal** / **View source lead**. |
+| A5 | Quick actions | Global top bar, next to profile / notifications: **Call / SMS / Email / Task**. Each click opens a working composer (dialer, text, email, task) pre-filled with this lead. No colored Call / SMS / Email / Task pills on the lead form. |
+| A6 | Line trash | Each line-of-interest card has a right-aligned trash can. Click removes the card immediately — no confirm. |
+| A7 | Template on/off | Follow-up Templates list has an on/off toggle per template. Off = that template never fires (no clock / steps / notifications). Aggressive off does not affect Default / Steady / Drip. Toggle back on anytime. |
+| A8 | Skip method | Method dropdown is **Call / Text / Email / Skip**. Skip is a no-op — the clock advances to the next step without contacting the lead. |
+| A9 | Crash / clock | New lead binds **Aggressive** and starts a live Response countdown. Status / clock / template stay per row. No **Load failed**. Snooze / Mark as read / pagination / one-confirm Delete still work. |
+| A10 | Lead detail | Two-column desk (form left, documents-by-line right). One **Add line** control. Per-line **Choose file** + trash. **View related deal** / **View source lead**. |
 
-**Standing platform rule:** Call / SMS / Email / Task stay on every record/detail header (Leads, Deals, Contacts, Policies, Business). Shared chrome is `RecordQuickActions`. Do not bury or drop them. Deals list rows keep the local five-action `DealQuickActions` (Call / SMS / Email / Task / Meeting).
+**Standing platform rule:** Call / SMS / Email / Task live in the **global top bar by profile / notifications** on every screen. They are not a colored button strip on the record form. On lead detail they pre-fill this lead. Shared chrome is `HeaderRecordActions`. Deals list rows keep the local five-action `DealQuickActions` (Call / SMS / Email / Task / Meeting).
 
-### B — Deals / Pipeline (sep7h)
+### B — Deals / Pipeline (sep7k)
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -51,6 +52,10 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | B10 | Deal search | **Deal** header is live typeahead (same as Leads **Name**). No ASC/DESC funnel on that column. Typing filters matching deal names immediately. |
 | B11 | Chip spacing | P&C / Health / Life sit with more horizontal room. Won-Lost and Archive sit further from that group and from each other. |
 
+## Mac test prior (`cursor/live-ff-tip-sep7k`)
+
+Consolidator: desk tip `cursor/live-ff-tip-sep7j` plus Today's Activity from `cursor/live-ff-tip-sep7h` @ `0a7ff00` (Call / Email / Task / Meeting colors + order, no SMS, black chip borders). Prefer sep7h for Deals activity strip / pipeline bar. Keep sep7j for everything else. No sidebar. No schema. No seed wipe. Tip SHA `d92cd0c`.
+
 ## Mac test prior (`cursor/live-ff-tip-sep7j`)
 
 Consolidator: Leads tip `cursor/live-ff-tip-sep7i` @ `0b4ed28` plus latest Deals tip `cursor/live-ff-tip-sep7h` @ `8c69e76` (Deal column live name search + Pipeline chip spacing). Tip SHA `8269e9c`.
@@ -65,7 +70,7 @@ Crew I Deals / Pipeline brief on desk tip `cursor/live-ff-tip-sep7f`. Title **De
 
 ## Mac test prior (`cursor/live-ff-tip-sep7g`)
 
-Crew H: lead-detail layout polish plus Follow-up Templates editor (per-template on/off + Skip). Branched from `cursor/live-ff-tip-sep7f`. Does **not** retouch Deals, sidebar, schema, or the snooze modal. Tip SHA `985fdcb`.
+Crew H: lead-detail layout polish plus Follow-up Templates editor (per-template on/off + Skip), then correction @ `93ee4db` — move Call / SMS / Email / Task to the global header and add line-card trash. Branched from `cursor/live-ff-tip-sep7f`. Does **not** retouch Deals, sidebar, schema, or the snooze modal. Tip SHA `93ee4db`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7f`)
 

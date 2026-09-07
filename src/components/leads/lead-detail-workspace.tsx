@@ -27,6 +27,7 @@ export function LeadDetailWorkspace({
   children: ReactNode;
 }) {
   const [extraLines, setExtraLines] = useState<ShopLine[]>([]);
+  const [hiddenLines, setHiddenLines] = useState<ShopLine[]>([]);
   const documentLines = documentLinesFromDocs(docs);
   const shopLines = useMemo(
     () =>
@@ -34,8 +35,8 @@ export function LeadDetailWorkspace({
         insuranceTypeDesired,
         documentLines,
         extraLines,
-      }),
-    [insuranceTypeDesired, documentLines, extraLines],
+      }).filter((line) => !hiddenLines.includes(line)),
+    [insuranceTypeDesired, documentLines, extraLines, hiddenLines],
   );
 
   return (
@@ -71,6 +72,8 @@ export function LeadDetailWorkspace({
         docs={docs}
         extraLines={extraLines}
         onExtraLines={setExtraLines}
+        hiddenLines={hiddenLines}
+        onHiddenLines={setHiddenLines}
       />
     </div>
   );

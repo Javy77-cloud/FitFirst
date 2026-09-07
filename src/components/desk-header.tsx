@@ -2,25 +2,15 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { CalendarDays, CircleHelp, Inbox, Phone } from "lucide-react";
+import { CircleHelp } from "lucide-react";
+import { HeaderRecordActions } from "@/components/desk/header-record-actions";
 import { NotificationBell } from "@/components/desk/notification-bell";
 import { ProfileMenu } from "@/components/profile-menu";
 import { SmartSearch } from "@/components/smart-search";
 import { useSupport } from "@/components/support/support-context";
 import type { Actor } from "@/lib/auth/rbac";
 import type { HeaderAlert } from "@/lib/desk/header-alerts";
-import { cn } from "@/lib/utils";
-
-const ICONS = [
-  { href: "/phone", label: "Phone", icon: Phone, className: "text-[#0f766e] hover:bg-[#ccfbf1]" },
-  {
-    href: "/calendar",
-    label: "Calendar",
-    icon: CalendarDays,
-    className: "text-[#b45309] hover:bg-[#fef3c7]",
-  },
-  { href: "/settings/email", label: "Email", icon: Inbox, className: "text-[#1d6fb8] hover:bg-[#dbeafe]" },
-];
+import type { HeaderRecordContext } from "@/lib/desk/header-record";
 
 export function DeskHeader({
   title,
@@ -36,6 +26,7 @@ export function DeskHeader({
   isImpersonating,
   utilityChrome = false,
   showBrand = true,
+  recordContext,
 }: {
   title: string;
   eyebrow?: string;
@@ -50,6 +41,7 @@ export function DeskHeader({
   isImpersonating: boolean;
   utilityChrome?: boolean;
   showBrand?: boolean;
+  recordContext?: HeaderRecordContext | null;
 }) {
   const { openSupport } = useSupport();
   return (
@@ -80,25 +72,7 @@ export function DeskHeader({
         <SmartSearch />
       </div>
       <div className="ml-auto flex items-center gap-1.5">
-        {utilityChrome
-          ? null
-          : ICONS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={item.label}
-                  className={cn(
-                    "relative inline-flex size-10 items-center justify-center rounded-md",
-                    item.className,
-                  )}
-                >
-                  <Icon className="size-6" strokeWidth={2.25} />
-                  <span className="sr-only">{item.label}</span>
-                </Link>
-              );
-            })}
+        <HeaderRecordActions record={recordContext} />
         <NotificationBell unread={unread} alerts={alerts} />
         {utilityChrome ? null : (
           <button

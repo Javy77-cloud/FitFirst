@@ -11,6 +11,7 @@ import { SupportProvider } from "@/components/support/support-context";
 import { currentDeskSession, getActor } from "@/lib/auth/session";
 import type { Actor } from "@/lib/auth/rbac";
 import { toHeaderAlert } from "@/lib/desk/header-alerts";
+import type { HeaderRecordContext } from "@/lib/desk/header-record";
 import { listUsers, listAlerts } from "@/lib/db/queries";
 import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
 
@@ -23,6 +24,7 @@ export async function AppShell({
   allowMfaPending = false,
   utilityChrome = false,
   showBrand = true,
+  recordContext,
 }: {
   children: ReactNode;
   title: string;
@@ -34,6 +36,8 @@ export async function AppShell({
   utilityChrome?: boolean;
   /** Worksheet chrome can keep the logo off so the page title stands alone. */
   showBrand?: boolean;
+  /** Prefills the global Call / SMS / Email / Task composers next to profile. */
+  recordContext?: HeaderRecordContext | null;
 }) {
   await releaseDueLeadFollowUps().catch(() => null);
   const [session, actor, userRows, alertRows] = await Promise.all([
@@ -92,6 +96,7 @@ export async function AppShell({
             isImpersonating={session.isImpersonating}
             utilityChrome={utilityChrome}
             showBrand={showBrand}
+            recordContext={recordContext}
           />
           <main className="flex-1 p-5">{children}</main>
         </div>

@@ -39,6 +39,9 @@ describe("lead detail layout + per-line documents", () => {
     expect(panel).toMatch(/aria-label="Add line"/);
     expect(panel).toMatch(/Add a line of interest\./);
     expect(panel).toMatch(/data-ff-add-line-empty/);
+    expect(panel).toMatch(/FileDeleteIcon/);
+    expect(panel).toMatch(/data-ff-line-card-delete/);
+    expect(panel).toMatch(/onRemove/);
     expect(panel).not.toMatch(/Add another line/);
     expect(page).not.toMatch(/<LineSelect/);
     expect(page).not.toMatch(/from "@\/components\/crm\/line-select"/);
@@ -80,20 +83,32 @@ describe("lead detail layout + per-line documents", () => {
     expect(save).toMatch(/redirect\("\/leads\?saved=1"\)/);
   });
 
-  it("puts Call SMS Email Task in the lead header row, not inside the form", () => {
+  it("keeps Call SMS Email Task in the global top bar, not as local lead-form pills", () => {
     const page = source("src/app/leads/[id]/page.tsx");
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
-    const quick = source("src/components/desk/record-quick-actions.tsx");
-    expect(page).toMatch(/justify-between[\s\S]*RecordQuickActions[\s\S]*leadId=\{lead\.id\}/);
+    const header = source("src/components/desk-header.tsx");
+    const shell = source("src/components/app-shell.tsx");
+    const quick = source("src/components/desk/header-record-actions.tsx");
     expect(page).toMatch(/<h1 className="text-xl font-semibold text-navy">\{formatPersonName\(lead\)\}<\/h1>/);
-    expect(desk).not.toMatch(/RecordQuickActions/);
-    expect(desk).not.toMatch(/\bCall\b/);
-    expect(quick).toMatch(/label="Call"/);
-    expect(quick).toMatch(/\bSMS\b/);
-    expect(quick).toMatch(/\bEmail\b/);
-    expect(quick).toMatch(/\bTask\b/);
-    expect(quick).toMatch(/data-ff-record-quick-actions/);
-    expect(quick).toMatch(/contactActionButtonClass/);
+    expect(page).toMatch(/showBrand=\{false\}/);
+    expect(page).toMatch(/title="Leads"/);
+    expect(page).toMatch(/recordContext=\{\{/);
+    expect(page).toMatch(/leadId: lead\.id/);
+    expect(page).not.toMatch(/LeadHeaderActions/);
+    expect(page).not.toMatch(/RecordQuickActions/);
+    expect(page).not.toMatch(/data-ff-lead-header-actions/);
+    expect(desk).not.toMatch(/LeadHeaderActions|RecordQuickActions|\bCall\b/);
+    expect(header).toMatch(/<HeaderRecordActions record=\{recordContext\} \/>/);
+    expect(header).toMatch(/HeaderRecordActions[\s\S]*NotificationBell/);
+    expect(shell).toMatch(/recordContext=\{recordContext\}/);
+    expect(quick).toMatch(/data-ff-header-record-actions/);
+    expect(quick).toMatch(/data-ff-header-action=\{action\.kind\}/);
+    expect(quick).toMatch(/openComposer\(action\.kind\)/);
+    expect(quick).toMatch(/CallComposer|Log call/);
+    expect(quick).toMatch(/SmsComposer|Queue SMS/);
+    expect(quick).toMatch(/EmailComposer|Queue email/);
+    expect(quick).toMatch(/TaskComposer|Save task/);
+    expect(quick).not.toMatch(/disabled=\{!/);
   });
 
   it("groups carried files by line on the deal and links back to the source lead", () => {
