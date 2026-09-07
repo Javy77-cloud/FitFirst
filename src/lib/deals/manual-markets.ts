@@ -37,3 +37,67 @@ export function hasMarketLookupData(
 ): boolean {
   return matches.length > 0 || manualIds.length > 0;
 }
+
+const SHEET_LOOKUP_IGNORE = new Set(["sheet_product"]);
+
+/** Risk facts that mean the agent entered data — not schema defaults like state=FL. */
+export function riskHasMarketFacts(risk: {
+  coverageA?: number | null;
+  yearBuilt?: number | null;
+  roofYear?: number | null;
+  milesToCoast?: number | null;
+  stories?: number | null;
+  replacementCostEstimate?: number | null;
+  squareFeet?: number | null;
+  address1?: string | null;
+  city?: string | null;
+  county?: string | null;
+  zip?: string | null;
+  construction?: string | null;
+  occupancy?: string | null;
+  roofCovering?: string | null;
+  openingProtection?: string | null;
+  protectionClass?: string | null;
+} | null | undefined): boolean {
+  if (!risk) return false;
+  const nums = [
+    risk.coverageA,
+    risk.yearBuilt,
+    risk.roofYear,
+    risk.milesToCoast,
+    risk.stories,
+    risk.replacementCostEstimate,
+    risk.squareFeet,
+  ];
+  if (nums.some((n) => n != null && Number.isFinite(n) && n !== 0)) return true;
+  const texts = [
+    risk.address1,
+    risk.city,
+    risk.county,
+    risk.zip,
+    risk.construction,
+    risk.occupancy,
+    risk.roofCovering,
+    risk.openingProtection,
+    risk.protectionClass,
+  ];
+  return texts.some((value) => Boolean(value?.trim()));
+}
+
+export function sheetHasMarketFacts(
+  values?: Record<string, { value?: string | null } | null> | null,
+): boolean {
+  if (!values) return false;
+  return Object.entries(values).some(([key, cell]) => {
+    if (SHEET_LOOKUP_IGNORE.has(key)) return false;
+    return Boolean(cell?.value?.trim());
+  });
+}
+
+/** True only when the deal has entered risk/sheet facts worth evaluating. */
+export function hasMarketLookupInput(
+  risk: Parameters<typeof riskHasMarketFacts>[0],
+  sheetValues?: Record<string, { value?: string | null } | null> | null,
+): boolean {
+  return riskHasMarketFacts(risk) || sheetHasMarketFacts(sheetValues);
+}

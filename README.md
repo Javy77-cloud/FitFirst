@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7be`)
+## Mac test now (`cursor/live-ff-tip-sep7bg`)
+
+Deal page four fixes, from `cursor/live-ff-tip-sep7az` @ `d225fca`. Separate crew from the toast tip. **Markets** with no carriers and no lookup is blank — no "In appetite", no buckets, no placeholder copy. **Documents** drops the Fit to screen / 100% toggle; the master sheet stays locked at **100%** with no zoom UI. Right rail `data-ff-deal-right-rail` is **exactly 320px**. Deal Details **Contact** and **Address** are a 50/50 split. Do not redesign Quotes, field builder, tags, or sidebar nav. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bg && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh, open a deal with **no** matches and **no** manual carriers → **Markets** is empty (no "In appetite"). Open **Documents** — there is no Fit / 100% toggle; the sheet is 100%. Confirm the right rail is **320px**. On **Deal Details**, Contact and Address are equal width. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BG — Deal page four fixes
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BG1 | Markets empty | Deal → Markets with no carriers and no lookup: completely empty. No "In appetite". `data-ff-markets-empty`. |
+| BG2 | Documents 100% | No Fit to screen / 100% toggle. Master sheet locked at 100%. No zoom scroll UI. |
+| BG3 | Right rail | `data-ff-deal-right-rail` is `lg:w-[320px] max-w-[320px]`. |
+| BG4 | Equal columns | Deal Details Contact + Address are `grid-cols-2` (50/50). |
+| BG5 | Tests | `deal-page-sep7bg`, `manual-markets`, `documents-zoom`, and `deal-details-tab` cover empty Markets, no zoom toggle, rail 320, equal columns. |
+| BG6 | Scope | Quotes, sidebar nav, field builder, Pipeline, and upload box position are untouched. |
+
+## Previous tip (`cursor/live-ff-tip-sep7be`)
 
 Fit-to-screen, Save sheet, builder redo + Safari `u.map` hotfix, from `cursor/live-ff-tip-sep7az` @ `ea60fa3`. **Fit to screen** on Documents → master sheet scales until there is **no scrollbar** (100% is the only mode that scrolls). **Save sheet** writes every field to the deal's quote sheet and reload returns those values; **Confirm & request quotes** persists the live form first, then shops from the saved sheet. Field builder is **one layout for every deal** — no Homeowners / Auto / Flood clip filters — three locked columns (narrow types, two equal canvases), Section in the palette, drop at the pointer, Save applies globally. Deal page `.map` paths normalize missing columns / sections / fieldKeys / options / matches. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `fefe1c7`.
 

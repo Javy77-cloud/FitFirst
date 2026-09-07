@@ -1,5 +1,4 @@
 import { extractExisting } from "@/app/actions/documents";
-import { DocumentsZoom } from "@/components/deal/documents-zoom";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetWorkspace } from "@/components/deal/master-sheet-compare";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
@@ -45,8 +44,7 @@ export function DocumentsPanel({
   const lineGroups = asList(groupDocsByLine(lineDocs));
 
   return (
-    <DocumentsZoom>
-    <div className="flex w-full flex-col space-y-4" data-ff-deal-docs>
+    <div className="flex w-full flex-col space-y-4" data-ff-deal-docs data-ff-docs-zoom="100">
       <div className="w-full min-w-0" data-ff-deal-upload>
         <section className="ff-card w-full p-3">
           <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>
@@ -102,7 +100,6 @@ export function DocumentsPanel({
         ) : null}
       </div>
     </div>
-    </DocumentsZoom>
   );
 }
 

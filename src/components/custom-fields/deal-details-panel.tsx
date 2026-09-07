@@ -40,7 +40,7 @@ export function DealDetailsPanel({
         <input type="hidden" name="line" value={line} />
       </form>
       <div
-        className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 max-[699px]:grid-cols-1"
+        className="grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
         data-ff-deal-details-layout="two-col"
       >
         {asList(safeLayout.columns).map((column) => (

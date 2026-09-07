@@ -47,16 +47,7 @@ export function MarketsPanel({
   const hasData = hasMarketLookupData(matchList, asList(manualIds));
 
   if (!hasData) {
-    return (
-      <div data-ff-deal-markets="" data-ff-markets-empty="">
-        <ManualCarrierAdd
-          dealId={dealId}
-          carriers={carriers}
-          alreadyIds={[]}
-          dealLine={dealLine}
-        />
-      </div>
-    );
+    return <div data-ff-deal-markets="" data-ff-markets-empty="" />;
   }
 
   return (

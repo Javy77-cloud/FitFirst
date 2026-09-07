@@ -27,7 +27,8 @@ describe("Deal Details tab", () => {
   it("shows only Contact essentials, Address, and Edit layout — no Property / Photos / Notes / inline add-field", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
-    expect(panel).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
+    expect(panel).toMatch(/grid-cols-2/);
+    expect(panel).not.toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
     expect(panel).toMatch(/Edit layout/);
     expect(panel).toMatch(/data-ff-open-field-builder/);
     expect(panel).toMatch(/\/settings\/field-builder\?line=/);
@@ -66,7 +67,8 @@ describe("Deal Details tab", () => {
     expect(linkBlock).not.toMatch(/variant: "ghost"/);
     expect(panel).toMatch(/href=\{`\/settings\/field-builder\?line=\$\{encodeURIComponent\(line\)\}`\}/);
     expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
-    expect(panel).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
+    expect(panel).toMatch(/grid-cols-2/);
+    expect(panel).not.toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
   });
 
   it("opens the field builder on its own settings page, not inline on the deal", () => {
