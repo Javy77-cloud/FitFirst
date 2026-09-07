@@ -2,7 +2,8 @@ import { LINES, LOB_TO_SHOP_LINE, type ShopLine } from "@/lib/domain";
 import { namedInsuredFromLead } from "@/lib/crm/lead-fields";
 import { sourceLabel } from "@/lib/crm/sources";
 import { fillSheetFromLead, leadOntoRisk, type LeadCopyFields } from "@/lib/desk/copy-once";
-import { filterLeadForCarry } from "@/lib/custom-fields/transfer";
+import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
+import { dealValuesFromLead, filterLeadForCarry } from "@/lib/custom-fields/transfer";
 import { formatDealTitle } from "@/lib/deals/deal-title";
 
 export type ConvertLead = LeadCopyFields & {
@@ -72,5 +73,6 @@ export function convertFieldCopy(
     sheetValues: fillSheetFromLead(filtered),
     sheetLine: (line === "AUTO" ? "auto" : shopLines[0] ?? "home") as ShopLine,
     carried: filtered,
+    fieldValues: dealValuesFromLead(filtered, CORE_FIELDS, carryFields),
   };
 }

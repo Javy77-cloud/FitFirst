@@ -99,3 +99,45 @@ export function systemValueFromLead(
   const value = (filtered as Record<string, unknown>)[systemKey];
   return value == null ? "" : String(value);
 }
+
+/** Lead keys that land on matching deal field keys (catalog + native). */
+export const LEAD_TO_DEAL_FIELD_KEYS: Array<{ key: string; systemKey: string }> = [
+  { key: "first_name", systemKey: "firstName" },
+  { key: "middle_name", systemKey: "middleName" },
+  { key: "last_name", systemKey: "lastName" },
+  { key: "email", systemKey: "email" },
+  { key: "phone", systemKey: "phone" },
+  { key: "date_of_birth", systemKey: "dateOfBirth" },
+  { key: "mailing_address", systemKey: "mailingAddress" },
+  { key: "city", systemKey: "city" },
+  { key: "state", systemKey: "state" },
+  { key: "zip", systemKey: "zip" },
+  { key: "notes", systemKey: "notes" },
+  { key: "named_insured", systemKey: "primaryNamedInsured" },
+  { key: "source", systemKey: "source" },
+  { key: "preferred_language", systemKey: "preferredLanguage" },
+];
+
+export function dealValuesFromLead(
+  lead: ConvertLead,
+  fields: ReadonlyArray<{ key: string; systemKey?: string | null }>,
+  carry?: readonly string[] | null,
+): Record<string, string> {
+  const filtered = filterLeadForCarry(lead, carry);
+  const values: Record<string, string> = {};
+
+  for (const field of fields) {
+    const systemKey =
+      field.systemKey || LEAD_TO_DEAL_FIELD_KEYS.find((row) => row.key === field.key)?.systemKey;
+    const value = systemValueFromLead(filtered, systemKey, carry);
+    if (value) values[field.key] = value;
+  }
+
+  for (const row of LEAD_TO_DEAL_FIELD_KEYS) {
+    if (values[row.key]) continue;
+    const value = systemValueFromLead(filtered, row.systemKey, carry);
+    if (value) values[row.key] = value;
+  }
+
+  return values;
+}

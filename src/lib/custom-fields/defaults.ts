@@ -5,7 +5,7 @@ function section(id: string, label: string, fieldKeys: string[]): LayoutSection 
   return { id, label, fieldKeys };
 }
 
-const CORE_FIELDS: CustomFieldDef[] = [
+export const CORE_FIELDS: CustomFieldDef[] = [
   { key: "first_name", label: "First name", type: "single_line", systemKey: "firstName" },
   { key: "middle_name", label: "Middle name", type: "single_line", systemKey: "middleName" },
   { key: "last_name", label: "Last name", type: "single_line", systemKey: "lastName" },
@@ -18,6 +18,7 @@ const CORE_FIELDS: CustomFieldDef[] = [
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
   { key: "named_insured", label: "Named insured", type: "single_line", systemKey: "primaryNamedInsured" },
+  { key: "preferred_language", label: "Preferred language", type: "single_line", systemKey: "preferredLanguage" },
 ];
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {

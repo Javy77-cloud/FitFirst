@@ -66,27 +66,31 @@ describe("list column visibility", () => {
     expect(defaultVisibleIds(cols)).toEqual(["pick", "title"]);
   });
 
-  it("keeps Deal title and e-sign locked and hides optional deal columns by default", () => {
+  it("keeps Deal title locked and builds columns from deal fields, not E-sign or Comms", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")).toBeUndefined();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")).toBeUndefined();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "comms")).toBeUndefined();
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "stage", "esign", "comms", "value"]),
+      expect.arrayContaining(["pick", "title", "stage", "value", "phone"]),
     );
     const dealsVisible = defaultVisibleIds(DEALS_LIST_COLUMNS);
     expect(dealsVisible).not.toContain("contact");
+    expect(dealsVisible).not.toContain("esign");
+    expect(dealsVisible).not.toContain("comms");
     expect(dealsVisible.indexOf("stage")).toBe(dealsVisible.indexOf("title") + 1);
-    expect(dealsVisible).not.toContain("phone");
-    expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("phone");
+    expect(dealsVisible).toContain("phone");
+    expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("phone");
+    expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("notes");
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")?.label).toBe("Value");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("city");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("premium");
     expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "actions")?.locked).toBe(true);
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "city", "value", "premium", "esign"]),
+      expect.arrayContaining(["pick", "title", "stage", "phone", "value"]),
     );
   });
 

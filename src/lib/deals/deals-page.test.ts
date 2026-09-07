@@ -212,39 +212,45 @@ describe("Deals page sep7h", () => {
     expect(comms).not.toMatch(/label="Text"/);
   });
 
-  it("removes the Contact column and the phone column", () => {
+  it("removes the Contact column and keeps Phone as a deal field", () => {
     const keys = (TABLE_COLUMNS.deals ?? []).map((column) => column.key);
     expect(keys[0]).toBe("title");
     expect(keys[1]).toBe("stage");
     expect(keys).not.toContain("contact");
-    expect(keys).not.toContain("phone");
+    expect(keys).toContain("phone");
+    expect(keys).not.toContain("esign");
+    expect(keys).not.toContain("comms");
     const visible = defaultVisibleIds(DEALS_LIST_COLUMNS);
     expect(visible[0]).toBe("pick");
     expect(visible[1]).toBe("title");
     expect(visible[2]).toBe("stage");
     expect(visible).not.toContain("contact");
-    expect(visible).not.toContain("phone");
-    expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("phone");
+    expect(visible).toContain("phone");
+    expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("contact");
-    expect(normalizeDealsVisibleColumns(["pick", "title", "stage", "contact", "phone"])).toEqual([
+    expect(normalizeDealsVisibleColumns(["pick", "title", "stage", "contact", "phone", "esign"])).toEqual([
       "pick",
       "title",
       "stage",
+      "phone",
     ]);
   });
 
   it("keeps filters, pagination, Value, hydration, and owner transfer", () => {
     const table = source("src/components/deals/deals-table.tsx");
     expect(table).toMatch(/showMacrosLink=\{false\}/);
-    expect(table).toMatch(/value: formatMoney\(value\)/);
+    expect(table).toMatch(/dealNativeColumnText\("value"/);
     expect(table).toMatch(/sheetAttr/);
     expect(table).toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
-    expect(table).toMatch(/comms: ""/);
+    expect(table).toMatch(/DealStageSelect/);
+    expect(table).toMatch(/dealRecordPhone/);
+    expect(table).not.toMatch(/comms: ""/);
+    expect(table).not.toMatch(/formatInDeskEsignList/);
     expect(source("src/components/lists/mass-update.tsx")).toMatch(/Mass update/);
     expect(source("src/components/developer-hub/list-selection.tsx")).toMatch(/list-select-matching/);
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "value", label: "Value"/);
-    expect(source("src/lib/desk/columns.ts")).toMatch(/key: "nextAction", label: "Next"/);
+    expect(source("src/lib/desk/columns.ts")).not.toMatch(/key: "nextAction", label: "Next"/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ListPagination/);
     expect(source("src/lib/deals/transfer.ts")).toMatch(/Transfer this deal to \$\{target\}/);
   });

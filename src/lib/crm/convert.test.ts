@@ -54,6 +54,13 @@ describe("lead → deal convert copy", () => {
     expect(copy.notes).toContain("Source: Dec drop");
     expect(copy.notes).toContain("Language: es");
     expect(copy.notes).toContain("elena.ruiz@example.com");
+    expect(copy.fieldValues.phone).toBe("(321) 555-0188");
+    expect(copy.fieldValues.email).toBe("elena.ruiz@example.com");
+    expect(copy.fieldValues.mailing_address).toBe("412 Harbor Isle Dr");
+    expect(copy.fieldValues.city).toBe("Melbourne");
+    expect(copy.fieldValues.source).toBe("dec_drop");
+    expect(copy.fieldValues.preferred_language).toBe("es");
+    expect(copy.fieldValues.notes).toBe("Melbourne HO drop");
   });
 
   it("keeps Ana-style notes when the lead already has them", () => {

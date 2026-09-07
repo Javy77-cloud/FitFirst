@@ -31,9 +31,11 @@ describe("table column pickers", () => {
     const deals = new Set((TABLE_COLUMNS.deals ?? []).map((col) => col.key));
     expect(deals.has("shopLines")).toBe(true);
     expect(deals.has("subType")).toBe(true);
-    expect(deals.has("esign")).toBe(true);
+    expect(deals.has("phone")).toBe(true);
+    expect(deals.has("notes")).toBe(true);
+    expect(deals.has("esign")).toBe(false);
+    expect(deals.has("comms")).toBe(false);
     expect(deals.has("contact")).toBe(false);
-    expect(deals.has("phone")).toBe(false);
     expect((TABLE_COLUMNS.deals ?? []).map((col) => col.key).slice(0, 2)).toEqual(["title", "stage"]);
     const accounts = new Set((TABLE_COLUMNS.accounts ?? []).map((col) => col.key));
     expect(accounts.has("email")).toBe(true);
@@ -57,9 +59,10 @@ describe("table column pickers", () => {
     expect((TABLE_COLUMNS["eo-trail"] ?? []).map((col) => col.key)).toContain("ids");
   });
 
-  it("keeps the e-sign list column on even if older column prefs omit it", () => {
-    expect(parseColumns("deals", "title,stage,line")).toContain("esign");
-    expect(parseColumns("deals", "title,stage,line,phone")).toEqual(["title", "stage", "line", "esign"]);
+  it("drops dead deal columns and keeps phone from the deal field list", () => {
+    expect(parseColumns("deals", "title,stage,line")).toEqual(["title", "stage", "line"]);
+    expect(parseColumns("deals", "title,stage,line,phone")).toEqual(["title", "stage", "line", "phone"]);
+    expect(parseColumns("deals", "title,stage,esign,comms")).toEqual(["title", "stage"]);
     expect(parseColumns("policies", "number,status")).toContain("esign");
   });
 });

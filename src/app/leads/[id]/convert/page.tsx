@@ -45,15 +45,14 @@ export default async function ConvertLeadPage({
     <AppShell title="Convert lead" utilityChrome showBrand={false}>
       <h1 className="text-xl font-semibold text-navy">Carry fields to the deal</h1>
       <p className="mt-1 mb-4 text-sm text-muted-foreground">
-        {formatPersonName(lead)} — pick which lead fields copy onto the new deal. Unchecked fields
-        stay on the lead only.
+        {formatPersonName(lead)} — every lead field copies onto the deal automatically. Phone,
+        email, source, address, notes, and matching custom fields land on the new shop.
       </p>
       <form action={createDealFromLead} className="max-w-xl space-y-4" data-ff-lead-carry>
         <input type="hidden" name="leadId" value={lead.id} />
         <input type="hidden" name="state" value={lead.state ?? "FL"} />
         <input type="hidden" name="line" value={query.line || lead.insuranceTypeDesired || "HO"} />
         <input type="hidden" name="shopLines" value={query.shopLines ?? ""} />
-        <input type="hidden" name="carrySelective" value="1" />
         <ul className="space-y-2">
           {LEAD_CARRY_FIELDS.map((field) => (
             <li key={field.key} className="flex items-start gap-3 rounded-md border border-border px-3 py-2">
@@ -62,6 +61,7 @@ export default async function ConvertLeadPage({
                 name="carryField"
                 value={field.key}
                 defaultChecked
+                disabled
                 className="mt-1"
                 id={`carry-${field.key}`}
               />
@@ -76,7 +76,7 @@ export default async function ConvertLeadPage({
         </ul>
         <div className="flex justify-end gap-3">
           <Button type="submit" data-ff-convert-deal>
-            Convert selected
+            Convert lead
           </Button>
         </div>
       </form>

@@ -1,4 +1,7 @@
+import { dealsColumnsFromFields } from "@/lib/deals/deal-columns";
 import { normalizeDealsVisibleColumns, TABLE_COLUMNS, type ColumnDef } from "@/lib/desk/columns";
+import type { CustomFieldDef } from "@/lib/custom-fields/types";
+import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { PIPELINE_FIELDS } from "@/lib/wire/pipeline";
 
 export type ListColumn = {
@@ -39,7 +42,7 @@ export function allColumnIds(columns: ListColumn[]): string[] {
 function isDealsListColumns(columns: ListColumn[]): boolean {
   return (
     columns.some((column) => column.id === "title" && column.label === "Deal") &&
-    columns.some((column) => column.id === "comms")
+    columns.some((column) => column.id === "stage")
   );
 }
 
@@ -286,10 +289,14 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "tags", label: "Tags" },
 ];
 
-export const DEALS_LIST_COLUMNS: ListColumn[] = fromDeskColumns(TABLE_COLUMNS.deals ?? [], {
-  pick: true,
-  lock: ["title", "esign"],
-}).map((column) => (column.id === "title" ? { ...column, liveSearch: true } : column));
+export function dealsListColumnsFromFields(fields: readonly CustomFieldDef[]): ListColumn[] {
+  return fromDeskColumns(dealsColumnsFromFields(fields), {
+    pick: true,
+    lock: ["title"],
+  }).map((column) => (column.id === "title" ? { ...column, liveSearch: true } : column));
+}
+
+export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(CORE_FIELDS);
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true },
