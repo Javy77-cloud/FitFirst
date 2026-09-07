@@ -4,7 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7v`)
+## Mac test now (`cursor/live-ff-tip-sep7x`)
+
+Deal detail only, on `cursor/live-ff-tip-sep7v` @ `9dede45`. Four fixes on `/deals/[id]`: drop in-desk signature, pin Markets buckets under the tab bar, add a Line of business selector that swaps the master sheet, leave Quotes empty until Markets returns rows. No Pipeline list, sidebar, schema, or other-page changes. No seed. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7x && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Open **Ana Dib** on Deal detail. Do not bind (unbound, Cov A **$321,000**).
+
+### X — Deal detail (sep7x)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| X1 | No e-sign | Documents has **no** “In-desk signature” block. Upload + master sheet stay. |
+| X2 | Markets flush | **In appetite / Stretch / Skip** and **Approve & request quotes** sit **directly under** the tab bar. No empty gap above them. Manual add still lists only carriers that write this line. |
+| X3 | Line of business | Documents opens with a **Line of business.** dropdown (Homeowners, Renters, Landlord, Auto, RV, Motorcycle, Flood, GL, Workers' Comp, Commercial Auto, plus niche). Default **Homeowners**. Changing it swaps the master sheet. One deal, one product. Uses existing deal LOB / quoting line / `policySubType` / sheet product — no schema. |
+| X4 | Quotes empty | Quotes is empty until Markets sends quotes back. No results chrome, bind gate, or attempt log while empty. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7v`)
 
 Pipeline layout polish only, on top of consolidator `cursor/live-ff-tip-sep7u` @ `fb589fd`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Activity strip sits **24px** in from the page edge, **overflow: hidden**, **4px** internal pad. Chips are **36px** tall with gradient, thin matching border, soft shadow, and **2px** hover lift. Attach is a **~120px** single row (search, doc type, Choose file, Store on this deal) with the same chrome as the activity strip. No `+ Add file`. No table / filter / sidebar / Deal detail / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
 

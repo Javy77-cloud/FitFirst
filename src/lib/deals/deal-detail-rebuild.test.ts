@@ -82,12 +82,13 @@ describe("deal detail final rebuild", () => {
     expect(carriersForDealLine(options, "HO").map((row) => row.id)).toEqual(["ho"]);
     expect(carriersForDealLine(options, "FLOOD").map((row) => row.id)).toEqual(["flood"]);
     const markets = source("src/components/deal/markets-panel.tsx");
-    expect(markets).toMatch(/In appetite|marketBucketLabel\("appetite"\)/);
-    expect(markets).toMatch(/Approve & request quotes/);
-    expect(markets).toMatch(/PaidApiWall/);
-    expect(markets).toMatch(/dealLine/);
-    expect(markets.indexOf("Approve & request quotes")).toBeLessThan(markets.indexOf("MarketTable"));
-    expect(markets.indexOf("MarketTable")).toBeLessThan(markets.indexOf("ManualCarrierAdd"));
+    const body = markets.slice(markets.indexOf("return ("));
+    expect(body).toMatch(/In appetite|marketBucketLabel\("appetite"\)/);
+    expect(body).toMatch(/Approve & request quotes/);
+    expect(body).toMatch(/PaidApiWall/);
+    expect(body).toMatch(/dealLine/);
+    expect(body.indexOf("Approve & request quotes")).toBeLessThan(body.indexOf("<MarketTable"));
+    expect(body.indexOf("<MarketTable")).toBeLessThan(body.indexOf("<ManualCarrierAdd"));
   });
 
   it("removes in-desk signature from Documents", () => {

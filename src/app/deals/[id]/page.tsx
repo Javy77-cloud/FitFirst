@@ -209,7 +209,7 @@ export default async function DealPage({
           defaultValue="documents"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
-          panelClassName={activeTab === "markets" ? "mt-2" : "mt-4"}
+          panelClassName={activeTab === "markets" ? "mt-1" : "mt-4"}
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,
             label: AGENT_DEAL_TAB_LABELS[id],
