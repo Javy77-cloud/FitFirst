@@ -53,7 +53,8 @@ describe("property enrichment stub", () => {
     expect(result.facts.some((fact) => fact.fieldKey === "roof_covering")).toBe(true);
     expect(result.facts.some((fact) => fact.fieldKey === "coverage_a")).toBe(false);
     expect(result.facts.some((fact) => fact.kind === "zestimate")).toBe(false);
-    expect(result.message).not.toMatch(/zillow|zestimate|bcpao|scrape/i);
+    expect(result.message).toMatch(/No Zillow/);
+    expect(result.message).not.toMatch(/zestimate|bcpao/i);
 
     const applied = applyPublicToSheet("home", emptySheetValues("home"), result.facts);
     expect(applied.values.year_built.status).toBe("check");
