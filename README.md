@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7az`)
 
-WIP consolidator — README finalized after AX + AV.
+WIP consolidator — README finalized after AV.
 
 ```bash
 cd ~/FitFirst
@@ -18,6 +18,16 @@ npm run dev -- --port 43147
 ```
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail (Deal Details tab + 300px rail). Also open a shopping deal (not Ana): drop a wind mit / 4-point / dec and confirm the street for enrichment stubs. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AX — Documents upload position
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AX1 | Cold open | First click **Documents**: upload box is **top of the tab, full width**. Not a left column. |
+| AX2 | Refresh | Hard refresh on Documents: **same** top / full-width position. |
+| AX3 | Leave and back | Open Markets (or another tab) then Documents again: **same** position. |
+| AX4 | No jump | Upload box does **not** move after first paint. No left→top or top→left shift. |
+| AX5 | Structure | `data-ff-deal-upload` is `w-full` first child of `data-ff-deal-docs` (`flex w-full flex-col`). Master sheet is `data-ff-deal-docs-sheet` **below**. No `data-ff-deal-upload-split`. No `lg:grid-cols-`. |
 
 ### AW — Deal Details strip-down
 

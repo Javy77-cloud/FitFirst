@@ -44,66 +44,64 @@ export function DocumentsPanel({
   const lineGroups = groupDocsByLine(lineDocs);
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]" data-ff-deal-upload-split>
-        <div className="min-w-0 space-y-3" data-ff-deal-upload>
-          <section className="ff-card p-3">
-            <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>
-            <p className="mb-2 text-helper text-muted-foreground">
-              Type, file, create. Source files stay on this deal.
-            </p>
-            {lineGroups.length > 0 ? (
-              <div className="mb-2 space-y-2" data-ff-deal-docs-by-line>
-                {lineGroups.map((group) => (
-                  <div key={group.line}>
-                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">
-                      {group.label}
-                    </p>
-                    <ul className="mt-1 space-y-1.5">
-                      {group.docs.map((doc) => (
-                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} />
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {otherSourceDocs.length > 0 ? (
-              <ul className="mb-2 space-y-1.5">
-                {otherSourceDocs.map((doc) => (
-                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} showType />
-                ))}
-              </ul>
-            ) : null}
-
-            <SourceDocsUpload dealId={dealId} riskId={riskId} />
-          </section>
-        </div>
-
-        <div className="min-w-0 space-y-3">
-          <MasterSheetCompare
-            dealId={dealId}
-            line={sheetLine}
-            fields={fields}
-            values={sheetValues}
-            product={product}
-            sourceDocCount={sourceDocs.length}
-          />
-          <SheetApproveGate
-            dealId={dealId}
-            line={sheetLine}
-            formLabel={formLabel}
-            unlocked={unlocked}
-            approvedBy={approvedBy}
-          />
-          {health ? (
-            <p className="text-helper text-muted-foreground">
-              {health.confirmed} confirmed · {health.check} needs review · {health.missing} missing.
-              Confirm the sheet before quotes.
-            </p>
+    <div className="flex w-full flex-col space-y-4" data-ff-deal-docs>
+      <div className="w-full min-w-0" data-ff-deal-upload>
+        <section className="ff-card w-full p-3">
+          <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>
+          <p className="mb-2 text-helper text-muted-foreground">
+            Type, file, create. Source files stay on this deal.
+          </p>
+          {lineGroups.length > 0 ? (
+            <div className="mb-2 space-y-2" data-ff-deal-docs-by-line>
+              {lineGroups.map((group) => (
+                <div key={group.line}>
+                  <p className="text-[11px] font-semibold uppercase text-muted-foreground">
+                    {group.label}
+                  </p>
+                  <ul className="mt-1 space-y-1.5">
+                    {group.docs.map((doc) => (
+                      <SourceFileRow key={doc.id} doc={doc} dealId={dealId} />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           ) : null}
-        </div>
+
+          {otherSourceDocs.length > 0 ? (
+            <ul className="mb-2 space-y-1.5">
+              {otherSourceDocs.map((doc) => (
+                <SourceFileRow key={doc.id} doc={doc} dealId={dealId} showType />
+              ))}
+            </ul>
+          ) : null}
+
+          <SourceDocsUpload dealId={dealId} riskId={riskId} />
+        </section>
+      </div>
+
+      <div className="w-full min-w-0 space-y-3" data-ff-deal-docs-sheet>
+        <MasterSheetCompare
+          dealId={dealId}
+          line={sheetLine}
+          fields={fields}
+          values={sheetValues}
+          product={product}
+          sourceDocCount={sourceDocs.length}
+        />
+        <SheetApproveGate
+          dealId={dealId}
+          line={sheetLine}
+          formLabel={formLabel}
+          unlocked={unlocked}
+          approvedBy={approvedBy}
+        />
+        {health ? (
+          <p className="text-helper text-muted-foreground">
+            {health.confirmed} confirmed · {health.check} needs review · {health.missing} missing.
+            Confirm the sheet before quotes.
+          </p>
+        ) : null}
       </div>
     </div>
   );

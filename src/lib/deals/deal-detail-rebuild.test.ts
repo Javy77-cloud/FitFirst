@@ -77,15 +77,30 @@ describe("deal detail final rebuild", () => {
     expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<MarketsPanel"));
     expect(docs).not.toMatch(/DealLineSelector/);
-    expect(docs).toMatch(/data-ff-deal-upload-split/);
+    expect(docs).toMatch(/data-ff-deal-upload/);
+    expect(docs).not.toMatch(/data-ff-deal-upload-split/);
+    expect(docs).not.toMatch(/lg:grid-cols-\[minmax\(0,18rem\)/);
+    expect(docs).not.toMatch(/grid-cols-/);
   });
 
-  it("puts an editable master sheet beside a compact upload on Documents", () => {
+  it("locks Documents upload full-width on top with the master sheet below", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     const docs = source("src/components/deal/documents-panel.tsx");
     const upload = source("src/components/deal/source-docs-upload.tsx");
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
     expect(page).toMatch(/DealLineSelector/);
+    expect(docs).toMatch(/data-ff-deal-docs/);
+    expect(docs).toMatch(/flex w-full flex-col/);
+    expect(docs).toMatch(/data-ff-deal-upload/);
+    expect(docs).toMatch(/data-ff-deal-docs-sheet/);
+    expect(docs).toMatch(/className="w-full min-w-0" data-ff-deal-upload/);
+    expect(docs).toMatch(/ff-card w-full/);
+    expect(docs).not.toMatch(/data-ff-deal-upload-split/);
+    expect(docs).not.toMatch(/lg:grid-cols-/);
+    expect(docs).not.toMatch(/grid-cols-/);
+    expect(docs).not.toMatch(/18rem/);
+    expect(docs.indexOf("data-ff-deal-upload")).toBeLessThan(docs.indexOf("data-ff-deal-docs-sheet"));
+    expect(docs.indexOf("data-ff-deal-upload")).toBeLessThan(docs.indexOf("<MasterSheetCompare"));
     expect(docs).toMatch(/SourceDocsUpload/);
     expect(docs).toMatch(/MasterSheetCompare/);
     expect(docs).toMatch(/SheetApproveGate/);
