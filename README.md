@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7aj`)
+## Mac test now (`cursor/live-ff-tip-sep7al`)
 
-From `cursor/live-ff-tip-sep7ai` @ `0cba5ac` / tip SHA `9d56da4`. MICRO only: `.deal-today-chip-count` numbers are a **shade darker** (more navy — `24%` chip-fg into `#101c34`). Font-size stays **28px**, weight **800**. Chip size, placement, labels, Attach, Deal detail, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `dcc74b3`.
+From `cursor/live-ff-tip-sep7aj` @ `2c4d603` / tip SHA `dcc74b3`. MICRO only: `.deal-today-chip-count` numbers are the **same color as the chip/square** (`var(--chip-fg, currentColor)`). Not mixed toward `#101c34`. Not navy. Not black. Font-size stays **28px**, weight **800**. Chip size, placement, labels, Attach, Deal detail, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `e12eac9`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7aj && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7al && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
@@ -27,7 +27,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
 | AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
 | AI1 | Count | Chip **number only** is **28px** / **800**. |
-| AJ1 | Count color | Chip **number only** is a **shade darker** (more navy toward `#101c34`). Cards, labels, Attach, and band stay sep7ai. |
+| AL1 | Count color | Chip **number only** is the **same color as the chip/square** (`--chip-fg`). Not navy, not black, not mixed toward `#101c34`. |
 
 ### AG — Deal detail
 
