@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7an`)
 
-Consolidator: Pipeline from `cursor/live-ff-tip-sep7am` @ `4cb5a00` / tip SHA `8ac20e6` (`.deal-today-chip-count` **24px** / **500**, soft chip-fg mix into white) plus Deal detail from `cursor/live-ff-tip-sep7ak` @ `042632b` / tip SHA `b5cf1a3` (upload trash on every row + Add another, tabs flush under deal header). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7am. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
+Consolidator: Pipeline from `cursor/live-ff-tip-sep7am` @ `4cb5a00` / tip SHA `8ac20e6` (`.deal-today-chip-count` **24px** / **500**, soft chip-fg mix into white) plus Deal detail from `cursor/live-ff-tip-sep7ak` @ `042632b` / tip SHA `b5cf1a3` (upload trash on every row + Add another, tabs flush under deal header). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7am. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `f6603bf`.
 
 ```bash
 cd ~/FitFirst
