@@ -36,15 +36,20 @@ describe("Deals page sep7h", () => {
 
   it("shrinks attach-documents and adds a transparent centered Today's Activity strip", () => {
     const page = source("src/app/deals/page.tsx");
-    expect(page).toMatch(/mt-6 overflow-visible/);
-    expect(page).not.toMatch(/lg:grid-cols-3/);
+    expect(page).toMatch(/deal-upload-activity/);
+    expect(page).toMatch(/lg:grid-cols-12/);
+    expect(page).toMatch(/gap-x-10/);
+    expect(page).toMatch(/lg:col-span-7/);
+    expect(page).toMatch(/lg:col-span-5/);
+    expect(page.indexOf("<TodayActivityStrip")).toBeLessThan(page.indexOf("<DealDocsUpload"));
     expect(page).toMatch(/<TodayActivityStrip/);
     expect(page).toMatch(/<DealDocsUpload/);
     const upload = source("src/components/deal/deal-docs-upload.tsx");
     expect(upload).toMatch(/Attach documents to a deal/);
     expect(upload).not.toMatch(/Upload documents onto a deal/);
-    expect(upload).toMatch(/flex flex-wrap items-center gap-2/);
+    expect(upload).toMatch(/space-y-2\.5 p-3/);
     expect(upload).not.toMatch(/h-full space-y-3 p-4/);
+    expect(upload).not.toMatch(/sr-only/);
     expect(upload).toMatch(/uploadDealCtaLabel\("select"\)/);
     expect(upload).toMatch(/uploadDealCtaLabel\("create"\)/);
     expect(upload).toMatch(/deal-select-existing/);
@@ -55,11 +60,11 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/todayActivityCalendarHref/);
     expect(strip).toMatch(/deal-today-calendar/);
     expect(strip).toMatch(/bg-transparent/);
-    expect(strip).toMatch(/items-center/);
-    expect(strip).toMatch(/justify-center/);
     expect(strip).toMatch(/hover:-translate-y/);
     expect(strip).toMatch(/linear-gradient/);
-    expect(strip).toMatch(/text-\[18px\]/);
+    expect(strip).toMatch(/text-\[20px\]/);
+    expect(strip).toMatch(/px-4 py-2\.5/);
+    expect(strip).toMatch(/mt-5/);
     expect(strip).not.toMatch(/border-black/);
     expect(strip).not.toMatch(/bg-card/);
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);

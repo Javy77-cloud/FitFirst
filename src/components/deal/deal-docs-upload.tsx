@@ -7,6 +7,7 @@ import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { suggestParties, type PartyHit, type PartyRecord } from "@/lib/crm/party-typeahead";
 import { matchDealLookup, suggestDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
 import { uploadDealCta, uploadDealCtaLabel } from "@/lib/deals/pipeline-desk";
@@ -76,85 +77,30 @@ export function DealDocsUpload({
   const primary = rows[0]!;
 
   return (
-    <form action={uploadDealDocuments} className="ff-card px-3 py-2" data-testid="deal-docs-upload">
-      <h2 className="sr-only">Attach documents to a deal</h2>
-      <div className="flex flex-wrap items-center gap-2">
+    <form action={uploadDealDocuments} className="ff-card space-y-2.5 p-3" data-testid="deal-docs-upload">
+      <div>
+        <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">Search this page, pick a deal, then attach files.</p>
+      </div>
+
+      <div>
+        <Label htmlFor="dealName" className="text-xs">
+          Search deals
+        </Label>
         <Input
           id="dealName"
           name="dealName"
           required
           value={dealName}
           onChange={(event) => onNameChange(event.target.value)}
-          className="h-8 min-w-[12rem] flex-1"
-          placeholder="Search deal, contact, or business"
+          className="mt-1 h-8"
+          placeholder="Type a deal, contact, or business name"
           autoComplete="off"
           aria-label="Search deals"
           data-testid="deal-docs-name"
         />
         <input type="hidden" name="dealId" value={match?.id ?? dealId} />
         <input type="hidden" name="rowCount" value={rows.length} />
-        <select
-          name="docType_0"
-          value={primary.docType}
-          onChange={(event) =>
-            setRows((current) =>
-              current.map((item) => (item.id === primary.id ? { ...item, docType: event.target.value } : item)),
-            )
-          }
-          aria-label="Doc type"
-          className="h-8 w-[10rem] rounded-md border border-input bg-card px-2 text-sm"
-        >
-          {DEAL_UPLOAD_DOC_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {DOC_TYPE_LABELS[type]}
-            </option>
-          ))}
-        </select>
-        <ChooseFileButton
-          name="files_0"
-          onFile={(file) =>
-            setRows((current) =>
-              current.map((item) => (item.id === primary.id ? { ...item, fileName: file?.name ?? "" } : item)),
-            )
-          }
-        />
-        {primary.fileName ? (
-          <FileDeleteIcon
-            type="button"
-            label={`Remove ${primary.fileName}`}
-            onClick={() =>
-              setRows((current) => {
-                const next = current.map((item) =>
-                  item.id === primary.id ? { ...item, fileName: "" } : item,
-                );
-                return next;
-              })
-            }
-          />
-        ) : null}
-        {cta.kind === "select" && cta.match ? (
-          <Button
-            type="button"
-            size="sm"
-            data-testid="deal-select-existing"
-            onClick={() => pickDeal(cta.match!)}
-          >
-            {uploadDealCtaLabel("select")}
-          </Button>
-        ) : null}
-        {cta.kind === "create" ? (
-          <Button
-            type="submit"
-            size="sm"
-            formAction={createDealFromUploadSearch}
-            data-testid="deal-create-from-search"
-          >
-            {uploadDealCtaLabel("create")}
-          </Button>
-        ) : null}
-        <Button type="submit" size="sm" disabled={!match}>
-          Store on this deal
-        </Button>
       </div>
 
       {match ? (
@@ -229,6 +175,71 @@ export function DealDocsUpload({
           ))}
         </ul>
       ) : null}
+
+      <div className="flex flex-wrap items-end gap-2">
+        <div>
+          <Label className="text-xs">Doc type</Label>
+          <select
+            name="docType_0"
+            value={primary.docType}
+            onChange={(event) =>
+              setRows((current) =>
+                current.map((item) => (item.id === primary.id ? { ...item, docType: event.target.value } : item)),
+              )
+            }
+            aria-label="Doc type"
+            className="mt-1 h-8 w-[10rem] rounded-md border border-input bg-card px-2 text-sm"
+          >
+            {DEAL_UPLOAD_DOC_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {DOC_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <ChooseFileButton
+          name="files_0"
+          onFile={(file) =>
+            setRows((current) =>
+              current.map((item) => (item.id === primary.id ? { ...item, fileName: file?.name ?? "" } : item)),
+            )
+          }
+        />
+        {primary.fileName ? (
+          <FileDeleteIcon
+            type="button"
+            label={`Remove ${primary.fileName}`}
+            onClick={() =>
+              setRows((current) =>
+                current.map((item) => (item.id === primary.id ? { ...item, fileName: "" } : item)),
+              )
+            }
+          />
+        ) : null}
+        {cta.kind === "select" && cta.match ? (
+          <Button
+            type="button"
+            size="sm"
+            data-testid="deal-select-existing"
+            onClick={() => pickDeal(cta.match!)}
+          >
+            {uploadDealCtaLabel("select")}
+          </Button>
+        ) : null}
+        {cta.kind === "create" ? (
+          <Button
+            type="submit"
+            size="sm"
+            formAction={createDealFromUploadSearch}
+            data-testid="deal-create-from-search"
+          >
+            {uploadDealCtaLabel("create")}
+          </Button>
+        ) : null}
+        <Button type="submit" size="sm" disabled={!match}>
+          Store on this deal
+        </Button>
+      </div>
 
       {rows.slice(1).map((row, extraIndex) => {
         const index = extraIndex + 1;

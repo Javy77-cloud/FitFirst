@@ -169,10 +169,15 @@ export default async function DealsPage({
 
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
-      <div className="mb-6 overflow-visible">
-        <DealDocsUpload deals={lookup} parties={parties} />
-        <div className="mt-6 overflow-visible">
+      <div
+        className="mb-6 grid grid-cols-1 items-start gap-x-10 gap-y-8 overflow-visible lg:grid-cols-12"
+        data-testid="deal-upload-activity"
+      >
+        <div className="min-w-0 overflow-visible lg:col-span-7">
           <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
+        </div>
+        <div className="min-w-0 lg:col-span-5">
+          <DealDocsUpload deals={lookup} parties={parties} />
         </div>
       </div>
 
