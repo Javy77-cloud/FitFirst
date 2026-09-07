@@ -1,4 +1,4 @@
-import { TABLE_COLUMNS, type ColumnDef } from "@/lib/desk/columns";
+import { normalizeDealsVisibleColumns, TABLE_COLUMNS, type ColumnDef } from "@/lib/desk/columns";
 import { PIPELINE_FIELDS } from "@/lib/wire/pipeline";
 
 export type ListColumn = {
@@ -34,10 +34,19 @@ export function allColumnIds(columns: ListColumn[]): string[] {
   return columns.map((column) => column.id);
 }
 
+function isDealsListColumns(columns: ListColumn[]): boolean {
+  return (
+    columns.some((column) => column.id === "title" && column.label === "Deal") &&
+    columns.some((column) => column.id === "contact") &&
+    columns.some((column) => column.id === "comms")
+  );
+}
+
 export function defaultVisibleIds(columns: ListColumn[]): string[] {
-  return columns
+  const ids = columns
     .filter((column) => column.locked || column.defaultOn !== false)
     .map((column) => column.id);
+  return isDealsListColumns(columns) ? normalizeDealsVisibleColumns(ids) : ids;
 }
 
 export function fromDeskColumns(
@@ -67,7 +76,8 @@ export function mergeVisibleColumns(
   );
   const missingLocked = locked.filter((id) => !visible.includes(id));
   const next = missingLocked.length ? [...missingLocked, ...visible] : visible;
-  return next.length ? next : defaults;
+  const result = next.length ? next : defaults;
+  return isDealsListColumns(columns) ? normalizeDealsVisibleColumns(result) : result;
 }
 
 export function clampColumnWidth(px: number): number {
@@ -273,7 +283,7 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
 
 export const DEALS_LIST_COLUMNS: ListColumn[] = fromDeskColumns(TABLE_COLUMNS.deals ?? [], {
   pick: true,
-  lock: ["title", "esign"],
+  lock: ["title", "contact", "esign"],
 });
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [

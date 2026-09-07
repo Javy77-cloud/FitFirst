@@ -4,32 +4,58 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7g`)
+## Mac test now (`cursor/live-ff-tip-sep7i`)
 
-Crew H: lead-detail layout polish plus Follow-up Templates editor (per-template on/off + Skip). Branched from `cursor/live-ff-tip-sep7f`. Does **not** retouch Deals, sidebar, schema, or the snooze modal.
+Consolidator: Leads tip `cursor/live-ff-tip-sep7g` @ `985fdcb` (Crew H: lead-detail polish + Follow-up Templates on/off + Skip) plus Crew I Deals / Pipeline (`cursor/live-ff-tip-sep7h` @ `c80f4e1`). Leads / lead detail / follow-up templates / list-selection stay sep7g. Deals / Pipeline / today-activity / deal row actions stay sep7h. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7g && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7i && git pull
 npm install
-# skip db:migrate — layout only, no schema
+# skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
 # skip db:seed — keep the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**.
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
+
+### A — Leads (sep7g)
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| 1 | Buttons | **Save lead** is a text link and **Convert** is a normal-sized primary button. Both sit on one compact right-aligned row. No stacked full-width blocks. |
-| 2 | Title | Header title is **Leads**. No “FitFirst Leads” in the top-left. |
-| 3 | Lines | No Home / Auto / Flood card until the agent picks from **Add line**. Empty state reads **Add a line of interest.** |
-| 4 | Documents | Documents-by-line is ~60% of the width, form ~40%. Long filenames truncate with an ellipsis; hover shows the full name. Layout does not wrap. |
-| 5 | Quick actions | Header row, right of the lead name: **Call / SMS / Email / Task**. Same compact pills as Deals `DealQuickActions`. Not inside the form. Not below it. |
-| 6 | Template on/off | Follow-up Templates list has an on/off toggle per template. Off = that template never fires (no clock / steps / notifications). Aggressive off does not affect Default / Steady / Drip. Toggle back on anytime. |
-| 7 | Skip method | Method dropdown is **Call / Text / Email / Skip**. Skip is a no-op — the clock advances to the next step without contacting the lead. |
+| A1 | Buttons | **Save lead** is a text link and **Convert** is a normal-sized primary button. Both sit on one compact right-aligned row. No stacked full-width blocks. |
+| A2 | Title | Header title is **Leads**. No “FitFirst Leads” in the top-left. |
+| A3 | Lines | No Home / Auto / Flood card until the agent picks from **Add line**. Empty state reads **Add a line of interest.** |
+| A4 | Documents | Documents-by-line is ~60% of the width, form ~40%. Long filenames truncate with an ellipsis; hover shows the full name. Layout does not wrap. |
+| A5 | Quick actions | Header row, right of the lead name: **Call / SMS / Email / Task**. Compact pills. Not inside the form. Not below it. |
+| A6 | Template on/off | Follow-up Templates list has an on/off toggle per template. Off = that template never fires (no clock / steps / notifications). Aggressive off does not affect Default / Steady / Drip. Toggle back on anytime. |
+| A7 | Skip method | Method dropdown is **Call / Text / Email / Skip**. Skip is a no-op — the clock advances to the next step without contacting the lead. |
+| A8 | Crash / clock | New lead binds **Aggressive** and starts a live Response countdown. Status / clock / template stay per row. No **Load failed**. Snooze / Mark as read / pagination / one-confirm Delete still work. |
+| A9 | Lead detail | Two-column desk (form left, documents-by-line right). One **Add line** control. Per-line **Choose file** + trash. **View related deal** / **View source lead**. |
 
-**Standing platform rule:** Call / SMS / Email / Task stay on every record/detail header (Leads, Deals, Contacts, Policies, Business). Shared chrome is `RecordQuickActions`. Do not bury or drop them.
+**Standing platform rule:** Call / SMS / Email / Task stay on every record/detail header (Leads, Deals, Contacts, Policies, Business). Shared chrome is `RecordQuickActions`. Do not bury or drop them. Deals list rows keep the local five-action `DealQuickActions` (Call / SMS / Email / Task / Meeting).
+
+### B — Deals / Pipeline (sep7h)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| B1 | Title | Header says **Deals / Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
+| B2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Task blue, Call green, Email amber, Meetings purple, Training teal. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
+| B3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task / Meeting**. Task is calendar blue. Meeting is the blue-purple chip color. Comms column is **Send quote / Change owner / Bind policy**. No “Text”. No duplicate phone column. |
+| B4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
+| B5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
+| B6 | Quote-to-bind | **Send quote** opens the proposal. Mark the in-desk e-sign **signed** — deal stage becomes **Bound** and a policy number is attached. Ana stays unbound. |
+| B7 | Stale flag | A deal untouched past 14 days shows a **Stale** badge with **Re-engage** or **Archive**. |
+| B8 | Contact second | **Contact** is the column immediately after **Deal**. Phone lives under the name only. |
+| B9 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7h`)
+
+Crew I Deals / Pipeline brief on desk tip `cursor/live-ff-tip-sep7f`. Title **Deals / Pipeline**, five row actions (Call / SMS / Email / Task / Meeting), tinted Today's Activity chips, Contact column second. Tip SHA `c80f4e1`.
+
+## Mac test prior (`cursor/live-ff-tip-sep7g`)
+
+Crew H: lead-detail layout polish plus Follow-up Templates editor (per-template on/off + Skip). Branched from `cursor/live-ff-tip-sep7f`. Does **not** retouch Deals, sidebar, schema, or the snooze modal. Tip SHA `985fdcb`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7f`)
 
@@ -77,18 +103,19 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | B5 | Lead ↔ Deal | Lead top shows **View related deal**. Deal top shows **View source lead**. |
 | B6 | Shared chrome | Convert is centered and bigger than **Save lead**. Save lead shows the navy toast, then lands on the Leads list. Upload button, trash, Columns, funnel sort, row dividers, and status/temp badges stay the shared platform set. |
 
-### C — Deals / Pipeline (sep7c)
+### C — Deals / Pipeline (sep7h)
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| C1 | Title | Header says **Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
-| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's activity**: Tasks, Calls, Emails, Meetings, Training with today’s counts. One row. Click a chip → work queue of that type. |
-| C3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task**. Comms column is **Send quote / Change owner / Meeting**. No “Text”. |
+| C1 | Title | Header says **Deals / Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
+| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Task blue, Call green, Email amber, Meetings purple, Training teal. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
+| C3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task / Meeting**. Task is calendar blue. Meeting is the blue-purple chip color. Comms column is **Send quote / Change owner / Bind policy**. No “Text”. No duplicate phone column. |
 | C4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
 | C5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
 | C6 | Quote-to-bind | **Send quote** opens the proposal. Mark the in-desk e-sign **signed** — deal stage becomes **Bound** and a policy number is attached. Ana stays unbound. |
 | C7 | Stale flag | A deal untouched past 14 days shows a **Stale** badge with **Re-engage** or **Archive**. |
-| C8 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
+| C8 | Contact second | **Contact** is the column immediately after **Deal**. Phone lives under the name only. |
+| C9 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
 
 ## Mac test prior (`cursor/live-ff-tip-sep7e`)
 

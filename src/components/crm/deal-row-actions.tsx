@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { ChangeOwnerDialog } from "@/components/deals/change-owner-dialog";
-import { MeetingButton } from "@/components/crm/meeting-button";
 import type { DeskUserOption } from "@/lib/deals/transfer";
-import { PIPELINE_CARD_ACTIONS } from "@/lib/meetings/types";
 
 export function DealRowActions({
   dealId,
-  homeAddress,
   ownerId,
   users = [],
 }: {
@@ -21,7 +18,7 @@ export function DealRowActions({
   users?: DeskUserOption[];
 }) {
   return (
-    <div className="flex flex-wrap gap-1" data-ff-card-actions={PIPELINE_CARD_ACTIONS.join(",")} data-testid="deal-comms">
+    <div className="flex flex-wrap gap-1" data-testid="deal-comms">
       <Link
         href={`/deals/${dealId}/compare`}
         className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/15"
@@ -31,7 +28,12 @@ export function DealRowActions({
       {users.length > 0 ? (
         <ChangeOwnerDialog dealId={dealId} ownerId={ownerId} users={users} />
       ) : null}
-      <MeetingButton dealId={dealId} homeAddress={homeAddress} />
+      <Link
+        href={`/deals/${dealId}#bind`}
+        className="rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-navy hover:bg-secondary"
+      >
+        Bind policy
+      </Link>
     </div>
   );
 }

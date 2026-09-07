@@ -35,6 +35,7 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
   ],
   deals: [
     { key: "title", label: "Deal", defaultOn: true },
+    { key: "contact", label: "Contact", defaultOn: true },
     { key: "stage", label: "Stage", defaultOn: true },
     { key: "line", label: "Line", defaultOn: true },
     { key: "subType", label: "Life / Health type", defaultOn: false },
@@ -44,8 +45,6 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "address", label: "Property address", defaultOn: false },
     { key: "shopLines", label: "Shop lines", defaultOn: false },
     { key: "source", label: "Source", defaultOn: true },
-    { key: "contact", label: "Contact", defaultOn: true },
-    { key: "phone", label: "Phone", defaultOn: true },
     { key: "email", label: "Email", defaultOn: false },
     { key: "assigned", label: "Assigned", defaultOn: true },
     { key: "value", label: "Value", defaultOn: true },
@@ -286,7 +285,22 @@ export const LEAD_FORM_COLUMN_KEYS = [
 ] as const;
 
 export function defaultColumns(tableKey: string): string[] {
-  return (TABLE_COLUMNS[tableKey] ?? []).filter((c) => c.defaultOn !== false).map((c) => c.key);
+  const keys = (TABLE_COLUMNS[tableKey] ?? []).filter((c) => c.defaultOn !== false).map((c) => c.key);
+  return tableKey === "deals" ? normalizeDealsVisibleColumns(keys) : keys;
+}
+
+/** Phone lives under the deal name. Contact stays the column immediately after Deal. */
+export function normalizeDealsVisibleColumns(ids: string[]): string[] {
+  const rest = ids.filter((id) => id !== "phone" && id !== "contact");
+  const titleIdx = rest.indexOf("title");
+  if (titleIdx >= 0) {
+    return [...rest.slice(0, titleIdx + 1), "contact", ...rest.slice(titleIdx + 1)];
+  }
+  const pickIdx = rest.indexOf("pick");
+  if (pickIdx >= 0) {
+    return [...rest.slice(0, pickIdx + 1), "contact", ...rest.slice(pickIdx + 1)];
+  }
+  return ["contact", ...rest];
 }
 
 export function parseColumns(tableKey: string, raw: string | null | undefined): string[] {
@@ -299,5 +313,5 @@ export function parseColumns(tableKey: string, raw: string | null | undefined): 
   if ((tableKey === "deals" || tableKey === "policies") && !next.includes("esign")) {
     next.push("esign");
   }
-  return next;
+  return tableKey === "deals" ? normalizeDealsVisibleColumns(next) : next;
 }
