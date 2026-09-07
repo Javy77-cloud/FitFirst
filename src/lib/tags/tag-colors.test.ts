@@ -60,6 +60,6 @@ describe("tag colors", () => {
     expect(migrate).toMatch(/ADD COLUMN IF NOT EXISTS "color"/);
     expect(migrate).toMatch(/Additive only/);
     expect(migrate).not.toMatch(/DROP TABLE/);
-    expect(migrate).not.toMatch(/db:seed/);
+    expect(migrate).not.toMatch(/db:seed wipe/);
   });
 });

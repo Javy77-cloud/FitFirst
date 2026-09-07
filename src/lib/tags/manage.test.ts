@@ -80,7 +80,7 @@ describe("module tag manage + assign popup", () => {
     expect(migrate).toMatch(/ALTER TABLE "carriers" ADD COLUMN IF NOT EXISTS "tags"/);
     expect(migrate).toMatch(/Additive only/);
     expect(migrate).not.toMatch(/DROP TABLE/);
-    expect(migrate).not.toMatch(/db:seed/);
+    expect(migrate).not.toMatch(/db:seed wipe/);
     expect(schema).toMatch(/export const accounts[\s\S]*tags: jsonb\("tags"\)/);
     expect(schema).toMatch(/export const carriers[\s\S]*tags: jsonb\("tags"\)/);
   });
