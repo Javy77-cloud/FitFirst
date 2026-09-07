@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7o`)
+## Mac test now (`cursor/live-ff-tip-sep7p`)
+
+Feel-pass layout fix on **Deals / Pipeline list only**. Cut from `cursor/live-ff-tip-sep7o` @ `600c260`. Today's Activity sits on the left of Attach documents; together they occupy the **left band** — Attach is not shoved to the right corner. Attach stays modest, **≤ half page**. Title + date + calendar are **centered over the counters**. Chips are true raised 3D (light from above, darker bottom face, layered drop shadow). No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7p && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### P — Pipeline list (sep7p)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| P1 | Left band | Today's Activity is to the **left of** Attach documents. Both sit on the **left side** of the page. Attach is not in the right corner. |
+| P2 | Attach size | Attach card is modest and **≤ half page width**. Search, doc type, file picker, Store still work. |
+| P3 | Centered title | **Today's Activity** + real date + calendar sit **visually centered** above the chip row — not left-ragged against empty space. Calendar opens Tasks. |
+| P4 | Raised 3D chips | Calls / Emails / Tasks / Meetings / Training read as raised buttons: bright top highlight, darker bottom face, layered drop shadow. Hover lifts with a deeper shadow and no clipping. Click opens that type's work queue. |
+| P5 | Unchanged | Mass update, record picker, Bind, Deal detail, sidebar, and schema are the same as sep7o. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7o`)
 
 Consolidator: live desk tip `cursor/live-ff-tip-sep7m` @ `cecc68f` (Pipeline activity left / upload right / 3D chips / mass update / picker / Bind) plus Deal detail rebuild `cursor/live-ff-tip-sep7n` @ `b13fc7b` (Documents compare, Markets, Quotes, bind gate, carrier history, motivation widgets). Prefer sep7m for Deals / Pipeline list. Prefer sep7n for `/deals/[id]`. Global Call / SMS / Email / Task stay on the profile bar — no local colored strips on lead or deal forms. No sidebar redesign. No schema. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 

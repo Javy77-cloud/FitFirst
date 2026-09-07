@@ -29,10 +29,10 @@ export function TodayActivityStrip({
   const dated = formatTodayActivityDate(now);
   return (
     <aside
-      className="overflow-visible bg-transparent px-1 py-4"
+      className="flex w-fit max-w-full flex-col items-center overflow-visible bg-transparent px-2 py-4"
       data-testid="deal-today-activity"
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start justify-center gap-2.5 text-center">
         <Link
           href={todayActivityCalendarHref()}
           className="mt-0.5 rounded-md p-1.5 text-navy/70 hover:bg-muted hover:text-navy"
@@ -49,7 +49,7 @@ export function TodayActivityStrip({
           </p>
         </div>
       </div>
-      <div className="mt-5 flex flex-nowrap items-center gap-3.5 overflow-x-auto overflow-y-visible py-4">
+      <div className="mt-5 flex flex-nowrap items-center justify-center gap-4 overflow-x-auto overflow-y-visible py-5">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -58,7 +58,7 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className="deal-today-chip inline-flex shrink-0 flex-col items-center rounded-xl px-4 py-2.5 hover:z-10"
+              className="deal-today-chip inline-flex shrink-0 flex-col items-center rounded-xl px-5 py-3 hover:z-10"
               style={{
                 color: tone.chipFg,
                 ["--chip-top" as string]: tone.chipBgLight,
@@ -70,11 +70,11 @@ export function TodayActivityStrip({
               data-testid={`deal-today-${chip.id}`}
               data-tone={chip.tone}
             >
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-2">
                 <Icon className="size-4 shrink-0" aria-hidden />
                 <span className="text-[13px] font-semibold leading-none">{chip.label}</span>
               </span>
-              <span className="mt-1.5 text-[20px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+              <span className="mt-2 text-[20px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
             </Link>
           );
         })}

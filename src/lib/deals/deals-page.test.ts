@@ -34,13 +34,18 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/gap-x-6/);
   });
 
-  it("shrinks attach-documents and adds a transparent centered Today's Activity strip", () => {
+  it("keeps attach-documents on the left band, ≤ half page, beside Today's Activity", () => {
     const page = source("src/app/deals/page.tsx");
     expect(page).toMatch(/deal-upload-activity/);
-    expect(page).toMatch(/lg:grid-cols-12/);
-    expect(page).toMatch(/gap-x-10/);
-    expect(page).toMatch(/lg:col-span-7/);
-    expect(page).toMatch(/lg:col-span-5/);
+    expect(page).toMatch(/lg:flex-row/);
+    expect(page).toMatch(/lg:flex-wrap/);
+    expect(page).toMatch(/lg:justify-start/);
+    expect(page).toMatch(/lg:max-w-\[min\(50%,28rem\)\]/);
+    expect(page).not.toMatch(/lg:grid-cols-12/);
+    expect(page).not.toMatch(/lg:col-span-7/);
+    expect(page).not.toMatch(/lg:col-span-5/);
+    expect(page).not.toMatch(/justify-end/);
+    expect(page).not.toMatch(/ml-auto/);
     expect(page.indexOf("<TodayActivityStrip")).toBeLessThan(page.indexOf("<DealDocsUpload"));
     expect(page).toMatch(/<TodayActivityStrip/);
     expect(page).toMatch(/<DealDocsUpload/);
@@ -60,9 +65,12 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/todayActivityCalendarHref/);
     expect(strip).toMatch(/deal-today-calendar/);
     expect(strip).toMatch(/bg-transparent/);
+    expect(strip).toMatch(/items-center/);
+    expect(strip).toMatch(/text-center/);
+    expect(strip).toMatch(/justify-center/);
     expect(strip).toMatch(/deal-today-chip/);
     expect(strip).toMatch(/text-\[20px\]/);
-    expect(strip).toMatch(/px-4 py-2\.5/);
+    expect(strip).toMatch(/px-5 py-3/);
     expect(strip).toMatch(/mt-5/);
     expect(strip).not.toMatch(/border-black/);
     expect(strip).not.toMatch(/bg-card/);
@@ -72,6 +80,10 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/inset 0 1\.5px 0/);
     expect(chrome).toMatch(/translateY\(-3px\)/);
     expect(chrome).toMatch(/linear-gradient/);
+    expect(chrome).toMatch(/0 3px 0 color-mix/);
+    expect(chrome).toMatch(/0 4px 4px rgba\(16, 28, 52/);
+    expect(chrome).toMatch(/0 12px 20px rgba\(16, 28, 52/);
+    expect(chrome).not.toMatch(/0 1px 0 rgba\(255, 255, 255/);
     const chips = source("src/lib/deals/pipeline-desk.ts");
     expect(chips).toMatch(/label: "Calls"/);
     expect(chips).toMatch(/label: "Emails"/);
