@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aa`)
 
-Red-box layout on `cursor/live-ff-tip-sep7y` @ `0a8ea92`. **Attach LEFT** (~two-thirds, never full page). **Today's Activity RIGHT** on the **same row**. Chips are **colored squares** (not flat 36px rectangles), 3D + 6px hover lift, no panel behind them. Trash stays on document rows inside Attach. Deal detail unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `a86a834`.
+Pipeline band only, from `cursor/live-ff-tip-sep7y` @ `0a8ea92` / tip SHA `48b78b4`. **Attach LEFT** (compact ~60%, not full-page). **Today's Activity RIGHT on the same row** — never under Attach, no wrap. Activity counters are **72×72 squares** (≤4px radius), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Attach multi-row / trash / +Add stay. Deal detail from sep7z/sep7x is untouched. No table / filter / sidebar / seed / Ana changes. Live Zoho stays book of record.
 
 ```bash
 cd ~/FitFirst
@@ -22,31 +22,9 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| AA1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Attach does **not** stretch full page. Activity is **not** stacked under Attach. |
-| AA2 | Widths | Attach stays in the **larger left** red-box (~**2/3**). Today's Activity stays in the **smaller right** red-box (~**1/3**). |
-| AA3 | Square chips | Each counter is a **colored square** (72×72, ≤**4px** radius) with 3D fill. Hover **lifts 6px**. No card/panel behind the row. |
-
-## Mac test prior (`cursor/live-ff-tip-sep7y`)
-
-Pipeline placement + Activity chips on consolidator `cursor/live-ff-tip-sep7z` @ `4e9571e` / tip SHA `2555bf3` (sep7w Pipeline + sep7x Deal detail). **Attach LEFT** (compact, left red-box region). **Today's Activity RIGHT** (right red-box region). **No card/panel fill** behind the counters — only colored 3D chip boxes + hover lift. Trash stays on document rows inside Attach. Deal detail is unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `48b78b4`.
-
-```bash
-cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7y && git pull
-npm install
-# skip db:migrate / db:seed on the live Zoho book
-npm run dev -- --port 43147
-```
-
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
-
-### Y — Pipeline list (sep7y)
-
-| # | Check | Pass when |
-| --- | --- | --- |
-| Y1 | Red-box placement | Attach documents sits in the **left** band. Today's Activity sits in the **right** band. They are two separate items — Attach is a compact card, Activity is not inside Attach's card. |
-| Y2 | Activity chips | **No card/panel fill** behind the counters. Title + date + calendar stay. Each chip is a **colored square box** (≤**4px** radius) using Call / Email / Task / Meeting / Training colors, raised **3D** depth, soft shadow. Hover **lifts 6px** with a stronger shadow. Strip `overflow: visible` so the lift is not clipped. |
-| Y3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). It does not float in the gap between Attach and Activity. |
+| AA1 | Same row | Attach LEFT compact (~60%). Today's Activity RIGHT. One horizontal band. No stack. No wrap. |
+| AA2 | Square chips | Each counter is a **72×72 square** (width = height, ≤**4px** radius), solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
+| AA3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). +Add another document still works. |
 
 ### B — Deal detail (sep7x @ `6ca87d0`, unchanged)
 

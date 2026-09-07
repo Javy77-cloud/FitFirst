@@ -61,7 +61,7 @@ export function TodayActivityStrip({
               className="deal-today-chip inline-flex shrink-0 flex-col items-center justify-center text-center"
               style={{
                 color: tone.chipFg,
-                ["--chip-top" as string]: tone.chipBgLight,
+                ["--chip-top" as string]: tone.chipBg,
                 ["--chip-mid" as string]: tone.chipBg,
                 ["--chip-bottom" as string]: tone.chipBgDark,
                 ["--chip-fg" as string]: tone.chipFg,
@@ -72,7 +72,7 @@ export function TodayActivityStrip({
             >
               <Icon className="size-4 shrink-0" aria-hidden />
               <span className="text-[11px] font-semibold leading-none">{chip.label}</span>
-              <span className="text-[23px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+              <span className="text-[20px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
             </Link>
           );
         })}

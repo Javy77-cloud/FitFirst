@@ -159,10 +159,10 @@ export default async function DealsPage({
         className="deal-upload-activity mb-6 flex flex-row flex-nowrap items-start justify-between gap-x-8 overflow-visible"
         data-testid="deal-upload-activity"
       >
-        <div className="deal-attach-slot min-w-0 w-[66%] max-w-[66%] shrink-0">
+        <div className="deal-attach-slot w-[min(38rem,60%)] shrink-0">
           <DealDocsUpload deals={lookup} parties={parties} />
         </div>
-        <div className="deal-today-slot w-fit max-w-[34%] shrink-0">
+        <div className="deal-today-slot w-fit shrink-0">
           <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
         </div>
       </div>
