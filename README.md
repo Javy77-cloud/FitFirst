@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bq`)
 
-Table Stage colors, `First Last / Lob` deal names, and Settings → Picklists starter catalog, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** Stage uses the same colors as Board (Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive, …) on the inline `DealStageSelect`. Deal titles are **First Last / Lob** — `Javier Canales / Home` — one slash only. Existing deals retitle via additive migrate `0088_stage_title_picklists` + boot backfill. **Settings → Picklists** seeds US states, lines of business, and common carriers so **Use a global list** on a picklist field has lists to choose. No `db:seed` wipe. Ana unbound. Cov A **$321,000**. Tip SHA `6dab3e85`.
+Table Stage colors, `First Last / Lob` deal names, and Settings → Picklists starter catalog, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** Stage uses the same colors as Board (Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive, …) on a compact inline `DealStageSelect` (`text-xs` / `h-7` — table only; Board pills stay). Deal titles are **First Last / Lob** — `Javier Canales / Home` — one slash only. Existing deals retitle via additive migrate `0088_stage_title_picklists` + boot backfill. **Settings → Picklists** seeds US states, lines of business, and common carriers so **Use a global list** on a picklist field has lists to choose. No `db:seed` wipe. Ana unbound. Cov A **$321,000**. Tip SHA `221dd224`.
 
 ```bash
 cd ~/FitFirst
@@ -23,7 +23,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals → Pipeline → 
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| BQ1 | Table Stage colors | Deals → Pipeline → Table Stage uses the same colors as Board for Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive. Inline stage edit still works. |
+| BQ1 | Table Stage colors | Deals → Pipeline → Table Stage uses the same colors as Board for Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive. Control is compact (`text-xs` / `h-7`). Inline stage edit still works. |
 | BQ2 | Deal name | New / convert / LOB change titles as `Javier Canales / Home` — one slash, no slash between first and last. |
 | BQ3 | Existing titles | Prior `First / Last / Lob` and shop leftovers retitle. Ana may become **Ana Dib / Home**; still unbound, Cov A **$321,000**. |
 | BQ4 | Picklists | Settings → Picklists shows US states, Lines of business, Common carriers. Field builder **Use a global list** lists them. |

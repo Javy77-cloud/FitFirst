@@ -35,7 +35,7 @@ export function DealStageSelect({
       data-ff-deal-stage
       data-stage-color={currentColor}
       className={cn(
-        "h-8 max-w-[11rem] rounded-md border px-2 text-sm font-semibold uppercase tracking-wide",
+        "h-7 max-w-[10.5rem] rounded-sm border px-1.5 text-xs font-semibold uppercase tracking-wide",
         statusColorClass(currentColor),
       )}
       value={value}
