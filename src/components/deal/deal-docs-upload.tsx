@@ -98,6 +98,7 @@ export function DealDocsUpload({
       action={uploadDealDocuments}
       className="ff-card relative flex h-[168px] flex-col justify-center gap-1 px-3 py-2"
       data-testid="deal-docs-upload"
+      style={{ minHeight: 168, height: "auto", overflow: "visible" }}
     >
       <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
       <div className="flex flex-nowrap items-center gap-2">

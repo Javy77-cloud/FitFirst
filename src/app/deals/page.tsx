@@ -155,11 +155,39 @@ export default async function DealsPage({
 
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
-      <div className="deal-upload-activity mb-6" data-testid="deal-upload-activity">
-        <div className="deal-attach-slot min-w-0 w-[min(819px,44.8%)] shrink-0">
+      <div
+        className="deal-upload-activity mb-6"
+        data-testid="deal-upload-activity"
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "nowrap",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        <div
+          className="deal-attach-slot min-w-0 w-[min(819px,44.8%)] shrink-0"
+          style={{
+            width: "min(819px, 44.8%)",
+            maxWidth: "min(819px, 44.8%)",
+            flex: "0 0 min(819px, 44.8%)",
+            minHeight: 168,
+            height: "auto",
+            overflow: "visible",
+          }}
+        >
           <DealDocsUpload deals={lookup} parties={parties} />
         </div>
-        <div className="deal-today-slot">
+        <div
+          className="deal-today-slot"
+          style={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
         </div>
       </div>

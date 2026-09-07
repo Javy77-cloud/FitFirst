@@ -70,7 +70,19 @@ export function TodayActivityStrip({
               data-testid={`deal-today-${chip.id}`}
               data-tone={chip.tone}
             >
-              <span className="deal-today-chip">
+              <span
+                className="deal-today-chip"
+                style={{
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minWidth: 100,
+                  minHeight: 100,
+                  borderRadius: 12,
+                  boxSizing: "border-box",
+                }}
+              >
                 <Icon className="size-5 shrink-0" aria-hidden />
                 <span className="deal-today-chip-count">{counts[chip.id]}</span>
                 <span className="deal-today-chip-word">{chip.label}</span>
