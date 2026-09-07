@@ -4,7 +4,55 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7aq`)
+## Mac test now (`cursor/live-ff-tip-sep7ar`)
+
+Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` confirms **once inside the form action**. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `91e9cfc`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ar && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AR — Deal rail widths (this tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AR1 | Split | Outer row `flex w-full`. Left `flex-1 lg:w-[72%]`. Right `lg:w-[300px] max-w-[300px] shrink-0`. Rail is **not** wider than 300px. |
+| AR2 | Quotes corner | Quotes-pulled + sheet health are **`items-end`**, flush to the **far right** of the 300px aside. Not left-aligned / centered in the column. |
+| AR3 | Cards under | Tags, Quick comms, Record context stay stacked in that same 300px aside. Original card sizes. No stretch. |
+| AR4 | Left grows | Empty middle gap closes by growing the **left** stack (title → tabs → LOB → panels). Not by widening the right rail. |
+
+### AO — Deal detail layout
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AO1 | Title left | Deal name is the **page title, top-left**. Not in the tabs toolbar. Not hanging mid/right. |
+| AO2 | No right chrome | No **Shopping / Source / Referral** strip on the top-right. Stage · Source · Referral is not a right-side title. |
+| AO3 | Flush stack | Left stack, almost no gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → panels. Motivation on the right does **not** push tabs down. |
+| AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
+| AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
+| AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
+| AQ2 | Right rail | `data-ff-deal-right-rail` is **300px sticky**: Sheet health, then Quotes pulled today, then Tags, Quick comms, Record context. No big empty gap under quotes-pulled. |
+| AQ3 | Tabs under title | Left `flex-1 lg:w-[72%]`: deal title → Documents \| Markets \| Quotes → LOB → panels. No `RecordDetailLayout` rail inside tabs. Motivation does **not** push tabs down. |
+| AQ4 | Delete once | Trash asks **Are you sure you want to delete?** exactly **once**, inside the form `action` wrapper, before the server action. Not `onSubmit` / `preventDefault`. |
+
+### AH — Pipeline list (sep7ah, locked)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
+| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
+| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
+| AI1 | Count | Chip **number only** is **24px** / **500**. |
+| AP1 | Count color | Chip **number only** keeps chip hue, one notch darker (`color-mix` 78% `--chip-fg` into `#ffffff`). Not navy, not black. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7aq`)
 
 Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; left `flex-1` is title → tabs → LOB → panels (no rail inside tabs); `data-ff-deal-right-rail` is 300px sticky: Sheet health, Quotes pulled today, Tags, Quick comms, Record context — stacked, no empty gap. `HardDeleteForm` confirms **once inside the form action** before the server call. No StagePill / Source · Referral strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `fceea29`.
 
@@ -18,30 +66,6 @@ npm run dev -- --port 43147
 ```
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
-
-### AO — Deal detail layout
-
-| # | Check | Pass when |
-| --- | --- | --- |
-| AO1 | Title left | Deal name is the **page title, top-left**. Not in the tabs toolbar. Not hanging mid/right. |
-| AO2 | No right chrome | No **Shopping / Source / Referral** strip on the top-right. Stage · Source · Referral is not a right-side title. |
-| AO3 | Flush stack | Left stack, almost no gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → panels. Motivation on the right does **not** push tabs down. |
-| AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
-| AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
-| AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
-| AQ2 | Right rail | `data-ff-deal-right-rail` is **300px sticky**: Sheet health, then Quotes pulled today, then Tags, Quick comms, Record context. No big empty gap under quotes-pulled. |
-| AQ3 | Tabs under title | Left `flex-1`: deal title → Documents \| Markets \| Quotes → LOB → panels. No `RecordDetailLayout` rail inside tabs. Motivation does **not** push tabs down. |
-| AQ4 | Delete once | Trash asks **Are you sure you want to delete?** exactly **once**, inside the form `action` wrapper, before the server action. Not `onSubmit` / `preventDefault`. |
-
-### AH — Pipeline list (sep7ah, locked)
-
-| # | Check | Pass when |
-| --- | --- | --- |
-| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
-| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
-| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
-| AI1 | Count | Chip **number only** is **24px** / **500**. |
-| AP1 | Count color | Chip **number only** keeps chip hue, one notch darker (`color-mix` 78% `--chip-fg` into `#ffffff`). Not navy, not black. |
 
 ## Mac test prior (`cursor/live-ff-tip-sep7ao`)
 
