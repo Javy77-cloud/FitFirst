@@ -10,6 +10,8 @@ export type ListColumn = {
   defaultOn?: boolean;
   /** Platform starting width. Per-user drag-resize overrides and persists. */
   defaultWidth?: number;
+  /** Live typeahead instead of the ASC/DESC funnel. Deal name on the deals list. */
+  liveSearch?: boolean;
 };
 
 export type ListSortDir = "asc" | "desc";
@@ -98,8 +100,9 @@ export function listSortForColumn(key: string, dir: ListSortDir | null): ListSor
   return { key, dir };
 }
 
-/** Name is live contains-search only — never a sort / funnel control. */
-export function isLiveSearchColumn(column: Pick<ListColumn, "id" | "label">): boolean {
+/** Name (and the Deals list Deal column) is live contains-search — never ASC/DESC. */
+export function isLiveSearchColumn(column: Pick<ListColumn, "id" | "label" | "liveSearch">): boolean {
+  if (column.liveSearch) return true;
   const label = column.label.trim().toLowerCase();
   if (!label) return false;
   return column.id === "name" || label === "name";
@@ -284,7 +287,7 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
 export const DEALS_LIST_COLUMNS: ListColumn[] = fromDeskColumns(TABLE_COLUMNS.deals ?? [], {
   pick: true,
   lock: ["title", "contact", "esign"],
-});
+}).map((column) => (column.id === "title" ? { ...column, liveSearch: true } : column));
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true },

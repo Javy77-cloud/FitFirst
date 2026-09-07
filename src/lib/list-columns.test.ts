@@ -69,6 +69,7 @@ describe("list column visibility", () => {
   it("keeps Deal title and e-sign locked and hides optional deal columns by default", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")?.locked).toBe(true);
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
@@ -190,6 +191,10 @@ describe("list column visibility", () => {
     expect(isLiveSearchColumn(name)).toBe(true);
     expect(isListColumnSortable(name)).toBe(false);
     expect(isLiveSearchColumn({ id: "title", label: "Name" })).toBe(true);
+    const deal = DEALS_LIST_COLUMNS.find((column) => column.id === "title")!;
+    expect(isLiveSearchColumn(deal)).toBe(true);
+    expect(isListColumnSortable(deal)).toBe(false);
+    expect(isLiveSearchColumn({ id: "title", label: "Deal" })).toBe(false);
     expect(isLiveSearchColumn(source)).toBe(false);
     expect(isListColumnSortable(source)).toBe(true);
     expect(isValueFilterColumn(source)).toBe(true);
