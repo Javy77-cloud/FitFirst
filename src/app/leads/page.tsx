@@ -38,9 +38,9 @@ import {
 } from "@/components/leads/lead-queue-controls";
 import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
-import { TagChips } from "@/components/tags/tag-chips";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
-import { listModuleTagColors } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -55,10 +55,10 @@ export default async function LeadsPage({
   const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
-  const [all, loadedTemplates, tagColors] = await Promise.all([
+  const [all, loadedTemplates, tagCatalog] = await Promise.all([
     listLeads(),
     listFollowUpTemplates().catch(() => []),
-    listModuleTagColors("leads").catch(() => ({})),
+    listModuleTags("leads").catch(() => []),
   ]);
   const templates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
   const queue = sortLeadQueue(all.filter((lead) => isLeadOnQueue(lead)));
@@ -266,7 +266,14 @@ export default async function LeadsPage({
                     ) : (
                       <StartShopForm leadId={lead.id} />
                     ),
-                    tags: <TagChips tags={lead.tags} colors={tagColors} />,
+                    tags: (
+                      <AssignRecordTags
+                        module="leads"
+                        recordId={lead.id}
+                        tags={lead.tags}
+                        catalog={tagCatalog}
+                      />
+                    ),
                   },
                 };
               })}

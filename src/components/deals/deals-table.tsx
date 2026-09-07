@@ -25,9 +25,9 @@ import { listPipelines } from "@/lib/db/queries";
 import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
-import { TagChips } from "@/components/tags/tag-chips";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
-import { listModuleTagColors } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 import { dealsListColumnsFromFields } from "@/lib/list-columns";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import type { ReactNode } from "react";
@@ -66,8 +66,8 @@ export async function DealsTable({
   initialQuery?: string;
   nextByDeal?: Map<string, string>;
 }) {
-  const [tagColors, fields, valueMap, pipelines] = await Promise.all([
-    listModuleTagColors("deals").catch(() => ({})),
+  const [tagCatalog, fields, valueMap, pipelines] = await Promise.all([
+    listModuleTags("deals").catch(() => []),
     listDealFieldDefs().catch(() => []),
     loadRecordValuesForIds(rows.map(({ deal }) => deal.id)).catch(() => new Map()),
     listPipelines().catch(() => []),
@@ -134,7 +134,7 @@ export async function DealsTable({
               accountId: account?.id ?? deal.accountId,
               leadId: deal.leadId,
               stale,
-              tagColors,
+              tagCatalog,
             });
             return {
               key: deal.id,
@@ -182,7 +182,7 @@ function dealRowCells({
   accountId,
   leadId,
   stale,
-  tagColors,
+  tagCatalog,
 }: {
   deal: DealsSheetRow["deal"];
   stored: Record<string, string>;
@@ -197,7 +197,7 @@ function dealRowCells({
   accountId: string | null | undefined;
   leadId: string | null | undefined;
   stale: boolean;
-  tagColors: Record<string, string>;
+  tagCatalog: { name: string; color: string | null }[];
 }) {
   const sort: Record<string, string> = {
     pick: "",
@@ -249,7 +249,9 @@ function dealRowCells({
     value: dealNativeColumnText("value", deal, users, value) || "—",
     premium: dealNativeColumnText("premium", deal, users, value) || "—",
     updated: formatDay(deal.updatedAt),
-    tags: <TagChips tags={deal.tags} colors={tagColors} />,
+    tags: (
+      <AssignRecordTags module="deals" recordId={deal.id} tags={deal.tags} catalog={tagCatalog} />
+    ),
   };
 
   for (const field of fields) {

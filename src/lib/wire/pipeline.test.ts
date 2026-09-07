@@ -110,6 +110,7 @@ describe("stage move sync", () => {
 describe("column / card field picker", () => {
   it("always keeps title and restores defaults when empty", () => {
     expect(defaultPipelineFieldIds()).toContain("title");
+    expect(defaultPipelineFieldIds()).toContain("tags");
     expect(parsePipelineFields("")).toEqual(defaultPipelineFieldIds());
     expect(parsePipelineFields("insured,phone")).toEqual(["title", "insured", "phone"]);
     expect(parsePipelineFields("nope,email")).toEqual(["title", "email"]);

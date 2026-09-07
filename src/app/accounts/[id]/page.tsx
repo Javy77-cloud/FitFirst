@@ -15,6 +15,10 @@ import { loadRecordContext } from "@/lib/record-context";
 import { AccountGlance } from "@/components/crm/account-glance";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { RecordComms } from "@/components/record-comms";
+import { RecordTags } from "@/components/tags/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +42,10 @@ export default async function AccountDetailPage({
     locations,
     certificates,
   } = workspace;
-  const templates = await listEmailTemplates();
+  const [templates, tagExtra] = await Promise.all([
+    listEmailTemplates(),
+    listModuleTags("accounts").catch(() => []),
+  ]);
   const context = await loadRecordContext({
     accountId: account.id,
     contactId: contacts[0]?.id,
@@ -61,6 +68,15 @@ export default async function AccountDetailPage({
         <span>
           Active / bound / pending <strong>{activePolicyCount}</strong>
         </span>
+      </div>
+      <div className="mb-4 max-w-lg">
+        <RecordTags
+          module="accounts"
+          recordId={account.id}
+          tags={account.tags}
+          suggestions={suggestedTagsFor("accounts", tagExtra.map((row) => row.name))}
+          colors={colorsFromModuleTags(tagExtra)}
+        />
       </div>
       <RecordDetailLayout
         main={

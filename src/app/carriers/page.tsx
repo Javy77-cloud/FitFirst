@@ -10,6 +10,9 @@ import { LINES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { RecordLink } from "@/components/record-links";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
+import { tagSortText } from "@/lib/tags/module-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +24,10 @@ export default async function CarriersPage({
   const params = await searchParams;
   const filter = pickFilterParams(params, ["portal", "line"]);
   const q = firstParam(params.q) ?? "";
-  const all = await listCarriers();
+  const [all, tagCatalog] = await Promise.all([
+    listCarriers(),
+    listModuleTags("carriers").catch(() => []),
+  ]);
   const rows = all.filter(({ carrier }) => {
     if (!matchesField(carrier.portalStatus, filter.portal)) return false;
     if (filter.line && !(carrier.writtenLines ?? []).some((line) => line.toUpperCase() === filter.line.toUpperCase())) {
@@ -81,7 +87,14 @@ export default async function CarriersPage({
               carrier.naic,
               carrier.territory,
               ...(carrier.writtenLines ?? []),
+              ...(carrier.tags ?? []),
             ]),
+            sort: {
+              pick: "",
+              carrier: carrier.name,
+              portal: carrier.portalStatus,
+              tags: tagSortText(carrier.tags),
+            },
             cells: {
               pick: <SelectRowCheckbox id={carrier.id} />,
               carrier: (
@@ -114,6 +127,14 @@ export default async function CarriersPage({
                 </span>
               ),
               dontWrite: <span className="text-xs">{carrier.dontWriteNotes}</span>,
+              tags: (
+                <AssignRecordTags
+                  module="carriers"
+                  recordId={carrier.id}
+                  tags={carrier.tags}
+                  catalog={tagCatalog}
+                />
+              ),
             },
           }))}
         />

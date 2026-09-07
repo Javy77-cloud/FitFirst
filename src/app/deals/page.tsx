@@ -23,6 +23,7 @@ import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { cn } from "@/lib/utils";
 import { parsePipelineView } from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
+import { listModuleTags } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export default async function DealsPage({
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || (view === "table" ? undefined : "p-c");
-  const [boardData, listRows, userRows, lineSettings, lookup, parties, desk] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, lookup, parties, desk, tagCatalog] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
@@ -75,6 +76,7 @@ export default async function DealsPage({
     listDealLookup(),
     listPartyTypeahead(),
     loadDealPipelineDesk(queue),
+    listModuleTags("deals").catch(() => []),
   ]);
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
@@ -237,6 +239,7 @@ export default async function DealsPage({
           cards={presented}
           view={view}
           stageFilter={stage}
+          tagCatalog={tagCatalog}
         />
       ) : (
         <p className="text-sm text-muted-foreground">

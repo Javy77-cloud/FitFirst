@@ -1,6 +1,7 @@
 import { MoreHorizontal, Pin } from "lucide-react";
 import { FunnelIcon } from "@/components/lists/funnel-icon";
 import { isLiveSearchColumn } from "@/lib/list-columns";
+import { tagModuleForList, tagModuleLabel } from "@/lib/tags/module-tags";
 import { cn } from "@/lib/utils";
 
 export function SheetHeader({
@@ -19,6 +20,7 @@ export function SheetHeader({
 }) {
   const label = typeof children === "string" ? children : "Column";
   const liveSearch = isLiveSearchColumn({ id: col, label });
+  const tagModule = tagModuleForList(table);
 
   return (
     <th
@@ -93,6 +95,18 @@ export function SheetHeader({
             >
               Pin column
             </button>
+            {tagModule ? (
+              <a
+                href={`/settings/tags?module=${tagModule}`}
+                data-ff-manage-tags=""
+                className="flex w-full rounded-md px-2 py-1.5 text-left text-navy hover:bg-muted"
+              >
+                Manage tags
+                <span className="ml-auto text-[11px] text-muted-foreground">
+                  {tagModuleLabel(tagModule)}
+                </span>
+              </a>
+            ) : null}
           </div>
         </details>
       </div>

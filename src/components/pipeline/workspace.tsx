@@ -5,7 +5,9 @@ import { PipelineFunnelView } from "@/components/pipeline/funnel-view";
 import { PipelineKanban } from "@/components/pipeline/kanban";
 import { PipelineStageEditor } from "@/components/pipeline/stage-editor";
 import { PipelineTableView } from "@/components/pipeline/table-view";
+import { SheetSettingsMenu } from "@/components/lists/sheet-settings-menu";
 import type { DeskUserOption } from "@/lib/deals/transfer";
+import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
 import type { PipelineViewId } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
@@ -16,6 +18,7 @@ export function PipelineWorkspace({
   stageFilter,
   canEditStages = false,
   agents = [],
+  tagCatalog = [],
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
@@ -23,6 +26,7 @@ export function PipelineWorkspace({
   stageFilter?: string | null;
   canEditStages?: boolean;
   agents?: DeskUserOption[];
+  tagCatalog?: TagCatalogRow[];
 }) {
   const hint =
     board.slug === "won-lost"
@@ -39,15 +43,25 @@ export function PipelineWorkspace({
     <div className="space-y-3" data-ff-pipe>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{hint}</p>
-        {view === "table" ? null : <PipelineFieldPicker />}
+        <div className="flex items-center gap-2">
+          {view === "table" ? null : <PipelineFieldPicker />}
+          <SheetSettingsMenu tagModule="deals" />
+        </div>
       </div>
       {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
       {view === "table" ? (
-        <PipelineTableView board={board} cards={cards} stageFilter={stageFilter} agents={agents} />
+        <PipelineTableView
+          board={board}
+          cards={cards}
+          stageFilter={stageFilter}
+          agents={agents}
+          tagCatalog={tagCatalog}
+        />
       ) : view === "funnel" ? (
         <PipelineFunnelView board={board} cards={cards} />
       ) : (
-        <PipelineKanban board={board} cards={cards} agents={agents} />
+        <PipelineKanban board={board} cards={cards} agents={agents} tagCatalog={tagCatalog} />
+      )}
       )}
     </div>
   );

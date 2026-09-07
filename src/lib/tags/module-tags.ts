@@ -1,17 +1,55 @@
-export const TAG_MODULES = ["leads", "contacts", "deals", "policies"] as const;
+export const TAG_MODULES = [
+  "leads",
+  "deals",
+  "contacts",
+  "accounts",
+  "policies",
+  "carriers",
+] as const;
 export type TagModule = (typeof TAG_MODULES)[number];
+
+export const TAG_MODULE_LABELS: Record<TagModule, string> = {
+  leads: "Leads",
+  deals: "Deals",
+  contacts: "Contacts",
+  accounts: "Business",
+  policies: "Policies",
+  carriers: "Carriers",
+};
+
+export const TAG_MODULE_PATHS: Record<TagModule, { list: string; detail: (id: string) => string }> = {
+  leads: { list: "/leads", detail: (id) => `/leads/${id}` },
+  deals: { list: "/deals", detail: (id) => `/deals/${id}` },
+  contacts: { list: "/contacts", detail: (id) => `/contacts/${id}` },
+  accounts: { list: "/accounts", detail: (id) => `/accounts/${id}` },
+  policies: { list: "/policies", detail: (id) => `/policies/${id}` },
+  carriers: { list: "/carriers", detail: (id) => `/carriers/${id}` },
+};
 
 export const SUGGESTED_MODULE_TAGS: Record<TagModule, readonly string[]> = {
   leads: ["hot", "referral", "inbound", "web", "renewal"],
   contacts: ["client", "referral", "vip", "review-due", "do-not-solicit"],
   deals: ["shopping", "urgent", "multi-line", "referral"],
+  accounts: ["client", "commercial", "target", "vip", "review-due"],
   policies: ["renewal", "review-due", "claim", "endorsement"],
+  carriers: ["preferred", "surplus", "admitted", "review", "do-not-write"],
 };
 
 const LEAD_ONLY = new Set(["hot", "inbound", "web"]);
 
 export function isTagModule(value: string): value is TagModule {
   return (TAG_MODULES as readonly string[]).includes(value);
+}
+
+export function tagModuleLabel(module: TagModule): string {
+  return TAG_MODULE_LABELS[module];
+}
+
+/** Map a list / sheet moduleId (businesses, pipeline, …) onto its tag catalog. */
+export function tagModuleForList(moduleId: string): TagModule | null {
+  if (moduleId === "businesses" || moduleId === "accounts") return "accounts";
+  if (moduleId === "pipeline") return "deals";
+  return isTagModule(moduleId) ? moduleId : null;
 }
 
 export function normalizeTag(raw: string): string {

@@ -650,6 +650,7 @@ export const carriers = pgTable(
     fixtureTag: text("fixture_tag"),
     zohoId: text("zoho_id"),
     sourceId: text("source_id"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [
@@ -1011,6 +1012,7 @@ export const accounts = pgTable(
     officerContactId: uuid("officer_contact_id"),
     website: text("website"),
     isExample: boolean("is_example").notNull().default(false),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [

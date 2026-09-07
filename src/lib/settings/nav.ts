@@ -113,7 +113,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "lists", href: "/settings/lists", label: "Global lists", hint: "Books and picklists" },
       { id: "field-builder", href: "/settings/field-builder", label: "Deal field builder", hint: "One layout for every deal" },
       { id: "picklists", href: "/settings/picklists", label: "Picklists", hint: "Reusable field options" },
-      { id: "tags", href: "/settings/tags", label: "Tags", hint: "Rename · merge · delete" },
+      { id: "tags", href: "/settings/tags", label: "Tags", hint: "Per-module catalog · colors" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },
       { id: "master-risk", href: "/settings/master-risk", label: "Master risk", hint: "Admin appetite worksheet" },
     ],

@@ -10,6 +10,9 @@ import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
+import { tagSortText } from "@/lib/tags/module-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +25,10 @@ export default async function AccountsPage({
   const filter = pickFilterParams(params, ["status"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
-  const all = await listAccounts();
+  const [all, tagCatalog] = await Promise.all([
+    listAccounts(),
+    listModuleTags("accounts").catch(() => []),
+  ]);
   const rows = all.filter((account) => matchesField(account.clientStatus, filter.status));
   return (
     <AppShell title="Businesses">
@@ -72,7 +78,16 @@ export default async function AccountsPage({
               account.email,
               account.city,
               account.einLast4,
+              ...(account.tags ?? []),
             ]),
+            sort: {
+              pick: "",
+              business: account.name,
+              status: account.clientStatus,
+              lifetime: account.policyCount,
+              inForce: account.activePolicyCount,
+              tags: tagSortText(account.tags),
+            },
             cells: {
               pick: <SelectRowCheckbox id={account.id} />,
               business: (
@@ -86,6 +101,14 @@ export default async function AccountsPage({
               status: <ClientStatusPill status={account.clientStatus} />,
               lifetime: account.policyCount,
               inForce: account.activePolicyCount,
+              tags: (
+                <AssignRecordTags
+                  module="accounts"
+                  recordId={account.id}
+                  tags={account.tags}
+                  catalog={tagCatalog}
+                />
+              ),
             },
           }))}
         />

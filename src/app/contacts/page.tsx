@@ -16,9 +16,9 @@ import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
-import { TagChips } from "@/components/tags/tag-chips";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
-import { listModuleTagColors } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +31,9 @@ export default async function ContactsPage({
   const filter = pickFilterParams(params, ["status", "source"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
-  const [all, tagColors] = await Promise.all([
+  const [all, tagCatalog] = await Promise.all([
     listContacts(),
-    listModuleTagColors("contacts").catch(() => ({})),
+    listModuleTags("contacts").catch(() => []),
   ]);
   const rows = all.filter(
     (contact) =>
@@ -138,7 +138,14 @@ export default async function ContactsPage({
                 source: sourceLabel(c.source),
                 lifetime: c.policyCount,
                 inForce: c.activePolicyCount,
-                tags: <TagChips tags={c.tags} colors={tagColors} />,
+                tags: (
+                  <AssignRecordTags
+                    module="contacts"
+                    recordId={c.id}
+                    tags={c.tags}
+                    catalog={tagCatalog}
+                  />
+                ),
               },
             }))}
           />
