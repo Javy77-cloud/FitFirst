@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7ao`)
 
-Deal detail layout only, from `cursor/live-ff-tip-sep7an` @ `1f775c9` / tip SHA `f6603bf`. **Deal title** (`deal.title`) sits **top-left** of the Deal screen (`data-ff-deal-title`). Documents · Markets · Quotes sit **flush under that title**, **right above** Line of business (`DealLineSelector`). Stage / source meta moved to the rail — not hanging on the tabs row right. Middle block pulled up (`-mt-5`). Upload trash + Add another stay. Pipeline Attach/Activity chips **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `PENDING`.
+Deal detail layout only, from `cursor/live-ff-tip-sep7an` @ `1f775c9` / tip SHA `f6603bf`. **Deal title** (`deal.title`) sits **top-left** of the Deal screen (`data-ff-deal-title`). Documents · Markets · Quotes sit **flush under that title**, **right above** Line of business (`DealLineSelector`). Stage / source meta moved to the rail — not hanging on the tabs row right. Middle block pulled up (`-mt-5`). Upload trash + Add another stay. Pipeline Attach/Activity chips **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `df5e03b`.
 
 ```bash
 cd ~/FitFirst
