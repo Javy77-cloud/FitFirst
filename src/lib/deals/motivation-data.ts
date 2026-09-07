@@ -1,9 +1,11 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, quotes } from "@/lib/db/schema";
 import { addUtcDays, DESK_AS_OF, startOfUtcMonth } from "@/lib/home/as-of";
 import { buildMotivationStats, type MotivationStat } from "./motivation";
+
+const SHOPPED_STAGES = ["quoting", "quoted", "bound", "closed_won"] as const;
 
 export async function loadDealMotivationStats(asOf = DESK_AS_OF): Promise<MotivationStat[]> {
   const todayStart = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate()));
@@ -21,19 +23,14 @@ export async function loadDealMotivationStats(asOf = DESK_AS_OF): Promise<Motiva
       and(
         eq(deals.tenantId, DEFAULT_TENANT_ID),
         gte(deals.updatedAt, monthStart),
-        sql`${deals.pipelineStage} in ('quoting','quoted','bound','closed_won')`,
+        inArray(deals.pipelineStage, [...SHOPPED_STAGES]),
       ),
     );
 
   const [boundRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(deals)
-    .where(
-      and(
-        eq(deals.tenantId, DEFAULT_TENANT_ID),
-        gte(deals.boundAt, monthStart),
-      ),
-    );
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), gte(deals.boundAt, monthStart)));
 
   const sparkQuotes: number[] = [];
   for (let i = 6; i >= 0; i -= 1) {
@@ -46,7 +43,7 @@ export async function loadDealMotivationStats(asOf = DESK_AS_OF): Promise<Motiva
         and(
           eq(quotes.tenantId, DEFAULT_TENANT_ID),
           gte(quotes.createdAt, day),
-          sql`${quotes.createdAt} < ${next}`,
+          lt(quotes.createdAt, next),
         ),
       );
     sparkQuotes.push(Number(row?.count ?? 0));
