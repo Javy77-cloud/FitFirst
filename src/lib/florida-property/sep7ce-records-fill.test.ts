@@ -1,5 +1,8 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { fieldsForLine } from "@/lib/quote-sheet/catalog";
 
 function source(file: string) {
@@ -15,6 +18,22 @@ describe("sep7ce Fill from property records", () => {
     expect(sheet).toMatch(/Confirm extracted/);
     expect(sheet.indexOf("Fill from property records")).toBeLessThan(sheet.indexOf("Save sheet"));
     expect(sheet.indexOf("Fill from source")).toBeLessThan(sheet.indexOf("Fill from property records"));
+    const html = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-1",
+        line: "home",
+        fields: [],
+        values: {},
+        product: "homeowners",
+      }),
+    );
+    expect(html).toContain("Fill from property records");
+    expect(html).toContain("Fill from source");
+    expect(html).toContain("Parcel ID");
+    expect(html).toContain("Assessed value");
+    expect(html).toContain("Records check");
+    expect(html).toContain("Square footage");
+    expect(html.indexOf("Fill from property records")).toBeLessThan(html.indexOf("Save sheet"));
   });
 
   it("adds Parcel ID, Assessed value, Records check, and Square footage on the HO sheet", () => {
