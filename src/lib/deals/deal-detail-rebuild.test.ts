@@ -51,7 +51,7 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-right-rail/);
     expect(page).toMatch(/flex w-full/);
     expect(page).toMatch(/flex-1 lg:w-\[72%\]/);
-    expect(page).toMatch(/lg:w-\[300px\] max-w-\[300px\] shrink-0/);
+    expect(page).toMatch(/lg:w-\[320px\] max-w-\[320px\] shrink-0/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/flex w-full flex-col items-end/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
@@ -208,7 +208,7 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/flex w-full flex-col items-end/);
     expect(page).toMatch(/lg:w-\[72%\]/);
-    expect(page).toMatch(/lg:w-\[300px\] max-w-\[300px\] shrink-0/);
+    expect(page).toMatch(/lg:w-\[320px\] max-w-\[320px\] shrink-0/);
     expect(page.indexOf("data-ff-deal-quotes-corner")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
     expect(page.indexOf("data-ff-deal-top-left")).toBeLessThan(page.indexOf("<SectionTabs"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("data-ff-deal-right-rail"));

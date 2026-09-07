@@ -286,7 +286,7 @@ export default async function DealPage({
         />
           </div>
           <aside
-            className="w-full space-y-3 lg:sticky lg:top-4 lg:w-[300px] max-w-[300px] shrink-0"
+            className="w-full space-y-3 lg:sticky lg:top-4 lg:w-[320px] max-w-[320px] shrink-0"
             data-ff-deal-right-rail
           >
             <div className="flex w-full flex-col items-end" data-ff-deal-quotes-corner>
