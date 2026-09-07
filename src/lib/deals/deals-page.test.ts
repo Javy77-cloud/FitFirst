@@ -55,6 +55,7 @@ describe("Deals page sep7h", () => {
     expect(upload).not.toMatch(/Upload documents onto a deal/);
     expect(upload).toMatch(/space-y-6 p-8/);
     expect(upload).toMatch(/h-14/);
+    expect(upload).toMatch(/h-14 px-5 text-base/);
     expect(upload).toMatch(/w-\[17\.6rem\]/);
     expect(upload).not.toMatch(/space-y-3\.5 p-5/);
     expect(upload).not.toMatch(/space-y-2\.5 p-3/);
@@ -100,6 +101,7 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/0 8px 8px rgba\(16, 28, 52/);
     expect(chrome).toMatch(/0 20px 30px rgba\(16, 28, 52/);
     expect(chrome).toMatch(/0 36px 48px rgba\(16, 28, 52/);
+    expect(chrome).toMatch(/color-mix\(in srgb, var\(--chip-bottom\) 48%, white\)/);
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\] \.ff-file-choose/);
     expect(chrome).toMatch(/height: 3\.5rem/);
     expect(chrome).not.toMatch(/inset 0 1\.5px 0/);
@@ -120,6 +122,13 @@ describe("Deals page sep7h", () => {
     expect(DEAL_ACTIVITY_TONES.task.chipFg).toBe("#1d6fb8");
     expect(DEAL_ACTIVITY_TONES.meeting.chipFg).toBe("#5b21b6");
     expect(DEAL_ACTIVITY_TONES.training.chipFg).toBe("#0f766e");
+    expect(DEAL_ACTIVITY_TONES.call.chipBgDark).toBe("#eadfb8");
+    expect(DEAL_ACTIVITY_TONES.email.chipBgDark).toBe("#c8cdd6");
+    expect(DEAL_ACTIVITY_TONES.task.chipBgDark).toBe("#b6d4f5");
+    expect(DEAL_ACTIVITY_TONES.meeting.chipBgDark).toBe("#d4c6f5");
+    expect(DEAL_ACTIVITY_TONES.training.chipBgDark).toBe("#9ee0d4");
+    expect(DEAL_ACTIVITY_TONES.call.chipBgDark).not.toBe("#c9b36a");
+    expect(DEAL_ACTIVITY_TONES.training.chipBgDark).not.toBe("#4db8a4");
   });
 
   it("puts phone and Call SMS Email Task Meeting under the deal name", () => {

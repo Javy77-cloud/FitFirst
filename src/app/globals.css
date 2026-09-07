@@ -200,7 +200,7 @@
     #ffffff 0%,
     var(--chip-top) 16%,
     var(--chip-mid) 62%,
-    var(--chip-bottom) 100%
+    color-mix(in srgb, var(--chip-bottom) 48%, white) 100%
   );
   border: 1px solid color-mix(in srgb, var(--chip-fg) 22%, transparent);
   border-top-color: rgba(255, 255, 255, 0.98);

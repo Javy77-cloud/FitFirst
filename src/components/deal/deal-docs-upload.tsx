@@ -104,12 +104,12 @@ export function DealDocsUpload({
       </div>
 
       {match ? (
-        <p className="mt-1 text-[11px] text-fit-green">
+        <p className="mt-1 text-sm text-fit-green">
           Will attach to <span className="font-medium">{match.title}</span>
           {match.partyName ? ` · ${match.partyName}` : ""}.
         </p>
       ) : dealName.trim() ? (
-        <p className="mt-1 text-[11px] text-fit-flag">
+        <p className="mt-1 text-sm text-fit-flag">
           No unique Deal match yet. Pick a Contact, Business, or shop below.
         </p>
       ) : null}
@@ -220,7 +220,7 @@ export function DealDocsUpload({
         {cta.kind === "select" && cta.match ? (
           <Button
             type="button"
-            size="sm"
+            className="h-14 px-5 text-base"
             data-testid="deal-select-existing"
             onClick={() => pickDeal(cta.match!)}
           >
@@ -230,14 +230,14 @@ export function DealDocsUpload({
         {cta.kind === "create" ? (
           <Button
             type="submit"
-            size="sm"
+            className="h-14 px-5 text-base"
             formAction={createDealFromUploadSearch}
             data-testid="deal-create-from-search"
           >
             {uploadDealCtaLabel("create")}
           </Button>
         ) : null}
-        <Button type="submit" size="sm" disabled={!match}>
+        <Button type="submit" className="h-14 px-5 text-base" disabled={!match}>
           Store on this deal
         </Button>
       </div>
