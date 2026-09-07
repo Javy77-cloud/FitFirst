@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aa`)
 
-Pipeline band only, from `cursor/live-ff-tip-sep7y` @ `0a8ea92` / tip SHA `48b78b4`. **Attach LEFT** (compact ~60%, not full-page). **Today's Activity RIGHT on the same row** — never under Attach, no wrap. Activity counters are **72×72 squares** (≤4px radius), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Attach multi-row / trash / +Add stay. Deal detail from sep7z/sep7x is untouched. No table / filter / sidebar / seed / Ana changes. Live Zoho stays book of record.
+Pipeline band only, from `cursor/live-ff-tip-sep7y` @ `0a8ea92` / tip SHA `48b78b4`. **Attach LEFT** (compact ~60%, not full-page). **Today's Activity RIGHT on the same row** — never under Attach, no wrap. Activity counters are **72×72 squares** (≤4px radius), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Attach multi-row / trash / +Add stay. Deal detail from sep7z/sep7x is untouched. No table / filter / sidebar / seed / Ana changes. Live Zoho stays book of record. Tip SHA `a323bf6`.
 
 ```bash
 cd ~/FitFirst
