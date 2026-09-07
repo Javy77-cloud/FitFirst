@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { QuoteBoard } from "@/components/quotes/quote-board";
 import { buttonVariants } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export default async function QuotesBoardPage({
 }) {
   const params = await searchParams;
   const deal = Array.isArray(params.deal) ? params.deal[0] : params.deal;
+  if (deal) redirect(`/deals/${deal}?tab=quotes`);
   const filter = pickFilterParams(params, ["stage", "line"]);
   const q = firstParam(params.q) ?? "";
   const [all, macros] = await Promise.all([

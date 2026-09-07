@@ -1,6 +1,15 @@
 import { finalizeQuoteResults } from "@/app/actions/lifecycle";
+import { BindConfirmGate } from "@/components/deal/bind-confirm-gate";
+import { QuoteConfirmRow } from "@/components/deal/quote-confirm-row";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
+import type { BindPathTarget } from "@/lib/crm/bind-path";
+import {
+  isLowConfidencePull,
+  quotePullNeedsConfirm,
+  type QuoteConfirmKind,
+} from "@/lib/deals/quote-confirm";
+import { sortQuotesCheapestFirst } from "@/lib/deals/quote-sort";
 import type { Carrier, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 
 export function QuotesPanel({
@@ -8,21 +17,40 @@ export function QuotesPanel({
   quotes,
   logs,
   quoteResultsNote,
+  formId = "HO3",
+  confirmLogs = [],
+  bind,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
   quoteResultsNote?: string | null;
+  formId?: string;
+  confirmLogs?: { carrierId: string; why?: string | null }[];
+  bind?: {
+    defaultTarget: BindPathTarget;
+    lineLabel: string;
+    isAna: boolean;
+    bound: boolean;
+    party: { id: string; name: string; href: string; kind: "contact" | "account" } | null;
+    policies: { id: string; policyNumber: string }[];
+  };
 }) {
+  const sorted = sortQuotesCheapestFirst(
+    quotes.map((row) => ({ ...row, premium: row.quote.premium })),
+  );
+  const cheapest = sorted[0] ?? null;
+  const resultByCarrier = new Map(logs.map((row) => [row.log.carrierId, row.log.result]));
+
   return (
     <div className="space-y-4">
-      <section className="ff-card p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className="ff-card overflow-hidden" data-ff-deal-quotes>
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div>
-            <h3 className="text-base font-semibold text-navy">Ranked quote results</h3>
+            <h3 className="text-base font-semibold text-navy">Quote results</h3>
             <p className="mt-1 text-base text-muted-foreground">
-              Cheapest first. This note stays on the deal. Quotes never become policies — bind is
-              the only path that writes a policy.
+              Cheapest on top. Premium, coverages, deductibles, and carrier status per market.
+              A quote never becomes a policy.
             </p>
           </div>
           <form action={finalizeQuoteResults}>
@@ -33,24 +61,13 @@ export function QuotesPanel({
           </form>
         </div>
         {quoteResultsNote ? (
-          <pre className="mt-3 whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-sm">
+          <pre className="whitespace-pre-wrap border-b border-border bg-muted px-4 py-2 text-sm">
             {quoteResultsNote}
           </pre>
-        ) : (
-          <p className="mt-3 text-base text-muted-foreground">
-            No ranked note yet. Build stub quotes, then finalize.
-          </p>
-        )}
-      </section>
-
-      <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-          Quote comparison
-        </div>
-        {quotes.length === 0 ? (
+        ) : null}
+        {sorted.length === 0 ? (
           <p className="px-4 py-6 text-base text-muted-foreground">
-            No quotes on this deal. Filter markets first, then build stub quotes for green fits.
-            A quote never creates a policy.
+            No quotes yet. Approve the master sheet, then request in-appetite quotes on Markets.
           </p>
         ) : (
           <table className="ff-table">
@@ -58,36 +75,84 @@ export function QuotesPanel({
               <tr>
                 <th>Carrier</th>
                 <th>Premium</th>
-                <th>AOP ded</th>
-                <th>Hurricane</th>
-                <th>Cov A</th>
-                <th>Bindable</th>
-                <th>Gaps</th>
+                <th>Coverages</th>
+                <th>Deductibles</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {quotes.map(({ quote, carrier }) => (
-                <tr key={quote.id}>
-                  <td className="font-medium">
-                    {carrier.name}
-                    {quote.stub ? (
-                      <div className="text-base text-muted-foreground">Stub · no portal</div>
-                    ) : null}
-                  </td>
-                  <td>{formatMoney(quote.premium)}</td>
-                  <td>{quote.aopDeductible ?? "—"}</td>
-                  <td>{quote.hurricaneDeductible ?? "—"}</td>
-                  <td>{formatMoney(quote.coverageA)}</td>
-                  <td>{quote.bindable ? "Yes" : "No"}</td>
-                  <td className="text-xs">
-                    {quote.coverageGaps.length ? quote.coverageGaps.join("; ") : "None noted"}
-                  </td>
-                </tr>
-              ))}
+              {sorted.map(({ quote, carrier }) => {
+                const denied = resultByCarrier.get(carrier.id) === "declined";
+                const kind: QuoteConfirmKind = quotePullNeedsConfirm({
+                  quoteId: quote.id,
+                  carrierId: carrier.id,
+                  formId,
+                  logs: confirmLogs,
+                  denied,
+                  lowConfidence: isLowConfidencePull(quote),
+                });
+                return (
+                  <tr key={quote.id}>
+                    <td className="font-medium">
+                      {carrier.name}
+                      {quote.stub ? (
+                        <div className="text-base text-muted-foreground">Stub · no paid rater</div>
+                      ) : null}
+                      <QuoteConfirmRow
+                        dealId={dealId}
+                        quoteId={quote.id}
+                        carrierId={carrier.id}
+                        carrierName={carrier.name}
+                        formId={formId}
+                        kind={kind}
+                      />
+                    </td>
+                    <td>{formatMoney(quote.premium)}</td>
+                    <td className="text-xs">
+                      Cov A {formatMoney(quote.coverageA)}
+                      {quote.coverageGaps.length ? (
+                        <div className="text-fit-flag">{quote.coverageGaps.join("; ")}</div>
+                      ) : (
+                        <div className="text-muted-foreground">Gaps none noted</div>
+                      )}
+                    </td>
+                    <td className="text-xs">
+                      AOP {quote.aopDeductible ?? "—"}
+                      <div>Hurricane {quote.hurricaneDeductible ?? "—"}</div>
+                    </td>
+                    <td className="text-xs uppercase">
+                      {denied ? "Denied" : quote.bindable ? "Quoted" : "Not bindable"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </section>
+
+      {bind ? (
+        <BindConfirmGate
+          dealId={dealId}
+          defaultTarget={bind.defaultTarget}
+          lineLabel={bind.lineLabel}
+          isAna={bind.isAna}
+          bound={bind.bound}
+          party={bind.party}
+          policies={bind.policies}
+          quote={
+            cheapest
+              ? {
+                  carrierName: cheapest.carrier.name,
+                  premium: cheapest.quote.premium,
+                  coverageA: cheapest.quote.coverageA,
+                  aopDeductible: cheapest.quote.aopDeductible,
+                  hurricaneDeductible: cheapest.quote.hurricaneDeductible,
+                }
+              : null
+          }
+        />
+      ) : null}
 
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
