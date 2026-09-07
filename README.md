@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bn`)
 
-Markets start-from-scratch on **every deal** in the Deals/Pipeline list, from `cursor/live-ff-tip-sep7az` (includes sep7bi empty-sheet gate). Hard refresh any deal → Markets is completely blank (`data-ff-markets-empty`): no In appetite, no stretch/skip, no carrier rows, no counts, no leftover evaluateDeal / quote-log / seed matches. The page does **not** run `evaluateDealMarkets` on load, even when the master sheet has values (Ana Cov A $321,000, Zoho imports). Markets may populate only after an explicit agent action on **that** deal — Confirm & request quotes / shop, or Add carrier — which writes `[ff-markets]`. Quotes empty stays a blank panel (no dashed placeholder). No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Markets start-from-scratch on **every deal** in the Deals/Pipeline list, from `cursor/live-ff-tip-sep7az` (includes sep7bi empty-sheet gate). Hard refresh any deal → Markets is completely blank (`data-ff-markets-empty`): no In appetite, no stretch/skip, no carrier rows, no counts, no leftover evaluateDeal / quote-log / seed matches. The page does **not** run `evaluateDealMarkets` on load, even when the master sheet has values (Ana Cov A $321,000, Zoho imports). Markets may populate only after an explicit agent action on **that** deal — Confirm & request quotes / shop, or Add carrier — which writes `[ff-markets]`. Quotes empty stays a blank panel (no dashed placeholder). No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `2740d1f1`.
 
 ```bash
 cd ~/FitFirst
