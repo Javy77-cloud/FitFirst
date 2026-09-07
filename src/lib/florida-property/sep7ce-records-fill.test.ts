@@ -1,0 +1,51 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { fieldsForLine } from "@/lib/quote-sheet/catalog";
+
+function source(file: string) {
+  return readFileSync(file, "utf8");
+}
+
+describe("sep7ce Fill from property records", () => {
+  it("places the button above the sheet next to the existing header actions", () => {
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    expect(sheet).toMatch(/Fill from property records/);
+    expect(sheet).toMatch(/fillFromPropertyRecords/);
+    expect(sheet).toMatch(/data-ff-fill-property-records/);
+    expect(sheet).toMatch(/Confirm extracted/);
+    expect(sheet.indexOf("Fill from property records")).toBeLessThan(sheet.indexOf("Save sheet"));
+    expect(sheet.indexOf("Fill from source")).toBeLessThan(sheet.indexOf("Fill from property records"));
+  });
+
+  it("adds Parcel ID, Assessed value, Records check, and Square footage on the HO sheet", () => {
+    const home = fieldsForLine("home", "homeowners");
+    expect(home.map((field) => field.label)).toEqual(
+      expect.arrayContaining(["Parcel ID", "Assessed value", "Records check", "Square footage"]),
+    );
+    expect(home.map((field) => field.key)).toEqual(
+      expect.arrayContaining(["parcel_id", "assessed_value", "records_check", "square_feet"]),
+    );
+  });
+
+  it("wires the Florida Property search URL and BYO key wall", () => {
+    const client = source("src/lib/florida-property/client.ts");
+    const key = source("src/lib/florida-property/key.ts");
+    const action = source("src/app/actions/quote-sheet.ts");
+    const env = source(".env.example");
+    expect(key).toMatch(/https:\/\/api\.floridapropertyapi\.com\/v1\/parcels\/search/);
+    expect(client).toMatch(/Authorization: `Bearer/);
+    expect(key).toMatch(/FLORIDA_PROPERTY_API_KEY/);
+    expect(key).toMatch(/No lookup ran/);
+    expect(action).toMatch(/fillFromPropertyRecords/);
+    expect(action).toMatch(/applyPropertyRecordsToSheet/);
+    expect(action).toMatch(/loadFloridaPropertyApiKey/);
+    expect(env).toMatch(/FLORIDA_PROPERTY_API_KEY=/);
+    expect(env).toMatch(/no fake parcel/);
+  });
+
+  it("does not rewrite document extraction maps", () => {
+    const maps = source("src/lib/extraction/field-maps.ts");
+    expect(maps).toMatch(/sourceLabel: "Year built"/);
+    expect(maps).toMatch(/sheetField: "year_built"/);
+  });
+});

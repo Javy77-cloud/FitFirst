@@ -327,6 +327,7 @@ export const QUOTE_FIELD_SOURCES = [
   "javy",
   "public",
   "public-records",
+  "property-records",
   "photo-ocr",
 ] as const;
 export type QuoteFieldSource = (typeof QUOTE_FIELD_SOURCES)[number];

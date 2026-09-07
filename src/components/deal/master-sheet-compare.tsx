@@ -1,7 +1,8 @@
 "use client";
 
-import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
+import { confirmQuoteSheetField, fillFromPropertyRecords, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
+import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
@@ -125,13 +126,22 @@ export function MasterSheetCompare({
               {SHEET_PRODUCT_LABELS[product]} · one product on this deal
             </p>
           </div>
-          <form action={fillQuoteSheetBlanks} className="shrink-0">
-            <input type="hidden" name="dealId" value={dealId} />
-            <input type="hidden" name="line" value={line} />
-            <Button type="submit" size="xs" variant="outline" disabled={sourceDocCount === 0}>
-              Fill from source
-            </Button>
-          </form>
+          <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+            <form action={fillQuoteSheetBlanks}>
+              <input type="hidden" name="dealId" value={dealId} />
+              <input type="hidden" name="line" value={line} />
+              <Button type="submit" size="xs" variant="outline" disabled={sourceDocCount === 0}>
+                Fill from source
+              </Button>
+            </form>
+            <form action={fillFromPropertyRecords} data-ff-fill-property-records="">
+              <input type="hidden" name="dealId" value={dealId} />
+              <input type="hidden" name="line" value={line} />
+              <Button type="submit" size="xs" variant="outline">
+                Fill from property records
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -221,6 +231,11 @@ function SheetGroup({
                 <td className="align-top text-muted-foreground">{sourceText || "—"}</td>
                 <td className="align-top">
                   <SheetCell fieldKey={field.key} input={field.input} cell={cell} />
+                  {cell && sourceTag(cell) ? (
+                    <span className="mt-0.5 block text-[10px] text-muted-foreground" data-ff-sheet-source="">
+                      {sourceTag(cell)}
+                    </span>
+                  ) : null}
                   {cell?.status && filled ? (
                     <span
                       className={cn(

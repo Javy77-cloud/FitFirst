@@ -18,7 +18,9 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "zip", label: "ZIP", group: "Property", extractKey: "zip" },
   { key: "mailing_address", label: "Mailing address", group: "Property", extractKey: "mailing_address" },
   { key: "legal_description", label: "Legal description", group: "Property" },
-  { key: "parcel_id", label: "Parcel / folio", group: "Property" },
+  { key: "parcel_id", label: "Parcel ID", group: "Property" },
+  { key: "assessed_value", label: "Assessed value", group: "Property", input: "number" },
+  { key: "records_check", label: "Records check", group: "Property", input: "textarea" },
   { key: "subdivision", label: "Subdivision", group: "Property" },
   { key: "year_purchased", label: "Year purchased", group: "Property", input: "number" },
   { key: "occupancy", label: "Occupancy", group: "Property", extractKey: "occupancy" },
@@ -27,7 +29,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "number_of_families", label: "Number of families", group: "Property", input: "number" },
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built", products: [...HO_LL] },
   { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories", products: [...HO_LL] },
-  { key: "square_feet", label: "Square feet", group: "Dwelling", input: "number", extractKey: "square_feet", products: [...HO_LL] },
+  { key: "square_feet", label: "Square footage", group: "Dwelling", input: "number", extractKey: "square_feet", products: [...HO_LL] },
   { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number", extractKey: "beds" },
   { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number", extractKey: "baths" },
   { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction", products: [...HO_LL] },
@@ -328,6 +330,8 @@ const EXTRACT_ALIASES: Record<string, string> = {
   garage: "garage_type",
   roof_material: "roof_covering",
   construction_type: "construction",
+  living_area: "square_feet",
+  square_footage: "square_feet",
 };
 
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {

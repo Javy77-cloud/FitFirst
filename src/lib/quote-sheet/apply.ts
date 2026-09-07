@@ -54,6 +54,9 @@ export function sourceTag(cell: QuoteSheetFieldValue): string | null {
   if (cell.source === "extracted") {
     return cell.status === "check" ? "CHECK · dec" : "dec";
   }
+  if (cell.source === "property-records") {
+    return cell.sourceLabel?.trim() || "property records";
+  }
   if (cell.source === "public" || cell.source === "public-records") {
     return cell.status === "check" ? "CHECK · public" : "public";
   }

@@ -4,7 +4,38 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7az`)
+## Mac test now (`cursor/live-ff-tip-sep7ce-f5f4`)
+
+Master sheet **Fill from property records** on Deals → Documents → Master sheet, from `cursor/live-ff-tip-sep7az` @ `27df6343`. The new button sits above the sheet next to **Fill from source** / Confirm extracted. Click it: the desk reads the property address from the sheet (or the deal / risk row), calls `GET https://api.floridapropertyapi.com/v1/parcels/search` with `Authorization: Bearer` + the agency key, and writes year built, construction, square footage, roof covering, stories, county, Parcel ID, assessed value, and owner → applicant / named insured **only where the cell is empty**. Four-point, wind mit, and dec values stay. When the API disagrees with a filled cell, the sheet value is left alone and **Records check** logs `API says 1982, sheet says 1978 (from 4pt).` Every API-written cell is tagged **property records**.
+
+Agency BYO. Store the key as `FLORIDA_PROPERTY_API_KEY` (already in `.env.example`) or a developer-vault row `provider=florida_property`. No key → toast says so and **nothing is written** — no fake parcel. No `db:seed`. Ana unbound. Cov A **$321,000**. Document extract / synonym maps are untouched.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ce-f5f4 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+# optional, to actually hit Florida Property API:
+# echo 'FLORIDA_PROPERTY_API_KEY=fpapi_live_…' >> .env
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Deals → any deal → Documents → Master sheet**. Confirm **Fill from property records** is above the sheet next to Fill from source. Click it without a key: toast says the key is missing and cells stay put. With a key and a blank Year built / Parcel ID: those fill and show **property records**. A Year built that came from 4-point / wind mit / dec stays; Records check gets the mismatch line. Do not bind or edit Ana Cov A (**$321,000**).
+
+### CE — Fill from property records
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| CE1 | Button | Documents → Master sheet shows **Fill from property records** above the sheet, next to Fill from source. Confirm extracted / Confirm & request quotes stay where they were. |
+| CE2 | Empty fill | Blank Year built, Construction, Square footage, Roof covering, Stories, County, Parcel ID, Assessed value fill from the API. Owner writes Applicant / Named insured only if those are empty. |
+| CE3 | Never overwrite | A value from 4-point, wind mit, or dec is not replaced. |
+| CE4 | Records check | Mismatch logs `API says …, sheet says … (from 4pt).` (or dec / wind mit). |
+| CE5 | Source tag | API-filled cells show **property records**. |
+| CE6 | Missing key | No `FLORIDA_PROPERTY_API_KEY` / vault row → error toast, no invented parcel, no cell writes. |
+| CE7 | Scope | Extract maps / synonym dictionary, confirm-button behavior, and every page outside the master sheet stay. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7az`)
 
 Pipeline **List** and **Grid** on the existing Board / Funnel switcher, merged from `cursor/live-ff-tip-sep7cc-4dd2` onto the desk tip. The current Pipeline table is **List** — click Deal name, carrier, stage, assigned, phone, email, or other navigable columns to open that record or destination (stage opens the Board filtered to that stage). **Grid** is the same columns with inline edit: type + Enter/blur for text; dropdown for picklists / line / source / assigned / stage; checkbox / date / number / currency where the field type says so. Saves persist without leaving the table and show the sitewide top-center toast (**Deal updated**). Read-only columns (Deal title, Updated, Tags, formulas) stay display-only in Grid. Board is unchanged. `view=table` bookmarks still open List. Keeps desk tip later work: FedEx address + vault, Edit Layout, BX tags, builder DnD, Dashboard, rail 320, Save toasts. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `182929b4`.
 

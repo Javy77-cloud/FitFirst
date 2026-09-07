@@ -20,6 +20,9 @@ export {
   type VaultPublicStatus,
 } from "./vault-public";
 
+export const FLORIDA_PROPERTY_VAULT_PROVIDER = "florida_property";
+export const FLORIDA_PROPERTY_VAULT_LABEL = "Florida Property API";
+
 function envFedExCredentials(): FedExCredentials | null {
   const apiKey = process.env.FEDEX_API_KEY?.trim() || "";
   const apiSecret = process.env.FEDEX_API_SECRET?.trim() || "";
@@ -132,6 +135,27 @@ export async function saveFedExVault(input: {
     await db.insert(developerApiVault).values(values);
   }
   return publicVaultStatus({ configured: true, source: "vault", environment: input.environment });
+}
+
+/** Server-only. Single-key paid plug. Never log the raw key. */
+export async function loadFloridaPropertyVaultKey(): Promise<string | null> {
+  try {
+    const [row] = await db
+      .select()
+      .from(developerApiVault)
+      .where(
+        and(
+          eq(developerApiVault.tenantId, DEFAULT_TENANT_ID),
+          eq(developerApiVault.provider, FLORIDA_PROPERTY_VAULT_PROVIDER),
+        ),
+      )
+      .limit(1);
+    if (!row?.configured || !row.apiKeyEnc || !row.apiKeyIv) return null;
+    const key = decryptSecret(row.apiKeyEnc, row.apiKeyIv).trim();
+    return key || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function clearFedExVault(actorId: string | null): Promise<VaultPublicStatus> {

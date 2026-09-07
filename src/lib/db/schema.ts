@@ -16,7 +16,7 @@ import {
 export type QuoteSheetFieldValue = {
   value: string;
   status: "missing" | "check" | "confirmed";
-  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public" | "public-records" | "photo-ocr";
+  source: "blank" | "agent" | "extracted" | "seed" | "javy" | "public" | "public-records" | "property-records" | "photo-ocr";
   /** Short tag on the cell: "Uploaded dec", "Brevard PA", "Listing facts", "FEMA flood". */
   sourceLabel?: string;
 };

@@ -205,6 +205,7 @@ function sourceTag(cell: QuoteSheetFieldValue) {
   if (cell.source === "javy") return "Javy-tested";
   if (cell.sourceLabel) return cell.sourceLabel;
   if (cell.source === "extracted") return "Uploaded dec";
+  if (cell.source === "property-records") return cell.sourceLabel?.trim() || "property records";
   if (cell.source === "public") return "Public records";
   if (cell.source === "agent") return "You typed";
   if (cell.source === "seed") return "Seed";
