@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7j`)
+## Mac test now (`cursor/live-ff-tip-sep7k`)
 
-Consolidator: Leads tip `cursor/live-ff-tip-sep7i` @ `0b4ed28` plus latest Deals tip `cursor/live-ff-tip-sep7h` @ `8c69e76` (Deal column live name search + Pipeline chip spacing). Prefer sep7i for Leads / lead detail / follow-up templates. Prefer sep7h for Deals / Pipeline / Deal live search / chip spacing. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
+Consolidator: desk tip `cursor/live-ff-tip-sep7j` plus Today's Activity from `cursor/live-ff-tip-sep7h` @ `0a7ff00` (Call / Email / Task / Meeting colors + order, no SMS, black chip borders). Prefer sep7h for Deals activity strip / pipeline bar. Keep sep7j for everything else. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7j && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7k && git pull
 npm install
 # skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
 # skip db:seed — keep the live Zoho book
@@ -40,7 +40,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | # | Check | Pass when |
 | --- | --- | --- |
 | B1 | Title | Header says **Deals / Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
-| B2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Task blue, Call green, Email amber, Meetings purple, Training teal. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
+| B2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered, black borders. Order matches row actions minus SMS: **Calls, Emails, Tasks, Meetings, Training**. Colors match Call mustard / Email navy / Task blue / Meeting purple (Training stays teal). No SMS chip. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
 | B3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task / Meeting**. Task is calendar blue. Meeting is the blue-purple chip color. Comms column is **Send quote / Change owner / Bind policy**. No “Text”. No duplicate phone column. |
 | B4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
 | B5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
@@ -50,6 +50,10 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | B9 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
 | B10 | Deal search | **Deal** header is live typeahead (same as Leads **Name**). No ASC/DESC funnel on that column. Typing filters matching deal names immediately. |
 | B11 | Chip spacing | P&C / Health / Life sit with more horizontal room. Won-Lost and Archive sit further from that group and from each other. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7j`)
+
+Consolidator: Leads tip `cursor/live-ff-tip-sep7i` @ `0b4ed28` plus latest Deals tip `cursor/live-ff-tip-sep7h` @ `8c69e76` (Deal column live name search + Pipeline chip spacing). Tip SHA `8269e9c`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7i`)
 
@@ -114,7 +118,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | # | Check | Pass when |
 | --- | --- | --- |
 | C1 | Title | Header says **Deals / Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
-| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Order matches row actions minus SMS: **Calls, Emails, Tasks, Meetings, Training**. Colors match Call mustard / Email navy / Task blue / Meeting purple (Training stays teal). No SMS chip. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
+| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Task blue, Call green, Email amber, Meetings purple, Training teal. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
 | C3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task / Meeting**. Task is calendar blue. Meeting is the blue-purple chip color. Comms column is **Send quote / Change owner / Bind policy**. No “Text”. No duplicate phone column. |
 | C4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
 | C5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
