@@ -10,7 +10,16 @@ export const MAX_PICKLIST_OPTIONS = 40;
 
 export function sanitizePicklistOptions(options: unknown): string[] {
   if (!Array.isArray(options)) return [];
-  return options.map((item) => String(item).trim()).filter(Boolean).slice(0, MAX_PICKLIST_OPTIONS);
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const item of options) {
+    const value = String(item ?? "").trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    next.push(value);
+    if (next.length >= MAX_PICKLIST_OPTIONS) break;
+  }
+  return next;
 }
 
 export function resizePicklistOptions(options: string[], count: number): string[] {

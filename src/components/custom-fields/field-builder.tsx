@@ -35,7 +35,7 @@ import {
   removeFieldFromLayout,
 } from "@/lib/custom-fields/layout";
 import { asList } from "@/lib/safe-list";
-import type { FieldPicklist } from "@/lib/custom-fields/picklists";
+import { sanitizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
 import {
   CUSTOM_FIELD_TYPE_LABELS,
   CUSTOM_FIELD_TYPES,
@@ -693,8 +693,8 @@ function DefaultValueInput({
         onChange={(event) => onPatch({ defaultValue: event.target.value })}
       >
         <option value="">None</option>
-        {(field.options ?? []).filter(Boolean).map((option) => (
-          <option key={option} value={option}>
+        {sanitizePicklistOptions(field.options ?? []).map((option, index) => (
+          <option key={`${field.key}:${index}:${option}`} value={option}>
             {option}
           </option>
         ))}

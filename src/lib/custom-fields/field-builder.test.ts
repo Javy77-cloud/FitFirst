@@ -1,5 +1,8 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { FieldControl } from "@/components/custom-fields/field-control";
 import {
   ESSENTIAL_ADDRESS_KEYS,
   ESSENTIAL_CONTACT_KEYS,
@@ -16,6 +19,7 @@ import {
   resizePicklistOptions,
   resolveFieldOptions,
   resolvedFieldValue,
+  sanitizePicklistOptions,
 } from "./picklists";
 import { CUSTOM_FIELD_TYPES, CUSTOM_FIELD_TYPE_LABELS, PALETTE_ITEMS, PALETTE_LABELS } from "./types";
 
@@ -198,6 +202,84 @@ describe("deal field builder", () => {
     ]);
     expect(formatCurrencyDisplay("321000")).toBe("321,000.00");
     expect(parseNumericInput("$321,000.00")).toBe("321000");
+  });
+
+  it("strips empty and duplicate picklist options from field defs before they hit FieldControl", () => {
+    expect(sanitizePicklistOptions(["", " ", "Frame", "Frame", "", "Masonry", "  Frame  "])).toEqual([
+      "Frame",
+      "Masonry",
+    ]);
+    expect(sanitizePicklistOptions(["", ""])).toEqual([]);
+    expect(sanitizePicklistOptions(null)).toEqual([]);
+    const custom = {
+      key: "construction",
+      label: "Construction",
+      type: "picklist" as const,
+      options: ["", "", "Frame", "Frame"],
+    };
+    expect(resolveFieldOptions(custom)).toEqual(["Frame"]);
+    const global = {
+      ...custom,
+      picklistId: "list-1",
+      options: ["", "leftover"],
+    };
+    expect(
+      resolveFieldOptions(global, [{ id: "list-1", name: "Construction", options: ["", "Masonry", "Masonry", " "] }]),
+    ).toEqual(["Masonry"]);
+    const control = source("src/components/custom-fields/field-control.tsx");
+    expect(control).toMatch(/sanitizePicklistOptions/);
+    expect(control).toMatch(/<option value="">Select<\/option>/);
+    expect(control).toMatch(/key=\{`\$\{field\.key\}:\$\{index\}:\$\{option\}`\}/);
+    expect(control).not.toMatch(/key=\{option\}/);
+    expect(source("src/lib/custom-fields/store.ts")).toMatch(/resolveFieldOptions\(field, lists\)/);
+    expect(source("src/lib/custom-fields/store.ts")).not.toMatch(
+      /field\.picklistId \? \{ \.\.\.field, options: resolveFieldOptions/,
+    );
+  });
+
+  it("renders a picklist FieldControl without duplicate empty keys", () => {
+    const errors: string[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args) => {
+      errors.push(args.map(String).join(" "));
+    });
+    const html = renderToString(
+      createElement(FieldControl, {
+        field: {
+          key: "construction",
+          label: "Construction",
+          type: "picklist",
+          options: ["", " ", "Frame", "Frame", "", "Masonry"],
+        },
+        value: "Frame",
+        values: { coverage_a: "321000" },
+        name: "field_construction",
+      }),
+    );
+    spy.mockRestore();
+    expect(errors.some((line) => line.includes("same key") || line.includes('key, ``'))).toBe(false);
+    expect(html.match(/<option/g)?.length).toBe(3);
+    expect(html).toMatch(/<option value="">Select<\/option>/);
+    expect(html).toContain('value="Frame"');
+    expect(html).toContain('value="Masonry"');
+    expect(html.match(/value="Frame"/g)?.length).toBe(1);
+    expect(html).not.toMatch(/<option value="">\s*<\/option>/);
+    const multi = renderToString(
+      createElement(FieldControl, {
+        field: {
+          key: "plan_type",
+          label: "Plan type",
+          type: "multi_select",
+          options: ["", "PPO", "PPO", "HMO"],
+        },
+        value: "PPO",
+        values: {},
+        name: "field_plan_type",
+      }),
+    );
+    expect(multi.match(/type="checkbox"/g)?.length).toBe(2);
+    expect(multi).toContain('value="PPO"');
+    expect(multi).toContain('value="HMO"');
+    expect(multi.match(/value="PPO"/g)?.length).toBe(1);
   });
 
   it("defaults every line of business to Contact essentials + Address only", () => {
