@@ -7,7 +7,6 @@ import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { suggestParties, type PartyHit, type PartyRecord } from "@/lib/crm/party-typeahead";
 import { matchDealLookup, suggestDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
 import { uploadDealCta, uploadDealCtaLabel } from "@/lib/deals/pipeline-desk";
@@ -74,148 +73,65 @@ export function DealDocsUpload({
       ? partySuggestions.flatMap((hit) => dealsForParty(hit).map((row) => ({ hit, row })))
       : [];
   const cta = uploadDealCta(deals, dealName, dealId || null);
+  const primary = rows[0]!;
 
   return (
-    <form action={uploadDealDocuments} className="ff-card h-full space-y-3 p-4" data-testid="deal-docs-upload">
-      <div>
-        <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
-        <p className="mt-1 text-helper text-muted-foreground">
-          Search deals on this page, pick one, then attach files. This is not global search.
-        </p>
-      </div>
-
-      <div>
-        <Label htmlFor="dealName" className="text-xs">
-          Search deals
-        </Label>
+    <form action={uploadDealDocuments} className="ff-card px-3 py-2" data-testid="deal-docs-upload">
+      <h2 className="sr-only">Attach documents to a deal</h2>
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           id="dealName"
           name="dealName"
           required
           value={dealName}
           onChange={(event) => onNameChange(event.target.value)}
-          className="mt-1 h-8"
-          placeholder="Type a deal, contact, or business name"
+          className="h-8 min-w-[12rem] flex-1"
+          placeholder="Search deal, contact, or business"
           autoComplete="off"
           aria-label="Search deals"
           data-testid="deal-docs-name"
         />
         <input type="hidden" name="dealId" value={match?.id ?? dealId} />
         <input type="hidden" name="rowCount" value={rows.length} />
-        {match ? (
-          <p className="mt-1 text-xs text-fit-green">
-            Will attach to <span className="font-medium">{match.title}</span>
-            {match.partyName ? ` · ${match.partyName}` : ""}.
-          </p>
-        ) : dealName.trim() ? (
-          <p className="mt-1 text-xs text-fit-flag">
-            No unique Deal match yet. Pick a Contact, Business, or shop below — files will not
-            store until a Deal is selected.
-          </p>
-        ) : (
-          <p className="mt-1 text-helper text-muted-foreground">Required before files are stored.</p>
-        )}
-        {dealName.trim() && (partySuggestions.length > 0 || dealSuggestions.length > 0) ? (
-          <ul className="mt-2 max-h-52 space-y-1 overflow-auto rounded-md border border-border bg-card p-1">
-            {partySuggestions.map((hit) => {
-              const related = dealsForParty(hit);
-              return (
-                <li key={`${hit.kind}-${hit.id}`}>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
-                    onClick={() => pickParty(hit)}
-                  >
-                    <span>
-                      <span className="font-medium text-navy">{hit.title}</span>
-                      <span className="ml-2 text-muted-foreground">{hit.subtitle}</span>
-                      {related.length === 1 ? (
-                        <span className="ml-2 text-fit-green">· {related[0]!.title}</span>
-                      ) : related.length > 1 ? (
-                        <span className="ml-2 text-muted-foreground">· {related.length} shops</span>
-                      ) : (
-                        <span className="ml-2 text-muted-foreground">· no shop yet</span>
-                      )}
-                    </span>
-                    <span className="shrink-0 uppercase text-[10px] text-muted-foreground">{hit.kind}</span>
-                  </button>
-                </li>
-              );
-            })}
-            {dealSuggestions.map((row) => (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
-                  onClick={() => pickDeal(row)}
-                >
-                  <span>
-                    <span className="font-medium text-primary">{row.title}</span>
-                    {row.partyName ? (
-                      <span className="ml-2 text-muted-foreground">{row.partyName}</span>
-                    ) : null}
-                  </span>
-                  <span className="shrink-0 uppercase text-[10px] text-muted-foreground">deal</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {relatedFromParty.length > 1 && !match ? (
-          <ul className="mt-1 space-y-1">
-            {relatedFromParty.map(({ row }) => (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  className="text-left text-xs text-primary hover:underline"
-                  onClick={() => pickDeal(row)}
-                >
-                  Use shop {row.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-
-      <div className="space-y-2">
-        {rows.map((row, index) => (
-          <FilePickRow
-            key={row.id}
-            row={row}
-            index={index}
-            onFileName={(fileName) =>
-              setRows((current) =>
-                current.map((item) => (item.id === row.id ? { ...item, fileName } : item)),
-              )
-            }
-            onDocType={(docType) =>
-              setRows((current) =>
-                current.map((item) => (item.id === row.id ? { ...item, docType } : item)),
-              )
-            }
-            onRemove={() => {
-              setRows((current) => {
-                const next = current.filter((item) => item.id !== row.id);
-                return next.length > 0 ? next : [{ id: row.id, docType: "dec", fileName: "" }];
-              });
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          className="text-sm font-medium text-primary hover:underline"
-          data-testid="deal-add-file"
-          onClick={() => {
-            setRows((current) => [...current, { id: nextId, docType: "dec", fileName: "" }]);
-            setNextId((n) => n + 1);
-          }}
+        <select
+          name="docType_0"
+          value={primary.docType}
+          onChange={(event) =>
+            setRows((current) =>
+              current.map((item) => (item.id === primary.id ? { ...item, docType: event.target.value } : item)),
+            )
+          }
+          aria-label="Doc type"
+          className="h-8 w-[10rem] rounded-md border border-input bg-card px-2 text-sm"
         >
-          + Add file
-        </button>
+          {DEAL_UPLOAD_DOC_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {DOC_TYPE_LABELS[type]}
+            </option>
+          ))}
+        </select>
+        <ChooseFileButton
+          name="files_0"
+          onFile={(file) =>
+            setRows((current) =>
+              current.map((item) => (item.id === primary.id ? { ...item, fileName: file?.name ?? "" } : item)),
+            )
+          }
+        />
+        {primary.fileName ? (
+          <FileDeleteIcon
+            type="button"
+            label={`Remove ${primary.fileName}`}
+            onClick={() =>
+              setRows((current) => {
+                const next = current.map((item) =>
+                  item.id === primary.id ? { ...item, fileName: "" } : item,
+                );
+                return next;
+              })
+            }
+          />
+        ) : null}
         {cta.kind === "select" && cta.match ? (
           <Button
             type="button"
@@ -240,56 +156,128 @@ export function DealDocsUpload({
           Store on this deal
         </Button>
       </div>
-    </form>
-  );
-}
 
-function FilePickRow({
-  row,
-  index,
-  onFileName,
-  onDocType,
-  onRemove,
-}: {
-  row: Row;
-  index: number;
-  onFileName: (fileName: string) => void;
-  onDocType: (docType: string) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
-      <div>
-        <Label className="text-xs">Doc type</Label>
-        <select
-          name={`docType_${index}`}
-          value={row.docType}
-          onChange={(event) => onDocType(event.target.value)}
-          className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-        >
-          {DEAL_UPLOAD_DOC_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {DOC_TYPE_LABELS[type]}
-            </option>
+      {match ? (
+        <p className="mt-1 text-[11px] text-fit-green">
+          Will attach to <span className="font-medium">{match.title}</span>
+          {match.partyName ? ` · ${match.partyName}` : ""}.
+        </p>
+      ) : dealName.trim() ? (
+        <p className="mt-1 text-[11px] text-fit-flag">
+          No unique Deal match yet. Pick a Contact, Business, or shop below.
+        </p>
+      ) : null}
+
+      {dealName.trim() && (partySuggestions.length > 0 || dealSuggestions.length > 0) ? (
+        <ul className="mt-1 max-h-40 space-y-0.5 overflow-auto rounded-md border border-border bg-card p-1">
+          {partySuggestions.map((hit) => {
+            const related = dealsForParty(hit);
+            return (
+              <li key={`${hit.kind}-${hit.id}`}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-xs hover:bg-muted"
+                  onClick={() => pickParty(hit)}
+                >
+                  <span>
+                    <span className="font-medium text-navy">{hit.title}</span>
+                    <span className="ml-2 text-muted-foreground">{hit.subtitle}</span>
+                    {related.length === 1 ? (
+                      <span className="ml-2 text-fit-green">· {related[0]!.title}</span>
+                    ) : related.length > 1 ? (
+                      <span className="ml-2 text-muted-foreground">· {related.length} shops</span>
+                    ) : (
+                      <span className="ml-2 text-muted-foreground">· no shop yet</span>
+                    )}
+                  </span>
+                  <span className="shrink-0 uppercase text-[10px] text-muted-foreground">{hit.kind}</span>
+                </button>
+              </li>
+            );
+          })}
+          {dealSuggestions.map((row) => (
+            <li key={row.id}>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-xs hover:bg-muted"
+                onClick={() => pickDeal(row)}
+              >
+                <span>
+                  <span className="font-medium text-primary">{row.title}</span>
+                  {row.partyName ? (
+                    <span className="ml-2 text-muted-foreground">{row.partyName}</span>
+                  ) : null}
+                </span>
+                <span className="shrink-0 uppercase text-[10px] text-muted-foreground">deal</span>
+              </button>
+            </li>
           ))}
-        </select>
-      </div>
-      <div>
-        <Label className="text-xs">File</Label>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <ChooseFileButton
-            name={`files_${index}`}
-            onFile={(file) => onFileName(file?.name ?? "")}
-          />
-          {row.fileName ? (
+        </ul>
+      ) : null}
+      {relatedFromParty.length > 1 && !match ? (
+        <ul className="mt-1 space-y-0.5">
+          {relatedFromParty.map(({ row }) => (
+            <li key={row.id}>
+              <button
+                type="button"
+                className="text-left text-xs text-primary hover:underline"
+                onClick={() => pickDeal(row)}
+              >
+                Use shop {row.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {rows.slice(1).map((row, extraIndex) => {
+        const index = extraIndex + 1;
+        return (
+          <div key={row.id} className="mt-1 flex flex-wrap items-center gap-2">
+            <select
+              name={`docType_${index}`}
+              value={row.docType}
+              onChange={(event) =>
+                setRows((current) =>
+                  current.map((item) => (item.id === row.id ? { ...item, docType: event.target.value } : item)),
+                )
+              }
+              aria-label="Doc type"
+              className="h-8 w-[10rem] rounded-md border border-input bg-card px-2 text-sm"
+            >
+              {DEAL_UPLOAD_DOC_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {DOC_TYPE_LABELS[type]}
+                </option>
+              ))}
+            </select>
+            <ChooseFileButton
+              name={`files_${index}`}
+              onFile={(file) =>
+                setRows((current) =>
+                  current.map((item) => (item.id === row.id ? { ...item, fileName: file?.name ?? "" } : item)),
+                )
+              }
+            />
             <FileDeleteIcon
               type="button"
-              label={`Remove ${row.fileName}`}
-              onClick={onRemove}
+              label={row.fileName ? `Remove ${row.fileName}` : "Remove file row"}
+              onClick={() => setRows((current) => current.filter((item) => item.id !== row.id))}
             />
-          ) : null}
-        </div>
-      </div>
-    </div>
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        className="mt-1 text-xs font-medium text-primary hover:underline"
+        data-testid="deal-add-file"
+        onClick={() => {
+          setRows((current) => [...current, { id: nextId, docType: "dec", fileName: "" }]);
+          setNextId((n) => n + 1);
+        }}
+      >
+        + Add file
+      </button>
+    </form>
   );
 }

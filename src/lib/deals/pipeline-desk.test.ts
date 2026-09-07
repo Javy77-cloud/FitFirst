@@ -6,8 +6,10 @@ import {
   DEAL_TODAY_ACTIVITY_CHIPS,
   dealNextActionState,
   filterTodayDealActivity,
+  formatTodayActivityDate,
   isDealStale,
   nextDealActionAt,
+  todayActivityCalendarHref,
   todayActivityWorkHref,
   uploadDealCta,
   uploadDealCtaLabel,
@@ -39,6 +41,8 @@ describe("Deals today activity strip", () => {
   it("filters the work queue to one type", () => {
     expect(filterTodayDealActivity(rows, "training", now).map((row) => row.id)).toEqual(["5"]);
     expect(todayActivityWorkHref("call")).toBe("/deals?queue=call");
+    expect(todayActivityCalendarHref()).toBe("/tasks");
+    expect(formatTodayActivityDate(now)).toBe("Monday, Sep 7");
   });
 
   it("classifies training from meetingType, not as a meeting", () => {

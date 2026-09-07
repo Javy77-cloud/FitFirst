@@ -15,6 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ActivityRecordPicker } from "@/components/activities/record-picker";
+import type { ActivityRecordHit } from "@/lib/activities/record-picker";
 import { mailtoHref, smsHref, telHref } from "@/lib/desk/contact-actions";
 import type { HeaderRecordContext } from "@/lib/desk/header-record";
 import { cn } from "@/lib/utils";
@@ -44,9 +46,26 @@ export function HeaderRecordActions({
   record?: HeaderRecordContext | null;
 }) {
   const [open, setOpen] = useState<Composer>(null);
+  const [picked, setPicked] = useState<HeaderRecordContext | null>(record ?? null);
   const [digits, setDigits] = useState(digitsFrom(record?.phone));
+  const active = picked ?? record ?? null;
+
+  function applyHit(hit: ActivityRecordHit) {
+    const next: HeaderRecordContext = {
+      leadId: hit.leadId,
+      dealId: hit.dealId,
+      contactId: hit.contactId,
+      accountId: hit.accountId,
+      name: hit.name,
+      phone: hit.phone,
+      email: hit.email,
+    };
+    setPicked(next);
+    setDigits(digitsFrom(hit.phone));
+  }
 
   function openComposer(next: Composer) {
+    setPicked(record ?? null);
     if (next === "call") setDigits(digitsFrom(record?.phone));
     setOpen(next);
   }
@@ -78,21 +97,37 @@ export function HeaderRecordActions({
         <DialogContent className="sm:max-w-md">
           {open === "call" ? (
             <CallComposer
-              record={record}
-              name={displayName(record)}
+              record={active}
+              name={displayName(active)}
               digits={digits}
               setDigits={setDigits}
+              onPick={applyHit}
               onDone={() => setOpen(null)}
             />
           ) : null}
           {open === "sms" ? (
-            <SmsComposer record={record} name={displayName(record)} onDone={() => setOpen(null)} />
+            <SmsComposer
+              record={active}
+              name={displayName(active)}
+              onPick={applyHit}
+              onDone={() => setOpen(null)}
+            />
           ) : null}
           {open === "email" ? (
-            <EmailComposer record={record} name={displayName(record)} onDone={() => setOpen(null)} />
+            <EmailComposer
+              record={active}
+              name={displayName(active)}
+              onPick={applyHit}
+              onDone={() => setOpen(null)}
+            />
           ) : null}
           {open === "task" ? (
-            <TaskComposer record={record} name={displayName(record)} onDone={() => setOpen(null)} />
+            <TaskComposer
+              record={active}
+              name={displayName(active)}
+              onPick={applyHit}
+              onDone={() => setOpen(null)}
+            />
           ) : null}
         </DialogContent>
       </Dialog>
@@ -118,12 +153,14 @@ function CallComposer({
   name,
   digits,
   setDigits,
+  onPick,
   onDone,
 }: {
   record?: HeaderRecordContext | null;
   name: string;
   digits: string;
   setDigits: (value: string | ((current: string) => string)) => void;
+  onPick: (hit: ActivityRecordHit) => void;
   onDone: () => void;
 }) {
   const dial = telHref(digits);
@@ -133,6 +170,7 @@ function CallComposer({
         <DialogTitle>Call {name}</DialogTitle>
         <DialogDescription>In-desk dialer. Logs the call on this record. No live trunk.</DialogDescription>
       </DialogHeader>
+      <ActivityRecordPicker onPick={onPick} />
       <form
         action={async (formData) => {
           formData.set("kind", "call");
@@ -190,10 +228,12 @@ function CallComposer({
 function SmsComposer({
   record,
   name,
+  onPick,
   onDone,
 }: {
   record?: HeaderRecordContext | null;
   name: string;
+  onPick: (hit: ActivityRecordHit) => void;
   onDone: () => void;
 }) {
   const phone = record?.phone ?? "";
@@ -204,6 +244,7 @@ function SmsComposer({
         <DialogTitle>Text {name}</DialogTitle>
         <DialogDescription>Desk SMS stub. Nothing leaves FitFirst.</DialogDescription>
       </DialogHeader>
+      <ActivityRecordPicker onPick={onPick} />
       <form
         action={async (formData) => {
           formData.set("direction", "outbound");
@@ -215,7 +256,7 @@ function SmsComposer({
         <RelatedFields record={record} />
         <div>
           <Label className="text-xs">Phone</Label>
-          <Input name="phone" defaultValue={phone} className="mt-1 h-8" placeholder="(321) 555-0100" />
+          <Input name="phone" key={phone} defaultValue={phone} className="mt-1 h-8" placeholder="(321) 555-0100" />
         </div>
         <div>
           <Label className="text-xs">Message</Label>
@@ -243,10 +284,12 @@ function SmsComposer({
 function EmailComposer({
   record,
   name,
+  onPick,
   onDone,
 }: {
   record?: HeaderRecordContext | null;
   name: string;
+  onPick: (hit: ActivityRecordHit) => void;
   onDone: () => void;
 }) {
   const email = record?.email ?? "";
@@ -257,6 +300,7 @@ function EmailComposer({
         <DialogTitle>Email {name}</DialogTitle>
         <DialogDescription>Desk email stub. Nothing leaves FitFirst.</DialogDescription>
       </DialogHeader>
+      <ActivityRecordPicker onPick={onPick} />
       <form
         action={async (formData) => {
           await sendDeskEmail(formData);
@@ -267,7 +311,7 @@ function EmailComposer({
         <RelatedFields record={record} />
         <div>
           <Label className="text-xs">To</Label>
-          <Input name="toAddress" defaultValue={email} className="mt-1 h-8" placeholder="client@email" />
+          <Input name="toAddress" key={email} defaultValue={email} className="mt-1 h-8" placeholder="client@email" />
         </div>
         <div>
           <Label className="text-xs">Subject</Label>
@@ -295,10 +339,12 @@ function EmailComposer({
 function TaskComposer({
   record,
   name,
+  onPick,
   onDone,
 }: {
   record?: HeaderRecordContext | null;
   name: string;
+  onPick: (hit: ActivityRecordHit) => void;
   onDone: () => void;
 }) {
   return (
@@ -307,6 +353,7 @@ function TaskComposer({
         <DialogTitle>Task for {name}</DialogTitle>
         <DialogDescription>Creates a desk task on this record. Nothing is sent.</DialogDescription>
       </DialogHeader>
+      <ActivityRecordPicker onPick={onPick} />
       <form
         action={async (formData) => {
           formData.set("kind", "task");
@@ -318,7 +365,7 @@ function TaskComposer({
         <RelatedFields record={record} />
         <div>
           <Label className="text-xs">Title</Label>
-          <Input name="title" required defaultValue={`Follow-up · ${name}`} className="mt-1 h-8" />
+          <Input name="title" required key={name} defaultValue={`Follow-up · ${name}`} className="mt-1 h-8" />
         </div>
         <div>
           <Label className="text-xs">Due</Label>

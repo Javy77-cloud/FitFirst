@@ -42,6 +42,7 @@ import {
 import { matchesContains } from "@/lib/search/live-query";
 import { sheetAttr, sheetCellProps } from "@/lib/desk/sheet-attr";
 import { cn } from "@/lib/utils";
+import { useOptionalSelection } from "@/components/developer-hub/list-selection";
 
 export type { ListColumn };
 
@@ -246,6 +247,9 @@ export function ColumnTable({
     setDraftWidths(next);
   }
 
+  const visibleIds = paged.slice.map((row) => row.id ?? row.key);
+  const matchingIds = sortedRows.map((row) => row.id ?? row.key);
+
   function onPageSize(next: PageSizeOption) {
     setPageSize(next);
     setPage(1);
@@ -258,6 +262,7 @@ export function ColumnTable({
 
   return (
     <div className="overflow-x-auto">
+      <ListScopeReporter visibleIds={visibleIds} matchingIds={matchingIds} />
       <table className="ff-table ff-list-table">
         <colgroup>
           {shown.map((column) => (
@@ -479,4 +484,18 @@ function ResizeHandle({
       className={cn("ff-col-resize", edge === "left" ? "ff-col-resize-left" : "ff-col-resize-right")}
     />
   );
+}
+
+function ListScopeReporter({
+  visibleIds,
+  matchingIds,
+}: {
+  visibleIds: string[];
+  matchingIds: string[];
+}) {
+  const selection = useOptionalSelection();
+  useEffect(() => {
+    selection?.setScope(visibleIds, matchingIds);
+  }, [matchingIds, selection, visibleIds]);
+  return null;
 }

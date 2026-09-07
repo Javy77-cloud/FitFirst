@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { SelectionActionsMenu } from "@/components/lists/selection-actions-menu";
+import { MassUpdateMenu, type MassUpdateOwner, type MassUpdateTemplate } from "@/components/lists/mass-update";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
+import { selectAllMode } from "@/lib/lists/mass-update";
 import type { CrmListModule, SelectionRecord } from "@/lib/lists/selection-actions";
 
 type MacroOption = { id: string; name: string; kind?: string };
@@ -15,22 +17,37 @@ type ButtonOption = {
 
 const SelectionContext = createContext<{
   selected: string[];
+  visibleIds: string[];
+  matchingIds: string[];
   toggle: (id: string) => void;
   setAll: (ids: string[]) => void;
+  setScope: (visibleIds: string[], matchingIds: string[]) => void;
   clear: () => void;
 } | null>(null);
 
+function sameIds(left: string[], right: string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
 export function ListSelectionProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<string[]>([]);
+  const [visibleIds, setVisibleIds] = useState<string[]>([]);
+  const [matchingIds, setMatchingIds] = useState<string[]>([]);
   const value = useMemo(
     () => ({
       selected,
+      visibleIds,
+      matchingIds,
       toggle: (id: string) =>
         setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])),
       setAll: (ids: string[]) => setSelected(ids),
+      setScope: (nextVisible: string[], nextMatching: string[]) => {
+        setVisibleIds((prev) => (sameIds(prev, nextVisible) ? prev : nextVisible));
+        setMatchingIds((prev) => (sameIds(prev, nextMatching) ? prev : nextMatching));
+      },
       clear: () => setSelected([]),
     }),
-    [selected],
+    [matchingIds, selected, visibleIds],
   );
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }
@@ -53,16 +70,39 @@ export function SelectRowCheckbox({ id }: { id: string }) {
   );
 }
 
+export function useOptionalSelection() {
+  return useContext(SelectionContext);
+}
+
 export function SelectAllCheckbox({ ids }: { ids: string[] }) {
-  const { selected, setAll, clear } = useSelection();
-  const allOn = ids.length > 0 && ids.every((id) => selected.includes(id));
+  const { selected, setAll, clear, visibleIds, matchingIds } = useSelection();
+  const pageIds = visibleIds.length ? visibleIds : ids;
+  const matchIds = matchingIds.length ? matchingIds : ids;
+  const mode = selectAllMode(pageIds, matchIds, selected);
+  const checked = mode === "page" || mode === "matching";
   return (
-    <input
-      type="checkbox"
-      checked={allOn}
-      onChange={() => (allOn ? clear() : setAll(ids))}
-      aria-label="Select all rows"
-    />
+    <span className="inline-flex items-center gap-2">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => (checked ? clear() : setAll(pageIds))}
+        aria-label="Select visible rows"
+        data-testid="list-select-visible"
+      />
+      {mode === "page" && matchIds.length > pageIds.length ? (
+        <button
+          type="button"
+          className="text-xs text-primary hover:underline"
+          data-testid="list-select-matching"
+          onClick={() => setAll(matchIds)}
+        >
+          Select all {matchIds.length} matching
+        </button>
+      ) : null}
+      {mode === "matching" && matchIds.length > pageIds.length ? (
+        <span className="text-xs text-muted-foreground">All {matchIds.length} matching</span>
+      ) : null}
+    </span>
   );
 }
 
@@ -72,6 +112,8 @@ export function ListMassBar({
   buttons = [],
   recordIds = [],
   records = [],
+  owners = [],
+  templates = [],
   showMacrosLink = true,
 }: {
   module: CrmListModule;
@@ -79,6 +121,8 @@ export function ListMassBar({
   buttons?: ButtonOption[];
   recordIds?: string[];
   records?: SelectionRecord[];
+  owners?: MassUpdateOwner[];
+  templates?: MassUpdateTemplate[];
   showFollowUp?: boolean;
   showMacrosLink?: boolean;
 }) {
@@ -112,6 +156,16 @@ export function ListMassBar({
           onBusy={setBusy}
           onMessage={setMessage}
           onWidget={setWidget}
+          onClear={clear}
+        />
+        <MassUpdateMenu
+          module={module}
+          selected={selected}
+          owners={owners}
+          templates={templates}
+          busy={busy}
+          onBusy={setBusy}
+          onMessage={setMessage}
           onClear={clear}
         />
         {selected.length ? (

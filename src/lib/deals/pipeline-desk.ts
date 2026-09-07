@@ -8,11 +8,21 @@ export const NEXT_ACTION_FALLBACK_DAYS = 7;
 
 /** Chip tints match row quick-action fills: Call mustard, Email navy, Task blue, Meeting purple. */
 export const DEAL_ACTIVITY_TONES = {
-  call: { chipBg: "#f3ead4", chipFg: CONTACT_ACTION_COLORS.call, buttonBg: CONTACT_ACTION_COLORS.call },
-  email: { chipBg: "#e4e6eb", chipFg: CONTACT_ACTION_COLORS.email, buttonBg: CONTACT_ACTION_COLORS.email },
-  task: { chipBg: "#dbeafe", chipFg: "#1d6fb8", buttonBg: "#1d6fb8" },
-  meeting: { chipBg: "#ede9fe", chipFg: "#5b21b6", buttonBg: "#5b21b6" },
-  training: { chipBg: "#ccfbf1", chipFg: "#0f766e", buttonBg: "#0f766e" },
+  call: {
+    chipBg: "#f3ead4",
+    chipBgLight: "#fbf6ea",
+    chipFg: CONTACT_ACTION_COLORS.call,
+    buttonBg: CONTACT_ACTION_COLORS.call,
+  },
+  email: {
+    chipBg: "#e4e6eb",
+    chipBgLight: "#f4f5f7",
+    chipFg: CONTACT_ACTION_COLORS.email,
+    buttonBg: CONTACT_ACTION_COLORS.email,
+  },
+  task: { chipBg: "#dbeafe", chipBgLight: "#eff6ff", chipFg: "#1d6fb8", buttonBg: "#1d6fb8" },
+  meeting: { chipBg: "#ede9fe", chipBgLight: "#f5f3ff", chipFg: "#5b21b6", buttonBg: "#5b21b6" },
+  training: { chipBg: "#ccfbf1", chipBgLight: "#f0fdfa", chipFg: "#0f766e", buttonBg: "#0f766e" },
 } as const;
 
 /** Same order as row actions Call / SMS / Email / Task / Meeting — SMS has no today counter. */
@@ -88,6 +98,21 @@ export function filterTodayDealActivity(
 
 export function todayActivityWorkHref(type: DealTodayActivityType): string {
   return `/deals?queue=${type}`;
+}
+
+/** Tasks page is the work queue for now — relabel later. */
+export function todayActivityCalendarHref(): string {
+  return "/tasks";
+}
+
+/** e.g. "Monday, Sep 7" */
+export function formatTodayActivityDate(now = new Date()): string {
+  return now.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    timeZone: "America/New_York",
+  });
 }
 
 export function lastTouchedAt(input: {

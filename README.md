@@ -4,7 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7l`)
+## Mac test now (`cursor/live-ff-tip-sep7m`)
+
+Crew J Pipeline / Deals on tip `cursor/live-ff-tip-sep7l` @ `91b46b0`. Today's Activity strip (dated title + calendar → Tasks work queue), floating chips, compact one-row upload, shared mass update, record picker on Call / SMS / Email / Task, Bind policy on client signature. No sidebar. No schema. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7m && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| M1 | Today's Activity | Strip sits below the upload block with real space. Title is **Today's Activity** with the date under it (e.g. Monday, Sep 7). Calendar icon opens Tasks (work queue). |
+| M2 | Chips | Calls / Emails / Tasks / Meetings / Training are larger, tint→lighter gradient, thin matching border, soft shadow. Hover lifts with a deeper shadow and is not clipped. Click opens that type's work queue. |
+| M3 | Upload | One compact row: search, doc type, file picker, Store. Roughly half the old height. No empty white padding. |
+| M4 | Mass update | Select-all is visible rows, or **Select all N matching**. Menu: status, source, follow-up template, owner, custom field. Wired on Deals; same control on Leads / Contacts / Policies. Bound is not a mass status. |
+| M5 | Record picker | Header Call / SMS / Email / Task search leads, deals, and contacts. Pick fills name / phone / email. Manual entry still works. |
+| M6 | Bind policy | Comms **Bind policy** requests client signature. On sign, the deal goes to **Bound** and a policy number attaches. No manual stage change. Ana stays unbound. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7l`)
 
 Consolidator: desk tip `cursor/live-ff-tip-sep7k` plus Crew H Leads correction `cursor/live-ff-tip-sep7g` @ `93ee4db` (global top-right Call / SMS / Email / Task for this lead; trash on each line-of-interest card, immediate delete, no confirm; title **Leads**). Prefer sep7g for Leads / lead detail / shell chrome related to those actions. Prefer sep7k for Deals / Pipeline. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 

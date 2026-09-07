@@ -184,6 +184,7 @@ export async function DealsTable({
                     email={email || null}
                     ownerId={deal.ownerId}
                     users={agents}
+                    boundAt={deal.boundAt}
                   />
                 ),
               },

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { ListMassBar, ListSelectionProvider } from "@/components/developer-hub/list-selection";
 import { parseMacroKind } from "@/lib/developer-hub/macros";
 import { listEnabledMacrosFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
+import { listFollowUpTemplates } from "@/lib/db/lead-follow-up-queries";
+import { listUsers } from "@/lib/db/queries";
 import { isDevHubModule } from "@/lib/developer-hub/types";
 import {
   serializeSelectionRecord,
@@ -24,12 +26,14 @@ export async function ModuleListActions({
   showMacrosLink?: boolean;
   showFollowUp?: boolean;
 }) {
-  const [macros, buttons] = isDevHubModule(module)
-    ? await Promise.all([
-        listEnabledMacrosFor(module),
-        listVisibleButtons({ module, placement: ["list", "mass_action"] }),
-      ])
-    : [[], []];
+  const [macros, buttons, userRows, templateRows] = await Promise.all([
+    isDevHubModule(module) ? listEnabledMacrosFor(module) : Promise.resolve([]),
+    isDevHubModule(module)
+      ? listVisibleButtons({ module, placement: ["list", "mass_action"] })
+      : Promise.resolve([]),
+    listUsers(),
+    listFollowUpTemplates().catch(() => []),
+  ]);
   return (
     <ListSelectionProvider>
       <div className="px-3 pt-3">
@@ -37,6 +41,8 @@ export async function ModuleListActions({
           module={module}
           recordIds={recordIds}
           records={records.map(serializeSelectionRecord)}
+          owners={userRows.map((user) => ({ id: user.id, name: user.name }))}
+          templates={templateRows.map((row) => ({ id: row.id, name: row.name }))}
           showFollowUp={showFollowUp ?? module === "leads"}
           showMacrosLink={showMacrosLink}
           macros={macros.map((macro) => ({

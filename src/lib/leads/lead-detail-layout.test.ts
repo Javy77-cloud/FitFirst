@@ -108,6 +108,7 @@ describe("lead detail layout + per-line documents", () => {
     expect(quick).toMatch(/SmsComposer|Queue SMS/);
     expect(quick).toMatch(/EmailComposer|Queue email/);
     expect(quick).toMatch(/TaskComposer|Save task/);
+    expect(quick).toMatch(/ActivityRecordPicker/);
     expect(quick).not.toMatch(/disabled=\{!/);
   });
 

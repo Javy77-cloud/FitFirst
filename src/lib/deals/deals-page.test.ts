@@ -36,25 +36,31 @@ describe("Deals page sep7h", () => {
 
   it("shrinks attach-documents and adds a transparent centered Today's Activity strip", () => {
     const page = source("src/app/deals/page.tsx");
-    expect(page).toMatch(/lg:grid-cols-3/);
-    expect(page).toMatch(/lg:col-span-2/);
+    expect(page).toMatch(/mt-6 overflow-visible/);
+    expect(page).not.toMatch(/lg:grid-cols-3/);
     expect(page).toMatch(/<TodayActivityStrip/);
     expect(page).toMatch(/<DealDocsUpload/);
     const upload = source("src/components/deal/deal-docs-upload.tsx");
     expect(upload).toMatch(/Attach documents to a deal/);
     expect(upload).not.toMatch(/Upload documents onto a deal/);
+    expect(upload).toMatch(/flex flex-wrap items-center gap-2/);
+    expect(upload).not.toMatch(/h-full space-y-3 p-4/);
     expect(upload).toMatch(/uploadDealCtaLabel\("select"\)/);
     expect(upload).toMatch(/uploadDealCtaLabel\("create"\)/);
     expect(upload).toMatch(/deal-select-existing/);
     expect(upload).toMatch(/deal-create-from-search/);
     const strip = source("src/components/deals/today-activity-strip.tsx");
     expect(strip).toMatch(/Today/);
+    expect(strip).toMatch(/formatTodayActivityDate/);
+    expect(strip).toMatch(/todayActivityCalendarHref/);
+    expect(strip).toMatch(/deal-today-calendar/);
     expect(strip).toMatch(/bg-transparent/);
     expect(strip).toMatch(/items-center/);
     expect(strip).toMatch(/justify-center/);
     expect(strip).toMatch(/hover:-translate-y/);
-    expect(strip).toMatch(/border-black/);
-    expect(strip).toMatch(/text-\[16px\]/);
+    expect(strip).toMatch(/linear-gradient/);
+    expect(strip).toMatch(/text-\[18px\]/);
+    expect(strip).not.toMatch(/border-black/);
     expect(strip).not.toMatch(/bg-card/);
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);
     const chips = source("src/lib/deals/pipeline-desk.ts");
@@ -98,7 +104,7 @@ describe("Deals page sep7h", () => {
     expect(actions).toMatch(/\/compare/);
     expect(actions).toMatch(/ChangeOwnerDialog/);
     expect(actions).toMatch(/Bind policy/);
-    expect(actions).toMatch(/#bind/);
+    expect(actions).toMatch(/requestBindSignature/);
     expect(actions).not.toMatch(/MeetingButton/);
     expect(actions).not.toMatch(/Add task/);
     expect(actions).not.toMatch(/DealRowComms/);
@@ -134,6 +140,8 @@ describe("Deals page sep7h", () => {
     expect(table).toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
     expect(table).toMatch(/comms: ""/);
+    expect(source("src/components/lists/mass-update.tsx")).toMatch(/Mass update/);
+    expect(source("src/components/developer-hub/list-selection.tsx")).toMatch(/list-select-matching/);
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "value", label: "Value"/);
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "nextAction", label: "Next"/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ListPagination/);
