@@ -380,12 +380,13 @@ export async function attachSamplePhotoDec(formData: FormData) {
 }
 
 function sourceLabelForDoc(docType: string, filename: string): string {
-  if (docType === "wind_mit") return "Wind mit";
-  if (docType === "four_point") return "4-point";
+  if (docType === "wind_mit") return "wind mitigation";
+  if (docType === "four_point") return "4pt inspection";
+  if (docType === "related_insured") return "related insured";
+  if (docType === "dec" || docType === "policy" || docType === "current_policy") return "dec page";
   if (docType === "inspection") return "Inspection";
   if (docType === "photo") return "Photo";
-  if (docType === "current_policy") return "Current policy";
-  return `Uploaded ${docType || "dec"} · ${filename}`;
+  return filename ? `dec page · ${filename}` : "dec page";
 }
 
 async function loadFillCorrections() {
@@ -417,11 +418,14 @@ async function logSheetCorrections(input: {
     if (prev.value.trim() === next.value.trim()) continue;
     if (!prev.value.trim() || !next.value.trim()) continue;
     if (input.dealId === DEAL_ID && key === "coverage_a") continue;
-    const docType = prev.sourceLabel?.toLowerCase().includes("wind")
+    const tag = prev.sourceLabel?.toLowerCase() ?? "";
+    const docType = tag.includes("wind")
       ? "wind_mit"
-      : prev.sourceLabel?.toLowerCase().includes("4-point")
+      : tag.includes("4pt") || tag.includes("4-point")
         ? "four_point"
-        : "dec";
+        : tag.includes("related")
+          ? "related_insured"
+          : "dec";
     await db.insert(fillFeedbackLogs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId: input.dealId,

@@ -126,7 +126,7 @@ describe("quote sheet fill — blanks only", () => {
     const result = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
     expect(result.filledKeys.length).toBeGreaterThanOrEqual(30);
     expect(result.values.coverage_a.source).toBe("extracted");
-    expect(result.values.coverage_a.sourceLabel).toBe("Uploaded dec");
+    expect(result.values.coverage_a.sourceLabel).toBe("dec page");
     expect(result.values.coverage_b.value).toBe("28500");
   });
 
