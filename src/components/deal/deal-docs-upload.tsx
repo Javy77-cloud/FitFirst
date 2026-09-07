@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createDealFromUploadSearch } from "@/app/actions/deals-upload";
 import { uploadDealDocuments } from "@/app/actions/documents";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { suggestParties, type PartyHit, type PartyRecord } from "@/lib/crm/party-typeahead";
 import { matchDealLookup, suggestDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
+import { uploadDealCta, uploadDealCtaLabel } from "@/lib/deals/pipeline-desk";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
 import { setLiveQuery } from "@/lib/search/live-query";
 
@@ -71,11 +73,12 @@ export function DealDocsUpload({
     !match && dealName.trim()
       ? partySuggestions.flatMap((hit) => dealsForParty(hit).map((row) => ({ hit, row })))
       : [];
+  const cta = uploadDealCta(deals, dealName, dealId || null);
 
   return (
-    <form action={uploadDealDocuments} className="ff-card space-y-3 p-4" data-testid="deal-docs-upload">
+    <form action={uploadDealDocuments} className="ff-card h-full space-y-3 p-4" data-testid="deal-docs-upload">
       <div>
-        <h2 className="text-sm font-semibold text-navy">Upload documents onto a deal</h2>
+        <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
         <p className="mt-1 text-helper text-muted-foreground">
           Search deals on this page, pick one, then attach files. This is not global search.
         </p>
@@ -213,6 +216,26 @@ export function DealDocsUpload({
         >
           + Add file
         </button>
+        {cta.kind === "select" && cta.match ? (
+          <Button
+            type="button"
+            size="sm"
+            data-testid="deal-select-existing"
+            onClick={() => pickDeal(cta.match!)}
+          >
+            {uploadDealCtaLabel("select")}
+          </Button>
+        ) : null}
+        {cta.kind === "create" ? (
+          <Button
+            type="submit"
+            size="sm"
+            formAction={createDealFromUploadSearch}
+            data-testid="deal-create-from-search"
+          >
+            {uploadDealCtaLabel("create")}
+          </Button>
+        ) : null}
         <Button type="submit" size="sm" disabled={!match}>
           Store on this deal
         </Button>

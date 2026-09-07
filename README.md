@@ -4,26 +4,26 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7d`)
+## Mac test now (`cursor/live-ff-tip-sep7f`)
 
-Consolidator: Crew D follow-up engine (`cursor/live-ff-tip-sep7a` @ `f615a08`) plus Crew E lead-detail brief (`cursor/live-ff-tip-sep7b`). Does **not** include Deals tip sep7c. No sidebar changes. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
+Consolidator: desk tip `cursor/live-ff-tip-sep7e` @ `c08c406` (Crew G: Leads Load-failed crash fix + Aggressive-on-new null guards; already includes sep7d = sep7a clock/delete + sep7b lead detail) plus Crew F Deals Pipeline (`cursor/live-ff-tip-sep7c` @ `4baf6b6`). Leads / follow-up / templates / list-selection / lead detail stay sep7e. Deals / Pipeline / deal upload / deal row actions / today activity strip stay sep7c. No sidebar changes. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7f && git pull
 npm install
 # skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
 # skip db:seed — keep the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then open a **Lead**.
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
 
-### A — Leads list / follow-up / delete / pagination (sep7a)
+### A — Crash / clock / follow-up (sep7a + sep7e)
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| A1 | Aggressive on new | Create a lead. Within ~1s Follow-up shows **Aggressive** and Response starts a live countdown. No manual Aggressive pick. |
+| A1 | Aggressive on new | Create a lead. Within ~1s Follow-up shows **Aggressive** and Response starts a live countdown. No manual Aggressive pick. Page does not flash **Load failed**. |
 | A2 | Status isolation | Change one row cold → contacted. Only that row flips. Other rows keep their status, clock, and template. |
 | A3 | Snooze labels | Follow-up modal presets are **Snooze 15 min**, **Snooze 1 hour**, **Snooze 1 day**. **Custom snooze** expands to number + unit + **Apply**. Apply actually reschedules. |
 | A4 | Mark as read | **Mark as read** advances to the next template step (clock resets, black). Last step: clock stops, Response shows a dash. |
@@ -31,6 +31,9 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then open a **
 | A6 | Template steps | Follow-up Templates list shows each step once. Edit view matches the list. |
 | A7 | Pagination | Leads and Contacts (or Deals) share the same bottom-right bar: 25 / 50 / 100 / 200 (default 25), **Page 1 of N**, **Showing 1–25 of …**. |
 | A8 | Bulk delete | Tick one lead → Actions → Delete → **one** confirm. Lead is gone (search by name/phone finds nothing). No runtime error. Selection clears. |
+| A9 | Null guards | Hard refresh Leads on a book with missing template, chip name, or `dueAt`. Queue still renders. No unguarded template / clock read crash. |
+
+**Crash root cause (sep7e):** Leads threw when follow-up template pick, chip name, `dueAt`, or clock publish hit a null. Guards keep the queue up. New leads still bind **Aggressive** (not Default) and keep the Response countdown on that row only.
 
 **Shared-state root cause:** row status / clock / template were not keyed per lead — `publishLeadClock` and React reuse could apply one row’s patch across the table, and `resetLeadsWithoutLoggedContact` rewrote other rows on refresh. Clock patches now require `leadId`; each control is keyed to that lead; the one-shot reset no longer cancels new-lead queues or flips other statuses.
 
@@ -46,6 +49,31 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then open a **
 | B4 | Choose file | The picker is a **Choose file** button, not a text field. The whole button is the click target. After a pick, the button text becomes the filename. |
 | B5 | Lead ↔ Deal | Lead top shows **View related deal**. Deal top shows **View source lead**. |
 | B6 | Shared chrome | Convert is centered and bigger than **Save lead**. Save lead shows the navy toast, then lands on the Leads list. Upload button, trash, Columns, funnel sort, row dividers, and status/temp badges stay the shared platform set. |
+
+### C — Deals / Pipeline (sep7c)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| C1 | Title | Header says **Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
+| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's activity**: Tasks, Calls, Emails, Meetings, Training with today’s counts. One row. Click a chip → work queue of that type. |
+| C3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task**. Comms column is **Send quote / Change owner / Meeting**. No “Text”. |
+| C4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
+| C5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
+| C6 | Quote-to-bind | **Send quote** opens the proposal. Mark the in-desk e-sign **signed** — deal stage becomes **Bound** and a policy number is attached. Ana stays unbound. |
+| C7 | Stale flag | A deal untouched past 14 days shows a **Stale** badge with **Re-engage** or **Archive**. |
+| C8 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7e`)
+
+Crew G crash fix on the sep7d desk tip. Null-safe template pick, chip names, dueAt, and clock publish so Leads still renders. New leads bind Aggressive (not Default). Tip SHA `c08c406`.
+
+## Mac test prior (`cursor/live-ff-tip-sep7d`)
+
+Consolidator: Crew D follow-up engine (`cursor/live-ff-tip-sep7a` @ `f615a08`) plus Crew E lead-detail brief (`cursor/live-ff-tip-sep7b`). Does **not** include Deals tip sep7c. No sidebar changes. No schema. No seed wipe.
+
+## Mac test prior (`cursor/live-ff-tip-sep7c`)
+
+Deals page only. Branched from `cursor/live-ff-tip-sep7a`. Pipeline title, attach-documents + Today's activity, select-vs-create, next-action timer, quote-to-bind, stale flag. Tip SHA `4baf6b6`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7a`)
 

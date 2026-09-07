@@ -50,6 +50,7 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "assigned", label: "Assigned", defaultOn: true },
     { key: "value", label: "Value", defaultOn: true },
     { key: "premium", label: "Coverage $", defaultOn: false },
+    { key: "nextAction", label: "Next", defaultOn: true },
     { key: "updated", label: "Updated", defaultOn: false },
     { key: "esign", label: "E-sign", defaultOn: true },
     { key: "comms", label: "Comms", defaultOn: true },

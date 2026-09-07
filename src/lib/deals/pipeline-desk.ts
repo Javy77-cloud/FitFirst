@@ -1,0 +1,168 @@
+import { isDueToday, isOverdue, whenForActivity } from "@/lib/activities/rules";
+import { formatCountdownClock, responseTimerState } from "@/lib/leads/queue";
+import { matchDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
+
+export const STALE_DEAL_DAYS = 14;
+export const NEXT_ACTION_FALLBACK_DAYS = 7;
+
+export const DEAL_TODAY_ACTIVITY_CHIPS = [
+  { id: "task", label: "Tasks" },
+  { id: "call", label: "Calls" },
+  { id: "email", label: "Emails" },
+  { id: "meeting", label: "Meetings" },
+  { id: "training", label: "Training" },
+] as const;
+
+export type DealTodayActivityType = (typeof DEAL_TODAY_ACTIVITY_CHIPS)[number]["id"];
+
+export type DealActivityTouch = {
+  id: string;
+  dealId?: string | null;
+  kind: string;
+  title: string;
+  status?: string | null;
+  dueAt?: Date | string | null;
+  startAt?: Date | string | null;
+  scheduledAt?: Date | string | null;
+  meetingType?: string | null;
+};
+
+export function isDealTodayActivityType(value: string | null | undefined): value is DealTodayActivityType {
+  return Boolean(value && DEAL_TODAY_ACTIVITY_CHIPS.some((chip) => chip.id === value));
+}
+
+export function classifyDealActivityType(row: Pick<DealActivityTouch, "kind" | "meetingType">): DealTodayActivityType | null {
+  if (row.meetingType === "training" || row.kind === "training") return "training";
+  if (row.kind === "task") return "task";
+  if (row.kind === "call") return "call";
+  if (row.kind === "email") return "email";
+  if (row.kind === "meeting") return "meeting";
+  return null;
+}
+
+export function countTodayDealActivity(
+  rows: DealActivityTouch[],
+  now = new Date(),
+): Record<DealTodayActivityType, number> {
+  const counts: Record<DealTodayActivityType, number> = {
+    task: 0,
+    call: 0,
+    email: 0,
+    meeting: 0,
+    training: 0,
+  };
+  for (const row of rows) {
+    const type = classifyDealActivityType(row);
+    if (!type) continue;
+    const when = whenForActivity(row);
+    if (!isDueToday(when, now, row.status)) continue;
+    counts[type] += 1;
+  }
+  return counts;
+}
+
+export function filterTodayDealActivity(
+  rows: DealActivityTouch[],
+  type: DealTodayActivityType,
+  now = new Date(),
+): DealActivityTouch[] {
+  return rows.filter((row) => {
+    if (classifyDealActivityType(row) !== type) return false;
+    return isDueToday(whenForActivity(row), now, row.status);
+  });
+}
+
+export function todayActivityWorkHref(type: DealTodayActivityType): string {
+  return `/deals?queue=${type}`;
+}
+
+export function lastTouchedAt(input: {
+  updatedAt?: Date | string | null;
+  activities?: Array<{ updatedAt?: Date | string | null; completedAt?: Date | string | null }>;
+}): Date | null {
+  const stamps = [input.updatedAt, ...(input.activities ?? []).flatMap((row) => [row.updatedAt, row.completedAt])];
+  let latest: Date | null = null;
+  for (const stamp of stamps) {
+    if (!stamp) continue;
+    const date = stamp instanceof Date ? stamp : new Date(stamp);
+    if (Number.isNaN(date.getTime())) continue;
+    if (!latest || date.getTime() > latest.getTime()) latest = date;
+  }
+  return latest;
+}
+
+export function isDealStale(input: {
+  updatedAt?: Date | string | null;
+  boundAt?: Date | string | null;
+  archivedAt?: Date | string | null;
+  pipelineStage?: string | null;
+  nextDueAt?: Date | string | null;
+  now?: Date;
+  thresholdDays?: number;
+}): boolean {
+  if (input.archivedAt) return false;
+  const stage = (input.pipelineStage ?? "").toLowerCase();
+  if (input.boundAt || stage === "bound" || stage === "closed_won") return false;
+  const next = input.nextDueAt ? new Date(input.nextDueAt) : null;
+  if (next && !Number.isNaN(next.getTime()) && next.getTime() >= (input.now ?? new Date()).getTime()) {
+    return false;
+  }
+  const touched = lastTouchedAt({ updatedAt: input.updatedAt });
+  if (!touched) return true;
+  const days = input.thresholdDays ?? STALE_DEAL_DAYS;
+  const now = input.now ?? new Date();
+  return now.getTime() - touched.getTime() > days * 24 * 60 * 60 * 1000;
+}
+
+export function nextDealActionAt(input: {
+  activities?: DealActivityTouch[];
+  updatedAt?: Date | string | null;
+  now?: Date;
+  fallbackDays?: number;
+}): Date | null {
+  const open = (input.activities ?? []).filter((row) => !isClosedStatus(row.status));
+  let soonest: Date | null = null;
+  for (const row of open) {
+    const when = whenForActivity(row);
+    if (!when) continue;
+    if (!soonest || when.getTime() < soonest.getTime()) soonest = when;
+  }
+  if (soonest) return soonest;
+  const touched = lastTouchedAt({ updatedAt: input.updatedAt });
+  if (!touched) return null;
+  const days = input.fallbackDays ?? NEXT_ACTION_FALLBACK_DAYS;
+  return new Date(touched.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function isClosedStatus(status?: string | null): boolean {
+  const raw = (status ?? "").toLowerCase();
+  return raw === "completed" || raw === "canceled" || raw === "cancelled";
+}
+
+export function dealNextActionState(dueAt: Date | string | null | undefined, now = new Date()) {
+  const state = responseTimerState(dueAt, now);
+  return {
+    ...state,
+    label: dueAt ? formatCountdownClock(state.overdue ? 0 : state.remainingMs) : "--:--",
+    overdue: Boolean(dueAt) && (state.overdue || isOverdue(dueAt ? new Date(dueAt) : null, now)),
+  };
+}
+
+export function uploadDealCta(
+  deals: DealLookupRow[],
+  query: string,
+  dealId?: string | null,
+): { kind: "idle" | "select" | "create"; match: DealLookupRow | null } {
+  const trimmed = query.trim();
+  if (!trimmed && !dealId) return { kind: "idle", match: null };
+  const match = matchDealLookup(deals, query, dealId);
+  if (match) return { kind: "select", match };
+  if (!trimmed) return { kind: "idle", match: null };
+  return { kind: "create", match: null };
+}
+
+export function uploadDealCtaLabel(kind: "idle" | "select" | "create"): string {
+  if (kind === "select") return "Select this deal";
+  if (kind === "create") return "Create deal";
+  return "Select this deal";
+}

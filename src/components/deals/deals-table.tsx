@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { StagePill } from "@/components/fit-badge";
+import { DealNextActionTimer } from "@/components/deals/deal-next-action";
+import { DealQuickActions } from "@/components/deals/deal-quick-actions";
+import { DealStaleBadge } from "@/components/deals/deal-stale-badge";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { DEALS_LIST_COLUMNS } from "@/lib/list-columns";
 import { sourceLabel } from "@/lib/crm/sources";
+import { isDealStale, nextDealActionAt } from "@/lib/deals/pipeline-desk";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import type { DeskUserOption } from "@/lib/deals/transfer";
@@ -27,11 +31,13 @@ export async function DealsTable({
   users,
   agents = [],
   initialQuery = "",
+  nextByDeal = new Map(),
 }: {
   rows: DealsSheetRow[];
   users: Map<string, string>;
   agents?: DeskUserOption[];
   initialQuery?: string;
+  nextByDeal?: Map<string, string>;
 }) {
   return (
     <section className="ff-card overflow-x-auto">
@@ -61,6 +67,17 @@ export async function DealsTable({
             const value = dealValue({ deal, contact, account, risk });
             const phone = contact?.phone ?? account?.phone ?? "";
             const email = contact?.email ?? account?.email ?? "";
+            const nextDue =
+              nextByDeal.get(deal.id) ??
+              nextDealActionAt({ updatedAt: deal.updatedAt })?.toISOString() ??
+              null;
+            const stale = isDealStale({
+              updatedAt: deal.updatedAt,
+              boundAt: deal.boundAt,
+              archivedAt: deal.archivedAt,
+              pipelineStage: deal.pipelineStage,
+              nextDueAt: nextDue,
+            });
             return {
               key: deal.id,
               hay: haystack([
@@ -99,6 +116,7 @@ export async function DealsTable({
                 assigned: sheetAttr(deal.ownerId ? users.get(deal.ownerId) : ""),
                 value: sheetAttr(value),
                 premium: sheetAttr(deal.coverageAmount),
+                nextAction: sheetAttr(nextDue),
                 updated: sheetAttr(deal.updatedAt ? new Date(deal.updatedAt).toISOString() : ""),
                 esign: sheetAttr(deal.esignStatus),
                 comms: "",
@@ -106,9 +124,27 @@ export async function DealsTable({
               cells: {
                 pick: <SelectRowCheckbox id={deal.id} />,
                 title: (
-                  <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                    {deal.title}
-                  </Link>
+                  <div>
+                    <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
+                      {deal.title}
+                    </Link>
+                    <div className="text-sm text-muted-foreground">{phone || "—"}</div>
+                    <DealQuickActions
+                      dealId={deal.id}
+                      phone={phone || null}
+                      email={email || null}
+                      contactId={contact?.id ?? deal.contactId}
+                      accountId={account?.id ?? deal.accountId}
+                      leadId={deal.leadId}
+                    />
+                    {stale ? (
+                      <DealStaleBadge
+                        dealId={deal.id}
+                        contactId={contact?.id ?? deal.contactId}
+                        leadId={deal.leadId}
+                      />
+                    ) : null}
+                  </div>
                 ),
                 stage: <StagePill stage={deal.pipelineStage} />,
                 line: deal.lineOfBusiness,
@@ -135,6 +171,7 @@ export async function DealsTable({
                 assigned: deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—",
                 value: formatMoney(value),
                 premium: formatMoney(deal.coverageAmount),
+                nextAction: <DealNextActionTimer dueAt={nextDue} />,
                 updated: formatDay(deal.updatedAt),
                 esign: formatInDeskEsignList(deal.esignStatus, deal.esignSignedAt, deal.esignRequestedAt),
                 comms: (

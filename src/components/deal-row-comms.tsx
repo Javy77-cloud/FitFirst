@@ -36,15 +36,6 @@ export function DealRowComms({
         accountId={accountId}
         phone={phone}
         enabled={hasPhone}
-        asTask
-      />
-      <SmsButton
-        label="Text"
-        dealId={dealId}
-        contactId={contactId}
-        accountId={accountId}
-        phone={phone}
-        enabled={hasPhone}
       />
       <EmailButton
         dealId={dealId}
