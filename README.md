@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7i`)
+## Mac test now (`cursor/live-ff-tip-sep7j`)
 
-Consolidator: Leads tip `cursor/live-ff-tip-sep7g` @ `985fdcb` (Crew H: lead-detail polish + Follow-up Templates on/off + Skip) plus Crew I Deals / Pipeline (`cursor/live-ff-tip-sep7h` @ `c80f4e1`). Leads / lead detail / follow-up templates / list-selection stay sep7g. Deals / Pipeline / today-activity / deal row actions stay sep7h. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
+Consolidator: Leads tip `cursor/live-ff-tip-sep7i` @ `0b4ed28` plus latest Deals tip `cursor/live-ff-tip-sep7h` @ `8c69e76` (Deal column live name search + Pipeline chip spacing). Prefer sep7i for Leads / lead detail / follow-up templates. Prefer sep7h for Deals / Pipeline / Deal live search / chip spacing. No sidebar. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7i && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7j && git pull
 npm install
 # skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
 # skip db:seed — keep the live Zoho book
@@ -48,6 +48,12 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | B7 | Stale flag | A deal untouched past 14 days shows a **Stale** badge with **Re-engage** or **Archive**. |
 | B8 | Contact second | **Contact** is the column immediately after **Deal**. Phone lives under the name only. |
 | B9 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
+| B10 | Deal search | **Deal** header is live typeahead (same as Leads **Name**). No ASC/DESC funnel on that column. Typing filters matching deal names immediately. |
+| B11 | Chip spacing | P&C / Health / Life sit with more horizontal room. Won-Lost and Archive sit further from that group and from each other. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7i`)
+
+Consolidator: Leads tip `cursor/live-ff-tip-sep7g` @ `985fdcb` (Crew H: lead-detail polish + Follow-up Templates on/off + Skip) plus Crew I Deals / Pipeline (`cursor/live-ff-tip-sep7h` @ `c80f4e1`). Tip SHA `0b4ed28`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7h`)
 
