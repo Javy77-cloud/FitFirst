@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7cd`)
 
-Master sheet parser **synonym dictionary** for dec / 4-point / wind mitigation / related insured docs. The extractor matches the printed label (or an alternate the form actually uses), then takes the value after the first colon, dash, or equals — **never the label or the question text**. Empty after the delimiter stays **yellow and blank**. When two synonyms hit the same line, the longer, more specific phrase wins. Every filled cell’s Source column shows **4pt inspection**, **dec page**, **wind mitigation**, or **related insured**. Upload UI, Confirm buttons, and every page outside the master sheet stay theirs. No Pipeline List/Grid work. No `db:seed`. Ana unbound. Cov A **$321,000**.
+Master sheet parser **synonym dictionary** for dec / 4-point / wind mitigation / related insured docs. The extractor matches the printed label (or an alternate the form actually uses), then takes the value after the first colon, dash, or equals — **never the label or the question text**. Empty after the delimiter stays **yellow and blank**. When two synonyms hit the same line, the longer, more specific phrase wins. Every filled cell’s Source column shows **4pt inspection**, **dec page**, **wind mitigation**, or **related insured**. Upload UI, Confirm buttons, and every page outside the master sheet stay theirs. No Pipeline List/Grid work. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `331c78d4`.
 
 ```bash
 cd ~/FitFirst
