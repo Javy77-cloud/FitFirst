@@ -10,7 +10,7 @@ Platform-wide **FedEx address autocomplete** plus a **site-developer API vault**
 
 **Site developer ≠ Admin.** Admins may open Settings → Developer Hub → **API vault** and see FedEx Address API as Configured / Not configured with `****************`. They cannot reveal or edit the raw key. Only a **site developer** can unlock, rotate, or clear. Grant with `users.is_site_developer` or `FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local` (no `db:seed` wipe). Secrets encrypt at rest with the existing carrier/PII AES-256-GCM key. Agency BYO — FitFirst does not subscribe.
 
-No Pipeline chip, Markets empty, bell, or rail 320 redesign. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+No Pipeline chip, Markets empty, bell, or rail 320 redesign. Ana unbound. Cov A **$321,000**. Tip SHA `b9d27d0b`.
 
 ```bash
 cd ~/FitFirst
