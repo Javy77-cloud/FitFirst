@@ -87,7 +87,7 @@ describe("sep7bo field builder rows, palette, preview drag", () => {
     expect(sql).not.toMatch(/DROP TABLE/);
     expect(sql).not.toMatch(/db:seed/);
     expect(source("drizzle/meta/_journal.json")).toMatch(/0087_deal_title_slashes/);
-    expect(source("src/lib/deals/deal-title.ts")).toMatch(/Javier \/ Canales \/ Home/);
-    expect(source("src/lib/deals/retitle.ts")).toMatch(/First \/ Last \/ Lob/);
+    expect(source("src/lib/deals/deal-title.ts")).toMatch(/Javier Canales \/ Home/);
+    expect(source("src/lib/deals/retitle.ts")).toMatch(/First Last \/ Lob/);
   });
 });

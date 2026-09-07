@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bq`)
+## Mac test now (`cursor/live-ff-tip-sep7bt`)
+
+Deal field builder drag-and-drop across sections, from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder** (Edit layout / Preview): grab any collapsed field row and drop it between fields in the same section or into another section — left or right column. A sky drop line and section ring mark the target. Order is in the Save payload. Collapsed rows, compact palette, and the four-item ⋯ menu from sep7bo stay. Preview stays editable with the same insert-between / cross-section move. Pipeline table, Markets, bell, Stage colors, and picklist catalogs are untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bt-c68c && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**. Drag **Phone** above **First name** in Contact, then drag **Email** into Address (before City). Drop line should appear. **Save**. Reload — order stays. Toggle **Preview** and drag again. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BT — Field builder reorder / cross-section drag
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BT1 | Within section | Drag a field to another position in the same section. Drop line is visible. Order updates. |
+| BT2 | Across sections | Drag a field from Contact into Address (or Left → Right). It lands in the target section. |
+| BT3 | Preview | Preview stays editable; insert-between and cross-section drops still work. |
+| BT4 | Persist | Save, reload builder — new order is still there. |
+| BT5 | Scope | Collapsed rows + ⋯ menu + compact palette unchanged. Pipeline / Markets / bell / Stage / picklists untouched. No `db:seed`. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bq`)
 
 Table Stage colors, `First Last / Lob` deal names, and Settings → Picklists starter catalog, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** Stage uses the same colors as Board (Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive, …) on a compact inline `DealStageSelect` (`text-xs` / `h-7` — table only; Board pills stay). Deal titles are **First Last / Lob** — `Javier Canales / Home` — one slash only. Existing deals retitle via additive migrate `0088_stage_title_picklists` + boot backfill. **Settings → Picklists** seeds US states, lines of business, and common carriers so **Use a global list** on a picklist field has lists to choose. No `db:seed` wipe. Ana unbound. Cov A **$321,000**. Tip SHA `221dd224`.
 

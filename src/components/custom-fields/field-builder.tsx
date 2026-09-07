@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { GripVertical, MoreHorizontal } from "lucide-react";
 import { saveDealFieldLayout } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { FormulaBuilder } from "@/components/custom-fields/formula-builder";
 import { PicklistConfig } from "@/components/custom-fields/picklist-config";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,10 @@ import {
   moveSection,
   relabelSection,
   removeFieldFromLayout,
+  resolveFieldDrop,
+  resolveSectionDrop,
+  type FieldDropSectionHit,
+  type FieldDropTarget,
 } from "@/lib/custom-fields/layout";
 import { asList } from "@/lib/safe-list";
 import type { FieldPicklist } from "@/lib/custom-fields/picklists";
@@ -61,7 +66,44 @@ type DragPayload =
   | { kind: "type"; type: CustomFieldType }
   | { kind: "new-section" };
 
+type DropHint = FieldDropTarget & {
+  columnId: string;
+  beforeSectionId?: string;
+};
+
 type FieldDialog = { kind: "properties" | "permissions"; key: string } | null;
+
+function sectionHitsFromColumn(column: HTMLElement): FieldDropSectionHit[] {
+  return [...column.querySelectorAll<HTMLElement>("[data-ff-builder-section]")].map((el) => {
+    const box = el.getBoundingClientRect();
+    return {
+      id: el.getAttribute("data-ff-builder-section") ?? "",
+      top: box.top,
+      height: box.height,
+      fields: [...el.querySelectorAll<HTMLElement>("[data-ff-builder-field]")].map((field) => {
+        const rect = field.getBoundingClientRect();
+        return {
+          key: field.getAttribute("data-ff-builder-field") ?? "",
+          top: rect.top,
+          height: rect.height,
+        };
+      }),
+    };
+  });
+}
+
+function columnFromEvent(event: React.DragEvent): HTMLElement | null {
+  return (event.currentTarget as HTMLElement).closest("[data-ff-builder-col]");
+}
+
+function hintsEqual(left: DropHint | null, right: DropHint | null) {
+  return (
+    left?.columnId === right?.columnId &&
+    left?.sectionId === right?.sectionId &&
+    left?.beforeKey === right?.beforeKey &&
+    left?.beforeSectionId === right?.beforeSectionId
+  );
+}
 
 export function FieldBuilder({
   line,
@@ -77,15 +119,23 @@ export function FieldBuilder({
   const [layout, setLayout] = useState(() => parseLayout(initialLayout));
   const [fields, setFields] = useState(() => asList(initialFields));
   const [drag, setDrag] = useState<DragPayload | null>(null);
+  const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [dialog, setDialog] = useState<FieldDialog>(null);
   const [preview, setPreview] = useState(false);
   const byKey = useMemo(() => Object.fromEntries(fields.map((field) => [field.key, field])), [fields]);
   const dialogField = dialog ? byKey[dialog.key] : undefined;
 
   function onDragStart(payload: DragPayload, event: React.DragEvent) {
+    event.stopPropagation();
     setDrag(payload);
+    setDropHint(null);
     event.dataTransfer.setData("text/plain", JSON.stringify(payload));
     event.dataTransfer.effectAllowed = payload.kind === "type" || payload.kind === "new-section" ? "copy" : "move";
+  }
+
+  function endDrag() {
+    setDrag(null);
+    setDropHint(null);
   }
 
   function placeNewField(type: CustomFieldType, columnId: string, sectionId?: string, beforeKey?: string) {
@@ -124,55 +174,36 @@ export function FieldBuilder({
     setDialog({ kind: "properties", key });
   }
 
-  function dropPointFromEvent(
-    event: React.DragEvent,
-    columnId: string,
-  ): { sectionId?: string; beforeKey?: string; beforeSectionId?: string } {
-    void columnId;
-    const column = event.currentTarget as HTMLElement;
-    const sectionEls = [...column.querySelectorAll<HTMLElement>("[data-ff-builder-section]")];
-    const fieldEls = [...column.querySelectorAll<HTMLElement>("[data-ff-builder-field]")];
+  function dropPointFromEvent(event: React.DragEvent, columnId: string): DropHint {
+    const column = columnFromEvent(event);
+    const hits = column ? sectionHitsFromColumn(column) : [];
     const y = event.clientY;
-    const beforeField = insertIndexFromClientY(
-      y,
-      fieldEls.map((el) => ({
-        key: el.getAttribute("data-ff-builder-field") ?? "",
-        top: el.getBoundingClientRect().top,
-        height: el.getBoundingClientRect().height,
-      })),
-    ).beforeKey;
-    if (beforeField) {
-      const host = fieldEls.find((el) => el.getAttribute("data-ff-builder-field") === beforeField);
-      const sectionId = host?.closest("[data-ff-builder-section]")?.getAttribute("data-ff-builder-section") ?? undefined;
-      return { sectionId, beforeKey: beforeField };
+    if (!hits.length) {
+      return { columnId, beforeKey: insertIndexFromClientY(y, []).beforeKey };
     }
-    const beforeSectionId = insertIndexFromClientY(
-      y,
-      sectionEls.map((el) => ({
-        key: el.getAttribute("data-ff-builder-section") ?? "",
-        top: el.getBoundingClientRect().top,
-        height: el.getBoundingClientRect().height,
-      })),
-    ).beforeKey;
-    if (beforeSectionId) {
-      return { sectionId: beforeSectionId, beforeSectionId };
+    if (drag?.kind === "section" || drag?.kind === "new-section") {
+      const sectionTarget = resolveSectionDrop(y, hits, {
+        draggingId: drag.kind === "section" ? drag.id : undefined,
+      });
+      return { columnId, ...sectionTarget, sectionId: sectionTarget.beforeSectionId };
     }
-    const lastSection = sectionEls.at(-1)?.getAttribute("data-ff-builder-section") ?? undefined;
-    return { sectionId: lastSection, beforeSectionId: undefined };
+    const fieldTarget = resolveFieldDrop(y, hits, {
+      draggingKey: drag?.kind === "field" ? drag.key : undefined,
+    });
+    return { columnId, ...fieldTarget };
   }
 
-  function handleDrop(
-    columnId: string,
-    sectionId?: string,
-    beforeKey?: string,
-    beforeSectionId?: string,
-    event?: React.DragEvent,
-  ) {
+  function updateDropHint(columnId: string, event: React.DragEvent) {
     if (!drag) return;
-    let target = { sectionId, beforeKey, beforeSectionId };
-    if (event && !beforeKey && !sectionId) {
-      target = { ...target, ...dropPointFromEvent(event, columnId) };
-    }
+    const next = dropPointFromEvent(event, columnId);
+    setDropHint((current) => (hintsEqual(current, next) ? current : next));
+  }
+
+  function handleDrop(columnId: string, event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!drag) return;
+    const target = dropPointFromEvent(event, columnId);
     if (drag.kind === "new-section") {
       setLayout((current) => {
         const next = addSection(current, columnId, "New section");
@@ -189,7 +220,7 @@ export function FieldBuilder({
     } else {
       setLayout((current) => moveSection(current, drag.id, { columnId, beforeSectionId: target.beforeSectionId }));
     }
-    setDrag(null);
+    endDrag();
   }
 
   function patchField(key: string, patch: Partial<CustomFieldDef>) {
@@ -208,15 +239,21 @@ export function FieldBuilder({
   }
 
   return (
-    <div className="space-y-4" data-ff-field-builder data-ff-builder-preview={preview ? "on" : "off"}>
+    <div
+      className="space-y-4"
+      data-ff-field-builder
+      data-ff-builder-preview={preview ? "on" : "off"}
+      data-ff-page-layout
+      onDragEnd={endDrag}
+    >
       <form action={saveDealFieldLayout}>
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="layout" value={JSON.stringify(layout)} />
         <input type="hidden" name="fields" value={JSON.stringify(fields)} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
-            Compact field types beside Left and Right. Drag a type — including Section — between
-            existing fields, including in Preview. Save applies to every deal.
+            Compact field types beside Left and Right. Drag any field between positions or into
+            another section — including in Preview. Save applies to every deal.
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -267,77 +304,118 @@ export function FieldBuilder({
             key={column.id}
             className="min-h-40 min-w-0 space-y-3 rounded-md border border-dashed border-border p-3"
             data-ff-builder-col={column.id}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
+            onDragOver={(event) => {
               event.preventDefault();
-              handleDrop(column.id, undefined, undefined, undefined, event);
+              updateDropHint(column.id, event);
             }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                setDropHint((current) => (current?.columnId === column.id ? null : current));
+              }
+            }}
+            onDrop={(event) => handleDrop(column.id, event)}
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {column.id === "left" ? "Left column" : "Right column"}
             </p>
-            {asList(column.sections).map((section) => (
-              <div
-                key={section.id}
-                className="ff-card space-y-2 p-3"
-                draggable
-                onDragStart={(event) => onDragStart({ kind: "section", id: section.id }, event)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.stopPropagation();
-                  handleDrop(column.id, section.id, undefined, section.id);
-                }}
-                data-ff-builder-section={section.id}
-              >
-                {preview ? (
-                  <h3 className="text-xs font-medium text-navy">{section.label}</h3>
-                ) : (
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <FieldTypeIcon type="section" />
-                      <Input
-                        value={section.label}
-                        aria-label="Section label"
-                        className="h-8"
-                        onChange={(event) =>
-                          setLayout((current) => relabelSection(current, section.id, event.target.value || section.label))
-                        }
-                        data-ff-section-label={section.id}
-                      />
+            {asList(column.sections).map((section) => {
+              const sectionActive = dropHint?.columnId === column.id && dropHint.sectionId === section.id;
+              return (
+                <div
+                  key={section.id}
+                  className={cn(
+                    "ff-card space-y-2 p-3",
+                    sectionActive && "ring-2 ring-sky-400 ring-offset-2 ring-offset-background",
+                  )}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    updateDropHint(column.id, event);
+                  }}
+                  onDrop={(event) => handleDrop(column.id, event)}
+                  data-ff-builder-section={section.id}
+                  data-ff-drop-section={sectionActive ? "1" : undefined}
+                >
+                  {preview ? (
+                    <h3 className="text-xs font-medium text-navy">{section.label}</h3>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        <button
+                          type="button"
+                          draggable
+                          aria-label={`Drag ${section.label} section`}
+                          className="inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-navy"
+                          data-ff-section-handle={section.id}
+                          onDragStart={(event) => onDragStart({ kind: "section", id: section.id }, event)}
+                        >
+                          <GripVertical className="size-3.5" />
+                        </button>
+                        <FieldTypeIcon type="section" />
+                        <Input
+                          value={section.label}
+                          aria-label="Section label"
+                          className="h-8"
+                          onChange={(event) =>
+                            setLayout((current) =>
+                              relabelSection(current, section.id, event.target.value || section.label),
+                            )
+                          }
+                          data-ff-section-label={section.id}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => setLayout((current) => deleteSection(current, section.id))}
+                      >
+                        Delete
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => setLayout((current) => deleteSection(current, section.id))}
+                  )}
+                  {asList(section.fieldKeys).length === 0 ? (
+                    <div
+                      className={cn(
+                        "rounded-md border border-dashed px-2 py-4 text-center text-[11px] text-muted-foreground",
+                        sectionActive && !dropHint?.beforeKey && "border-sky-400 bg-sky-50 text-sky-700",
+                      )}
+                      data-ff-section-empty={section.id}
                     >
-                      Delete
-                    </Button>
-                  </div>
-                )}
-                {asList(section.fieldKeys).map((key) => {
-                  const field = byKey[key];
-                  if (!field) return null;
-                  return (
-                    <BuilderFieldRow
-                      key={key}
-                      field={field}
-                      preview={preview}
-                      values={Object.fromEntries(fields.map((item) => [item.key, item.defaultValue ?? ""]))}
-                      onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
-                      onDrop={(event) => {
-                        event.stopPropagation();
-                        handleDrop(column.id, section.id, key);
-                      }}
-                      onRequired={() => patchField(key, { required: !field.required })}
-                      onPermissions={() => setDialog({ kind: "permissions", key })}
-                      onProperties={() => setDialog({ kind: "properties", key })}
-                      onRemove={() => removeField(key)}
-                    />
-                  );
-                })}
-              </div>
-            ))}
+                      Drop a field here
+                    </div>
+                  ) : null}
+                  {asList(section.fieldKeys).map((key) => {
+                    const field = byKey[key];
+                    if (!field) return null;
+                    const showLine = sectionActive && dropHint?.beforeKey === key;
+                    return (
+                      <div key={key}>
+                        {showLine ? <DropLine /> : null}
+                        <BuilderFieldRow
+                          field={field}
+                          preview={preview}
+                          dragging={drag?.kind === "field" && drag.key === key}
+                          values={Object.fromEntries(fields.map((item) => [item.key, item.defaultValue ?? ""]))}
+                          onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            updateDropHint(column.id, event);
+                          }}
+                          onDrop={(event) => handleDrop(column.id, event)}
+                          onRequired={() => patchField(key, { required: !field.required })}
+                          onPermissions={() => setDialog({ kind: "permissions", key })}
+                          onProperties={() => setDialog({ kind: "properties", key })}
+                          onRemove={() => removeField(key)}
+                        />
+                      </div>
+                    );
+                  })}
+                  {sectionActive && !dropHint?.beforeKey && asList(section.fieldKeys).length > 0 ? (
+                    <DropLine />
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -372,11 +450,23 @@ export function FieldBuilder({
   );
 }
 
+function DropLine() {
+  return (
+    <div
+      className="h-0.5 rounded-full bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.2)]"
+      data-ff-drop-line
+      aria-hidden
+    />
+  );
+}
+
 function BuilderFieldRow({
   field,
   preview,
+  dragging,
   values,
   onDragStart,
+  onDragOver,
   onDrop,
   onRequired,
   onPermissions,
@@ -385,8 +475,10 @@ function BuilderFieldRow({
 }: {
   field: CustomFieldDef;
   preview: boolean;
+  dragging?: boolean;
   values: Record<string, string>;
   onDragStart: (event: React.DragEvent) => void;
+  onDragOver: (event: React.DragEvent) => void;
   onDrop: (event: React.DragEvent) => void;
   onRequired: () => void;
   onPermissions: () => void;
@@ -398,11 +490,12 @@ function BuilderFieldRow({
       <div
         draggable
         onDragStart={onDragStart}
-        onDragOver={(event) => event.preventDefault()}
+        onDragOver={onDragOver}
         onDrop={onDrop}
-        className="cursor-grab space-y-1"
+        className={cn("cursor-grab space-y-1", dragging && "opacity-40")}
         data-ff-builder-field={field.key}
         data-ff-preview-field={field.key}
+        data-ff-dragging={dragging ? "1" : undefined}
       >
         <label className="flex items-center gap-1.5 text-xs font-medium text-navy">
           <FieldTypeIcon type={field.type} />
@@ -418,11 +511,15 @@ function BuilderFieldRow({
     <div
       draggable
       onDragStart={onDragStart}
-      onDragOver={(event) => event.preventDefault()}
+      onDragOver={onDragOver}
       onDrop={onDrop}
-      className="flex cursor-grab items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+      className={cn(
+        "flex cursor-grab items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5",
+        dragging && "opacity-40",
+      )}
       data-ff-builder-field={field.key}
       data-ff-field-row="collapsed"
+      data-ff-dragging={dragging ? "1" : undefined}
     >
       <span className="flex min-w-0 items-center gap-1.5 truncate text-sm text-navy">
         <FieldTypeIcon type={field.type} />
