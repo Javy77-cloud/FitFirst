@@ -52,6 +52,7 @@ describe("lead + deal worksheet entry checklist", () => {
     expect(shell).toMatch(/utilityChrome/);
     expect(header).toMatch(/utilityChrome/);
     expect(header).toMatch(/data-ff-utility-chrome/);
+    expect(header).not.toMatch(/Personal lines worksheet/);
     expect(contacts).not.toMatch(/utilityChrome/);
   });
 });

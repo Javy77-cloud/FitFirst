@@ -56,16 +56,19 @@ export function DeskHeader({
       data-ff-utility-chrome={utilityChrome ? "true" : "false"}
     >
       {utilityChrome ? (
-        <Link href="/" className="shrink-0 text-base font-semibold text-navy" title="FitFirst home">
-          FitFirst
-        </Link>
+        <div className="flex min-w-0 shrink-0 items-baseline gap-3">
+          <Link href="/" className="shrink-0 text-base font-semibold text-navy" title="FitFirst home">
+            FitFirst
+          </Link>
+          <h1 className="text-xl font-semibold text-navy">{title}</h1>
+        </div>
       ) : (
         <div className="min-w-0 shrink-0">
-          {eyebrow === "" ? null : (
+          {eyebrow ? (
             <div className="text-caption uppercase tracking-wide text-muted-foreground">
-              {eyebrow ?? "Personal lines worksheet"}
+              {eyebrow}
             </div>
-          )}
+          ) : null}
           <h1 className="text-xl font-semibold text-navy">{title}</h1>
         </div>
       )}

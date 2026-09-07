@@ -12,6 +12,9 @@ describe("lead detail layout + per-line documents", () => {
     const form = source("src/components/crm/lead-form-fields.tsx");
     expect(page).toMatch(/title="Leads"/);
     expect(page).not.toMatch(/Personal Lines Worksheet/);
+    const header = source("src/components/desk-header.tsx");
+    expect(header).not.toMatch(/Personal lines worksheet/);
+    expect(header).toMatch(/\{title\}/);
     expect(page).toMatch(/View related deal/);
     expect(page).toMatch(/LeadDetailWorkspace/);
     expect(page).not.toMatch(/uploadDocument/);
