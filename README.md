@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bg`)
 
-Deal page four fixes, from `cursor/live-ff-tip-sep7az` @ `d225fca`. Separate crew from the toast tip. **Markets** with no carriers and no lookup is blank — no "In appetite", no buckets, no placeholder copy. **Documents** drops the Fit to screen / 100% toggle; the master sheet stays locked at **100%** with no zoom UI. Right rail `data-ff-deal-right-rail` is **exactly 320px**. Deal Details **Contact** and **Address** are a 50/50 split. Do not redesign Quotes, field builder, tags, or sidebar nav. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Deal page four fixes, from `cursor/live-ff-tip-sep7az` @ `d225fca`. Separate crew from the toast tip. **Markets** with no carriers and no lookup is blank — no "In appetite", no buckets, no placeholder copy. **Documents** drops the Fit to screen / 100% toggle; the master sheet stays locked at **100%** with no zoom UI. Right rail `data-ff-deal-right-rail` is **exactly 320px**. Deal Details **Contact** and **Address** are a 50/50 split. Do not redesign Quotes, field builder, tags, or sidebar nav. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `aea35cbb`.
 
 ```bash
 cd ~/FitFirst
