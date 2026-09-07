@@ -310,7 +310,7 @@ export function ColumnTable({
                   onReorder={reorder}
                   onReset={reset}
                 />
-                <SheetSettingsMenu moduleId={moduleId} />
+                <SheetSettingsMenu moduleId={queryModule} />
               </div>
             </th>
           </tr>

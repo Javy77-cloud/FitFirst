@@ -17,6 +17,7 @@ describe("per-module tags", () => {
     expect(TAG_MODULES).toContain("carriers");
     expect(tagModuleLabel("accounts")).toBe("Business");
     expect(tagModuleForList("leads")).toBe("leads");
+    expect(tagModuleForList("leads-queue")).toBe("leads");
     expect(SUGGESTED_MODULE_TAGS.leads).toContain("referral");
     expect(SUGGESTED_MODULE_TAGS.contacts).toContain("client");
     expect(SUGGESTED_MODULE_TAGS.deals).toContain("shopping");

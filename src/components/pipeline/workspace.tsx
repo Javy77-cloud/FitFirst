@@ -62,7 +62,6 @@ export function PipelineWorkspace({
       ) : (
         <PipelineKanban board={board} cards={cards} agents={agents} tagCatalog={tagCatalog} />
       )}
-      )}
     </div>
   );
 }

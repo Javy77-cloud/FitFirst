@@ -19,6 +19,7 @@ describe("module tag manage + assign popup", () => {
     expect(tagModuleLabel("accounts")).toBe("Business");
     expect(tagModuleForList("businesses")).toBe("accounts");
     expect(tagModuleForList("pipeline")).toBe("deals");
+    expect(tagModuleForList("leads-queue")).toBe("leads");
     expect(tagModuleForList("carriers")).toBe("carriers");
     expect(tagManagePaths("accounts").list).toBe("/accounts");
     expect(tagManagePaths("carriers").manage).toBe("/settings/tags?module=carriers");

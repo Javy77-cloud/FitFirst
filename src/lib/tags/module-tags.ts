@@ -45,10 +45,11 @@ export function tagModuleLabel(module: TagModule): string {
   return TAG_MODULE_LABELS[module];
 }
 
-/** Map a list / sheet moduleId (businesses, pipeline, …) onto its tag catalog. */
+/** Map a list / sheet moduleId (businesses, pipeline, leads-queue, …) onto its tag catalog. */
 export function tagModuleForList(moduleId: string): TagModule | null {
   if (moduleId === "businesses" || moduleId === "accounts") return "accounts";
   if (moduleId === "pipeline") return "deals";
+  if (moduleId === "leads-queue" || moduleId === "leads") return "leads";
   return isTagModule(moduleId) ? moduleId : null;
 }
 
