@@ -73,6 +73,10 @@ describe("deal detail final rebuild", () => {
     expect(page.indexOf("<SheetHealthToggle")).toBeLessThan(page.indexOf("<DealMotivation"));
     expect(page.indexOf("<DealMotivation")).toBeLessThan(page.indexOf("<RecordTags"));
     expect(page.indexOf("<RecordTags")).toBeLessThan(page.indexOf("data-ff-deal-quick-comms"));
+    expect(source("src/components/tags/record-tags.tsx")).toMatch(/AssignRecordTags/);
+    expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Manage tags/);
+    expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Add a tag/);
+    expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Save tags/);
     expect(page.indexOf("data-ff-deal-quick-comms")).toBeLessThan(page.indexOf("<RecordContextRail"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DealLineSelector"));
     expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));

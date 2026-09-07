@@ -97,11 +97,11 @@ export function AssignRecordTags({
   }
 
   return (
-    <div className="relative" data-ff-assign-tags={module}>
+    <div className="relative min-w-0 max-w-full" data-ff-assign-tags={module}>
       <button
         ref={buttonRef}
         type="button"
-        className="max-w-full rounded-sm text-left hover:bg-muted/60"
+        className="min-w-0 max-w-full rounded-sm text-left hover:bg-muted/60"
         onClick={() => {
           setDraft(current);
           setOpen((value) => !value);

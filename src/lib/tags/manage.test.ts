@@ -51,9 +51,13 @@ describe("module tag manage + assign popup", () => {
     expect(settings).toMatch(/createModuleTag/);
     expect(settings).toMatch(/Save color/);
     expect(settings).toMatch(/data-ff-tag-manager/);
-    expect(record).toMatch(/data-ff-manage-tags/);
+    expect(record).toMatch(/AssignRecordTags/);
+    expect(record).not.toMatch(/data-ff-manage-tags/);
+    expect(record).not.toMatch(/Manage tags/);
+    expect(record).not.toMatch(/Save tags/);
     expect(record).not.toMatch(/data-ff-tag-color-picker/);
     expect(record).not.toMatch(/placeholder="Add a tag"/);
+    expect(record).not.toMatch(/\+ \$\{formatTagLabel/);
     expect(assign).not.toMatch(/createModuleTag/);
     expect(assign).toMatch(/data-ff-assign-tags-popup/);
     expect(source("src/app/actions/record-tags.ts")).toMatch(/export async function createModuleTag/);
@@ -69,6 +73,8 @@ describe("module tag manage + assign popup", () => {
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/components/pipeline/table-view.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/components/pipeline/deal-card.tsx")).toMatch(/AssignRecordTags/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/<RecordTags/);
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/placeholder="Add a tag"/);
     expect(source("src/components/tags/assign-record-tags.tsx")).toMatch(/data-ff-assign-tags-trigger/);
     expect(source("src/components/tags/assign-record-tags.tsx")).toMatch(/type="checkbox"/);
   });
