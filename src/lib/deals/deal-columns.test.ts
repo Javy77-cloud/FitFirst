@@ -95,6 +95,10 @@ describe("pipeline table deal-field columns", () => {
     expect(select).toMatch(/stageColorFromNameOrSlug/);
     expect(select).toMatch(/statusColorClass/);
     expect(select).toMatch(/data-stage-color/);
+    expect(select).toMatch(/text-xs/);
+    expect(select).toMatch(/h-7/);
+    expect(select).not.toMatch(/text-sm/);
+    expect(select).not.toMatch(/h-8/);
     expect(pill).toMatch(/stageColorFromNameOrSlug\(stage, color\)/);
     for (const [index, stage] of pc.stages.entries()) {
       const view = dealStageView(
