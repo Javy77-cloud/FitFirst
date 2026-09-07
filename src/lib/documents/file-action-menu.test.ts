@@ -58,14 +58,18 @@ describe("standard file action menu", () => {
     expect(text).toMatch(/fileDownloadHref/);
     expect(text).toMatch(/replaceDocument/);
     expect(text).toMatch(/deleteUploadedFile/);
+    expect(text).toMatch(/FileDeleteIcon/);
+    expect(text).toMatch(/data-ff-file-action="delete-icon"/);
   });
 
   it("deletes through HardDeleteForm so confirmHardDelete runs once", () => {
     const text = source(MENU);
     expect(text).toMatch(/<HardDeleteForm/);
+    expect(text.match(/<HardDeleteForm/g)).toHaveLength(1);
     expect(text).toMatch(/action=\{deleteUploadedFile\}/);
     expect(text).toMatch(/subject=\{subject\}/);
     expect(text).toMatch(/deleteBtnRef\.current\?\.click\(\)/);
+    expect((text.match(/deleteBtnRef\.current\?\.click\(\)/g) || []).length).toBeGreaterThanOrEqual(2);
     expect(text).not.toMatch(/confirmHardDelete\(/);
     expect(text).not.toMatch(/confirmDeleteOnce\(/);
     expect(text).not.toMatch(/window\.confirm/);

@@ -6,6 +6,7 @@ import { Download, Eye, Replace, Trash2 } from "lucide-react";
 import { deleteUploadedFile } from "@/app/actions/documents";
 import { replaceDocument } from "@/app/actions/document-versions";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +57,7 @@ export function FileActionMenu({
   const subject = deleteUploadedFileSubject(filename, mode);
 
   return (
-    <div className={cn("min-w-0", className)} data-ff-file-action-menu="">
+    <div className={cn("flex min-w-0 items-center gap-1", className)} data-ff-file-action-menu="">
       <form ref={replaceFormRef} action={replaceDocument} className="hidden">
         <input type="hidden" name="documentId" value={documentId} />
         {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
@@ -74,6 +75,7 @@ export function FileActionMenu({
           }}
         />
       </form>
+      {/* One HardDeleteForm: menu Delete + visible trash both click this submitter (one confirm). */}
       <HardDeleteForm action={deleteUploadedFile} subject={subject} className="hidden">
         <input type="hidden" name="documentId" value={documentId} />
         {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
@@ -90,7 +92,7 @@ export function FileActionMenu({
             <button
               type="button"
               className={cn(
-                "flex min-w-0 w-full items-center gap-2 rounded-md border-0 bg-transparent p-0 text-left shadow-none outline-none hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring",
+                "flex min-w-0 flex-1 items-center gap-2 rounded-md border-0 bg-transparent p-0 text-left shadow-none outline-none hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring",
                 triggerClassName,
               )}
             />
@@ -132,6 +134,17 @@ export function FileActionMenu({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <FileDeleteIcon
+        type="button"
+        label={mode === "hide" ? "Hide" : "Delete"}
+        data-ff-file-action="delete-icon"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          deleteBtnRef.current?.click();
+        }}
+      />
     </div>
   );
 }

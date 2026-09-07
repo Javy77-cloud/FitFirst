@@ -6,29 +6,31 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7az`)
 
-Pipeline **List** and **Grid** on the existing Board / Funnel switcher, merged from `cursor/live-ff-tip-sep7cc-4dd2` onto the desk tip. The current Pipeline table is **List** — click Deal name, carrier, stage, assigned, phone, email, or other navigable columns to open that record or destination (stage opens the Board filtered to that stage). **Grid** is the same columns with inline edit: type + Enter/blur for text; dropdown for picklists / line / source / assigned / stage; checkbox / date / number / currency where the field type says so. Saves persist without leaving the table and show the sitewide top-center toast (**Deal updated**). Read-only columns (Deal title, Updated, Tags, formulas) stay display-only in Grid. Board is unchanged. `view=table` bookmarks still open List. Keeps desk tip later work: FedEx address + vault, Edit Layout, BX tags, builder DnD, Dashboard, rail 320, Save toasts. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `182929b4`.
+**Deal Documents visible trash:** each uploaded source-file row on Deal → Documents shows a garbage-can via the shared `FileActionMenu` (right of the filename). Menu still has View / Download / Replace / Delete. Visible trash and menu Delete share **one** `HardDeleteForm` submitter — exactly one confirm, then DB/storage delete and the row leaves the UI. Pending Choose-file rows already had trash. Master sheet / Pipeline / Markets / upload band layout untouched.
 
-```bash
-cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
-npm install
-npm run db:migrate
-# skip db:seed on the live Zoho book
-npm run dev -- --port 43147
-```
+Keeps prior desk tip work on this branch: Pipeline **List** + **Grid**, FedEx address + vault, Edit Layout, BX tags, builder DnD, Dashboard, rail 320, Save toasts. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**.
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Deals / Pipeline: confirm the switcher reads **List · Grid · Board · Funnel**. Stay on List — click a deal name (opens the deal), a carrier cell if one resolves, and a stage pill (Board for that stage). Switch to **Grid** — edit a text cell (phone or city) and tab/Enter; pick a new stage or source from the dropdown. Confirm the top-center **Deal updated** toast. Open **Board** and confirm cards still drag. Do not bind or edit Ana Cov A (**$321,000**). Do not redesign Attach / Activity chips, Markets empty, bell, or the 320 rail.
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a Deal → Documents. Each uploaded source file shows a trash can on the right. Confirm once — the row disappears. Do not bind or edit Ana Cov A (**$321,000**).
 
-### CC — Pipeline List + Grid
+### Documents trash
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| CC1 | Switcher | Deals / Pipeline shows **List · Grid · Board · Funnel** in the same chip row as before. No third nav. |
-| CC2 | List click | Deal name → deal. Carrier → carrier when the name matches. Stage → Board for that stage. Phone / email still dial or mail. |
-| CC3 | Grid edit | Text cell commit on blur/Enter writes and stays on the table. Picklist / stage / source use a dropdown of allowed values. |
-| CC4 | Toast | Successful Grid save shows the sitewide top-center **Deal updated** toast. Failed save does not claim success. |
-| CC5 | Read-only | Title, Updated, Tags, and formula columns are not inputs in Grid. Board view is unchanged. |
-| CC6 | Scope | Attach/Activity chips, Markets empty, bell, rail 320 stay. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+| DT1 | Visible trash | Deal → Documents uploaded file rows show a garbage-can (`data-ff-delete-file`) on the right. |
+| DT2 | One confirm | Trash asks **Are you sure you want to delete …?** exactly once. Cancel leaves the file. |
+| DT3 | Gone | After confirm the file is removed from DB/storage and the row leaves the UI immediately. |
+| DT4 | Menu intact | Filename menu still has View / Download / Replace / Delete (same single confirm path). |
+| DT5 | Scope | Upload band / Master sheet / Pipeline / Markets untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+
+### CC — Pipeline List + Grid (still on tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| CC1 | Switcher | Deals / Pipeline shows **List · Grid · Board · Funnel**. |
+| CC2 | List click | Deal name / carrier / stage / phone / email navigate as before. |
+| CC3 | Grid edit | Text and picklist cells save inline with toast. |
+| CC4 | Scope | Attach/Activity, Markets empty, bell, rail 320 stay. No seed. Ana unbound. |
+
 
 ## Previous tip (`cursor/live-ff-tip-sep7ca-59d4`)
 
