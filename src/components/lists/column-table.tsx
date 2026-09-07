@@ -65,8 +65,9 @@ export function cellSortText(value: ReactNode): string {
 }
 
 export function rowSortValue(row: ColumnRow, columnId: string): string {
-  const explicit = row.sort?.[columnId];
-  if (explicit != null && explicit !== "") return String(explicit);
+  if (row.sort && Object.prototype.hasOwnProperty.call(row.sort, columnId)) {
+    return sheetAttr(row.sort[columnId]);
+  }
   return cellSortText(row.cells[columnId]);
 }
 

@@ -16,4 +16,15 @@ describe("shared list table sort values", () => {
     expect(sheetAttr(rowSortValue(row, "missing"))).toBe("");
     expect(sheetAttr(null)).toBe("");
   });
+
+  it("keeps an explicit empty sort string so action cells hydrate the same on server and client", () => {
+    const row: ColumnRow = {
+      key: "deal-1",
+      cells: { comms: "Send quote Bind policy", pick: "on" },
+      sort: { comms: "", pick: "" },
+    };
+    expect(rowSortValue(row, "comms")).toBe("");
+    expect(rowSortValue(row, "pick")).toBe("");
+    expect(sheetAttr(rowSortValue(row, "comms"))).toBe("");
+  });
 });

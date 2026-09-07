@@ -133,6 +133,7 @@ describe("Deals page sep7h", () => {
     expect(table).toMatch(/sheetAttr/);
     expect(table).toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
+    expect(table).toMatch(/comms: ""/);
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "value", label: "Value"/);
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "nextAction", label: "Next"/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ListPagination/);

@@ -118,6 +118,7 @@ export async function DealsTable({
                 nextAction: sheetAttr(nextDue),
                 updated: sheetAttr(deal.updatedAt ? new Date(deal.updatedAt).toISOString() : ""),
                 esign: sheetAttr(deal.esignStatus),
+                // Keep "" on both sides — client action labels must not become data-sort.
                 comms: "",
               },
               cells: {
