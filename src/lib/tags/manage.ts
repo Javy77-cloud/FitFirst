@@ -1,4 +1,4 @@
-import { normalizeTag, type TagModule } from "./module-tags";
+import { normalizeTag, normalizeTags, TAG_MODULE_PATHS, type TagModule } from "./module-tags";
 
 export function renameTagInList(tags: string[], from: string, to: string): string[] {
   const source = normalizeTag(from);
@@ -25,9 +25,16 @@ export function deleteTagFromList(tags: string[], name: string): string[] {
 }
 
 export function tagManagePaths(module: TagModule) {
+  const paths = TAG_MODULE_PATHS[module];
   return {
-    list: `/${module}`,
-    detail: (id: string) => `/${module}/${id}`,
+    list: paths.list,
+    detail: paths.detail,
     manage: `/settings/tags?module=${module}`,
   };
+}
+
+/** Assignment never invents catalog names — only pick from the module set. */
+export function assignFromCatalog(selected: string[], catalog: readonly string[]): string[] {
+  const allowed = new Set(catalog.map((name) => normalizeTag(name)).filter(Boolean));
+  return normalizeTags(selected).filter((tag) => allowed.has(tag));
 }

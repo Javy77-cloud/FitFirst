@@ -24,6 +24,7 @@ export type PipelineCardView = {
   updatedAt: string | null;
   boundAt: string | null;
   archivedAt: string | null;
+  tags: string[];
 };
 
 function iso(value: Date | string | null | undefined) {
@@ -61,6 +62,7 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
     updatedAt: iso(deal.updatedAt),
     boundAt: iso(deal.boundAt),
     archivedAt: iso(deal.archivedAt),
+    tags: Array.isArray(deal.tags) ? deal.tags : [],
   };
 }
 

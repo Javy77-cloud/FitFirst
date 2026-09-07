@@ -1,4 +1,5 @@
 import {
+  createModuleTag,
   deleteModuleTag,
   listModuleTags,
   mergeModuleTag,
@@ -9,7 +10,13 @@ import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatTagLabel, isTagModule, TAG_MODULES, type TagModule } from "@/lib/tags/module-tags";
+import {
+  formatTagLabel,
+  isTagModule,
+  TAG_MODULES,
+  tagModuleLabel,
+  type TagModule,
+} from "@/lib/tags/module-tags";
 import { DEFAULT_TAG_PICKER_COLOR, tagChipStyle } from "@/lib/tags/tag-colors";
 import Link from "next/link";
 
@@ -27,25 +34,49 @@ export default async function ManageTagsPage({
   return (
     <SettingsShell title="Manage tags" current="tags">
       <p className="mb-4 text-sm text-muted-foreground">
-        Rename, merge, or delete tags for this module. Changes apply to every record that uses the
-        chip — not just one deal.
+        Each module has its own catalog. Create, rename, color, merge, or delete here — assigning a
+        tag on a row never creates a new one.
       </p>
       <div className="mb-4 flex flex-wrap gap-2">
         {TAG_MODULES.map((item) => (
           <Link
             key={item}
             href={`/settings/tags?module=${item}`}
-            className={`rounded-sm px-2.5 py-1 text-sm capitalize ${
+            className={`rounded-sm px-2.5 py-1 text-sm ${
               item === module ? "bg-navy text-white" : "bg-muted text-navy hover:bg-secondary"
             }`}
           >
-            {item}
+            {tagModuleLabel(item)}
           </Link>
         ))}
       </div>
 
+      <form action={createModuleTag} className="mb-4 flex flex-wrap items-end gap-2" data-ff-tag-create="">
+        <input type="hidden" name="module" value={module} />
+        <div>
+          <label className="text-[11px] text-muted-foreground" htmlFor="settings-new-tag">
+            New {tagModuleLabel(module).toLowerCase()} tag
+          </label>
+          <Input id="settings-new-tag" name="name" placeholder="Name" className="h-8 w-40" />
+        </div>
+        <label className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          Color
+          <input
+            type="color"
+            name="color"
+            defaultValue={DEFAULT_TAG_PICKER_COLOR}
+            className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0"
+            aria-label="New tag color"
+            data-ff-tag-color-picker=""
+          />
+        </label>
+        <Button type="submit" size="xs">
+          Create
+        </Button>
+      </form>
+
       {tags.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No saved tags for {module} yet.</p>
+        <p className="text-sm text-muted-foreground">No saved tags for {tagModuleLabel(module)} yet.</p>
       ) : (
         <ul className="space-y-3" data-ff-tag-manager={module}>
           {tags.map((tag) => (

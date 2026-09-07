@@ -17,6 +17,10 @@ import { listDeskUsers } from "@/lib/db/activity-queries";
 import { getCarrier, listRecordAsks } from "@/lib/db/queries";
 import { CARRIER_BINDING, CARRIER_BINDING_LABEL, CARRIER_SUBMISSION_METHODS, formatMoney } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
+import { RecordTags } from "@/components/tags/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -50,11 +54,12 @@ export default async function CarrierRecordPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, asks, users, session] = await Promise.all([
+  const [row, asks, users, session, tagExtra] = await Promise.all([
     getCarrier(id),
     listRecordAsks("carrier", id),
     listDeskUsers(),
     currentDeskSession(),
+    listModuleTags("carriers").catch(() => []),
   ]);
   if (!row) notFound();
   const { carrier, rule } = row;
@@ -71,6 +76,15 @@ export default async function CarrierRecordPage({
     <AppShell title={carrier.name}>
       <div className="mb-3 flex justify-end">
         <EditLayoutLink module="carriers" />
+      </div>
+      <div className="mb-4 max-w-lg">
+        <RecordTags
+          module="carriers"
+          recordId={carrier.id}
+          tags={carrier.tags}
+          suggestions={suggestedTagsFor("carriers", tagExtra.map((row) => row.name))}
+          colors={colorsFromModuleTags(tagExtra)}
+        />
       </div>
       <form action={updateCarrierContact} className="space-y-4">
         <input type="hidden" name="carrierId" value={carrier.id} />

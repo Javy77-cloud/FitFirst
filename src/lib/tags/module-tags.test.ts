@@ -1,19 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
   SUGGESTED_MODULE_TAGS,
+  TAG_MODULES,
   carryLeadTagsToContact,
   formatTagLabel,
   mergeTags,
   normalizeTags,
+  tagModuleForList,
+  tagModuleLabel,
   tagSortText,
 } from "./module-tags";
 
 describe("per-module tags", () => {
   it("keeps suggested defaults per module", () => {
+    expect(TAG_MODULES).toContain("accounts");
+    expect(TAG_MODULES).toContain("carriers");
+    expect(tagModuleLabel("accounts")).toBe("Business");
+    expect(tagModuleForList("leads")).toBe("leads");
+    expect(tagModuleForList("leads-queue")).toBe("leads");
     expect(SUGGESTED_MODULE_TAGS.leads).toContain("referral");
     expect(SUGGESTED_MODULE_TAGS.contacts).toContain("client");
     expect(SUGGESTED_MODULE_TAGS.deals).toContain("shopping");
+    expect(SUGGESTED_MODULE_TAGS.accounts).toContain("commercial");
     expect(SUGGESTED_MODULE_TAGS.policies).toContain("renewal");
+    expect(SUGGESTED_MODULE_TAGS.carriers).toContain("preferred");
   });
 
   it("carries sensible lead tags onto a contact", () => {

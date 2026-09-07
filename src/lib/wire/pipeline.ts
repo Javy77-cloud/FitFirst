@@ -19,7 +19,8 @@ export type PipelineFieldId =
   | "carrier"
   | "stage"
   | "updated"
-  | "bound";
+  | "bound"
+  | "tags";
 
 export type PipelineFieldDef = {
   id: PipelineFieldId;
@@ -43,6 +44,7 @@ export const PIPELINE_FIELDS: PipelineFieldDef[] = [
   { id: "stage", label: "Stage", defaultOn: false },
   { id: "updated", label: "Updated", defaultOn: false },
   { id: "bound", label: "Bound", defaultOn: false },
+  { id: "tags", label: "Tags", defaultOn: true },
 ];
 
 /**

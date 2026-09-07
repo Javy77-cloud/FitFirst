@@ -9,16 +9,19 @@ import { StagePill } from "@/components/fit-badge";
 import { cn } from "@/lib/utils";
 import { collapsedStorageKey, dealMatchesStage, parseCollapsedStages } from "@/lib/wire/pipeline";
 import type { DeskUserOption } from "@/lib/deals/transfer";
+import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineKanban({
   board,
   cards,
   agents = [],
+  tagCatalog = [],
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   agents?: DeskUserOption[];
+  tagCatalog?: TagCatalogRow[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -120,6 +123,7 @@ export function PipelineKanban({
                       stageColor={"color" in stage ? stage.color : undefined}
                       showArchive={board.slug !== "archive"}
                       agents={agents}
+                      tagCatalog={tagCatalog}
                     />
                   ))
                 )}

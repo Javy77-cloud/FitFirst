@@ -69,6 +69,7 @@ export const FLASH_COPY = {
   "field-confirmed": "Field confirmed",
   "tags-saved": "Tags saved",
   "tag-added": "Tag added",
+  "tag-created": "Tag created",
   "tag-color-saved": "Tag color saved",
   "document-deleted": "Document deleted",
   "document-replaced": "Document replaced",

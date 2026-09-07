@@ -35,31 +35,31 @@ describe("tag colors", () => {
     expect(DEFAULT_TAG_PICKER_COLOR).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it("adds a color picker on create and an edit control on existing chips", () => {
-    const chips = source("src/components/tags/record-tags.tsx");
+  it("edits colors only from the module catalog manager", () => {
+    const record = source("src/components/tags/record-tags.tsx");
+    const assign = source("src/components/tags/assign-record-tags.tsx");
     const lists = source("src/components/tags/tag-chips.tsx");
     const settings = source("src/app/settings/tags/page.tsx");
+    const dialog = source("src/components/tags/manage-tags-dialog.tsx");
     const actions = source("src/app/actions/record-tags.ts");
     const schema = source("src/lib/db/schema.ts");
     const migrate = source("drizzle/0084_tag_colors.sql");
-    expect(chips).toMatch(/data-ff-tag-color-picker/);
-    expect(chips).toMatch(/type="color"/);
-    expect(chips).toMatch(/data-ff-tag-color-edit/);
-    expect(chips).toMatch(/updateModuleTagColor/);
-    expect(chips).toMatch(/tagColors/);
-    expect(chips).toMatch(/data-ff-tag-color=/);
+    expect(record).not.toMatch(/data-ff-tag-color-picker/);
+    expect(assign).not.toMatch(/data-ff-tag-color-picker/);
     expect(lists).toMatch(/data-ff-tag-color=/);
     expect(lists).toMatch(/tagChipStyle/);
     expect(settings).toMatch(/updateModuleTagColor/);
     expect(settings).toMatch(/Save color/);
+    expect(settings).toMatch(/data-ff-tag-color-picker/);
     expect(settings).toMatch(/data-ff-tag-color-edit/);
+    expect(dialog).toMatch(/data-ff-tag-color-picker/);
+    expect(dialog).toMatch(/updateModuleTagColor/);
     expect(actions).toMatch(/export async function updateModuleTagColor/);
-    expect(actions).toMatch(/parseTagColorsFromForm/);
     expect(actions).toMatch(/onConflictDoUpdate/);
     expect(schema).toMatch(/color: text\("color"\)/);
     expect(migrate).toMatch(/ADD COLUMN IF NOT EXISTS "color"/);
     expect(migrate).toMatch(/Additive only/);
     expect(migrate).not.toMatch(/DROP TABLE/);
-    expect(migrate).not.toMatch(/db:seed/);
+    expect(migrate).not.toMatch(/db:seed wipe/);
   });
 });

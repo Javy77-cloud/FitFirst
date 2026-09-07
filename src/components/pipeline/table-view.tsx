@@ -10,6 +10,8 @@ import { ColumnTable } from "@/components/lists/column-table";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
+import { AssignRecordTags, type TagCatalogRow } from "@/components/tags/assign-record-tags";
+import { tagSortText } from "@/lib/tags/module-tags";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { dealSearchHaystack } from "@/lib/deals/deal-title";
@@ -22,11 +24,13 @@ export function PipelineTableView({
   cards,
   stageFilter,
   agents = [],
+  tagCatalog = [],
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   stageFilter?: string | null;
   agents?: DeskUserOption[];
+  tagCatalog?: TagCatalogRow[];
 }) {
   const labels = new Map(board.stages.map((stage) => [stage.slug, stage.name]));
   const colors = new Map(board.stages.map((stage) => [stage.slug, stage.color]));
@@ -76,6 +80,7 @@ export function PipelineTableView({
             stage: sheetAttr(deal.pipelineStage),
             updated: sheetAttr(deal.updatedAt),
             bound: sheetAttr(deal.boundAt),
+            tags: tagSortText(deal.tags),
             actions: "",
           },
           cells: {
@@ -112,6 +117,14 @@ export function PipelineTableView({
             ),
             updated: deal.updatedAt ? formatIsoDate(new Date(deal.updatedAt)) : "—",
             bound: deal.boundAt ? formatIsoDate(new Date(deal.boundAt)) : "Unbound",
+            tags: (
+              <AssignRecordTags
+                module="deals"
+                recordId={deal.id}
+                tags={deal.tags}
+                catalog={tagCatalog}
+              />
+            ),
             actions: (
               <DealRowActions
                 dealId={deal.id}

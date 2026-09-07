@@ -22,6 +22,9 @@ describe("ColumnTable / ColumnsMenu SSR ids", () => {
     expect(source("src/app/leads/page.tsx")).toMatch(/tags: tagSortText\(lead\.tags\)/);
     expect(source("src/app/contacts/page.tsx")).toMatch(/tags: tagSortText\(c\.tags\)/);
     expect(source("src/app/policies/page.tsx")).toMatch(/tags: tagSortText\(policy\.tags\)/);
+    expect(source("src/app/accounts/page.tsx")).toMatch(/tags: tagSortText\(account\.tags\)/);
+    expect(source("src/app/carriers/page.tsx")).toMatch(/tags: tagSortText\(carrier\.tags\)/);
+    expect(source("src/components/pipeline/table-view.tsx")).toMatch(/tags: tagSortText\(deal\.tags\)/);
     expect(source("src/components/lists/column-table.tsx")).not.toMatch(/isValidElement/);
   });
 

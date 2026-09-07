@@ -12,6 +12,7 @@ import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
 import { isClosedWonStage } from "@/lib/wire/pipeline";
 import type { DeskUserOption } from "@/lib/deals/transfer";
+import { AssignRecordTags, type TagCatalogRow } from "@/components/tags/assign-record-tags";
 import type { PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineDealCard({
@@ -20,12 +21,14 @@ export function PipelineDealCard({
   stageColor,
   showArchive,
   agents = [],
+  tagCatalog = [],
 }: {
   deal: PipelineCardView;
   stageName?: string;
   stageColor?: string | null;
   showArchive?: boolean;
   agents?: DeskUserOption[];
+  tagCatalog?: TagCatalogRow[];
 }) {
   const line =
     LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness;
@@ -79,6 +82,9 @@ export function PipelineDealCard({
       </FieldSlot>
       <FieldSlot id="bound" className="mt-0.5 text-[11px] text-muted-foreground">
         {deal.boundAt ? `Bound ${formatIsoDate(new Date(deal.boundAt))}` : "Unbound"}
+      </FieldSlot>
+      <FieldSlot id="tags" className="mt-1">
+        <AssignRecordTags module="deals" recordId={deal.id} tags={deal.tags} catalog={tagCatalog} />
       </FieldSlot>
       <div className="mt-2">
         <DealRowActions

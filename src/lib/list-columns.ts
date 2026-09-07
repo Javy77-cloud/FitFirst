@@ -304,6 +304,7 @@ export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
   { id: "status", label: "Status" },
   { id: "lifetime", label: "Lifetime" },
   { id: "inForce", label: "In-force" },
+  { id: "tags", label: "Tags" },
 ];
 
 export const POLICIES_LIST_COLUMNS: ListColumn[] = [
@@ -325,6 +326,7 @@ export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
   { id: "covA", label: "Cov A" },
   { id: "rules", label: "Roof / coast / mobile" },
   { id: "dontWrite", label: "Don't write" },
+  { id: "tags", label: "Tags" },
 ];
 
 export const TASKS_LIST_COLUMNS: ListColumn[] = [

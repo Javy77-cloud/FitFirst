@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bw`)
+## Mac test now (`cursor/live-ff-tip-sep7bx`)
+
+Per-module global tag catalog + assign from list/board, merged onto `cursor/live-ff-tip-sep7az`. Each module — **Leads, Deals, Contacts, Business, Policies, Carriers** — has its own catalog. The Columns / sheet **⋯** opens **Manage tags** to create, rename, color, merge, or delete (Leads ⋯ included). Clicking tags on a list row or Pipeline board card opens a multi-select popup from that catalog (including none). Creating a tag is never a side effect of assigning one on a row. Deal rail Tags is catalog assign-only — no inline create. Additive migrate `0089_account_carrier_tags` only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `3ca61366`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads** (or Deals, Contacts, Business, Policies, Carriers). Open **⋯** next to Columns → **Manage tags**. Create or recolor a tag. Click the Tags cell on a row — pick any subset. On **Deals → Pipeline → Board**, click tags on a card the same way. Deal rail Tags assigns from the catalog only. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BX — Module tag catalog + assign popup
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BX1 | Catalog | Each of the six modules has its own tag set. A Lead tag is not a Deal tag. |
+| BX2 | Manage | List ⋯ → Manage tags creates, edits, deletes, and recolors catalog tags. |
+| BX3 | Assign | Clicking tags on a list or board row opens a multi-select popup. 0–N tags. |
+| BX4 | Persist | Assigned chips stay on the sheet / list / board after refresh. |
+| BX5 | Scope | 320 rail, Save toasts, Dashboard, picklist keys, Markets, and bell stay theirs. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bw`)
 
 Rename left-nav **Home** to **Dashboard**. Same `/` route and house icon. Page chrome title and nav customizer / catalog for that top item also say **Dashboard**. Merged onto `cursor/live-ff-tip-sep7az`. No sidebar redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `c1127d91`. Head `46217c28`.
 

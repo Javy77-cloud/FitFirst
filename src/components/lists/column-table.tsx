@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
+import { SheetSettingsMenu } from "@/components/lists/sheet-settings-menu";
 import { ColumnSortFilter } from "@/components/lists/funnel-sort";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
@@ -301,13 +302,16 @@ export function ColumnTable({
               />
             ))}
             <th className="ff-col-manage">
-              <ColumnsMenu
-                columns={columns}
-                visible={visible}
-                onToggle={toggle}
-                onReorder={reorder}
-                onReset={reset}
-              />
+              <div className="flex items-center justify-end gap-1">
+                <ColumnsMenu
+                  columns={columns}
+                  visible={visible}
+                  onToggle={toggle}
+                  onReorder={reorder}
+                  onReset={reset}
+                />
+                <SheetSettingsMenu moduleId={queryModule} />
+              </div>
             </th>
           </tr>
         </thead>
