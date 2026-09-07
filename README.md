@@ -4,7 +4,29 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7aa`)
+## Mac test now (`cursor/live-ff-tip-sep7ac`)
+
+Pipeline band only, from `cursor/live-ff-tip-sep7aa` @ `011c324`. **Exact red-box sizes** (1829px content crop): **Attach** `min(819px, 44.8%)` LEFT, **4px gap**, **Today's Activity** `min(797px, 43.6%)` immediately RIGHT. Flex-start from the page inset — **no** `justify-between` / edge slam. Trailing space after Activity stays empty. Counters are **60×60 squares** (icon + count inside, tiny label under), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Deal detail / table / sidebar / seed untouched. Live Zoho stays book of record. Tip SHA `95c423b`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ac && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AC — Pipeline list (sep7ac)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AC1 | Placement | Attach and Today's Activity sit on **one horizontal band** at the content inset. They sit **next to each other** (4px gap). **No** huge empty middle. Activity is **not** stacked under Attach. |
+| AC2 | Widths | Attach is **819px / 44.8%** (left red box). Activity is **797px / 43.6%** (right red box). Neither stretches to fill. Extra viewport width stays empty on the right. |
+| AC3 | Square chips | Each counter is a **60×60 square** (width = height, ≤**4px** radius), icon + count inside, tiny label under. Solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7aa`)
 
 Red-box layout on `cursor/live-ff-tip-sep7y` @ `0a8ea92`. **Attach LEFT** (~two-thirds, never full page). **Today's Activity RIGHT** on the **same row**. Chips are **colored squares** (not flat 36px rectangles), 3D + 6px hover lift, no panel behind them. Trash stays on document rows inside Attach. Deal detail unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `a86a834`.
 
