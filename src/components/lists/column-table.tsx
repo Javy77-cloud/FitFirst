@@ -7,7 +7,15 @@ import { ColumnsMenu } from "@/components/lists/columns-menu";
 import { ColumnSortFilter } from "@/components/lists/funnel-sort";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
+import { ListPagination } from "@/components/lists/list-pagination";
 import { compareSheetValues } from "@/lib/desk/sheet-layout";
+import {
+  DEFAULT_PAGE_SIZE,
+  normalizePageSize,
+  pageSizeStorageKey,
+  paginateRows,
+  type PageSizeOption,
+} from "@/lib/lists/pagination";
 import {
   allColumnIds,
   clampColumnWidth,
@@ -103,6 +111,15 @@ export function ColumnTable({
   );
   const [sort, setSort] = useState<ListSort | null>(() => parseListSort(initialSort));
   const [valueFilters, setValueFilters] = useState<Record<string, string>>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSizeOption>(() => {
+    if (typeof window === "undefined") return DEFAULT_PAGE_SIZE;
+    try {
+      return normalizePageSize(window.localStorage.getItem(pageSizeStorageKey(moduleId)));
+    } catch {
+      return DEFAULT_PAGE_SIZE;
+    }
+  });
   const [draftWidths, setDraftWidths] = useState<Record<string, number> | null>(null);
   const appliedWidths = draftWidths ?? widths;
   const colKey = columns.map((column) => column.id).join(",");
@@ -174,6 +191,15 @@ export function ColumnTable({
       return sort.dir === "asc" ? cmp : -cmp;
     });
   }, [filteredRows, shown, sort]);
+  const paged = useMemo(() => paginateRows(sortedRows, page, pageSize), [sortedRows, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [liveQuery, moduleId, sort?.key, sort?.dir, JSON.stringify(valueFilters)]);
+
+  useEffect(() => {
+    if (page !== paged.page) setPage(paged.page);
+  }, [page, paged.page]);
 
   function persist(next: ListColumnLayout) {
     setVisible(next.columns);
@@ -217,6 +243,16 @@ export function ColumnTable({
       return;
     }
     setDraftWidths(next);
+  }
+
+  function onPageSize(next: PageSizeOption) {
+    setPageSize(next);
+    setPage(1);
+    try {
+      window.localStorage.setItem(pageSizeStorageKey(moduleId), String(next));
+    } catch {
+      // private mode
+    }
   }
 
   return (
@@ -277,7 +313,7 @@ export function ColumnTable({
               </td>
             </tr>
           ) : (
-            sortedRows.map((row) => (
+            paged.slice.map((row) => (
               <tr key={row.key} id={row.id}>
                 {shown.map((column) => (
                   <td
@@ -295,6 +331,16 @@ export function ColumnTable({
           )}
         </tbody>
       </table>
+      <ListPagination
+        page={paged.page}
+        totalPages={paged.totalPages}
+        start={paged.start}
+        end={paged.end}
+        total={paged.total}
+        pageSize={paged.pageSize}
+        onPage={setPage}
+        onPageSize={onPageSize}
+      />
     </div>
   );
 }

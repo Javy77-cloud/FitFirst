@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { markAlertRead } from "@/app/actions/alerts";
-import { hideFollowUpModalForLead, snoozeLeadFollowUpReminder } from "@/app/actions/lead-follow-up";
+import {
+  hideFollowUpModalForLead,
+  markFollowUpReadAndAdvance,
+  snoozeLeadFollowUpReminder,
+} from "@/app/actions/lead-follow-up";
 import { FollowUpSnoozePresets } from "@/components/leads/follow-up-snooze-presets";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,7 +57,15 @@ export function FollowUpReminderPopup({
     if (shown?.kind !== "follow-up") return;
     const form = new FormData();
     form.set("alertId", shown.id);
-    await markAlertRead(form);
+    const result = await markFollowUpReadAndAdvance(form);
+    if (result.leadId) {
+      publishLeadClock({
+        leadId: result.leadId,
+        dueAt: result.dueAt ?? null,
+        followUpName: result.followUpName ?? "",
+        done: !result.dueAt,
+      });
+    }
     setOpen(false);
   }
 
@@ -76,10 +88,11 @@ export function FollowUpReminderPopup({
     form.set("amount", String(amount));
     form.set("unit", unit);
     const result = await snoozeLeadFollowUpReminder(form);
-    if (result.leadId) {
+    if (result?.leadId) {
       publishLeadClock({
         leadId: result.leadId,
-        dueAt: result.dueAt ? new Date(result.dueAt).toISOString() : null,
+        dueAt: result.dueAt,
+        done: false,
       });
     }
     setPending(false);

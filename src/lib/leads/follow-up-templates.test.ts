@@ -8,6 +8,7 @@ import {
   FOLLOW_UP_OVERRIDE_OPTIONS,
   followUpTemplateChipName,
   followUpTemplateFullName,
+  dedupeFollowUpSteps,
   nextTemplateStep,
   normalizeFollowUpSteps,
   outboundStubLabel,
@@ -56,37 +57,39 @@ describe("follow-up templates", () => {
     expect(dueAtFromStep(now, 1, "days").toISOString()).toBe("2026-09-07T12:00:00.000Z");
   });
 
-  it("maps Default to contacted and uses Aggressive / Steady / Drip only as overrides", () => {
-    expect(pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new" })).toBeNull();
+  it("binds Aggressive to new, Default to contacted, Steady to warm, Drip to cold", () => {
+    expect(pickTemplateForLead([hot, warm, cold, contactedDefault], { status: "new" })?.id).toBe("hot");
     expect(pickTemplateForLead([hot, warm, cold, contactedDefault], { status: "contacted" })?.id).toBe("cdef");
-    expect(pickTemplateForLead([hot, warm, cold], { status: "new" })).toBeNull();
-    expect(
-      pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new", followUpTemplateId: "hot" })?.id,
-    ).toBe("hot");
+    expect(pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "contacted" })?.id).toBe("def");
+    expect(pickTemplateForLead([hot, warm, cold, contactedDefault], { status: "warm" })?.id).toBe("warm");
+    expect(pickTemplateForLead([hot, warm, cold, contactedDefault], { status: "cold" })?.id).toBe("cold");
+    expect(pickTemplateForLead([hot, warm, cold, contactedDefault], { status: "qualified" })).toBeNull();
     expect(
       pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "contacted", followUpTemplateId: "hot" })
         ?.id,
     ).toBe("hot");
     expect(
-      pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "contacted", followUpTemplateId: "def" })
-        ?.id,
-    ).toBe("def");
+      pickTemplateForLead([hot, warm, cold, fallbackDefault], { status: "new", followUpTemplateId: "def" })?.id,
+    ).toBe("hot");
+    expect(canStartFollowUpClock("new")).toBe(true);
     expect(canStartFollowUpClock("contacted")).toBe(true);
     expect(canStartFollowUpClock("Contacted")).toBe(true);
-    expect(canStartFollowUpClock("new")).toBe(false);
-    expect(canStartFollowUpClock("warm")).toBe(false);
+    expect(canStartFollowUpClock("warm")).toBe(true);
+    expect(canStartFollowUpClock("cold")).toBe(true);
+    expect(canStartFollowUpClock("qualified")).toBe(false);
   });
 
-  it("holds the clock until status is contacted — not arrival, save, or first-contact stamp", () => {
-    expect(shouldHoldFollowUpUntilFirstContact({ status: "new", firstContactAt: null })).toBe(true);
+  it("starts the clock from status alone — new does not wait for a contact stamp or Aggressive pick", () => {
+    expect(shouldHoldFollowUpUntilFirstContact({ status: "new", firstContactAt: null })).toBe(false);
     expect(
       shouldHoldFollowUpUntilFirstContact({
         status: "new",
         firstContactAt: new Date("2026-09-06T12:30:00Z"),
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(shouldHoldFollowUpUntilFirstContact({ status: "contacted", firstContactAt: null })).toBe(false);
-    expect(shouldHoldFollowUpUntilFirstContact({ status: "warm", firstContactAt: null })).toBe(true);
+    expect(shouldHoldFollowUpUntilFirstContact({ status: "warm", firstContactAt: null })).toBe(false);
+    expect(shouldHoldFollowUpUntilFirstContact({ status: "qualified", firstContactAt: null })).toBe(true);
   });
 
   it("orders Follow-up override options Aggressive, Steady, Drip, then Default", () => {
@@ -116,7 +119,11 @@ describe("follow-up templates", () => {
 
   it("snoozes with 15 min / 1 hour / 1 day presets", () => {
     const now = new Date("2026-09-06T12:00:00Z");
-    expect(SNOOZE_PRESETS.map((row) => row.label)).toEqual(["15 min", "1 hour", "1 day"]);
+    expect(SNOOZE_PRESETS.map((row) => row.label)).toEqual([
+      "Snooze 15 min",
+      "Snooze 1 hour",
+      "Snooze 1 day",
+    ]);
     expect(snoozeDueAt(now, 15, "minutes").toISOString()).toBe("2026-09-06T12:15:00.000Z");
     expect(snoozeDueAt(now, 1, "hours").toISOString()).toBe("2026-09-06T13:00:00.000Z");
     expect(snoozeDueAt(now, 1, "days").toISOString()).toBe("2026-09-07T12:00:00.000Z");
@@ -131,7 +138,18 @@ describe("follow-up templates", () => {
     expect(shouldEmailAgentReminder("agent@agency.test")).toBe(true);
   });
 
-  it("advances to the next live template step", () => {
+  it("renders each template step once by id", () => {
+    expect(
+      dedupeFollowUpSteps([
+        { id: "a", sortOrder: 0 },
+        { id: "a", sortOrder: 0 },
+        { id: "b", sortOrder: 1 },
+        { id: "b", sortOrder: 1 },
+      ]).map((step) => step.id),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("advances to the next live template step and dedupes by step id", () => {
     const steps = [
       { id: "a", sortOrder: 0 },
       { id: "b", sortOrder: 1 },
@@ -140,6 +158,16 @@ describe("follow-up templates", () => {
     expect(nextTemplateStep(steps, -1)?.id).toBe("a");
     expect(nextTemplateStep(steps, 0)?.id).toBe("b");
     expect(nextTemplateStep(steps, 2)).toBeNull();
+    expect(
+      nextTemplateStep(
+        [
+          { id: "a", sortOrder: 0 },
+          { id: "a", sortOrder: 0 },
+          { id: "b", sortOrder: 1 },
+        ],
+        -1,
+      )?.id,
+    ).toBe("a");
   });
 
   it("hides the modal on the lead page and for 10 minutes after Open lead", () => {

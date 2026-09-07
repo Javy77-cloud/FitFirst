@@ -18,7 +18,8 @@ import {
   contacts,
   deals,
   emailCampaigns,
-  eoAuditLogs,
+  documents,
+  leadFollowUpQueue,
   leadOffers,
   leadRoutingLogs,
   leads,
@@ -391,6 +392,7 @@ export async function deleteSelectedTasks(formData: FormData) {
 }
 
 async function deleteSelectedLeads(ids: string[]): Promise<{ ok: boolean; message: string }> {
+  try {
   const tenant = eq(leads.tenantId, DEFAULT_TENANT_ID);
   const rows = await db
     .select({ id: leads.id })
@@ -427,9 +429,12 @@ async function deleteSelectedLeads(ids: string[]): Promise<{ ok: boolean; messag
     .set({ leadId: null, updatedAt: new Date() })
     .where(and(eq(leadOffers.tenantId, DEFAULT_TENANT_ID), inArray(leadOffers.leadId, found)));
   await db
-    .update(eoAuditLogs)
+    .update(documents)
     .set({ leadId: null })
-    .where(and(eq(eoAuditLogs.tenantId, DEFAULT_TENANT_ID), inArray(eoAuditLogs.leadId, found)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), inArray(documents.leadId, found)));
+  await db
+    .delete(leadFollowUpQueue)
+    .where(and(eq(leadFollowUpQueue.tenantId, DEFAULT_TENANT_ID), inArray(leadFollowUpQueue.leadId, found)));
 
   await db
     .delete(socialLeadOffers)
@@ -462,6 +467,10 @@ async function deleteSelectedLeads(ids: string[]): Promise<{ ok: boolean; messag
     ok: true,
     message: `Deleted ${found.length} lead${found.length === 1 ? "" : "s"}. Linked shops stay.`,
   };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Delete failed.";
+    return { ok: false, message: `Could not delete lead: ${message}` };
+  }
 }
 
 export async function openMergeForSelection(formData: FormData): Promise<{

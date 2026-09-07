@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
@@ -12,7 +12,7 @@ import {
   duplicateSelectedRecord,
   openMergeForSelection,
 } from "@/app/actions/list-selection";
-import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
+import { confirmDeleteOnce, confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -94,6 +94,7 @@ export function SelectionActionsMenu({
   const [compose, setCompose] = useState<"email" | "sms" | null>(null);
   const [subject, setSubject] = useState("Desk follow-up");
   const [body, setBody] = useState("");
+  const deleteLock = useRef(false);
 
   if (selected.length === 0) return null;
 
@@ -131,6 +132,8 @@ export function SelectionActionsMenu({
   }
 
   async function onDelete() {
+    if (deleteLock.current) return;
+    deleteLock.current = true;
     const noun =
       module === "leads"
         ? selected.length === 1
@@ -139,9 +142,21 @@ export function SelectionActionsMenu({
         : selected.length === 1
           ? "this task"
           : `${selected.length} selected tasks`;
-    if (!confirmHardDelete(noun)) return;
+    const confirmed = module === "leads" ? confirmDeleteOnce(noun) : confirmHardDelete(noun);
+    if (!confirmed) {
+      deleteLock.current = false;
+      return;
+    }
     onBusy(true);
-    await finish(await deleteSelectedRecords(formWithIds()));
+    try {
+      const result = await deleteSelectedRecords(formWithIds());
+      await finish(result);
+    } catch (error) {
+      onBusy(false);
+      onMessage(error instanceof Error ? error.message : "Delete failed.");
+    } finally {
+      deleteLock.current = false;
+    }
   }
 
   async function onConvert() {

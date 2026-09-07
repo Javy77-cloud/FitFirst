@@ -4,7 +4,37 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6y`)
+## Mac test now (`cursor/live-ff-tip-sep7a`)
+
+Follow-up engine + shared pagination + Leads bulk delete. Rebased onto `cursor/live-ff-tip-sep6y` (`56e7552`). Does **not** retouch lead-detail docs layout (sep6x) or Deals polish (sep6z). No schema. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7a && git pull
+npm install
+# skip db:migrate — no new schema
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Aggressive on new | Create a lead. Within ~1s Follow-up shows **Aggressive** and Response starts a live countdown. No manual Aggressive pick. |
+| 2 | Status isolation | Change one row cold → contacted. Only that row flips. Other rows keep their status, clock, and template. |
+| 3 | Snooze labels | Follow-up modal presets are **Snooze 15 min**, **Snooze 1 hour**, **Snooze 1 day**. **Custom snooze** expands to number + unit + **Apply**. Apply actually reschedules. |
+| 4 | Mark as read | **Mark as read** advances to the next template step (clock resets, black). Last step: clock stops, Response shows a dash. |
+| 5 | Clock bindings | Aggressive → new, Default → contacted, Steady → warm, Drip → cold. Red only when overdue. Edit a template delay — pending clocks reschedule live. |
+| 6 | Template steps | Follow-up Templates list shows each step once. Edit view matches the list. |
+| 7 | Pagination | Leads and Contacts (or Deals) share the same bottom-right bar: 25 / 50 / 100 / 200 (default 25), **Page 1 of N**, **Showing 1–25 of …**. |
+| 8 | Bulk delete | Tick one lead → Actions → Delete → **one** confirm. Lead is gone (search by name/phone finds nothing). No runtime error. Selection clears. |
+
+**Shared-state root cause:** row status / clock / template were not keyed per lead — `publishLeadClock` and React reuse could apply one row’s patch across the table, and `resetLeadsWithoutLoggedContact` rewrote other rows on refresh. Clock patches now require `leadId`; each control is keyed to that lead; the one-shot reset no longer cancels new-lead queues or flips other statuses.
+
+**Delete root cause:** `deleteSelectedLeads` ran `UPDATE eo_audit_logs SET lead_id = NULL`. That table is append-only (`eo_audit_logs is append-only`). Historical audit rows are left as-is. Duplicate confirm was `confirmHardDelete` asking the same question twice.
+
+## Mac test prior (`cursor/live-ff-tip-sep6y`)
 
 Platform-wide UI standards only: same upload drop-zone, trash delete, save toast → list, primary action, Columns picker, leftover funnel sort, row dividers, and status/temp badges. Rebased onto `cursor/live-ff-tip-sep6z` (`27a9ba3`), which already sits on `sep6x` / `sep6w`. No clock / follow-up / Operations nav / lead-detail docs / Deals checklist work. Leave sep6z Deals upload (`Choose file` + Add file) as-is. This tip adds no schema; `0079_documents_lead_id` is already on the branch from sep6x — migrate only if this desk is behind. No seed wipe.
 

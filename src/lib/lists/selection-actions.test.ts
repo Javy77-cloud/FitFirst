@@ -151,3 +151,13 @@ describe("listSelectionActions", () => {
     expect(picked.find((item) => item.id === "run_macro")?.enabled).toBe(true);
   });
 });
+
+describe("lead bulk delete cleanup", () => {
+  it("does not UPDATE append-only eo_audit_logs", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const source = await readFile(new URL("../../app/actions/list-selection.ts", import.meta.url), "utf8");
+    expect(source).not.toMatch(/update\(eoAuditLogs\)/);
+    expect(source).toMatch(/delete\(leadFollowUpQueue\)/);
+    expect(source).toMatch(/documents/);
+  });
+});

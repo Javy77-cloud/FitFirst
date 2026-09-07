@@ -3,6 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { leadFollowUpQueue, leadFollowUpSteps, leadFollowUpTemplates } from "@/lib/db/schema";
 import { ensureFollowUpPlaybooks } from "@/lib/leads/ensure-playbooks";
+import { dedupeFollowUpSteps } from "@/lib/leads/follow-up-templates";
 import { normalizeLeadStatus } from "@/lib/leads/queue";
 
 export type FollowUpTemplateWithSteps = {
@@ -40,17 +41,19 @@ export async function listFollowUpTemplates(): Promise<FollowUpTemplateWithSteps
     name: template.name,
     triggerStatus: normalizeLeadStatus(template.triggerStatus),
     enabled: template.enabled,
-    steps: steps
-      .filter((step) => step.templateId === template.id)
-      .map((step) => ({
-        id: step.id,
-        sortOrder: step.sortOrder,
-        method: step.method,
-        delayAmount: step.delayAmount,
-        delayUnit: step.delayUnit,
-        message: step.message,
-        remindVia: step.remindVia,
-      })),
+    steps: dedupeFollowUpSteps(
+      steps
+        .filter((step) => step.templateId === template.id)
+        .map((step) => ({
+          id: step.id,
+          sortOrder: step.sortOrder,
+          method: step.method,
+          delayAmount: step.delayAmount,
+          delayUnit: step.delayUnit,
+          message: step.message,
+          remindVia: step.remindVia,
+        })),
+    ),
   }));
 }
 

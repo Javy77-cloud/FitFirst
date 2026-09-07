@@ -13,7 +13,7 @@ import {
 import { followUpMethodFromTitle, followUpNotificationTitle } from "@/lib/desk/notifications";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import {
-  canStartFollowUpClock,
+  dedupeFollowUpSteps,
   dueAtFromStep,
   followUpEmailSnoozeBody,
   followUpMethodToActivityKind,
@@ -117,7 +117,7 @@ async function scheduleNextLiveStep(input: {
     .select()
     .from(leads)
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, input.leadId)));
-  if (!lead || !canStartFollowUpClock(lead.status)) return { scheduled: 0 };
+  if (!lead) return { scheduled: 0 };
   const { templates, steps } = await loadEnabledTemplates();
   const picked = pickTemplateForLead(
     templates.map((row) => ({
@@ -129,10 +129,9 @@ async function scheduleNextLiveStep(input: {
     { followUpTemplateId: input.templateId ?? lead.followUpTemplateId, status: normalizeLeadStatus(lead.status) },
   );
   if (!picked) return { scheduled: 0 };
-  const templateSteps = steps
-    .filter((step) => step.templateId === picked.id)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .slice(0, 4);
+  const templateSteps = dedupeFollowUpSteps(
+    steps.filter((step) => step.templateId === picked.id),
+  );
   const next = nextTemplateStep(templateSteps, input.afterSortOrder);
   if (!next) return { scheduled: 0, templateId: picked.id, templateName: followUpTemplateChipName(picked) };
   const leadName = `${lead.lastName}, ${lead.firstName}`;
@@ -159,7 +158,7 @@ export async function fireLeadFollowUpForStatus(leadId: string, status: string, 
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!lead) return { scheduled: 0 };
   const normalized = normalizeLeadStatus(status);
-  if (normalized === "lost" || normalized === "nurture" || normalized === "converted" || normalized === "new") {
+  if (normalized === "lost" || normalized === "nurture" || normalized === "converted") {
     await cancelLeadFollowUps(leadId);
     return { scheduled: 0, held: true as const };
   }
@@ -437,15 +436,43 @@ export async function completeLeadFollowUpAndAdvance(leadId: string, now = new D
     )
     .orderBy(desc(leadFollowUpQueue.createdAt));
   const current = open[0];
-  await cancelLeadFollowUps(leadId);
-  if (!current) return { scheduled: 0 };
+  if (open.length) {
+    await db
+      .update(leadFollowUpQueue)
+      .set({ status: "completed", cancelledAt: now, updatedAt: now })
+      .where(
+        inArray(
+          leadFollowUpQueue.id,
+          open.map((row) => row.id),
+        ),
+      );
+  }
+  if (!current) return { scheduled: 0, dueAt: undefined as Date | undefined, completed: true as const };
   const sortOrder = await sortOrderForQueueItem(current);
-  return scheduleNextLiveStep({
+  const next = await scheduleNextLiveStep({
     leadId,
     templateId: current.templateId,
     afterSortOrder: sortOrder,
     now,
   });
+  return { ...next, completed: true as const };
+}
+
+export async function completeFollowUpFromAlert(
+  alertId: string,
+  now = new Date(),
+): Promise<{ scheduled: number; dueAt?: Date; leadId: string | null; completed: boolean }> {
+  if (!alertId) return { scheduled: 0, leadId: null, completed: false };
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), eq(alerts.id, alertId)));
+  if (!alert) return { scheduled: 0, leadId: null, completed: false };
+  const leadId = alert.entityId;
+  await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, alertId));
+  if (!leadId) return { scheduled: 0, leadId: null, completed: true };
+  const result = await completeLeadFollowUpAndAdvance(leadId, now);
+  return { scheduled: result.scheduled, dueAt: result.dueAt, leadId, completed: true };
 }
 
 export async function snoozeLeadFollowUpAlert(

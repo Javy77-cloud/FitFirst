@@ -17,7 +17,7 @@ import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters
 import { haystack } from "@/lib/search/live-query";
 import { listFollowUpTemplates, listLeadFollowUps } from "@/lib/db/lead-follow-up-queries";
 import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
-import { canStartFollowUpClock, followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
+import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
 import { resetLeadsWithoutLoggedContact } from "@/lib/leads/reset-untouched";
 import {
   isLeadOnQueue,
@@ -67,6 +67,7 @@ export default async function LeadsPage({
   const dueCount = followUps.filter((row) => row.status === "queued" && row.dueAt.getTime() <= Date.now()).length;
   const nextByLead = new Map<string, Date>();
   const releasedByLead = new Map<string, Date>();
+  const finishedByLead = new Set<string>();
   for (const item of followUps) {
     if (item.status === "queued") {
       const current = nextByLead.get(item.leadId);
@@ -76,6 +77,7 @@ export default async function LeadsPage({
       const current = releasedByLead.get(item.leadId);
       if (!current || item.dueAt > current) releasedByLead.set(item.leadId, item.dueAt);
     }
+    if (item.status === "completed") finishedByLead.add(item.leadId);
   }
 
   return (
@@ -83,9 +85,9 @@ export default async function LeadsPage({
       <LeadSavedToast show={saved} />
       <p className="mb-3 text-base text-muted-foreground">
         Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-        Status contacted starts the Response clock and Default. Aggressive / Steady / Drip override
-        that lead. Temp badges stay Hot / Warm / Cold. Lost stays off this list until you search.
-        Nurture parks until the contact-again date.
+        Status new starts Aggressive. Contacted starts Default. Warm starts Steady. Cold starts
+        Drip. Overrides stay on that lead only. Temp badges stay Hot / Warm / Cold. Lost stays
+        off this list until you search. Nurture parks until the contact-again date.
       </p>
       <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -175,15 +177,17 @@ export default async function LeadsPage({
               }
               rows={rows.map((lead) => {
                 const status = normalizeLeadStatus(lead.status);
-                const nextDue =
-                  nextByLead.get(lead.id) ??
-                  (canStartFollowUpClock(status) ? releasedByLead.get(lead.id) : undefined);
+                const queuedDue = nextByLead.get(lead.id);
+                const releasedDue = releasedByLead.get(lead.id);
+                const nextDue = queuedDue ?? releasedDue;
+                const clockDone = !queuedDue && !releasedDue && finishedByLead.has(lead.id);
                 const picked = pickTemplateForLead(templates, {
                   followUpTemplateId: lead.followUpTemplateId,
                   status,
                 });
                 return {
                   key: lead.id,
+                  id: lead.id,
                   parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
                   hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
                   sort: {
@@ -208,13 +212,21 @@ export default async function LeadsPage({
                         <LeadLogContact leadId={lead.id} phone={lead.phone} email={lead.email} />
                       </div>
                     ),
-                    status: <LeadStatusSelect leadId={lead.id} status={status} />,
+                    status: <LeadStatusSelect key={`status-${lead.id}`} leadId={lead.id} status={status} />,
                     source: sourceLabel(lead.source),
-                    timer: <ResponseTimer leadId={lead.id} dueAt={toIsoString(nextDue)} />,
-                    heat: <LeadHeatToggle leadId={lead.id} temperature={lead.temperature} />,
+                    timer: (
+                      <ResponseTimer
+                        key={`timer-${lead.id}`}
+                        leadId={lead.id}
+                        dueAt={toIsoString(nextDue)}
+                        done={clockDone}
+                      />
+                    ),
+                    heat: <LeadHeatToggle key={`heat-${lead.id}`} leadId={lead.id} temperature={lead.temperature} />,
                     followUp: (
                       <div className="space-y-1">
                         <LeadTemplateOverride
+                          key={`follow-${lead.id}`}
                           leadId={lead.id}
                           templateId={lead.followUpTemplateId}
                           templates={templates}

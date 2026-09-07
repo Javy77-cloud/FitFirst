@@ -10,6 +10,7 @@ import { writeDeskComms } from "@/lib/desk/write-comms";
 import { enqueueOutboundJob } from "@/lib/desk/outbound-queue";
 import {
   cancelLeadFollowUps,
+  completeFollowUpFromAlert,
   completeLeadFollowUpAndAdvance,
   fireLeadFollowUpForStatus,
   releaseDueLeadFollowUps,
@@ -72,13 +73,10 @@ async function followUpResultForLead(
     { followUpTemplateId, status },
   );
   const followUpName = picked ? followUpTemplateChipName(picked) : "";
-  if (!canStartFollowUpClock(status)) {
-    return { dueAt: null as string | null, followUpName };
-  }
   if (scheduled?.dueAt) {
     return {
       dueAt: scheduled.dueAt.toISOString(),
-      followUpName: scheduled.templateName || followUpName || "Default",
+      followUpName: scheduled.templateName || followUpName,
     };
   }
   return { dueAt: null as string | null, followUpName };
@@ -105,7 +103,7 @@ export async function updateLeadQueueStatus(formData: FormData) {
         nurtureRemindVia: null,
         updatedAt: new Date(),
       })
-      .where(eq(leads.id, leadId));
+      .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   }
   const open = await db
     .select()
@@ -183,10 +181,8 @@ export async function overrideLeadFollowUpTemplate(formData: FormData) {
   await db
     .update(leads)
     .set({ followUpTemplateId: nextId, updatedAt: new Date() })
-    .where(eq(leads.id, leadId));
-  const scheduled = canStartFollowUpClock(existing.status)
-    ? await fireLeadFollowUpForStatus(leadId, existing.status)
-    : undefined;
+    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
+  const scheduled = await fireLeadFollowUpForStatus(leadId, existing.status);
   revalidateLeads(leadId);
   return followUpResultForLead(leadId, existing.status, nextId, scheduled);
 }
@@ -304,13 +300,42 @@ export async function snoozeLeadFollowUpReminder(formData: FormData) {
   const alertId = str(formData, "alertId");
   const amount = Number(str(formData, "amount"));
   const unitRaw = str(formData, "unit");
-  if (!alertId || !Number.isFinite(amount) || !isSnoozeDelayUnit(unitRaw)) return;
+  if (!alertId || !Number.isFinite(amount) || amount < 1 || !isSnoozeDelayUnit(unitRaw)) {
+    return { queued: false, dueAt: null as string | null, leadId: null as string | null };
+  }
   const result = await snoozeLeadFollowUpAlert(alertId, amount, unitRaw);
   revalidatePath("/");
   revalidatePath("/leads");
   revalidatePath("/notifications");
   revalidatePath("/alerts");
   if (result.leadId) revalidatePath(`/leads/${result.leadId}`);
+  return {
+    queued: result.queued,
+    dueAt: result.dueAt ? result.dueAt.toISOString() : null,
+    leadId: result.leadId,
+  };
+}
+
+export async function markFollowUpReadAndAdvance(formData: FormData) {
+  const alertId = str(formData, "alertId");
+  if (!alertId) return { dueAt: null as string | null, leadId: null as string | null, followUpName: "" };
+  const result = await completeFollowUpFromAlert(alertId);
+  revalidatePath("/");
+  revalidatePath("/leads");
+  revalidatePath("/notifications");
+  revalidatePath("/alerts");
+  if (result.leadId) revalidatePath(`/leads/${result.leadId}`);
+  if (!result.leadId) return { dueAt: null, leadId: null, followUpName: "" };
+  const [lead] = await db
+    .select({ status: leads.status, followUpTemplateId: leads.followUpTemplateId })
+    .from(leads)
+    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, result.leadId)));
+  return followUpResultForLead(
+    result.leadId,
+    lead?.status ?? "",
+    lead?.followUpTemplateId ?? null,
+    result,
+  );
 }
 
 export async function deleteFollowUpTemplate(formData: FormData) {

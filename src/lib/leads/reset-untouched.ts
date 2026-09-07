@@ -33,35 +33,6 @@ export async function resetLeadsWithoutLoggedContact() {
   `);
 
   await db.execute(sql`
-    UPDATE leads
-    SET
-      status = 'new',
-      nurture_until = NULL,
-      nurture_remind_via = NULL,
-      updated_at = now()
-    WHERE tenant_id = ${DEFAULT_TENANT_ID}
-      AND first_contact_at IS NULL
-      AND converted_deal_id IS NULL
-      AND lower(coalesce(status, '')) NOT IN ('new', 'converted', 'contacted')
-      AND NOT EXISTS (
-        SELECT 1 FROM activities a
-        WHERE a.lead_id = leads.id
-          AND a.kind IN ('call', 'email', 'sms')
-      )
-  `);
-
-  await db.execute(sql`
-    UPDATE lead_follow_up_queue AS q
-    SET status = 'cancelled', cancelled_at = now(), updated_at = now()
-    FROM leads AS l
-    WHERE q.lead_id = l.id
-      AND q.status = 'queued'
-      AND l.first_contact_at IS NULL
-      AND lower(l.status) = 'new'
-      AND l.tenant_id = ${DEFAULT_TENANT_ID}
-  `);
-
-  await db.execute(sql`
     UPDATE lead_follow_up_steps
     SET remind_via = 'popup'
     WHERE id = 'a0710001-a071-4111-8111-a07100000031'

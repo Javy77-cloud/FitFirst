@@ -20,6 +20,7 @@ import {
   REMIND_VIA_CHANNELS,
   REMIND_VIA_LABELS,
   TEMPLATE_TRIGGER_STATUSES,
+  dedupeFollowUpSteps,
   followUpTemplateFullName,
   remindViaLabel,
 } from "@/lib/leads/follow-up-templates";
@@ -80,7 +81,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
 
   const stepDefaults = editing
     ? [0, 1, 2, 3].map((index) => {
-        const step = editing.steps[index];
+        const step = dedupeFollowUpSteps(editing.steps)[index];
         const fallback = EMPTY_STEP_DEFAULTS[index];
         return {
           method: step?.method || fallback.method,
@@ -108,9 +109,9 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
           <DialogHeader>
             <DialogTitle>Follow-up Templates</DialogTitle>
             <DialogDescription>
-              Each template maps to one status. New leads run Default (Aggressive steps) until the
-              agent overrides. Status change swaps Steady or Drip. Temp badges stay Hot / Warm /
-              Cold. Each step has Remind via (Task, Pop-up, or Email).
+              Each template maps to one status. New starts Aggressive. Contacted starts Default.
+              Warm starts Steady. Cold starts Drip. Overrides stay per lead. Each step has Remind
+              via (Task, Pop-up, or Email).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -282,7 +283,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                           </div>
                         </div>
                         <ol className="mt-2 space-y-1 text-xs text-muted-foreground">
-                          {template.steps.map((step) => (
+                          {dedupeFollowUpSteps(template.steps).map((step) => (
                             <li key={step.id}>
                               {step.method} · {step.delayAmount}{" "}
                               {FOLLOW_UP_DELAY_UNIT_LABELS[

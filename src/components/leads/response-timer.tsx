@@ -9,21 +9,34 @@ import { cn } from "@/lib/utils";
 
 /** Same on server and first client paint — live clock starts after mount. */
 const CLOCK_PLACEHOLDER = "--:--";
+const CLOCK_DONE = "—";
 
-export function ResponseTimer({ leadId, dueAt }: { leadId?: string; dueAt: string | null }) {
+export function ResponseTimer({
+  leadId,
+  dueAt,
+  done = false,
+}: {
+  leadId?: string;
+  dueAt: string | null;
+  done?: boolean;
+}) {
   const router = useRouter();
   const [localDue, setLocalDue] = useState<string | null>(dueAt);
+  const [localDone, setLocalDone] = useState(done);
   const [now, setNow] = useState<number | null>(null);
   const fired = useRef(false);
 
   useEffect(() => {
     setLocalDue(dueAt);
-  }, [dueAt]);
+    setLocalDone(done);
+  }, [dueAt, done]);
 
   useEffect(() => {
     if (!leadId) return;
     return subscribeLeadClock((patch) => {
-      if (patch.leadId === leadId) setLocalDue(patch.dueAt);
+      if (patch.leadId !== leadId) return;
+      setLocalDue(patch.dueAt);
+      setLocalDone(Boolean(patch.done) && !patch.dueAt);
     });
   }, [leadId]);
 
@@ -50,6 +63,20 @@ export function ResponseTimer({ leadId, dueAt }: { leadId?: string; dueAt: strin
     });
   }, [localDue, now, router]);
 
+  if (localDone && !localDue) {
+    return (
+      <span
+        className="font-mono text-xs tabular-nums text-navy"
+        data-overdue="false"
+        data-timer="done"
+        data-testid="response-timer"
+        title="No more follow-up steps"
+      >
+        {CLOCK_DONE}
+      </span>
+    );
+  }
+
   if (!localDue) {
     return (
       <span
@@ -57,7 +84,7 @@ export function ResponseTimer({ leadId, dueAt }: { leadId?: string; dueAt: strin
         data-overdue="false"
         data-timer="idle"
         data-testid="response-timer"
-        title="Timer starts when status changes to contacted"
+        title="Timer starts on the status this template is bound to"
       >
         {CLOCK_PLACEHOLDER}
       </span>

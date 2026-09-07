@@ -30,9 +30,9 @@ export const FOLLOW_UP_MODAL_REOPEN_MS = 10 * 60 * 1000;
 export const FOLLOW_UP_HIDE_COOKIE = "ff_follow_up_modal_hide";
 
 export const SNOOZE_PRESETS = [
-  { label: "15 min", amount: 15, unit: "minutes" as const },
-  { label: "1 hour", amount: 1, unit: "hours" as const },
-  { label: "1 day", amount: 1, unit: "days" as const },
+  { label: "Snooze 15 min", amount: 15, unit: "minutes" as const },
+  { label: "Snooze 1 hour", amount: 1, unit: "hours" as const },
+  { label: "Snooze 1 day", amount: 1, unit: "days" as const },
 ] as const;
 
 /**
@@ -185,9 +185,27 @@ export function findDefaultFollowUpTemplate<T extends FollowUpTemplateRecord>(te
   );
 }
 
-/** Clock and first Default step start only when status is contacted. */
+/** Status → bound template. Clock starts on that status with no manual pick. */
+export const CLOCK_TRIGGER_STATUSES = {
+  new: "Aggressive",
+  contacted: "Default",
+  warm: "Steady",
+  cold: "Drip",
+} as const;
+
+export type ClockTriggerStatus = keyof typeof CLOCK_TRIGGER_STATUSES;
+
+export function normalizeClockStatus(status: string | null | undefined): string {
+  return (status ?? "").trim().toLowerCase();
+}
+
+export function isClockTriggerStatus(status: string | null | undefined): status is ClockTriggerStatus {
+  return normalizeClockStatus(status) in CLOCK_TRIGGER_STATUSES;
+}
+
+/** Clock starts on the status the template is bound to — new / contacted / warm / cold. */
 export function canStartFollowUpClock(status: string | null | undefined): boolean {
-  return (status ?? "").trim().toLowerCase() === "contacted";
+  return isClockTriggerStatus(status);
 }
 
 export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
@@ -199,11 +217,15 @@ export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
     const override = enabled.find((row) => row.id === lead.followUpTemplateId);
     if (override && !isDefaultFollowUpTemplate(override)) return override;
   }
-  if (!canStartFollowUpClock(lead.status)) return null;
-  return findDefaultFollowUpTemplate(enabled);
+  const status = normalizeClockStatus(lead.status);
+  if (status === DEFAULT_FOLLOW_UP_TRIGGER || status === "default") {
+    return findDefaultFollowUpTemplate(enabled);
+  }
+  if (!isClockTriggerStatus(status)) return null;
+  return enabled.find((row) => row.triggerStatus === status) ?? null;
 }
 
-/** Hold until status is contacted. Arrival, save, and first-contact stamps do not start the clock. */
+/** Hold when the status has no bound template and there is no override. */
 export function shouldHoldFollowUpUntilFirstContact(lead: {
   status: string;
   firstContactAt?: Date | string | null;
@@ -211,20 +233,35 @@ export function shouldHoldFollowUpUntilFirstContact(lead: {
   return !canStartFollowUpClock(lead.status);
 }
 
-export function nextTemplateStep<T extends { sortOrder: number }>(
+export function dedupeFollowUpSteps<T extends { id: string; sortOrder: number }>(steps: T[]): T[] {
+  const seen = new Set<string>();
+  return [...steps]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .filter((step) => {
+      if (!step.id || seen.has(step.id)) return false;
+      seen.add(step.id);
+      return true;
+    })
+    .slice(0, MAX_FOLLOW_UP_STEPS);
+}
+
+export function nextTemplateStep<T extends { id?: string; sortOrder: number }>(
   steps: T[],
   afterSortOrder = -1,
 ): T | null {
-  return [...steps].sort((a, b) => a.sortOrder - b.sortOrder).find((step) => step.sortOrder > afterSortOrder) ?? null;
+  const unique = steps.some((step) => step.id)
+    ? dedupeFollowUpSteps(steps.filter((step): step is T & { id: string } => Boolean(step.id)))
+    : [...steps].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, MAX_FOLLOW_UP_STEPS);
+  return unique.find((step) => step.sortOrder > afterSortOrder) ?? null;
 }
 
 export function followUpEmailSnoozeBody(basePath: string, queueId: string): string {
   const root = basePath.replace(/\/$/, "");
   return [
     "Snooze this reminder:",
-    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=15&unit=minutes  (15 min)`,
-    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=1&unit=hours  (1 hour)`,
-    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=1&unit=days  (1 day)`,
+    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=15&unit=minutes  (Snooze 15 min)`,
+    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=1&unit=hours  (Snooze 1 hour)`,
+    `${root}/api/follow-up/snooze?queueId=${queueId}&amount=1&unit=days  (Snooze 1 day)`,
   ].join("\n");
 }
 

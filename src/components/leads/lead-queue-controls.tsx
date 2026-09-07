@@ -45,7 +45,7 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
 
   useEffect(() => {
     setValue(status);
-  }, [status]);
+  }, [leadId, status]);
 
   function commitStatus(next: string) {
     setValue(next);
@@ -66,10 +66,11 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
   return (
     <>
       <select
-        name="status"
+        name={`status-${leadId}`}
         value={value}
         disabled={pending}
         aria-label="Lead status"
+        data-lead-id={leadId}
         onChange={(event) => {
           const next = event.target.value;
           if (next === "nurture") {
@@ -248,17 +249,16 @@ export function LeadTemplateOverride({
 
   useEffect(() => {
     setValue(templateId ?? "");
-  }, [templateId]);
+  }, [leadId, templateId]);
 
   useEffect(() => {
     setName(resolvedName);
-  }, [resolvedName]);
+  }, [leadId, resolvedName]);
 
   useEffect(() => {
     return subscribeLeadClock((patch) => {
-      if (patch.leadId === leadId && patch.followUpName != null) {
-        setName(patch.followUpName || "—");
-      }
+      if (patch.leadId !== leadId) return;
+      if (patch.followUpName != null) setName(patch.followUpName || "—");
     });
   }, [leadId]);
 
@@ -279,10 +279,11 @@ export function LeadTemplateOverride({
         {name}
       </p>
       <select
-        name="templateId"
+        name={`templateId-${leadId}`}
         value={selected}
         disabled={pending}
         aria-label="Follow-up template override"
+        data-lead-id={leadId}
         onChange={(event) => {
           const next = event.target.value;
           setValue(next);
