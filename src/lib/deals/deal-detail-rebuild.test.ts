@@ -48,10 +48,10 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-identity/);
     expect(page).not.toMatch(/toolbar=/);
     expect(page).not.toMatch(/justify-end/);
-    expect(page.indexOf("data-ff-deal-title")).toBeLessThan(page.indexOf("SectionTabs"));
-    expect(page.indexOf("SectionTabs")).toBeLessThan(page.indexOf("DealLineSelector"));
-    expect(page.indexOf("DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
-    expect(page.indexOf("DealLineSelector")).toBeLessThan(page.indexOf("<MarketsPanel"));
+    expect(page.indexOf("data-ff-deal-title")).toBeLessThan(page.indexOf("<SectionTabs"));
+    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DealLineSelector"));
+    expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
+    expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<MarketsPanel"));
     expect(docs).not.toMatch(/DealLineSelector/);
     expect(docs).toMatch(/data-ff-deal-upload-split/);
   });
@@ -73,7 +73,7 @@ describe("deal detail final rebuild", () => {
     expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
     expect(gate).toMatch(/requestQuotes/);
     expect(docs).toMatch(/DeleteUploadedFileButton/);
-    expect(page.indexOf("DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
+    expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));
     expect(docs).toMatch(/deal-doc-row flex w-full/);
     expect(upload).toMatch(/Create/);
