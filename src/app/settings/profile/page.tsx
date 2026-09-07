@@ -1,4 +1,5 @@
 import { saveOwnProfile } from "@/app/actions/mfa";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,12 @@ export default async function ProfileSettingsPage({
         </div>
         <div>
           <Label className="text-xs">Meeting address</Label>
-          <Input name="meetingAddress" defaultValue={user.meetingAddress ?? ""} className="mt-1 h-8" />
+          <AddressAutocomplete
+            name="meetingAddress"
+            defaultValue={user.meetingAddress ?? ""}
+            composeOnConfirm
+            className="mt-1 h-8"
+          />
         </div>
         <Button type="submit" size="sm">
           Save profile

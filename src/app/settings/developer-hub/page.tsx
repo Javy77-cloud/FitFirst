@@ -39,9 +39,11 @@ export default async function DeveloperHubPage() {
             <div className="flex items-start justify-between gap-2">
               <div className="text-sm font-semibold text-navy">{section.label}</div>
               <span className="text-xs text-muted-foreground">
-                {section.ownedHere
-                  ? `${counts[section.id] ?? 0} on this desk`
-                  : "Core branch"}
+                {"badge" in section && section.badge
+                  ? section.badge
+                  : section.ownedHere
+                    ? `${counts[section.id] ?? 0} on this desk`
+                    : "Core branch"}
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{section.hint}</p>

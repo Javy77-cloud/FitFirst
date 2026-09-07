@@ -126,6 +126,8 @@ export const users = pgTable(
     frozenAt: timestamp("frozen_at", { withTimezone: true }),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     meetingAddress: text("meeting_address"),
+    /** Super-dev flag. Admin/owner still cannot open the API vault unless this is true. */
+    isSiteDeveloper: boolean("is_site_developer").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -3293,6 +3295,36 @@ export const developerConnections = pgTable(
     uniqueIndex("developer_connections_link_uidx").on(t.tenantId, t.linkName),
   ],
 );
+
+/**
+ * Site-developer API vault. Encrypted at rest with the carrier/PII secrets key.
+ * Never store or return plaintext to non-developer clients. Admin may see configured + mask only.
+ */
+export const developerApiVault = pgTable(
+  "developer_api_vault",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    label: text("label").notNull(),
+    configured: boolean("configured").notNull().default(false),
+    apiKeyEnc: text("api_key_enc"),
+    apiKeyIv: text("api_key_iv"),
+    apiSecretEnc: text("api_secret_enc"),
+    apiSecretIv: text("api_secret_iv"),
+    accountNumberEnc: text("account_number_enc"),
+    accountNumberIv: text("account_number_iv"),
+    environment: text("environment").notNull().default("sandbox"),
+    updatedBy: uuid("updated_by"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("developer_api_vault_provider_uidx").on(t.tenantId, t.provider),
+    index("developer_api_vault_tenant_idx").on(t.tenantId),
+  ],
+);
+
+export type DeveloperApiVaultRow = typeof developerApiVault.$inferSelect;
 
 /** Manual, user-run macros. Never scheduled. Developer Hub → Macros. */
 export const deskMacros = pgTable(

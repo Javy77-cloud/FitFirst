@@ -4,7 +4,39 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bt`)
+## Mac test now (`cursor/live-ff-tip-sep7az`)
+
+Platform-wide **FedEx address autocomplete** plus a **site-developer API vault**, merged from `cursor/live-ff-tip-sep7ca-59d4` onto the desk tip. Every address field (Lead, Deal, Contact, Business, Policy, Quote Sheet, Settings, custom Address-type fields) uses one `AddressAutocomplete` control. Without a configured FedEx key the field is plain text — no stub that pretends FedEx works. With a key: typeahead → select/confirm fills street, city, state, ZIP and marks confirmed.
+
+**Site developer ≠ Admin.** Admins may open Settings → Developer Hub → **API vault** and see FedEx Address API as Configured / Not configured with `****************`. They cannot reveal or edit the raw key. Only a **site developer** can unlock, rotate, or clear. Grant with `users.is_site_developer` or `FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local` (no `db:seed` wipe). Secrets encrypt at rest with the existing carrier/PII AES-256-GCM key. Agency BYO — FitFirst does not subscribe.
+
+Keeps desk tip later work: Edit Layout existing layouts, BX tags, builder DnD, Dashboard, rail 320, Save toasts. Additive migrate `0090_fedex_address_vault` (after `0089_account_carrier_tags`). Ana unbound. Cov A **$321,000**. Tip SHA `b9d27d0b`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+# optional, to unlock the vault as Javy without a SQL flag:
+# echo 'FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local' >> .env
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a Lead or Deal Details address field — type freely (plain input) if no FedEx key is saved. Settings → Developer Hub → **API vault**: Javy-as-admin sees the mask only. After adding `FF_SITE_DEVELOPER_EMAILS`, Unlock vault, paste sandbox API key + secret, Save. Return to an address field and type a street — suggestions appear; picking one fills city / state / ZIP and shows **Address confirmed**. Do not bind or edit Ana Cov A (**$321,000**).
+
+### CA — FedEx address + developer vault
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| CA1 | Shared control | Lead, Deal Details, Quote Sheet, Policy, Settings office / meeting, and an Address-type field all use `data-ff-address-autocomplete`. |
+| CA2 | Key missing | No FedEx key → address is a normal text box. No “add a key” stub theater on the field. |
+| CA3 | Confirm fill | With a key, pick a suggestion → street / city / state / ZIP fill and **Address confirmed** shows. |
+| CA4 | Admin mask | Settings → Developer Hub → API vault shows Configured/`****************` (or Not configured). No reveal. Unlock is hidden for Javy unless he is a site developer. |
+| CA5 | Site developer | `FF_SITE_DEVELOPER_EMAILS=javy@fitfirst.local` (or `is_site_developer`) shows Unlock vault. Save / Clear rotate the encrypted key. Never see the old secret. |
+| CA6 | Scope | Edit Layout, BX tags, builder DnD, Dashboard, rail 320, Save toasts stay. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bt`)
 
 Deal field builder drag-and-drop across sections, merged onto `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder** (Edit layout / Preview): grab any collapsed field row and drop it between fields in the same section or into another section — left or right column. A sky drop line and section ring mark the target. Order is in the Save payload. Collapsed rows, compact palette, equal-width chips, and the four-item ⋯ menu stay. Preview stays editable with the same insert-between / cross-section move. BX tags, 320 rail, Save toasts, Dashboard, and picklist keys stay theirs. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `da67229e`. Head `f573bff6`.
 

@@ -2,6 +2,7 @@ import {
   deleteAdditionalInterest,
   saveAdditionalInterest,
 } from "@/app/actions/ams";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,7 +95,7 @@ export function AdditionalInterestPanel({
         </div>
         <div>
           <Label className="text-xs">Mailing address</Label>
-          <Input name="address" className="mt-1" />
+          <AddressAutocomplete name="address" className="mt-1" />
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>

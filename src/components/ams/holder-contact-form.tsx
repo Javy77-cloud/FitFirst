@@ -1,4 +1,5 @@
 import { saveHolderContact } from "@/app/actions/ams";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,7 +47,7 @@ export function HolderContactForm({
         </div>
         <div>
           <Label className="text-xs">Street</Label>
-          <Input name="address" className="mt-1" defaultValue={contact?.address ?? ""} />
+          <AddressAutocomplete name="address" className="mt-1" defaultValue={contact?.address ?? ""} />
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">

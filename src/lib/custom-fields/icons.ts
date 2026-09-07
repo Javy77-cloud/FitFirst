@@ -6,6 +6,7 @@ export const FIELD_TYPE_ICON_NAMES = {
   multi_line: "AlignLeft",
   email: "Mail",
   phone: "Phone",
+  address: "MapPin",
   picklist: "List",
   multi_select: "ListChecks",
   date: "Calendar",

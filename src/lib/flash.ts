@@ -82,6 +82,8 @@ export const FLASH_COPY = {
   "outcome-saved": "Outcome saved",
   "consent-saved": "Consent saved",
   "filter-saved": "Filter saved",
+  "fedex-vault-saved": "FedEx credentials saved",
+  "fedex-vault-cleared": "FedEx credentials cleared",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

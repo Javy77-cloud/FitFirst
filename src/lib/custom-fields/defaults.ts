@@ -12,7 +12,7 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "date_of_birth", label: "Date of birth", type: "date", systemKey: "dateOfBirth" },
-  { key: "mailing_address", label: "Address", type: "single_line", systemKey: "mailingAddress" },
+  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },

@@ -6,6 +6,8 @@ import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula
 import { formatCurrencyDisplay, parseNumericInput } from "@/lib/custom-fields/format";
 import { resolvedFieldValue, sanitizePicklistOptions } from "@/lib/custom-fields/picklists";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -179,6 +181,19 @@ function TypedControl({
         />
         <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
       </div>
+    );
+  }
+  if (field.type === "address" || isStreetAddressField(field.key, field.type)) {
+    return (
+      <AddressAutocomplete
+        name={name}
+        defaultValue={value}
+        disabled={disabled}
+        required={required}
+        form={form}
+        fill={addressFillForKey(field.key)}
+        className="mt-1 h-8"
+      />
     );
   }
   if (field.type === "lookup") {
