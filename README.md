@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bx`)
 
-Per-module global tag catalog + assign from list/board, from `cursor/live-ff-tip-sep7az`. Each module — **Leads, Deals, Contacts, Business, Policies, Carriers** — has its own catalog. The Columns / sheet **⋯** opens **Manage tags** to create, rename, color, merge, or delete. Clicking tags on a list row or Pipeline board card opens a multi-select popup from that catalog (including none). Creating a tag is never a side effect of assigning one on a row. Additive migrate `0089_account_carrier_tags` only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Per-module global tag catalog + assign from list/board, from `cursor/live-ff-tip-sep7az`. Each module — **Leads, Deals, Contacts, Business, Policies, Carriers** — has its own catalog. The Columns / sheet **⋯** opens **Manage tags** to create, rename, color, merge, or delete. Clicking tags on a list row or Pipeline board card opens a multi-select popup from that catalog (including none). Creating a tag is never a side effect of assigning one on a row. Additive migrate `0089_account_carrier_tags` only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `021cdf20`.
 
 ```bash
 cd ~/FitFirst
