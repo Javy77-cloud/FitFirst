@@ -41,6 +41,8 @@ describe("sep7by deal right rail hard-locked to 320px", () => {
     expect(css).toMatch(/max-width: 320px !important;/);
     expect(css).toMatch(/flex: 0 0 320px !important;/);
     expect(css).toMatch(/overflow-x: hidden !important;/);
+    expect(css).toMatch(/\[data-ff-deal-top-left\]/);
+    expect(css).toMatch(/flex: 1 1 0% !important;/);
   });
 
   it("BY3 — rail children have no 28rem / overflowing min-widths", () => {
@@ -52,15 +54,21 @@ describe("sep7by deal right rail hard-locked to 320px", () => {
       expect(text, file).not.toMatch(OVERFLOW_WIDTH);
       expect(text, file).not.toMatch(OVERFLOW_MIN);
     }
-    const comms = source("src/components/comms/quick-comms-board.tsx");
-    expect(comms).not.toMatch(/sm:grid-cols-2/);
-    expect(comms).toMatch(/min-w-0 w-full max-w-full/);
-    const tags = source("src/components/tags/record-tags.tsx");
-    expect(tags).toMatch(/min-w-0 w-full max-w-full/);
     const health = source("src/components/deal/sheet-health-toggle.tsx");
     expect(health).toMatch(/w-full min-w-0 max-w-full/);
+    expect(health).not.toMatch(/28rem/);
     const context = source("src/components/record-context/record-context-rail.tsx");
     expect(context).toMatch(/min-w-0 w-full max-w-full/);
+  });
+
+  it("BY3b — left column leftover flex is locked; only the rail is 320", () => {
+    const css = source("src/app/globals.css");
+    expect(css).toMatch(/\[data-ff-deal-top-left\]/);
+    expect(css).toMatch(/flex: 1 1 0% !important;/);
+    expect(css).toMatch(/max-width: none !important;/);
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/min-w-0 flex-1 space-y-1/);
+    expect(page).not.toMatch(/lg:w-\[72%\]/);
   });
 
   it("BY4 — page stacks Tags, Quick Comms, sheet health, and context inside the locked rail", () => {

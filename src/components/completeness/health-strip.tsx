@@ -34,7 +34,7 @@ export function HealthStrip({
 
   return (
     <section
-      className={cn("ff-completeness min-w-0 w-full max-w-full", compact && "ff-completeness-compact")}
+      className={cn("ff-completeness", compact && "ff-completeness-compact")}
       data-ff-completeness
       data-confirmed={report.confirmed}
       data-check={report.check}

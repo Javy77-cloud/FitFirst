@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7by`)
 
-Hard-lock the Deal detail right rail to **exactly 320px**, from `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden` on every viewport (not lg-only) plus a CSS `!important` lock (`flex: 0 0 320px`). Tags, Quick Communications, Sheet health, quotes-pulled, and Record context are `w-full max-w-full min-w-0` — no `28rem`, no min-width that can blow the rail. Left column is leftover `flex-1`. Quick Comms When/Notes stack so datetime-local cannot crush or overflow 320. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `a4b8c377`.
+**Only** the Deal detail right rail is **exactly 320px**. Everything else on the deal page (title, tabs, Details / Documents / Markets / Quotes) takes the leftover `flex-1` row. From `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w/min/max-[320px] shrink-0` plus CSS `flex: 0 0 320px !important`. Left `data-ff-deal-top-left` is `flex: 1 1 0%` — no 72% fight. No Tags / Quick Comms / tabs / Pipeline redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `a4b8c377`.
 
 ```bash
 cd ~/FitFirst
@@ -25,8 +25,8 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh a deal (Ana Dib is fine).
 | --- | --- | --- |
 | BY1 | Rail width | `data-ff-deal-right-rail` measures **320px** with Tags + Quick Comms visible. |
 | BY2 | Open panels | Sheet health / context open — rail stays 320. No 28rem Sheet health. |
-| BY3 | Fit | Tags and Quick Comms sit inside 320 without horizontal overflow or crushed datetime fields. |
-| BY4 | Left column | Details / Documents take leftover flex. No 72% fight. |
+| BY3 | Left leftover | Title + tabs + panels fill the remaining row. Only the rail is 320. |
+| BY4 | Scope | Tags, Quick Comms, tabs, Pipeline unchanged — width lock only. |
 
 ## Previous tip (`cursor/live-ff-tip-sep7br`)
 
