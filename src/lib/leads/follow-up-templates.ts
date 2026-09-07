@@ -1,5 +1,21 @@
-export const FOLLOW_UP_METHODS = ["call", "text", "email"] as const;
+export const FOLLOW_UP_METHODS = ["call", "text", "email", "skip"] as const;
 export type FollowUpMethod = (typeof FOLLOW_UP_METHODS)[number];
+
+export const FOLLOW_UP_METHOD_LABELS: Record<FollowUpMethod, string> = {
+  call: "Call",
+  text: "Text",
+  email: "Email",
+  skip: "Skip",
+};
+
+export function followUpMethodEditorLabel(method: string | null | undefined): string {
+  const key = (method ?? "").trim().toLowerCase();
+  return FOLLOW_UP_METHOD_LABELS[key as FollowUpMethod] ?? (method ?? "");
+}
+
+export function isSkipFollowUpMethod(value: string | null | undefined): boolean {
+  return (value ?? "").trim().toLowerCase() === "skip";
+}
 
 export const FOLLOW_UP_DELAY_UNITS = ["minutes", "hours", "days"] as const;
 export type FollowUpDelayUnit = (typeof FOLLOW_UP_DELAY_UNITS)[number];
@@ -130,7 +146,8 @@ export function shouldEmailAgentReminder(agentEmail: string | null | undefined):
   return true;
 }
 
-export function followUpMethodToActivityKind(method: FollowUpMethod): "call" | "sms" | "email" {
+export function followUpMethodToActivityKind(method: FollowUpMethod): "call" | "sms" | "email" | null {
+  if (method === "skip") return null;
   return method === "text" ? "sms" : method;
 }
 
@@ -331,6 +348,7 @@ export function followUpTemplateFullName(template: {
 }
 
 export function outboundStubLabel(method: FollowUpMethod): string {
+  if (method === "skip") return "Skip — no contact. Clock advances to the next step.";
   if (method === "call") return "In-app call task — no trunk. Desk ping only.";
   if (method === "text") return "Stub — no paid SMS API. Queued in-desk only. Nothing texted.";
   return "Stub — no paid email API. Queued in-desk only. Nothing emailed.";

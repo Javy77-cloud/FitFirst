@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   canStartFollowUpClock,
   delayMs,
   dueAtFromStep,
+  FOLLOW_UP_METHODS,
   followUpEmailSnoozeBody,
   followUpMethodToActivityKind,
   FOLLOW_UP_OVERRIDE_OPTIONS,
@@ -86,6 +88,19 @@ describe("follow-up templates", () => {
       })?.id,
     ).toBe("hot");
     expect(followUpTemplateChipName(undefined)).toBe("");
+    expect(
+      pickTemplateForLead([{ ...hot, enabled: false }, warm, cold, contactedDefault], { status: "new" }),
+    ).toBeNull();
+    expect(
+      pickTemplateForLead([{ ...hot, enabled: false }, warm, cold, contactedDefault], {
+        status: "new",
+        followUpTemplateId: "hot",
+      }),
+    ).toBeNull();
+    expect(
+      pickTemplateForLead([{ ...hot, enabled: false }, warm, cold, contactedDefault], { status: "contacted" })
+        ?.id,
+    ).toBe("cdef");
     expect(followUpTemplateFullName({ name: null, triggerStatus: "new" })).toBe("Aggressive");
     expect(dedupeFollowUpSteps(undefined)).toEqual([]);
     expect(nextTemplateStep(undefined)).toBeNull();
@@ -124,9 +139,15 @@ describe("follow-up templates", () => {
   });
 
   it("maps text to sms and labels the paid API wall", () => {
+    expect(FOLLOW_UP_METHODS).toEqual(["call", "text", "email", "skip"]);
     expect(followUpMethodToActivityKind("text")).toBe("sms");
+    expect(followUpMethodToActivityKind("skip")).toBeNull();
+    expect(normalizeFollowUpSteps([{ method: "skip", delayAmount: 1, delayUnit: "hours" }])[0]?.method).toBe(
+      "skip",
+    );
     expect(outboundStubLabel("email")).toMatch(/no paid email API/i);
     expect(outboundStubLabel("text")).toMatch(/no paid SMS API/i);
+    expect(outboundStubLabel("skip")).toMatch(/skip/i);
   });
 
   it("snoozes with 15 min / 1 hour / 1 day presets", () => {
@@ -191,5 +212,31 @@ describe("follow-up templates", () => {
     expect(shouldShowFollowUpModal({ id: "alert-1", entityId: "lead-1" }, null, "/leads/lead-1")).toBe(false);
     expect(shouldShowFollowUpModal({ id: "alert-1", entityId: "lead-1" }, null, "/leads")).toBe(true);
     expect(shouldShowFollowUpModal({ id: "alert-1", readAt: new Date() }, null, "/leads")).toBe(false);
+  });
+});
+
+describe("follow-up template editor + fire-path checks", () => {
+  it("exposes a per-template on/off toggle and Skip in the method dropdown", () => {
+    const panel = readFileSync("src/components/leads/follow-up-templates-panel.tsx", "utf8");
+    const actions = readFileSync("src/app/actions/lead-follow-up.ts", "utf8");
+    expect(panel).toMatch(/setFollowUpTemplateEnabled/);
+    expect(panel).toMatch(/role="switch"/);
+    expect(panel).toMatch(/data-ff-template-enabled/);
+    expect(panel).toMatch(/FOLLOW_UP_METHOD_LABELS/);
+    expect(panel).toMatch(/FOLLOW_UP_METHODS/);
+    const methods = readFileSync("src/lib/leads/follow-up-templates.ts", "utf8");
+    expect(methods).toMatch(/skip: "Skip"/);
+    expect(actions).toMatch(/setFollowUpTemplateEnabled/);
+    expect(actions).toMatch(/cancelFollowUpsForTemplate/);
+  });
+
+  it("skips disabled templates and Skip steps on the fire path without rewriting snooze", () => {
+    const fire = readFileSync("src/lib/leads/apply-follow-up.ts", "utf8");
+    const snooze = readFileSync("src/components/leads/follow-up-snooze-presets.tsx", "utf8");
+    expect(fire).toMatch(/isSkipFollowUpMethod/);
+    expect(fire).toMatch(/enabledById/);
+    expect(fire).toMatch(/cancelFollowUpsForTemplate/);
+    expect(fire).toMatch(/scheduleNextLiveStep/);
+    expect(snooze).not.toMatch(/isSkipFollowUpMethod/);
   });
 });

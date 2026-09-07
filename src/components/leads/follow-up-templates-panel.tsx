@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { deleteFollowUpTemplate, saveFollowUpTemplate } from "@/app/actions/lead-follow-up";
+import {
+  deleteFollowUpTemplate,
+  saveFollowUpTemplate,
+  setFollowUpTemplateEnabled,
+} from "@/app/actions/lead-follow-up";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +20,9 @@ import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import {
   FOLLOW_UP_DELAY_UNIT_LABELS,
   FOLLOW_UP_DELAY_UNITS,
+  FOLLOW_UP_METHOD_LABELS,
   FOLLOW_UP_METHODS,
+  followUpMethodEditorLabel,
   REMIND_VIA_CHANNELS,
   REMIND_VIA_LABELS,
   TEMPLATE_TRIGGER_STATUSES,
@@ -125,6 +131,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemp
                 className="space-y-3"
               >
                 {editing.id ? <input type="hidden" name="templateId" value={editing.id} /> : null}
+                <input type="hidden" name="enabled" value={editing.enabled ? "1" : "0"} />
                 <div className="grid gap-2 sm:grid-cols-[1fr_11rem]">
                   <div>
                     <Label htmlFor="template-name" className="text-xs">
@@ -178,7 +185,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemp
                           >
                             {FOLLOW_UP_METHODS.map((method) => (
                               <option key={method} value={method}>
-                                {method}
+                                {FOLLOW_UP_METHOD_LABELS[method]}
                               </option>
                             ))}
                           </select>
@@ -264,7 +271,30 @@ export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemp
                               {template.steps.length === 1 ? "step" : "steps"}
                             </p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
+                            <form action={setFollowUpTemplateEnabled} className="flex items-center gap-1.5">
+                              <input type="hidden" name="templateId" value={template.id} />
+                              <input type="hidden" name="enabled" value={template.enabled ? "0" : "1"} />
+                              <button
+                                type="submit"
+                                role="switch"
+                                aria-checked={template.enabled}
+                                aria-label={`${followUpTemplateFullName(template)} ${template.enabled ? "on" : "off"}`}
+                                data-ff-template-enabled={template.id}
+                                className={`relative h-5 w-9 rounded-full transition-colors ${
+                                  template.enabled ? "bg-primary" : "bg-muted"
+                                }`}
+                              >
+                                <span
+                                  className={`absolute top-0.5 size-4 rounded-full bg-white shadow ${
+                                    template.enabled ? "right-0.5" : "left-0.5"
+                                  }`}
+                                />
+                              </button>
+                              <span className="text-[11px] text-muted-foreground">
+                                {template.enabled ? "On" : "Off"}
+                              </span>
+                            </form>
                             <Button type="button" size="xs" variant="outline" onClick={() => setEditingId(template.id)}>
                               Edit
                             </Button>
@@ -286,7 +316,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemp
                         <ol className="mt-2 space-y-1 text-xs text-muted-foreground">
                           {dedupeFollowUpSteps(template.steps ?? []).map((step) => (
                             <li key={step.id}>
-                              {step.method} · {step.delayAmount}{" "}
+                              {followUpMethodEditorLabel(step.method)} · {step.delayAmount}{" "}
                               {FOLLOW_UP_DELAY_UNIT_LABELS[
                                 step.delayUnit as keyof typeof FOLLOW_UP_DELAY_UNIT_LABELS
                               ] ?? step.delayUnit}{" "}

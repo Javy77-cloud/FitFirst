@@ -20,6 +20,7 @@ import {
   followUpTemplateChipName,
   isFollowUpDelayUnit,
   isFollowUpMethod,
+  isSkipFollowUpMethod,
   isSnoozeDelayUnit,
   nextTemplateStep,
   normalizeRemindVia,
@@ -36,6 +37,30 @@ import {
 } from "@/lib/leads/follow-up-templates";
 import { ensureFollowUpPlaybooks } from "@/lib/leads/ensure-playbooks";
 import { leadStatusLabel, normalizeLeadStatus } from "@/lib/leads/queue";
+
+export async function cancelFollowUpsForTemplate(templateId: string) {
+  const open = await db
+    .select()
+    .from(leadFollowUpQueue)
+    .where(
+      and(
+        eq(leadFollowUpQueue.tenantId, DEFAULT_TENANT_ID),
+        eq(leadFollowUpQueue.templateId, templateId),
+        inArray(leadFollowUpQueue.status, ["queued"]),
+      ),
+    );
+  if (open.length === 0) return;
+  const now = new Date();
+  await db
+    .update(leadFollowUpQueue)
+    .set({ status: "cancelled", cancelledAt: now, updatedAt: now })
+    .where(
+      inArray(
+        leadFollowUpQueue.id,
+        open.map((row) => row.id),
+      ),
+    );
+}
 
 export async function cancelLeadFollowUps(leadId: string) {
   const open = await db
@@ -240,6 +265,14 @@ export async function releaseDueLeadFollowUps(now = new Date()) {
       ),
     );
   if (due.length === 0) return { released: 0 };
+  const templateIds = [...new Set(due.map((row) => row.templateId).filter((id): id is string => Boolean(id)))];
+  const templateRows = templateIds.length
+    ? await db
+        .select({ id: leadFollowUpTemplates.id, enabled: leadFollowUpTemplates.enabled })
+        .from(leadFollowUpTemplates)
+        .where(inArray(leadFollowUpTemplates.id, templateIds))
+    : [];
+  const enabledById = new Map(templateRows.map((row) => [row.id, row.enabled !== false]));
   const leadRows = await db
     .select()
     .from(leads)
@@ -265,6 +298,28 @@ export async function releaseDueLeadFollowUps(now = new Date()) {
   for (const item of due) {
     const lead = byId.get(item.leadId);
     if (!lead) continue;
+    if (item.templateId && enabledById.get(item.templateId) === false) {
+      await db
+        .update(leadFollowUpQueue)
+        .set({ status: "cancelled", cancelledAt: now, updatedAt: now })
+        .where(eq(leadFollowUpQueue.id, item.id));
+      continue;
+    }
+    if (isSkipFollowUpMethod(item.method)) {
+      await db
+        .update(leadFollowUpQueue)
+        .set({ status: "released", releasedAt: now, updatedAt: now })
+        .where(eq(leadFollowUpQueue.id, item.id));
+      const sortOrder = await sortOrderForQueueItem(item);
+      await scheduleNextLiveStep({
+        leadId: item.leadId,
+        templateId: item.templateId,
+        afterSortOrder: sortOrder,
+        now,
+      });
+      released += 1;
+      continue;
+    }
     const method = (isFollowUpMethod(item.method) ? item.method : "call") as FollowUpMethod;
     const remindVia = normalizeRemindVia(item.remindVia) as RemindViaChannel;
     const leadName = `${lead.lastName}, ${lead.firstName}`;

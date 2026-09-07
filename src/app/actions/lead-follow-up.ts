@@ -9,6 +9,7 @@ import { leadFollowUpQueue, leadFollowUpSteps, leadFollowUpTemplates, leads } fr
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { enqueueOutboundJob } from "@/lib/desk/outbound-queue";
 import {
+  cancelFollowUpsForTemplate,
   cancelLeadFollowUps,
   completeFollowUpFromAlert,
   completeLeadFollowUpAndAdvance,
@@ -292,7 +293,22 @@ export async function saveFollowUpTemplate(formData: FormData) {
       })),
     );
   }
-  if (templateId) await rescheduleQueuedFromLiveTemplate(templateId, now, sortOrderByQueueId);
+  if (templateId) {
+    if (enabled) await rescheduleQueuedFromLiveTemplate(templateId, now, sortOrderByQueueId);
+    else await cancelFollowUpsForTemplate(templateId);
+  }
+  revalidateLeads();
+}
+
+export async function setFollowUpTemplateEnabled(formData: FormData) {
+  const id = str(formData, "templateId");
+  if (!id) return;
+  const enabled = str(formData, "enabled") !== "0";
+  await db
+    .update(leadFollowUpTemplates)
+    .set({ enabled, updatedAt: new Date() })
+    .where(and(eq(leadFollowUpTemplates.tenantId, DEFAULT_TENANT_ID), eq(leadFollowUpTemplates.id, id)));
+  if (!enabled) await cancelFollowUpsForTemplate(id);
   revalidateLeads();
 }
 

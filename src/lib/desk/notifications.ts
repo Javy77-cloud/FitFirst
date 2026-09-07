@@ -45,6 +45,7 @@ const FOLLOW_UP_METHOD_LABELS: Record<string, string> = {
   text: "SMS",
   sms: "SMS",
   email: "Email",
+  skip: "Skip",
 };
 
 export function followUpMethodLabel(method: string): string {
