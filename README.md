@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7az`)
 
-WIP consolidator — README finalized after AV.
+Consolidator on `cursor/live-ff-tip-sep7au-2ccf` @ `d0a6eb7` / tip SHA `4f66ea9` (Deal Details + field builder + extract maps 0081/0082). Merge order: (1) `cursor/live-ff-tip-sep7aw-5c80` @ `93bfc72` / tip SHA `f45c790` — Deal Details is Contact + Address + **Edit layout** only, builder off-page; (2) `cursor/live-ff-tip-sep7ax-f547` @ `4e63622` / tip SHA `efed45e` — Documents upload box locked **top / full-width**, never jumps; (3) `cursor/live-ff-tip-sep7av` @ `b6ce8c2` / tip SHA `9c43360` — three-layer learning pipeline + dormant purchase consent. Learning migrate renumbered **0083** so **0081_deal_field_builder** and **0082_document_field_maps** stay. sep7ar chrome stays: AppShell title **Deals**, left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`, `HardDeleteForm` confirms **once** via `onClickCapture`, Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
 
 ```bash
 cd ~/FitFirst
@@ -17,7 +17,17 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail (Deal Details tab + 300px rail). Also open a shopping deal (not Ana): drop a wind mit / 4-point / dec and confirm the street for enrichment stubs. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail (Deal Details tab + 300px rail). Open **Documents** and confirm the upload box stays top / full-width. Also open a shopping deal (not Ana): drop a wind mit / 4-point / dec and confirm the street for enrichment stubs. Purchase consent on `/onboarding/purchase` stays **unchecked**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AW — Deal Details strip-down
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AW1 | Essentials only | Deal Details shows **Contact** (first, last, email, phone) + **Address** (street, city, state, ZIP) + **Edit layout**. No Property / Photos & calc / Notes / New field row. |
+| AW2 | Own page | **Edit layout** opens `/settings/field-builder?line=…`. Builder is **not** inline on the deal. |
+| AW3 | Builder | Palette of types (single line through image upload). Drag onto a column, drop, type the label. Two columns; drag fields/sections to reorder. Add/relabel sections. **Save** applies to every deal of that LOB. |
+| AW4 | Other tabs | Documents, Markets, Quotes, and the 300px rail are unchanged. |
+| AW5 | Tests | `deal-details-tab` + `field-builder` cover the stripped desk and the builder open path. |
 
 ### AX — Documents upload position
 
@@ -29,15 +39,16 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AX4 | No jump | Upload box does **not** move after first paint. No left→top or top→left shift. |
 | AX5 | Structure | `data-ff-deal-upload` is `w-full` first child of `data-ff-deal-docs` (`flex w-full flex-col`). Master sheet is `data-ff-deal-docs-sheet` **below**. No `data-ff-deal-upload-split`. No `lg:grid-cols-`. |
 
-### AW — Deal Details strip-down
+### AV — Learning pipeline + dormant consent
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| AW1 | Essentials only | Deal Details shows **Contact** (first, last, email, phone) + **Address** (street, city, state, ZIP) + **Edit layout**. No Property / Photos & calc / Notes / New field row. |
-| AW2 | Own page | **Edit layout** opens `/settings/field-builder?line=…`. Builder is **not** inline on the deal. |
-| AW3 | Builder | Palette of types (single line through image upload). Drag onto a column, drop, type the label. Two columns; drag fields/sections to reorder. Add/relabel sections. **Save** applies to every deal of that LOB. |
-| AW4 | Other tabs | Documents, Markets, Quotes, and the 300px rail are unchanged. |
-| AW5 | Tests | `deal-details-tab` + `field-builder` cover the stripped desk and the builder open path. |
+| AV1 | Three layers | `src/lib/learning-pipeline/{raw,anonymize,pool}` exist. Raw never exports outside the tenant. Pool is admin-only. |
+| AV2 | Consent storage | Record has agency / tenant id, timestamp, terms version. Default opt-out (no row = decline). Checkbox default unchecked. |
+| AV3 | Pool gate | `writeAnonymizedToGlobalPool` refuses without consent **and** `LEARNING_POOL_CONSENT_LIVE`. Flag default off. |
+| AV4 | LEGAL todos | Onboarding module and anonymization service carry the `TODO(LEGAL)` markers. |
+| AV5 | Anonymize tests | PII fields stripped; source label / field type / form version / carrier / mapping kept. |
+| AV6 | Additive only | Migrate is **0083_learning_pipeline**. No `db:seed`. Deal / Pipeline chrome stays sep7ar. |
 
 ### AT — Field maps + enrichment
 
@@ -90,6 +101,58 @@ Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA 
 | AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
 | AI1 | Count | Chip **number only** is **24px** / **500**. |
 | AP1 | Count color | Chip **number only** keeps chip hue, one notch darker (`color-mix` 78% `--chip-fg` into `#ffffff`). Not navy, not black. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7au`)
+
+Consolidator: Deal Details + field builder from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d` plus extraction maps + ATTOM / Estated / FL stubs from `cursor/live-ff-tip-sep7at-6bcc` @ `94b775a` / tip SHA `199ae2e`. sep7ar chrome stays. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `4f66ea9`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7au-2ccf && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+## Mac test prior (`cursor/live-ff-tip-sep7aw`)
+
+Deal Details strip-down + Zoho-style field builder, from `cursor/live-ff-tip-sep7as` @ `e409265` / tip SHA `ce2d72d`. **Deal Details** keeps Contact (first, last, email, phone) + Address (street, city, state, ZIP) and one **Edit layout** button. Property / Photos & calc / Notes / inline add-field are gone. **Edit layout** opens `/settings/field-builder` (not inline). Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `f45c790`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7aw-5c80 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+## Mac test prior (`cursor/live-ff-tip-sep7ax`)
+
+Tight Documents upload lock only, from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d`. On **Deals → Documents**, the upload box is **full width at the top of the tab** from the first paint — never a left column, never a post-load jump. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `efed45e`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ax-f547 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+## Mac test prior (`cursor/live-ff-tip-sep7av`)
+
+Learning data pipeline only, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Three layers: **raw tenant**, **anonymize**, **global pool**. Consent checkbox on `/onboarding/purchase` is **dormant / unchecked**. Global pool writes stay blocked unless a consent record exists **and** `LEARNING_POOL_CONSENT_LIVE` is on (default off). Original tip used migrate `0081_learning_pipeline`; this consolidator ships it as **0083**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `9c43360`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7av && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
 
 ## Mac test prior (`cursor/live-ff-tip-sep7as`)
 

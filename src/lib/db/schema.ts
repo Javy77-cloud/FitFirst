@@ -3444,3 +3444,126 @@ export const leadFollowUpQueue = pgTable(
 export type LeadFollowUpTemplate = typeof leadFollowUpTemplates.$inferSelect;
 export type LeadFollowUpStep = typeof leadFollowUpSteps.$inferSelect;
 export type LeadFollowUpQueueRow = typeof leadFollowUpQueue.$inferSelect;
+
+/** Learning pipeline — raw tenant wall. Never leaves the agency. No CRM FKs. */
+export const learningRawDocuments = pgTable(
+  "learning_raw_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    formVersion: text("form_version").notNull(),
+    carrier: text("carrier").notNull().default(""),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
+    ...timestamps,
+  },
+  (t) => [index("learning_raw_documents_tenant_idx").on(t.tenantId)],
+);
+
+export const learningRawExtractions = pgTable(
+  "learning_raw_extractions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id").notNull(),
+    fieldKey: text("field_key").notNull(),
+    fieldType: text("field_type").notNull(),
+    extractedValue: text("extracted_value").notNull().default(""),
+    sourceLabel: text("source_label").notNull(),
+    formVersion: text("form_version").notNull(),
+    carrier: text("carrier").notNull().default(""),
+    extractedAt: timestamp("extracted_at", { withTimezone: true }).defaultNow().notNull(),
+    ...timestamps,
+  },
+  (t) => [index("learning_raw_extractions_tenant_idx").on(t.tenantId, t.documentId)],
+);
+
+export const learningRawCorrections = pgTable(
+  "learning_raw_corrections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id").notNull(),
+    extractionId: uuid("extraction_id").notNull(),
+    fieldKey: text("field_key").notNull(),
+    fieldType: text("field_type").notNull(),
+    extractedValue: text("extracted_value").notNull().default(""),
+    correctedValue: text("corrected_value").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    formVersion: text("form_version").notNull(),
+    carrier: text("carrier").notNull().default(""),
+    correctedBy: text("corrected_by").notNull(),
+    correctedAt: timestamp("corrected_at", { withTimezone: true }).defaultNow().notNull(),
+    ...timestamps,
+  },
+  (t) => [index("learning_raw_corrections_tenant_idx").on(t.tenantId, t.documentId)],
+);
+
+/** Opt-in record. No row = decline. Default unchecked at purchase. */
+export const learningPoolConsents = pgTable(
+  "learning_pool_consents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    agencyId: uuid("agency_id").notNull(),
+    optedIn: boolean("opted_in").notNull().default(false),
+    termsVersion: text("terms_version").notNull(),
+    agreedAt: timestamp("agreed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("learning_pool_consents_agency_uidx").on(t.agencyId)],
+);
+
+/**
+ * Admin-only anonymized pool. tenant_id is the platform owner, never the contributing agency.
+ * No PII columns.
+ */
+export const learningGlobalPool = pgTable(
+  "learning_global_pool",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    fieldType: text("field_type").notNull(),
+    formVersion: text("form_version").notNull(),
+    carrier: text("carrier").notNull().default(""),
+    correction: jsonb("correction")
+      .$type<{
+        kind: "remap" | "value" | "confirm";
+        fromField: string;
+        toField: string;
+        extractedValue: string | null;
+        correctedValue: string | null;
+      }>()
+      .notNull(),
+    receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
+    ...timestamps,
+  },
+  (t) => [index("learning_global_pool_field_idx").on(t.fieldType, t.formVersion)],
+);
+
+export const learningSeedLibrary = pgTable(
+  "learning_seed_library",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id").notNull(),
+    formId: text("form_id").notNull(),
+    formVersion: text("form_version").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    fieldType: text("field_type").notNull(),
+    carrier: text("carrier").notNull().default(""),
+    mappingFrom: text("mapping_from").notNull(),
+    mappingTo: text("mapping_to").notNull(),
+    ...timestamps,
+  },
+  (t) => [index("learning_seed_library_form_idx").on(t.formId, t.formVersion)],
+);
+
+export type LearningRawDocument = typeof learningRawDocuments.$inferSelect;
+export type LearningRawExtraction = typeof learningRawExtractions.$inferSelect;
+export type LearningRawCorrection = typeof learningRawCorrections.$inferSelect;
+export type LearningPoolConsentRow = typeof learningPoolConsents.$inferSelect;
+export type LearningGlobalPoolRow = typeof learningGlobalPool.$inferSelect;
+export type LearningSeedLibraryRow = typeof learningSeedLibrary.$inferSelect;
