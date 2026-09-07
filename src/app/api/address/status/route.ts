@@ -4,6 +4,10 @@ import { fedexAddressEnabled } from "@/lib/developer/vault";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const enabled = await fedexAddressEnabled();
-  return NextResponse.json({ enabled });
+  try {
+    const enabled = await fedexAddressEnabled();
+    return NextResponse.json({ enabled });
+  } catch {
+    return NextResponse.json({ enabled: false });
+  }
 }
