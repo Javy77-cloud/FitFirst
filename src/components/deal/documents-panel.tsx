@@ -1,8 +1,7 @@
 import { extractExisting } from "@/app/actions/documents";
 import { DocumentsZoom } from "@/components/deal/documents-zoom";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
-import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
-import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
+import { MasterSheetWorkspace } from "@/components/deal/master-sheet-compare";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
 import { groupDocsByLine, isImageDoc, lineFromTags } from "@/lib/leads/line-documents";
@@ -12,6 +11,7 @@ import type { CompletenessReport } from "@/lib/completeness/report";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
+import { asList } from "@/lib/safe-list";
 
 export function DocumentsPanel({
   dealId,
@@ -39,10 +39,10 @@ export function DocumentsPanel({
   approvedBy?: string | null;
   product: SheetProduct;
 }) {
-  const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
+  const sourceDocs = asList(docs).filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
   const lineDocs = sourceDocs.filter((d) => lineFromTags(d.tags));
   const otherSourceDocs = sourceDocs.filter((d) => !lineFromTags(d.tags));
-  const lineGroups = groupDocsByLine(lineDocs);
+  const lineGroups = asList(groupDocsByLine(lineDocs));
 
   return (
     <DocumentsZoom>
@@ -83,17 +83,13 @@ export function DocumentsPanel({
       </div>
 
       <div className="w-full min-w-0 space-y-3" data-ff-deal-docs-sheet>
-        <MasterSheetCompare
+        <MasterSheetWorkspace
           dealId={dealId}
           line={sheetLine}
-          fields={fields}
-          values={sheetValues}
+          fields={asList(fields)}
+          values={sheetValues ?? {}}
           product={product}
           sourceDocCount={sourceDocs.length}
-        />
-        <SheetApproveGate
-          dealId={dealId}
-          line={sheetLine}
           formLabel={formLabel}
           unlocked={unlocked}
           approvedBy={approvedBy}

@@ -91,6 +91,21 @@ export function moveField(
   return next;
 }
 
+/** Insert before the first item whose midpoint is below the pointer. */
+export function insertIndexFromClientY(
+  clientY: number,
+  rects: { key: string; top: number; height: number }[],
+): { beforeKey?: string } {
+  for (const rect of asLayoutRects(rects)) {
+    if (clientY < rect.top + rect.height / 2) return { beforeKey: rect.key };
+  }
+  return {};
+}
+
+function asLayoutRects(rects: { key: string; top: number; height: number }[] | null | undefined) {
+  return Array.isArray(rects) ? rects : [];
+}
+
 export function moveSection(
   layout: FieldLayout,
   sectionId: string,

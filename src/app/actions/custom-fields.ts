@@ -11,6 +11,7 @@ import {
   listDealFieldDefs,
   loadLayoutForLine,
   loadRecordValues,
+  saveLayoutForEveryLine,
   saveLayoutForLine,
   upsertFieldDef,
   writeRecordValues,
@@ -73,7 +74,7 @@ export async function saveDealFieldLayout(formData: FormData) {
       /* keep layout save even if field payload is stale */
     }
   }
-  await saveLayoutForLine(line, layout);
+  await saveLayoutForEveryLine(layout);
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line);
 }
 

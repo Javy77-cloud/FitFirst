@@ -1,7 +1,8 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import { extractKeyToSheetKey, fieldsForLine } from "./catalog";
-import { isRepeatableSheetKey } from "./repeatable-units";
+import type { SheetProduct } from "./products";
+import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 
 export type ExtractedInput = {
   fieldKey: string;
@@ -322,44 +323,49 @@ export function mergeAgentEdits(
   existing: Record<string, QuoteSheetFieldValue>,
   submitted: Record<string, string>,
   line: ShopLine,
+  product?: SheetProduct,
 ): Record<string, QuoteSheetFieldValue> {
   const next: Record<string, QuoteSheetFieldValue> = { ...existing };
-  for (const field of fieldsForLine(line)) {
-    if (!(field.key in submitted)) continue;
-    const typed = submitted[field.key].trim();
-    const current = next[field.key];
-    if (neverCheckCoverageA(field.key, current) && typed === (current?.value ?? "")) {
-      next[field.key] = {
+
+  function writeCell(key: string, raw: string) {
+    const typed = String(raw ?? "").trim();
+    const current = next[key];
+    if (neverCheckCoverageA(key, current) && typed === (current?.value ?? "")) {
+      next[key] = {
         value: current?.value ?? typed,
         status: "confirmed",
         source: "javy",
       };
-      continue;
+      return;
     }
     if (typed === "") {
-      next[field.key] = { value: "", status: "missing", source: "blank" };
-      continue;
+      next[key] = { value: "", status: "missing", source: "blank" };
+      return;
     }
     const unchangedCheck =
       current?.status === "check" &&
       current.value === typed &&
       (current.source === "extracted" || current.source === "photo-ocr");
     if (unchangedCheck) {
-      next[field.key] = current;
-      continue;
+      next[key] = current;
+      return;
     }
-    next[field.key] = { value: typed, status: "confirmed", source: "agent" };
+    next[key] = { value: typed, status: "confirmed", source: "agent" };
+  }
+
+  const catalog = new Set(fieldsForLine(line, product).map((field) => field.key));
+  for (const fieldKey of catalog) {
+    if (!(fieldKey in submitted)) continue;
+    writeCell(fieldKey, submitted[fieldKey]);
   }
   for (const [key, raw] of Object.entries(submitted)) {
-    if (key in next) continue;
-    if (!isRepeatableSheetKey(key)) continue;
-    const typed = raw.trim();
-    next[key] = typed
-      ? { value: typed, status: "confirmed", source: "agent" }
-      : { value: "", status: "missing", source: "blank" };
+    if (isSheetFormMetaKey(key) || catalog.has(key)) continue;
+    writeCell(key, raw);
   }
   return next;
 }
+
+export { submittedSheetValues };
 
 export function confirmField(
   existing: Record<string, QuoteSheetFieldValue>,

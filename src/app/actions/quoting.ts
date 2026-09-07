@@ -19,7 +19,8 @@ import {
 } from "@/lib/db/schema";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { shopDealQuotes } from "@/app/actions/quotes";
-import { runFillDealSheets } from "@/app/actions/quote-sheet";
+import { persistQuoteSheetValues, runFillDealSheets } from "@/app/actions/quote-sheet";
+import { submittedSheetValues } from "@/lib/quote-sheet/apply";
 import {
   canUnlockQuoting,
   isAppetiteCaptureResult,
@@ -110,6 +111,11 @@ export async function approveMasterSheet(formData: FormData) {
   const session = await currentDeskSession();
   const now = new Date();
   const who = session.name || "desk";
+
+  const submitted = submittedSheetValues(formData);
+  if (Object.keys(submitted).length > 0) {
+    await persistQuoteSheetValues(dealId, line, submitted);
+  }
 
   await db
     .update(deals)

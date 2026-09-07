@@ -232,4 +232,22 @@ describe("quote sheet fill — blanks only", () => {
     expect(next.coverage_a.source).toBe("javy");
     expect(next.coverage_a.status).toBe("confirmed");
   });
+
+  it("round-trips every submitted sheet field so reload can return the saved values", () => {
+    const existing = emptySheetValues("home", "homeowners");
+    const submitted = {
+      applicant_name: "Jordan Lee",
+      city: "Melbourne",
+      occupancy: "Owner",
+      notes: "Call after 5",
+    };
+    const saved = mergeAgentEdits(existing, submitted, "home", "homeowners");
+    expect(saved.applicant_name).toEqual({ value: "Jordan Lee", status: "confirmed", source: "agent" });
+    expect(saved.city.value).toBe("Melbourne");
+    expect(saved.occupancy.value).toBe("Owner");
+    expect(saved.notes.value).toBe("Call after 5");
+    const reloaded = mergeAgentEdits(saved, submitted, "home", "homeowners");
+    expect(reloaded.applicant_name.value).toBe("Jordan Lee");
+    expect(reloaded.city.value).toBe("Melbourne");
+  });
 });

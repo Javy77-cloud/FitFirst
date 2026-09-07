@@ -12,21 +12,23 @@ import {
   addSection,
   deleteSection,
   insertFieldAfter,
+  insertIndexFromClientY,
   moveField,
   moveSection,
   relabelSection,
   removeFieldFromLayout,
 } from "@/lib/custom-fields/layout";
+import { asList } from "@/lib/safe-list";
 import { cloneFieldDef, type FieldPicklist } from "@/lib/custom-fields/picklists";
 import {
   CUSTOM_FIELD_TYPE_LABELS,
   PALETTE_ITEMS,
   PALETTE_LABELS,
+  parseLayout,
   slugifyFieldKey,
   type CustomFieldDef,
   type CustomFieldType,
   type FieldLayout,
-  type PaletteItem,
 } from "@/lib/custom-fields/types";
 
 type DragPayload =
@@ -46,8 +48,8 @@ export function FieldBuilder({
   fields: CustomFieldDef[];
   picklists?: FieldPicklist[];
 }) {
-  const [layout, setLayout] = useState(initialLayout);
-  const [fields, setFields] = useState(initialFields);
+  const [layout, setLayout] = useState(() => parseLayout(initialLayout));
+  const [fields, setFields] = useState(() => asList(initialFields));
   const [drag, setDrag] = useState<DragPayload | null>(null);
   const [configKey, setConfigKey] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -95,16 +97,70 @@ export function FieldBuilder({
     if (type === "picklist" || type === "multi_select") setConfigKey(key);
   }
 
-  function handleDrop(columnId: string, sectionId?: string, beforeKey?: string, beforeSectionId?: string) {
+  function dropPointFromEvent(
+    event: React.DragEvent,
+    columnId: string,
+  ): { sectionId?: string; beforeKey?: string; beforeSectionId?: string } {
+    void columnId;
+    const column = event.currentTarget as HTMLElement;
+    const sectionEls = [...column.querySelectorAll<HTMLElement>("[data-ff-builder-section]")];
+    const fieldEls = [...column.querySelectorAll<HTMLElement>("[data-ff-builder-field]")];
+    const y = event.clientY;
+    const beforeField = insertIndexFromClientY(
+      y,
+      fieldEls.map((el) => ({
+        key: el.getAttribute("data-ff-builder-field") ?? "",
+        top: el.getBoundingClientRect().top,
+        height: el.getBoundingClientRect().height,
+      })),
+    ).beforeKey;
+    if (beforeField) {
+      const host = fieldEls.find((el) => el.getAttribute("data-ff-builder-field") === beforeField);
+      const sectionId = host?.closest("[data-ff-builder-section]")?.getAttribute("data-ff-builder-section") ?? undefined;
+      return { sectionId, beforeKey: beforeField };
+    }
+    const beforeSectionId = insertIndexFromClientY(
+      y,
+      sectionEls.map((el) => ({
+        key: el.getAttribute("data-ff-builder-section") ?? "",
+        top: el.getBoundingClientRect().top,
+        height: el.getBoundingClientRect().height,
+      })),
+    ).beforeKey;
+    if (beforeSectionId) {
+      return { columnId, sectionId: beforeSectionId, beforeSectionId };
+    }
+    const lastSection = sectionEls.at(-1)?.getAttribute("data-ff-builder-section") ?? undefined;
+    return { sectionId: lastSection, beforeSectionId: undefined };
+  }
+
+  function handleDrop(
+    columnId: string,
+    sectionId?: string,
+    beforeKey?: string,
+    beforeSectionId?: string,
+    event?: React.DragEvent,
+  ) {
     if (!drag || preview) return;
+    let target = { sectionId, beforeKey, beforeSectionId };
+    if (event && !beforeKey && !sectionId) {
+      target = { ...target, ...dropPointFromEvent(event, columnId) };
+    }
     if (drag.kind === "new-section") {
-      setLayout((current) => addSection(current, columnId, "New section"));
+      setLayout((current) => {
+        const next = addSection(current, columnId, "New section");
+        const added = next.columns.find((col) => col.id === columnId)?.sections.at(-1);
+        if (!added || !target.beforeSectionId) return next;
+        return moveSection(next, added.id, { columnId, beforeSectionId: target.beforeSectionId });
+      });
     } else if (drag.kind === "type") {
-      placeNewField(drag.type, columnId, sectionId, beforeKey);
+      placeNewField(drag.type, columnId, target.sectionId, target.beforeKey);
     } else if (drag.kind === "field") {
-      setLayout((current) => moveField(current, drag.key, { columnId, sectionId, beforeKey }));
+      setLayout((current) =>
+        moveField(current, drag.key, { columnId, sectionId: target.sectionId, beforeKey: target.beforeKey }),
+      );
     } else {
-      setLayout((current) => moveSection(current, drag.id, { columnId, beforeSectionId }));
+      setLayout((current) => moveSection(current, drag.id, { columnId, beforeSectionId: target.beforeSectionId }));
     }
     setDrag(null);
   }
@@ -144,7 +200,7 @@ export function FieldBuilder({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             Three locked columns: field types, left canvas, right canvas. Drag a type — including
-            Section — onto a column. Save applies to every {line} deal.
+            Section — onto a column. Save applies to every deal.
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -164,21 +220,21 @@ export function FieldBuilder({
       </form>
 
       <div
-        className="grid w-full grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] items-start gap-4"
+        className="grid w-full grid-cols-[max-content_minmax(0,1fr)_minmax(0,1fr)] items-start gap-4"
         data-ff-builder-lock="three-col"
         data-ff-builder-columns
       >
-        <aside className="min-w-0 space-y-2" data-ff-builder-palette>
+        <aside className="w-max max-w-[11rem] space-y-2" data-ff-builder-palette>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Field types</p>
           <div className="space-y-1 rounded-md border border-dashed border-border p-2">
-            {PALETTE_ITEMS.map((type) => (
+            {asList([...PALETTE_ITEMS]).map((type) => (
               <div
                 key={type}
                 draggable={!preview}
                 onDragStart={(event) =>
                   onDragStart(type === "section" ? { kind: "new-section" } : { kind: "type", type }, event)
                 }
-                className="flex cursor-grab items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-sm text-navy"
+                className="flex w-max cursor-grab items-center gap-2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1.5 text-sm text-navy"
                 data-ff-palette-type={type}
               >
                 <FieldTypeIcon type={type} />
@@ -188,7 +244,7 @@ export function FieldBuilder({
           </div>
         </aside>
 
-        {layout.columns.map((column) => (
+        {asList(layout.columns).map((column) => (
           <div
             key={column.id}
             className="min-h-40 min-w-0 space-y-3 rounded-md border border-dashed border-border p-3"
@@ -196,12 +252,15 @@ export function FieldBuilder({
             onDragOver={(event) => {
               if (!preview) event.preventDefault();
             }}
-            onDrop={() => handleDrop(column.id)}
+            onDrop={(event) => {
+              event.preventDefault();
+              handleDrop(column.id, undefined, undefined, undefined, event);
+            }}
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {column.id === "left" ? "Left column" : "Right column"}
             </p>
-            {column.sections.map((section) => (
+            {asList(column.sections).map((section) => (
               <div
                 key={section.id}
                 className="ff-card space-y-2 p-3"
@@ -242,7 +301,7 @@ export function FieldBuilder({
                     </Button>
                   </div>
                 )}
-                {section.fieldKeys.map((key) => {
+                {asList(section.fieldKeys).map((key) => {
                   const field = byKey[key];
                   if (!field) return null;
                   return (

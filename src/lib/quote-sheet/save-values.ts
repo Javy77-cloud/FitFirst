@@ -1,0 +1,25 @@
+/** Form meta keys that must never be stored as sheet cells. */
+export const SHEET_FORM_META_KEYS = new Set([
+  "dealId",
+  "line",
+  "sheet_product",
+  "fieldKey",
+  "formId",
+  "reviewed",
+  "sure",
+  "requestQuotes",
+]);
+
+export function isSheetFormMetaKey(key: string): boolean {
+  return SHEET_FORM_META_KEYS.has(key) || key.startsWith("$ACTION") || key.startsWith("$ACTION_");
+}
+
+/** Every named input on the master sheet, excluding action chrome. */
+export function submittedSheetValues(formData: FormData): Record<string, string> {
+  const submitted: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (isSheetFormMetaKey(key)) continue;
+    submitted[key] = String(value);
+  }
+  return submitted;
+}

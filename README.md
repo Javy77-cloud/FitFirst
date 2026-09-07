@@ -4,7 +4,34 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bb`)
+## Mac test now (`cursor/live-ff-tip-sep7be`)
+
+Fit-to-screen, Save sheet, builder redo + Safari `u.map` hotfix, from `cursor/live-ff-tip-sep7az` @ `ea60fa3`. **Fit to screen** on Documents → master sheet scales until there is **no scrollbar** (100% is the only mode that scrolls). **Save sheet** writes every field to the deal's quote sheet and reload returns those values; **Confirm & request quotes** persists the live form first, then shops from the saved sheet. Field builder is **one layout for every deal** — no Homeowners / Auto / Flood clip filters — three locked columns (narrow types, two equal canvases), Section in the palette, drop at the pointer, Save applies globally. Deal page `.map` paths normalize missing columns / sections / fieldKeys / options / matches. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7be-b909 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh, open **Ana Dib** (unbound, do not bind). **Documents**: open a long sheet, click **Fit to screen** — zero scroll at any window size; **100%** may scroll. Type sheet values, **Save sheet**, refresh — values return. **Confirm & request quotes** uses those saved values. **Settings → Deal field builder**: no LOB chips; three columns; drag a type onto left/right; Save. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BE — Fit, save sheet, builder redo
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BE1 | Fit to screen | Documents master sheet has **zero** vertical/horizontal scroll in Fit mode at any reasonable viewport. 100% may scroll. |
+| BE2 | Save sheet | Save writes every field. Reload shows the same values. |
+| BE3 | Confirm quotes | Confirm & request quotes reads the **saved** sheet, not stale client state. |
+| BE4 | No LOB clips | Settings → Deal field builder has **no** Homeowners / Auto / Flood filters. One layout for all lines. |
+| BE5 | Builder columns | Three locked columns; types column shrinks to labels; left/right equal; Section in the palette; drop at point; Save applies globally. |
+| BE6 | Tests | `documents-zoom`, `sheet-save`, `field-builder`, `deal-page-sparse-render` cover fit, save/reload, builder, and the `u.map` crash. |
+| BE7 | Scope | Upload box, tags, Markets, and sidebar are unchanged. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bb`)
 
 Documents / tags / Markets only, from `cursor/live-ff-tip-sep7az` @ `270eebf` / tip SHA `911111b`. Separate crew from the field-builder tip — do not touch `/settings/field-builder`, Pipeline, Quotes, Deal Details strip, or file-action menus beyond tag color display. Documents tab gets a **Fit to screen / 100%** zoom toggle (default **fit**, PDF-viewer style, session-persisted) so the tab content stays in the viewport. Tags get a color picker on create, an edit control on existing chips, and the chosen color on every chip (deal rail, lists, settings). Markets with no carriers and no lookup is **blank** — no "In appetite", no empty buckets, no placeholder copy. Populated Markets still shows the real appetite / stretch / skip tables. Additive migrate **0084_tag_colors** only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 

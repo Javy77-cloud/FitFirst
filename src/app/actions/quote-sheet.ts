@@ -48,7 +48,9 @@ import {
   confirmField,
   fillDealHeaderBlanks,
   mergeAgentEdits,
+  submittedSheetValues,
 } from "@/lib/quote-sheet/apply";
+import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import {
@@ -65,7 +67,6 @@ import {
   quotingFormForProduct,
   shopLineForProduct,
 } from "@/lib/deals/deal-line";
-import { isSheetProduct } from "@/lib/quote-sheet/products";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -99,29 +100,27 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
   return created;
 }
 
-export async function saveQuoteSheet(formData: FormData) {
-  const dealId = str(formData, "dealId");
-  const lineRaw = str(formData, "line");
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
-  const sheet = await ensureQuoteSheet(dealId, lineRaw);
-  const submitted: Record<string, string> = {};
-  for (const [key, value] of formData.entries()) {
-    if (key === "dealId" || key === "line") continue;
-    submitted[key] = String(value);
-  }
-  const values = mergeAgentEdits(sheet.values, submitted, lineRaw);
-  const product = submitted.sheet_product?.trim();
-  if (product) {
-    values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+export async function persistQuoteSheetValues(
+  dealId: string,
+  line: ShopLine,
+  submitted: Record<string, string>,
+  formId?: string,
+) {
+  const sheet = await ensureQuoteSheet(dealId, line);
+  const productRaw = submitted.sheet_product?.trim();
+  const product = productRaw && isSheetProduct(productRaw) ? (productRaw as SheetProduct) : undefined;
+  const values = mergeAgentEdits(sheet.values, submitted, line, product);
+  if (productRaw) {
+    values.sheet_product = { value: productRaw, status: "confirmed", source: "agent" };
   }
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   await logSheetCorrections({
     dealId,
     sheetId: sheet.id,
-    line: lineRaw,
+    line,
     before: sheet.values,
     after: values,
-    formId: str(formData, "formId") || deal?.quotingForm || "HO3",
+    formId: formId || deal?.quotingForm || "HO3",
   });
   await db
     .update(quoteSheets)
@@ -129,6 +128,34 @@ export async function saveQuoteSheet(formData: FormData) {
     .where(eq(quoteSheets.id, sheet.id));
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
+  return values;
+}
+
+export async function applySavedSheetToDeal(dealId: string, line: ShopLine) {
+  const [sheet] = await db
+    .select()
+    .from(quoteSheets)
+    .where(
+      and(
+        eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
+        eq(quoteSheets.dealId, dealId),
+        eq(quoteSheets.line, line),
+      ),
+    );
+  if (!sheet) return null;
+  await syncRiskFromSheet(dealId, sheet.values, "save");
+  await syncHeaderFromSheet(dealId, sheet.values, "save");
+  return sheet.values;
+}
+
+export async function saveQuoteSheet(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const lineRaw = str(formData, "line");
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const submitted = submittedSheetValues(formData);
+  const product = str(formData, "sheet_product");
+  if (product) submitted.sheet_product = product;
+  await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
 }

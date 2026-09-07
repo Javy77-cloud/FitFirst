@@ -37,7 +37,7 @@ export function RecordTags({
   const [draftColor, setDraftColor] = useState(DEFAULT_TAG_PICKER_COLOR);
   const [colors, setColors] = useState<TagColorMap>(() => ({ ...initialColors }));
   const [, startTransition] = useTransition();
-  const unused = suggestions.filter((tag) => !current.includes(tag));
+  const unused = (Array.isArray(suggestions) ? suggestions : []).filter((tag) => !current.includes(tag));
 
   function add(raw: string) {
     const tag = normalizeTag(raw);

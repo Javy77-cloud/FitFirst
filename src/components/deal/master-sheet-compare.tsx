@@ -1,6 +1,10 @@
+"use client";
+
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
+import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -8,7 +12,61 @@ import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
+import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
+
+const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
+
+export function MasterSheetWorkspace({
+  dealId,
+  line,
+  fields,
+  values,
+  product,
+  sourceDocCount = 0,
+  formLabel,
+  unlocked,
+  approvedBy,
+}: {
+  dealId: string;
+  line: ShopLine;
+  fields: ExtractedFieldRow[];
+  values: Record<string, QuoteSheetFieldValue>;
+  product?: string | null;
+  sourceDocCount?: number;
+  formLabel: string;
+  unlocked: boolean;
+  approvedBy?: string | null;
+}) {
+  async function persistSheet() {
+    const form = document.getElementById(MASTER_SHEET_FORM_ID) as HTMLFormElement | null;
+    if (!form) throw new Error("Master sheet form is missing.");
+    await saveQuoteSheet(new FormData(form));
+  }
+
+  return (
+    <>
+      <MasterSheetCompare
+        dealId={dealId}
+        line={line}
+        fields={fields}
+        values={values}
+        product={product}
+        sourceDocCount={sourceDocCount}
+        formId={MASTER_SHEET_FORM_ID}
+        persistSheet={persistSheet}
+      />
+      <SheetApproveGate
+        dealId={dealId}
+        line={line}
+        formLabel={formLabel}
+        unlocked={unlocked}
+        approvedBy={approvedBy}
+        persistSheet={persistSheet}
+      />
+    </>
+  );
+}
 
 export function MasterSheetCompare({
   dealId,
@@ -17,6 +75,8 @@ export function MasterSheetCompare({
   values,
   product: productParam,
   sourceDocCount = 0,
+  formId = MASTER_SHEET_FORM_ID,
+  persistSheet,
 }: {
   dealId: string;
   line: ShopLine;
@@ -24,18 +84,30 @@ export function MasterSheetCompare({
   values: Record<string, QuoteSheetFieldValue>;
   product?: string | null;
   sourceDocCount?: number;
+  formId?: string;
+  persistSheet?: () => Promise<void>;
 }) {
-  const product = parseSheetProduct(
-    productParam ?? values.sheet_product?.value,
-    line,
-  );
-  const catalog = fieldsForLine(line, product);
-  const groups = groupFields(line, product);
-  const extractedByKey = new Map(fields.map((field) => [field.fieldKey, field]));
+  const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
+  const catalog = asList(fieldsForLine(line, product));
+  const groups = asList(groupFields(line, product));
+  const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
   const filled = catalog.filter((field) => {
     const cell = values[field.key];
     return Boolean(cell?.value.trim() && cell.status !== "missing");
   }).length;
+
+  async function onSave(event: React.FormEvent<HTMLFormElement>) {
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    if (!(submitter instanceof HTMLElement) || submitter.getAttribute("data-ff-save-sheet") == null) {
+      return;
+    }
+    event.preventDefault();
+    if (persistSheet) {
+      await persistSheet();
+      return;
+    }
+    await saveQuoteSheet(new FormData(event.currentTarget));
+  }
 
   return (
     <section className="ff-card overflow-hidden" data-ff-master-sheet-compare>
@@ -61,11 +133,17 @@ export function MasterSheetCompare({
         </div>
       </div>
 
-      <form action={saveQuoteSheet} className="space-y-0">
+      <form
+        id={formId}
+        action={saveQuoteSheet}
+        onSubmit={onSave}
+        className="space-y-0"
+        data-ff-master-sheet-form=""
+      >
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="sheet_product" value={product} />
-        <div className="max-h-[36rem] overflow-auto">
+        <div data-ff-master-sheet-scroll="" className="overflow-visible">
           {groups.map((group) =>
             group.group === "Vehicle" && line === "auto" ? (
               <RepeatableUnitBlocks
@@ -87,7 +165,7 @@ export function MasterSheetCompare({
               <SheetGroup
                 key={group.group}
                 title={group.group}
-                groupFields={group.fields}
+                groupFields={asList(group.fields)}
                 values={values}
                 extractedByKey={extractedByKey}
               />
@@ -95,9 +173,9 @@ export function MasterSheetCompare({
           )}
         </div>
         <div className="border-t border-border px-3 py-2">
-          <Button type="submit" size="sm">
+          <button type="submit" className={buttonVariants({ size: "sm" })} data-ff-save-sheet="">
             Save sheet
-          </Button>
+          </button>
         </div>
       </form>
     </section>
@@ -129,25 +207,17 @@ function SheetGroup({
           </tr>
         </thead>
         <tbody>
-          {groupFields.map((field) => {
-            const extracted =
-              extractedByKey.get(field.key) ??
-              extractedByKey.get(field.extractKey ?? "");
+          {asList(groupFields).map((field) => {
+            const extracted = extractedByKey.get(field.key) ?? extractedByKey.get(field.extractKey ?? "");
             const cell = values[field.key];
             const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
             const sourceText = extracted?.normalizedValue || extracted?.rawValue || "";
             return (
               <tr key={field.key} id={`sheet-field-${field.key}`}>
                 <td className="align-top font-medium">{field.label}</td>
-                <td className="align-top text-muted-foreground">
-                  {sourceText || "—"}
-                </td>
+                <td className="align-top text-muted-foreground">{sourceText || "—"}</td>
                 <td className="align-top">
-                  <SheetCell
-                    fieldKey={field.key}
-                    input={field.input}
-                    cell={cell}
-                  />
+                  <SheetCell fieldKey={field.key} input={field.input} cell={cell} />
                   {cell?.status && filled ? (
                     <span
                       className={cn(

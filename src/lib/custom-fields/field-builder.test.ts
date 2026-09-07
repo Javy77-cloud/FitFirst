@@ -9,7 +9,7 @@ import {
 import { formatCurrencyDisplay, parseNumericInput } from "./format";
 import { evaluateFormula, extractFormulaFields } from "./formula";
 import { FIELD_TYPE_ICON_NAMES, iconNameForType } from "./icons";
-import { addSection, insertFieldAfter, moveField, relabelSection } from "./layout";
+import { addSection, insertFieldAfter, insertIndexFromClientY, moveField, relabelSection } from "./layout";
 import {
   cloneFieldDef,
   missingRequiredFields,
@@ -49,10 +49,14 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/data-ff-field-builder/);
     expect(builder).toMatch(/data-ff-builder-columns/);
     expect(builder).toMatch(/data-ff-builder-lock="three-col"/);
-    expect(builder).toMatch(/grid-cols-\[13rem_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
+    expect(builder).toMatch(/grid-cols-\[max-content_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
     expect(builder).not.toMatch(/max-\[899px\]:grid-cols-1/);
     expect(builder).not.toMatch(/max-\[699px\]:grid-cols-1/);
     expect(builder).toMatch(/data-ff-builder-palette/);
+    expect(builder).toMatch(/w-max max-w-\[11rem\]/);
+    expect(builder).toMatch(/insertIndexFromClientY/);
+    expect(builder).toMatch(/Save applies to every deal/);
+    expect(builder).not.toMatch(/every \{line\} deal/);
     expect(builder).toMatch(/data-ff-palette-type/);
     expect(builder).toMatch(/data-ff-palette-type=\{type\}/);
     expect(builder).toMatch(/kind: "new-section"/);
@@ -67,7 +71,10 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/data-ff-section-label/);
     expect(builder).toMatch(/data-ff-field-label/);
     expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/FieldBuilder/);
-    expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/DEAL_LAYOUT_LINES/);
+    expect(source("src/app/settings/field-builder/page.tsx")).not.toMatch(/DEAL_LAYOUT_LINES/);
+    expect(source("src/app/settings/field-builder/page.tsx")).not.toMatch(/data-ff-builder-lobs/);
+    expect(source("src/app/settings/field-builder/page.tsx")).not.toMatch(/Homeowners/);
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveLayoutForEveryLine/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveDealFieldLayout/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
   });
@@ -83,9 +90,9 @@ describe("deal field builder", () => {
     expect(control).toMatch(/type="checkbox"/);
     expect(control).toMatch(/data-ff-picklist/);
     expect(control).toMatch(/<select/);
-    expect(control).toMatch(/type="email"/);
-    expect(control).toMatch(/type="tel"/);
-    expect(control).toMatch(/type="date"/);
+    expect(control).toMatch(/\? "email"/);
+    expect(control).toMatch(/\? "tel"/);
+    expect(control).toMatch(/\? "date"/);
     expect(control).toMatch(/datetime-local/);
     expect(control).toMatch(/data-ff-lookup-input/);
     expect(control).toMatch(/data-ff-image-control/);
@@ -236,6 +243,11 @@ describe("deal field builder", () => {
     const moved = moveField(start, "email", { columnId: "right" });
     expect(moved.columns[1].sections.some((section) => section.fieldKeys.includes("email"))).toBe(true);
     expect(moved.columns[0].sections.every((section) => !section.fieldKeys.includes("email"))).toBe(true);
+    const drop = insertIndexFromClientY(40, [
+      { key: "a", top: 0, height: 30 },
+      { key: "b", top: 40, height: 30 },
+    ]);
+    expect(drop.beforeKey).toBe("b");
     const cloned = insertFieldAfter(start, "first_name", "first_name_copy");
     expect(cloned.columns[0].sections[0].fieldKeys).toEqual([
       "first_name",
@@ -247,14 +259,14 @@ describe("deal field builder", () => {
   });
 
   it("ships an additive picklist migrate and does not touch deal Documents / Markets / Quotes files", () => {
-    const sql = source("drizzle/0084_field_builder_picklists.sql");
+    const sql = source("drizzle/0085_field_builder_picklists.sql");
     expect(sql).toMatch(/desk_field_picklists/);
     expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS "required"/);
     expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS "default_value"/);
     expect(sql).not.toMatch(/DROP TABLE/);
     expect(sql).not.toMatch(/db:seed/);
     const journal = source("drizzle/meta/_journal.json");
-    expect(journal).toMatch(/0084_field_builder_picklists/);
+    expect(journal).toMatch(/0085_field_builder_picklists/);
     expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(/FieldControl/);
     expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/FieldBuilder/);
   });

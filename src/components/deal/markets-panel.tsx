@@ -6,6 +6,7 @@ import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
 import { appointmentLabel, isAppointedMatch } from "@/lib/appetite/present";
 import { bucketForMatch, hasMarketLookupData, marketBucketLabel } from "@/lib/deals/manual-markets";
+import { asList } from "@/lib/safe-list";
 
 export function MarketsPanel({
   dealId,
@@ -22,9 +23,10 @@ export function MarketsPanel({
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
 }) {
-  const manual = new Set(manualIds);
-  const listedIds = matches.map((row) => row.carrierId);
-  const extraManual = carriers
+  const manual = new Set(asList(manualIds));
+  const matchList = asList(matches);
+  const listedIds = matchList.map((row) => row.carrierId);
+  const extraManual = asList(carriers)
     .filter((carrier) => manual.has(carrier.id) && !listedIds.includes(carrier.id))
     .map(
       (carrier): CarrierMatch => ({
@@ -37,12 +39,12 @@ export function MarketsPanel({
         shoppable: true,
       }),
     );
-  const rows = [...matches, ...extraManual];
+  const rows = [...matchList, ...extraManual];
   const appetite = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "appetite");
   const stretch = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "stretch");
   const skip = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "skip");
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
-  const hasData = hasMarketLookupData(matches, manualIds);
+  const hasData = hasMarketLookupData(matchList, asList(manualIds));
 
   if (!hasData) {
     return (
@@ -123,7 +125,7 @@ function MarketTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {asList(rows).map((row) => (
             <tr key={row.carrierId}>
               <td className="font-medium">
                 {row.carrierName}
@@ -142,7 +144,7 @@ function MarketTable({
               </td>
               <td>{row.fitScore}</td>
               <td className="text-xs">
-                {row.reasons
+                {asList(row.reasons)
                   .filter((r) => r.severity !== "pass")
                   .map((r) => r.message)
                   .join(" · ") || "Clears structured appetite."}

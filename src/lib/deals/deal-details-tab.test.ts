@@ -77,7 +77,8 @@ describe("Deal Details tab", () => {
     expect(panel).not.toMatch(/FieldBuilder/);
     expect(page).not.toMatch(/FieldBuilder/);
     expect(builderPage).toMatch(/FieldBuilder/);
-    expect(builderPage).toMatch(/DEAL_LAYOUT_LINES/);
+    expect(builderPage).not.toMatch(/data-ff-builder-lobs/);
+    expect(builderPage).not.toMatch(/DEAL_LAYOUT_LINES/);
   });
 
   it("strips a saved sep7as layout that still packs Property / Photos / Notes", () => {

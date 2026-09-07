@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
-import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt } from "@/lib/domain";
+import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { appointedByCarrierLine } from "@/lib/db/queries";
 import {
@@ -16,6 +16,7 @@ import {
   quotes,
   risks,
 } from "@/lib/db/schema";
+import { applySavedSheetToDeal } from "@/app/actions/quote-sheet";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { MANUAL_MARKET_MARKER, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
@@ -38,6 +39,10 @@ export async function shopInAppetite(dealId: string) {
 
 export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch") {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (deal) {
+    const line = (deal.quotingLine || "home") as ShopLine;
+    await applySavedSheetToDeal(dealId, line);
+  }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
   if (!quotingUnlockedForDeal(deal)) {

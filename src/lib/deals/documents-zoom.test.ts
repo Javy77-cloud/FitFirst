@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   DOCS_ZOOM_DEFAULT,
   DOCS_ZOOM_STORAGE_KEY,
+  documentsFitOverflows,
   documentsFitScale,
+  documentsZeroScrollScale,
   parseDocsZoomMode,
 } from "./documents-zoom";
 
@@ -28,6 +30,14 @@ describe("Documents tab zoom", () => {
     expect(documentsFitScale(800, 2000, 800, 500)).toBeCloseTo(0.25, 5);
   });
 
+  it("shrinks below 20% when the sheet is taller than the window so fit never scrolls", () => {
+    const scale = documentsZeroScrollScale(800, 8000, 800, 500);
+    expect(scale).toBeLessThan(0.2);
+    expect(documentsFitOverflows(800, 8000, scale, 800, 500)).toBe(false);
+    expect(documentsFitOverflows(800, 2000, 0.4, 800, 500)).toBe(true);
+    expect(documentsZeroScrollScale(400, 300, 800, 700)).toBe(1);
+  });
+
   it("wires a fit / 100% toggle on the Documents panel", () => {
     const panel = source("src/components/deal/documents-panel.tsx");
     const zoom = source("src/components/deal/documents-zoom.tsx");
@@ -42,5 +52,10 @@ describe("Documents tab zoom", () => {
     expect(zoom).toMatch(/sessionStorage/);
     expect(zoom).toMatch(/DOCS_ZOOM_STORAGE_KEY/);
     expect(zoom).toMatch(/overflow-hidden/);
+    expect(zoom).toMatch(/documentsZeroScrollScale/);
+    expect(zoom).toMatch(/overflow = "hidden"/);
+    expect(zoom).toMatch(/data-ff-docs-zoom-scroll/);
+    expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/data-ff-master-sheet-scroll/);
+    expect(source("src/components/deal/master-sheet-compare.tsx")).not.toMatch(/max-h-\[36rem\]/);
   });
 });

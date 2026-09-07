@@ -103,24 +103,19 @@ export function emptyLayout(): FieldLayout {
 export function parseLayout(raw: unknown): FieldLayout {
   const fallback = emptyLayout();
   if (!raw || typeof raw !== "object") return fallback;
-  const columns = (raw as { columns?: unknown }).columns;
-  if (!Array.isArray(columns) || columns.length < 2) return fallback;
+  const columnsRaw = (raw as { columns?: unknown }).columns;
+  const columns = Array.isArray(columnsRaw) ? columnsRaw : [];
   const parseColumn = (col: unknown, fallbackId: string): LayoutColumn => {
     if (!col || typeof col !== "object") return { id: fallbackId, sections: [] };
     const row = col as { id?: unknown; sections?: unknown };
-    const sections = Array.isArray(row.sections)
-      ? row.sections
-          .filter((section): section is LayoutSection => {
-            if (!section || typeof section !== "object") return false;
-            const item = section as LayoutSection;
-            return typeof item.id === "string" && typeof item.label === "string" && Array.isArray(item.fieldKeys);
-          })
-          .map((section) => ({
-            id: section.id,
-            label: section.label,
-            fieldKeys: section.fieldKeys.map((key) => String(key)),
-          }))
-      : [];
+    const sectionsRaw = Array.isArray(row.sections) ? row.sections : [];
+    const sections = sectionsRaw
+      .filter((section): section is Record<string, unknown> => Boolean(section) && typeof section === "object")
+      .map((section) => ({
+        id: typeof section.id === "string" ? section.id : newSectionId(),
+        label: typeof section.label === "string" ? section.label : "Section",
+        fieldKeys: Array.isArray(section.fieldKeys) ? section.fieldKeys.map((key) => String(key)) : [],
+      }));
     return { id: typeof row.id === "string" ? row.id : fallbackId, sections };
   };
   return {

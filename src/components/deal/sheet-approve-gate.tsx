@@ -11,12 +11,14 @@ export function SheetApproveGate({
   formLabel,
   unlocked,
   approvedBy,
+  persistSheet,
 }: {
   dealId: string;
   line: string;
   formLabel: string;
   unlocked: boolean;
   approvedBy?: string | null;
+  persistSheet?: () => Promise<void>;
 }) {
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,15 @@ export function SheetApproveGate({
           Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Request quotes from every
           in-appetite carrier.
         </p>
-        <form action={requestAppetiteQuotesAction}>
+        <form
+          action={requestAppetiteQuotesAction}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (persistSheet) await persistSheet();
+            const data = new FormData(event.currentTarget);
+            await requestAppetiteQuotesAction(data);
+          }}
+        >
           <input type="hidden" name="dealId" value={dealId} />
           <Button type="submit" size="sm">
             Confirm & request quotes
@@ -47,11 +57,18 @@ export function SheetApproveGate({
       return;
     }
     setPending(true);
-    const data = new FormData(event.currentTarget);
-    data.set("reviewed", "yes");
-    data.set("sure", "yes");
-    data.set("requestQuotes", "yes");
     try {
+      if (persistSheet) await persistSheet();
+      const sheetForm = document.getElementById("ff-master-sheet-save") as HTMLFormElement | null;
+      const data = new FormData(event.currentTarget);
+      if (sheetForm) {
+        for (const [key, value] of new FormData(sheetForm).entries()) {
+          if (!data.has(key)) data.set(key, String(value));
+        }
+      }
+      data.set("reviewed", "yes");
+      data.set("sure", "yes");
+      data.set("requestQuotes", "yes");
       await approveMasterSheet(data);
     } catch (err) {
       setPending(false);

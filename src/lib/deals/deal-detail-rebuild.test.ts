@@ -100,10 +100,11 @@ describe("deal detail final rebuild", () => {
     expect(docs).not.toMatch(/grid-cols-/);
     expect(docs).not.toMatch(/18rem/);
     expect(docs.indexOf("data-ff-deal-upload")).toBeLessThan(docs.indexOf("data-ff-deal-docs-sheet"));
-    expect(docs.indexOf("data-ff-deal-upload")).toBeLessThan(docs.indexOf("<MasterSheetCompare"));
+    expect(docs.indexOf("data-ff-deal-upload")).toBeLessThan(docs.indexOf("<MasterSheetWorkspace"));
     expect(docs).toMatch(/SourceDocsUpload/);
-    expect(docs).toMatch(/MasterSheetCompare/);
-    expect(docs).toMatch(/SheetApproveGate/);
+    expect(docs).toMatch(/MasterSheetWorkspace/);
+    expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/SheetApproveGate/);
+    expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/persistSheet/);
     const gate = source("src/components/deal/sheet-approve-gate.tsx");
     expect(gate).toMatch(/I visually reviewed this master sheet\./);
     expect(gate).toMatch(/Confirm & request quotes/);

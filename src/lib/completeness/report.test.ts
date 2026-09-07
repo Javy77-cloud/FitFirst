@@ -54,8 +54,8 @@ describe("completeness strip — blank vs filled, not a score", () => {
     expect(dealPage).toMatch(/DocumentsPanel/);
     expect(dealPage).toMatch(/tab=documents/);
     expect(dealPage).not.toMatch(/QuoteSheetPanel/);
-    expect(docs).toMatch(/MasterSheetCompare/);
-    expect(docs).toMatch(/SheetApproveGate/);
+    expect(docs).toMatch(/MasterSheetWorkspace/);
+    expect(readFileSync("src/components/deal/master-sheet-compare.tsx", "utf8")).toMatch(/SheetApproveGate/);
   });
 
   it("labels check status Needs review on the deal worksheet strip", () => {

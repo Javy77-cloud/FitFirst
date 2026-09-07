@@ -192,6 +192,13 @@ export async function saveLayoutForLine(line: string, layout: FieldLayout) {
     });
 }
 
+/** One builder layout applies to every deal, every line. */
+export async function saveLayoutForEveryLine(layout: FieldLayout) {
+  for (const line of DEAL_LAYOUT_LINES) {
+    await saveLayoutForLine(line, layout);
+  }
+}
+
 export async function loadRecordValues(recordId: string): Promise<Record<string, string>> {
   try {
     const rows = await db

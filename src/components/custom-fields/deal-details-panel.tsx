@@ -4,7 +4,8 @@ import Link from "next/link";
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button, buttonVariants } from "@/components/ui/button";
-import type { CustomFieldDef, FieldLayout } from "@/lib/custom-fields/types";
+import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
+import { asList } from "@/lib/safe-list";
 
 export function DealDetailsPanel({
   dealId,
@@ -19,7 +20,9 @@ export function DealDetailsPanel({
   fields: CustomFieldDef[];
   values: Record<string, string>;
 }) {
-  const byKey = Object.fromEntries(fields.map((field) => [field.key, field]));
+  const safeLayout = parseLayout(layout);
+  const fieldList = asList(fields);
+  const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
 
   return (
     <div data-ff-deal-details>
@@ -40,12 +43,12 @@ export function DealDetailsPanel({
         className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 max-[699px]:grid-cols-1"
         data-ff-deal-details-layout="two-col"
       >
-        {layout.columns.map((column) => (
+        {asList(safeLayout.columns).map((column) => (
           <div key={column.id} className="min-w-0 space-y-3" data-ff-deal-details-col={column.id}>
-            {column.sections.map((section) => (
+            {asList(column.sections).map((section) => (
               <section key={section.id} className="ff-card space-y-2 p-3" data-ff-deal-section={section.id}>
                 <h3 className="text-xs font-medium text-navy">{section.label}</h3>
-                {section.fieldKeys.map((key) => {
+                {asList(section.fieldKeys).map((key) => {
                   const field = byKey[key];
                   if (!field) return null;
                   return (
