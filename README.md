@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bi`)
+## Mac test now (`cursor/live-ff-tip-sep7bp`)
+
+Hide call / next-action clocks from Pipeline table rows, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** no longer shows a ticking `HH:MM:SS` under each deal (those were `DealNextActionTimer` countdowns from `updatedAt + 7 days`, not live call duration). They auto-started on mount. Call / SMS / Email / Task / Meeting chips stay. In-call softphone timer is unchanged. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `bf6d0c9f`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bp-b754 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals** table. Confirm no `167:51:26`-style clocks under deal names. Click **Call** — still logs / opens tel. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BP — No idle timers on Pipeline rows
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BP1 | Table rows | Hard refresh Deals / Pipeline table: no `HH:MM:SS` or `--:--` under the title / Call chips. |
+| BP2 | Call chip | Call button still present and still logs a call / opens `tel:`. |
+| BP3 | In-call | Softphone / in-call timer still starts only when an agent starts a call. |
+| BP4 | Scope | Attach-Activity chips, stages, hydration, Markets, other columns unchanged. |
+| BP5 | Tests | `deals-page` asserts list rows do not mount `DealNextActionTimer`. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bi`)
 
 Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank when the active master sheet has no saved values — the page does not run `evaluateDealMarkets` and leftover risk-row / log matches are ignored. After the agent saves sheet values (or adds a carrier / shops), Markets may show. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `d1a6a702`.
 
