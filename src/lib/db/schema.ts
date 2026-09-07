@@ -262,6 +262,7 @@ export const deskCustomFields = pgTable(
     required: boolean("required").notNull().default(false),
     defaultValue: text("default_value"),
     picklistId: uuid("picklist_id"),
+    permissions: jsonb("permissions").$type<{ admin?: string; agent?: string }>(),
     ...timestamps,
   },
   (t) => [

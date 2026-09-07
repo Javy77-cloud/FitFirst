@@ -50,16 +50,16 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/data-ff-field-builder/);
     expect(builder).toMatch(/data-ff-builder-columns/);
     expect(builder).toMatch(/data-ff-builder-lock="three-col"/);
-    expect(builder).toMatch(/grid-cols-3/);
+    expect(builder).toMatch(/grid-cols-\[max-content_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
     expect(builder).toMatch(/items-start/);
-    expect(builder).not.toMatch(/grid-cols-\[max-content/);
+    expect(builder).not.toMatch(/grid-cols-3/);
     expect(builder).not.toMatch(/grid-cols-\[1fr_1fr_1fr\]/);
     expect(builder).not.toMatch(/max-\[899px\]:grid-cols-1/);
     expect(builder).not.toMatch(/max-\[699px\]:grid-cols-1/);
     expect(builder).toMatch(/data-ff-builder-palette/);
-    expect(builder).not.toMatch(/w-max/);
-    expect(builder).toMatch(/flex w-full cursor-grab/);
-    expect(builder).toMatch(/min-w-0 w-full space-y-2/);
+    expect(builder).toMatch(/data-ff-palette-compact/);
+    expect(builder).toMatch(/data-ff-palette-chip="compact"/);
+    expect(builder).toMatch(/flex w-max max-w-full cursor-grab/);
     expect(builder).toMatch(/insertIndexFromClientY/);
     expect(builder).toMatch(/Save applies to every deal/);
     expect(builder).not.toMatch(/every \{line\} deal/);
@@ -114,7 +114,7 @@ describe("deal field builder", () => {
     const config = source("src/components/custom-fields/picklist-config.tsx");
     const page = source("src/app/settings/picklists/page.tsx");
     expect(builder).toMatch(/PicklistConfig/);
-    expect(builder).toMatch(/setConfigKey/);
+    expect(builder).toMatch(/data-ff-edit-properties/);
     expect(builder).toMatch(/type === "picklist" \|\| type === "multi_select"/);
     expect(config).toMatch(/data-ff-picklist-config/);
     expect(config).toMatch(/data-ff-option-count/);
@@ -153,13 +153,12 @@ describe("deal field builder", () => {
     }
   });
 
-  it("persists required and default, clones a field, and toggles preview", () => {
+  it("persists required and default, and toggles preview", () => {
     const builder = source("src/components/custom-fields/field-builder.tsx");
     expect(builder).toMatch(/data-ff-field-required/);
     expect(builder).toMatch(/data-ff-field-default/);
-    expect(builder).toMatch(/data-ff-duplicate-field/);
+    expect(builder).not.toMatch(/data-ff-duplicate-field/);
     expect(builder).toMatch(/data-ff-preview-toggle/);
-    expect(builder).toMatch(/cloneFieldDef/);
     expect(builder).toMatch(/data-ff-builder-preview/);
     expect(builder).toMatch(/data-ff-preview-field/);
     expect(source("src/lib/custom-fields/types.ts")).toMatch(/required\?: boolean/);

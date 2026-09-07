@@ -11,22 +11,21 @@ function source(file: string) {
 }
 
 describe("sep7bi builder rail Markets Quotes", () => {
-  it("BI1 — builder is three equal columns with uniform palette chips", () => {
+  it("BI1 — builder keeps three columns: compact types beside Left and Right", () => {
     const builder = source("src/components/custom-fields/field-builder.tsx");
     expect(builder).toMatch(/data-ff-builder-lock="three-col"/);
-    expect(builder).toMatch(/grid-cols-3/);
+    expect(builder).toMatch(/grid-cols-\[max-content_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
     expect(builder).toMatch(/items-start/);
-    expect(builder).not.toMatch(/grid-cols-\[max-content/);
-    expect(builder).not.toMatch(/minmax\(0,1fr\)/);
-    expect(builder).not.toMatch(/w-max/);
+    expect(builder).not.toMatch(/grid-cols-3/);
     expect(builder).toMatch(/data-ff-builder-palette/);
-    expect(builder).toMatch(/flex w-full cursor-grab/);
+    expect(builder).toMatch(/data-ff-palette-compact/);
+    expect(builder).toMatch(/flex w-max max-w-full cursor-grab/);
     const chipClass = builder.match(
-      /className="flex w-full cursor-grab items-center gap-2 whitespace-nowrap[^"]+"/,
+      /className="flex w-max max-w-full cursor-grab items-center gap-1.5 whitespace-nowrap[^"]+"/,
     );
     expect(chipClass).toBeTruthy();
-    expect(chipClass?.[0]).toContain("w-full");
-    expect(chipClass?.[0]).not.toContain("w-max");
+    expect(chipClass?.[0]).toContain("w-max");
+    expect(chipClass?.[0]).not.toMatch(/[" ]w-full /);
   });
 
   it("BI2 — no LOB clip filters on the field builder", () => {
@@ -34,7 +33,7 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(page).not.toMatch(/DEAL_LAYOUT_LINES/);
     expect(page).not.toMatch(/data-ff-builder-lobs/);
     expect(page).not.toMatch(/Homeowners/);
-    expect(page).toMatch(/Three equal columns on one row/);
+    expect(page).toMatch(/Compact field-type chips sit beside Left and Right/);
     expect(source("src/components/custom-fields/field-builder.tsx")).not.toMatch(/data-ff-builder-lobs/);
   });
 

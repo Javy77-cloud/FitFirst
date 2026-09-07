@@ -36,6 +36,43 @@ export const CUSTOM_FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   image: "Image upload",
 };
 
+export const LOOKUP_MODULES = [
+  { value: "contacts", label: "Contacts" },
+  { value: "accounts", label: "Accounts" },
+  { value: "leads", label: "Leads" },
+  { value: "deals", label: "Deals" },
+  { value: "users", label: "Users" },
+] as const;
+
+export type LookupModule = (typeof LOOKUP_MODULES)[number]["value"];
+
+export const FIELD_PERMISSION_ROLES = ["admin", "agent"] as const;
+export type FieldPermissionRole = (typeof FIELD_PERMISSION_ROLES)[number];
+export type FieldPermissionLevel = "hidden" | "read" | "write";
+export type FieldPermissions = Record<FieldPermissionRole, FieldPermissionLevel>;
+
+export function defaultFieldPermissions(): FieldPermissions {
+  return { admin: "write", agent: "write" };
+}
+
+export function parseFieldPermissions(raw: unknown): FieldPermissions {
+  const fallback = defaultFieldPermissions();
+  if (!raw || typeof raw !== "object") return fallback;
+  const row = raw as Record<string, unknown>;
+  const level = (value: unknown): FieldPermissionLevel =>
+    value === "hidden" || value === "read" || value === "write" ? value : "write";
+  return { admin: level(row.admin), agent: level(row.agent) };
+}
+
+export const FIELD_ROW_MENU_ITEMS = [
+  "Mark as required",
+  "Set permissions",
+  "Edit properties",
+  "Remove field",
+] as const;
+
+export const FIELD_ROW_MENU_EXCLUDED = ["Create layout rules", "Validation rule"] as const;
+
 export type CustomFieldDef = {
   key: string;
   label: string;
@@ -47,6 +84,7 @@ export type CustomFieldDef = {
   required?: boolean;
   defaultValue?: string | null;
   picklistId?: string | null;
+  permissions?: FieldPermissions;
 };
 
 /** Palette includes field types plus Section, which is a layout block — not a field type. */

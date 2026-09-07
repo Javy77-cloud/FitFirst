@@ -16,8 +16,8 @@ export default async function FieldBuilderPage() {
   return (
     <SettingsShell title="Deal field builder" current="field-builder">
       <p className="mb-4 text-sm text-muted-foreground">
-        One layout for every deal. Three equal columns on one row: field types, left canvas,
-        right canvas. Drag a type — including Section — onto a column. Save applies globally.
+        One layout for every deal. Compact field-type chips sit beside Left and Right on one
+        row. Every field is a closed row until you open its menu. Save applies globally.
       </p>
       <FieldBuilder line="HO" initialLayout={layout} fields={fields} picklists={picklists} />
     </SettingsShell>

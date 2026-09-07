@@ -11,7 +11,10 @@ import {
   dealTitleLobWord,
   formatDealTitle,
   isLegacyShopTitle,
+  joinDealTitleParts,
   matchesDealNameSearch,
+  parseTitlePerson,
+  stripDealTitleLob,
   stripLegacyShopSuffix,
 } from "./deal-title";
 import { dealTitleForRecords } from "./deal-title";
@@ -20,11 +23,15 @@ function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("BH1 — deal titles are First Last Lob", () => {
-  it("names converts and new deals First Last Home / Auto", () => {
-    expect(dealTitleFromPerson("Javier", "Canales", "HO")).toBe("Javier Canales Home");
-    expect(dealTitleFromPerson("Javier", "Canales", "AUTO")).toBe("Javier Canales Auto");
-    expect(formatDealTitle({ firstName: "Elena", lastName: "Ruiz", line: "HO" })).toBe("Elena Ruiz Home");
+describe("BH1 — deal titles are First / Last / Lob", () => {
+  it("names converts and new deals First / Last / Home", () => {
+    expect(dealTitleFromPerson("Javier", "Canales", "HO")).toBe("Javier / Canales / Home");
+    expect(dealTitleFromPerson("Javier", "Canales", "AUTO")).toBe("Javier / Canales / Auto");
+    expect(formatDealTitle({ firstName: "Elena", lastName: "Ruiz", line: "HO" })).toBe("Elena / Ruiz / Home");
+    expect(formatDealTitle({ accountName: "Harbor Key Marine LLC", line: "GL" })).toBe(
+      "Harbor Key Marine LLC / GL",
+    );
+    expect(joinDealTitleParts("Javier", "Canales", "Home")).toBe("Javier / Canales / Home");
     expect(dealTitleLobWord("HO")).toBe("Home");
     expect(dealTitleLobWord("FLOOD")).toBe("Flood");
     expect(dealTitleLobWord("AUTO")).toBe("Auto");
@@ -41,7 +48,7 @@ describe("BH2 — LOB change retitles the deal", () => {
       title: "Javier Canales Home",
       lead: { firstName: "Javier", lastName: "Canales" },
     });
-    expect(next).toBe("Javier Canales Auto");
+    expect(next).toBe("Javier / Canales / Auto");
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(/dealTitleForRecords|formatDealTitle/);
   });
 });
@@ -50,8 +57,12 @@ describe("BH3 — existing shop titles are rewritten", () => {
   it("kills the Canales - HO shop / Last · HO shop pattern", () => {
     expect(isLegacyShopTitle("Canales - HO shop")).toBe(true);
     expect(isLegacyShopTitle("Ruiz · HO shop")).toBe(true);
+    expect(isLegacyShopTitle("Javier / Canales / Home")).toBe(false);
     expect(isLegacyShopTitle("Javier Canales Home")).toBe(false);
     expect(stripLegacyShopSuffix("Canales - HO shop")).toBe("Canales");
+    expect(stripDealTitleLob("Javier Canales Home")).toBe("Javier Canales");
+    expect(parseTitlePerson("Javier Canales Home")).toEqual({ firstName: "Javier", lastName: "Canales" });
+    expect(parseTitlePerson("Javier / Canales / Home")).toEqual({ firstName: "Javier", lastName: "Canales" });
     expect(
       formatDealTitle({
         firstName: "Javier",
@@ -59,7 +70,7 @@ describe("BH3 — existing shop titles are rewritten", () => {
         existingTitle: "Canales - HO shop",
         line: "HO",
       }),
-    ).toBe("Javier Canales Home");
+    ).toBe("Javier / Canales / Home");
     expect(
       dealTitleForRecords({
         lineOfBusiness: "HO",
@@ -67,7 +78,13 @@ describe("BH3 — existing shop titles are rewritten", () => {
         contact: { firstName: "Ana", lastName: "Dib" },
         primaryNamedInsured: "Ana Dib",
       }),
-    ).toBe("Ana Dib Home");
+    ).toBe("Ana / Dib / Home");
+    expect(
+      formatDealTitle({
+        existingTitle: "Javier Canales Home",
+        line: "HO",
+      }),
+    ).toBe("Javier / Canales / Home");
   });
 });
 
@@ -89,7 +106,7 @@ describe("BH4 — search matches first, last, or LOB", () => {
     expect(
       matchesDealFilters(
         {
-          title: "Javier Canales Home",
+          title: "Javier / Canales / Home",
           pipelineStage: "shopping",
           lineOfBusiness: "HO",
           state: "FL",
