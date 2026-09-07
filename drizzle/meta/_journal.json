@@ -575,6 +575,13 @@
       "when": 1788804000000,
       "tag": "0081_deal_field_builder",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1788820000000,
+      "tag": "0082_document_field_maps",
+      "breakpoints": true
     }
   ]
 }

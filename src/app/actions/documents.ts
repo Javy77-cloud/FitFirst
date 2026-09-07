@@ -521,7 +521,7 @@ async function runExtraction(documentId: string, dealId: string) {
     }
     return;
   }
-  const result = extractFieldsFromText(text);
+  const result = extractFieldsFromText(text, doc.docType);
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
 
@@ -553,6 +553,20 @@ async function runExtraction(documentId: string, dealId: string) {
       const value = coerceRiskValue(field.fieldKey, field.normalizedValue);
       if (col && value != null) applyPatch[col] = value;
     }
+  }
+  for (const unmapped of result.unmappedLabels) {
+    await db.insert(extractedFields).values({
+      tenantId: DEFAULT_TENANT_ID,
+      documentId,
+      riskId: doc.riskId,
+      fieldKey: "needs_review",
+      rawValue: `${unmapped.sourceLabel}: ${unmapped.rawValue}`,
+      normalizedValue: "",
+      confidence: "0.000",
+      flagged: true,
+      appliedToRisk: false,
+      reviewerNote: unmapped.sourceLabel,
+    });
   }
 
   if (Object.keys(applyPatch).length > 0 && risk) {

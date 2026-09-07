@@ -12,6 +12,7 @@ import {
   documents,
   extractedFields,
   extractionJobs,
+  propertyEnrichmentCache,
   fillFeedbackLogs,
   fillLearningLogs,
   quoteSheets,
@@ -50,6 +51,10 @@ import {
 } from "@/lib/quote-sheet/apply";
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
+import {
+  ADDRESS_CONFIRM_KEYS,
+  enrichPropertyOnAddressConfirm,
+} from "@/lib/property-enrichment/service";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -134,7 +139,57 @@ export async function confirmQuoteSheetField(formData: FormData) {
   const fieldKey = str(formData, "fieldKey");
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
-  const values = confirmField(sheet.values, fieldKey);
+  let values = confirmField(sheet.values, fieldKey);
+  if (ADDRESS_CONFIRM_KEYS.has(fieldKey)) {
+    const enriched = await enrichPropertyOnAddressConfirm(addressFromSheet(values));
+    if (enriched.triggered) {
+      if (enriched.facts.length) {
+        const applied = applyPublicToSheet(lineRaw, values, enriched.facts);
+        values = applied.values;
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          quoteSheetId: sheet.id,
+          engine: "property_enrichment",
+          status: "done",
+          filledKeys: applied.filledKeys,
+          skippedKeys: applied.skippedKeys,
+          message: enriched.message,
+        });
+      } else {
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          quoteSheetId: sheet.id,
+          engine: "property_enrichment",
+          status: "done",
+          message: enriched.message,
+        });
+      }
+      await db
+        .insert(propertyEnrichmentCache)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          addressKey: enriched.cacheKey,
+          provider: enriched.provider,
+          facts: enriched.facts,
+          conflicts: enriched.conflicts,
+          message: enriched.message,
+        })
+        .onConflictDoUpdate({
+          target: [propertyEnrichmentCache.tenantId, propertyEnrichmentCache.addressKey],
+          set: {
+            dealId,
+            provider: enriched.provider,
+            facts: enriched.facts,
+            conflicts: enriched.conflicts,
+            message: enriched.message,
+            updatedAt: new Date(),
+          },
+        });
+    }
+  }
   await db
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
@@ -402,7 +457,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       if (inferred !== line && !hoOntoHome) {
         continue;
       }
-      const extracted = extractFieldsFromText(text);
+      const extracted = extractFieldsFromText(text, doc.docType);
       const feedback = applyLoggedCorrections(extracted.fields, doc.docType, corrections);
       const learned = applyLearningToExtracted(
         feedback.fields.map((field) => ({
@@ -432,6 +487,20 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           appliedToRisk: applied.filledKeys.includes(
             extractKeyToSheetKey(line, field.fieldKey) ?? field.fieldKey,
           ),
+        });
+      }
+      for (const unmapped of extracted.unmappedLabels) {
+        await db.insert(extractedFields).values({
+          tenantId: DEFAULT_TENANT_ID,
+          documentId: doc.id,
+          riskId: doc.riskId,
+          fieldKey: "needs_review",
+          rawValue: `${unmapped.sourceLabel}: ${unmapped.rawValue}`,
+          normalizedValue: "",
+          confidence: "0.000",
+          flagged: true,
+          appliedToRisk: false,
+          reviewerNote: unmapped.sourceLabel,
         });
       }
 
