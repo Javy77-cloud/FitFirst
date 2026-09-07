@@ -30,7 +30,7 @@ export function QuickCommsBoard({
   const filtered = items.filter((item) => item.kind === kind);
 
   return (
-    <section className="ff-card min-w-0 w-full max-w-full p-4">
+    <section className="ff-card min-w-0 w-full max-w-full overflow-x-hidden p-4">
       <h2 className="text-base font-semibold text-navy">Quick Communications</h2>
       <p className="mt-1 text-base text-muted-foreground">
         Task, meeting, call, email, and SMS on this {dealId ? "deal" : "lead"}. Not a carrier
@@ -53,26 +53,26 @@ export function QuickCommsBoard({
         ))}
       </div>
 
-      <form action={logDeskActivity} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
+      <form action={logDeskActivity} className="my-3 grid min-w-0 max-w-full gap-2 rounded-md border border-border p-3">
         {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
         <input type="hidden" name="kind" value={kind} />
-        <div className="sm:col-span-2">
+        <div className="min-w-0">
           <Label className="text-xs">Title</Label>
           <Input
             name="title"
             required
-            className="mt-1 h-8"
+            className="mt-1 h-8 min-w-0 w-full max-w-full"
             placeholder={`${ACTIVITY_KIND_LABEL[kind]} · follow-up`}
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <Label className="text-xs">When</Label>
-          <Input name="dueAt" type="datetime-local" className="mt-1 h-8" />
+          <Input name="dueAt" type="datetime-local" className="mt-1 h-8 min-w-0 w-full max-w-full" />
         </div>
-        <div>
+        <div className="min-w-0">
           <Label className="text-xs">Notes</Label>
-          <Input name="notes" className="mt-1 h-8" />
+          <Input name="notes" className="mt-1 h-8 min-w-0 w-full max-w-full" />
         </div>
         <Button type="submit" size="sm">
           Add {ACTIVITY_KIND_LABEL[kind].toLowerCase()}
@@ -86,7 +86,7 @@ export function QuickCommsBoard({
       ) : (
         <ol className="space-y-2">
           {filtered.map((item) => (
-            <li key={item.id} className="rounded-md border border-border px-3 py-2 text-sm">
+            <li key={item.id} className="min-w-0 max-w-full break-words rounded-md border border-border px-3 py-2 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={cn("rounded-sm px-1.5 py-0.5 text-[11px] font-semibold uppercase", KIND_TONE[item.kind as ActivityKind] ?? "bg-muted")}>
                   {item.kind}

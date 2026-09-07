@@ -68,7 +68,7 @@ export function RecordTags({
   }
 
   return (
-    <form action={saveRecordTags} className="space-y-2" data-ff-record-tags={module}>
+    <form action={saveRecordTags} className="min-w-0 w-full max-w-full space-y-2" data-ff-record-tags={module}>
       <input type="hidden" name="module" value={module} />
       <input type="hidden" name="recordId" value={recordId} />
       <input type="hidden" name="tags" value={current.join(",")} />
@@ -139,7 +139,7 @@ export function RecordTags({
           })}
         </div>
       ) : null}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
         <Input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -150,7 +150,7 @@ export function RecordTags({
             }
           }}
           placeholder="Add a tag"
-          className="h-8 w-40"
+          className="h-8 min-w-0 w-40 max-w-full"
           aria-label="Add a tag"
         />
         <label className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">

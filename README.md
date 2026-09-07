@@ -4,7 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7br`)
+## Mac test now (`cursor/live-ff-tip-sep7by`)
+
+Hard-lock the Deal detail right rail to **exactly 320px**, from `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden` on every viewport (not lg-only) plus a CSS `!important` lock (`flex: 0 0 320px`). Tags, Quick Communications, Sheet health, quotes-pulled, and Record context are `w-full max-w-full min-w-0` — no `28rem`, no min-width that can blow the rail. Left column is leftover `flex-1`. Quick Comms When/Notes stack so datetime-local cannot crush or overflow 320. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7by-a7a5 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh a deal (Ana Dib is fine). Confirm **TAGS** + **Quick Communications** are visible on the right rail. In DevTools, `document.querySelector('[data-ff-deal-right-rail]').getBoundingClientRect().width` must be **320**. Open Sheet health — still 320. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BY — Deal right rail exactly 320px
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BY1 | Rail width | `data-ff-deal-right-rail` measures **320px** with Tags + Quick Comms visible. |
+| BY2 | Open panels | Sheet health / context open — rail stays 320. No 28rem Sheet health. |
+| BY3 | Fit | Tags and Quick Comms sit inside 320 without horizontal overflow or crushed datetime fields. |
+| BY4 | Left column | Details / Documents take leftover flex. No 72% fight. |
+
+## Previous tip (`cursor/live-ff-tip-sep7br`)
 
 Header notification badge + unread rows, from latest `cursor/live-ff-tip-sep7az`. The top-bar **bell icon stays normal** — no fill, no terracotta ring. Unread count > 0 shows a **number badge** on the bell; zero unread hides the badge. Open the panel: **unread rows** are highlighted; read rows are not. Mark as read drops the badge and clears that row highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `87247321`.
 

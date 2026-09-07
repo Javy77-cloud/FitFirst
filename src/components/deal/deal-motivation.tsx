@@ -22,7 +22,7 @@ export function DealMotivation({ stats }: { stats: MotivationStat[] }) {
 
   return (
     <aside
-      className="max-w-[11rem] rounded-md border border-border bg-card px-2.5 py-2"
+      className="min-w-0 w-full max-w-[11rem] rounded-md border border-border bg-card px-2.5 py-2"
       data-ff-deal-motivation
     >
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
