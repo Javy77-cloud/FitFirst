@@ -66,6 +66,8 @@ import {
   shopLineForProduct,
 } from "@/lib/deals/deal-line";
 import { isSheetProduct } from "@/lib/quote-sheet/products";
+import { withFlash } from "@/lib/flash";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -131,6 +133,13 @@ export async function saveQuoteSheet(formData: FormData) {
   await syncHeaderFromSheet(dealId, values, "save");
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
+  const returnTo = str(formData, "returnTo");
+  const dest =
+    returnTo ||
+    `/deals/${dealId}?tab=documents&line=${lineRaw}${
+      product ? `&product=${encodeURIComponent(product)}` : ""
+    }`;
+  flashAction(dest, "sheet-saved");
 }
 
 export async function confirmQuoteSheetField(formData: FormData) {
@@ -195,6 +204,8 @@ export async function confirmQuoteSheetField(formData: FormData) {
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
   revalidatePath(`/deals/${dealId}`);
+  const returnTo = str(formData, "returnTo");
+  flashAction(returnTo || `/deals/${dealId}?tab=documents&line=${lineRaw}`, "field-confirmed");
 }
 
 export async function setDealSheetProduct(formData: FormData) {
@@ -227,7 +238,7 @@ export async function setDealSheetProduct(formData: FormData) {
     })
     .where(eq(quoteSheets.id, sheet.id));
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=documents&line=${line}&product=${productRaw}`);
+  redirect(withFlash(`/deals/${dealId}?tab=documents&line=${line}&product=${productRaw}`, "deal-updated"));
 }
 
 export async function addShopLine(formData: FormData) {
@@ -243,7 +254,7 @@ export async function addShopLine(formData: FormData) {
     .where(eq(deals.id, dealId));
   await ensureQuoteSheet(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=documents&line=${lineRaw}`);
+  redirect(withFlash(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "deal-updated"));
 }
 
 export async function fillQuoteSheet(formData: FormData) {
@@ -252,6 +263,7 @@ export async function fillQuoteSheet(formData: FormData) {
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
   await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
+  flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "sheet-filled");
 }
 
 export async function runFillDealSheets(dealId: string, primary: ShopLine) {

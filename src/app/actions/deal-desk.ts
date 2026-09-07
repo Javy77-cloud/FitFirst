@@ -18,6 +18,7 @@ import {
 import { isUuid } from "@/lib/ids";
 import { MANUAL_MARKET_MARKER } from "@/lib/deals/manual-markets";
 import { confirmWhy, type QuoteConfirmKind } from "@/lib/deals/quote-confirm";
+import { flashAction } from "@/lib/flash-action";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 
 function str(form: FormData, key: string) {
@@ -57,6 +58,7 @@ export async function addManualMarket(formData: FormData) {
   });
 
   revalidatePath(`/deals/${dealId}`);
+  flashAction(`/deals/${dealId}?tab=markets`, "market-added");
 }
 
 export async function confirmQuotePull(formData: FormData) {

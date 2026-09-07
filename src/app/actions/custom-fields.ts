@@ -29,6 +29,7 @@ import {
   type CustomFieldDef,
   type CustomFieldType,
 } from "@/lib/custom-fields/types";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -160,9 +161,9 @@ export async function deleteDealLayoutField(formData: FormData) {
 
 export async function saveDealFieldValues(formData: FormData) {
   const dealId = str(formData, "dealId");
-  if (!dealId) return;
+  if (!dealId) throw new Error("Deal details could not be saved.");
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
-  if (!deal) return;
+  if (!deal) throw new Error("Deal details could not be saved.");
   const defs = await listDealFieldDefs();
   const custom: Record<string, string> = {};
   const system: Record<string, string> = {};
@@ -187,6 +188,7 @@ export async function saveDealFieldValues(formData: FormData) {
   await writeRecordValues(dealId, custom);
   await applySystemDealValues(dealId, system);
   revalidatePath(`/deals/${dealId}`);
+  flashAction(`/deals/${dealId}`, "deal-details-saved");
 }
 
 async function applySystemDealValues(dealId: string, system: Record<string, string>) {
@@ -221,7 +223,9 @@ export async function uploadDealFieldImage(formData: FormData) {
   const dealId = str(formData, "dealId");
   const key = str(formData, "key");
   const file = formData.get("file");
-  if (!dealId || !key || !(file instanceof File) || file.size === 0) return;
+  if (!dealId || !key || !(file instanceof File) || file.size === 0) {
+    throw new Error("Image could not be uploaded.");
+  }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   const buffer = Buffer.from(await file.arrayBuffer());
   const doc = await persistFile({
@@ -236,4 +240,5 @@ export async function uploadDealFieldImage(formData: FormData) {
   const current = await loadRecordValues(dealId);
   await writeRecordValues(dealId, { ...current, [key]: doc.id });
   revalidatePath(`/deals/${dealId}`);
+  flashAction(`/deals/${dealId}`, "image-uploaded");
 }

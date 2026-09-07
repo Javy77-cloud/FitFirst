@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { accounts, contacts, deals, leads } from "@/lib/db/schema";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { replaceEin, replaceSsn } from "@/lib/pii/write";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -60,6 +61,7 @@ export async function updateContactRecord(formData: FormData) {
   await emitDeskEvent("record.updated", { entityType: "contact", entityId: id });
   revalidatePath(`/contacts/${id}`);
   revalidatePath("/contacts");
+  flashAction(`/contacts/${id}`, "Contact updated");
 }
 
 export async function updateAccountRecord(formData: FormData) {
@@ -91,6 +93,7 @@ export async function updateAccountRecord(formData: FormData) {
     })
     .where(eq(accounts.id, id));
   revalidatePath(`/accounts/${id}`);
+  flashAction(`/accounts/${id}`, "Business updated");
 }
 
 export async function updateLeadRecord(formData: FormData) {
@@ -144,4 +147,5 @@ export async function updateDealRecord(formData: FormData) {
     .where(eq(deals.id, id));
   revalidatePath(`/deals/${id}`);
   revalidatePath("/deals");
+  flashAction(`/deals/${id}`, "deal-updated");
 }

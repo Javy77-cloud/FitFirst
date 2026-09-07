@@ -65,6 +65,7 @@ export function MasterSheetCompare({
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="sheet_product" value={product} />
+        <input type="hidden" name="returnTo" value={`/deals/${dealId}?tab=documents&line=${line}`} />
         <div className="max-h-[36rem] overflow-auto">
           {groups.map((group) =>
             group.group === "Vehicle" && line === "auto" ? (

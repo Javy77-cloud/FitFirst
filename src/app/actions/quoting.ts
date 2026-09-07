@@ -18,6 +18,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { withFlash } from "@/lib/flash";
 import { shopDealQuotes } from "@/app/actions/quotes";
 import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import {
@@ -146,11 +147,11 @@ export async function approveMasterSheet(formData: FormData) {
   if (str(formData, "requestQuotes") === "yes") {
     await shopDealQuotes(dealId, "appetite");
     revalidatePath(`/deals/${dealId}`);
-    redirect(`/deals/${dealId}?tab=quotes&line=${line}`);
+    redirect(withFlash(`/deals/${dealId}?tab=quotes&line=${line}`, "quotes-requested"));
   }
 
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=documents&line=${line}&handoff=1`);
+  redirect(withFlash(`/deals/${dealId}?tab=documents&line=${line}&handoff=1`, "Sheet approved"));
 }
 
 export async function logAppetiteResult(formData: FormData) {

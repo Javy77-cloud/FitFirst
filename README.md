@@ -4,7 +4,56 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bb`)
+## Mac test now (`cursor/live-ff-tip-sep7bf`)
+
+Site-wide action confirmation toasts only, from `cursor/live-ff-tip-sep7az` @ `ea60fa3` / tip SHA `ea60fa3`. Separate crew from sep7be (fit / Save sheet persist / field builder). Do not redesign layout, Pipeline chips, Markets empty state, field-builder columns, Documents zoom math, or sidebar. After a successful action, a **center-top** toast names what happened and auto-dismisses in 2.5s (or close). Shared helper: server `flashAction(href, "…")` → `?flash=`; client `flashAction("…")` for stay-on-page color edits. Existing list-create `SavedToast` (`?saved=1`, bottom, then list) is unchanged. Additive only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bf && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh, open **Ana Dib** (unbound, do not bind). On **Deal Details**, change a field and **Save deal details** — toast **Deal details saved**. On **Documents**, **Save sheet** — toast **Sheet saved**. Failures still throw (error overlay / existing error). Do not bind or edit Ana’s Cov A (**$321,000**).
+
+### BF — Site-wide action confirmation toasts
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BF1 | Shared UI | Top-center toast host is in the root layout (`ActionToastHost`). Fixed, readable, auto-dismiss ~2.5s, dismiss button, does not block the page. |
+| BF2 | Deal Details | **Save deal details** shows **Deal details saved**. |
+| BF3 | Save sheet | **Save sheet** on the Documents master sheet shows **Sheet saved**. |
+| BF4 | Other mutations | Same helper on tags, document delete/replace/upload, image upload, field confirm, fill from source, market add, deal/contact/business update, quote request. See table below. |
+| BF5 | Forms + errors | Toast does not replace the form. Failed saves throw or show an error toast (`flashKind=error`). List-create `?saved=1` navy toast is unchanged. |
+| BF6 | Tests | `flash.test.ts` + `action-toast.test.ts` cover helper copy/URLs and toast render after save wiring. |
+| BF7 | Scope | No layout / Pipeline / Markets empty / field-builder / Documents zoom / sidebar redesign. |
+
+**Wired through `flashAction` / `withFlash` (BF4)**
+
+| Action | Copy |
+| --- | --- |
+| `saveDealFieldValues` | Deal details saved |
+| `saveQuoteSheet` | Sheet saved |
+| `confirmQuoteSheetField` | Field confirmed |
+| `fillQuoteSheet` / `fillQuoteSheetBlanks` | Sheet filled from source |
+| `saveRecordTags` | Tags saved |
+| `updateModuleTagColor` (client) | Tag color saved |
+| `deleteUploadedFile` | Document deleted |
+| `replaceDocument` | Document replaced |
+| `uploadDocument` / sample / deal drop | Document uploaded |
+| `uploadDealFieldImage` | Image uploaded |
+| `addManualMarket` | Market added |
+| `updateDealRecord` | Deal updated |
+| `updateContactRecord` | Contact updated |
+| `updateAccountRecord` | Business updated |
+| `requestAppetiteQuotesAction` / sheet approve | Quotes requested |
+
+Create-then-list still uses `SavedToast` (`Lead saved.`, `Deal saved.`, …) — that is a different path on purpose.
+
+## Previous tip (`cursor/live-ff-tip-sep7bb`)
 
 Documents / tags / Markets only, from `cursor/live-ff-tip-sep7az` @ `270eebf` / tip SHA `911111b`. Separate crew from the field-builder tip — do not touch `/settings/field-builder`, Pipeline, Quotes, Deal Details strip, or file-action menus beyond tag color display. Documents tab gets a **Fit to screen / 100%** zoom toggle (default **fit**, PDF-viewer style, session-persisted) so the tab content stays in the viewport. Tags get a color picker on create, an edit control on existing chips, and the chosen color on every chip (deal rail, lists, settings). Markets with no carriers and no lookup is **blank** — no "In appetite", no empty buckets, no placeholder copy. Populated Markets still shows the real appetite / stretch / skip tables. Additive migrate **0084_tag_colors** only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 

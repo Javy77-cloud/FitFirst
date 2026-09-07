@@ -19,13 +19,16 @@ import {
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { MANUAL_MARKET_MARKER, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import { flashAction } from "@/lib/flash-action";
 
 export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
 }
 
 export async function requestAppetiteQuotesAction(formData: FormData) {
-  await shopDealQuotes(String(formData.get("dealId") ?? ""), "appetite");
+  const dealId = String(formData.get("dealId") ?? "");
+  await shopDealQuotes(dealId, "appetite");
+  flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
 }
 
 export async function requestStretchQuotesAction(formData: FormData) {
