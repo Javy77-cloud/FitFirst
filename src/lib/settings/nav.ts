@@ -111,7 +111,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
       { id: "lines", href: "/settings/lines", label: "Lines of business", hint: "Life / Health" },
       { id: "lists", href: "/settings/lists", label: "Global lists", hint: "Books and picklists" },
-      { id: "field-builder", href: "/settings/field-builder", label: "Deal field builder", hint: "One layout for every deal" },
+      { id: "field-builder", href: "/settings/field-builder", label: "Field layouts", hint: "Leads · Deals · Policies · Contacts · Business · Carriers" },
       { id: "picklists", href: "/settings/picklists", label: "Picklists", hint: "Reusable field options" },
       { id: "tags", href: "/settings/tags", label: "Tags", hint: "Rename · merge · delete" },
       { id: "signatures", href: "/settings/email-signatures", label: "Signatures", hint: "Client close" },

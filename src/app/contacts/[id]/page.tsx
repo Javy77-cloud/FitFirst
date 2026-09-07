@@ -9,6 +9,7 @@ import { getContactWorkspace, listEmailTemplates } from "@/lib/db/queries";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { AccountGlance } from "@/components/crm/account-glance";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { OptOutForm } from "@/components/crm/opt-out-form";
@@ -57,6 +58,9 @@ export default async function ContactDetailPage({
 
   return (
     <AppShell title={`${contact.lastName}, ${contact.firstName}`}>
+      <div className="mb-3 flex justify-end">
+        <EditLayoutLink module="contacts" />
+      </div>
       <RecordModuleMacros module="contacts" recordId={contact.id} />
       <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Account 360</p>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">

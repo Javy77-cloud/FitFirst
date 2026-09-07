@@ -70,7 +70,10 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/data-ff-builder-palette/);
     expect(builder).toMatch(/data-ff-palette-compact/);
     expect(builder).toMatch(/data-ff-palette-chip="compact"/);
-    expect(builder).toMatch(/flex w-max max-w-full cursor-grab/);
+    expect(builder).toMatch(/data-ff-palette-chip-width="longest"/);
+    expect(builder).toMatch(/data-ff-palette-equal-width/);
+    expect(builder).toMatch(/flex w-full cursor-grab/);
+    expect(builder).not.toMatch(/flex w-max max-w-full cursor-grab/);
     expect(builder).toMatch(/insertIndexFromClientY/);
     expect(builder).toMatch(/Save applies to every deal/);
     expect(builder).not.toMatch(/every \{line\} deal/);

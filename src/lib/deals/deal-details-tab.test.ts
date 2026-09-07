@@ -29,9 +29,11 @@ describe("Deal Details tab", () => {
     expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
     expect(panel).toMatch(/grid-cols-2/);
     expect(panel).not.toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
-    expect(panel).toMatch(/Edit layout/);
-    expect(panel).toMatch(/data-ff-open-field-builder/);
-    expect(panel).toMatch(/\/settings\/field-builder\?line=/);
+    expect(panel).toMatch(/EditLayoutLink/);
+    expect(panel).toMatch(/module="deals"/);
+    expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(/Edit Layout/);
+    expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(/data-ff-open-field-builder/);
+    expect(source("src/lib/custom-fields/modules.ts")).toMatch(/\/settings\/field-builder\?/);
     expect(panel).toMatch(/buttonVariants\(\{ variant: "default", size: "sm" \}\)/);
     expect(panel).not.toMatch(/Add field/);
     expect(panel).not.toMatch(/New field/);
@@ -58,14 +60,12 @@ describe("Deal Details tab", () => {
 
   it("colors Edit layout as a filled primary action, still opening the field builder", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
-    const linkBlock = panel.slice(
-      panel.indexOf("data-ff-open-field-builder") - 220,
-      panel.indexOf("data-ff-open-field-builder") + 80,
-    );
-    expect(linkBlock).toMatch(/buttonVariants\(\{ variant: "default", size: "sm" \}\)/);
-    expect(linkBlock).not.toMatch(/variant: "outline"/);
-    expect(linkBlock).not.toMatch(/variant: "ghost"/);
-    expect(panel).toMatch(/href=\{`\/settings\/field-builder\?line=\$\{encodeURIComponent\(line\)\}`\}/);
+    const link = source("src/components/custom-fields/edit-layout-link.tsx");
+    expect(panel).toMatch(/<EditLayoutLink module="deals" line=\{line\} \/>/);
+    expect(link).toMatch(/buttonVariants\(\{ variant: "default", size \}\)/);
+    expect(link).not.toMatch(/variant: "outline"/);
+    expect(link).not.toMatch(/variant: "ghost"/);
+    expect(link).toMatch(/fieldBuilderHref/);
     expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
     expect(panel).toMatch(/grid-cols-2/);
     expect(panel).not.toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
@@ -75,9 +75,9 @@ describe("Deal Details tab", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     const page = source("src/app/deals/[id]/page.tsx");
     const builderPage = source("src/app/settings/field-builder/page.tsx");
-    expect(panel).toMatch(/href=\{`\/settings\/field-builder\?line=\$\{encodeURIComponent\(line\)\}`\}/);
-    expect(panel).not.toMatch(/FieldBuilder/);
-    expect(page).not.toMatch(/FieldBuilder/);
+    expect(panel).toMatch(/EditLayoutLink/);
+    expect(panel).not.toMatch(/<FieldBuilder/);
+    expect(page).not.toMatch(/<FieldBuilder/);
     expect(builderPage).toMatch(/FieldBuilder/);
     expect(builderPage).not.toMatch(/data-ff-builder-lobs/);
     expect(builderPage).not.toMatch(/DEAL_LAYOUT_LINES/);

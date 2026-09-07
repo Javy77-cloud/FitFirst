@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7br`)
+## Mac test now (`cursor/live-ff-tip-sep7bv`)
+
+Equal-width field-type chips + Edit Layout on every CRM module, from `cursor/live-ff-tip-sep7az`. On the field builder, every palette chip is the **same width** — sized to the longest type label (`Image upload` / `Multi-select`), not `w-max` uneven. **Edit Layout** opens the same builder for **Leads, Deals, Policies, Contacts, Business, and Carriers**. Saves persist per module. Pipeline list, Markets, bell, and Stage colors are untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bv-55cb && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Settings → Field layouts** — chips in the left palette are one width. From Leads, Deals, Policies, Contacts, Business, or Carriers, click **Edit Layout** and confirm that module’s builder. Save a field on Carriers, then open Leads — layouts stay separate. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BV — Equal chips + Edit Layout everywhere
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BV1 | Chips | Field-type chips are equal width, sized to the longest label. Not half-width / uneven `w-max`. |
+| BV2 | Entries | Leads, Deals, Policies, Contacts, Business, and Carriers each have a clear **Edit Layout** control. |
+| BV3 | Builder | Each entry opens that module’s layout editor (same collapsed-row / menu / DnD builder). |
+| BV4 | Persist | Save on one module does not overwrite another module’s layout. |
+| BV5 | Scope | Pipeline list, Markets, bell, and Stage colors unchanged. No `db:seed` wipe. |
+
+## Previous tip (`cursor/live-ff-tip-sep7br`)
 
 Header notification badge + unread rows, from latest `cursor/live-ff-tip-sep7az`. The top-bar **bell icon stays normal** — no fill, no terracotta ring. Unread count > 0 shows a **number badge** on the bell; zero unread hides the badge. Open the panel: **unread rows** are highlighted; read rows are not. Mark as read drops the badge and clears that row highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `87247321`.
 

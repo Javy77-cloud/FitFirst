@@ -1,25 +1,50 @@
 import { FieldBuilder } from "@/components/custom-fields/field-builder";
+import { ModuleLayoutNav } from "@/components/custom-fields/module-layout-nav";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
-import { ensureFieldsForLine, listDealFieldDefs, loadLayoutForLine } from "@/lib/custom-fields/store";
+import {
+  fieldLayoutModuleLabel,
+  parseLayoutModule,
+} from "@/lib/custom-fields/modules";
+import { ensureFieldsForModule, listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
 
 export const dynamic = "force-dynamic";
 
-export default async function FieldBuilderPage() {
-  await ensureFieldsForLine("HO").catch(() => null);
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function FieldBuilderPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const module = parseLayoutModule(first(params.module));
+  const line = first(params.line) || "HO";
+  await ensureFieldsForModule(module, line).catch(() => null);
   const [layout, fields, picklists] = await Promise.all([
-    loadLayoutForLine("HO"),
-    listDealFieldDefs(),
+    loadLayoutForModule(module, line),
+    listFieldDefs(module),
     listFieldPicklists(),
   ]);
+  const label = fieldLayoutModuleLabel(module);
 
   return (
-    <SettingsShell title="Deal field builder" current="field-builder">
+    <SettingsShell title={`${label} field builder`} current="field-builder">
       <p className="mb-4 text-sm text-muted-foreground">
-        One layout for every deal. Compact field-type chips sit beside Left and Right on one
-        row. Every field is a closed row until you open its menu. Save applies globally.
+        One layout for every {label.toLowerCase()} record. Compact field-type chips sit beside Left
+        and Right on one row. Every field is a closed row until you open its menu. Save applies
+        globally to this module.
       </p>
-      <FieldBuilder line="HO" initialLayout={layout} fields={fields} picklists={picklists} />
+      <ModuleLayoutNav current={module} />
+      <FieldBuilder
+        module={module}
+        line={line}
+        initialLayout={layout}
+        fields={fields}
+        picklists={picklists}
+      />
     </SettingsShell>
   );
 }

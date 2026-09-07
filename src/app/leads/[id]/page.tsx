@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
@@ -70,6 +71,9 @@ export default async function LeadDetailPage({
         email: lead.email,
       }}
     >
+      <div className="mb-3 flex justify-end">
+        <EditLayoutLink module="leads" />
+      </div>
       <RecordDeveloperActions
         module="leads"
         recordId={lead.id}

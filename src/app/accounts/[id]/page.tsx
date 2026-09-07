@@ -12,6 +12,7 @@ import { listAccountInterests } from "@/lib/ams/queries";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { AccountGlance } from "@/components/crm/account-glance";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { RecordComms } from "@/components/record-comms";
@@ -52,6 +53,9 @@ export default async function AccountDetailPage({
 
   return (
     <AppShell title={account.name}>
+      <div className="mb-3 flex justify-end">
+        <EditLayoutLink module="businesses" />
+      </div>
       <RecordModuleMacros module="businesses" recordId={account.id} />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <ClientStatusPill status={clientStatus} />

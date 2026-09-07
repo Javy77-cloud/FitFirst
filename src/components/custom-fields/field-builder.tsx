@@ -3,6 +3,10 @@
 import { useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { saveDealFieldLayout } from "@/app/actions/custom-fields";
+import {
+  fieldLayoutModuleLabel,
+  type FieldLayoutModule,
+} from "@/lib/custom-fields/modules";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { FormulaBuilder } from "@/components/custom-fields/formula-builder";
@@ -65,15 +69,18 @@ type FieldDialog = { kind: "properties" | "permissions"; key: string } | null;
 
 export function FieldBuilder({
   line,
+  module = "deals",
   initialLayout,
   fields: initialFields,
   picklists = [],
 }: {
   line: string;
+  module?: FieldLayoutModule;
   initialLayout: FieldLayout;
   fields: CustomFieldDef[];
   picklists?: FieldPicklist[];
 }) {
+  const moduleLabel = fieldLayoutModuleLabel(module);
   const [layout, setLayout] = useState(() => parseLayout(initialLayout));
   const [fields, setFields] = useState(() => asList(initialFields));
   const [drag, setDrag] = useState<DragPayload | null>(null);
@@ -208,15 +215,24 @@ export function FieldBuilder({
   }
 
   return (
-    <div className="space-y-4" data-ff-field-builder data-ff-builder-preview={preview ? "on" : "off"}>
+    <div
+      className="space-y-4"
+      data-ff-field-builder
+      data-ff-builder-module={module}
+      data-ff-builder-preview={preview ? "on" : "off"}
+    >
       <form action={saveDealFieldLayout}>
         <input type="hidden" name="line" value={line} />
+        <input type="hidden" name="module" value={module} />
         <input type="hidden" name="layout" value={JSON.stringify(layout)} />
         <input type="hidden" name="fields" value={JSON.stringify(fields)} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             Compact field types beside Left and Right. Drag a type — including Section — between
-            existing fields, including in Preview. Save applies to every deal.
+            existing fields, including in Preview.{" "}
+            {module === "deals"
+              ? "Save applies to every deal."
+              : `Save applies to every ${moduleLabel.toLowerCase()} record.`}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -241,9 +257,9 @@ export function FieldBuilder({
         data-ff-builder-columns
         data-ff-palette-compact
       >
-        <aside className="w-max max-w-[9.5rem] min-w-0 space-y-2" data-ff-builder-palette>
+        <aside className="w-max min-w-0 space-y-2" data-ff-builder-palette data-ff-palette-equal-width>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Field types</p>
-          <div className="space-y-1 rounded-md border border-dashed border-border p-1.5">
+          <div className="grid w-max grid-cols-1 gap-1 rounded-md border border-dashed border-border p-1.5">
             {asList([...PALETTE_ITEMS]).map((type) => (
               <div
                 key={type}
@@ -251,9 +267,10 @@ export function FieldBuilder({
                 onDragStart={(event) =>
                   onDragStart(type === "section" ? { kind: "new-section" } : { kind: "type", type }, event)
                 }
-                className="flex w-max max-w-full cursor-grab items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-background px-1.5 py-1 text-xs text-navy"
+                className="flex w-full cursor-grab items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-background px-1.5 py-1 text-xs text-navy"
                 data-ff-palette-type={type}
                 data-ff-palette-chip="compact"
+                data-ff-palette-chip-width="longest"
               >
                 <FieldTypeIcon type={type} className="size-3.5" />
                 {PALETTE_LABELS[type]}
@@ -637,7 +654,7 @@ function SetPermissionsDialog({
       <DialogContent className="sm:max-w-md" showCloseButton data-ff-set-permissions={field.key}>
         <DialogHeader>
           <DialogTitle>Set permissions</DialogTitle>
-          <DialogDescription>Who can see or edit {field.label} on a deal.</DialogDescription>
+          <DialogDescription>Who can see or edit {field.label} on this record.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {FIELD_PERMISSION_ROLES.map((role) => (

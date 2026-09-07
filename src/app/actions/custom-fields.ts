@@ -13,9 +13,15 @@ import {
   loadRecordValues,
   saveLayoutForEveryLine,
   saveLayoutForLine,
+  saveLayoutForModule,
   upsertFieldDef,
   writeRecordValues,
 } from "@/lib/custom-fields/store";
+import {
+  fieldLayoutListHref,
+  parseLayoutModule,
+  type FieldLayoutModule,
+} from "@/lib/custom-fields/modules";
 import {
   addFieldToSection,
   addSection,
@@ -41,14 +47,20 @@ function lineFrom(form: FormData) {
   return str(form, "line") || str(form, "lineOfBusiness") || "HO";
 }
 
-function revalidateDealSurfaces(dealId?: string, line?: string) {
+function moduleFrom(form: FormData): FieldLayoutModule {
+  return parseLayoutModule(str(form, "module"));
+}
+
+function revalidateDealSurfaces(dealId?: string, line?: string, module: FieldLayoutModule = "deals") {
   revalidatePath("/settings/field-builder");
+  revalidatePath(fieldLayoutListHref(module));
   if (dealId) revalidatePath(`/deals/${dealId}`);
-  if (line) revalidatePath("/deals");
+  if (line && module === "deals") revalidatePath("/deals");
 }
 
 export async function saveDealFieldLayout(formData: FormData) {
   const line = lineFrom(formData);
+  const module = moduleFrom(formData);
   const raw = str(formData, "layout");
   const layout = parseLayout(raw ? JSON.parse(raw) : {});
   const rawFields = str(formData, "fields");
@@ -58,27 +70,34 @@ export async function saveDealFieldLayout(formData: FormData) {
       if (Array.isArray(incoming)) {
         for (const field of incoming) {
           if (!field?.key || !field.label || !isCustomFieldType(String(field.type))) continue;
-          await upsertFieldDef({
-            key: field.key,
-            label: field.label,
-            type: field.type,
-            options: field.options ?? [],
-            formula: field.formula ?? null,
-            lookupModule: field.lookupModule ?? null,
-            systemKey: field.systemKey ?? null,
-            required: Boolean(field.required),
-            defaultValue: field.defaultValue ?? null,
-            picklistId: field.picklistId ?? null,
-            permissions: field.permissions,
-          });
+          await upsertFieldDef(
+            {
+              key: field.key,
+              label: field.label,
+              type: field.type,
+              options: field.options ?? [],
+              formula: field.formula ?? null,
+              lookupModule: field.lookupModule ?? null,
+              systemKey: field.systemKey ?? null,
+              required: Boolean(field.required),
+              defaultValue: field.defaultValue ?? null,
+              picklistId: field.picklistId ?? null,
+              permissions: field.permissions,
+            },
+            module,
+          );
         }
       }
     } catch {
       /* keep layout save even if field payload is stale */
     }
   }
-  await saveLayoutForEveryLine(layout);
-  revalidateDealSurfaces(str(formData, "dealId") || undefined, line);
+  if (module === "deals") {
+    await saveLayoutForEveryLine(layout);
+  } else {
+    await saveLayoutForModule(module, layout);
+  }
+  revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
 }
 
 export async function addDealLayoutSection(formData: FormData) {

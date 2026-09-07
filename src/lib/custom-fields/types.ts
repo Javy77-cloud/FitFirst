@@ -96,6 +96,13 @@ export const PALETTE_LABELS: Record<PaletteItem, string> = {
   section: "Section",
 };
 
+/** Longest palette label — chips size to this so every type is the same width. */
+export function longestPaletteLabel(): string {
+  return PALETTE_ITEMS.map((item) => PALETTE_LABELS[item]).reduce((longest, label) =>
+    label.length > longest.length ? label : longest,
+  );
+}
+
 export type LayoutSection = {
   id: string;
   label: string;

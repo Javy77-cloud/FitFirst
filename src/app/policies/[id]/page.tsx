@@ -3,6 +3,7 @@ import { uploadDealSlot } from "@/app/actions/lifecycle";
 import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { ChooseFiles } from "@/components/choose-files";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
@@ -111,6 +112,9 @@ export default async function PolicyDetailPage({
 
   return (
     <AppShell title={policy.policyNumber}>
+      <div className="mb-3 flex justify-end">
+        <EditLayoutLink module="policies" />
+      </div>
       <RecordModuleMacros module="policies" recordId={policy.id} />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <PolicyStatusBadge status={policy.status} />

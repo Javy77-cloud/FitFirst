@@ -4,6 +4,7 @@ import { listCarrierSecretAudits } from "@/app/actions/carrier-secrets";
 import { updateCarrierContact } from "@/app/actions/pipeline-admin";
 import { PortalLoginAdmin } from "@/components/carriers/portal-login-admin";
 import { AppShell } from "@/components/app-shell";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { RecordAskPanel } from "@/components/record-ask";
 import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,9 @@ export default async function CarrierRecordPage({
 
   return (
     <AppShell title={carrier.name}>
+      <div className="mb-3 flex justify-end">
+        <EditLayoutLink module="carriers" />
+      </div>
       <form action={updateCarrierContact} className="space-y-4">
         <input type="hidden" name="carrierId" value={carrier.id} />
 

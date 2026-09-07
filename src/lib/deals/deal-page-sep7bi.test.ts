@@ -19,13 +19,14 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(builder).not.toMatch(/grid-cols-3/);
     expect(builder).toMatch(/data-ff-builder-palette/);
     expect(builder).toMatch(/data-ff-palette-compact/);
-    expect(builder).toMatch(/flex w-max max-w-full cursor-grab/);
+    expect(builder).toMatch(/flex w-full cursor-grab/);
+    expect(builder).toMatch(/data-ff-palette-chip-width="longest"/);
     const chipClass = builder.match(
-      /className="flex w-max max-w-full cursor-grab items-center gap-1.5 whitespace-nowrap[^"]+"/,
+      /className="flex w-full cursor-grab items-center gap-1.5 whitespace-nowrap[^"]+"/,
     );
     expect(chipClass).toBeTruthy();
-    expect(chipClass?.[0]).toContain("w-max");
-    expect(chipClass?.[0]).not.toMatch(/[" ]w-full /);
+    expect(chipClass?.[0]).toContain("w-full");
+    expect(chipClass?.[0]).not.toMatch(/[" ]w-max /);
   });
 
   it("BI2 — no LOB clip filters on the field builder", () => {
