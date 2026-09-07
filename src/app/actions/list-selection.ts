@@ -461,8 +461,12 @@ async function deleteSelectedLeads(ids: string[]): Promise<{ ok: boolean; messag
     );
 
   await db.delete(leads).where(and(tenant, leadIds));
-  revalidateModule("leads", found);
-  revalidatePath("/deals");
+  try {
+    revalidateModule("leads", found);
+    revalidatePath("/deals");
+  } catch {
+    // Delete already committed. Cache refresh is best-effort.
+  }
   return {
     ok: true,
     message: `Deleted ${found.length} lead${found.length === 1 ? "" : "s"}. Linked shops stay.`,
