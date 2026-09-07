@@ -30,6 +30,8 @@ describe("deal detail final rebuild", () => {
     expect(page).not.toMatch(/tab=quote-sheet/);
     expect(page).toMatch(/SectionTabs/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
+    expect(page).toMatch(/-mt-5/);
+    expect(page).not.toMatch(/-mt-3/);
     expect(page.indexOf("SectionTabs")).toBeLessThan(page.indexOf("RecordDetailLayout"));
   });
 
@@ -41,6 +43,13 @@ describe("deal detail final rebuild", () => {
     expect(docs).toMatch(/SourceDocsUpload/);
     expect(docs).toMatch(/MasterSheetCompare/);
     expect(docs).toMatch(/SheetApproveGate/);
+    const gate = source("src/components/deal/sheet-approve-gate.tsx");
+    expect(gate).toMatch(/I visually reviewed this master sheet\./);
+    expect(gate).toMatch(/Confirm & request quotes/);
+    expect(gate).not.toMatch(/: "Confirm sheet"/);
+    expect(gate).not.toMatch(/Approve & request quotes/);
+    expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
+    expect(gate).toMatch(/requestQuotes/);
     expect(docs).toMatch(/DeleteUploadedFileButton/);
     expect(docs.indexOf("DealLineSelector")).toBeLessThan(docs.indexOf("SourceDocsUpload"));
     expect(upload).toMatch(/Create/);

@@ -178,7 +178,7 @@ export default async function DealPage({
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
-        <div className="-mt-3" data-ff-deal-flush-tabs>
+        <div className="-mt-5" data-ff-deal-flush-tabs>
         <SectionTabs
           defaultValue="documents"
           active={activeTab}

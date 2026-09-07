@@ -9,7 +9,7 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 8 as const;
+export const NAV_LAYOUT_VERSION = 9 as const;
 export const DIVIDER_ID = "divider";
 
 /** Admin-only Operations folder. Default rail places it top-level; Customize can nest or promote it. */
@@ -29,6 +29,7 @@ export const POLICIES_DEFAULT_KIDS = ["my-book", "renewals", "certificates"] as 
 
 /** Catalog extras that used to nest in the default rail — Customize can still add them. */
 export const CATALOG_ONLY_DEFAULT_EXTRAS = [
+  "quotes",
   "work-queue",
   "phone",
   "scorecards",
@@ -70,7 +71,7 @@ export const UTILITY_PRIMARY_IDS = [
 export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   home: [],
   leads: [],
-  deals: ["quotes"],
+  deals: [],
   contacts: [],
   policies: POLICIES_DEFAULT_KIDS,
   business: [],

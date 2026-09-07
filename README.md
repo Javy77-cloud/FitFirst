@@ -4,7 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ab`)
+## Mac test now (`cursor/live-ff-tip-sep7ag`)
+
+Deal detail only, from `cursor/live-ff-tip-sep7ab` @ `9cf10e3` / tip SHA `18c6ebc`. One checkbox (**I visually reviewed this master sheet.**) and one action (**Confirm & request quotes**) — disabled until the box is ticked, then one click confirms the sheet and shops every in-appetite carrier. Documents · Markets · Quotes sit **flush under the deal header** (`-mt-5` cancels main padding). **Deals has no Quotes subfolder** — Quotes is a deal-detail tab only (`NAV_LAYOUT_VERSION` **9**). No other sidebar change. No Pipeline attach/activity change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ag && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal detail** (Ana unbound). Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AG — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AG1 | One button | Documents has **no** separate **Confirm sheet** button. One checkbox: **I visually reviewed this master sheet.** The only action is **Confirm & request quotes**, disabled until the box is ticked. One click confirms the sheet and requests quotes from every in-appetite carrier. |
+| AG2 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+| AG3 | No Quotes folder | Sidebar **Deals** has **no** nested Quotes child. No dead `/deals/quotes` link. Quotes lives only as the Deal detail tab. Customize can still add the catalog Quotes row; it is not a default Deals subfolder. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ab`)
 
 Deal detail + Integrations, from `cursor/live-ff-tip-sep7aa` @ `011c324` / tip SHA `a86a834` (later sep7aa Pipeline band left alone). Vehicle and driver blocks start at **one**. Documents upload is repeatable rows. Tabs sit **flush under the deal header**. Tags on lead / contact / policy / deal sheets and list rows. **8x8** + **Mac Continuity** on Settings → Integrations. No sidebar change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `18c6ebc`.
 
@@ -937,7 +960,7 @@ npm test
 
 **`cursor/live-ff-tip-sep6f`** is **`cursor/live-ff-tip-sep6e`** (`1ab3f69`) plus menu-structure only: Policies kids and Admin → Operations. No page redesign. No AMS. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
 
-Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (Quotes only), **Contacts** (no kids), **Policies** (My Book / Renewals / Certificates — parent click lands on My Book), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome), **Operations** (admin only, own top-level row). Operations children (admin only): Billing, Claims, Endorsements, Compliance, Carrier Downloads, Book of Health, Book of Life, Marketplace. Customize can nest or promote any folder — kids stay with the folder. Agents never see Settings, Admin, Operations, or anything inside Operations. `NAV_LAYOUT_VERSION` is **8**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept). No `db:seed` / no Zoho wipe.
+Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (no kids — Quotes is a Deal detail tab only), **Contacts** (no kids), **Policies** (My Book / Renewals / Certificates — parent click lands on My Book), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome), **Operations** (admin only, own top-level row). Operations children (admin only): Billing, Claims, Endorsements, Compliance, Carrier Downloads, Book of Health, Book of Life, Marketplace. Customize can nest or promote any folder — kids stay with the folder. Agents never see Settings, Admin, Operations, or anything inside Operations. `NAV_LAYOUT_VERSION` is **9**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept). No `db:seed` / no Zoho wipe.
 
 Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` — personal only), **Sign Out**. **Switch role** stays for Admin view-as and writes `role_switch` to the E&O trail.
 
