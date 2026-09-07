@@ -49,7 +49,7 @@ export function TodayActivityStrip({
           </p>
         </div>
       </div>
-      <div className="mt-5 flex flex-nowrap items-center gap-3.5 overflow-x-auto overflow-y-visible py-3">
+      <div className="mt-5 flex flex-nowrap items-center gap-3.5 overflow-x-auto overflow-y-visible py-4">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -58,18 +58,15 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className={
-                on
-                  ? "inline-flex shrink-0 flex-col items-center rounded-xl px-4 py-2.5 shadow-[0_4px_10px_rgba(16,28,52,0.16)] transition-[transform,box-shadow] duration-150 hover:-translate-y-1 hover:z-10 hover:shadow-[0_8px_18px_rgba(16,28,52,0.20)]"
-                  : "inline-flex shrink-0 flex-col items-center rounded-xl px-4 py-2.5 shadow-[0_2px_6px_rgba(16,28,52,0.10)] transition-[transform,box-shadow] duration-150 hover:-translate-y-1 hover:z-10 hover:shadow-[0_8px_18px_rgba(16,28,52,0.18)]"
-              }
+              className="deal-today-chip inline-flex shrink-0 flex-col items-center rounded-xl px-4 py-2.5 hover:z-10"
               style={{
                 color: tone.chipFg,
-                backgroundImage: `linear-gradient(180deg, ${tone.chipBg} 0%, ${tone.chipBgLight} 100%)`,
-                border: `1px solid ${tone.chipFg}55`,
-                outline: on ? `2px solid ${tone.chipFg}` : undefined,
-                outlineOffset: on ? "2px" : undefined,
+                ["--chip-top" as string]: tone.chipBgLight,
+                ["--chip-mid" as string]: tone.chipBg,
+                ["--chip-bottom" as string]: tone.chipBgDark,
+                ["--chip-fg" as string]: tone.chipFg,
               }}
+              data-on={on ? "1" : "0"}
               data-testid={`deal-today-${chip.id}`}
               data-tone={chip.tone}
             >

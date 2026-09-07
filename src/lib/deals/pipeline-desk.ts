@@ -10,19 +10,39 @@ export const NEXT_ACTION_FALLBACK_DAYS = 7;
 export const DEAL_ACTIVITY_TONES = {
   call: {
     chipBg: "#f3ead4",
-    chipBgLight: "#fbf6ea",
+    chipBgLight: "#fff8e8",
+    chipBgDark: "#e0cf9a",
     chipFg: CONTACT_ACTION_COLORS.call,
     buttonBg: CONTACT_ACTION_COLORS.call,
   },
   email: {
     chipBg: "#e4e6eb",
-    chipBgLight: "#f4f5f7",
+    chipBgLight: "#f7f8fa",
+    chipBgDark: "#c5c9d2",
     chipFg: CONTACT_ACTION_COLORS.email,
     buttonBg: CONTACT_ACTION_COLORS.email,
   },
-  task: { chipBg: "#dbeafe", chipBgLight: "#eff6ff", chipFg: "#1d6fb8", buttonBg: "#1d6fb8" },
-  meeting: { chipBg: "#ede9fe", chipBgLight: "#f5f3ff", chipFg: "#5b21b6", buttonBg: "#5b21b6" },
-  training: { chipBg: "#ccfbf1", chipBgLight: "#f0fdfa", chipFg: "#0f766e", buttonBg: "#0f766e" },
+  task: {
+    chipBg: "#dbeafe",
+    chipBgLight: "#f0f7ff",
+    chipBgDark: "#b6d4f7",
+    chipFg: "#1d6fb8",
+    buttonBg: "#1d6fb8",
+  },
+  meeting: {
+    chipBg: "#ede9fe",
+    chipBgLight: "#f7f4ff",
+    chipBgDark: "#d3c8f6",
+    chipFg: "#5b21b6",
+    buttonBg: "#5b21b6",
+  },
+  training: {
+    chipBg: "#ccfbf1",
+    chipBgLight: "#f2fffb",
+    chipBgDark: "#9be8d8",
+    chipFg: "#0f766e",
+    buttonBg: "#0f766e",
+  },
 } as const;
 
 /** Same order as row actions Call / SMS / Email / Task / Meeting — SMS has no today counter. */

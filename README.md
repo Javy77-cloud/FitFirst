@@ -22,7 +22,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 | # | Check | Pass when |
 | --- | --- | --- |
 | M1 | Today's Activity | Left of the upload card, with a real gap. Title is **Today's Activity** with the date under it (e.g. Monday, Sep 7). Calendar icon opens Tasks (work queue). Chips have padding so text/icons are not crammed. |
-| M2 | Chips | Calls / Emails / Tasks / Meetings / Training are a little bigger, tint→lighter gradient, thin matching border, soft shadow. Hover lifts with a deeper shadow and is not clipped. Click opens that type's work queue. |
+| M2 | Chips | Calls / Emails / Tasks / Meetings / Training read as raised 3D buttons: lighter top highlight, darker bottom, layered float shadow. Hover lifts without clipping. Click opens that type's work queue. |
 | M3 | Upload | Card sits top-right — a little smaller than the pre-compact block, not a skinny full-width row. Search, doc type, file picker, Store. |
 | M4 | Mass update | Select-all is visible rows, or **Select all N matching**. Menu: status, source, follow-up template, owner, custom field. Wired on Deals; same control on Leads / Contacts / Policies. Bound is not a mass status. |
 | M5 | Record picker | Header Call / SMS / Email / Task search leads, deals, and contacts. Pick fills name / phone / email. Manual entry still works. |
