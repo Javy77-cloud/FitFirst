@@ -3,6 +3,7 @@ import { namedInsuredFromLead } from "@/lib/crm/lead-fields";
 import { sourceLabel } from "@/lib/crm/sources";
 import { fillSheetFromLead, leadOntoRisk, type LeadCopyFields } from "@/lib/desk/copy-once";
 import { filterLeadForCarry } from "@/lib/custom-fields/transfer";
+import { formatDealTitle } from "@/lib/deals/deal-title";
 
 export type ConvertLead = LeadCopyFields & {
   lastName: string;
@@ -42,7 +43,11 @@ export function dealNotesFromLead(lead: ConvertLead): string | null {
 }
 
 export function dealTitleFromLead(lead: ConvertLead, line: string) {
-  return `${lead.lastName} · ${line} shop`;
+  return formatDealTitle({
+    firstName: lead.firstName,
+    lastName: lead.lastName,
+    line,
+  });
 }
 
 /** Everything convert copies so the agent does not retype. Contact is attached only when a match already exists. */

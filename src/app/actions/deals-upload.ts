@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatPersonName } from "@/lib/crm/display";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
+import { formatDealTitle } from "@/lib/deals/deal-title";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { uploadDealCta } from "@/lib/deals/pipeline-desk";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -42,10 +43,13 @@ export async function createDealFromUploadSearch(formData: FormData) {
     ? await db.select().from(contacts).where(eq(contacts.id, contactId))
     : [];
   const typed = splitTypedPartyName(dealName);
-  const title =
-    dealName ||
-    (pickedContact ? formatPersonName(pickedContact) : "") ||
-    `${typed.lastName || typed.firstName} shop`;
+  const title = formatDealTitle({
+    firstName: pickedContact?.firstName || typed.firstName,
+    lastName: pickedContact?.lastName || typed.lastName,
+    primaryNamedInsured: dealName,
+    existingTitle: dealName,
+    line: "HO",
+  });
   const [pipeline] = await db
     .select()
     .from(pipelines)

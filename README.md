@@ -4,7 +4,34 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bg`)
+## Mac test now (`cursor/live-ff-tip-sep7bh`)
+
+Deal naming rule, search, and drop the Contact column, from `cursor/live-ff-tip-sep7az` latest HEAD. Separate crew from toast (bf) and deal-four-fixes (bg). Every deal auto-names **First Last Lob** — `Javier Canales Home`, `Javier Canales Auto`. Applies on convert and on any line-of-business change. Existing titles backfill (additive migrate `0086_deal_titles` + boot rename). No `… - HO shop` leftovers. Deal search matches first name, last name, or line of business. Pipeline / deals table **has no Contact column**; Contact is not required on the deal. Stages, filters, and other columns stay. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bh && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Convert or create a deal — title is **First Last Home** (or Auto / Flood). Change line of business — title updates. Search **Javier** on Deals / Pipeline and find Javier Canales Home. Confirm the table has no Contact column. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BH — Deal name, search, no Contact column
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BH1 | New / convert name | New deals and converts title as `First Last Lob` (`Javier Canales Home`). |
+| BH2 | LOB retitle | Changing line of business retitles the deal (`… Home` → `… Auto`). |
+| BH3 | Existing titles | Shop leftovers like `Canales - HO shop` / `Ruiz · HO shop` are gone. Ana may become **Ana Dib Home**; still unbound, Cov A **$321,000**. |
+| BH4 | Search | Typing `Javier` finds Javier Canales Home. First, last, and LOB fields match even if the title lags. |
+| BH5 | No Contact column | Pipeline / deals table has no Contact column. Contact is not required on the deal. |
+| BH6 | Scope | Stages, filters, and every other column stay. Deal detail layout otherwise untouched. |
+| BH7 | Tests | `deal-title`, convert, columns, and deals-page cover naming, search, and column removal. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bg`)
 
 Deal page four fixes, from `cursor/live-ff-tip-sep7az` @ `d225fca`. Separate crew from the toast tip. **Markets** with no carriers and no lookup is blank — no "In appetite", no buckets, no placeholder copy. **Documents** drops the Fit to screen / 100% toggle; the master sheet stays locked at **100%** with no zoom UI. Right rail `data-ff-deal-right-rail` is **exactly 320px**. Deal Details **Contact** and **Address** are a 50/50 split. Do not redesign Quotes, field builder, tags, or sidebar nav. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `aea35cbb`.
 

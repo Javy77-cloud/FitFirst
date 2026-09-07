@@ -1,5 +1,6 @@
 import { formatPersonName } from "@/lib/crm/display";
 import { foldPartyQuery, matchesPartyQuery, phoneDigits } from "@/lib/crm/party-typeahead";
+import { dealTitleLobWord } from "@/lib/deals/deal-title";
 import type { DocSlot, DocType } from "@/lib/domain";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPES } from "@/lib/domain";
 
@@ -11,6 +12,9 @@ export type DealLookupRow = {
   phone?: string | null;
   contactId?: string | null;
   accountId?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  lineOfBusiness?: string | null;
 };
 
 export function normalizeDealQuery(value: string): string {
@@ -40,6 +44,10 @@ export function dealLookupHaystack(row: DealLookupRow): string {
   return [
     row.title,
     row.partyName ?? "",
+    row.firstName ?? "",
+    row.lastName ?? "",
+    row.lineOfBusiness ?? "",
+    dealTitleLobWord(row.lineOfBusiness),
     row.email ?? "",
     row.phone ?? "",
     phoneDigits(row.phone),
@@ -84,6 +92,9 @@ export function matchDealLookup(
       id: row.id,
       title: row.title,
       partyName: row.partyName,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      name: [row.lineOfBusiness, dealTitleLobWord(row.lineOfBusiness)].filter(Boolean).join(" "),
       email: row.email,
       phone: row.phone,
     }),
@@ -103,6 +114,9 @@ export function suggestDealLookup(rows: DealLookupRow[], query: string, limit = 
         id: row.id,
         title: row.title,
         partyName: row.partyName,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        name: [row.lineOfBusiness, dealTitleLobWord(row.lineOfBusiness)].filter(Boolean).join(" "),
         email: row.email,
         phone: row.phone,
       }),

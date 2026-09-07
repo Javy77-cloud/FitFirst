@@ -32,9 +32,9 @@ describe("table column pickers", () => {
     expect(deals.has("shopLines")).toBe(true);
     expect(deals.has("subType")).toBe(true);
     expect(deals.has("esign")).toBe(true);
-    expect(deals.has("contact")).toBe(true);
+    expect(deals.has("contact")).toBe(false);
     expect(deals.has("phone")).toBe(false);
-    expect((TABLE_COLUMNS.deals ?? []).map((col) => col.key).slice(0, 2)).toEqual(["title", "contact"]);
+    expect((TABLE_COLUMNS.deals ?? []).map((col) => col.key).slice(0, 2)).toEqual(["title", "stage"]);
     const accounts = new Set((TABLE_COLUMNS.accounts ?? []).map((col) => col.key));
     expect(accounts.has("email")).toBe(true);
     expect(accounts.has("mailingAddress")).toBe(true);
@@ -59,7 +59,7 @@ describe("table column pickers", () => {
 
   it("keeps the e-sign list column on even if older column prefs omit it", () => {
     expect(parseColumns("deals", "title,stage,line")).toContain("esign");
-    expect(parseColumns("deals", "title,stage,line,phone")).toEqual(["title", "contact", "stage", "line", "esign"]);
+    expect(parseColumns("deals", "title,stage,line,phone")).toEqual(["title", "stage", "line", "esign"]);
     expect(parseColumns("policies", "number,status")).toContain("esign");
   });
 });

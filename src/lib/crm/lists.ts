@@ -1,3 +1,4 @@
+import { dealSearchHaystack, matchesDealNameSearch } from "@/lib/deals/deal-title";
 import { accountDisplayName } from "./bind";
 import { formatPersonName } from "./display";
 
@@ -179,6 +180,9 @@ export function matchesDealFilters(
     lineOfBusiness: string;
     state: string;
     insured: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    accountName?: string | null;
     phone?: string | null;
     email?: string | null;
     city?: string | null;
@@ -190,13 +194,33 @@ export function matchesDealFilters(
   if (filter.state?.trim() && input.state.toUpperCase() !== filter.state.trim().toUpperCase()) {
     return false;
   }
-  const q = filter.q?.trim().toLowerCase();
+  const q = filter.q?.trim();
   if (!q) return true;
-  const hay = [input.title, input.insured, input.phone, input.email, input.city]
+  if (
+    matchesDealNameSearch(q, {
+      title: input.title,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      accountName: input.accountName,
+      primaryNamedInsured: input.insured,
+      lineOfBusiness: input.lineOfBusiness,
+    })
+  ) {
+    return true;
+  }
+  const hay = dealSearchHaystack({
+    title: input.title,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    accountName: input.accountName,
+    primaryNamedInsured: input.insured,
+    lineOfBusiness: input.lineOfBusiness,
+  });
+  return [hay, input.phone, input.email, input.city]
     .filter(Boolean)
     .join(" ")
-    .toLowerCase();
-  return hay.includes(q);
+    .toLowerCase()
+    .includes(q.toLowerCase());
 }
 
 export function telHref(phone?: string | null): string | null {
