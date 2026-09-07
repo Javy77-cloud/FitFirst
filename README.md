@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7au`)
 
-Consolidator: Deal Details + field builder from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d` (Deal Details tab, per-LOB field builder, tag chip ×, Manage tags, selective lead convert) plus extraction maps + ATTOM / Estated / FL stubs from `cursor/live-ff-tip-sep7at-6bcc` @ `94b775a` / tip SHA `199ae2e` (per-form source label → master sheet field, address-confirm enrichment). sep7ar chrome stays: AppShell title **Deals**, left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`, `HardDeleteForm` confirms **once** via `onClickCapture`, Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+Consolidator: Deal Details + field builder from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d` (Deal Details tab, per-LOB field builder, tag chip ×, Manage tags, selective lead convert) plus extraction maps + ATTOM / Estated / FL stubs from `cursor/live-ff-tip-sep7at-6bcc` @ `94b775a` / tip SHA `199ae2e` (per-form source label → master sheet field, address-confirm enrichment). sep7ar chrome stays: AppShell title **Deals**, left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`, `HardDeleteForm` confirms **once** via `onClickCapture`, Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `4f66ea9`.
 
 ```bash
 cd ~/FitFirst
