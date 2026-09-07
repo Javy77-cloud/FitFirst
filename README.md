@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bx`)
+## Mac test now (`cursor/live-ff-tip-sep7bt`)
+
+Deal field builder drag-and-drop across sections, merged onto `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder** (Edit layout / Preview): grab any collapsed field row and drop it between fields in the same section or into another section — left or right column. A sky drop line and section ring mark the target. Order is in the Save payload. Collapsed rows, compact palette, equal-width chips, and the four-item ⋯ menu stay. Preview stays editable with the same insert-between / cross-section move. BX tags, 320 rail, Save toasts, Dashboard, and picklist keys stay theirs. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `da67229e`. Head `f573bff6`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**. Drag **Phone** above **First name** in Contact, then drag **Email** into Address (before City). Drop line should appear. **Save**. Reload — order stays. Toggle **Preview** and drag again. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BT — Field builder reorder / cross-section drag
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BT1 | Within section | Drag a field to another position in the same section. Drop line is visible. Order updates. |
+| BT2 | Across sections | Drag a field from Contact into Address (or Left → Right). It lands in the target section. |
+| BT3 | Preview | Preview stays editable; insert-between and cross-section drops still work. |
+| BT4 | Persist | Save, reload builder — new order is still there. |
+| BT5 | Scope | Equal chips, Edit Layout, BX tags, 320 rail, Save toasts, Dashboard, picklist keys stay. No `db:seed`. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bx`)
 
 Per-module global tag catalog + assign from list/board, merged onto `cursor/live-ff-tip-sep7az`. Each module — **Leads, Deals, Contacts, Business, Policies, Carriers** — has its own catalog. The Columns / sheet **⋯** opens **Manage tags** to create, rename, color, merge, or delete (Leads ⋯ included). Clicking tags on a list row or Pipeline board card opens a multi-select popup from that catalog (including none). Creating a tag is never a side effect of assigning one on a row. Deal rail Tags is catalog assign-only — no inline create. Additive migrate `0089_account_carrier_tags` only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `3ca61366`.
 

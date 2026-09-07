@@ -76,6 +76,7 @@ export function moveField(
   fieldKey: string,
   target: { columnId: string; sectionId?: string; beforeKey?: string },
 ): FieldLayout {
+  if (target.beforeKey === fieldKey) return cloneLayout(layout);
   const next = removeFieldFromLayout(layout, fieldKey);
   const column = next.columns.find((col) => col.id === target.columnId) ?? next.columns[0];
   let section: LayoutSection | undefined = column.sections.find((item) => item.id === target.sectionId);
@@ -91,6 +92,102 @@ export function moveField(
   return next;
 }
 
+export type FieldDropFieldHit = {
+  key: string;
+  top: number;
+  height: number;
+};
+
+export type FieldDropSectionHit = {
+  id: string;
+  top: number;
+  height: number;
+  fields: FieldDropFieldHit[];
+};
+
+export type FieldDropTarget = {
+  sectionId?: string;
+  beforeKey?: string;
+};
+
+/** Section-aware insert: pointer inside a section stays in that section, including across columns. */
+export function resolveFieldDrop(
+  clientY: number,
+  sections: FieldDropSectionHit[],
+  options?: { draggingKey?: string },
+): FieldDropTarget {
+  const list = asLayoutRects(sections)
+    .filter((section) => section.id)
+    .map((section) => ({
+      ...section,
+      fields: asLayoutRects(section.fields).filter(
+        (field) => field.key && field.key !== options?.draggingKey,
+      ),
+    }));
+  if (!list.length) return {};
+
+  const containing = list.find(
+    (section) => clientY >= section.top && clientY <= section.top + section.height,
+  );
+  if (containing) {
+    return {
+      sectionId: containing.id,
+      beforeKey: insertIndexFromClientY(clientY, containing.fields).beforeKey,
+    };
+  }
+
+  for (const section of list) {
+    if (clientY < section.top + section.height / 2) {
+      return {
+        sectionId: section.id,
+        beforeKey: insertIndexFromClientY(clientY, section.fields).beforeKey,
+      };
+    }
+  }
+
+  const last = list[list.length - 1];
+  return {
+    sectionId: last.id,
+    beforeKey: insertIndexFromClientY(clientY, last.fields).beforeKey,
+  };
+}
+
+export function resolveSectionDrop(
+  clientY: number,
+  sections: { id: string; top: number; height: number }[],
+  options?: { draggingId?: string },
+): { beforeSectionId?: string } {
+  const list = asLayoutRects(sections).filter((section) => section.id && section.id !== options?.draggingId);
+  const insert = insertIndexFromClientY(
+    clientY,
+    list.map((section) => ({ key: section.id, top: section.top, height: section.height })),
+  );
+  return { beforeSectionId: insert.beforeKey };
+}
+
+export function applyResolvedFieldDrop(
+  layout: FieldLayout,
+  fieldKey: string,
+  columnId: string,
+  clientY: number,
+  sections: FieldDropSectionHit[],
+): FieldLayout {
+  const target = resolveFieldDrop(clientY, sections, { draggingKey: fieldKey });
+  return moveField(layout, fieldKey, { columnId, ...target });
+}
+
+/** Skip the dragging row / ghost when reading the column under the pointer. */
+export function columnIdFromHitStack(stack: Array<{ closest: (sel: string) => { getAttribute: (name: string) => string | null } | null } | null>): string | null {
+  for (const node of stack) {
+    if (!node) continue;
+    if (node.closest("[data-ff-drag-ghost]") || node.closest("[data-ff-dragging]")) continue;
+    const column = node.closest("[data-ff-builder-col]");
+    const id = column?.getAttribute("data-ff-builder-col");
+    if (id) return id;
+  }
+  return null;
+}
+
 /** Insert before the first item whose midpoint is below the pointer. */
 export function insertIndexFromClientY(
   clientY: number,
@@ -102,7 +199,7 @@ export function insertIndexFromClientY(
   return {};
 }
 
-function asLayoutRects(rects: { key: string; top: number; height: number }[] | null | undefined) {
+function asLayoutRects<T extends { top: number; height: number }>(rects: T[] | null | undefined): T[] {
   return Array.isArray(rects) ? rects : [];
 }
 
