@@ -44,24 +44,33 @@ export function MarketsPanel({
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3" data-ff-deal-markets>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {appetite.length} in appetite · {stretch.length} stretch · {skip.length} skip · {appointed}{" "}
+          appointed
+        </p>
+        <form action={requestAppetiteQuotesAction}>
+          <input type="hidden" name="dealId" value={dealId} />
+          <Button type="submit" size="sm" disabled={appetite.length === 0 || !unlocked}>
+            {unlocked ? "Approve & request quotes" : "Approve sheet to request"}
+          </Button>
+        </form>
+      </div>
+      <MarketTable
+        title={marketBucketLabel("appetite")}
+        rows={appetite}
+        manualIds={manual}
+        empty="No in-appetite markets. Add a carrier manually to override."
+      />
+      <MarketTable
+        title={marketBucketLabel("stretch")}
+        rows={stretch}
+        manualIds={manual}
+        empty="No stretch markets."
+      />
+      <MarketTable title={marketBucketLabel("skip")} rows={skip} manualIds={manual} empty="Nothing to skip." />
       <div className="ff-card space-y-3 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-navy">Appetite, then submit</h3>
-            <p className="text-base text-muted-foreground">
-              {appetite.length} in appetite · {stretch.length} stretch · {skip.length} skip · {appointed}{" "}
-              appointed. One button submits the confirmed sheet to every in-appetite carrier.
-              Stretch is a second pass.
-            </p>
-          </div>
-          <form action={requestAppetiteQuotesAction}>
-            <input type="hidden" name="dealId" value={dealId} />
-            <Button type="submit" size="sm" disabled={appetite.length === 0 || !unlocked}>
-              {unlocked ? "Approve & request quotes" : "Approve sheet to request"}
-            </Button>
-          </form>
-        </div>
         <ManualCarrierAdd
           dealId={dealId}
           carriers={carriers}
@@ -77,19 +86,6 @@ export function MarketsPanel({
         </form>
         <PaidApiWall />
       </div>
-      <MarketTable
-        title={marketBucketLabel("appetite")}
-        rows={appetite}
-        manualIds={manual}
-        empty="No in-appetite markets. Add a carrier manually to override."
-      />
-      <MarketTable
-        title={marketBucketLabel("stretch")}
-        rows={stretch}
-        manualIds={manual}
-        empty="No stretch markets."
-      />
-      <MarketTable title={marketBucketLabel("skip")} rows={skip} manualIds={manual} empty="Nothing to skip." />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { extractExisting } from "@/app/actions/documents";
+import { DealLineSelector } from "@/components/deal/deal-line-selector";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { CompletenessReport } from "@/lib/completeness/report";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
+import type { SheetProduct } from "@/lib/quote-sheet/products";
 
 export function DocumentsPanel({
   dealId,
@@ -35,7 +37,7 @@ export function DocumentsPanel({
   formLabel: string;
   unlocked: boolean;
   approvedBy?: string | null;
-  product?: string | null;
+  product: SheetProduct;
 }) {
   const sourceDocs = docs.filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
   const lineDocs = sourceDocs.filter((d) => lineFromTags(d.tags));
@@ -44,6 +46,7 @@ export function DocumentsPanel({
 
   return (
     <div className="space-y-4">
+      <DealLineSelector dealId={dealId} product={product} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]" data-ff-deal-upload-split>
         <div className="min-w-0 space-y-3" data-ff-deal-upload>
           <section className="ff-card p-3">

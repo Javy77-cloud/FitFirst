@@ -4,6 +4,7 @@ import { AGENT_DEAL_TABS } from "./tabs";
 import { fieldsForLine, homeFieldCount } from "@/lib/quote-sheet/catalog";
 import { defaultProductForLine, productsForLine } from "@/lib/quote-sheet/products";
 import { carriersForDealLine } from "./carriers-for-line";
+import { resolveDealProduct } from "./deal-line";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -35,10 +36,12 @@ describe("deal detail final rebuild", () => {
     const docs = source("src/components/deal/documents-panel.tsx");
     const upload = source("src/components/deal/source-docs-upload.tsx");
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    expect(docs).toMatch(/DealLineSelector/);
     expect(docs).toMatch(/SourceDocsUpload/);
     expect(docs).toMatch(/MasterSheetCompare/);
     expect(docs).toMatch(/SheetApproveGate/);
     expect(docs).toMatch(/DeleteUploadedFileButton/);
+    expect(docs.indexOf("DealLineSelector")).toBeLessThan(docs.indexOf("SourceDocsUpload"));
     expect(upload).toMatch(/Create/);
     expect(upload).not.toMatch(/Add another file/);
     expect(sheet).toMatch(/name=\{fieldKey\}/);
@@ -79,10 +82,37 @@ describe("deal detail final rebuild", () => {
     expect(carriersForDealLine(options, "HO").map((row) => row.id)).toEqual(["ho"]);
     expect(carriersForDealLine(options, "FLOOD").map((row) => row.id)).toEqual(["flood"]);
     const markets = source("src/components/deal/markets-panel.tsx");
-    expect(markets).toMatch(/In appetite|marketBucketLabel\("appetite"\)/);
-    expect(markets).toMatch(/Approve & request quotes/);
-    expect(markets).toMatch(/PaidApiWall/);
-    expect(markets).toMatch(/dealLine/);
+    const body = markets.slice(markets.indexOf("return ("));
+    expect(body).toMatch(/In appetite|marketBucketLabel\("appetite"\)/);
+    expect(body).toMatch(/Approve & request quotes/);
+    expect(body).toMatch(/PaidApiWall/);
+    expect(body).toMatch(/dealLine/);
+    expect(body.indexOf("Approve & request quotes")).toBeLessThan(body.indexOf("<MarketTable"));
+    expect(body.indexOf("<MarketTable")).toBeLessThan(body.indexOf("<ManualCarrierAdd"));
+  });
+
+  it("removes in-desk signature from Documents", () => {
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).not.toMatch(/InDeskEsignPanel/);
+    expect(page).not.toMatch(/getLatestInDeskEnvelope/);
+    expect(page).not.toMatch(/In-desk signature/);
+  });
+
+  it("defaults the deal line selector to Homeowners and swaps the sheet", () => {
+    expect(resolveDealProduct({})).toBe("homeowners");
+    const selector = source("src/components/deal/deal-line-selector.tsx");
+    expect(selector).toMatch(/Line of business\./);
+    expect(selector).toMatch(/setDealSheetProduct/);
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    expect(sheet).not.toMatch(/data-ff-sheet-product/);
+    expect(sheet).toMatch(/one product on this deal/);
+  });
+
+  it("leaves Quotes empty until Markets returns rows", () => {
+    const quotes = source("src/components/deal/quotes-panel.tsx");
+    expect(quotes).toMatch(/data-ff-deal-quotes-empty/);
+    expect(quotes).toMatch(/Quotes land here after Markets sends them back/);
+    expect(quotes.indexOf("sorted.length === 0")).toBeLessThan(quotes.indexOf("Quote results"));
   });
 
   it("pins quick comms and keeps motivation in the corner", () => {

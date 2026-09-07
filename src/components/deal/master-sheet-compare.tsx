@@ -5,11 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
-import {
-  parseSheetProduct,
-  productsForLine,
-  SHEET_PRODUCT_LABELS,
-} from "@/lib/quote-sheet/products";
+import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +31,6 @@ export function MasterSheetCompare({
   const catalog = fieldsForLine(line, product);
   const groups = groupFields(line, product);
   const extractedByKey = new Map(fields.map((field) => [field.fieldKey, field]));
-  const variants = productsForLine(line);
   const filled = catalog.filter((field) => {
     const cell = values[field.key];
     return Boolean(cell?.value.trim() && cell.status !== "missing");
@@ -51,6 +46,9 @@ export function MasterSheetCompare({
               Empty before extraction. Type a value or confirm what the source pulled.
               {filled === 0 ? " Fields start blank." : ` ${filled} filled.`}
             </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {SHEET_PRODUCT_LABELS[product]} · one product on this deal
+            </p>
           </div>
           <form action={fillQuoteSheetBlanks} className="shrink-0">
             <input type="hidden" name="dealId" value={dealId} />
@@ -60,28 +58,6 @@ export function MasterSheetCompare({
             </Button>
           </form>
         </div>
-        {variants.length > 1 ? (
-          <div className="mt-2 flex flex-wrap gap-1" data-ff-sheet-product>
-            {variants.map((item) => (
-              <a
-                key={item}
-                href={`?tab=documents&line=${line}&product=${item}`}
-                className={cn(
-                  "rounded-sm px-2 py-0.5 text-[11px] font-medium",
-                  item === product
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {SHEET_PRODUCT_LABELS[item]}
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {SHEET_PRODUCT_LABELS[product]} · one product on this deal
-          </p>
-        )}
       </div>
 
       <form action={saveQuoteSheet} className="space-y-0">

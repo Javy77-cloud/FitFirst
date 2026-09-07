@@ -55,6 +55,12 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
 import { listFillLearningForLookup } from "@/lib/db/queries";
 import { DEAL_ID } from "@/lib/fixtures/ids";
+import {
+  lobForProduct,
+  quotingFormForProduct,
+  shopLineForProduct,
+} from "@/lib/deals/deal-line";
+import { isSheetProduct } from "@/lib/quote-sheet/products";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -134,6 +140,39 @@ export async function confirmQuoteSheetField(formData: FormData) {
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
   revalidatePath(`/deals/${dealId}`);
+}
+
+export async function setDealSheetProduct(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const productRaw = str(formData, "product");
+  if (!dealId || !isSheetProduct(productRaw)) throw new Error("Pick a line of business.");
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) throw new Error("Deal not found");
+  const line = shopLineForProduct(productRaw);
+  const formId = quotingFormForProduct(productRaw);
+  await db
+    .update(deals)
+    .set({
+      lineOfBusiness: lobForProduct(productRaw),
+      quotingLine: line,
+      quotingForm: formId ?? deal.quotingForm,
+      policySubType: productRaw,
+      updatedAt: new Date(),
+    })
+    .where(eq(deals.id, dealId));
+  const sheet = await ensureQuoteSheet(dealId, line);
+  await db
+    .update(quoteSheets)
+    .set({
+      values: {
+        ...sheet.values,
+        sheet_product: { value: productRaw, status: "confirmed", source: "agent" },
+      },
+      updatedAt: new Date(),
+    })
+    .where(eq(quoteSheets.id, sheet.id));
+  revalidatePath(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}?tab=documents&line=${line}&product=${productRaw}`);
 }
 
 export async function addShopLine(formData: FormData) {

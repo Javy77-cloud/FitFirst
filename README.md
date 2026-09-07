@@ -4,7 +4,38 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7w`)
+## Mac test now (`cursor/live-ff-tip-sep7z`)
+
+Consolidator: live Pipeline tip `cursor/live-ff-tip-sep7w` @ `0c79cfa` / `8f9bc84` (chips / attach rows / no deal-name field) plus Deal detail `cursor/live-ff-tip-sep7x` @ `6ca87d007fc60f42469a05017a783dddc8dcd805` (kill e-sign, Markets flush, LOB selector, Quotes empty). Prefer sep7w for Deals / Pipeline list. Prefer sep7x for `/deals/[id]`. No sidebar / schema / seed. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7z && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### A — Pipeline list (sep7w @ `8f9bc84`)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| W1 | Today's Activity chips | Square them back up — no rounded corners, sharp **4px radius max**. **Remove the background fill entirely.** Chips float on the page with only a **thin border** and a **soft shadow underneath**. Hover: lift **4px** with a stronger shadow so they feel like they're rising off the surface. Add **`overflow: hidden`** to the strip container so nothing spills out. |
+| W2 | Attach documents to a deal | Make the row **repeatable**: each document is its own line with a **trash can**. Add a **"+ Add another document"** link below the last row so agents can attach multiple files. The document name is **plain text, not a button** — no background, no border, just the filename. Keep the box compact, about **120px tall**, matching the activity strip. |
+| W3 | Duplicate deal name | **Remove the deal name field** from the Table, Board, and Funnel views. The global search at the top already handles it, and the upload box has its own contact field. |
+
+### B — Deal detail (sep7x @ `6ca87d0`)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| X1 | No e-sign | Documents has **no** “In-desk signature” block. Upload + master sheet stay. |
+| X2 | Markets flush | **In appetite / Stretch / Skip** and **Approve & request quotes** sit **directly under** the tab bar. No empty gap above them. Manual add still lists only carriers that write this line. |
+| X3 | Line of business | Documents opens with a **Line of business.** dropdown (Homeowners, Renters, Landlord, Auto, RV, Motorcycle, Flood, GL, Workers' Comp, Commercial Auto, plus niche). Default **Homeowners**. Changing it swaps the master sheet. One deal, one product. Uses existing deal LOB / quoting line / `policySubType` / sheet product — no schema. |
+| X4 | Quotes empty | Quotes is empty until Markets sends quotes back. No results chrome, bind gate, or attempt log while empty. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7w`)
 
 Three Pipeline-page fixes only, on top of `cursor/live-ff-tip-sep7v` @ `9dede457fabeac939ce10e33d6726674a5607575`. Band order is unchanged: **Attach LEFT**, **Activity RIGHT**. No Deal detail. No other pages. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `8f9bc84`.
 
@@ -26,6 +57,29 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 | W1 | Today's Activity chips | Square them back up — no rounded corners, sharp **4px radius max**. **Remove the background fill entirely.** Chips float on the page with only a **thin border** and a **soft shadow underneath**. Hover: lift **4px** with a stronger shadow so they feel like they're rising off the surface. Add **`overflow: hidden`** to the strip container so nothing spills out. |
 | W2 | Attach documents to a deal | Make the row **repeatable**: each document is its own line with a **trash can**. Add a **"+ Add another document"** link below the last row so agents can attach multiple files. The document name is **plain text, not a button** — no background, no border, just the filename. Keep the box compact, about **120px tall**, matching the activity strip. |
 | W3 | Duplicate deal name | **Remove the deal name field** from the Table, Board, and Funnel views. The global search at the top already handles it, and the upload box has its own contact field. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7x`)
+
+Deal detail only, on `cursor/live-ff-tip-sep7v` @ `9dede45`. Four fixes on `/deals/[id]`: drop in-desk signature, pin Markets buckets under the tab bar, add a Line of business selector that swaps the master sheet, leave Quotes empty until Markets returns rows. No Pipeline list, sidebar, schema, or other-page changes. No seed. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7x && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Open **Ana Dib** on Deal detail. Do not bind (unbound, Cov A **$321,000**).
+
+### X — Deal detail (sep7x)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| X1 | No e-sign | Documents has **no** “In-desk signature” block. Upload + master sheet stay. |
+| X2 | Markets flush | **In appetite / Stretch / Skip** and **Approve & request quotes** sit **directly under** the tab bar. No empty gap above them. Manual add still lists only carriers that write this line. |
+| X3 | Line of business | Documents opens with a **Line of business.** dropdown (Homeowners, Renters, Landlord, Auto, RV, Motorcycle, Flood, GL, Workers' Comp, Commercial Auto, plus niche). Default **Homeowners**. Changing it swaps the master sheet. One deal, one product. Uses existing deal LOB / quoting line / `policySubType` / sheet product — no schema. |
+| X4 | Quotes empty | Quotes is empty until Markets sends quotes back. No results chrome, bind gate, or attempt log while empty. |
 
 ## Mac test prior (`cursor/live-ff-tip-sep7v`)
 
