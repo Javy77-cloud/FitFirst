@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7ar`)
 
-Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` confirms **once inside the form action**. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `91e9cfc`.
+Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` keeps the real server `action` and confirms **once** via `onClickCapture` + `confirmHardDelete` (cancel `preventDefault` / `stopPropagation`). `FileDeleteIcon` has no `name` / `formAction`. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `2cbb5fb`.
 
 ```bash
 cd ~/FitFirst
@@ -40,7 +40,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
 | AQ2 | Right rail | `data-ff-deal-right-rail` is **300px sticky**: Sheet health, then Quotes pulled today, then Tags, Quick comms, Record context. No big empty gap under quotes-pulled. |
 | AQ3 | Tabs under title | Left `flex-1 lg:w-[72%]`: deal title → Documents \| Markets \| Quotes → LOB → panels. No `RecordDetailLayout` rail inside tabs. Motivation does **not** push tabs down. |
-| AQ4 | Delete once | Trash asks **Are you sure you want to delete?** exactly **once**, inside the form `action` wrapper, before the server action. Not `onSubmit` / `preventDefault`. |
+| AQ4 | Delete once | Trash asks **Are you sure you want to delete?** exactly **once**, via form `onClickCapture` + `confirmHardDelete`. Form `action` stays the real server action — not a client wrapper. Cancel uses `preventDefault` / `stopPropagation`. `FileDeleteIcon` has no `name` / `formAction`. |
 
 ### AH — Pipeline list (sep7ah, locked)
 
