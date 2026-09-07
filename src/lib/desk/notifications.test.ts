@@ -10,9 +10,11 @@ import {
   followUpMethodFromTitle,
   followUpNotificationTitle,
   isFollowUpPopupKind,
+  applyLocalNotificationReads,
   notificationBellBadge,
-  notificationBellHighlighted,
+  notificationBellHasUnread,
   notificationBellUnreadLabel,
+  notificationRowUnread,
   notificationHref,
   notificationWhen,
   parseFollowUpNotification,
@@ -39,20 +41,41 @@ describe("notification board helpers", () => {
     expect(recentNotifications(rows)[0]?.id).toBe("a0");
     expect(unreadNotificationCount(rows)).toBe(3);
     expect(unreadNotificationCount([])).toBe(0);
-    expect(notificationBellHighlighted(unreadNotificationCount(rows))).toBe(true);
-    expect(notificationBellHighlighted(unreadNotificationCount([]))).toBe(false);
+    expect(notificationBellHasUnread(unreadNotificationCount(rows))).toBe(true);
+    expect(notificationBellHasUnread(unreadNotificationCount([]))).toBe(false);
   });
 
-  it("highlights the header bell only while unread count is above zero", () => {
-    expect(notificationBellHighlighted(1)).toBe(true);
-    expect(notificationBellHighlighted(3)).toBe(true);
-    expect(notificationBellHighlighted(12)).toBe(true);
-    expect(notificationBellHighlighted(0)).toBe(false);
+  it("shows a bell badge only while unread count is above zero", () => {
+    expect(notificationBellHasUnread(1)).toBe(true);
+    expect(notificationBellHasUnread(3)).toBe(true);
+    expect(notificationBellHasUnread(12)).toBe(true);
+    expect(notificationBellHasUnread(0)).toBe(false);
     expect(notificationBellBadge(4)).toBe("4");
     expect(notificationBellBadge(12)).toBe("9+");
     expect(notificationBellBadge(0)).toBeNull();
     expect(notificationBellUnreadLabel(2)).toBe("Notifications, 2 unread");
     expect(notificationBellUnreadLabel(0)).toBe("Notifications");
+  });
+
+  it("highlights unread panel rows and drops that highlight after mark as read", () => {
+    expect(notificationRowUnread(false)).toBe(true);
+    expect(notificationRowUnread(true)).toBe(false);
+    const rows = [
+      { id: "a1", read: false },
+      { id: "a2", read: false },
+      { id: "a3", read: true },
+    ];
+    expect(unreadNotificationCount(rows)).toBe(2);
+    const afterOne = applyLocalNotificationReads(rows, ["a1"]);
+    expect(afterOne.find((row) => row.id === "a1")?.read).toBe(true);
+    expect(notificationRowUnread(afterOne.find((row) => row.id === "a1")!.read)).toBe(false);
+    expect(notificationRowUnread(afterOne.find((row) => row.id === "a2")!.read)).toBe(true);
+    expect(unreadNotificationCount(afterOne)).toBe(1);
+    expect(notificationBellBadge(unreadNotificationCount(afterOne))).toBe("1");
+    const afterAll = applyLocalNotificationReads(afterOne, ["a2"]);
+    expect(unreadNotificationCount(afterAll)).toBe(0);
+    expect(notificationBellBadge(0)).toBeNull();
+    expect(afterAll.every((row) => !notificationRowUnread(row.read))).toBe(true);
   });
 
   it("deep-links when a record href exists, else the board", () => {

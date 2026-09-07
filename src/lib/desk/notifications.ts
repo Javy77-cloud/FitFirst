@@ -21,20 +21,34 @@ export function unreadNotificationCount(rows: readonly { read: boolean }[]): num
   return rows.filter((row) => !row.read).length;
 }
 
-/** Top-bar bell is highlighted only while any in-app notification is unread. */
-export function notificationBellHighlighted(unread: number): boolean {
+/** Badge on the header bell — not a filled/ringed icon — while any in-app notification is unread. */
+export function notificationBellHasUnread(unread: number): boolean {
   return unread > 0;
 }
 
 export function notificationBellUnreadLabel(unread: number): string {
-  if (!notificationBellHighlighted(unread)) return "Notifications";
+  if (!notificationBellHasUnread(unread)) return "Notifications";
   const shown = unread > 9 ? "9+" : String(unread);
   return `Notifications, ${shown} unread`;
 }
 
 export function notificationBellBadge(unread: number): string | null {
-  if (!notificationBellHighlighted(unread)) return null;
+  if (!notificationBellHasUnread(unread)) return null;
   return unread > 9 ? "9+" : String(unread);
+}
+
+/** Panel / board rows: unread is highlighted; read is not. */
+export function notificationRowUnread(read: boolean): boolean {
+  return !read;
+}
+
+export function applyLocalNotificationReads<T extends { id: string; read: boolean }>(
+  rows: readonly T[],
+  locallyRead: readonly string[],
+): T[] {
+  if (locallyRead.length === 0) return [...rows];
+  const cleared = new Set(locallyRead);
+  return rows.map((row) => (cleared.has(row.id) ? { ...row, read: true } : row));
 }
 
 export function notificationHref(href: string | null | undefined): string {

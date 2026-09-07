@@ -12,7 +12,11 @@ import {
   selectedNotificationIds,
   toggleNotificationSelection,
 } from "@/lib/desk/notification-selection";
-import { parseFollowUpNotification } from "@/lib/desk/notifications";
+import {
+  applyLocalNotificationReads,
+  notificationRowUnread,
+  parseFollowUpNotification,
+} from "@/lib/desk/notifications";
 import { cn } from "@/lib/utils";
 
 export type ChecklistAlert = {
@@ -38,7 +42,9 @@ export function NotificationChecklist({
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>(() => emptyNotificationSelection());
-  const ids = alerts.map((alert) => alert.id);
+  const [locallyRead, setLocallyRead] = useState<string[]>([]);
+  const rows = applyLocalNotificationReads(alerts, locallyRead);
+  const ids = rows.map((alert) => alert.id);
   const checked = selectedNotificationIds(selected, ids);
   const allOn = ids.length > 0 && ids.every((id) => checked.includes(id));
   const bulkEnabled = canRunNotificationBulk(checked);
@@ -51,19 +57,25 @@ export function NotificationChecklist({
     const form = new FormData();
     form.set("alertId", id);
     await markAlertRead(form);
-    const wasUnread = alerts.some((alert) => alert.id === id && !alert.read);
-    if (wasUnread) onMarkedRead?.([id]);
+    const wasUnread = rows.some((alert) => alert.id === id && !alert.read);
+    if (wasUnread) {
+      setLocallyRead((prev) => [...prev, id]);
+      onMarkedRead?.([id]);
+    }
     router.refresh();
   }
 
   async function markChecked() {
     if (!bulkEnabled) return;
-    const unreadIds = alerts.filter((alert) => checked.includes(alert.id) && !alert.read).map((alert) => alert.id);
+    const unreadIds = rows.filter((alert) => checked.includes(alert.id) && !alert.read).map((alert) => alert.id);
     const form = new FormData();
     form.set("alertIds", checked.join(","));
     await markSelectedAlertsRead(form);
     setSelected(emptyNotificationSelection());
-    if (unreadIds.length) onMarkedRead?.(unreadIds);
+    if (unreadIds.length) {
+      setLocallyRead((prev) => [...prev, ...unreadIds]);
+      onMarkedRead?.(unreadIds);
+    }
     router.refresh();
   }
 
@@ -92,18 +104,23 @@ export function NotificationChecklist({
         </Button>
       </div>
 
-      {alerts.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="px-3 py-6 text-sm text-muted-foreground">{empty}</p>
       ) : (
         <ul>
-          {alerts.map((alert) => {
+          {rows.map((alert) => {
             const copy = parseFollowUpNotification(alert);
             const isChecked = checked.includes(alert.id);
+            const unread = notificationRowUnread(alert.read);
             return (
               <li
                 key={alert.id}
-                className="flex items-start gap-2 border-b border-border px-3 py-2 last:border-b-0"
+                className={cn(
+                  "flex items-start gap-2 border-b border-border px-3 py-2 last:border-b-0",
+                  unread && "bg-[#ffedd5]",
+                )}
                 data-testid="notification-row"
+                data-unread-row={unread ? "true" : "false"}
               >
                 <input
                   type="checkbox"
@@ -114,7 +131,7 @@ export function NotificationChecklist({
                   data-testid="notification-select"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className={cn("truncate text-sm text-navy", !alert.read && "font-semibold")}>{copy.action}</p>
+                  <p className={cn("truncate text-sm text-navy", unread && "font-semibold")}>{copy.action}</p>
                   <p className="mt-0.5 truncate text-sm text-navy/80">{copy.leadName}</p>
                   {alert.when ? (
                     <p className="mt-0.5 text-[11px] text-muted-foreground">{alert.when}</p>
