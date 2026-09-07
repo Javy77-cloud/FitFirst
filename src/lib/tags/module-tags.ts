@@ -60,3 +60,8 @@ export function formatTagLabel(tag: string): string {
     .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+/** Stable list-cell sort/display string — same on SSR and CSR. Do not walk TagChips. */
+export function tagSortText(tags: string[] | null | undefined): string {
+  return normalizeTags(tags).map(formatTagLabel).join(" ");
+}

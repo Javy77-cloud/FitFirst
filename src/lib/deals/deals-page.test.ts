@@ -241,6 +241,7 @@ describe("Deals page sep7h", () => {
     expect(table).toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
     expect(table).toMatch(/comms: ""/);
+    expect(table).toMatch(/tags: tagSortText\(deal\.tags\)/);
     expect(source("src/components/lists/mass-update.tsx")).toMatch(/Mass update/);
     expect(source("src/components/developer-hub/list-selection.tsx")).toMatch(/list-select-matching/);
     expect(source("src/lib/desk/columns.ts")).toMatch(/key: "value", label: "Value"/);

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { isValidElement } from "react";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
 import { ColumnSortFilter } from "@/components/lists/funnel-sort";
@@ -61,7 +60,9 @@ export function cellSortText(value: ReactNode): string {
   if (value == null || typeof value === "boolean") return "";
   if (typeof value === "string" || typeof value === "number") return String(value);
   if (Array.isArray(value)) return value.map(cellSortText).filter(Boolean).join(" ");
-  if (isValidElement<{ children?: ReactNode }>(value)) return cellSortText(value.props.children);
+  // Do not walk React trees. RSC-passed components (TagChips, StagePill, …) have no
+  // children on the server and expanded host children on the client — that mismatch
+  // used to stamp data-sort="" in SSR HTML and data-sort="High Risk" after hydrate.
   return "";
 }
 

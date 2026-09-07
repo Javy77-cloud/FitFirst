@@ -39,6 +39,7 @@ import {
 import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
 import { TagChips } from "@/components/tags/tag-chips";
+import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTagColors } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
@@ -207,6 +208,7 @@ export default async function LeadsPage({
                   parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
                   hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status, ...(lead.tags ?? [])]),
                   sort: {
+                    pick: "",
                     name: `${lead.lastName}, ${lead.firstName}`,
                     status,
                     source: sourceLabel(lead.source),
@@ -214,6 +216,7 @@ export default async function LeadsPage({
                     heat: lead.temperature ?? "hot",
                     followUp: followUpName,
                     shop: lead.convertedDealId ? "open" : "convert",
+                    tags: tagSortText(lead.tags),
                   },
                   cells: {
                     pick: <SelectRowCheckbox id={lead.id} />,

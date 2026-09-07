@@ -18,6 +18,7 @@ import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { TagChips } from "@/components/tags/tag-chips";
+import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTagColors } from "@/app/actions/record-tags";
 
 type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account" | "lead"> & {
@@ -125,6 +126,8 @@ export async function DealsTable({
                 nextAction: sheetAttr(nextDue),
                 updated: sheetAttr(deal.updatedAt ? new Date(deal.updatedAt).toISOString() : ""),
                 esign: sheetAttr(deal.esignStatus),
+                // Same labels TagChips shows — do not walk the chip tree (SSR children are empty).
+                tags: tagSortText(deal.tags),
                 // Keep "" on both sides — client action labels must not become data-sort.
                 comms: "",
               },
