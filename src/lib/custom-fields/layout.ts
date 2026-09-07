@@ -1,3 +1,8 @@
+import {
+  OPTIONAL_CONTACT_KEYS,
+  STRIPPED_DEAL_SECTION_IDS,
+  defaultLayoutForLine,
+} from "./defaults";
 import type { FieldLayout, LayoutSection } from "./types";
 import { emptyLayout, newSectionId, parseLayout } from "./types";
 
@@ -96,4 +101,42 @@ export function ensureTwoColumns(layout: FieldLayout): FieldLayout {
   if (!parsed.columns[0]) parsed.columns[0] = { id: "left", sections: [] };
   if (!parsed.columns[1]) parsed.columns[1] = { id: "right", sections: [] };
   return parsed.columns[0] && parsed.columns[1] ? parsed : emptyLayout();
+}
+
+const STRIPPED_IDS = new Set<string>(STRIPPED_DEAL_SECTION_IDS);
+const OPTIONAL_CONTACT = new Set<string>(OPTIONAL_CONTACT_KEYS);
+
+export function needsEssentialDealMigration(layout: FieldLayout): boolean {
+  return layout.columns.some((column) =>
+    column.sections.some((section) => STRIPPED_IDS.has(section.id)),
+  );
+}
+
+/** Drop Property / Photos / Notes (and other old LOB packs) from a saved layout. */
+export function stripLegacyDealLayout(layout: FieldLayout): FieldLayout {
+  if (!needsEssentialDealMigration(layout)) return cloneLayout(layout);
+  const next = cloneLayout(layout);
+  for (const column of next.columns) {
+    column.sections = column.sections.filter((section) => !STRIPPED_IDS.has(section.id));
+    for (const section of column.sections) {
+      if (section.id === "contact") {
+        section.fieldKeys = section.fieldKeys.filter((key) => !OPTIONAL_CONTACT.has(key));
+      }
+    }
+  }
+  const hasContact = next.columns.some((column) => column.sections.some((section) => section.id === "contact"));
+  const hasAddress = next.columns.some((column) => column.sections.some((section) => section.id === "address"));
+  if (!hasContact || !hasAddress) return defaultLayoutForLine();
+  const right = next.columns[1];
+  if (right && right.sections.length === 0) {
+    for (const column of next.columns) {
+      const idx = column.sections.findIndex((section) => section.id === "address");
+      if (idx >= 0 && column.id !== "right") {
+        const [address] = column.sections.splice(idx, 1);
+        right.sections.push(address);
+        break;
+      }
+    }
+  }
+  return next;
 }

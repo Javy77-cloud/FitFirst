@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/schema";
 import type { ConvertLead } from "@/lib/crm/convert";
 import { catalogForLines, defaultFieldsForLine, defaultLayoutForLine, DEAL_LAYOUT_LINES } from "./defaults";
+import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import { filterLeadForCarry, systemValueFromLead } from "./transfer";
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { parseLayout } from "./types";
@@ -119,7 +120,22 @@ export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
           eq(deskFieldLayouts.lineOfBusiness, lob),
         ),
       );
-    if (row) return parseLayout(row.columns);
+    if (row) {
+      const parsed = parseLayout(row.columns);
+      if (!needsEssentialDealMigration(parsed)) return parsed;
+      const stripped = stripLegacyDealLayout(parsed);
+      await db
+        .update(deskFieldLayouts)
+        .set({ columns: stripped, updatedAt: new Date() })
+        .where(
+          and(
+            eq(deskFieldLayouts.tenantId, DEFAULT_TENANT_ID),
+            eq(deskFieldLayouts.module, "deals"),
+            eq(deskFieldLayouts.lineOfBusiness, lob),
+          ),
+        );
+      return stripped;
+    }
     const layout = defaultLayoutForLine(lob);
     await db
       .insert(deskFieldLayouts)

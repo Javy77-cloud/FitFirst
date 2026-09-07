@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7au`)
+## Mac test now (`cursor/live-ff-tip-sep7az`)
 
-Consolidator: Deal Details + field builder from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d` (Deal Details tab, per-LOB field builder, tag chip ×, Manage tags, selective lead convert) plus extraction maps + ATTOM / Estated / FL stubs from `cursor/live-ff-tip-sep7at-6bcc` @ `94b775a` / tip SHA `199ae2e` (per-form source label → master sheet field, address-confirm enrichment). sep7ar chrome stays: AppShell title **Deals**, left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`, `HardDeleteForm` confirms **once** via `onClickCapture`, Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `4f66ea9`.
+WIP consolidator — README finalized after AX + AV.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7au-2ccf && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
@@ -19,15 +19,15 @@ npm run dev -- --port 43147
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail (Deal Details tab + 300px rail). Also open a shopping deal (not Ana): drop a wind mit / 4-point / dec and confirm the street for enrichment stubs. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
-### AS — Deal Details + field builder
+### AW — Deal Details strip-down
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| AS1 | Tabs | **Deal Details · Documents · Markets · Quotes**. Details is first and the default tab. |
-| AS2 | Two-col desk | Details is the lead two-column desk. Inline add / delete / relabel fields and sections. |
-| AS3 | Field builder | Settings `/settings/field-builder` — drag fields between two columns, all Javy types, formula math, image upload, **per-LOB layouts**. |
-| AS4 | Tags | Tag chip **× on hover** removes from this deal. **Manage tags** opens the module catalog (rename / merge / delete). |
-| AS5 | Selective convert | Lead → Deal convert is a checkbox list. Only checked lead fields carry. |
+| AW1 | Essentials only | Deal Details shows **Contact** (first, last, email, phone) + **Address** (street, city, state, ZIP) + **Edit layout**. No Property / Photos & calc / Notes / New field row. |
+| AW2 | Own page | **Edit layout** opens `/settings/field-builder?line=…`. Builder is **not** inline on the deal. |
+| AW3 | Builder | Palette of types (single line through image upload). Drag onto a column, drop, type the label. Two columns; drag fields/sections to reorder. Add/relabel sections. **Save** applies to every deal of that LOB. |
+| AW4 | Other tabs | Documents, Markets, Quotes, and the 300px rail are unchanged. |
+| AW5 | Tests | `deal-details-tab` + `field-builder` cover the stripped desk and the builder open path. |
 
 ### AT — Field maps + enrichment
 
