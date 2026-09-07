@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aa`)
 
-Red-box layout on `cursor/live-ff-tip-sep7y` @ `0a8ea92`. **Attach LEFT** (~two-thirds, never full page). **Today's Activity RIGHT** on the **same row**. Chips are **colored squares** (not flat 36px rectangles), 3D + 6px hover lift, no panel behind them. Trash stays on document rows inside Attach. Deal detail unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+Red-box layout on `cursor/live-ff-tip-sep7y` @ `0a8ea92`. **Attach LEFT** (~two-thirds, never full page). **Today's Activity RIGHT** on the **same row**. Chips are **colored squares** (not flat 36px rectangles), 3D + 6px hover lift, no panel behind them. Trash stays on document rows inside Attach. Deal detail unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `a86a834`.
 
 ```bash
 cd ~/FitFirst
