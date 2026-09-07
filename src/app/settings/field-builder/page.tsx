@@ -21,8 +21,9 @@ export default async function FieldBuilderPage({
   return (
     <SettingsShell title="Deal field builder" current="field-builder">
       <p className="mb-4 text-sm text-muted-foreground">
-        Build the Deal Details layout once per line of business. Homeowners and general liability
-        do not share a sheet — a roofer shop and a salon shop keep their own fields.
+        Drag a field type onto a column, drop it, and type the label. Reorder by dragging fields
+        or sections. Save applies this layout to every {LINE_LABELS[line]} deal — homeowners and
+        general liability do not share a sheet.
       </p>
       <div className="mb-4 flex flex-wrap gap-2" data-ff-builder-lobs>
         {DEAL_LAYOUT_LINES.map((item) => (

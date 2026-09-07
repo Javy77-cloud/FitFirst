@@ -79,47 +79,32 @@ const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
   ],
 };
 
-function contactSections(): LayoutSection[] {
-  return [
-    section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone", "date_of_birth"]),
-    section("address", "Address", ["mailing_address", "city", "state", "zip"]),
-  ];
-}
+export const ESSENTIAL_CONTACT_KEYS = ["first_name", "last_name", "email", "phone"] as const;
+export const ESSENTIAL_ADDRESS_KEYS = ["mailing_address", "city", "state", "zip"] as const;
+export const OPTIONAL_CONTACT_KEYS = ["middle_name", "date_of_birth"] as const;
 
-const LOB_RIGHT: Record<string, LayoutSection[]> = {
-  HO: [
-    section("property", "Property", ["year_built", "roof_year", "construction", "stories", "coverage_a"]),
-    section("photos", "Photos & calc", ["roof_photo", "dwell_pct"]),
-    section("notes", "Notes", ["notes"]),
-  ],
-  AUTO: [
-    section("vehicle", "Vehicle", ["vin", "vehicle_year", "make", "model"]),
-    section("notes", "Notes", ["notes"]),
-  ],
-  FLOOD: [section("flood", "Flood", ["flood_zone", "elevation"]), section("notes", "Notes", ["notes"])],
-  UMBRELLA: [
-    section("umbrella", "Umbrella", ["umbrella_limit", "underlying"]),
-    section("notes", "Notes", ["notes"]),
-  ],
-  GL: [
-    section("business", "Business", ["legal_name", "class_code", "employees", "occupancy", "sqft"]),
-    section("operations", "Operations", ["operations", "notes"]),
-  ],
-  BOP: [
-    section("business", "Business", ["legal_name", "class_code", "employees", "sales"]),
-    section("notes", "Notes", ["notes"]),
-  ],
-  LIFE: [
-    section("life", "Life", ["face_amount", "tobacco", "beneficiary"]),
-    section("notes", "Notes", ["notes"]),
-  ],
-  HEALTH: [section("health", "Health", ["plan_type", "dependents"]), section("notes", "Notes", ["notes"])],
-  RV: [section("rv", "Rec / RV", ["rv_year", "rv_make", "length_ft"]), section("notes", "Notes", ["notes"])],
-  WC: [
-    section("wc", "Workers comp", ["payroll", "class_code", "employees"]),
-    section("notes", "Notes", ["notes"]),
-  ],
-};
+/** Old sep7as default sections that no longer belong on Deal Details. */
+export const STRIPPED_DEAL_SECTION_IDS = [
+  "property",
+  "photos",
+  "notes",
+  "vehicle",
+  "flood",
+  "umbrella",
+  "business",
+  "operations",
+  "life",
+  "health",
+  "rv",
+  "wc",
+] as const;
+
+function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } {
+  return {
+    left: [section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS])],
+    right: [section("address", "Address", [...ESSENTIAL_ADDRESS_KEYS])],
+  };
+}
 
 export function defaultFieldsForLine(line: string): CustomFieldDef[] {
   const extra = LOB_FIELDS[line] ?? LOB_FIELDS.HO;
@@ -133,11 +118,12 @@ export function defaultFieldsForLine(line: string): CustomFieldDef[] {
   return out;
 }
 
-export function defaultLayoutForLine(line: string): FieldLayout {
+export function defaultLayoutForLine(_line?: string): FieldLayout {
+  const { left, right } = essentialSections();
   return {
     columns: [
-      { id: "left", sections: contactSections() },
-      { id: "right", sections: LOB_RIGHT[line] ?? LOB_RIGHT.HO },
+      { id: "left", sections: left },
+      { id: "right", sections: right },
     ],
   };
 }

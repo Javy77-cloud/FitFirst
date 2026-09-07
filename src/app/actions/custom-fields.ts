@@ -48,6 +48,28 @@ export async function saveDealFieldLayout(formData: FormData) {
   const line = lineFrom(formData);
   const raw = str(formData, "layout");
   const layout = parseLayout(raw ? JSON.parse(raw) : {});
+  const rawFields = str(formData, "fields");
+  if (rawFields) {
+    try {
+      const incoming = JSON.parse(rawFields) as CustomFieldDef[];
+      if (Array.isArray(incoming)) {
+        for (const field of incoming) {
+          if (!field?.key || !field.label || !isCustomFieldType(String(field.type))) continue;
+          await upsertFieldDef({
+            key: field.key,
+            label: field.label,
+            type: field.type,
+            options: field.options ?? [],
+            formula: field.formula ?? null,
+            lookupModule: field.lookupModule ?? null,
+            systemKey: field.systemKey ?? null,
+          });
+        }
+      }
+    } catch {
+      /* keep layout save even if field payload is stale */
+    }
+  }
   await saveLayoutForLine(line, layout);
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line);
 }

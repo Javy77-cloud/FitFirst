@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7as`)
+## Mac test now (`cursor/live-ff-tip-sep7aw`)
 
-Deal Details + field builder, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Tabs: **Deal Details · Documents · Markets · Quotes**. Details is the lead two-column desk with inline add/delete/relabel. Field builder is its own Settings screen (`/settings/field-builder`) — drag fields between two columns, all Javy types, formula math, image upload, **per-LOB layouts**. Tag chip **× on hover** removes from this deal; **Manage tags** opens the module catalog (rename / merge / delete). Convert is selective — agent checks which lead fields carry. Outer row `flex w-full`: left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`. AppShell title **Deals**. `HardDeleteForm` confirms **once** via `onClickCapture`. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `ce2d72d`.
+Deal Details strip-down + Zoho-style field builder, from `cursor/live-ff-tip-sep7as` @ `e409265` / tip SHA `ce2d72d`. **Deal Details** keeps Contact (first, last, email, phone) + Address (street, city, state, ZIP) and one **Edit layout** button. Property / Photos & calc / Notes / inline add-field are gone — those live on Documents or the rail. Middle name and DOB only appear if the agent adds them on the builder. **Edit layout** opens `/settings/field-builder` (not inline): type palette, two-column drag-and-drop, custom sections, relabel, **Save** per line of business. Documents / Markets / Quotes / sidebar unchanged. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7as-ae16 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7aw-5c80 && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
@@ -18,6 +18,16 @@ npm run dev -- --port 43147
 ```
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AW — Deal Details strip-down (this tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AW1 | Essentials only | Deal Details shows **Contact** (first, last, email, phone) + **Address** (street, city, state, ZIP) + **Edit layout**. No Property / Photos & calc / Notes / New field row. |
+| AW2 | Own page | **Edit layout** opens `/settings/field-builder?line=…`. Builder is **not** inline on the deal. |
+| AW3 | Builder | Palette of types (single line through image upload). Drag onto a column, drop, type the label. Two columns; drag fields/sections to reorder. Add/relabel sections. **Save** applies to every deal of that LOB. |
+| AW4 | Other tabs | Documents, Markets, Quotes, and the 300px rail are unchanged. |
+| AW5 | Tests | `deal-details-tab` + `field-builder` cover the stripped desk and the builder open path. |
 
 ### AR — Deal rail widths (this tip)
 

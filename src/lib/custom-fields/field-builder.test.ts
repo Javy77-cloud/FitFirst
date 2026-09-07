@@ -1,16 +1,21 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { defaultFieldsForLine, defaultLayoutForLine } from "./defaults";
+import {
+  ESSENTIAL_ADDRESS_KEYS,
+  ESSENTIAL_CONTACT_KEYS,
+  defaultFieldsForLine,
+  defaultLayoutForLine,
+} from "./defaults";
 import { evaluateFormula, extractFormulaFields } from "./formula";
 import { addSection, moveField, relabelSection } from "./layout";
-import { CUSTOM_FIELD_TYPES } from "./types";
+import { CUSTOM_FIELD_TYPES, CUSTOM_FIELD_TYPE_LABELS } from "./types";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
 describe("deal field builder", () => {
-  it("exposes every Javy field type including formula and image", () => {
+  it("exposes every Javy field type on a drag palette, two columns, and a per-LOB save", () => {
     expect(CUSTOM_FIELD_TYPES).toEqual([
       "single_line",
       "multi_line",
@@ -28,25 +33,48 @@ describe("deal field builder", () => {
       "formula",
       "image",
     ]);
+    expect(CUSTOM_FIELD_TYPE_LABELS.image).toBe("Image upload");
     const builder = source("src/components/custom-fields/field-builder.tsx");
     expect(builder).toMatch(/data-ff-field-builder/);
     expect(builder).toMatch(/data-ff-builder-columns/);
+    expect(builder).toMatch(/data-ff-builder-palette/);
+    expect(builder).toMatch(/data-ff-palette-type/);
+    expect(builder).toMatch(/kind: "type"/);
     expect(builder).toMatch(/onDragStart/);
     expect(builder).toMatch(/FormulaBuilder/);
+    expect(builder).toMatch(/data-ff-save-layout/);
+    expect(builder).toMatch(/>Save</);
+    expect(builder).toMatch(/Add section/);
+    expect(builder).toMatch(/data-ff-section-label/);
+    expect(builder).toMatch(/data-ff-field-label/);
     expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/FieldBuilder/);
     expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/DEAL_LAYOUT_LINES/);
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveDealFieldLayout/);
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
   });
 
-  it("builds different default layouts per line of business", () => {
+  it("defaults every line of business to Contact essentials + Address only", () => {
     const home = defaultLayoutForLine("HO");
     const salon = defaultLayoutForLine("GL");
     expect(home.columns).toHaveLength(2);
     expect(salon.columns).toHaveLength(2);
-    const homeKeys = home.columns[1].sections.flatMap((section) => section.fieldKeys);
-    const salonKeys = salon.columns[1].sections.flatMap((section) => section.fieldKeys);
-    expect(homeKeys).toEqual(expect.arrayContaining(["roof_year", "coverage_a"]));
-    expect(salonKeys).toEqual(expect.arrayContaining(["legal_name", "class_code", "occupancy"]));
+    const homeKeys = home.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys));
+    const salonKeys = salon.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys));
+    expect(homeKeys).toEqual([...ESSENTIAL_CONTACT_KEYS, ...ESSENTIAL_ADDRESS_KEYS]);
+    expect(salonKeys).toEqual(homeKeys);
+    expect(homeKeys).not.toContain("roof_year");
     expect(homeKeys).not.toContain("occupancy");
+    expect(home.columns[0].sections.map((section) => section.label)).toEqual(["Contact"]);
+    expect(home.columns[1].sections.map((section) => section.label)).toEqual(["Address"]);
+  });
+
+  it("keeps LOB field catalogs so the builder can add them later", () => {
+    expect(defaultFieldsForLine("HO").map((field) => field.key)).toEqual(
+      expect.arrayContaining(["roof_year", "coverage_a", "roof_photo"]),
+    );
+    expect(defaultFieldsForLine("GL").map((field) => field.key)).toEqual(
+      expect.arrayContaining(["legal_name", "class_code", "occupancy"]),
+    );
     expect(defaultFieldsForLine("HO").some((field) => field.type === "formula")).toBe(true);
     expect(defaultFieldsForLine("HO").some((field) => field.type === "image")).toBe(true);
   });
