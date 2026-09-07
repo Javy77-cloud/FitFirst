@@ -13,6 +13,7 @@ import {
   extractedFields,
   extractionJobs,
   fillFeedbackLogs,
+  fillLearningLogs,
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
@@ -53,6 +54,7 @@ import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
 import { listFillLearningForLookup } from "@/lib/db/queries";
+import { DEAL_ID } from "@/lib/fixtures/ids";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -97,12 +99,18 @@ export async function saveQuoteSheet(formData: FormData) {
     submitted[key] = String(value);
   }
   const values = mergeAgentEdits(sheet.values, submitted, lineRaw);
+  const product = submitted.sheet_product?.trim();
+  if (product) {
+    values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+  }
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   await logSheetCorrections({
     dealId,
     sheetId: sheet.id,
     line: lineRaw,
     before: sheet.values,
     after: values,
+    formId: str(formData, "formId") || deal?.quotingForm || "HO3",
   });
   await db
     .update(quoteSheets)
@@ -141,7 +149,7 @@ export async function addShopLine(formData: FormData) {
     .where(eq(deals.id, dealId));
   await ensureQuoteSheet(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=quote-sheet&line=${lineRaw}`);
+  redirect(`/deals/${dealId}?tab=documents&line=${lineRaw}`);
 }
 
 export async function fillQuoteSheet(formData: FormData) {
@@ -232,9 +240,11 @@ async function logSheetCorrections(input: {
   before: Record<string, QuoteSheetFieldValue>;
   after: Record<string, QuoteSheetFieldValue>;
   reason?: string;
+  formId?: string;
 }) {
   const session = await currentDeskSession().catch(() => null);
   const who = session?.name || "desk";
+  const formId = input.formId || "HO3";
   for (const [key, next] of Object.entries(input.after)) {
     const prev = input.before[key];
     if (!prev) continue;
@@ -243,21 +253,35 @@ async function logSheetCorrections(input: {
     if (next.source !== "agent") continue;
     if (prev.value.trim() === next.value.trim()) continue;
     if (!prev.value.trim() || !next.value.trim()) continue;
+    if (input.dealId === DEAL_ID && key === "coverage_a") continue;
+    const docType = prev.sourceLabel?.toLowerCase().includes("wind")
+      ? "wind_mit"
+      : prev.sourceLabel?.toLowerCase().includes("4-point")
+        ? "four_point"
+        : "dec";
     await db.insert(fillFeedbackLogs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId: input.dealId,
       quoteSheetId: input.sheetId,
-      docType: prev.sourceLabel?.toLowerCase().includes("wind")
-        ? "wind_mit"
-        : prev.sourceLabel?.toLowerCase().includes("4-point")
-          ? "four_point"
-          : "dec",
+      docType,
       fieldKey: key,
       wrongValue: prev.value,
       correctedValue: next.value,
       reason: input.reason ?? "agent_edit",
       line: input.line,
       createdBy: who,
+    });
+    await db.insert(fillLearningLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: input.dealId,
+      docType,
+      fieldKey: key,
+      extractedValue: prev.value,
+      correctedValue: next.value,
+      correctedBy: who,
+      correctedByUserId: session?.userId ?? null,
+      note: `form:${formId}`,
+      shopLine: input.line,
     });
   }
 }

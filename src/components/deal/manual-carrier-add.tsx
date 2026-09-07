@@ -1,16 +1,21 @@
 import { addManualMarket } from "@/app/actions/deal-desk";
 import { Button } from "@/components/ui/button";
+import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
 
 export function ManualCarrierAdd({
   dealId,
   carriers,
   alreadyIds,
+  dealLine,
 }: {
   dealId: string;
-  carriers: { id: string; name: string }[];
+  carriers: { id: string; name: string; writtenLines?: string[] | null }[];
   alreadyIds: string[];
+  dealLine: string;
 }) {
-  const available = carriers.filter((carrier) => !alreadyIds.includes(carrier.id));
+  const available = carriersForDealLine(carriers, dealLine).filter(
+    (carrier) => !alreadyIds.includes(carrier.id),
+  );
 
   return (
     <form action={addManualMarket} className="flex flex-wrap items-end gap-2" data-ff-manual-carrier>
@@ -24,7 +29,7 @@ export function ManualCarrierAdd({
           defaultValue=""
         >
           <option value="" disabled>
-            Lookup from the carrier list
+            Carriers that write this line
           </option>
           {available.map((carrier) => (
             <option key={carrier.id} value={carrier.id}>

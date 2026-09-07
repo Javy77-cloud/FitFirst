@@ -1,48 +1,107 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { AGENT_DEAL_TABS } from "./tabs";
+import { fieldsForLine, homeFieldCount } from "@/lib/quote-sheet/catalog";
+import { defaultProductForLine, productsForLine } from "@/lib/quote-sheet/products";
+import { carriersForDealLine } from "./carriers-for-line";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("deal detail rebuild checklist", () => {
-  it("drops the standalone source field and issued-quote PDF block", () => {
+describe("deal detail final rebuild", () => {
+  it("shows only the deal name in the header and keeps FitFirst off the title", () => {
     const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/title=\{deal\.title\}/);
+    expect(page).toMatch(/showBrand=\{false\}/);
+    expect(page).toMatch(/utilityChrome/);
+    expect(page).not.toMatch(/<h1[^>]*>\{deal\.title\}/);
+    expect(page).not.toMatch(/FitFirst/);
+    expect(page).toMatch(/recordContext=\{\{/);
+    expect(page).not.toMatch(/deal-quick-actions/);
+  });
+
+  it("keeps three tabs under the name and kills Quote Sheet", () => {
+    expect(AGENT_DEAL_TABS).toEqual(["documents", "markets", "quotes"]);
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/AGENT_DEAL_TABS/);
+    expect(page).not.toMatch(/QuoteSheetPanel/);
+    expect(page).not.toMatch(/tab=quote-sheet/);
+    expect(page).toMatch(/SectionTabs/);
+    expect(page.indexOf("SectionTabs")).toBeLessThan(page.indexOf("RecordDetailLayout"));
+  });
+
+  it("puts an editable master sheet beside a compact upload on Documents", () => {
     const docs = source("src/components/deal/documents-panel.tsx");
-    expect(page).not.toMatch(/SourceSelect/);
-    expect(page).toMatch(/Source ·/);
-    expect(page).not.toMatch(/Save source/);
-    expect(docs).not.toMatch(/Issued quote PDFs/);
+    const upload = source("src/components/deal/source-docs-upload.tsx");
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
     expect(docs).toMatch(/SourceDocsUpload/);
     expect(docs).toMatch(/MasterSheetCompare/);
     expect(docs).toMatch(/SheetApproveGate/);
     expect(docs).toMatch(/DeleteUploadedFileButton/);
+    expect(upload).toMatch(/Create/);
+    expect(upload).not.toMatch(/Add another file/);
+    expect(sheet).toMatch(/name=\{fieldKey\}/);
+    expect(sheet).toMatch(/Confirm extracted/);
+    expect(sheet).toMatch(/Save sheet/);
   });
 
-  it("pins quick comms to the sticky rail and collapses sheet health", () => {
+  it("uses a rich HO sheet with shared applicant core and line scaffolds", () => {
+    expect(homeFieldCount()).toBeGreaterThanOrEqual(90);
+    const home = fieldsForLine("home", "homeowners").map((field) => field.key);
+    expect(home).toEqual(expect.arrayContaining([
+      "applicant_name",
+      "applicant_phone",
+      "applicant_email",
+      "applicant_dob",
+      "entity_type",
+      "construction",
+      "wind_mit_form",
+      "four_point_date",
+      "coverage_a",
+    ]));
+    expect(fieldsForLine("auto").map((field) => field.key)).toEqual(
+      expect.arrayContaining(["vin", "driver_1_name", "driver_1_license"]),
+    );
+    expect(fieldsForLine("flood").map((field) => field.key)).toContain("flood_zone");
+    expect(fieldsForLine("general_liability").map((field) => field.key)).toContain("class_code");
+    expect(fieldsForLine("workers_comp").map((field) => field.key)).toContain("payroll");
+    expect(productsForLine("home")).toEqual(["homeowners", "renters", "landlord"]);
+    expect(defaultProductForLine("auto")).toBe("auto");
+    expect(productsForLine("auto")).toEqual(["auto", "motorcycle", "commercial_auto"]);
+  });
+
+  it("filters manual carrier add to writers of this line", () => {
+    const options = [
+      { id: "ho", name: "Home Co", writtenLines: ["HO"] },
+      { id: "flood", name: "Flood Co", writtenLines: ["FLOOD"] },
+    ];
+    expect(carriersForDealLine(options, "HO").map((row) => row.id)).toEqual(["ho"]);
+    expect(carriersForDealLine(options, "FLOOD").map((row) => row.id)).toEqual(["flood"]);
+    const markets = source("src/components/deal/markets-panel.tsx");
+    expect(markets).toMatch(/In appetite|marketBucketLabel\("appetite"\)/);
+    expect(markets).toMatch(/Approve & request quotes/);
+    expect(markets).toMatch(/PaidApiWall/);
+    expect(markets).toMatch(/dealLine/);
+  });
+
+  it("pins quick comms and keeps motivation in the corner", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/data-ff-deal-quick-comms/);
     expect(page).toMatch(/QuickCommsBoard/);
     expect(page).toMatch(/lg:sticky/);
-    expect(page).toMatch(/SheetHealthToggle/);
     expect(page).toMatch(/DealMotivation/);
-    expect(page).not.toMatch(/deal-quick-actions/);
-    const health = source("src/components/deal/sheet-health-toggle.tsx");
-    expect(health).toMatch(/useState\(false\)/);
-    expect(health).toMatch(/Sheet health/);
-  });
-
-  it("keeps markets as appetite / stretch / skip with a paid wall", () => {
-    const markets = source("src/components/deal/markets-panel.tsx");
-    expect(markets).toMatch(/Approve & request quotes/);
-    expect(markets).toMatch(/Request stretch quotes/);
-    expect(markets).toMatch(/ManualCarrierAdd/);
-    expect(markets).toMatch(/PaidApiWall/);
-    expect(markets).toMatch(/manual/);
+    expect(page).toMatch(/SheetHealthToggle/);
+    const comms = source("src/components/comms/quick-comms-board.tsx");
+    expect(comms).toMatch(/ACTIVITY_KINDS/);
+    expect(comms).toMatch(/ACTIVITY_KIND_LABEL/);
+    expect(comms).toMatch(/task:|meeting:|call:|email:|sms:/);
   });
 
   it("does not add a carrier-history item to the sidebar catalog", () => {
     const nav = source("src/lib/desk/nav-catalog.ts");
     expect(nav).not.toMatch(/carrier-history/);
+    const css = source("src/app/globals.css");
+    expect(css).toContain("--ff-sidebar: #1d4e89;");
   });
 });

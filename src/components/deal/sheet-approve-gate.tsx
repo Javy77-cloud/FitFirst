@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { requestAppetiteQuotesAction } from "@/app/actions/quotes";
 import { approveMasterSheet } from "@/app/actions/quoting";
 import { Button } from "@/components/ui/button";
 
@@ -23,9 +24,17 @@ export function SheetApproveGate({
 
   if (unlocked) {
     return (
-      <div className="rounded-md bg-fit-green-bg px-3 py-2 text-xs text-fit-green">
-        Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Send to Fill is unlocked.
-        Quotes still do not bind.
+      <div className="space-y-2 rounded-md border border-fit-green/30 bg-fit-green-bg px-3 py-3" data-ff-sheet-approve>
+        <p className="text-xs text-fit-green">
+          Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Request quotes from every
+          in-appetite carrier.
+        </p>
+        <form action={requestAppetiteQuotesAction}>
+          <input type="hidden" name="dealId" value={dealId} />
+          <Button type="submit" size="sm">
+            Approve & request quotes
+          </Button>
+        </form>
       </div>
     );
   }
@@ -57,13 +66,17 @@ export function SheetApproveGate({
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3">
+    <form
+      onSubmit={onSubmit}
+      className="rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
+      data-ff-sheet-approve
+    >
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
-      <p className="text-sm font-semibold text-navy">Visual approval required</p>
+      <p className="text-sm font-semibold text-navy">Confirm this sheet</p>
       <p className="mt-1 text-helper text-muted-foreground">
-        Glance the {formLabel} master sheet. Yellow is missing. Blue is CHECK. Confirm, then
-        answer “are you sure?” Send to Fill stays locked until both steps.
+        Glance the {formLabel} master sheet. Confirm it, then{" "}
+        <span className="font-medium">Approve & request quotes</span> unlocks.
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input
@@ -76,7 +89,10 @@ export function SheetApproveGate({
       </label>
       <div className="mt-3">
         <Button type="submit" size="sm" disabled={!reviewed || pending}>
-          {pending ? "Unlocking…" : "Approve and unlock quoting"}
+          {pending ? "Unlocking…" : "Confirm sheet"}
+        </Button>
+        <Button type="button" size="sm" className="ml-2" disabled>
+          Approve & request quotes
         </Button>
       </div>
       {error ? <p className="mt-2 text-xs text-fit-flag">{error}</p> : null}

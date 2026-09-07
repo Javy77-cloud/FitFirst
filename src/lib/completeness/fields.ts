@@ -45,9 +45,16 @@ export const AUTO_BIND_KEYS = [
   "current_carrier",
 ] as const;
 
+const FLOOD_SHOP_KEYS = ["flood_zone", "building_limit"] as const;
+const GL_SHOP_KEYS = ["occupancy", "class_code", "limit"] as const;
+const WC_SHOP_KEYS = ["class_code", "payroll"] as const;
+
 const SHOP: Partial<Record<ShopLine, readonly string[]>> = {
   home: HOME_SHOP_KEYS,
   auto: AUTO_SHOP_KEYS,
+  flood: FLOOD_SHOP_KEYS,
+  general_liability: GL_SHOP_KEYS,
+  workers_comp: WC_SHOP_KEYS,
 };
 
 const BIND: Partial<Record<ShopLine, readonly string[]>> = {

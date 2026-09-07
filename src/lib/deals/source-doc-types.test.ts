@@ -21,10 +21,12 @@ describe("deal worksheet source docs", () => {
     expect(SOURCE_DOC_ACCEPT).toMatch(/image\/heic/);
   });
 
-  it("accepts multiple files and addable rows on the worksheet form", () => {
+  it("keeps one compact type / file / create zone on the worksheet", () => {
     const form = readFileSync("src/components/deal/source-docs-upload.tsx", "utf8");
     expect(form).toMatch(/multiple/);
-    expect(form).toMatch(/Add another file/);
-    expect(form).toMatch(/name=\{`files_\$\{index\}`\}/);
+    expect(form).toMatch(/Create/);
+    expect(form).toMatch(/name="files_0"/);
+    expect(form).toMatch(/name="docType_0"/);
+    expect(form).not.toMatch(/Add another file/);
   });
 });

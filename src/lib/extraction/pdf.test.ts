@@ -154,7 +154,7 @@ describe("dec + 4-point + wind mit packet → HO master form", () => {
       for (const field of extracted.fields) allKeys.add(field.fieldKey);
     }
 
-    const extractable = HOME_FIELDS.filter((field) => field.key !== "notes");
+    const extractable = HOME_FIELDS.filter((field) => field.key !== "notes" && field.extractKey);
     const filled = extractable.filter((field) => {
       const cell = values[field.key];
       return Boolean(cell?.value.trim()) && cell.status !== "missing";

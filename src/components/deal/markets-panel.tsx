@@ -13,12 +13,14 @@ export function MarketsPanel({
   unlocked = false,
   manualIds = [],
   carriers = [],
+  dealLine = "HO",
 }: {
   dealId: string;
   matches: CarrierMatch[];
   unlocked?: boolean;
   manualIds?: string[];
-  carriers?: { id: string; name: string }[];
+  carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
+  dealLine?: string;
 }) {
   const manual = new Set(manualIds);
   const listedIds = matches.map((row) => row.carrierId);
@@ -60,7 +62,12 @@ export function MarketsPanel({
             </Button>
           </form>
         </div>
-        <ManualCarrierAdd dealId={dealId} carriers={carriers} alreadyIds={rows.map((row) => row.carrierId)} />
+        <ManualCarrierAdd
+          dealId={dealId}
+          carriers={carriers}
+          alreadyIds={rows.map((row) => row.carrierId)}
+          dealLine={dealLine}
+        />
         <form action={requestStretchQuotesAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="dealId" value={dealId} />
           <Button type="submit" size="sm" variant="outline" disabled={stretch.length === 0 || !unlocked}>

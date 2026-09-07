@@ -1,14 +1,14 @@
 import type { ShopLine } from "@/lib/domain";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import { APPLICANT_CORE_FIELDS, type QuoteFieldDef } from "./applicant-core";
+import type { SheetProduct } from "./products";
 
-export type QuoteFieldDef = {
-  key: string;
-  label: string;
-  group: string;
-  input?: "text" | "number" | "textarea";
-  /** Maps an extraction fieldKey onto this sheet key. */
-  extractKey?: string;
-};
+export type { QuoteFieldDef } from "./applicant-core";
+export { APPLICANT_CORE_FIELDS } from "./applicant-core";
+
+const HO_LL = ["homeowners", "landlord"] as const;
+const RENT = ["renters"] as const;
+const LL = ["landlord"] as const;
 
 export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "address1", label: "Property address", group: "Property", extractKey: "address" },
@@ -16,108 +16,143 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "county", label: "County", group: "Property", extractKey: "county" },
   { key: "state", label: "State", group: "Property", extractKey: "state" },
   { key: "zip", label: "ZIP", group: "Property", extractKey: "zip" },
-  { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built" },
-  { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories" },
-  { key: "square_feet", label: "Square feet", group: "Dwelling", input: "number", extractKey: "square_feet" },
+  { key: "mailing_address", label: "Mailing address", group: "Property", extractKey: "mailing_address" },
+  { key: "legal_description", label: "Legal description", group: "Property" },
+  { key: "parcel_id", label: "Parcel / folio", group: "Property" },
+  { key: "subdivision", label: "Subdivision", group: "Property" },
+  { key: "year_purchased", label: "Year purchased", group: "Property", input: "number" },
+  { key: "occupancy", label: "Occupancy", group: "Property", extractKey: "occupancy" },
+  { key: "usage", label: "Usage", group: "Property" },
+  { key: "months_occupied", label: "Months occupied", group: "Property", input: "number" },
+  { key: "number_of_families", label: "Number of families", group: "Property", input: "number" },
+  { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built", products: [...HO_LL] },
+  { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories", products: [...HO_LL] },
+  { key: "square_feet", label: "Square feet", group: "Dwelling", input: "number", extractKey: "square_feet", products: [...HO_LL] },
   { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number", extractKey: "beds" },
   { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number", extractKey: "baths" },
-  { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction" },
-  { key: "occupancy", label: "Occupancy", group: "Dwelling", extractKey: "occupancy" },
-  { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year" },
-  { key: "roof_covering", label: "Roof covering", group: "Roof / wind", extractKey: "roof_covering" },
-  { key: "roof_shape", label: "Roof shape", group: "Roof / wind", extractKey: "roof_shape" },
+  { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction", products: [...HO_LL] },
+  { key: "foundation", label: "Foundation", group: "Dwelling", products: [...HO_LL] },
+  { key: "living_units", label: "Living units", group: "Dwelling", input: "number", products: [...HO_LL] },
+  { key: "basement", label: "Basement", group: "Dwelling", products: [...HO_LL] },
+  { key: "garage_type", label: "Garage", group: "Dwelling", products: [...HO_LL] },
+  { key: "carport", label: "Carport", group: "Dwelling", products: [...HO_LL] },
+  { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year", products: [...HO_LL] },
+  { key: "roof_covering", label: "Roof covering", group: "Roof / wind", extractKey: "roof_covering", products: [...HO_LL] },
+  { key: "roof_shape", label: "Roof shape", group: "Roof / wind", extractKey: "roof_shape", products: [...HO_LL] },
+  { key: "roof_deck", label: "Roof deck", group: "Roof / wind", products: [...HO_LL] },
+  { key: "roof_deck_attachment", label: "Roof deck attachment", group: "Roof / wind", products: [...HO_LL] },
+  { key: "roof_to_wall", label: "Roof-to-wall connection", group: "Roof / wind", products: [...HO_LL] },
   {
     key: "opening_protection",
     label: "Opening protection",
     group: "Roof / wind",
     extractKey: "opening_protection",
+    products: [...HO_LL],
   },
+  { key: "secondary_water", label: "Secondary water resistance", group: "Roof / wind", products: [...HO_LL] },
+  { key: "terrain", label: "Terrain", group: "Roof / wind", products: [...HO_LL] },
+  { key: "wind_speed", label: "Design wind speed", group: "Roof / wind", products: [...HO_LL] },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Roof / wind", extractKey: "wind_mit_form", products: [...HO_LL] },
+  { key: "wind_mit_date", label: "Wind mit date", group: "Roof / wind", products: [...HO_LL] },
+  { key: "wind_mit_inspector", label: "Wind mit inspector", group: "Roof / wind", products: [...HO_LL] },
   {
     key: "protection_class",
     label: "Protection class",
-    group: "Roof / wind",
+    group: "Protection",
     extractKey: "protection_class",
   },
+  { key: "fire_district", label: "Fire district", group: "Protection" },
+  { key: "hydrant", label: "Hydrant within 1,000 ft", group: "Protection" },
+  { key: "miles_to_fire_station", label: "Miles to fire station", group: "Protection", input: "number" },
+  { key: "central_alarm", label: "Central alarm", group: "Protection" },
+  { key: "sprinkler", label: "Sprinkler", group: "Protection" },
+  { key: "smoke_detectors", label: "Smoke detectors", group: "Protection" },
+  { key: "deadbolts", label: "Deadbolts", group: "Protection" },
   {
     key: "miles_to_coast",
     label: "Miles to coast",
-    group: "Roof / wind",
+    group: "Coastal / flood",
     input: "number",
     extractKey: "miles_to_coast",
   },
-  { key: "pool", label: "Pool", group: "Roof / wind", extractKey: "pool" },
-  { key: "mobile_home", label: "Mobile / manufactured", group: "Roof / wind", extractKey: "mobile_home" },
-  { key: "coverage_a", label: "Coverage A (dwelling)", group: "Coverages", input: "number", extractKey: "coverage_a" },
-  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number", extractKey: "coverage_b" },
+  { key: "flood_zone", label: "Flood zone", group: "Coastal / flood", extractKey: "flood_zone" },
+  { key: "flood_policy", label: "Flood policy in force", group: "Coastal / flood" },
+  { key: "elevation", label: "Elevation", group: "Coastal / flood" },
+  { key: "pool", label: "Pool", group: "Hazards", extractKey: "pool" },
+  { key: "pool_fence", label: "Pool fence", group: "Hazards" },
+  { key: "trampoline", label: "Trampoline", group: "Hazards" },
+  { key: "animals", label: "Animals", group: "Hazards" },
+  { key: "dog_breed", label: "Dog breed", group: "Hazards" },
+  { key: "business_on_premises", label: "Business on premises", group: "Hazards" },
+  { key: "mobile_home", label: "Mobile / manufactured", group: "Hazards", extractKey: "mobile_home", products: [...HO_LL] },
+  { key: "acres", label: "Acres", group: "Hazards", input: "number" },
+  { key: "four_point_date", label: "4-point date", group: "4-point", extractKey: "four_point_date", products: [...HO_LL] },
+  { key: "four_point_result", label: "4-point result", group: "4-point", extractKey: "four_point_result", products: [...HO_LL] },
+  { key: "plumbing_year", label: "Plumbing year", group: "4-point", input: "number", products: [...HO_LL] },
+  { key: "electrical_year", label: "Electrical year", group: "4-point", input: "number", products: [...HO_LL] },
+  { key: "hvac_year", label: "HVAC year", group: "4-point", input: "number", products: [...HO_LL] },
+  { key: "roof_condition", label: "Roof condition (4-point)", group: "4-point", products: [...HO_LL] },
+  { key: "coverage_a", label: "Coverage A (dwelling)", group: "Coverages", input: "number", extractKey: "coverage_a", products: [...HO_LL] },
+  { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number", extractKey: "coverage_b", products: [...HO_LL] },
   { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number", extractKey: "coverage_c" },
   { key: "coverage_d", label: "Coverage D (loss of use)", group: "Coverages", input: "number", extractKey: "coverage_d" },
   { key: "coverage_e", label: "Coverage E (liability)", group: "Coverages", input: "number", extractKey: "coverage_e" },
   { key: "coverage_f", label: "Coverage F (medical payments)", group: "Coverages", input: "number", extractKey: "coverage_f" },
+  { key: "ordinance_or_law", label: "Ordinance or law", group: "Coverages", extractKey: "ordinance_or_law" },
+  { key: "water_backup", label: "Water backup", group: "Coverages", extractKey: "water_backup" },
+  { key: "scheduled_personal", label: "Scheduled personal property", group: "Coverages" },
+  { key: "jewelry_limit", label: "Jewelry limit", group: "Coverages" },
+  { key: "identity_theft", label: "Identity theft", group: "Coverages" },
+  { key: "loss_assessment", label: "Loss assessment", group: "Coverages" },
   {
     key: "hurricane_deductible",
     label: "Hurricane deductible",
     group: "Coverages",
     extractKey: "hurricane_deductible",
   },
-  {
-    key: "aop_deductible",
-    label: "AOP deductible",
-    group: "Coverages",
-    extractKey: "aop_deductible",
-  },
+  { key: "aop_deductible", label: "AOP deductible", group: "Coverages", extractKey: "aop_deductible" },
   {
     key: "wind_hail_deductible",
     label: "Wind / hail deductible",
     group: "Coverages",
     extractKey: "wind_deductible",
   },
+  { key: "sinkhole_deductible", label: "Sinkhole deductible", group: "Coverages" },
   {
     key: "replacement_cost_estimate",
     label: "RCE / MSB (not Zillow)",
     group: "Coverages",
     input: "number",
     extractKey: "replacement_cost_estimate",
+    products: [...HO_LL],
   },
-  {
-    key: "named_insured",
-    label: "Named insured (from dec)",
-    group: "Current policy",
-    extractKey: "named_insured",
-  },
+  { key: "rce_source", label: "RCE source", group: "Coverages", products: [...HO_LL] },
+  { key: "named_insured", label: "Named insured (from dec)", group: "Current policy", extractKey: "named_insured" },
   {
     key: "secondary_named_insured",
     label: "Additional named insured (from dec)",
     group: "Current policy",
     extractKey: "secondary_named_insured",
   },
-  {
-    key: "mailing_address",
-    label: "Mailing address",
-    group: "Property",
-    extractKey: "mailing_address",
-  },
-  {
-    key: "ordinance_or_law",
-    label: "Ordinance or law",
-    group: "Coverages",
-    extractKey: "ordinance_or_law",
-  },
-  {
-    key: "water_backup",
-    label: "Water backup",
-    group: "Coverages",
-    extractKey: "water_backup",
-  },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "policy_number", label: "Policy number", group: "Current policy", extractKey: "policy_number" },
   { key: "form", label: "Form", group: "Current policy", extractKey: "form" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
-  { key: "flood_zone", label: "Flood zone", group: "Inspections", extractKey: "flood_zone" },
   { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
   { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
-  { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date" },
-  { key: "four_point_result", label: "4-point result", group: "Inspections", extractKey: "four_point_result" },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form" },
+  { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
+  { key: "claims_3yr", label: "Claims last 3 years", group: "Current policy", input: "number" },
+  { key: "claims_5yr", label: "Claims last 5 years", group: "Current policy", input: "number" },
+  { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee" },
+  { key: "mortgagee_address", label: "Mortgagee address", group: "Mortgagee" },
+  { key: "loan_number", label: "Loan number", group: "Mortgagee" },
+  { key: "tenant_name", label: "Tenant name", group: "Landlord", products: [...LL] },
+  { key: "lease_term", label: "Lease term", group: "Landlord", products: [...LL] },
+  { key: "landlord_liability", label: "Landlord liability", group: "Landlord", products: [...LL] },
+  { key: "loss_of_rents", label: "Loss of rents", group: "Landlord", products: [...LL] },
+  { key: "contents_limit", label: "Contents limit", group: "Renters", input: "number", products: [...RENT] },
+  { key: "renters_liability", label: "Renters liability", group: "Renters", products: [...RENT] },
+  { key: "additional_living", label: "Additional living expense", group: "Renters", products: [...RENT] },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
 ];
 
@@ -129,12 +164,33 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "vehicle_usage", label: "Usage", group: "Vehicle" },
   { key: "garaging_zip", label: "Garaging ZIP", group: "Vehicle" },
   { key: "garaging_address", label: "Garaging address", group: "Vehicle" },
+  { key: "vehicle_2_vin", label: "Vehicle 2 VIN", group: "Vehicle" },
+  { key: "vehicle_2_year", label: "Vehicle 2 year", group: "Vehicle", input: "number" },
+  { key: "vehicle_2_make", label: "Vehicle 2 make", group: "Vehicle" },
+  { key: "vehicle_2_model", label: "Vehicle 2 model", group: "Vehicle" },
+  { key: "driver_1_name", label: "Driver 1 name", group: "Drivers" },
+  { key: "driver_1_dob", label: "Driver 1 DOB", group: "Drivers" },
+  { key: "driver_1_license", label: "Driver 1 license", group: "Drivers" },
+  { key: "driver_1_status", label: "Driver 1 status", group: "Drivers" },
+  { key: "driver_1_years_licensed", label: "Driver 1 years licensed", group: "Drivers", input: "number" },
+  { key: "driver_2_name", label: "Driver 2 name", group: "Drivers" },
+  { key: "driver_2_dob", label: "Driver 2 DOB", group: "Drivers" },
+  { key: "driver_2_license", label: "Driver 2 license", group: "Drivers" },
+  { key: "accidents_3yr", label: "Accidents last 3 years", group: "Drivers", input: "number" },
+  { key: "violations_3yr", label: "Violations last 3 years", group: "Drivers", input: "number" },
   { key: "liability_bi", label: "BI limits", group: "Coverages" },
   { key: "liability_pd", label: "PD limit", group: "Coverages" },
   { key: "um_uim", label: "UM / UIM", group: "Coverages" },
   { key: "pip", label: "PIP", group: "Coverages" },
   { key: "comp_deductible", label: "Comp deductible", group: "Coverages" },
   { key: "collision_deductible", label: "Collision deductible", group: "Coverages" },
+  { key: "motorcycle_cc", label: "Engine CC", group: "Motorcycle", products: ["motorcycle"] },
+  { key: "motorcycle_type", label: "Motorcycle type", group: "Motorcycle", products: ["motorcycle"] },
+  { key: "endorsed_rider", label: "Endorsed rider", group: "Motorcycle", products: ["motorcycle"] },
+  { key: "radius", label: "Radius", group: "Commercial auto", products: ["commercial_auto"] },
+  { key: "gvw", label: "GVW", group: "Commercial auto", products: ["commercial_auto"] },
+  { key: "vehicle_class", label: "Vehicle class", group: "Commercial auto", products: ["commercial_auto"] },
+  { key: "fleet_size", label: "Fleet size", group: "Commercial auto", input: "number", products: ["commercial_auto"] },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
@@ -148,13 +204,22 @@ export const REC_RV_FIELDS: QuoteFieldDef[] = [
   { key: "value", label: "Value", group: "Unit", input: "number" },
   { key: "usage", label: "Usage", group: "Unit" },
   { key: "storage", label: "Storage", group: "Unit" },
+  { key: "length_feet", label: "Length (ft)", group: "Unit", input: "number" },
+  { key: "slideouts", label: "Slide-outs", group: "Unit" },
+  { key: "full_timer", label: "Full-timer", group: "Unit" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
 export const FLOOD_FIELDS: QuoteFieldDef[] = [
-  { key: "flood_zone", label: "Flood zone", group: "Risk" },
-  { key: "elevation", label: "Elevation", group: "Risk" },
+  { key: "flood_zone", label: "Flood zone", group: "Flood", extractKey: "flood_zone" },
+  { key: "community_number", label: "NFIP community number", group: "Flood" },
+  { key: "elevation", label: "Elevation", group: "Flood" },
+  { key: "bfe", label: "Base flood elevation", group: "Flood" },
+  { key: "foundation", label: "Foundation", group: "Flood" },
+  { key: "flood_vents", label: "Flood vents", group: "Flood" },
+  { key: "lowest_floor", label: "Lowest floor", group: "Flood" },
+  { key: "nfip_policy", label: "NFIP policy number", group: "Flood" },
   { key: "building_limit", label: "Building limit", group: "Coverages", input: "number" },
   { key: "contents_limit", label: "Contents limit", group: "Coverages", input: "number" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
@@ -165,29 +230,47 @@ export const UMBRELLA_FIELDS: QuoteFieldDef[] = [
   { key: "limit", label: "Umbrella limit", group: "Coverages" },
   { key: "underlying_home", label: "Underlying home", group: "Underlying" },
   { key: "underlying_auto", label: "Underlying auto", group: "Underlying" },
+  { key: "um_uim", label: "UM / UIM", group: "Underlying" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
 export const LIFE_FIELDS: QuoteFieldDef[] = [
+  { key: "face_amount", label: "Face amount", group: "CRM" },
+  { key: "product_type", label: "Product type", group: "CRM" },
   { key: "notes", label: "Life notes (CRM only — no rating)", group: "CRM", input: "textarea" },
 ];
 
 export const HEALTH_FIELDS: QuoteFieldDef[] = [
+  { key: "plan_type", label: "Plan type", group: "CRM" },
+  { key: "members", label: "Members", group: "CRM", input: "number" },
   { key: "notes", label: "Health notes (CRM only — no rating)", group: "CRM", input: "textarea" },
 ];
 
 export const WC_FIELDS: QuoteFieldDef[] = [
-  { key: "class_code", label: "Class code", group: "Risk" },
-  { key: "payroll", label: "Payroll", group: "Risk", input: "number" },
+  { key: "class_code", label: "Class code", group: "Payroll by class" },
+  { key: "payroll", label: "Payroll", group: "Payroll by class", input: "number" },
+  { key: "class_code_2", label: "Class code 2", group: "Payroll by class" },
+  { key: "payroll_2", label: "Payroll 2", group: "Payroll by class", input: "number" },
+  { key: "class_code_3", label: "Class code 3", group: "Payroll by class" },
+  { key: "payroll_3", label: "Payroll 3", group: "Payroll by class", input: "number" },
   { key: "employees", label: "Employees", group: "Risk", input: "number" },
+  { key: "officers", label: "Officers included", group: "Risk" },
   { key: "experience_mod", label: "Experience mod", group: "Risk" },
+  { key: "states", label: "States", group: "Risk" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
 export const GL_FIELDS: QuoteFieldDef[] = [
   { key: "occupancy", label: "Occupancy / operations", group: "Risk" },
+  { key: "class_code", label: "Class code", group: "Class codes" },
+  { key: "class_code_2", label: "Class code 2", group: "Class codes" },
+  { key: "class_code_3", label: "Class code 3", group: "Class codes" },
+  { key: "payroll", label: "Payroll", group: "Class codes", input: "number" },
+  { key: "annual_sales", label: "Annual sales", group: "Risk", input: "number" },
+  { key: "employees", label: "Employees", group: "Risk", input: "number" },
+  { key: "years_in_business", label: "Years in business", group: "Risk", input: "number" },
   { key: "limit", label: "Limit", group: "Coverages" },
   { key: "deductible", label: "Deductible", group: "Coverages" },
   { key: "operations", label: "Operations", group: "Risk" },
@@ -207,13 +290,29 @@ const CATALOG: Record<ShopLine, QuoteFieldDef[]> = {
   general_liability: GL_FIELDS,
 };
 
-export function fieldsForLine(line: ShopLine): QuoteFieldDef[] {
-  return CATALOG[line] ?? [];
+function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
+  const seen = new Set<string>();
+  const out: QuoteFieldDef[] = [];
+  for (const field of fields) {
+    if (seen.has(field.key)) continue;
+    seen.add(field.key);
+    out.push(field);
+  }
+  return out;
 }
 
-export function emptySheetValues(line: ShopLine): Record<string, QuoteSheetFieldValue> {
+export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
+  const raw = dedupeFields([...APPLICANT_CORE_FIELDS, ...(CATALOG[line] ?? [])]);
+  if (!product) return raw;
+  return raw.filter((field) => !field.products || field.products.includes(product));
+}
+
+export function emptySheetValues(
+  line: ShopLine,
+  product?: SheetProduct,
+): Record<string, QuoteSheetFieldValue> {
   const values: Record<string, QuoteSheetFieldValue> = {};
-  for (const field of fieldsForLine(line)) {
+  for (const field of fieldsForLine(line, product)) {
     values[field.key] = { value: "", status: "missing", source: "blank" };
   }
   return values;
@@ -226,22 +325,28 @@ const EXTRACT_ALIASES: Record<string, string> = {
 
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {
   const aliased = EXTRACT_ALIASES[extractKey] ?? extractKey;
-  const match = fieldsForLine(line).find(
-    (field) =>
-      field.extractKey === extractKey ||
-      field.extractKey === aliased ||
-      field.key === extractKey ||
-      field.key === aliased,
+  const fields = fieldsForLine(line);
+  const exact = fields.find((field) => field.key === extractKey || field.key === aliased);
+  if (exact) return exact.key;
+  const match = fields.find(
+    (field) => field.extractKey === extractKey || field.extractKey === aliased,
   );
   return match?.key ?? null;
 }
 
-export function groupFields(line: ShopLine): { group: string; fields: QuoteFieldDef[] }[] {
+export function groupFields(
+  line: ShopLine,
+  product?: SheetProduct,
+): { group: string; fields: QuoteFieldDef[] }[] {
   const groups: { group: string; fields: QuoteFieldDef[] }[] = [];
-  for (const field of fieldsForLine(line)) {
+  for (const field of fieldsForLine(line, product)) {
     const existing = groups.find((g) => g.group === field.group);
     if (existing) existing.fields.push(field);
     else groups.push({ group: field.group, fields: [field] });
   }
   return groups;
+}
+
+export function homeFieldCount(): number {
+  return fieldsForLine("home", "homeowners").length;
 }

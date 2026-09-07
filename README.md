@@ -4,7 +4,35 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7r`)
+## Mac test now (`cursor/live-ff-tip-sep7s`)
+
+Deal detail final rebuild on **`/deals/[id]` only**. Cut from `cursor/live-ff-tip-sep7r` @ `cb23a8f`. Pipeline list band stays sep7r — do not rewrite Attach / Today's Activity. Title is **the deal name only** (no FitFirst). Tabs sit **directly under the name**: Documents · Markets · Quotes. Quote Sheet tab is gone — the master sheet lives on Documents. No sidebar / data model / other-page changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7s && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### S — Deal detail (sep7s)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| S1 | Title | Top-left is **only the deal name** (e.g. `test - HO shop.`). No “FitFirst” in the title. |
+| S2 | Tabs | **Documents · Markets · Quotes** sit directly under the deal name. No empty left gutter. No Quote Sheet tab. Old `?tab=quote-sheet` opens Documents. |
+| S3 | Documents | Left: one compact upload (type, file, create) + source files with trash-cans. Right: editable master sheet. Empty before extract; filled beside the source after. Confirm the sheet at the bottom — then **Approve & request quotes** unlocks. |
+| S4 | Master sheet | Shared applicant core (name, address, phone, email, DOB, entity). HO is a full homeowners inventory (construction / wind mit / 4-point). Auto / flood / GL / WC swap in their sections. One deal, one product. Agent corrections become mapping rules for that form. |
+| S5 | Markets | In appetite / Stretch / Skip. Manual add lists only carriers that write this line. **Approve & request quotes** submits to every in-appetite carrier. IVANS / EZLynx / QuoteRush stay paid stubs. |
+| S6 | Quotes | Per carrier: premium, coverages, deductibles, status. Cheapest on top. First pull from a new carrier confirms; then sample one in five. Bind gate re-checks premium + coverages + deductibles. Ana stays locked / unbound, Cov A **$321,000**. |
+| S7 | Quick comms | Sticky right rail: Task, Meeting, Call, Email, SMS. No local colored Call / SMS / Email / Task strip next to the deal name — those stay on the profile bar. |
+| S8 | Motivation | Corner sparkline: quotes pulled today + bind rate this month. At most one sixth of the screen. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7r`)
 
 Polish on **Deals / Pipeline list only**, on top of `cursor/live-ff-tip-sep7q` @ `9f5e807`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Attach is a little roomier. Chips stay the **same size** with **deeper 3D** only. Title + date + calendar stay **centered over the counters**. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 
