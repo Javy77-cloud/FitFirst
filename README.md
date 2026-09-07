@@ -4,7 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7v`)
+## Mac test now (`cursor/live-ff-tip-sep7w`)
+
+Three Pipeline-page fixes only, on top of `cursor/live-ff-tip-sep7v` @ `9dede457fabeac939ce10e33d6726674a5607575`. Band order is unchanged: **Attach LEFT**, **Activity RIGHT**. No Deal detail. No other pages. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7w && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### W — Pipeline list (sep7w)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| W1 | Today's Activity chips | Square them back up — no rounded corners, sharp **4px radius max**. **Remove the background fill entirely.** Chips float on the page with only a **thin border** and a **soft shadow underneath**. Hover: lift **4px** with a stronger shadow so they feel like they're rising off the surface. Add **`overflow: hidden`** to the strip container so nothing spills out. |
+| W2 | Attach documents to a deal | Make the row **repeatable**: each document is its own line with a **trash can**. Add a **"+ Add another document"** link below the last row so agents can attach multiple files. The document name is **plain text, not a button** — no background, no border, just the filename. Keep the box compact, about **120px tall**, matching the activity strip. |
+| W3 | Duplicate deal name | **Remove the deal name field** from the Table, Board, and Funnel views. The global search at the top already handles it, and the upload box has its own contact field. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7v`)
 
 Pipeline layout polish only, on top of consolidator `cursor/live-ff-tip-sep7u` @ `fb589fd`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Activity strip sits **24px** in from the page edge, **overflow: hidden**, **4px** internal pad. Chips are **36px** tall with gradient, thin matching border, soft shadow, and **2px** hover lift. Attach is a **~120px** single row (search, doc type, Choose file, Store on this deal) with the same chrome as the activity strip. No `+ Add file`. No table / filter / sidebar / Deal detail / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
 

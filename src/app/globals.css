@@ -203,18 +203,14 @@
   width: 100%;
 }
 
-/* 36px chips — gradient, thin matching border, soft shadow. Hover lift 2px max. */
+/* 36px chips — no fill, 4px max radius, thin border, soft shadow. Hover lift 4px. */
 .deal-today-chip {
   height: 36px;
   box-sizing: border-box;
-  background-color: var(--chip-mid);
-  background-image: linear-gradient(
-    to bottom,
-    #ffffff 0%,
-    var(--chip-top) 16%,
-    var(--chip-mid) 62%,
-    color-mix(in srgb, var(--chip-bottom) 48%, white) 100%
-  );
+  border-radius: 4px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
   border: 1px solid color-mix(in srgb, var(--chip-fg) 28%, transparent);
   box-shadow: 0 1px 3px rgba(16, 28, 52, 0.14);
   transition:
@@ -222,8 +218,8 @@
     box-shadow 150ms ease;
 }
 .deal-today-chip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 3px 8px rgba(16, 28, 52, 0.16);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(16, 28, 52, 0.22);
 }
 .deal-today-chip[data-on="1"] {
   box-shadow:

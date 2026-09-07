@@ -7,7 +7,6 @@ import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { DealsTable } from "@/components/deals/deals-table";
 import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
-import { PipelineCreateDealForm } from "@/components/pipeline/create-deal-form";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
 import { requireSignedIn } from "@/lib/auth/guards";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
@@ -21,7 +20,6 @@ import {
   type DealListFilter,
 } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { lineForPipelineSlug } from "@/lib/desk/line-settings";
 import { cn } from "@/lib/utils";
 import { parsePipelineView } from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
@@ -154,18 +152,6 @@ export default async function DealsPage({
         attention={filter.attention}
         settings={settings}
       />
-
-      {board && board.kind === "shopping" && (pipeline || view !== "table") ? (
-        <PipelineCreateDealForm
-          parties={parties}
-          deals={lookup}
-          pipelineSlug={board.slug}
-          lineOfBusiness={lineForPipelineSlug(board.slug)}
-          lifeOptions={settings.lifeOptions}
-          healthOptions={settings.healthOptions}
-          stages={board.stages}
-        />
-      ) : null}
 
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 

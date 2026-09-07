@@ -13,6 +13,7 @@ export function ChooseFileButton({
   required,
   disabled,
   className,
+  keepLabel,
   onFile,
 }: {
   name?: string;
@@ -21,6 +22,7 @@ export function ChooseFileButton({
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  keepLabel?: boolean;
   onFile?: (file: File | null) => void;
 }) {
   const generatedId = useId();
@@ -50,7 +52,7 @@ export function ChooseFileButton({
           onFile?.(file);
         }}
       />
-      <span className="min-w-0 truncate">{fileName || "Choose file"}</span>
+      <span className="min-w-0 truncate">{keepLabel ? "Choose file" : fileName || "Choose file"}</span>
     </label>
   );
 }

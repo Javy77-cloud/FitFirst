@@ -34,7 +34,7 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/gap-x-6/);
   });
 
-  it("keeps attach-documents on the left band, ~120px single row, beside Today's Activity", () => {
+  it("keeps attach-documents on the left band, ~120px, beside Today's Activity", () => {
     const page = source("src/app/deals/page.tsx");
     expect(page).toMatch(/deal-upload-activity/);
     expect(page).toMatch(/lg:flex-row/);
@@ -45,6 +45,9 @@ describe("Deals page sep7h", () => {
     expect(page).not.toMatch(/lg:col-span-5/);
     expect(page).not.toMatch(/justify-end/);
     expect(page).not.toMatch(/ml-auto/);
+    expect(page).not.toMatch(/PipelineCreateDealForm/);
+    expect(page).not.toMatch(/deal-name-typeahead/);
+    expect(page).not.toMatch(/Deal name — Contact or Business/);
     expect(page.indexOf("<DealDocsUpload")).toBeLessThan(page.indexOf("<TodayActivityStrip"));
     expect(page).toMatch(/<TodayActivityStrip/);
     expect(page).toMatch(/<DealDocsUpload/);
@@ -54,6 +57,11 @@ describe("Deals page sep7h", () => {
     expect(upload).toMatch(/h-\[120px\]/);
     expect(upload).toMatch(/flex-nowrap/);
     expect(upload).toMatch(/Store on this deal/);
+    expect(upload).toMatch(/\+ Add another document/);
+    expect(upload).toMatch(/deal-add-document/);
+    expect(upload).toMatch(/deal-doc-filename/);
+    expect(upload).toMatch(/keepLabel/);
+    expect(upload).toMatch(/FileDeleteIcon/);
     expect(upload).not.toMatch(/\+ Add file/);
     expect(upload).not.toMatch(/deal-add-file/);
     expect(upload).not.toMatch(/space-y-6 p-8/);
@@ -78,6 +86,7 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/text-\[16px\]/);
     expect(strip).toMatch(/text-\[23px\]/);
     expect(strip).toMatch(/size-6/);
+    expect(strip).not.toMatch(/rounded-lg/);
     expect(strip).not.toMatch(/border-black/);
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);
     const chrome = source("src/app/globals.css");
@@ -86,15 +95,17 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/overflow: hidden/);
     expect(chrome).toMatch(/padding: 4px/);
     expect(chrome).toMatch(/height: 36px/);
-    expect(chrome).toMatch(/translateY\(-2px\)/);
+    expect(chrome).toMatch(/border-radius: 4px/);
+    expect(chrome).toMatch(/background: none/);
+    expect(chrome).toMatch(/translateY\(-4px\)/);
     expect(chrome).toMatch(/height: 120px/);
-    expect(chrome).toMatch(/linear-gradient/);
     expect(chrome).toMatch(/deal-today-heading/);
-    expect(chrome).toMatch(/to bottom/);
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\]/);
     expect(chrome).toMatch(/border-radius: var\(--radius\)/);
+    expect(chrome).not.toMatch(/translateY\(-2px\)/);
     expect(chrome).not.toMatch(/translateY\(-7px\)/);
     expect(chrome).not.toMatch(/scale\(1\.04\)/);
+    expect(chrome).not.toMatch(/linear-gradient/);
     const chips = source("src/lib/deals/pipeline-desk.ts");
     expect(chips).toMatch(/label: "Calls"/);
     expect(chips).toMatch(/label: "Emails"/);

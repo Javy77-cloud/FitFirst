@@ -13,7 +13,11 @@ import { uploadDealCta, uploadDealCtaLabel } from "@/lib/deals/pipeline-desk";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
 import { setLiveQuery } from "@/lib/search/live-query";
 
-type Row = { id: number; docType: string; fileName: string };
+type Row = { id: number; docType: string; fileName: string; pick: number };
+
+function emptyRow(id: number): Row {
+  return { id, docType: "dec", fileName: "", pick: 0 };
+}
 
 export function DealDocsUpload({
   deals,
@@ -24,7 +28,8 @@ export function DealDocsUpload({
 }) {
   const [dealName, setDealName] = useState("");
   const [dealId, setDealId] = useState("");
-  const [row, setRow] = useState<Row>({ id: 0, docType: "dec", fileName: "" });
+  const [rows, setRows] = useState<Row[]>([emptyRow(0)]);
+  const [nextId, setNextId] = useState(1);
 
   const match = useMemo(
     () => matchDealLookup(deals, dealName, dealId || null),
@@ -67,6 +72,21 @@ export function DealDocsUpload({
     setDealId(next?.id ?? "");
   }
 
+  function patchRow(id: number, patch: Partial<Row>) {
+    setRows((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  }
+
+  function removeRow(id: number) {
+    setRows((current) => {
+      if (current.length === 1) {
+        return current.map((item) =>
+          item.id === id ? { ...item, fileName: "", pick: item.pick + 1 } : item,
+        );
+      }
+      return current.filter((item) => item.id !== id);
+    });
+  }
+
   const relatedFromParty =
     !match && dealName.trim()
       ? partySuggestions.flatMap((hit) => dealsForParty(hit).map((item) => ({ hit, row: item })))
@@ -76,7 +96,7 @@ export function DealDocsUpload({
   return (
     <form
       action={uploadDealDocuments}
-      className="ff-card relative flex h-[120px] flex-col justify-center gap-2 px-3 py-2"
+      className="ff-card relative flex h-[120px] flex-col justify-center gap-1 px-3 py-2"
       data-testid="deal-docs-upload"
     >
       <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
@@ -87,44 +107,19 @@ export function DealDocsUpload({
           required
           value={dealName}
           onChange={(event) => onNameChange(event.target.value)}
-          className="h-9 min-w-[10rem] flex-1"
+          className="h-8 min-w-[10rem] flex-1"
           placeholder="Search deals"
           autoComplete="off"
           aria-label="Search deals"
           data-testid="deal-docs-name"
         />
         <input type="hidden" name="dealId" value={match?.id ?? dealId} />
-        <input type="hidden" name="rowCount" value={1} />
-        <select
-          name="docType_0"
-          value={row.docType}
-          onChange={(event) => setRow((current) => ({ ...current, docType: event.target.value }))}
-          aria-label="Doc type"
-          className="h-9 w-[10rem] shrink-0 rounded-md border border-input bg-card px-2 text-sm"
-        >
-          {DEAL_UPLOAD_DOC_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {DOC_TYPE_LABELS[type]}
-            </option>
-          ))}
-        </select>
-        <ChooseFileButton
-          name="files_0"
-          className="h-9 shrink-0"
-          onFile={(file) => setRow((current) => ({ ...current, fileName: file?.name ?? "" }))}
-        />
-        {row.fileName ? (
-          <FileDeleteIcon
-            type="button"
-            label={`Remove ${row.fileName}`}
-            onClick={() => setRow((current) => ({ ...current, fileName: "" }))}
-          />
-        ) : null}
+        <input type="hidden" name="rowCount" value={rows.length} />
         {cta.kind === "select" && cta.match ? (
           <Button
             type="button"
             size="sm"
-            className="h-9 shrink-0"
+            className="h-8 shrink-0"
             data-testid="deal-select-existing"
             onClick={() => pickDeal(cta.match!)}
           >
@@ -135,16 +130,64 @@ export function DealDocsUpload({
           <Button
             type="submit"
             size="sm"
-            className="h-9 shrink-0"
+            className="h-8 shrink-0"
             formAction={createDealFromUploadSearch}
             data-testid="deal-create-from-search"
           >
             {uploadDealCtaLabel("create")}
           </Button>
         ) : null}
-        <Button type="submit" size="sm" className="h-9 shrink-0" disabled={!match}>
+        <Button type="submit" size="sm" className="h-8 shrink-0" disabled={!match}>
           Store on this deal
         </Button>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+        {rows.map((row, index) => (
+          <div key={row.id} className="flex flex-nowrap items-center gap-2">
+            <select
+              name={`docType_${index}`}
+              value={row.docType}
+              onChange={(event) => patchRow(row.id, { docType: event.target.value })}
+              aria-label="Doc type"
+              className="h-8 w-[10rem] shrink-0 rounded-md border border-input bg-card px-2 text-sm"
+            >
+              {DEAL_UPLOAD_DOC_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {DOC_TYPE_LABELS[type]}
+                </option>
+              ))}
+            </select>
+            <ChooseFileButton
+              key={`${row.id}-${row.pick}`}
+              name={`files_${index}`}
+              keepLabel
+              className="h-8 shrink-0"
+              onFile={(file) => patchRow(row.id, { fileName: file?.name ?? "" })}
+            />
+            {row.fileName ? (
+              <span className="min-w-0 truncate text-sm text-navy" data-testid="deal-doc-filename">
+                {row.fileName}
+              </span>
+            ) : null}
+            <FileDeleteIcon
+              type="button"
+              label={row.fileName ? `Remove ${row.fileName}` : "Remove file row"}
+              onClick={() => removeRow(row.id)}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          className="text-sm font-medium text-primary hover:underline"
+          data-testid="deal-add-document"
+          onClick={() => {
+            setRows((current) => [...current, emptyRow(nextId)]);
+            setNextId((n) => n + 1);
+          }}
+        >
+          + Add another document
+        </button>
       </div>
 
       {match ? (

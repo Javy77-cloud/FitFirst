@@ -58,12 +58,9 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className="deal-today-chip inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5"
+              className="deal-today-chip inline-flex shrink-0 items-center gap-1.5 px-2.5"
               style={{
                 color: tone.chipFg,
-                ["--chip-top" as string]: tone.chipBgLight,
-                ["--chip-mid" as string]: tone.chipBg,
-                ["--chip-bottom" as string]: tone.chipBgDark,
                 ["--chip-fg" as string]: tone.chipFg,
               }}
               data-on={on ? "1" : "0"}
