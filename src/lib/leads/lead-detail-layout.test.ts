@@ -116,7 +116,7 @@ describe("lead detail layout + per-line documents", () => {
     const deal = source("src/app/deals/[id]/page.tsx");
     const docs = source("src/components/deal/documents-panel.tsx");
     const convert = source("src/app/actions/crm.ts");
-    expect(deal).toMatch(/View source lead/);
+    expect(deal).toMatch(/DealDetailsPanel/);
     expect(docs).toMatch(/data-ff-deal-docs-by-line/);
     expect(docs).toMatch(/groupDocsByLine/);
     expect(convert).toMatch(/shopLinesForConvertWithDocs/);

@@ -8,10 +8,12 @@ import { contacts, deals, deskModuleTags, leads, policies } from "@/lib/db/schem
 import { getActor } from "@/lib/auth/session";
 import {
   isTagModule,
+  normalizeTag,
   normalizeTags,
   parseTagsFromForm,
   type TagModule,
 } from "@/lib/tags/module-tags";
+import { deleteTagFromList, mergeTagInList, renameTagInList } from "@/lib/tags/manage";
 
 const PATHS: Record<TagModule, { list: string; detail: (id: string) => string }> = {
   leads: { list: "/leads", detail: (id) => `/leads/${id}` },
@@ -68,6 +70,79 @@ export async function writeRecordTags(module: TagModule, recordId: string, tags:
         target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name],
       });
   }
+}
+
+async function recordsForModule(module: TagModule) {
+  if (module === "leads") return db.select({ id: leads.id, tags: leads.tags }).from(leads).where(eq(leads.tenantId, DEFAULT_TENANT_ID));
+  if (module === "contacts") {
+    return db.select({ id: contacts.id, tags: contacts.tags }).from(contacts).where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
+  }
+  if (module === "deals") return db.select({ id: deals.id, tags: deals.tags }).from(deals).where(eq(deals.tenantId, DEFAULT_TENANT_ID));
+  return db.select({ id: policies.id, tags: policies.tags }).from(policies).where(eq(policies.tenantId, DEFAULT_TENANT_ID));
+}
+
+async function rewriteModuleTags(module: TagModule, rewrite: (tags: string[]) => string[]) {
+  const rows = await recordsForModule(module);
+  for (const row of rows) {
+    const current = normalizeTags(row.tags);
+    const next = rewrite(current);
+    if (next.join(",") === current.join(",")) continue;
+    await writeRecordTags(module, row.id, next);
+  }
+}
+
+export async function renameModuleTag(formData: FormData) {
+  const module = String(formData.get("module") ?? "");
+  const from = normalizeTag(String(formData.get("from") ?? ""));
+  const to = normalizeTag(String(formData.get("to") ?? ""));
+  if (!isTagModule(module) || !from || !to || from === to) return;
+  const actor = await getActor().catch(() => null);
+  await rewriteModuleTags(module, (tags) => renameTagInList(tags, from, to));
+  await db
+    .delete(deskModuleTags)
+    .where(
+      and(eq(deskModuleTags.tenantId, DEFAULT_TENANT_ID), eq(deskModuleTags.module, module), eq(deskModuleTags.name, from)),
+    );
+  await db
+    .insert(deskModuleTags)
+    .values({ tenantId: DEFAULT_TENANT_ID, module, name: to, createdBy: actor?.id ?? null })
+    .onConflictDoNothing({ target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name] });
+  revalidatePath(PATHS[module].list);
+  revalidatePath("/settings/tags");
+}
+
+export async function mergeModuleTag(formData: FormData) {
+  const module = String(formData.get("module") ?? "");
+  const from = normalizeTag(String(formData.get("from") ?? ""));
+  const into = normalizeTag(String(formData.get("into") ?? ""));
+  if (!isTagModule(module) || !from || !into || from === into) return;
+  const actor = await getActor().catch(() => null);
+  await rewriteModuleTags(module, (tags) => mergeTagInList(tags, from, into));
+  await db
+    .delete(deskModuleTags)
+    .where(
+      and(eq(deskModuleTags.tenantId, DEFAULT_TENANT_ID), eq(deskModuleTags.module, module), eq(deskModuleTags.name, from)),
+    );
+  await db
+    .insert(deskModuleTags)
+    .values({ tenantId: DEFAULT_TENANT_ID, module, name: into, createdBy: actor?.id ?? null })
+    .onConflictDoNothing({ target: [deskModuleTags.tenantId, deskModuleTags.module, deskModuleTags.name] });
+  revalidatePath(PATHS[module].list);
+  revalidatePath("/settings/tags");
+}
+
+export async function deleteModuleTag(formData: FormData) {
+  const module = String(formData.get("module") ?? "");
+  const name = normalizeTag(String(formData.get("name") ?? ""));
+  if (!isTagModule(module) || !name) return;
+  await rewriteModuleTags(module, (tags) => deleteTagFromList(tags, name));
+  await db
+    .delete(deskModuleTags)
+    .where(
+      and(eq(deskModuleTags.tenantId, DEFAULT_TENANT_ID), eq(deskModuleTags.module, module), eq(deskModuleTags.name, name)),
+    );
+  revalidatePath(PATHS[module].list);
+  revalidatePath("/settings/tags");
 }
 
 export async function listModuleTagSuggestions(module: TagModule): Promise<string[]> {

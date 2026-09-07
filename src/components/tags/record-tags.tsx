@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { saveRecordTags } from "@/app/actions/record-tags";
 import { Button } from "@/components/ui/button";
@@ -48,15 +49,22 @@ export function RecordTags({
           <span className="text-sm text-muted-foreground">No tags yet.</span>
         ) : (
           current.map((tag) => (
-            <button
+            <span
               key={tag}
-              type="button"
-              className="rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] font-medium text-navy hover:bg-fit-yellow-bg"
-              onClick={() => remove(tag)}
-              aria-label={`Remove ${formatTagLabel(tag)}`}
+              className="group relative inline-flex items-center rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] font-medium text-navy"
+              data-ff-tag-chip={tag}
             >
-              {formatTagLabel(tag)} ×
-            </button>
+              {formatTagLabel(tag)}
+              <button
+                type="button"
+                className="ml-1 hidden text-muted-foreground group-hover:inline hover:text-fit-red"
+                onClick={() => remove(tag)}
+                aria-label={`Remove ${formatTagLabel(tag)}`}
+                data-ff-tag-remove={tag}
+              >
+                ×
+              </button>
+            </span>
           ))
         )}
       </div>
@@ -94,6 +102,13 @@ export function RecordTags({
         <Button type="submit" size="xs">
           Save tags
         </Button>
+        <Link
+          href={`/settings/tags?module=${module}`}
+          className="inline-flex h-7 items-center rounded-[10px] border border-border px-2 text-xs font-medium text-navy hover:bg-muted"
+          data-ff-manage-tags
+        >
+          Manage tags
+        </Link>
       </div>
     </form>
   );

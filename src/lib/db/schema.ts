@@ -243,6 +243,66 @@ export const deskModuleTags = pgTable(
   ],
 );
 
+/** Custom field catalog. Additive — does not rewrite Lead/Deal/Contact columns. */
+export const deskCustomFields = pgTable(
+  "desk_custom_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull().default("deals"),
+    key: text("key").notNull(),
+    label: text("label").notNull(),
+    type: text("type").notNull().default("single_line"),
+    options: jsonb("options").$type<string[]>().notNull().default([]),
+    formula: text("formula"),
+    lookupModule: text("lookup_module"),
+    systemKey: text("system_key"),
+    ...timestamps,
+  },
+  (t) => [
+    index("desk_custom_fields_tenant_idx").on(t.tenantId, t.module),
+    uniqueIndex("desk_custom_fields_uidx").on(t.tenantId, t.module, t.key),
+  ],
+);
+
+/** Per-LOB two-column layouts. One layout applies to every deal of that line. */
+export const deskFieldLayouts = pgTable(
+  "desk_field_layouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull().default("deals"),
+    lineOfBusiness: text("line_of_business").notNull(),
+    columns: jsonb("columns").$type<unknown>().notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("desk_field_layouts_uidx").on(t.tenantId, t.module, t.lineOfBusiness),
+  ],
+);
+
+/** Per-record custom field values. */
+export const deskCustomFieldValues = pgTable(
+  "desk_custom_field_values",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull().default("deals"),
+    recordId: uuid("record_id").notNull(),
+    fieldKey: text("field_key").notNull(),
+    value: text("value"),
+    ...timestamps,
+  },
+  (t) => [
+    index("desk_custom_field_values_record_idx").on(t.tenantId, t.module, t.recordId),
+    uniqueIndex("desk_custom_field_values_uidx").on(t.tenantId, t.module, t.recordId, t.fieldKey),
+  ],
+);
+
+export type DeskCustomField = typeof deskCustomFields.$inferSelect;
+export type DeskFieldLayout = typeof deskFieldLayouts.$inferSelect;
+export type DeskCustomFieldValue = typeof deskCustomFieldValues.$inferSelect;
+
 /** Physical desks. An agent can sit in more than one office (different states ok). */
 export const offices = pgTable(
   "offices",

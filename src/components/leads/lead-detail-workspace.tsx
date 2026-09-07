@@ -2,9 +2,9 @@
 
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { createDealFromLead } from "@/app/actions/crm";
+import Link from "next/link";
 import { updateLeadRecord } from "@/app/actions/record-edit";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { LeadLineDocuments, type LeadLineDoc } from "@/components/leads/lead-line-documents";
 import { documentLinesFromDocs, leadDocumentCardLines } from "@/lib/leads/line-documents";
 import type { ShopLine } from "@/lib/domain";
@@ -58,9 +58,13 @@ export function LeadDetailWorkspace({
               Save lead
             </Button>
             {canConvert ? (
-              <Button type="submit" formAction={createDealFromLead} data-ff-convert-deal>
+              <Link
+                href={`/leads/${leadId}/convert?shopLines=${encodeURIComponent(shopLines.join(","))}`}
+                className={buttonVariants()}
+                data-ff-convert-deal
+              >
                 Convert
-              </Button>
+              </Link>
             ) : null}
           </div>
         </form>

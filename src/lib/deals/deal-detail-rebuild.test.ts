@@ -25,10 +25,12 @@ describe("deal detail final rebuild", () => {
     expect(page).not.toMatch(/deal-quick-actions/);
   });
 
-  it("keeps three tabs under the name and kills Quote Sheet", () => {
-    expect(AGENT_DEAL_TABS).toEqual(["documents", "markets", "quotes"]);
+  it("keeps Deal Details first, then Documents, Markets, Quotes — no Quote Sheet", () => {
+    expect(AGENT_DEAL_TABS).toEqual(["details", "documents", "markets", "quotes"]);
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/AGENT_DEAL_TABS/);
+    expect(page).toMatch(/DealDetailsPanel/);
+    expect(page).toMatch(/defaultValue="details"/);
     expect(page).not.toMatch(/QuoteSheetPanel/);
     expect(page).not.toMatch(/tab=quote-sheet/);
     expect(page).toMatch(/SectionTabs/);

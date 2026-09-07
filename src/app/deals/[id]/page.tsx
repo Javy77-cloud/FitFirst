@@ -41,6 +41,10 @@ import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTagSuggestions } from "@/app/actions/record-tags";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
+import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
+import { listDealFieldDefs, loadLayoutForLine, loadRecordValues } from "@/lib/custom-fields/store";
+import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
+import { mergeDealSystemValues } from "@/lib/custom-fields/values";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +75,7 @@ export default async function DealPage({
     boundPolicies,
   } = workspace;
   const matches = risk ? await evaluateDealMarkets(risk) : [];
-  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra] =
+  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra, dealLayout, dealFields, dealValues] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledMacrosFor("deals"),
@@ -82,6 +86,9 @@ export default async function DealPage({
       listQuoteLogs(),
       loadDealMotivationStats(),
       listModuleTagSuggestions("deals").catch(() => [] as string[]),
+      loadLayoutForLine(deal.lineOfBusiness).catch(() => null),
+      listDealFieldDefs().catch(() => []),
+      loadRecordValues(deal.id).catch(() => ({}) as Record<string, string>),
     ]);
   const context = await loadRecordContext({
     dealId: deal.id,
@@ -171,7 +178,7 @@ export default async function DealPage({
             {deal.title}
           </h1>
         <SectionTabs
-          defaultValue="documents"
+          defaultValue="details"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
           panelClassName="mt-1"
@@ -201,7 +208,15 @@ export default async function DealPage({
             label: AGENT_DEAL_TAB_LABELS[id],
             content: (
                   <div>
-                    {id === "documents" ? (
+                    {id === "details" ? (
+                      <DealDetailsPanel
+                        dealId={deal.id}
+                        line={deal.lineOfBusiness}
+                        layout={dealLayout ?? defaultLayoutForLine(deal.lineOfBusiness)}
+                        fields={dealFields}
+                        values={mergeDealSystemValues(deal, lead, dealValues)}
+                      />
+                    ) : id === "documents" ? (
                       <DocumentsPanel
                         dealId={deal.id}
                         riskId={risk.id}

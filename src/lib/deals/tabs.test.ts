@@ -9,13 +9,15 @@ import {
 
 describe("agent deal tabs", () => {
   it("does not expose Master Risk or Quote Sheet on the agent Deal", () => {
-    expect(AGENT_DEAL_TABS).toEqual(["documents", "markets", "quotes"]);
+    expect(AGENT_DEAL_TABS).toEqual(["details", "documents", "markets", "quotes"]);
     expect(AGENT_DEAL_TABS).not.toContain("risk");
     expect(AGENT_DEAL_TABS).not.toContain("master-risk");
     expect(AGENT_DEAL_TABS).not.toContain("quote-sheet");
     expect(parseAgentDealTab("risk")).toBe("documents");
     expect(parseAgentDealTab("master-risk")).toBe("documents");
     expect(parseAgentDealTab("quote-sheet")).toBe("documents");
+    expect(parseAgentDealTab("details")).toBe("details");
+    expect(parseAgentDealTab(undefined)).toBe("details");
     expect(parseAgentDealTab("markets")).toBe("markets");
     expect(parseAgentDealTab("quotes")).toBe("quotes");
   });

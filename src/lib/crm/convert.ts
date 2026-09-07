@@ -2,6 +2,7 @@ import { LINES, LOB_TO_SHOP_LINE, type ShopLine } from "@/lib/domain";
 import { namedInsuredFromLead } from "@/lib/crm/lead-fields";
 import { sourceLabel } from "@/lib/crm/sources";
 import { fillSheetFromLead, leadOntoRisk, type LeadCopyFields } from "@/lib/desk/copy-once";
+import { filterLeadForCarry } from "@/lib/custom-fields/transfer";
 
 export type ConvertLead = LeadCopyFields & {
   lastName: string;
@@ -45,19 +46,26 @@ export function dealTitleFromLead(lead: ConvertLead, line: string) {
 }
 
 /** Everything convert copies so the agent does not retype. Contact is attached only when a match already exists. */
-export function convertFieldCopy(lead: ConvertLead, line: string, state: string) {
-  const dealState = state || lead.state || "FL";
+export function convertFieldCopy(
+  lead: ConvertLead,
+  line: string,
+  state: string,
+  carryFields?: readonly string[] | null,
+) {
+  const filtered = filterLeadForCarry(lead, carryFields);
+  const dealState = state || filtered.state || lead.state || "FL";
   const shopLines = shopLinesForConvert(line);
   return {
     dealState,
     shopLines,
     pipelineSlug: pipelineSlugForLine(line),
     title: dealTitleFromLead(lead, line),
-    notes: dealNotesFromLead(lead),
-    source: lead.source ?? null,
-    primaryNamedInsured: namedInsuredFromLead(lead),
-    risk: leadOntoRisk(lead, dealState),
-    sheetValues: fillSheetFromLead(lead),
+    notes: dealNotesFromLead(filtered),
+    source: filtered.source ?? null,
+    primaryNamedInsured: namedInsuredFromLead(filtered) || null,
+    risk: leadOntoRisk(filtered, dealState),
+    sheetValues: fillSheetFromLead(filtered),
     sheetLine: (line === "AUTO" ? "auto" : shopLines[0] ?? "home") as ShopLine,
+    carried: filtered,
   };
 }
