@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
+import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import {
   ESSENTIAL_ADDRESS_KEYS,
@@ -280,6 +281,45 @@ describe("deal field builder", () => {
     expect(multi).toContain('value="PPO"');
     expect(multi).toContain('value="HMO"');
     expect(multi.match(/value="PPO"/g)?.length).toBe(1);
+  });
+
+  it("renders Deal Details picklists with dirty field-def options and no duplicate-key warning", () => {
+    const errors: string[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args) => {
+      errors.push(args.map(String).join(" "));
+    });
+    const html = renderToString(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: {
+          columns: [
+            {
+              id: "left",
+              sections: [{ id: "contact", label: "Contact", fieldKeys: ["construction"] }],
+            },
+            { id: "right", sections: [] },
+          ],
+        },
+        fields: [
+          {
+            key: "construction",
+            label: "Construction",
+            type: "picklist",
+            options: ["", "", "Frame", "Masonry", "Frame"],
+          },
+        ],
+        values: { coverage_a: "321000" },
+      }),
+    );
+    spy.mockRestore();
+    expect(errors.some((line) => line.includes("same key") || line.includes("key, ``"))).toBe(false);
+    expect(html).toMatch(/data-ff-deal-details/);
+    expect(html).toMatch(/data-ff-picklist="construction"/);
+    expect(html.match(/<option/g)?.length).toBe(3);
+    expect(html).toMatch(/<option value=""[^>]*>Select<\/option>/);
+    expect(html.match(/value="Frame"/g)?.length).toBe(1);
+    expect(html.match(/value="Masonry"/g)?.length).toBe(1);
   });
 
   it("defaults every line of business to Contact essentials + Address only", () => {

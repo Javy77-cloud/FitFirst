@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7br`)
+## Mac test now (`cursor/live-ff-tip-sep7bs`)
+
+Deal Details picklist duplicate-key fix, from `cursor/live-ff-tip-sep7az`. Field-builder placeholders (`["", ""]`) and unsanitized custom field defs were rendering empty `<option>` rows that collided with the Select placeholder (`key=""`). `sanitizePicklistOptions` now strips blanks and duplicates; catalog load + persist sanitize custom and global lists; FieldControl keys remaining values uniquely. Placeholder Select stays the only empty value. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `f4a4bcec`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bs-020c && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal Details**. Open any picklist (including a new builder picklist that still has blank option rows). No React duplicate-key overlay. Select still saves. Do not bind or edit Ana Cov A (**$321,000**). Do not redesign builder layout, Pipeline, Markets, or the bell.
+
+### BS — Picklist FieldControl keys
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BS1 | Overlay | Hard refresh Deal Details: no React duplicate-key overlay on picklist selects. |
+| BS2 | Blanks | Empty / duplicate options are dropped. Placeholder Select is the only empty value. |
+| BS3 | Save | Choosing a real option and saving Deal Details still persists. |
+| BS4 | Scope | Builder layout, Pipeline, Markets, and the bell are unchanged. |
+| BS5 | Tests | Field-builder tests cover empty/duplicate options and FieldControl render. |
+
+## Previous tip (`cursor/live-ff-tip-sep7br`)
 
 Header notification bell unread highlight, from `cursor/live-ff-tip-sep7az`. When any in-app notification is **unread**, the top-bar bell (next to profile) is highlighted: filled icon, terracotta ring, and a count badge. Mark as read / zero unread clears the highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `bb2e3bf7`.
 
