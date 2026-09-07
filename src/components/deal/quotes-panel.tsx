@@ -42,6 +42,17 @@ export function QuotesPanel({
   const cheapest = sorted[0] ?? null;
   const resultByCarrier = new Map(logs.map((row) => [row.log.carrierId, row.log.result]));
 
+  if (sorted.length === 0) {
+    return (
+      <div
+        className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground"
+        data-ff-deal-quotes-empty
+      >
+        Quotes land here after Markets sends them back.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <section className="ff-card overflow-hidden" data-ff-deal-quotes>
@@ -65,12 +76,7 @@ export function QuotesPanel({
             {quoteResultsNote}
           </pre>
         ) : null}
-        {sorted.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No quotes yet. Approve the master sheet, then request in-appetite quotes on Markets.
-          </p>
-        ) : (
-          <table className="ff-table">
+        <table className="ff-table">
             <thead>
               <tr>
                 <th>Carrier</th>
@@ -128,7 +134,6 @@ export function QuotesPanel({
               })}
             </tbody>
           </table>
-        )}
       </section>
 
       {bind ? (

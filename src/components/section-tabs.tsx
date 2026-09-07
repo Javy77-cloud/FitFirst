@@ -18,12 +18,14 @@ export function SectionTabs({
   active,
   param = "tab",
   extraQuery,
+  panelClassName,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
   active?: string | null;
   param?: string;
   extraQuery?: Record<string, string | undefined>;
+  panelClassName?: string;
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
 
@@ -81,7 +83,7 @@ export function SectionTabs({
           );
         })}
       </div>
-      <div role="tabpanel" className="mt-4">
+      <div role="tabpanel" className={panelClassName ?? "mt-4"}>
         {current?.content}
       </div>
     </div>

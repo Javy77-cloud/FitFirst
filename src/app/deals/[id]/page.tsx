@@ -4,7 +4,6 @@ import { sourceLabel } from "@/lib/crm/sources";
 import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
-import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { SheetHealthToggle } from "@/components/deal/sheet-health-toggle";
@@ -18,7 +17,6 @@ import { RecordDeveloperActions } from "@/components/developer-hub/record-action
 import { WidgetHost } from "@/components/developer-hub/widget-host";
 import {
   getDealWorkspace,
-  getLatestInDeskEnvelope,
   listCarriers,
   listQuoteLogs,
   listRecordActivities,
@@ -38,8 +36,9 @@ import { reportFromSheet } from "@/lib/completeness/report";
 import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
 import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
-import { parseShopLine, SHOP_LINE_LABELS } from "@/lib/domain";
+import { SHOP_LINE_LABELS } from "@/lib/domain";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
+import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 
@@ -53,7 +52,7 @@ export default async function DealPage({
   searchParams: Promise<{ tab?: string; notice?: string; field?: string; line?: string; product?: string }>;
 }) {
   const { id } = await params;
-  const { tab, notice, field, line: lineParam, product } = await searchParams;
+  const { tab, field, line: lineParam, product } = await searchParams;
   const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
@@ -67,7 +66,6 @@ export default async function DealPage({
     lead,
     contact,
     account,
-    quoteSheet,
     sheets,
     jobs,
     boundPolicies,
@@ -91,17 +89,24 @@ export default async function DealPage({
     accountId: deal.accountId,
   });
   const isAna = deal.id === DEAL_ID;
-  const envelope = await getLatestInDeskEnvelope({ dealId: deal.id });
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
   const activeTab = parseAgentDealTab(tab);
-  const sheetLine = parseShopLine(
+  const sheetLine = resolveDealSheetLine({
     lineParam,
-    parseShopLine(quoteSheet?.line ?? deal.shopLines?.[0]),
-  );
+    quotingLine: deal.quotingLine,
+    lineOfBusiness: deal.lineOfBusiness,
+  });
   const activeSheet =
     sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
+  const selectedProduct = resolveDealProduct({
+    productParam: product,
+    sheetProduct: activeSheet.values.sheet_product?.value,
+    policySubType: deal.policySubType,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingLine: deal.quotingLine ?? sheetLine,
+  });
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
   const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const unlocked = quotingUnlockedForDeal(deal);
@@ -203,7 +208,8 @@ export default async function DealPage({
         <SectionTabs
           defaultValue="documents"
           active={activeTab}
-          extraQuery={{ line: sheetLine, product }}
+          extraQuery={{ line: sheetLine, product: selectedProduct }}
+          panelClassName={activeTab === "markets" ? "mt-2" : "mt-4"}
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,
             label: AGENT_DEAL_TAB_LABELS[id],
@@ -212,35 +218,20 @@ export default async function DealPage({
                 main={
                   <div>
                     {id === "documents" ? (
-                      <div className="space-y-4">
-                        <DocumentsPanel
-                          dealId={deal.id}
-                          riskId={risk.id}
-                          docs={docs}
-                          fields={fields}
-                          jobs={jobs}
-                          health={health}
-                          sheetLine={sheetLine}
-                          sheetValues={activeSheet.values}
-                          formLabel={quotingForm?.label ?? "HO3"}
-                          unlocked={unlocked}
-                          approvedBy={deal.sheetApprovedBy}
-                          product={product ?? activeSheet.values.sheet_product?.value}
-                        />
-                        <InDeskEsignPanel
-                          recordKind="deal"
-                          recordId={deal.id}
-                          riskId={risk.id}
-                          partyName={partyName}
-                          status={deal.esignStatus}
-                          requestedAt={deal.esignRequestedAt}
-                          signedAt={deal.esignSignedAt}
-                          signerName={deal.esignSignerName}
-                          docs={docs}
-                          envelope={envelope}
-                          notice={notice}
-                        />
-                      </div>
+                      <DocumentsPanel
+                        dealId={deal.id}
+                        riskId={risk.id}
+                        docs={docs}
+                        fields={fields}
+                        jobs={jobs}
+                        health={health}
+                        sheetLine={sheetLine}
+                        sheetValues={activeSheet.values}
+                        formLabel={quotingForm?.label ?? "HO3"}
+                        unlocked={unlocked}
+                        approvedBy={deal.sheetApprovedBy}
+                        product={selectedProduct}
+                      />
                     ) : id === "markets" ? (
                       <MarketsPanel
                         dealId={deal.id}
