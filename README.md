@@ -4,7 +4,44 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7m`)
+## Mac test now (`cursor/live-ff-tip-sep7o`)
+
+Consolidator: live desk tip `cursor/live-ff-tip-sep7m` @ `cecc68f` (Pipeline activity left / upload right / 3D chips / mass update / picker / Bind) plus Deal detail rebuild `cursor/live-ff-tip-sep7n` @ `b13fc7b` (Documents compare, Markets, Quotes, bind gate, carrier history, motivation widgets). Prefer sep7m for Deals / Pipeline list. Prefer sep7n for `/deals/[id]`. Global Call / SMS / Email / Task stay on the profile bar — no local colored strips on lead or deal forms. No sidebar redesign. No schema. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7o && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### A — Pipeline list (sep7m @ `cecc68f`)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| A1 | Today's Activity | Left of the upload card, with a real gap. Title is **Today's Activity** with the date under it (e.g. Monday, Sep 7). Calendar icon opens Tasks (work queue). Chips have padding so text/icons are not crammed. |
+| A2 | Chips | Calls / Emails / Tasks / Meetings / Training read as raised 3D buttons: lighter top highlight, darker bottom, layered float shadow. Hover lifts without clipping. Click opens that type's work queue. |
+| A3 | Upload | Card sits top-right — a little smaller than the pre-compact block, not a skinny full-width row. Search, doc type, file picker, Store. |
+| A4 | Mass update | Select-all is visible rows, or **Select all N matching**. Menu: status, source, follow-up template, owner, custom field. Wired on Deals; same control on Leads / Contacts / Policies. Bound is not a mass status. |
+| A5 | Record picker | Header Call / SMS / Email / Task search leads, deals, and contacts. Pick fills name / phone / email. Manual entry still works. |
+| A6 | Bind policy | Comms **Bind policy** requests client signature. On sign, the deal goes to **Bound** and a policy number attaches. No manual stage change. Ana stays unbound. |
+
+### B — Deal detail (sep7n @ `b13fc7b`)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| B1 | Tabs | `/deals/[id]` tabs are **Documents · Quote Sheet · Markets · Quotes**. No Master Risk. No local Call / SMS / Email / Task strip on the form. |
+| B2 | Documents | Source-doc upload plus master-sheet compare. Delete on each file. Sheet health is a collapse toggle, not a full-width banner. |
+| B3 | Markets | Appetite / stretch / skip. **Approve & request quotes** / **Request stretch quotes**. Manual carrier add. Paid API wall — no live rater. |
+| B4 | Quotes | Cheapest first. Confirm low-confidence pulls. Bind gate requires premium + coverages + deductibles. Ana cannot bind. |
+| B5 | Motivation | Corner widgets: quotes pulled today + bind rate this month. Sample copy when the desk has no counts. |
+| B6 | Carrier history | Admin → Operations → Carrier history. Date filter. Not a new sidebar row. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7m`)
 
 Crew J Pipeline / Deals on tip `cursor/live-ff-tip-sep7l` @ `91b46b0`. Today's Activity strip (dated title + calendar → Tasks work queue), floating chips, compact one-row upload, shared mass update, record picker on Call / SMS / Email / Task, Bind policy on client signature. No sidebar. No schema. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 
