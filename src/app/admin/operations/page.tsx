@@ -18,6 +18,14 @@ export default async function OperationsHubPage() {
         Agency operations. Agents never see this folder.
       </p>
       <ul className="space-y-2">
+        <li>
+          <Link href="/admin/operations/carrier-history" className="text-sm text-primary hover:underline">
+            Carrier history
+          </Link>
+          <p className="text-helper text-muted-foreground">
+            Admin only. Last pull, fields captured, confidence, and correction rules.
+          </p>
+        </li>
         {links.map((link) => (
           <li key={link.id}>
             <Link href={link.href} className="text-sm text-primary hover:underline">

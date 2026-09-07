@@ -18,12 +18,25 @@ import {
 } from "@/lib/db/schema";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
+import { MANUAL_MARKET_MARKER, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 
 export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
 }
 
+export async function requestAppetiteQuotesAction(formData: FormData) {
+  await shopDealQuotes(String(formData.get("dealId") ?? ""), "appetite");
+}
+
+export async function requestStretchQuotesAction(formData: FormData) {
+  await shopDealQuotes(String(formData.get("dealId") ?? ""), "stretch");
+}
+
 export async function shopInAppetite(dealId: string) {
+  return shopDealQuotes(dealId, "appetite");
+}
+
+export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch") {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
@@ -69,29 +82,51 @@ export async function shopInAppetite(dealId: string) {
     }),
   );
 
-  await db.delete(quotes).where(eq(quotes.dealId, dealId));
+  const dealLogs = logs.filter((log) => log.dealId === dealId);
+  const manualIds = new Set(manualCarrierIdsFromLogs(dealLogs));
+  const byId = new Map(matches.map((match) => [match.carrierId, match]));
 
-  for (const match of matches.filter((m) => m.band === "green")) {
-    const portal = portalFor(match.carrierId, match.carrierName);
+  const shopIds = new Set<string>();
+  if (pass === "appetite") {
+    for (const match of matches.filter((row) => row.band === "green")) shopIds.add(match.carrierId);
+    for (const id of manualIds) shopIds.add(id);
+    await db.delete(quotes).where(eq(quotes.dealId, dealId));
+  } else {
+    const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
+    if (existing.length === 0) {
+      throw new Error("Request in-appetite quotes first. Stretch is a manual second pass.");
+    }
+    for (const match of matches.filter((row) => row.band === "yellow")) shopIds.add(match.carrierId);
+    for (const row of existing) shopIds.delete(row.carrierId);
+  }
+
+  const named = await db.select({ id: carriers.id, name: carriers.name }).from(carriers);
+  const nameById = new Map(named.map((row) => [row.id, row.name]));
+
+  for (const carrierId of shopIds) {
+    const match = byId.get(carrierId);
+    const carrierName = match?.carrierName ?? nameById.get(carrierId) ?? "Carrier";
+    const portal = portalFor(carrierId, carrierName);
     const portalResult = await portal.submitQuote({
-      carrierId: match.carrierId,
+      carrierId,
       dealId,
       riskId: risk.id,
     });
     const premium = risk.coverageA ? String(Math.round(risk.coverageA * 0.0165)) : null;
+    const manual = manualIds.has(carrierId);
     await db.insert(quotes).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       riskId: risk.id,
-      carrierId: match.carrierId,
-      quoteNumber: `STUB-${match.carrierName.slice(0, 4).toUpperCase()}-${Date.now().toString().slice(-5)}`,
+      carrierId,
+      quoteNumber: `STUB-${carrierName.slice(0, 4).toUpperCase()}-${Date.now().toString().slice(-5)}`,
       premium,
       hurricaneDeductible: "2%",
       aopDeductible: "$2,500",
       coverageA: risk.coverageA,
       bindable: true,
       coverageGaps: risk.openingProtection === "none" ? ["No opening protection credit"] : [],
-      notes: `${portalResult.message} Ranked fit score ${match.fitScore}.`,
+      notes: `${portalResult.message} ${manual ? `${MANUAL_MARKET_MARKER} Manual override. ` : ""}Ranked fit score ${match?.fitScore ?? "—"}.`,
       stub: true,
     });
   }
