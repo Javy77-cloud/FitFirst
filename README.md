@@ -29,6 +29,31 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Settings → Fiel
 | BV4 | Persist | Save on one module does not overwrite another module’s layout. |
 | BV5 | Scope | Pipeline list, Markets, bell, and Stage colors unchanged. No `db:seed` wipe. |
 
+## Previous tip (`cursor/live-ff-tip-sep7bs`)
+
+Deal Details picklist duplicate-key fix, from `cursor/live-ff-tip-sep7az`. Field-builder placeholders (`["", ""]`) and unsanitized custom field defs were rendering empty `<option>` rows that collided with the Select placeholder (`key=""`). `sanitizePicklistOptions` now strips blanks and duplicates; catalog load + persist sanitize custom and global lists; FieldControl keys remaining values uniquely. Placeholder Select stays the only empty value. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `6e0757b8`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bs-020c && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal Details**. Open any picklist (including a new builder picklist that still has blank option rows). No React duplicate-key overlay. Select still saves. Do not bind or edit Ana Cov A (**$321,000**). Do not redesign builder layout, Pipeline, Markets, or the bell.
+
+### BS — Picklist FieldControl keys
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BS1 | Overlay | Hard refresh Deal Details: no React duplicate-key overlay on picklist selects. |
+| BS2 | Blanks | Empty / duplicate options are dropped. Placeholder Select is the only empty value. |
+| BS3 | Save | Choosing a real option and saving Deal Details still persists. |
+| BS4 | Scope | Builder layout, Pipeline, Markets, and the bell are unchanged. |
+| BS5 | Tests | Field-builder tests cover empty/duplicate options and FieldControl render. |
+
 ## Previous tip (`cursor/live-ff-tip-sep7br`)
 
 Header notification badge + unread rows, from latest `cursor/live-ff-tip-sep7az`. The top-bar **bell icon stays normal** — no fill, no terracotta ring. Unread count > 0 shows a **number badge** on the bell; zero unread hides the badge. Open the panel: **unread rows** are highlighted; read rows are not. Mark as read drops the badge and clears that row highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `87247321`.

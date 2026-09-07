@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula";
 import { formatCurrencyDisplay, parseNumericInput } from "@/lib/custom-fields/format";
-import { resolvedFieldValue } from "@/lib/custom-fields/picklists";
+import { resolvedFieldValue, sanitizePicklistOptions } from "@/lib/custom-fields/picklists";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +26,7 @@ export function FieldControl({
 }) {
   const resolved = resolvedFieldValue(field, value);
   const required = Boolean(field.required);
-  const options = field.options ?? [];
+  const options = sanitizePicklistOptions(field.options ?? []);
 
   return (
     <div data-ff-control-type={field.type} data-ff-control-key={field.key}>
@@ -115,8 +115,8 @@ function TypedControl({
         data-ff-picklist={field.key}
       >
         <option value="">Select</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
+        {options.map((option, index) => (
+          <option key={`${field.key}:${index}:${option}`} value={option}>
             {option}
           </option>
         ))}
@@ -127,8 +127,8 @@ function TypedControl({
     const selected = new Set(value.split(",").filter(Boolean));
     return (
       <div className="mt-1 flex flex-wrap gap-2" data-ff-multi-select={field.key}>
-        {options.map((option) => (
-          <label key={option} className="flex items-center gap-1 text-xs">
+        {options.map((option, index) => (
+          <label key={`${field.key}:${index}:${option}`} className="flex items-center gap-1 text-xs">
             <input
               type="checkbox"
               name={name}

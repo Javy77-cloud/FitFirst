@@ -20,7 +20,7 @@ import { dealValuesFromLead } from "./transfer";
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
-import { resolveFieldOptions } from "./picklists";
+import { resolveFieldOptions, sanitizePicklistOptions } from "./picklists";
 
 export function toFieldDef(row: DeskCustomField): CustomFieldDef {
   return {
@@ -84,10 +84,19 @@ export async function ensureDealFieldCatalog() {
   return applyPicklists(rows.map(toFieldDef));
 }
 
+function persistFieldOptions(field: CustomFieldDef): string[] {
+  if (field.type === "picklist" || field.type === "multi_select" || field.picklistId) {
+    return sanitizePicklistOptions(field.options ?? []);
+  }
+  return field.options ?? [];
+}
+
 async function applyPicklists(fields: CustomFieldDef[]): Promise<CustomFieldDef[]> {
   const lists = await listFieldPicklists().catch(() => []);
   return fields.map((field) =>
-    field.picklistId ? { ...field, options: resolveFieldOptions(field, lists) } : field,
+    field.type === "picklist" || field.type === "multi_select" || field.picklistId
+      ? { ...field, options: resolveFieldOptions(field, lists) }
+      : field,
   );
 }
 
@@ -120,6 +129,7 @@ export async function listFieldDefs(module: FieldLayoutModule = "deals"): Promis
 }
 
 export async function upsertFieldDef(field: CustomFieldDef, module: FieldLayoutModule = "deals") {
+  const options = persistFieldOptions(field);
   await db
     .insert(deskCustomFields)
     .values({
@@ -128,7 +138,7 @@ export async function upsertFieldDef(field: CustomFieldDef, module: FieldLayoutM
       key: field.key,
       label: field.label,
       type: field.type,
-      options: field.options ?? [],
+      options,
       formula: field.formula ?? null,
       lookupModule: field.lookupModule ?? null,
       systemKey: field.systemKey ?? null,
@@ -143,7 +153,7 @@ export async function upsertFieldDef(field: CustomFieldDef, module: FieldLayoutM
       set: {
         label: field.label,
         type: field.type,
-        options: field.options ?? [],
+        options,
         formula: field.formula ?? null,
         lookupModule: field.lookupModule ?? null,
         systemKey: field.systemKey ?? null,
