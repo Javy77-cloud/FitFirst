@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bu`)
 
-Sitewide Save toasts — every successful Save uses the durable top-center `ActionToastHost` (`flashAction` / `flashStay` / sessionStorage), from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder → Save** shows **Deal layout saved**. The same host covers Save deal details, Save sheet, Save layout, Save settings, Save policy, Save lead, Save meeting, Save task, Save password, and the rest of the desk Save / Save changes / form submit-save paths. Failed saves do not claim success. No second toast system. No `db:seed`. Ana unbound. Cov A **$321,000**.
+Sitewide Save toasts — every successful Save uses the durable top-center `ActionToastHost` (`flashAction` / `flashStay` / sessionStorage), from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder → Save** shows **Deal layout saved**. The same host covers Save deal details, Save sheet, Save layout, Save settings, Save policy, Save lead, Save meeting, Save task, Save password, and the rest of the desk Save / Save changes / form submit-save paths. Failed saves do not claim success. No second toast system. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `32da9b17`.
 
 ```bash
 cd ~/FitFirst
@@ -27,7 +27,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Settings → Deal
 | BU2 | Other Saves | Save deal details, Save sheet, Save layout, Save settings, Save policy, Save lead, and other Save buttons use the same `ActionToastHost`. |
 | BU3 | Failed save | A failed persist does not show a success toast. |
 | BU4 | Durable | Toast survives remount/replace (sessionStorage `ff-action-toast`). |
-| BU5 | Scope | No builder DnD redesign, no Pipeline/Markets/bell work, no `db:seed`. Ana unbound, Cov A **$321,000**. |
+| BU5 | Scope | No builder DnD redesign, no Pipeline/Markets/bell work, no `db:seed`. Ana unbound, Cov A **$321,000**. Tip SHA `32da9b17`. |
 
 ## Previous tip (`cursor/live-ff-tip-sep7bq`)
 
