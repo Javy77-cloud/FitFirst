@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7cc-4dd2`)
+## Mac test now (`cursor/live-ff-tip-sep7az`)
 
-Pipeline **List** and **Grid** on the existing Board / Funnel switcher, from latest `cursor/live-ff-tip-sep7az`. The current Pipeline table is **List** — click Deal name, carrier, stage, assigned, phone, email, or other navigable columns to open that record or destination (stage opens the Board filtered to that stage). **Grid** is the same columns with inline edit: type + Enter/blur for text; dropdown for picklists / line / source / assigned / stage; checkbox / date / number / currency where the field type says so. Saves persist without leaving the table and show the sitewide top-center toast (**Deal updated**). Read-only columns (Deal title, Updated, Tags, formulas) stay display-only in Grid. Board is unchanged. `view=table` bookmarks still open List. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**.
+Pipeline **List** and **Grid** on the existing Board / Funnel switcher, merged from `cursor/live-ff-tip-sep7cc-4dd2` onto the desk tip. The current Pipeline table is **List** — click Deal name, carrier, stage, assigned, phone, email, or other navigable columns to open that record or destination (stage opens the Board filtered to that stage). **Grid** is the same columns with inline edit: type + Enter/blur for text; dropdown for picklists / line / source / assigned / stage; checkbox / date / number / currency where the field type says so. Saves persist without leaving the table and show the sitewide top-center toast (**Deal updated**). Read-only columns (Deal title, Updated, Tags, formulas) stay display-only in Grid. Board is unchanged. `view=table` bookmarks still open List. Keeps desk tip later work: FedEx address + vault, Edit Layout, BX tags, builder DnD, Dashboard, rail 320, Save toasts. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `182929b4`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7cc-4dd2 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7az && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
@@ -30,7 +30,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh. Deals / Pipeline: confir
 | CC5 | Read-only | Title, Updated, Tags, and formula columns are not inputs in Grid. Board view is unchanged. |
 | CC6 | Scope | Attach/Activity chips, Markets empty, bell, rail 320 stay. No `db:seed`. Ana unbound. Cov A **$321,000**. |
 
-## Previous tip (`cursor/live-ff-tip-sep7az`)
+## Previous tip (`cursor/live-ff-tip-sep7ca-59d4`)
 
 Platform-wide **FedEx address autocomplete** plus a **site-developer API vault**, merged from `cursor/live-ff-tip-sep7ca-59d4` onto the desk tip. Every address field (Lead, Deal, Contact, Business, Policy, Quote Sheet, Settings, custom Address-type fields) uses one `AddressAutocomplete` control. Without a configured FedEx key the field is plain text — no stub that pretends FedEx works. With a key: typeahead → select/confirm fills street, city, state, ZIP and marks confirmed.
 
