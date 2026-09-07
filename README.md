@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7ai`)
 
-Consolidator: Pipeline from `cursor/live-ff-tip-sep7ah` @ `2a1480c` / tip SHA `079243c` (inline flex band, Attach left, Activity centered, rounded chips, Attach `minHeight` 168 / `height` auto) plus Deal detail + nav from `cursor/live-ff-tip-sep7ag` @ `ced7ae9` / tip SHA `dcfeae7` (confirm one-button, flush tabs, vehicles/drivers, tags/8x8, no Deals→Quotes folder). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7ah except one locked micro tweak: `.deal-today-chip-count` is **28px** and a **darker navy**. Chip size, placement, labels, chip-body colors, Attach, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+Consolidator: Pipeline from `cursor/live-ff-tip-sep7ah` @ `2a1480c` / tip SHA `079243c` (inline flex band, Attach left, Activity centered, rounded chips, Attach `minHeight` 168 / `height` auto) plus Deal detail + nav from `cursor/live-ff-tip-sep7ag` @ `ced7ae9` / tip SHA `dcfeae7` (confirm one-button, flush tabs, vehicles/drivers, tags/8x8, no Deals→Quotes folder). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7ah except one locked micro tweak: `.deal-today-chip-count` is **28px** and a **darker navy**. Chip size, placement, labels, chip-body colors, Attach, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `9d56da4`.
 
 ```bash
 cd ~/FitFirst
