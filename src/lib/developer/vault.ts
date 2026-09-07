@@ -39,12 +39,16 @@ function normalizeEnvironment(value: string | null | undefined): FedExEnvironmen
 }
 
 export async function loadFedExVaultRow() {
-  const [row] = await db
-    .select()
-    .from(developerApiVault)
-    .where(and(eq(developerApiVault.tenantId, DEFAULT_TENANT_ID), eq(developerApiVault.provider, FEDEX_VAULT_PROVIDER)))
-    .limit(1);
-  return row ?? null;
+  try {
+    const [row] = await db
+      .select()
+      .from(developerApiVault)
+      .where(and(eq(developerApiVault.tenantId, DEFAULT_TENANT_ID), eq(developerApiVault.provider, FEDEX_VAULT_PROVIDER)))
+      .limit(1);
+    return row ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Server-only. Never return this object to a non-developer client. Never log it. */
