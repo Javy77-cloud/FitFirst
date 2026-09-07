@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7an`)
+## Mac test now (`cursor/live-ff-tip-sep7ao`)
+
+Deal detail layout only, from `cursor/live-ff-tip-sep7an` @ `1f775c9` / tip SHA `f6603bf`. **Deal title** (`deal.title`) sits **top-left** of the Deal screen (`data-ff-deal-title`). Documents · Markets · Quotes sit **flush under that title**, **right above** Line of business (`DealLineSelector`). Stage / source meta moved to the rail — not hanging on the tabs row right. Middle block pulled up (`-mt-5`). Upload trash + Add another stay. Pipeline Attach/Activity chips **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `PENDING`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ao && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AO — Deal detail layout
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AO1 | Title left | Deal name is the **page title, top-left**. Not in the tabs toolbar. Not hanging mid/right. |
+| AO2 | No right chrome | Stage / LOB / Source / referral text is **off the tabs row right**. Meta lives under the title or in the rail. |
+| AO3 | Flush stack | Top → bottom, minimal gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → Upload / sheet / Markets / Quotes. No dead band under the shell header. |
+| AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
+| AO5 | Pipeline locked | Attach / Activity chips on Deals / Pipeline are unchanged. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7an`)
 
 Consolidator: Pipeline from `cursor/live-ff-tip-sep7am` @ `4cb5a00` / tip SHA `8ac20e6` (`.deal-today-chip-count` **24px** / **500**, soft chip-fg mix into white) plus Deal detail from `cursor/live-ff-tip-sep7ak` @ `042632b` / tip SHA `b5cf1a3` (upload trash on every row + Add another, tabs flush under deal header). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7am. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `f6603bf`.
 

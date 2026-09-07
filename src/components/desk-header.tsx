@@ -26,6 +26,7 @@ export function DeskHeader({
   isImpersonating,
   utilityChrome = false,
   showBrand = true,
+  hideHeaderTitle = false,
   recordContext,
 }: {
   title: string;
@@ -41,6 +42,7 @@ export function DeskHeader({
   isImpersonating: boolean;
   utilityChrome?: boolean;
   showBrand?: boolean;
+  hideHeaderTitle?: boolean;
   recordContext?: HeaderRecordContext | null;
 }) {
   const { openSupport } = useSupport();
@@ -49,7 +51,7 @@ export function DeskHeader({
       className="ff-no-print flex flex-wrap items-center gap-3 border-b border-border bg-card px-5 py-3"
       data-ff-utility-chrome={utilityChrome ? "true" : "false"}
     >
-      {utilityChrome ? (
+      {hideHeaderTitle ? null : utilityChrome ? (
         <div className="flex min-w-0 shrink-0 items-baseline gap-3">
           {showBrand ? (
             <Link href="/" className="shrink-0 text-base font-semibold text-navy" title="FitFirst home">

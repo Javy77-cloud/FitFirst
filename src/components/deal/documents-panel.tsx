@@ -1,5 +1,4 @@
 import { extractExisting } from "@/app/actions/documents";
-import { DealLineSelector } from "@/components/deal/deal-line-selector";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
@@ -46,7 +45,6 @@ export function DocumentsPanel({
 
   return (
     <div className="space-y-4">
-      <DealLineSelector dealId={dealId} product={product} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]" data-ff-deal-upload-split>
         <div className="min-w-0 space-y-3" data-ff-deal-upload>
           <section className="ff-card p-3">

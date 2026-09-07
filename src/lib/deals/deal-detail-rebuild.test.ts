@@ -14,9 +14,11 @@ describe("deal detail final rebuild", () => {
   it("shows only the deal name in the header and keeps FitFirst off the title", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/title=\{deal\.title\}/);
+    expect(page).toMatch(/data-ff-deal-title/);
+    expect(page).toMatch(/hideHeaderTitle/);
     expect(page).toMatch(/showBrand=\{false\}/);
     expect(page).toMatch(/utilityChrome/);
-    expect(page).not.toMatch(/<h1[^>]*>\{deal\.title\}/);
+    expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{deal\.title\}/);
     expect(page).not.toMatch(/FitFirst/);
     expect(page).toMatch(/recordContext=\{\{/);
     expect(page).not.toMatch(/deal-quick-actions/);
@@ -37,11 +39,29 @@ describe("deal detail final rebuild", () => {
     expect(page.indexOf("data-ff-deal-flush-tabs")).toBeLessThan(page.indexOf("banner="));
   });
 
+  it("stacks deal title, tabs, then LOB with no right-side title chrome", () => {
+    const page = source("src/app/deals/[id]/page.tsx");
+    const docs = source("src/components/deal/documents-panel.tsx");
+    expect(page).toMatch(/data-ff-deal-title/);
+    expect(page).toMatch(/data-ff-deal-flush-tabs/);
+    expect(page).toMatch(/DealLineSelector/);
+    expect(page).toMatch(/data-ff-deal-identity/);
+    expect(page).not.toMatch(/toolbar=/);
+    expect(page).not.toMatch(/justify-end/);
+    expect(page.indexOf("data-ff-deal-title")).toBeLessThan(page.indexOf("SectionTabs"));
+    expect(page.indexOf("SectionTabs")).toBeLessThan(page.indexOf("DealLineSelector"));
+    expect(page.indexOf("DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
+    expect(page.indexOf("DealLineSelector")).toBeLessThan(page.indexOf("<MarketsPanel"));
+    expect(docs).not.toMatch(/DealLineSelector/);
+    expect(docs).toMatch(/data-ff-deal-upload-split/);
+  });
+
   it("puts an editable master sheet beside a compact upload on Documents", () => {
+    const page = source("src/app/deals/[id]/page.tsx");
     const docs = source("src/components/deal/documents-panel.tsx");
     const upload = source("src/components/deal/source-docs-upload.tsx");
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(docs).toMatch(/DealLineSelector/);
+    expect(page).toMatch(/DealLineSelector/);
     expect(docs).toMatch(/SourceDocsUpload/);
     expect(docs).toMatch(/MasterSheetCompare/);
     expect(docs).toMatch(/SheetApproveGate/);
@@ -53,7 +73,7 @@ describe("deal detail final rebuild", () => {
     expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
     expect(gate).toMatch(/requestQuotes/);
     expect(docs).toMatch(/DeleteUploadedFileButton/);
-    expect(docs.indexOf("DealLineSelector")).toBeLessThan(docs.indexOf("SourceDocsUpload"));
+    expect(page.indexOf("DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));
     expect(docs).toMatch(/deal-doc-row flex w-full/);
     expect(upload).toMatch(/Create/);

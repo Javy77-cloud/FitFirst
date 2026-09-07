@@ -13,7 +13,7 @@ export function DealLineSelector({
   product: SheetProduct;
 }) {
   return (
-    <form action={setDealSheetProduct} className="max-w-sm" data-ff-deal-lob>
+    <form action={setDealSheetProduct} className="mt-1 max-w-sm" data-ff-deal-lob>
       <input type="hidden" name="dealId" value={dealId} />
       <Label htmlFor="deal-line-of-business" className="mb-1 text-sm font-medium text-navy">
         Line of business.

@@ -24,6 +24,7 @@ export async function AppShell({
   allowMfaPending = false,
   utilityChrome = false,
   showBrand = true,
+  hideHeaderTitle = false,
   recordContext,
 }: {
   children: ReactNode;
@@ -36,6 +37,8 @@ export async function AppShell({
   utilityChrome?: boolean;
   /** Worksheet chrome can keep the logo off so the page title stands alone. */
   showBrand?: boolean;
+  /** Deal detail: title lives in the page stack, not the utility header. */
+  hideHeaderTitle?: boolean;
   /** Prefills the global Call / SMS / Email / Task composers next to profile. */
   recordContext?: HeaderRecordContext | null;
 }) {
@@ -96,6 +99,7 @@ export async function AppShell({
             isImpersonating={session.isImpersonating}
             utilityChrome={utilityChrome}
             showBrand={showBrand}
+            hideHeaderTitle={hideHeaderTitle}
             recordContext={recordContext}
           />
           <main className="flex-1 p-5">{children}</main>
