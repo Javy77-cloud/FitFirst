@@ -28,6 +28,28 @@ async function readFieldPicklists(): Promise<FieldPicklist[]> {
   return rows.map(toPicklist).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  const codes: unknown[] = [];
+  let cur: unknown = error;
+  for (let i = 0; i < 4 && cur && typeof cur === "object"; i++) {
+    if ("code" in cur) codes.push((cur as { code?: unknown }).code);
+    cur = "cause" in cur ? (cur as { cause?: unknown }).cause : undefined;
+  }
+  return codes.some((code) => code === "23505");
+}
+
+/** "Foo", then "Foo 2", "Foo 3", … when the desired name is already taken for the tenant. */
+async function allocateUniquePicklistName(desired: string): Promise<string> {
+  const base = desired.trim() || "Untitled list";
+  const existing = await readFieldPicklists();
+  const taken = new Set(existing.map((list) => list.name.trim().toLowerCase()));
+  if (!taken.has(base.toLowerCase())) return base;
+  for (let n = 2; ; n++) {
+    const candidate = `${base} ${n}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+}
+
 /** Insert missing starter lists. Never overwrites a list that already has values. */
 export async function ensureDefaultFieldPicklists(): Promise<FieldPicklist[]> {
   try {
@@ -62,16 +84,23 @@ export async function listFieldPicklists(): Promise<FieldPicklist[]> {
 }
 
 export async function createFieldPicklist(name: string, options: string[] = []): Promise<FieldPicklist> {
-  const trimmed = name.trim() || "Untitled list";
-  const [row] = await db
-    .insert(deskFieldPicklists)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      name: trimmed,
-      options: sanitizePicklistOptions(options),
-    })
-    .returning();
-  return toPicklist(row);
+  const uniqueName = await allocateUniquePicklistName(name.trim() || "Untitled list");
+  try {
+    const [row] = await db
+      .insert(deskFieldPicklists)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        name: uniqueName,
+        options: sanitizePicklistOptions(options),
+      })
+      .returning();
+    return toPicklist(row);
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new Error(`A picklist named "${uniqueName}" already exists.`);
+    }
+    throw error;
+  }
 }
 
 export async function updateFieldPicklist(id: string, patch: { name?: string; options?: string[] }) {
@@ -80,16 +109,35 @@ export async function updateFieldPicklist(id: string, patch: { name?: string; op
     .from(deskFieldPicklists)
     .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)));
   if (!existing) return null;
-  const [row] = await db
-    .update(deskFieldPicklists)
-    .set({
-      name: patch.name?.trim() || existing.name,
-      options: patch.options !== undefined ? sanitizePicklistOptions(patch.options) : existing.options,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)))
-    .returning();
-  return row ? toPicklist(row) : null;
+
+  const nextName = patch.name !== undefined ? patch.name.trim() || existing.name : existing.name;
+  if (nextName.toLowerCase() !== existing.name.trim().toLowerCase()) {
+    const siblings = await readFieldPicklists();
+    const clash = siblings.some(
+      (list) => list.id !== id && list.name.trim().toLowerCase() === nextName.toLowerCase(),
+    );
+    if (clash) {
+      throw new Error(`A picklist named "${nextName}" already exists.`);
+    }
+  }
+
+  try {
+    const [row] = await db
+      .update(deskFieldPicklists)
+      .set({
+        name: nextName,
+        options: patch.options !== undefined ? sanitizePicklistOptions(patch.options) : existing.options,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)))
+      .returning();
+    return row ? toPicklist(row) : null;
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new Error(`A picklist named "${nextName}" already exists.`);
+    }
+    throw error;
+  }
 }
 
 export async function deleteFieldPicklist(id: string) {
