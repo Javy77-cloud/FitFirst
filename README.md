@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7as`)
+## Mac test now (`cursor/live-ff-tip-sep7ax`)
+
+Tight Documents upload lock only, from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d`. Do **not** merge learning pipeline, Deal Details strip, or later tips. On **Deals → Documents**, the upload box (`Type, file, create. Source files stay on this deal.`) is **full width at the top of the tab** from the first paint — never a left column, never a post-load jump. Master sheet stays below. No `lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]`, no `data-ff-deal-upload-split`. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `efed45e`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ax-f547 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals**, open **Ana Dib**, then **Documents**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AX — Documents upload position (this tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AX1 | Cold open | First click **Documents**: upload box is **top of the tab, full width**. Not a left column. |
+| AX2 | Refresh | Hard refresh on Documents: **same** top / full-width position. |
+| AX3 | Leave and back | Open Markets (or another tab) then Documents again: **same** position. |
+| AX4 | No jump | Upload box does **not** move after first paint. No left→top or top→left shift. |
+| AX5 | Structure | `data-ff-deal-upload` is `w-full` first child of `data-ff-deal-docs` (`flex w-full flex-col`). Master sheet is `data-ff-deal-docs-sheet` **below**. No `data-ff-deal-upload-split`. No `lg:grid-cols-`. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7as`)
 
 Deal Details + field builder, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Tabs: **Deal Details · Documents · Markets · Quotes**. Details is the lead two-column desk with inline add/delete/relabel. Field builder is its own Settings screen (`/settings/field-builder`) — drag fields between two columns, all Javy types, formula math, image upload, **per-LOB layouts**. Tag chip **× on hover** removes from this deal; **Manage tags** opens the module catalog (rename / merge / delete). Convert is selective — agent checks which lead fields carry. Outer row `flex w-full`: left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`. AppShell title **Deals**. `HardDeleteForm` confirms **once** via `onClickCapture`. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `ce2d72d`.
 
@@ -19,7 +44,7 @@ npm run dev -- --port 43147
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
-### AR — Deal rail widths (this tip)
+### AR — Deal rail widths (sep7as, locked)
 
 | # | Check | Pass when |
 | --- | --- | --- |
