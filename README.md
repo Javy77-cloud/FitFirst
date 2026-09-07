@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bq`)
+## Mac test now (`cursor/live-ff-tip-sep7br`)
+
+Header notification badge + unread rows, from latest `cursor/live-ff-tip-sep7az`. The top-bar **bell icon stays normal** — no fill, no terracotta ring. Unread count > 0 shows a **number badge** on the bell; zero unread hides the badge. Open the panel: **unread rows** are highlighted; read rows are not. Mark as read drops the badge and clears that row highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `87247321`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7br-3688 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Unread alerts → number on the bell, icon otherwise normal. Open the panel — unread rows highlighted. Mark as read — badge drops, row highlight gone. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BR — Unread badge + row highlight
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BR1 | Badge | Unread count > 0 → number on the bell. Icon is not filled, ringed, or otherwise highlighted. |
+| BR2 | No unread | Zero unread → no badge. |
+| BR3 | Panel rows | Open panel: unread rows have a stronger background (`data-unread-row="true"`). Read rows do not. |
+| BR4 | Mark read | Mark as read → badge count drops; that row highlight is gone. |
+| BR5 | Scope | Header / panel only. Pipeline, builder, Markets, Stage colors unchanged. In-app only. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bq`)
 
 Table Stage colors, `First Last / Lob` deal names, and Settings → Picklists starter catalog, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** Stage uses the same colors as Board (Gather Info, Meet / Quotes, Quote Sent, Closed Won, Archive, …) on a compact inline `DealStageSelect` (`text-xs` / `h-7` — table only; Board pills stay). Deal titles are **First Last / Lob** — `Javier Canales / Home` — one slash only. Existing deals retitle via additive migrate `0088_stage_title_picklists` + boot backfill. **Settings → Picklists** seeds US states, lines of business, and common carriers so **Use a global list** on a picklist field has lists to choose. No `db:seed` wipe. Ana unbound. Cov A **$321,000**. Tip SHA `221dd224`.
 

@@ -10,8 +10,8 @@ import {
   NOTIFICATION_BOARD_LABEL,
   NOTIFICATION_EMPTY_PANEL,
   NOTIFICATION_IN_APP_COPY,
+  applyLocalNotificationReads,
   notificationBellBadge,
-  notificationBellHighlighted,
   notificationBellUnreadLabel,
   notificationHref,
   recentNotifications,
@@ -29,10 +29,10 @@ export function NotificationBell({
 }) {
   const [open, setOpen] = useState(false);
   const [localUnread, setLocalUnread] = useState(unread);
+  const [locallyRead, setLocallyRead] = useState<string[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
-  const recent = recentNotifications(alerts);
+  const recent = applyLocalNotificationReads(recentNotifications(alerts), locallyRead);
   const displayUnread = localUnread;
-  const highlighted = notificationBellHighlighted(displayUnread);
   const badge = notificationBellBadge(displayUnread);
 
   useEffect(() => {
@@ -60,7 +60,6 @@ export function NotificationBell({
       className="relative overflow-visible"
       ref={rootRef}
       data-testid="notification-bell"
-      data-ff-bell-highlight={highlighted ? "on" : "off"}
       data-unread-count={displayUnread}
     >
       <button
@@ -69,21 +68,14 @@ export function NotificationBell({
         aria-label={notificationBellUnreadLabel(displayUnread)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        data-unread-highlight={highlighted ? "true" : "false"}
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
           "relative inline-flex size-10 items-center justify-center overflow-visible rounded-md text-[#c2410c] hover:bg-[#ffedd5]",
           triggerClassName,
           open && "bg-[#ffedd5]",
-          highlighted &&
-            "bg-[#ffedd5] text-[#c2410c] ring-2 ring-[#c2410c] ring-offset-2 ring-offset-card",
         )}
       >
-        <Bell
-          className={cn("size-6", highlighted && "fill-[#c2410c]")}
-          strokeWidth={2.25}
-          aria-hidden
-        />
+        <Bell className="size-6" strokeWidth={2.25} aria-hidden />
         {badge ? (
           <span
             data-testid="notification-bell-unread"
@@ -116,7 +108,10 @@ export function NotificationBell({
             <NotificationChecklist
               resetKey={open}
               empty={NOTIFICATION_EMPTY_PANEL}
-              onMarkedRead={(ids) => setLocalUnread((count) => Math.max(0, count - ids.length))}
+              onMarkedRead={(ids) => {
+                setLocallyRead((prev) => [...prev, ...ids]);
+                setLocalUnread((count) => Math.max(0, count - ids.length));
+              }}
               alerts={recent.map((alert) => ({
                 id: alert.id,
                 title: alert.title,
