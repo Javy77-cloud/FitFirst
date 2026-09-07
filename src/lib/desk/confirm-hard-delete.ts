@@ -1,15 +1,11 @@
-/** Two-step confirm before any hard delete. Same question twice (Javy rule). Archive stays a single confirm. */
+/** One confirm before any hard delete. Exactly one “Are you sure you want to delete?” per trash click (Javy rule). Archive stays a single confirm. */
 export function confirmHardDelete(subject: string): boolean {
   const ask = typeof globalThis.confirm === "function" ? globalThis.confirm.bind(globalThis) : null;
   if (!ask) return false;
-  const message = `Are you sure you want to delete ${subject}?`;
-  if (!ask(message)) return false;
-  return ask(message);
+  return ask(`Are you sure you want to delete ${subject}?`);
 }
 
-/** Leads list Delete — one dialog per click. Files / tasks still use confirmHardDelete. */
+/** Same one-dialog confirm as confirmHardDelete. */
 export function confirmDeleteOnce(subject: string): boolean {
-  const ask = typeof globalThis.confirm === "function" ? globalThis.confirm.bind(globalThis) : null;
-  if (!ask) return false;
-  return ask(`Are you sure you want to delete ${subject}?`);
+  return confirmHardDelete(subject);
 }

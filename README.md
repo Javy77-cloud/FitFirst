@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aq`)
 
-Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; `data-ff-deal-topband` left stack is title → tabs → LOB → panels (`data-ff-deal-top-left`, almost no gap); **Sheet health** + **Quotes pulled today** stay `data-ff-deal-top-right` and do not push tabs down. No StagePill / Source · Referral / RelatedRecordNav rail strip. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `d1494d3`.
+Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; `data-ff-deal-topband` left stack is title → tabs → LOB → panels (`data-ff-deal-top-left`, almost no gap); **Sheet health** + **Quotes pulled today** stay `data-ff-deal-top-right` and do not push tabs down. File trash asks **once**. No StagePill / Source · Referral / RelatedRecordNav rail strip. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
 
 ```bash
 cd ~/FitFirst
@@ -31,6 +31,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
 | AQ2 | Title-row meta | `data-ff-deal-topband`: `data-ff-deal-top-left` is title → tabs → LOB → panels. `data-ff-deal-top-right` is **Sheet health** + **Quotes pulled today**. |
 | AQ3 | Motivation right | Motivation stays the **right corner**, top-aligned. Tabs sit immediately under the deal title on the left. |
+| AQ4 | Delete once | Trash on a file asks **Are you sure you want to delete?** exactly **once**. No second dialog. |
 
 ### AH — Pipeline list (sep7ah, locked)
 

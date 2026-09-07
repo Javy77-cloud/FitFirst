@@ -26,7 +26,7 @@ function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("upload surfaces offer delete + double confirm", () => {
+describe("upload surfaces offer delete + one confirm", () => {
   it("every stored-file upload surface has a Delete/Hide control gated by confirmHardDelete", () => {
     for (const row of SURFACES.filter((item) => item.stored)) {
       const text = source(row.file);
@@ -55,10 +55,11 @@ describe("upload surfaces offer delete + double confirm", () => {
     expect(action).toMatch(/unlinkStoredPath/);
   });
 
-  it("Javy confirm asks the same question twice", () => {
+  it("Javy confirm asks Are you sure you want to delete … once", () => {
     const helper = source("src/lib/desk/confirm-hard-delete.ts");
     expect(helper).toMatch(/Are you sure you want to delete \$\{subject\}\?/);
-    expect(helper).toMatch(/if \(!ask\(message\)\) return false;/);
-    expect(helper).toMatch(/return ask\(message\);/);
+    expect(helper).toMatch(/return ask\(`Are you sure you want to delete \$\{subject\}\?`\);/);
+    expect(helper).not.toMatch(/if \(!ask\(message\)\) return false;/);
+    expect(helper).not.toMatch(/return ask\(message\);/);
   });
 });

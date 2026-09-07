@@ -14,7 +14,7 @@ export function HardDeleteForm({
   subject: string;
   className?: string;
   children: ReactNode;
-  /** Lead line files delete immediately. Other hard deletes still ask twice. */
+  /** Lead line files can skip. Other hard deletes ask once: Are you sure you want to delete? */
   confirm?: boolean;
 }) {
   return (
