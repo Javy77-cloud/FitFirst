@@ -4,7 +4,31 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep6y`)
+## Mac test now (`cursor/live-ff-tip-sep7b`)
+
+Lead detail only. Two-column layout, one lines-of-interest control, per-line documents, and the shared Choose file / trash / Convert+Save chrome. Branched from `cursor/live-ff-tip-sep6y`. Do not retouch follow-up, clocks, snooze, bulk-delete, sidebar, or schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7b && git pull
+npm install
+# skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh, open a **Lead**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Two-column | Left is the lead form. Right is Documents by line. Side by side on a normal desk — does not stack until a phone-narrow window. Address / City / State / ZIP share one row. Email and Phone share one row. Header title is **Leads**. No “Personal Lines Worksheet.” |
+| 2 | One line control | Home / Auto / Flood cards are the lines of interest. One **Add line** dropdown at the top of the cards creates another card. No “Add another line” at the bottom. No second line picker on Convert. Selected cards transfer to the deal on convert. |
+| 3 | Per-line files | Each card has its own drop zone, starts with one file slot, **+ Add file** adds another. Uploaded rows show a right-aligned trash can that deletes immediately (no confirm). No global lead upload. Files carry onto the deal grouped by the same line. |
+| 4 | Choose file | The picker is a **Choose file** button, not a text field. The whole button is the click target. After a pick, the button text becomes the filename. |
+| 5 | Lead ↔ Deal | Lead top shows **View related deal**. Deal top shows **View source lead**. |
+| 6 | Shared chrome | Convert is centered and bigger than **Save lead**. Save lead shows the navy toast, then lands on the Leads list. Upload button, trash, Columns, funnel sort, row dividers, and status/temp badges stay the shared platform set. |
+
+## Mac test prior (`cursor/live-ff-tip-sep6y`)
 
 Platform-wide UI standards only: same upload drop-zone, trash delete, save toast → list, primary action, Columns picker, leftover funnel sort, row dividers, and status/temp badges. Rebased onto `cursor/live-ff-tip-sep6z` (`27a9ba3`), which already sits on `sep6x` / `sep6w`. No clock / follow-up / Operations nav / lead-detail docs / Deals checklist work. Leave sep6z Deals upload (`Choose file` + Add file) as-is. This tip adds no schema; `0079_documents_lead_id` is already on the branch from sep6x — migrate only if this desk is behind. No seed wipe.
 

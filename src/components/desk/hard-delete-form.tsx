@@ -8,18 +8,21 @@ export function HardDeleteForm({
   subject,
   className,
   children,
+  confirm = true,
 }: {
   action: (formData: FormData) => unknown;
   subject: string;
   className?: string;
   children: ReactNode;
+  /** Lead line files delete immediately. Other hard deletes still ask twice. */
+  confirm?: boolean;
 }) {
   return (
     <form
       action={action as (formData: FormData) => void | Promise<void>}
       className={className}
       onSubmit={(event) => {
-        if (!confirmHardDelete(subject)) event.preventDefault();
+        if (confirm && !confirmHardDelete(subject)) event.preventDefault();
       }}
     >
       {children}

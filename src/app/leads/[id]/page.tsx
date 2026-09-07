@@ -1,10 +1,7 @@
 import { notFound } from "next/navigation";
-import { createDealFromLead } from "@/app/actions/crm";
-import { updateLeadRecord } from "@/app/actions/record-edit";
 import { AppShell } from "@/components/app-shell";
 import { ClickToCall } from "@/components/click-to-call";
 import { LeadFormFields } from "@/components/crm/lead-form-fields";
-import { LineSelect } from "@/components/crm/line-select";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
 import { RecordSection } from "@/components/record-section";
@@ -13,7 +10,7 @@ import { formatPersonName } from "@/lib/crm/display";
 import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
-import { LeadLineDocuments } from "@/components/leads/lead-line-documents";
+import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
 import { routeLeadNow } from "@/app/actions/lead-routing";
 import { latestRoutingLog } from "@/lib/leads/apply-routing";
@@ -56,7 +53,7 @@ export default async function LeadDetailPage({
     : null;
 
   return (
-    <AppShell title={formatPersonName(lead)} utilityChrome>
+    <AppShell title="Leads" utilityChrome>
       <RecordDeveloperActions
         module="leads"
         recordId={lead.id}
@@ -136,45 +133,22 @@ export default async function LeadDetailPage({
         </div>
       ) : null}
 
-      <div
-        className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]"
-        data-ff-lead-layout="two-col"
+      <RecordSection
+        id="record"
+        title="This lead"
+        summary="Person on the left. Files sit on each line of interest to the right."
       >
-        <div className="min-w-0">
-          <RecordSection
-            id="record"
-            title="This lead"
-            summary="Person and coverage they asked for. Files sit on each line to the right."
-          >
-            <form action={updateLeadRecord} className="mb-4 space-y-3">
-              <input type="hidden" name="leadId" value={lead.id} />
-              <LeadFormFields lead={lead} />
-              <Button type="submit" size="sm">
-                Save lead
-              </Button>
-            </form>
-            {!deal ? (
-              <form action={createDealFromLead} className="mb-4 flex flex-wrap items-end gap-2">
-                <input type="hidden" name="leadId" value={lead.id} />
-                <input type="hidden" name="state" value={lead.state ?? "FL"} />
-                <LineSelect id="convert-line" defaultValue={lead.insuranceTypeDesired ?? "HO"} />
-                <Button type="submit" data-ff-convert-deal>
-                  Convert
-                </Button>
-                <p className="w-full text-helper text-muted-foreground">
-                  Convert when ready to shop. Line files carry onto the deal, grouped the same way.
-                </p>
-              </form>
-            ) : null}
-          </RecordSection>
-        </div>
-        <LeadLineDocuments
+        <LeadDetailWorkspace
           leadId={lead.id}
           dealId={deal?.id ?? null}
           insuranceTypeDesired={lead.insuranceTypeDesired}
+          state={lead.state ?? "FL"}
+          canConvert={!deal}
           docs={docs}
-        />
-      </div>
+        >
+          <LeadFormFields lead={lead} hideLineSelect />
+        </LeadDetailWorkspace>
+      </RecordSection>
 
       <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">
         {deal ? (

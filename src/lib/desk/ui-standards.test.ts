@@ -34,6 +34,7 @@ describe("platform UI standards", () => {
 
   it("create actions toast then redirect to the list", () => {
     expect(source("src/app/actions/crm.ts")).toMatch(/redirect\("\/leads\?saved=1"\)/);
+    expect(source("src/app/actions/record-edit.ts")).toMatch(/redirect\("\/leads\?saved=1"\)/);
     expect(source("src/app/actions/crm.ts")).toMatch(/redirect\("\/contacts\?saved=1"\)/);
     expect(source("src/app/actions/crm.ts")).toMatch(/redirect\("\/deals\?saved=1"\)/);
     expect(source("src/app/actions/activities.ts")).toMatch(/redirect\("\/accounts\?saved=1"\)/);
