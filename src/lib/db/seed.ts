@@ -49,6 +49,7 @@ import { ensureDefaultLineSubfilters } from "./line-settings";
 import { seedCalendarDesk } from "./seed-calendar";
 import { seedCompanyMeetings } from "./seed-company-meetings";
 import { seedGlobalLists } from "./seed-global-lists";
+import { seedFieldPicklists } from "./seed-field-picklists";
 import { seedHomeDashboard } from "./seed-home-dashboard";
 import { seedDocumentLibraries } from "./seed-documents";
 import { seedAutomationsHub } from "./seed-automations";
@@ -555,6 +556,7 @@ async function seedUnlocked() {
   await seedCalendarDesk();
   await seedCompanyMeetings();
   await seedGlobalLists();
+  await seedFieldPicklists();
   await seedHomeDashboard();
   await seedDocumentLibraries();
   await seedAutomationsHub();
@@ -591,4 +593,7 @@ async function seedUnlocked() {
   await seedAmsWave8();
   const { seedAmsWave9 } = await import("./seed-ams-wave9");
   await seedAmsWave9();
+  const { ensureDealTitles, resetDealTitleBoot } = await import("@/lib/deals/retitle");
+  resetDealTitleBoot();
+  await ensureDealTitles().catch(() => null);
 }

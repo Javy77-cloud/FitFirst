@@ -4,6 +4,7 @@ import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { CUSTOM_FIELD_TYPE_LABELS } from "@/lib/custom-fields/types";
 import { convertFieldCopy } from "@/lib/crm/convert";
 import { dealValuesFromLead } from "@/lib/custom-fields/transfer";
+import { defaultStageColor, stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { SEEDED_PIPELINES } from "@/lib/wire/pipeline";
 import {
   DEAD_DEAL_COLUMN_IDS,
@@ -23,7 +24,11 @@ const boards = [
   {
     id: "pc",
     slug: "p-c",
-    stages: pc.stages.map((stage) => ({ slug: stage.slug, name: stage.name })),
+    stages: pc.stages.map((stage, index) => ({
+      slug: stage.slug,
+      name: stage.name,
+      color: defaultStageColor(index, stage.slug),
+    })),
   },
 ];
 
@@ -82,6 +87,35 @@ describe("pipeline table deal-field columns", () => {
     expect(quoting.name).not.toBe("Quoting");
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/DealStageSelect/);
     expect(source("src/components/deals/deal-stage-select.tsx")).toMatch(/moveDealToStage/);
+  });
+
+  it("uses the same stage colors on the table select as Board StagePill", () => {
+    const select = source("src/components/deals/deal-stage-select.tsx");
+    const pill = source("src/components/fit-badge.tsx");
+    expect(select).toMatch(/stageColorFromNameOrSlug/);
+    expect(select).toMatch(/statusColorClass/);
+    expect(select).toMatch(/data-stage-color/);
+    expect(pill).toMatch(/stageColorFromNameOrSlug\(stage, color\)/);
+    for (const [index, stage] of pc.stages.entries()) {
+      const view = dealStageView(
+        {
+          title: "Javier Canales / Home",
+          pipelineStage: stage.slug,
+          pipelineStageSlug: stage.slug,
+          pipelineId: "pc",
+          lineOfBusiness: "HO",
+        },
+        boards,
+      );
+      const boardColor = stageColorFromNameOrSlug(stage.name, defaultStageColor(index, stage.slug));
+      expect(view.color).toBe(boardColor);
+      expect(view.name).toBe(stage.name);
+    }
+    expect(dealStageView({ title: "x", pipelineStage: "gather", pipelineStageSlug: "gather", lineOfBusiness: "HO" }, boards).color).toBe("blue");
+    expect(dealStageView({ title: "x", pipelineStage: "quotes", pipelineStageSlug: "quotes", lineOfBusiness: "HO" }, boards).color).toBe("teal");
+    expect(dealStageView({ title: "x", pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent", lineOfBusiness: "HO" }, boards).color).toBe("violet");
+    expect(dealStageView({ title: "x", pipelineStage: "closed_won", pipelineStageSlug: "closed_won", lineOfBusiness: "HO" }, boards).color).toBe("green");
+    expect(stageColorFromNameOrSlug("ARCHIVE", "slate")).toBe("slate");
   });
 });
 

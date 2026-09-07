@@ -617,6 +617,13 @@
       "when": 1788870000000,
       "tag": "0087_deal_title_slashes",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1788880000000,
+      "tag": "0088_stage_title_picklists",
+      "breakpoints": true
     }
   ]
 }

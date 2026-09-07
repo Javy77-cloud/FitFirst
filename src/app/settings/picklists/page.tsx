@@ -19,8 +19,9 @@ export default async function FieldPicklistsPage() {
     <SettingsShell title="Picklists" current="picklists">
       <p className="mb-4 text-sm text-muted-foreground">
         Global option lists for picklist and multi-select fields. Create a list once, then reuse it
-        on any field on any line of business. These are not the policy book lists under Lines /
-        Global lists.
+        on any field on any line of business. Starter lists — US states, lines of business, and
+        common carriers — are ready for <span className="font-medium text-navy">Use a global list</span>{" "}
+        on the field builder. These are not the policy book lists under Lines / Global lists.
       </p>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Link href="/settings/field-builder" className="text-sm text-primary hover:underline">
@@ -46,7 +47,12 @@ export default async function FieldPicklistsPage() {
       ) : (
         <div className="space-y-4" data-ff-picklists>
           {lists.map((list) => (
-            <section key={list.id} className="ff-card space-y-3 p-4" data-ff-picklist-list={list.id}>
+            <section
+              key={list.id}
+              className="ff-card space-y-3 p-4"
+              data-ff-picklist-list={list.id}
+              data-ff-picklist-name={list.name}
+            >
               <div className="flex items-center gap-2">
                 <FieldTypeIcon type="picklist" />
                 <h2 className="text-sm font-semibold text-navy">{list.name}</h2>

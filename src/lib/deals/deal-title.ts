@@ -137,16 +137,26 @@ export function resolveDealPerson(input: {
   };
 }
 
-/** First / Last / Lob — e.g. Javier / Canales / Home. Falls back to account name for commercial. */
+export function formatDealPersonName(
+  firstName?: string | null,
+  lastName?: string | null,
+): string {
+  return [firstName, lastName]
+    .map((part) => (part ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** First Last / Lob — e.g. Javier Canales / Home. One slash only. Falls back to account name for commercial. */
 export function formatDealTitle(input: DealTitleInput): string {
   const person = resolveDealPerson(input);
-  const who = [person.firstName, person.lastName].filter(Boolean);
-  const head = who.length ? who : person.accountName ? [person.accountName] : [];
+  const name = formatDealPersonName(person.firstName, person.lastName) || person.accountName;
   const lob = dealTitleLobWord(input.line);
-  if (!head.length) return lob;
-  const last = head[head.length - 1] ?? "";
-  if (last.toLowerCase() === lob.toLowerCase()) return joinDealTitleParts(...head);
-  return joinDealTitleParts(...head, lob);
+  if (!name) return lob;
+  if (name.toLowerCase() === lob.toLowerCase()) return name;
+  const suffix = `${TITLE_PART_SEP}${lob}`.toLowerCase();
+  if (name.toLowerCase().endsWith(suffix)) return name;
+  return joinDealTitleParts(name, lob);
 }
 
 export function dealTitleFromPerson(

@@ -5,6 +5,7 @@ import { formatCurrencyDisplay } from "@/lib/custom-fields/format";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import type { ColumnDef } from "@/lib/desk/columns";
 import { formatMoney } from "@/lib/domain";
+import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { pipelineSlugForDealStage } from "@/lib/wire/pipeline";
 
 /** Columns that are not deal fields — never offer them on the pipeline table. */
@@ -172,10 +173,11 @@ export function dealStageView(
   const slug = dealStageSlug(deal);
   const stages = board?.stages ?? [];
   const match = stages.find((stage) => stage.slug === slug);
+  const name = match?.name ?? slug.replaceAll("_", " ");
   return {
     slug,
-    name: match?.name ?? slug.replaceAll("_", " "),
-    color: match?.color ?? null,
+    name,
+    color: stageColorFromNameOrSlug(name, match?.color),
     pipelineSlug: board?.slug ?? "p-c",
     stages,
   };

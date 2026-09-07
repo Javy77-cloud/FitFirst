@@ -6,7 +6,8 @@ export type FieldPicklist = {
   options: string[];
 };
 
-export const MAX_PICKLIST_OPTIONS = 40;
+/** High enough for US states + DC. Custom field lists stay this size. */
+export const MAX_PICKLIST_OPTIONS = 80;
 
 export function sanitizePicklistOptions(options: unknown): string[] {
   if (!Array.isArray(options)) return [];
