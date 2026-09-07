@@ -78,6 +78,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | C7 | Stale flag | A deal untouched past 14 days shows a **Stale** badge with **Re-engage** or **Archive**. |
 | C8 | Contact second | **Contact** is the column immediately after **Deal**. Phone lives under the name only. |
 | C9 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
+| C10 | Deal search | **Deal** header is live typeahead (same as Leads **Name**). No ASC/DESC funnel on that column. Typing filters matching deal names immediately. |
 
 ## Mac test prior (`cursor/live-ff-tip-sep7e`)
 
