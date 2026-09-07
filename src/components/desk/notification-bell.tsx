@@ -10,6 +10,9 @@ import {
   NOTIFICATION_BOARD_LABEL,
   NOTIFICATION_EMPTY_PANEL,
   NOTIFICATION_IN_APP_COPY,
+  notificationBellBadge,
+  notificationBellHighlighted,
+  notificationBellUnreadLabel,
   notificationHref,
   recentNotifications,
 } from "@/lib/desk/notifications";
@@ -27,6 +30,8 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const recent = recentNotifications(alerts);
+  const highlighted = notificationBellHighlighted(unread);
+  const badge = notificationBellBadge(unread);
 
   useEffect(() => {
     if (!open) return;
@@ -45,24 +50,40 @@ export function NotificationBell({
   }, [open]);
 
   return (
-    <div className="relative" ref={rootRef} data-testid="notification-bell">
+    <div
+      className="relative overflow-visible"
+      ref={rootRef}
+      data-testid="notification-bell"
+      data-ff-bell-highlight={highlighted ? "on" : "off"}
+      data-unread-count={unread}
+    >
       <button
         type="button"
-        title="Notifications"
-        aria-label="Notifications"
+        title={notificationBellUnreadLabel(unread)}
+        aria-label={notificationBellUnreadLabel(unread)}
         aria-expanded={open}
         aria-haspopup="dialog"
+        data-unread-highlight={highlighted ? "true" : "false"}
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "relative inline-flex size-10 items-center justify-center rounded-md text-[#c2410c] hover:bg-[#ffedd5]",
-          open && "bg-[#ffedd5]",
+          "relative inline-flex size-10 items-center justify-center overflow-visible rounded-md text-[#c2410c] hover:bg-[#ffedd5]",
           triggerClassName,
+          open && "bg-[#ffedd5]",
+          highlighted &&
+            "bg-[#ffedd5] text-[#c2410c] ring-2 ring-[#c2410c] ring-offset-2 ring-offset-card",
         )}
       >
-        <Bell className="size-6" strokeWidth={2.25} />
-        {unread > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-sm bg-fit-flag px-1 text-[10px] font-semibold leading-4 text-white">
-            {unread > 9 ? "9+" : unread}
+        <Bell
+          className={cn("size-6", highlighted && "fill-[#c2410c]")}
+          strokeWidth={2.25}
+          aria-hidden
+        />
+        {badge ? (
+          <span
+            data-testid="notification-bell-unread"
+            className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#c2410c] px-1 text-[11px] font-bold leading-5 text-white shadow-sm"
+          >
+            {badge}
           </span>
         ) : null}
       </button>

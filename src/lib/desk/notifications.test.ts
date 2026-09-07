@@ -10,6 +10,9 @@ import {
   followUpMethodFromTitle,
   followUpNotificationTitle,
   isFollowUpPopupKind,
+  notificationBellBadge,
+  notificationBellHighlighted,
+  notificationBellUnreadLabel,
   notificationHref,
   notificationWhen,
   parseFollowUpNotification,
@@ -36,6 +39,20 @@ describe("notification board helpers", () => {
     expect(recentNotifications(rows)[0]?.id).toBe("a0");
     expect(unreadNotificationCount(rows)).toBe(3);
     expect(unreadNotificationCount([])).toBe(0);
+    expect(notificationBellHighlighted(unreadNotificationCount(rows))).toBe(true);
+    expect(notificationBellHighlighted(unreadNotificationCount([]))).toBe(false);
+  });
+
+  it("highlights the header bell only while unread count is above zero", () => {
+    expect(notificationBellHighlighted(1)).toBe(true);
+    expect(notificationBellHighlighted(3)).toBe(true);
+    expect(notificationBellHighlighted(12)).toBe(true);
+    expect(notificationBellHighlighted(0)).toBe(false);
+    expect(notificationBellBadge(4)).toBe("4");
+    expect(notificationBellBadge(12)).toBe("9+");
+    expect(notificationBellBadge(0)).toBeNull();
+    expect(notificationBellUnreadLabel(2)).toBe("Notifications, 2 unread");
+    expect(notificationBellUnreadLabel(0)).toBe("Notifications");
   });
 
   it("deep-links when a record href exists, else the board", () => {

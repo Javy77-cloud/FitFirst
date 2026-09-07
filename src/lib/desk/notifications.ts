@@ -21,6 +21,22 @@ export function unreadNotificationCount(rows: readonly { read: boolean }[]): num
   return rows.filter((row) => !row.read).length;
 }
 
+/** Top-bar bell is highlighted only while any in-app notification is unread. */
+export function notificationBellHighlighted(unread: number): boolean {
+  return unread > 0;
+}
+
+export function notificationBellUnreadLabel(unread: number): string {
+  if (!notificationBellHighlighted(unread)) return "Notifications";
+  const shown = unread > 9 ? "9+" : String(unread);
+  return `Notifications, ${shown} unread`;
+}
+
+export function notificationBellBadge(unread: number): string | null {
+  if (!notificationBellHighlighted(unread)) return null;
+  return unread > 9 ? "9+" : String(unread);
+}
+
 export function notificationHref(href: string | null | undefined): string {
   return href?.trim() || NOTIFICATION_BOARD_HREF;
 }

@@ -4,7 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bp`)
+## Mac test now (`cursor/live-ff-tip-sep7br`)
+
+Header notification bell unread highlight, from `cursor/live-ff-tip-sep7az`. When any in-app notification is **unread**, the top-bar bell (next to profile) is highlighted: filled icon, terracotta ring, and a count badge. Mark as read / zero unread clears the highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA TBD.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7br-3688 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh any desk page. If unread alerts exist, the header bell is ringed and badged. Open the panel, mark as read — highlight is gone. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BR — Unread bell highlight
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BR1 | Unread | Unread count > 0 → bell has `data-ff-bell-highlight="on"`, filled icon, ring, and count badge. |
+| BR2 | Read | Mark as read / zero unread → highlight off, badge gone. |
+| BR3 | Scope | Header bell only. Pipeline, builder, Markets, Stage colors unchanged. |
+| BR4 | In-app | Panel copy stays in-app. Nothing emails Javy. |
+| BR5 | Tests | `notification-bell` + `notifications` assert unread → highlight on, read → highlight off. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bp`)
 
 Hide call / next-action clocks from Pipeline table rows, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** no longer shows a ticking `HH:MM:SS` under each deal (those were `DealNextActionTimer` countdowns from `updatedAt + 7 days`, not live call duration). They auto-started on mount. Call / SMS / Email / Task / Meeting chips stay. In-call softphone timer is unchanged. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `bf6d0c9f`.
 
