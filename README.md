@@ -4,20 +4,39 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ar`)
+## Mac test now (`cursor/live-ff-tip-sep7at`)
 
-Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` keeps the real server `action` and confirms **once** via `onClickCapture` + `confirmHardDelete` (cancel `preventDefault` / `stopPropagation`). `FileDeleteIcon` has no `name` / `formAction`. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `2cbb5fb`.
+Document extraction + property enrichment only, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Per-form field maps (wind mit OIR-B1-1802, four-point, dec page, policy scaffold) drive extract: **source label → master sheet field**, no guessing. Unmapped labels stay blank and land in the existing needs-review / yellow CHECK path. Confirming the property address runs ATTOM / Estated / Florida Property **stubs** (BYO `ATTOM_API_KEY` / `ESTATED_API_KEY` / `FLORIDA_PROPERTY_API_KEY`). No Zillow. No county scrape. No Zestimate as Cov A. Sidebar / Pipeline / Deal-details field builder untouched (that work is on `sep7as`). Additive migrate only — do not `db:seed`. Ana unbound. Cov A stays **$321,000**.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7ar && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7at && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals**, open a shopping deal (not Ana). Drop a wind mit / 4-point / dec; mapped labels fill CHECK cells. Confirm the street to trigger enrichment. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AT — Field maps + enrichment (this tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AT1 | Wind mit map | OIR-B1-1802 table maps Roof covering / Roof deck attachment / Roof-to-wall / Opening protection / Roof geometry / SWR. Extract uses the map only. |
+| AT2 | Four-point map | Age of electrical panel, Year last updated, piping supply, water heater, HVAC year, Actual year built. |
+| AT3 | Dec page map | Reasonable HO3 labels (named insured, Cov A–D, deductibles, year built, roof, carrier) → sheet fields. |
+| AT4 | Unmapped | Unknown labels stay blank. No invented Cov A / Zestimate. Flagged `needs_review` extract rows. |
+| AT5 | Address confirm | Confirming `address1` (or city/state/zip after the street is set) runs the enrichment stub; facts enter CHECK. |
+| AT6 | Paid API wall | ATTOM / Estated / Florida Property are stubs. Env key names in `.env.example`. No Zillow or county HTML. |
+| AT7 | Tests | `field-maps.test.ts` + `property-enrichment/service.test.ts` — map lookup, unmapped blank, stub smoke. |
+| AT8 | Scope | Sidebar and Pipeline files not in this tip. Deal-details field builder left on `sep7as`. |
+
+Accuracy targets: wind mit / four-point maps **95%+** on standardized forms; property API **90%+** on year built / exterior / roof type when a BYO key is present. Remainder → agent review.
+
+## Previous tip (`cursor/live-ff-tip-sep7ar`)
+
+Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` keeps the real server `action` and confirms **once** via `onClickCapture` + `confirmHardDelete` (cancel `preventDefault` / `stopPropagation`). `FileDeleteIcon` has no `name` / `formAction`. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `2cbb5fb`.
 
 ### AR — Deal rail widths (this tip)
 

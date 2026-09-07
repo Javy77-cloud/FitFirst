@@ -1,5 +1,11 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import {
+  type FieldMapDocType,
+  inferFieldMapDocType,
+  lookupSheetField,
+  sheetFieldsForDocType,
+} from "./field-maps";
+import {
   EXTRACT_LABELS,
   aliasToKey,
   isBlockedExtractKey,
@@ -16,11 +22,19 @@ export type ExtractedField = {
   source: "labeled" | "inferred" | "uncertain";
 };
 
+export type UnmappedExtractLabel = {
+  sourceLabel: string;
+  rawValue: string;
+};
+
 export type ExtractionResult = {
   fields: ExtractedField[];
   documentQuality: "clean" | "messy";
   qualityNotes: string[];
   glanceRequired: boolean;
+  /** Labeled lines with no map row — stay blank on the sheet; review bucket. */
+  unmappedLabels: UnmappedExtractLabel[];
+  fieldMapDocType: FieldMapDocType | null;
 };
 
 const UNCERTAIN_VALUE = /\?|\bunk(?:nown)?\b|\billegible\b|\bn\/?a\b|\btbd\b/i;
@@ -358,13 +372,23 @@ export function normalizeExtractText(text: string): string {
     .replace(/(\d), (\d{3})/g, "$1,$2");
 }
 
-export function extractFieldsFromText(text: string): ExtractionResult {
+export function extractFieldsFromText(text: string, docType?: string | null): ExtractionResult {
   const quality = assessDocumentQuality(text);
   const byKey = new Map<string, ExtractedField>();
   text = normalizeExtractText(text);
+  const mapType = inferFieldMapDocType(text, docType);
+  const unmappedLabels: UnmappedExtractLabel[] = [];
 
-  for (const field of [...fromPatterns(text, quality.penalty), ...fromLabeledLines(text, quality.penalty)]) {
+  const labeled = mapType
+    ? fromMappedLines(text, mapType, quality.penalty, unmappedLabels)
+    : fromLabeledLines(text, quality.penalty);
+
+  const patterned = fromPatterns(text, quality.penalty);
+  const allowed = mapType ? sheetFieldsForDocType(mapType) : null;
+
+  for (const field of [...patterned, ...labeled]) {
     if (isBlockedExtractKey(field.fieldKey) || looksLikeSsn(field.rawValue)) continue;
+    if (allowed && !allowed.has(field.fieldKey)) continue;
     const existing = byKey.get(field.fieldKey);
     if (!existing || field.confidence > existing.confidence) {
       byKey.set(field.fieldKey, field);
@@ -376,7 +400,9 @@ export function extractFieldsFromText(text: string): ExtractionResult {
     fields,
     documentQuality: quality.messy ? "messy" : "clean",
     qualityNotes: quality.notes,
-    glanceRequired: fields.some((f) => f.flagged),
+    glanceRequired: fields.some((f) => f.flagged) || unmappedLabels.length > 0,
+    unmappedLabels,
+    fieldMapDocType: mapType,
   };
 }
 
@@ -409,6 +435,40 @@ function fromLabeledLines(text: string, penalty: number): ExtractedField[] {
   return fields;
 }
 
+/** Map-only labeled lines. Unmapped labels are recorded, never guessed onto a key. */
+function fromMappedLines(
+  text: string,
+  docType: FieldMapDocType,
+  penalty: number,
+  unmapped: UnmappedExtractLabel[],
+): ExtractedField[] {
+  const fields: ExtractedField[] = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.length > 220) continue;
+    const match = /^([A-Za-z][A-Za-z0-9 ./%#-]{0,56})\s*[:#]\s*(.+)$/.exec(line);
+    if (!match) continue;
+    const sourceLabel = match[1].trim();
+    const rawValue = match[2].trim();
+    if (!rawValue || looksLikeSsn(rawValue)) continue;
+    const key = lookupSheetField(docType, sourceLabel);
+    if (!key) {
+      if (!isBlockedExtractKey(normalizeBlocked(sourceLabel))) {
+        unmapped.push({ sourceLabel, rawValue });
+      }
+      continue;
+    }
+    if (isBlockedExtractKey(key)) continue;
+    const built = toField(key, rawValue, normalizerFor(key), penalty);
+    if (built) fields.push(built);
+  }
+  return fields;
+}
+
+function normalizeBlocked(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
 function toField(
   key: string,
   rawValue: string,
@@ -435,7 +495,18 @@ function toField(
 }
 
 function normalizerFor(key: string): (raw: string) => string {
-  if (key === "year_built" || key === "roof_year" || key === "vehicle_year") return normalizeYear;
+  if (
+    key === "year_built" ||
+    key === "roof_year" ||
+    key === "vehicle_year" ||
+    key === "electrical_year" ||
+    key === "electrical_updated" ||
+    key === "plumbing_year" ||
+    key === "water_heater_year" ||
+    key === "hvac_year"
+  ) {
+    return normalizeYear;
+  }
   if (
     key === "coverage_a" ||
     key === "coverage_b" ||
@@ -456,6 +527,7 @@ function normalizerFor(key: string): (raw: string) => string {
   }
   if (key === "construction") return normalizeConstruction;
   if (key === "roof_covering") return normalizeRoof;
+  if (key === "roof_shape") return (s) => s.toLowerCase().trim();
   if (key === "opening_protection") return normalizeOpenings;
   if (key === "occupancy") return normalizeOccupancy;
   if (key === "address") return streetFromLocation;
@@ -474,6 +546,9 @@ function normalizerFor(key: string): (raw: string) => string {
     return (s) => (/^(y|yes|true)$/i.test(s.trim()) ? "true" : /^(n|no|false|none)$/i.test(s.trim()) ? "false" : s);
   }
   if (key === "form") return (s) => s.replace(/\s+/g, "").toUpperCase();
+  if (key === "swr") {
+    return (s) => (/^(y|yes|true|present)$/i.test(s.trim()) ? "yes" : /^(n|no|false|none)$/i.test(s.trim()) ? "no" : s.replace(/\s+/g, " ").trim());
+  }
   if (key === "flood_zone") return (s) => s.trim().toUpperCase();
   if (key === "named_insured" || key === "mortgagee") return (s) => s.replace(/\s+/g, " ").trim();
   return (s) => s.replace(/\s+/g, " ").trim();

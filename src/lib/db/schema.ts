@@ -1003,6 +1003,44 @@ export const extractedFields = pgTable(
   (t) => [index("extracted_fields_doc_idx").on(t.tenantId, t.documentId)],
 );
 
+/** Per-form source-label → master-sheet field. Runtime still reads TypeScript maps. */
+export const documentFieldMaps = pgTable(
+  "document_field_maps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    docType: text("doc_type").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    sheetField: text("sheet_field").notNull(),
+    aliases: jsonb("aliases").$type<string[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [
+    index("document_field_maps_type_idx").on(t.tenantId, t.docType),
+    uniqueIndex("document_field_maps_uidx").on(t.tenantId, t.docType, t.sourceLabel),
+  ],
+);
+
+/** Address-confirm property API payload. Never stores a Zestimate as Cov A. */
+export const propertyEnrichmentCache = pgTable(
+  "property_enrichment_cache",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    addressKey: text("address_key").notNull(),
+    provider: text("provider").notNull(),
+    facts: jsonb("facts").$type<{ fieldKey: string; value: string; sourceLabel: string; kind?: string }[]>().notNull().default([]),
+    conflicts: jsonb("conflicts").$type<{ fieldKey: string; primaryValue: string; floridaValue: string }[]>().notNull().default([]),
+    message: text("message"),
+    ...timestamps,
+  },
+  (t) => [
+    index("property_enrichment_cache_addr_idx").on(t.tenantId, t.addressKey),
+    uniqueIndex("property_enrichment_cache_uidx").on(t.tenantId, t.addressKey),
+  ],
+);
+
 export const appetiteRules = pgTable(
   "appetite_rules",
   {
@@ -2532,6 +2570,8 @@ export type Document = typeof documents.$inferSelect;
 export type PolicyChangeLog = typeof policyChangeLogs.$inferSelect;
 export type DocumentVersion = typeof documentVersions.$inferSelect;
 export type ExtractedFieldRow = typeof extractedFields.$inferSelect;
+export type DocumentFieldMapRow = typeof documentFieldMaps.$inferSelect;
+export type PropertyEnrichmentCacheRow = typeof propertyEnrichmentCache.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;
 export type CarrierSecretRevealLog = typeof carrierSecretRevealLogs.$inferSelect;
 export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
