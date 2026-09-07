@@ -45,12 +45,12 @@ export const DEAL_ACTIVITY_TONES = {
   },
 } as const;
 
-/** Same order as row actions Call / SMS / Email / Task / Meeting — SMS has no today counter. */
+/** Visible words: Phone / SMS / Task / Meeting / Training. Ids stay call / email for the work queue. */
 export const DEAL_TODAY_ACTIVITY_CHIPS = [
-  { id: "call", label: "Calls", tone: "mustard" },
-  { id: "email", label: "Emails", tone: "navy" },
-  { id: "task", label: "Tasks", tone: "blue" },
-  { id: "meeting", label: "Meetings", tone: "purple" },
+  { id: "call", label: "Phone", tone: "mustard" },
+  { id: "email", label: "SMS", tone: "navy" },
+  { id: "task", label: "Task", tone: "blue" },
+  { id: "meeting", label: "Meeting", tone: "purple" },
   { id: "training", label: "Training", tone: "teal" },
 ] as const;
 

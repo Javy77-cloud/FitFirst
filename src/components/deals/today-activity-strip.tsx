@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calendar, CalendarDays, GraduationCap, ListTodo, Mail, Phone } from "lucide-react";
+import { Calendar, CalendarDays, GraduationCap, ListTodo, MessageSquare, Phone } from "lucide-react";
 import {
   DEAL_ACTIVITY_TONES,
   DEAL_TODAY_ACTIVITY_CHIPS,
@@ -12,7 +12,7 @@ import {
 const CHIP_ICONS = {
   task: ListTodo,
   call: Phone,
-  email: Mail,
+  email: MessageSquare,
   meeting: Calendar,
   training: GraduationCap,
 } as const;
@@ -58,7 +58,7 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className="deal-today-item inline-flex shrink-0 flex-col items-center justify-center text-center"
+              className="deal-today-item inline-flex shrink-0 items-center justify-center text-center"
               style={{
                 color: tone.chipFg,
                 ["--chip-top" as string]: tone.chipBgLight,
@@ -71,10 +71,10 @@ export function TodayActivityStrip({
               data-tone={chip.tone}
             >
               <span className="deal-today-chip">
-                <Icon className="size-4 shrink-0" aria-hidden />
-                <span className="text-[18px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+                <Icon className="size-5 shrink-0" aria-hidden />
+                <span className="deal-today-chip-count">{counts[chip.id]}</span>
+                <span className="deal-today-chip-word">{chip.label}</span>
               </span>
-              <span className="deal-today-chip-label">{chip.label}</span>
             </Link>
           );
         })}

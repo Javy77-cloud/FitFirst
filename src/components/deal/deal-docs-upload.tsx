@@ -96,7 +96,7 @@ export function DealDocsUpload({
   return (
     <form
       action={uploadDealDocuments}
-      className="ff-card relative flex h-[120px] flex-col justify-center gap-1 px-3 py-2"
+      className="ff-card relative flex h-[168px] flex-col justify-center gap-1 px-3 py-2"
       data-testid="deal-docs-upload"
     >
       <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
