@@ -113,6 +113,52 @@ function hintsEqual(left: DropHint | null, right: DropHint | null) {
   );
 }
 
+function clearPaintedHint() {
+  document.querySelectorAll("[data-ff-drop-section='1']").forEach((el) => {
+    el.removeAttribute("data-ff-drop-section");
+    el.classList.remove("ring-2", "ring-sky-400", "ring-offset-2", "ring-offset-background");
+  });
+  document.querySelectorAll("[data-ff-drop-line]").forEach((el) => el.remove());
+  document.querySelector("[data-ff-drag-ghost]")?.remove();
+}
+
+function paintDropHint(hint: DropHint | null) {
+  document.querySelectorAll("[data-ff-drop-section='1']").forEach((el) => {
+    el.removeAttribute("data-ff-drop-section");
+    el.classList.remove("ring-2", "ring-sky-400", "ring-offset-2", "ring-offset-background");
+  });
+  document.querySelectorAll("[data-ff-drop-line]").forEach((el) => el.remove());
+  if (!hint?.sectionId) return;
+  const section = document.querySelector(`[data-ff-builder-section="${hint.sectionId}"]`);
+  if (!section) return;
+  section.setAttribute("data-ff-drop-section", "1");
+  section.classList.add("ring-2", "ring-sky-400", "ring-offset-2", "ring-offset-background");
+  const line = document.createElement("div");
+  line.setAttribute("data-ff-drop-line", "");
+  line.className = "h-0.5 rounded-full bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.2)]";
+  if (hint.beforeKey) {
+    const field = section.querySelector(`[data-ff-builder-field="${hint.beforeKey}"]`);
+    if (field?.parentElement) field.parentElement.insertBefore(line, field);
+    else section.appendChild(line);
+  } else {
+    section.appendChild(line);
+  }
+}
+
+function paintGhost(label: string, clientX: number, clientY: number) {
+  let ghost = document.querySelector<HTMLDivElement>("[data-ff-drag-ghost]");
+  if (!ghost) {
+    ghost = document.createElement("div");
+    ghost.setAttribute("data-ff-drag-ghost", "");
+    ghost.className =
+      "pointer-events-none fixed z-[80] rounded-md border border-sky-400 bg-background px-2 py-1 text-xs text-navy shadow-md";
+    document.body.appendChild(ghost);
+  }
+  ghost.textContent = label;
+  ghost.style.left = `${clientX + 10}px`;
+  ghost.style.top = `${clientY + 10}px`;
+}
+
 export function FieldBuilder({
   line,
   initialLayout,
@@ -132,10 +178,10 @@ export function FieldBuilder({
   const [preview, setPreview] = useState(false);
   const dragRef = useRef<DragPayload | null>(null);
   const dropHintRef = useRef<DropHint | null>(null);
-  const ghostRef = useRef<HTMLDivElement | null>(null);
   const pointerListenersRef = useRef<{
     move: (event: PointerEvent) => void;
     up: (event: PointerEvent) => void;
+    source: HTMLElement | null;
   } | null>(null);
   const byKey = useMemo(() => Object.fromEntries(fields.map((field) => [field.key, field])), [fields]);
   const dialogField = dialog ? byKey[dialog.key] : undefined;
@@ -155,8 +201,16 @@ export function FieldBuilder({
     window.removeEventListener("pointermove", listeners.move);
     window.removeEventListener("pointerup", listeners.up);
     window.removeEventListener("pointercancel", listeners.up);
+    listeners.source?.removeEventListener("pointermove", listeners.move);
+    listeners.source?.removeEventListener("pointerup", listeners.up);
     pointerListenersRef.current = null;
     document.body.style.userSelect = "";
+  }
+
+  function ghostLabelFor(payload: DragPayload) {
+    if (payload.kind === "field") return byKey[payload.key]?.label ?? payload.key;
+    if (payload.kind === "type") return CUSTOM_FIELD_TYPE_LABELS[payload.type];
+    return "Section";
   }
 
   function beginPointerDrag(payload: DragPayload, event: React.PointerEvent) {
@@ -171,34 +225,41 @@ export function FieldBuilder({
     setDropHint(null);
     detachPointerListeners();
     document.body.style.userSelect = "none";
+    const source = event.currentTarget as HTMLElement;
+    try {
+      source.setPointerCapture(event.pointerId);
+    } catch {
+      /* capture is best-effort */
+    }
     const move = (moveEvent: PointerEvent) => {
       const current = dragRef.current;
       if (!current) return;
       const next = dropHintFromPoint(moveEvent.clientX, moveEvent.clientY, current);
       dropHintRef.current = next;
-      setDropHint((existing) => (hintsEqual(existing, next) ? existing : next));
-      if (ghostRef.current) {
-        ghostRef.current.style.left = `${moveEvent.clientX + 10}px`;
-        ghostRef.current.style.top = `${moveEvent.clientY + 10}px`;
-      }
+      paintDropHint(next);
+      paintGhost(ghostLabelFor(current), moveEvent.clientX, moveEvent.clientY);
     };
     const up = (upEvent: PointerEvent) => {
       const current = dragRef.current;
       if (!current) {
+        clearPaintedHint();
         detachPointerListeners();
         return;
       }
       const hint = dropHintFromPoint(upEvent.clientX, upEvent.clientY, current) ?? dropHintRef.current;
       applyLayoutDrop(current, hint);
     };
-    pointerListenersRef.current = { move, up };
+    pointerListenersRef.current = { move, up, source };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
+    source.addEventListener("pointermove", move);
+    source.addEventListener("pointerup", up);
   }
 
   function endDrag() {
     detachPointerListeners();
+    clearPaintedHint();
     dragRef.current = null;
     dropHintRef.current = null;
     setDrag(null);
@@ -543,20 +604,6 @@ export function FieldBuilder({
         />
       ) : null}
 
-      {drag ? (
-        <div
-          ref={ghostRef}
-          className="pointer-events-none fixed z-[80] rounded-md border border-sky-400 bg-background px-2 py-1 text-xs text-navy shadow-md"
-          data-ff-drag-ghost
-          style={{ left: -9999, top: -9999 }}
-        >
-          {drag.kind === "field"
-            ? (byKey[drag.key]?.label ?? drag.key)
-            : drag.kind === "type"
-              ? CUSTOM_FIELD_TYPE_LABELS[drag.type]
-              : "Section"}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -601,7 +648,6 @@ function BuilderFieldRow({
   if (preview) {
     return (
       <div
-        draggable
         onDragStart={onDragStart}
         onPointerDown={onPointerDown}
         onDragOver={onDragOver}
@@ -623,7 +669,6 @@ function BuilderFieldRow({
 
   return (
     <div
-      draggable
       onDragStart={onDragStart}
       onPointerDown={onPointerDown}
       onDragOver={onDragOver}
