@@ -4,31 +4,35 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bi`)
+## Mac test now (`cursor/live-ff-tip-sep7bn`)
 
-Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank when the active master sheet has no saved values — the page does not run `evaluateDealMarkets` and leftover risk-row / log matches are ignored. After the agent saves sheet values (or adds a carrier / shops), Markets may show. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `d1a6a702`.
+Markets start-from-scratch on **every deal** in the Deals/Pipeline list, from `cursor/live-ff-tip-sep7az` (includes sep7bi empty-sheet gate). Hard refresh any deal → Markets is completely blank (`data-ff-markets-empty`): no In appetite, no stretch/skip, no carrier rows, no counts, no leftover evaluateDeal / quote-log / seed matches. The page does **not** run `evaluateDealMarkets` on load, even when the master sheet has values (Ana Cov A $321,000, Zoho imports). Markets may populate only after an explicit agent action on **that** deal — Confirm & request quotes / shop, or Add carrier — which writes `[ff-markets]`. Quotes empty stays a blank panel (no dashed placeholder). No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7bi-125d && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7bn-12ae && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**: three equal columns side by side; every field-type chip the same width. Open a deal: right rail is **320px**; Sheet health does not blow it out. **Markets** with no agent add/shop is completely blank (no "In appetite") even if evaluateDeal would have matches. **Quotes** with no rows is blank — no dashed box. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **any** deal from Deals or Pipeline → **Markets** is empty (no carriers, no In appetite). Confirm another deal — same blank Markets. On Documents, **Confirm & request quotes** (or add a carrier after a shop) — that deal’s Markets can show real results. Other deals stay blank. Do not bind or edit Ana Cov A (**$321,000**).
 
-### BI — Equal builder, 320 rail, empty Markets/Quotes
+### BN — Markets blank on every deal until shop/add
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| BI1 | Builder columns | Settings → Deal field builder is `grid-cols-3` — Field types \| Left \| Right on one row. Palette chips are `w-full` (same width). |
-| BI2 | No LOB filters | Field builder has no Homeowners / Auto / Flood clips. One layout for all lines. |
-| BI3 | Rail 320 | `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px]`. Sheet health is not 28rem. Measured 320px. |
-| BI4 | Markets empty | Empty master sheet → Markets completely blank. No evaluateDeal, no leftover In appetite. |
-| BI5 | Quotes empty | Deal with no quotes: blank `data-ff-quotes-empty`. No placeholder text. |
-| BI6 | Tests | `deal-page-sep7bi`, field-builder, manual-markets, and quotes empty assertions cover the lock. |
+| BN1 | Every deal | Open any row on Deals/Pipeline → Markets is `data-ff-markets-empty`. Zero carriers. No In appetite. |
+| BN2 | No auto eval | Page load does not call `evaluateDealMarkets` unless that deal has an `[ff-markets]` shop/add. Filled sheets do not paint Markets. |
+| BN3 | No leftover cache | Seed quote logs, stub quotes, risk-row facts, and evaluateDeal matches are ignored. |
+| BN4 | Explicit shop/add | Confirm & request quotes or Add carrier writes `[ff-markets]`. That deal only may then show Markets. |
+| BN5 | Quotes empty | Deal with no quote rows: blank `data-ff-quotes-empty`. No dashed placeholder. |
+| BN6 | Tests | `deal-page-sep7bn` + manual-markets lock page-load never auto-matches and empty UI has no In appetite. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bi`)
+
+Builder three equal columns, hard 320px rail, Markets empty on an empty master sheet, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. Tip SHA `d1a6a702`. **sep7bn** tightens this: a filled sheet no longer auto-paints Markets.
 
 ## Previous tip (`cursor/live-ff-tip-sep7bh`)
 

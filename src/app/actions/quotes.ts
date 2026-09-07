@@ -19,7 +19,11 @@ import {
 import { applySavedSheetToDeal } from "@/app/actions/quote-sheet";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
-import { MANUAL_MARKET_MARKER, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import {
+  EXPLICIT_MARKET_ACTION_MARKER,
+  MANUAL_MARKET_MARKER,
+  manualCarrierIdsFromLogs,
+} from "@/lib/deals/manual-markets";
 import { flashAction } from "@/lib/flash-action";
 
 export async function shopInAppetiteAction(formData: FormData) {
@@ -134,8 +138,22 @@ export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch
       coverageA: risk.coverageA,
       bindable: true,
       coverageGaps: risk.openingProtection === "none" ? ["No opening protection credit"] : [],
-      notes: `${portalResult.message} ${manual ? `${MANUAL_MARKET_MARKER} Manual override. ` : ""}Ranked fit score ${match?.fitScore ?? "—"}.`,
+      notes: `${EXPLICIT_MARKET_ACTION_MARKER} ${portalResult.message} ${manual ? `${MANUAL_MARKET_MARKER} Manual override. ` : ""}Ranked fit score ${match?.fitScore ?? "—"}.`,
       stub: true,
+    });
+  }
+
+  const actedCarrierId = [...shopIds][0] ?? named[0]?.id;
+  if (actedCarrierId) {
+    await db.insert(quoteAttemptLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      riskId: risk.id,
+      carrierId: actedCarrierId,
+      lineOfBusiness: deal.lineOfBusiness || "HO",
+      result: "maybe",
+      bindable: false,
+      why: `${EXPLICIT_MARKET_ACTION_MARKER} Agent requested ${pass} quotes.`,
     });
   }
 

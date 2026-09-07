@@ -16,7 +16,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { isUuid } from "@/lib/ids";
-import { MANUAL_MARKET_MARKER } from "@/lib/deals/manual-markets";
+import { EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER } from "@/lib/deals/manual-markets";
 import { confirmWhy, type QuoteConfirmKind } from "@/lib/deals/quote-confirm";
 import { flashAction } from "@/lib/flash-action";
 import { DEAL_ID } from "@/lib/fixtures/ids";
@@ -41,7 +41,7 @@ export async function addManualMarket(formData: FormData) {
     lineOfBusiness: deal.lineOfBusiness || "HO",
     result: "maybe",
     bindable: false,
-    why: `${MANUAL_MARKET_MARKER} Agent added this carrier. Overrides appetite even when the system says skip.`,
+    why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Agent added this carrier. Overrides appetite even when the system says skip.`,
     snapYearBuilt: risk.yearBuilt,
     snapRoofYear: risk.roofYear,
     snapRoofCovering: risk.roofCovering,

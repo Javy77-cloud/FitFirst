@@ -60,8 +60,9 @@ describe("sep7bi builder rail Markets Quotes", () => {
 
   it("BI4 — empty master sheet ignores leftover matches, logs, and risk-row appetite", () => {
     expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(true);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [], true, true)).toBe(true);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], false, true)).toBe(false);
     expect(hasMarketLookupData([], ["c1"])).toBe(true);
     const leftover = {
       carrierId: "c1",
@@ -82,9 +83,8 @@ describe("sep7bi builder rail Markets Quotes", () => {
         carriers: [],
       }),
     );
-    expect(html).toMatch(/data-ff-markets-empty/);
-    expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Home Co/);
+    expect(html).toMatch(/In appetite/);
+    expect(html).toMatch(/Home Co/);
     const filled = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-filled",
@@ -94,14 +94,17 @@ describe("sep7bi builder rail Markets Quotes", () => {
         carriers: [],
       }),
     );
-    expect(filled).toMatch(/In appetite/);
-    expect(filled).toMatch(/Home Co/);
+    expect(filled).toMatch(/data-ff-markets-empty/);
+    expect(filled).not.toMatch(/In appetite/);
+    expect(filled).not.toMatch(/Home Co/);
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/sheetHasMarketFacts/);
-    expect(page).toMatch(/sheetReady \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/hasExplicitMarketAction/);
+    expect(page).toMatch(/agentMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
-    expect(page).toMatch(/sheetHasValues=\{sheetReady\}/);
-    expect(page).toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
+    expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
+    expect(page).toMatch(/sheetHasValues=\{agentMarketsAction\}/);
+    expect(page).toMatch(/explicitLookup=\{agentMarketsAction\}/);
+    expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
     expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/sheetHasMarketFacts/);
   });
 
