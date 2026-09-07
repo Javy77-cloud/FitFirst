@@ -4,7 +4,29 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ac`)
+## Mac test now (`cursor/live-ff-tip-sep7ad`)
+
+Pipeline band only, from `cursor/live-ff-tip-sep7ac` @ `746501c` / tip SHA `95c423b`. **Attach** stays `min(819px, 44.8%)` LEFT — same place and width, **taller** (`168px`) so search + doc type + Choose file + Add another can breathe. **Today's Activity** sits in the leftover space to the right (`flex: 1`) and is **centered** in that region — not pinned to the far right, not a second `797px / 43.6%` slot. Chips are **soft-rounded 100px cards** (12px radius), **bigger** than the 60px squares, with **Phone / SMS / Task / Meeting / Training** + icon + count **inside**. 3D fill + 6px hover lift. **No panel fill** behind chips. Deal detail / table / sidebar / seed untouched. Live Zoho stays book of record. Tip SHA `38a53d9`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ad && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AD — Pipeline list (sep7ad)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AD1 | Attach | Same left place and width as sep7ac (`819px / 44.8%`). Panel is **taller** so the doc-type row is not cut off. Nothing else on Attach moved. |
+| AD2 | Activity | To the **right of Attach**, **centered in leftover space**. Not slammed to the far-right edge. Not a fixed `%` / `797px` slot filling the row. |
+| AD3 | Chips | Soft **rounded** cards (not 4px razor squares). **Bigger** than 60px. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. No panel behind the row. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ac`)
 
 Pipeline band only, from `cursor/live-ff-tip-sep7aa` @ `011c324`. **Exact red-box sizes** (1829px content crop): **Attach** `min(819px, 44.8%)` LEFT, **4px gap**, **Today's Activity** `min(797px, 43.6%)` immediately RIGHT. Flex-start from the page inset — **no** `justify-between` / edge slam. Trailing space after Activity stays empty. Counters are **60×60 squares** (icon + count inside, tiny label under), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Deal detail / table / sidebar / seed untouched. Live Zoho stays book of record. Tip SHA `95c423b`.
 
