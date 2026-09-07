@@ -183,46 +183,56 @@
   box-shadow: var(--ff-shadow);
 }
 
-/* Raised 3D counters — light from above, darker bottom face, float shadow. */
+/* Header sits on the chip-row width so title + date + calendar center on the counters. */
+.deal-today-strip {
+  width: max-content;
+}
+.deal-today-heading {
+  width: 100%;
+}
+
+/* Raised 3D counters — light from above only: bright top bevel, darker bottom face. */
 .deal-today-chip {
   position: relative;
+  background-color: var(--chip-mid);
   background-image: linear-gradient(
-    180deg,
-    var(--chip-top) 0%,
-    var(--chip-mid) 40%,
+    to bottom,
+    #ffffff 0%,
+    var(--chip-top) 18%,
+    var(--chip-mid) 52%,
     var(--chip-bottom) 100%
   );
-  border: 1px solid color-mix(in srgb, var(--chip-fg) 28%, transparent);
-  border-top-color: color-mix(in srgb, #ffffff 68%, var(--chip-top));
-  border-bottom-color: color-mix(in srgb, var(--chip-fg) 38%, var(--chip-bottom));
+  border: 1px solid color-mix(in srgb, var(--chip-fg) 26%, transparent);
+  border-top-color: rgba(255, 255, 255, 0.92);
+  border-bottom-color: color-mix(in srgb, var(--chip-fg) 42%, var(--chip-bottom));
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.92),
-    inset 0 5px 8px rgba(255, 255, 255, 0.2),
-    inset 0 -3px 0 color-mix(in srgb, var(--chip-fg) 20%, transparent),
-    0 3px 0 color-mix(in srgb, var(--chip-bottom) 82%, #101c34),
-    0 4px 4px rgba(16, 28, 52, 0.2),
-    0 12px 20px rgba(16, 28, 52, 0.16);
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 8px 10px rgba(255, 255, 255, 0.28),
+    inset 0 -5px 0 color-mix(in srgb, var(--chip-fg) 26%, transparent),
+    0 4px 0 color-mix(in srgb, var(--chip-bottom) 70%, #101c34),
+    0 5px 4px rgba(16, 28, 52, 0.22),
+    0 14px 22px rgba(16, 28, 52, 0.16);
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 .deal-today-chip:hover {
   transform: translateY(-3px);
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
-    inset 0 5px 8px rgba(255, 255, 255, 0.26),
-    inset 0 -3px 0 color-mix(in srgb, var(--chip-fg) 22%, transparent),
-    0 4px 0 color-mix(in srgb, var(--chip-bottom) 82%, #101c34),
-    0 8px 8px rgba(16, 28, 52, 0.22),
-    0 20px 32px rgba(16, 28, 52, 0.2);
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.98),
+    inset 0 8px 10px rgba(255, 255, 255, 0.34),
+    inset 0 -5px 0 color-mix(in srgb, var(--chip-fg) 28%, transparent),
+    0 5px 0 color-mix(in srgb, var(--chip-bottom) 70%, #101c34),
+    0 9px 8px rgba(16, 28, 52, 0.24),
+    0 22px 34px rgba(16, 28, 52, 0.2);
 }
 .deal-today-chip[data-on="1"] {
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.94),
-    inset 0 5px 8px rgba(255, 255, 255, 0.22),
-    inset 0 -3px 0 color-mix(in srgb, var(--chip-fg) 22%, transparent),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 8px 10px rgba(255, 255, 255, 0.3),
+    inset 0 -5px 0 color-mix(in srgb, var(--chip-fg) 28%, transparent),
     0 0 0 2px var(--chip-fg),
-    0 3px 0 color-mix(in srgb, var(--chip-bottom) 82%, #101c34),
-    0 5px 6px rgba(16, 28, 52, 0.2),
-    0 14px 22px rgba(16, 28, 52, 0.18);
+    0 4px 0 color-mix(in srgb, var(--chip-bottom) 70%, #101c34),
+    0 6px 6px rgba(16, 28, 52, 0.22),
+    0 16px 24px rgba(16, 28, 52, 0.18);
 }
 
 /* Shared type scale — whole desk one step up; helper/caption stay readable. */

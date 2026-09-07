@@ -65,6 +65,9 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/todayActivityCalendarHref/);
     expect(strip).toMatch(/deal-today-calendar/);
     expect(strip).toMatch(/bg-transparent/);
+    expect(strip).toMatch(/deal-today-heading/);
+    expect(strip).toMatch(/inline-grid/);
+    expect(strip).toMatch(/justify-items-center/);
     expect(strip).toMatch(/items-center/);
     expect(strip).toMatch(/text-center/);
     expect(strip).toMatch(/justify-center/);
@@ -80,9 +83,11 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/inset 0 1\.5px 0/);
     expect(chrome).toMatch(/translateY\(-3px\)/);
     expect(chrome).toMatch(/linear-gradient/);
-    expect(chrome).toMatch(/0 3px 0 color-mix/);
-    expect(chrome).toMatch(/0 4px 4px rgba\(16, 28, 52/);
-    expect(chrome).toMatch(/0 12px 20px rgba\(16, 28, 52/);
+    expect(chrome).toMatch(/deal-today-heading/);
+    expect(chrome).toMatch(/to bottom/);
+    expect(chrome).toMatch(/0 4px 0 color-mix/);
+    expect(chrome).toMatch(/0 5px 4px rgba\(16, 28, 52/);
+    expect(chrome).toMatch(/0 14px 22px rgba\(16, 28, 52/);
     expect(chrome).not.toMatch(/0 1px 0 rgba\(255, 255, 255/);
     const chips = source("src/lib/deals/pipeline-desk.ts");
     expect(chips).toMatch(/label: "Calls"/);

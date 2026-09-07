@@ -29,25 +29,25 @@ export function TodayActivityStrip({
   const dated = formatTodayActivityDate(now);
   return (
     <aside
-      className="flex w-fit max-w-full flex-col items-center overflow-visible bg-transparent px-2 py-4"
+      className="deal-today-strip inline-grid max-w-full justify-items-center overflow-visible bg-transparent px-2 py-4"
       data-testid="deal-today-activity"
     >
-      <div className="flex items-start justify-center gap-2.5 text-center">
-        <Link
-          href={todayActivityCalendarHref()}
-          className="mt-0.5 rounded-md p-1.5 text-navy/70 hover:bg-muted hover:text-navy"
-          title="Open work queue"
-          aria-label="Open work queue"
-          data-testid="deal-today-calendar"
-        >
-          <CalendarDays className="size-5" aria-hidden />
-        </Link>
-        <div>
+      <div className="deal-today-heading flex w-full flex-col items-center justify-center text-center">
+        <div className="flex items-center justify-center gap-2">
+          <Link
+            href={todayActivityCalendarHref()}
+            className="rounded-md p-1.5 text-navy/70 hover:bg-muted hover:text-navy"
+            title="Open work queue"
+            aria-label="Open work queue"
+            data-testid="deal-today-calendar"
+          >
+            <CalendarDays className="size-5" aria-hidden />
+          </Link>
           <p className="text-sm font-semibold tracking-wide text-navy">Today&apos;s Activity</p>
-          <p className="mt-1 text-[13px] text-muted-foreground" data-testid="deal-today-date">
-            {dated}
-          </p>
         </div>
+        <p className="mt-1 text-[13px] text-muted-foreground" data-testid="deal-today-date">
+          {dated}
+        </p>
       </div>
       <div className="mt-5 flex flex-nowrap items-center justify-center gap-4 overflow-x-auto overflow-y-visible py-5">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
