@@ -2,7 +2,7 @@
 
 import { saveFormFill, scanSuggestForm } from "@/app/actions/form-fill";
 import { ChooseFiles } from "@/components/choose-files";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,14 +44,16 @@ export function FillWorkspace({
           <ChooseFiles name="sourceFile" accept="application/pdf,image/*" className="mt-1" />
           {sourceDocumentId && sourceFilename ? (
             <div className="ff-file-row mt-2 text-sm">
-              <span className="font-medium text-navy">{sourceFilename}</span>
-              <DeleteUploadedFileButton
+              <FileActionMenu
                 documentId={sourceDocumentId}
                 filename={sourceFilename}
                 slot="library_file"
                 docType="other"
                 returnTo={`/documents/fill/${slug}${fillId ? `?fillId=${fillId}` : ""}`}
-              />
+                className="min-w-0 flex-1"
+              >
+                <span className="font-medium text-navy">{sourceFilename}</span>
+              </FileActionMenu>
             </div>
           ) : null}
         </div>

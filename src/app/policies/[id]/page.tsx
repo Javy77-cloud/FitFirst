@@ -5,7 +5,7 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { ChooseFiles } from "@/components/choose-files";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { deletePolicyFilingAttachment } from "@/app/actions/policies";
@@ -353,18 +353,20 @@ export default async function PolicyDetailPage({
                   <tbody>
                     {files.map((file) => (
                       <tr key={file.id}>
-                        <td className="font-medium">{file.filename}</td>
-                        <td className="uppercase">{file.docType.replaceAll("_", " ")}</td>
-                        <td>
-                          <DeleteUploadedFileButton
+                        <td className="font-medium">
+                          <FileActionMenu
                             documentId={file.id}
                             filename={file.filename}
                             slot={file.slot}
                             docType={file.docType}
                             dealId={policy.dealId}
                             policyId={policy.id}
-                          />
+                          >
+                            {file.filename}
+                          </FileActionMenu>
                         </td>
+                        <td className="uppercase">{file.docType.replaceAll("_", " ")}</td>
+                        <td></td>
                       </tr>
                     ))}
                   </tbody>

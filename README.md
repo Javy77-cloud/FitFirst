@@ -4,22 +4,32 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7as`)
+## Mac test now (`cursor/live-ff-tip-sep7ay`)
 
-Deal Details + field builder, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Tabs: **Deal Details · Documents · Markets · Quotes**. Details is the lead two-column desk with inline add/delete/relabel. Field builder is its own Settings screen (`/settings/field-builder`) — drag fields between two columns, all Javy types, formula math, image upload, **per-LOB layouts**. Tag chip **× on hover** removes from this deal; **Manage tags** opens the module catalog (rename / merge / delete). Convert is selective — agent checks which lead fields carry. Outer row `flex w-full`: left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`. AppShell title **Deals**. `HardDeleteForm` confirms **once** via `onClickCapture`. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `ce2d72d`.
+Standard file action menu, from `cursor/live-ff-tip-sep7as-ae16` @ `e409265` / tip SHA `ce2d72d`. One shared `FileActionMenu` on every uploaded-file row: **View → Download → Replace → Delete**. Click the thumbnail or filename. View opens a new tab. Download saves locally. Replace swaps the bytes and keeps the same record + metadata. Delete uses `HardDeleteForm` / `confirmHardDelete` **once** — not twice, not silent. Wired on Deal Documents, lead line files, policy issued/attach rows, Documents library, and the other stored-file lists. Contact / email / note pages have no file list yet. Deal Details strip, Pipeline, and upload-row layout stay locked. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7as-ae16 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7ay-3ec6 && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail → **Documents**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
-### AR — Deal rail widths (this tip)
+### AY — Standard file action menu (this tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AY1 | Shared menu | Deal Documents file rows use `FileActionMenu`. Click the thumbnail or filename — not a page-specific kebab. |
+| AY2 | Order | Menu is **View → Download → Replace → Delete**, same icons on every page. |
+| AY3 | Surfaces | Lead line files, policy issued/attach rows, and Documents library use the same menu. No leftover View/Download/Delete-only controls on those lists. |
+| AY4 | Delete once | Delete asks **Are you sure you want to delete?** exactly **once** via `HardDeleteForm` + `confirmHardDelete`. Cancel does not delete. |
+| AY5 | Tests | `file-action-menu.test.ts` covers labels/order and the single confirm. |
+
+### AR — Deal rail widths (sep7as, locked)
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -35,7 +45,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AO1 | Title left | Deal name is the **page title, top-left**. Not in the tabs toolbar. Not hanging mid/right. |
 | AO2 | No right chrome | No **Shopping / Source / Referral** strip on the top-right. Stage · Source · Referral is not a right-side title. |
 | AO3 | Flush stack | Left stack, almost no gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → panels. Motivation on the right does **not** push tabs down. |
-| AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
+| AO4 | Upload trash | Pending upload rows still have a **trash can**. Stored files open **FileActionMenu**. **+ Add another document** stays. |
 | AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
 | AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
 | AQ2 | Right rail | `data-ff-deal-right-rail` is **300px sticky**: Sheet health, then Quotes pulled today, then Tags, Quick comms, Record context. No big empty gap under quotes-pulled. |
@@ -51,6 +61,19 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
 | AI1 | Count | Chip **number only** is **24px** / **500**. |
 | AP1 | Count color | Chip **number only** keeps chip hue, one notch darker (`color-mix` 78% `--chip-fg` into `#ffffff`). Not navy, not black. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7as`)
+
+Deal Details + field builder, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Tabs: **Deal Details · Documents · Markets · Quotes**. Details is the lead two-column desk with inline add/delete/relabel. Field builder is its own Settings screen (`/settings/field-builder`) — drag fields between two columns, all Javy types, formula math, image upload, **per-LOB layouts**. Tag chip **× on hover** removes from this deal; **Manage tags** opens the module catalog (rename / merge / delete). Convert is selective — agent checks which lead fields carry. Outer row `flex w-full`: left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`. AppShell title **Deals**. `HardDeleteForm` confirms **once** via `onClickCapture`. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `ce2d72d`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7as-ae16 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
 
 ## Mac test prior (`cursor/live-ff-tip-sep7aq`)
 

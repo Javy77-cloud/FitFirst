@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { attachPolicyFiles } from "@/app/actions/policy-files";
 import { ChooseFiles } from "@/components/choose-files";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { DocumentVersions } from "@/components/documents/document-versions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
 import type { DocumentVersionRow } from "@/lib/documents/versions";
 import { groupVersionsByDocument } from "@/lib/documents/versions";
-import { filePreviewHref } from "@/lib/files/urls";
 
 type FileRow = { id: number; category: string };
 
@@ -85,20 +84,18 @@ export function PolicyFileAttach({
           {files.map((file) => (
             <li key={file.id} className="rounded-md border border-border p-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <a href={filePreviewHref(file.id)} className="font-medium text-navy hover:underline">
-                    {file.filename}
-                  </a>
-                  <span className="text-muted-foreground"> · {file.docType.replaceAll("_", " ")}</span>
-                </div>
-                <DeleteUploadedFileButton
+                <FileActionMenu
                   documentId={file.id}
                   filename={file.filename}
                   slot="policy_file"
                   docType={file.docType}
                   dealId={dealId}
                   policyId={policyId}
-                />
+                  className="min-w-0 flex-1"
+                >
+                  <span className="font-medium text-navy">{file.filename}</span>
+                  <span className="text-muted-foreground"> · {file.docType.replaceAll("_", " ")}</span>
+                </FileActionMenu>
               </div>
               <DocumentVersions
                 documentId={file.id}

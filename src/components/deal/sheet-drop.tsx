@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { uploadDocument } from "@/app/actions/documents";
 import { fillQuoteSheet } from "@/app/actions/quote-sheet";
 import { ChooseFiles } from "@/components/choose-files";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { Button } from "@/components/ui/button";
 import type { Document } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
@@ -88,14 +88,16 @@ export function SheetDrop({
         <ul className="space-y-1 text-sm" data-ff-sheet-drop-files>
           {docs.map((doc) => (
             <li key={doc.id} className="ff-file-row">
-              <span className="font-medium">{doc.filename}</span>
-              <DeleteUploadedFileButton
+              <FileActionMenu
                 documentId={doc.id}
                 filename={doc.filename}
                 slot={doc.slot}
                 docType={doc.docType}
                 dealId={dealId}
-              />
+                className="min-w-0 flex-1"
+              >
+                <span className="font-medium">{doc.filename}</span>
+              </FileActionMenu>
             </li>
           ))}
         </ul>

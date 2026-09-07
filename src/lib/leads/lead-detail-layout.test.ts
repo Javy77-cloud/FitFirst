@@ -55,8 +55,8 @@ describe("lead detail layout + per-line documents", () => {
     expect(panel).toMatch(/data-ff-line-dropzone/);
     expect(panel).toMatch(/ChooseFileButton/);
     expect(panel).toMatch(/\+ Add file/);
-    expect(panel).toMatch(/immediate/);
-    expect(panel).toMatch(/FileDeleteIcon|DeleteUploadedFileButton/);
+    expect(panel).toMatch(/FileActionMenu/);
+    expect(panel).toMatch(/FileDeleteIcon|FileActionMenu/);
     expect(panel).toMatch(/ff-file-row/);
     expect(panel).toMatch(/title=\{doc\.filename\}/);
     expect(panel).toMatch(/truncate whitespace-nowrap/);

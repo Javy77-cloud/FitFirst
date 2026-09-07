@@ -1,7 +1,7 @@
 import { uploadDocument } from "@/app/actions/documents";
 import { sendDocumentForSignature } from "@/app/actions/esign";
 import { ChooseFiles } from "@/components/choose-files";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,15 +89,8 @@ export function DocumentTable({
       <tbody>
         {docs.map((doc) => (
           <tr key={doc.id}>
-            <td className="font-medium">{doc.filename}</td>
-            <td>{DOC_TYPE_LABELS[doc.docType as keyof typeof DOC_TYPE_LABELS] ?? doc.docType}</td>
-            <td className="text-xs">{(doc.tags ?? []).join(", ") || "—"}</td>
-            <td>{doc.status.replaceAll("_", " ")}</td>
-            <td>
-              <SendForSignature document={doc} returnTo={returnTo} compact />
-            </td>
-            <td className="text-right">
-              <DeleteUploadedFileButton
+            <td className="font-medium">
+              <FileActionMenu
                 documentId={doc.id}
                 filename={doc.filename}
                 slot={doc.slot}
@@ -106,8 +99,17 @@ export function DocumentTable({
                 policyId={doc.policyId}
                 contactId={doc.contactId}
                 returnTo={returnTo}
-              />
+              >
+                {doc.filename}
+              </FileActionMenu>
             </td>
+            <td>{DOC_TYPE_LABELS[doc.docType as keyof typeof DOC_TYPE_LABELS] ?? doc.docType}</td>
+            <td className="text-xs">{(doc.tags ?? []).join(", ") || "—"}</td>
+            <td>{doc.status.replaceAll("_", " ")}</td>
+            <td>
+              <SendForSignature document={doc} returnTo={returnTo} compact />
+            </td>
+            <td></td>
           </tr>
         ))}
       </tbody>
