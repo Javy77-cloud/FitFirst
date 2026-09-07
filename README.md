@@ -8,7 +8,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 Master sheet **Fill from property records** on Deals → Documents → Master sheet, from `cursor/live-ff-tip-sep7az` @ `27df6343`. The new button sits above the sheet next to **Fill from source** / Confirm extracted. Click it: the desk reads the property address from the sheet (or the deal / risk row), calls `GET https://api.floridapropertyapi.com/v1/parcels/search` with `Authorization: Bearer` + the agency key, and writes year built, construction, square footage, roof covering, stories, county, Parcel ID, assessed value, and owner → applicant / named insured **only where the cell is empty**. Four-point, wind mit, and dec values stay. When the API disagrees with a filled cell, the sheet value is left alone and **Records check** logs `API says 1982, sheet says 1978 (from 4pt).` Every API-written cell is tagged **property records**.
 
-Agency BYO. Store the key as `FLORIDA_PROPERTY_API_KEY` (already in `.env.example`) or a developer-vault row `provider=florida_property`. No key → toast says so and **nothing is written** — no fake parcel. No `db:seed`. Ana unbound. Cov A **$321,000**. Document extract / synonym maps are untouched.
+Agency BYO. Store the key as `FLORIDA_PROPERTY_API_KEY` (already in `.env.example`) or a developer-vault row `provider=florida_property`. No key → toast says so and **nothing is written** — no fake parcel. No `db:seed`. Ana unbound. Cov A **$321,000**. Document extract / synonym maps are untouched. Tip SHA `c2634af1`.
 
 ```bash
 cd ~/FitFirst
