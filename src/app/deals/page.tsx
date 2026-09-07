@@ -170,13 +170,13 @@ export default async function DealsPage({
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
       <div
-        className="mb-6 flex flex-col items-stretch gap-x-8 gap-y-8 overflow-visible lg:flex-row lg:flex-wrap lg:items-start lg:justify-start"
+        className="mb-6 flex flex-col items-stretch gap-x-8 gap-y-8 lg:flex-row lg:flex-wrap lg:items-start lg:justify-start"
         data-testid="deal-upload-activity"
       >
-        <div className="w-full min-w-0 max-w-full lg:min-w-[29rem] lg:max-w-[min(62%,45rem)]">
+        <div className="min-w-0 flex-1">
           <DealDocsUpload deals={lookup} parties={parties} />
         </div>
-        <div className="w-fit max-w-full overflow-visible">
+        <div className="w-fit max-w-full">
           <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
         </div>
       </div>

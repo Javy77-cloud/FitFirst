@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7u`)
+## Mac test now (`cursor/live-ff-tip-sep7v`)
+
+Pipeline layout polish only, on top of consolidator `cursor/live-ff-tip-sep7u` @ `fb589fd`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Activity strip sits **24px** in from the page edge, **overflow: hidden**, **4px** internal pad. Chips are **36px** tall with gradient, thin matching border, soft shadow, and **2px** hover lift. Attach is a **~120px** single row (search, doc type, Choose file, Store on this deal) with the same chrome as the activity strip. No `+ Add file`. No table / filter / sidebar / Deal detail / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7v && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### V — Pipeline list (sep7v)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| V1 | Activity inset | Today's Activity has **24px** left margin so it aligns with the table below, not the page edge. |
+| V2 | Clip + pad | Strip container is **overflow: hidden** with **4px** internal padding. The **2px** hover lift has room and chips do not spill. |
+| V3 | Chips | Chips are **36px** tall, gradient, thin matching border, soft shadow. Hover lift is **2px** max — not the 7px lift. |
+| V4 | Attach row | Attach is **~120px** total, one inline row: search, doc type, Choose file, Store on this deal. No stacked layout. No **+ Add file**. |
+| V5 | Matched chrome | Attach uses the same background, border, and corner radius as the activity strip. Heights match. |
+| V6 | Unchanged | Table, filters, sidebar, mass update, picker, Bind, Deal detail, and schema are the same as sep7u @ `fb589fd`. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7u`)
 
 Consolidator: live desk tip `cursor/live-ff-tip-sep7t` @ `b9f0521` (Pipeline Attach left / Activity right / ~1.6× attach / lighter chips / bigger type / hover) plus Deal detail final rebuild `cursor/live-ff-tip-sep7s` @ `db18aeb` (3 tabs Documents / Markets / Quotes, deal-name title, master sheet in Documents). Prefer sep7t for Deals / Pipeline list. Prefer sep7s for `/deals/[id]`. Global Call / SMS / Email / Task stay on the profile bar — no local colored strips on lead or deal forms. No sidebar redesign. No schema. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 

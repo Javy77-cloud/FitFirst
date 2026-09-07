@@ -29,7 +29,7 @@ export function TodayActivityStrip({
   const dated = formatTodayActivityDate(now);
   return (
     <aside
-      className="deal-today-strip inline-grid max-w-full justify-items-center overflow-visible bg-transparent px-2 py-4"
+      className="deal-today-strip ff-card inline-grid max-w-full justify-items-center"
       data-testid="deal-today-activity"
     >
       <div className="deal-today-heading flex w-full flex-col items-center justify-center text-center">
@@ -49,7 +49,7 @@ export function TodayActivityStrip({
           {dated}
         </p>
       </div>
-      <div className="mt-5 flex flex-nowrap items-center justify-center gap-4 overflow-x-auto overflow-y-visible py-8">
+      <div className="mt-1 flex flex-nowrap items-center justify-center gap-2">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -58,7 +58,7 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className="deal-today-chip inline-flex shrink-0 flex-col items-center rounded-xl px-5 py-3 hover:z-10"
+              className="deal-today-chip inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5"
               style={{
                 color: tone.chipFg,
                 ["--chip-top" as string]: tone.chipBgLight,
@@ -70,11 +70,9 @@ export function TodayActivityStrip({
               data-testid={`deal-today-${chip.id}`}
               data-tone={chip.tone}
             >
-              <span className="inline-flex items-center gap-2">
-                <Icon className="size-5 shrink-0" aria-hidden />
-                <span className="text-[16px] font-semibold leading-none">{chip.label}</span>
-              </span>
-              <span className="mt-2 text-[23px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+              <Icon className="size-4 shrink-0" aria-hidden />
+              <span className="text-[16px] font-semibold leading-none">{chip.label}</span>
+              <span className="text-[23px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
             </Link>
           );
         })}
