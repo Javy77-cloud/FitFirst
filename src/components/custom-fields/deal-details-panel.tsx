@@ -26,7 +26,7 @@ export function DealDetailsPanel({
       <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
         <Link
           href={`/settings/field-builder?line=${encodeURIComponent(line)}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={buttonVariants({ variant: "default", size: "sm" })}
           data-ff-open-field-builder
         >
           Edit layout

@@ -31,6 +31,7 @@ describe("Deal Details tab", () => {
     expect(panel).toMatch(/Edit layout/);
     expect(panel).toMatch(/data-ff-open-field-builder/);
     expect(panel).toMatch(/\/settings\/field-builder\?line=/);
+    expect(panel).toMatch(/buttonVariants\(\{ variant: "default", size: "sm" \}\)/);
     expect(panel).not.toMatch(/Add field/);
     expect(panel).not.toMatch(/New field/);
     expect(panel).not.toMatch(/Add section/);
@@ -52,6 +53,20 @@ describe("Deal Details tab", () => {
     expect(keys).not.toContain("notes");
     expect(layout.columns[0].sections.map((section) => section.id)).toEqual(["contact"]);
     expect(layout.columns[1].sections.map((section) => section.id)).toEqual(["address"]);
+  });
+
+  it("colors Edit layout as a filled primary action, still opening the field builder", () => {
+    const panel = source("src/components/custom-fields/deal-details-panel.tsx");
+    const linkBlock = panel.slice(
+      panel.indexOf("data-ff-open-field-builder") - 220,
+      panel.indexOf("data-ff-open-field-builder") + 80,
+    );
+    expect(linkBlock).toMatch(/buttonVariants\(\{ variant: "default", size: "sm" \}\)/);
+    expect(linkBlock).not.toMatch(/variant: "outline"/);
+    expect(linkBlock).not.toMatch(/variant: "ghost"/);
+    expect(panel).toMatch(/href=\{`\/settings\/field-builder\?line=\$\{encodeURIComponent\(line\)\}`\}/);
+    expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
+    expect(panel).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
   });
 
   it("opens the field builder on its own settings page, not inline on the deal", () => {
