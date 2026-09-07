@@ -12,11 +12,22 @@ import { FIELD_TYPE_ICON_NAMES, iconNameForType } from "./icons";
 import { addSection, insertFieldAfter, insertIndexFromClientY, moveField, relabelSection } from "./layout";
 import {
   cloneFieldDef,
+  MAX_PICKLIST_OPTIONS,
   missingRequiredFields,
   resizePicklistOptions,
   resolveFieldOptions,
   resolvedFieldValue,
 } from "./picklists";
+import {
+  COMMON_CARRIER_OPTIONS,
+  LINE_OF_BUSINESS_OPTIONS,
+  STARTER_FIELD_PICKLISTS,
+  STARTER_PICKLIST_CARRIERS,
+  STARTER_PICKLIST_LINES,
+  STARTER_PICKLIST_US_STATES,
+  US_STATE_OPTIONS,
+  missingStarterPicklistNames,
+} from "./starter-picklists";
 import { CUSTOM_FIELD_TYPES, CUSTOM_FIELD_TYPE_LABELS, PALETTE_ITEMS, PALETTE_LABELS } from "./types";
 
 function source(file: string) {
@@ -124,8 +135,13 @@ describe("deal field builder", () => {
     expect(page).toMatch(/SettingsShell title="Picklists"/);
     expect(page).toMatch(/current="picklists"/);
     expect(page).toMatch(/data-ff-new-picklist/);
+    expect(page).toMatch(/data-ff-picklist-name/);
+    expect(page).toMatch(/US states/);
     expect(source("src/lib/settings/nav.ts")).toMatch(/"picklists"/);
     expect(source("src/lib/settings/nav.ts")).toMatch(/\/settings\/picklists/);
+    expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/ensureDefaultFieldPicklists/);
+    expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/STARTER_FIELD_PICKLISTS/);
+    expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/listFieldPicklists/);
   });
 
   it("uses the same icon set on palette, canvas, and settings", () => {
@@ -196,6 +212,18 @@ describe("deal field builder", () => {
       "Florida",
       "Georgia",
     ]);
+    expect(MAX_PICKLIST_OPTIONS).toBeGreaterThanOrEqual(US_STATE_OPTIONS.length);
+    expect(STARTER_FIELD_PICKLISTS.map((list) => list.name)).toEqual([
+      STARTER_PICKLIST_US_STATES,
+      STARTER_PICKLIST_LINES,
+      STARTER_PICKLIST_CARRIERS,
+    ]);
+    expect(US_STATE_OPTIONS).toHaveLength(51);
+    expect(US_STATE_OPTIONS).toContain("FL — Florida");
+    expect(LINE_OF_BUSINESS_OPTIONS).toEqual(expect.arrayContaining(["Home", "Auto", "Flood", "Homeowners"]));
+    expect(COMMON_CARRIER_OPTIONS).toEqual(expect.arrayContaining(["Tailrow", "Progressive", "Citizens"]));
+    expect(missingStarterPicklistNames([])).toEqual([...STARTER_FIELD_PICKLISTS.map((list) => list.name)]);
+    expect(missingStarterPicklistNames(["US states", "Lines of business", "Common carriers"])).toEqual([]);
     expect(formatCurrencyDisplay("321000")).toBe("321,000.00");
     expect(parseNumericInput("$321,000.00")).toBe("321000");
   });
@@ -270,8 +298,16 @@ describe("deal field builder", () => {
     expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS "default_value"/);
     expect(sql).not.toMatch(/DROP TABLE/);
     expect(sql).not.toMatch(/db:seed/);
+    const catalog = source("drizzle/0088_stage_title_picklists.sql");
+    expect(catalog).toMatch(/US states/);
+    expect(catalog).toMatch(/Lines of business/);
+    expect(catalog).toMatch(/Common carriers/);
+    expect(catalog).toMatch(/NOT EXISTS/);
+    expect(catalog).not.toMatch(/DROP TABLE/);
+    expect(catalog).not.toMatch(/db:seed/);
     const journal = source("drizzle/meta/_journal.json");
     expect(journal).toMatch(/0085_field_builder_picklists/);
+    expect(journal).toMatch(/0088_stage_title_picklists/);
     expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(/FieldControl/);
     expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/FieldBuilder/);
   });

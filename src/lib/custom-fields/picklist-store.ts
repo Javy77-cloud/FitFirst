@@ -6,6 +6,7 @@ import {
   sanitizePicklistOptions,
   type FieldPicklist,
 } from "./picklists";
+import { STARTER_FIELD_PICKLISTS } from "./starter-picklists";
 
 export function toPicklist(row: {
   id: string;
@@ -19,13 +20,42 @@ export function toPicklist(row: {
   };
 }
 
+async function readFieldPicklists(): Promise<FieldPicklist[]> {
+  const rows = await db
+    .select()
+    .from(deskFieldPicklists)
+    .where(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID));
+  return rows.map(toPicklist).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Insert missing starter lists. Never overwrites a list that already has values. */
+export async function ensureDefaultFieldPicklists(): Promise<FieldPicklist[]> {
+  try {
+    const existing = await readFieldPicklists();
+    const byName = new Map(existing.map((list) => [list.name.trim().toLowerCase(), list]));
+    for (const starter of STARTER_FIELD_PICKLISTS) {
+      const current = byName.get(starter.name.toLowerCase());
+      if (!current) {
+        const created = await createFieldPicklist(starter.name, starter.options);
+        byName.set(created.name.trim().toLowerCase(), created);
+        continue;
+      }
+      if (current.options.length === 0) {
+        const updated = await updateFieldPicklist(current.id, { options: starter.options });
+        if (updated) byName.set(updated.name.trim().toLowerCase(), updated);
+      }
+    }
+    return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
+}
+
 export async function listFieldPicklists(): Promise<FieldPicklist[]> {
   try {
-    const rows = await db
-      .select()
-      .from(deskFieldPicklists)
-      .where(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID));
-    return rows.map(toPicklist).sort((a, b) => a.name.localeCompare(b.name));
+    const lists = await ensureDefaultFieldPicklists();
+    if (lists.length > 0) return lists;
+    return await readFieldPicklists();
   } catch {
     return [];
   }

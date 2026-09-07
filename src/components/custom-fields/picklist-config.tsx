@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { resizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
+import { MAX_PICKLIST_OPTIONS, resizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 
 export function PicklistConfig({
@@ -28,7 +28,7 @@ export function PicklistConfig({
           <Input
             type="number"
             min={0}
-            max={40}
+            max={MAX_PICKLIST_OPTIONS}
             value={options.length}
             className="mt-0.5 h-7 w-20"
             data-ff-option-count

@@ -264,6 +264,8 @@ describe("Deals page sep7h", () => {
     expect(table).not.toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
     expect(table).toMatch(/DealStageSelect/);
+    expect(source("src/components/deals/deal-stage-select.tsx")).toMatch(/statusColorClass/);
+    expect(source("src/components/deals/deal-stage-select.tsx")).toMatch(/stageColorFromNameOrSlug/);
     expect(table).toMatch(/tags: tagSortText\(deal\.tags\)/);
     expect(table).toMatch(/dealRecordPhone/);
     expect(table).not.toMatch(/comms: ""/);

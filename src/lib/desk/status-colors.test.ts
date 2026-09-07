@@ -24,6 +24,9 @@ describe("stage colors", () => {
     expect(stageColorFromNameOrSlug("Gather Info", "green")).toBe("green");
     expect(stageColorFromNameOrSlug("Quote Sent")).toBe("violet");
     expect(stageColorFromNameOrSlug("Meet / Quotes")).toBe("teal");
+    expect(stageColorFromNameOrSlug("Gather Info")).toBe("blue");
+    expect(stageColorFromNameOrSlug("Closed Won")).toBe("green");
+    expect(stageColorFromNameOrSlug("ARCHIVE")).toBe("slate");
   });
 });
 

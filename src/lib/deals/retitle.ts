@@ -6,7 +6,7 @@ import { dealTitleForRecords } from "./deal-title";
 
 let retitlePromise: Promise<number> | null = null;
 
-/** One-shot First / Last / Lob rename. Additive — does not wipe seed or coverage. */
+/** One-shot First Last / Lob rename. Additive — does not wipe seed or coverage. */
 export async function retitleExistingDeals(): Promise<number> {
   const rows = await db
     .select({
