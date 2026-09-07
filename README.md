@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7at`)
 
-Document extraction + property enrichment only, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Per-form field maps (wind mit OIR-B1-1802, four-point, dec page, policy scaffold) drive extract: **source label → master sheet field**, no guessing. Unmapped labels stay blank and land in the existing needs-review / yellow CHECK path. Confirming the property address runs ATTOM / Estated / Florida Property **stubs** (BYO `ATTOM_API_KEY` / `ESTATED_API_KEY` / `FLORIDA_PROPERTY_API_KEY`). No Zillow. No county scrape. No Zestimate as Cov A. Sidebar / Pipeline / Deal-details field builder untouched (that work is on `sep7as`). Additive migrate only — do not `db:seed`. Ana unbound. Cov A stays **$321,000**.
+Document extraction + property enrichment only, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Per-form field maps (wind mit OIR-B1-1802, four-point, dec page, policy scaffold) drive extract: **source label → master sheet field**, no guessing. Unmapped labels stay blank and land in the existing needs-review / yellow CHECK path. Confirming the property address runs ATTOM / Estated / Florida Property **stubs** (BYO `ATTOM_API_KEY` / `ESTATED_API_KEY` / `FLORIDA_PROPERTY_API_KEY`). No Zillow. No county scrape. No Zestimate as Cov A. Sidebar / Pipeline / Deal-details field builder untouched (that work is on `sep7as`). Additive migrate only — do not `db:seed`. Ana unbound. Cov A stays **$321,000**. Tip SHA `199ae2e`.
 
 ```bash
 cd ~/FitFirst
