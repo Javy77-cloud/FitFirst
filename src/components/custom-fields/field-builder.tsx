@@ -45,6 +45,7 @@ import {
   type FieldDropTarget,
 } from "@/lib/custom-fields/layout";
 import { asList } from "@/lib/safe-list";
+import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { sanitizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
 import {
   CUSTOM_FIELD_TYPE_LABELS,
@@ -190,6 +191,11 @@ export function FieldBuilder({
     up: (event: PointerEvent) => void;
     source: HTMLElement | null;
   } | null>(null);
+  useEffect(() => {
+    const next = parseLayout(initialLayout);
+    setLayout(next);
+    setFields(resolveLayoutFields(next, asList(initialFields)));
+  }, [module]);
   const byKey = useMemo(() => Object.fromEntries(fields.map((field) => [field.key, field])), [fields]);
   const dialogField = dialog ? byKey[dialog.key] : undefined;
 

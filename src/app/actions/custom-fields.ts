@@ -9,6 +9,7 @@ import {
   deleteFieldDef,
   ensureFieldsForLine,
   listDealFieldDefs,
+  listFieldDefs,
   loadLayoutForLine,
   loadRecordValues,
   saveLayoutForEveryLine,
@@ -22,6 +23,8 @@ import {
   parseLayoutModule,
   type FieldLayoutModule,
 } from "@/lib/custom-fields/modules";
+import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
 import {
   addFieldToSection,
   addSection,
@@ -56,6 +59,28 @@ function revalidateDealSurfaces(dealId?: string, line?: string, module: FieldLay
   revalidatePath(fieldLayoutListHref(module));
   if (dealId) revalidatePath(`/deals/${dealId}`);
   if (line && module === "deals") revalidatePath("/deals");
+}
+
+export async function saveModuleRecordValues(formData: FormData) {
+  const module = moduleFrom(formData);
+  const recordId =
+    str(formData, "recordId") ||
+    str(formData, "dealId") ||
+    str(formData, "leadId") ||
+    str(formData, "contactId") ||
+    str(formData, "accountId") ||
+    str(formData, "policyId") ||
+    str(formData, "carrierId");
+  if (!recordId) throw new Error("Record could not be saved.");
+  const defs = await listFieldDefs(module);
+  const custom = customValuesFromForm(formData, defs);
+  await writeRecordValues(recordId, custom, module);
+  await applyModuleSystemValues(module, recordId, custom, defs);
+  const href = `${fieldLayoutListHref(module)}/${recordId}`;
+  revalidatePath("/settings/field-builder");
+  revalidatePath(fieldLayoutListHref(module));
+  revalidatePath(href);
+  flashAction(href, `${module === "businesses" ? "Business" : module.slice(0, 1).toUpperCase() + module.slice(1)} saved`);
 }
 
 export async function saveDealFieldLayout(formData: FormData) {

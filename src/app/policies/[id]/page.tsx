@@ -4,6 +4,10 @@ import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { AppShell } from "@/components/app-shell";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
+import { RecordLayoutForm } from "@/components/custom-fields/record-layout-form";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { ChooseFiles } from "@/components/choose-files";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
@@ -63,7 +67,7 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const [servicing, policyClaims, session, envelope, serviceTimeline, inspections, installments, tagExtra] = await Promise.all([
+  const [servicing, policyClaims, session, envelope, serviceTimeline, inspections, installments, tagExtra, policyLayout] = await Promise.all([
     loadPolicyServicing(id),
     listClaimsForPolicy(id),
     currentDeskSession(),
@@ -72,6 +76,7 @@ export default async function PolicyDetailPage({
     listPolicyInspections(id),
     listPolicyInstallments(id),
     listModuleTags("policies").catch(() => [] as { name: string; color: string | null }[]),
+    loadModuleLayoutBundle("policies", id).catch(() => null),
   ]);
   const {
     policy,
@@ -114,6 +119,20 @@ export default async function PolicyDetailPage({
     <AppShell title={policy.policyNumber}>
       <div className="mb-3 flex justify-end">
         <EditLayoutLink module="policies" />
+      </div>
+      <div className="mb-4">
+        <RecordLayoutForm
+          module="policies"
+          recordId={policy.id}
+          layout={policyLayout?.layout ?? defaultLayoutForModule("policies")}
+          fields={policyLayout?.fields ?? []}
+          values={mergeRecordSystemValues(
+            policy as unknown as Record<string, unknown>,
+            policyLayout?.stored ?? {},
+            policyLayout?.fields ?? [],
+          )}
+          saveLabel="Save policy fields"
+        />
       </div>
       <RecordModuleMacros module="policies" recordId={policy.id} />
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">

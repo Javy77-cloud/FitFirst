@@ -10,6 +10,10 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
 import { loadRecordContext } from "@/lib/record-context";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
+import { RecordLayoutForm } from "@/components/custom-fields/record-layout-form";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 import { AccountGlance } from "@/components/crm/account-glance";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { OptOutForm } from "@/components/crm/opt-out-form";
@@ -45,9 +49,10 @@ export default async function ContactDetailPage({
     locations,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
-  const [templates, tagExtra] = await Promise.all([
+  const [templates, tagExtra, contactLayout] = await Promise.all([
     listEmailTemplates(),
     listModuleTags("contacts").catch(() => [] as { name: string; color: string | null }[]),
+    loadModuleLayoutBundle("contacts", contact.id).catch(() => null),
   ]);
   const context = await loadRecordContext({
     contactId: contact.id,
@@ -60,6 +65,20 @@ export default async function ContactDetailPage({
     <AppShell title={`${contact.lastName}, ${contact.firstName}`}>
       <div className="mb-3 flex justify-end">
         <EditLayoutLink module="contacts" />
+      </div>
+      <div className="mb-4">
+        <RecordLayoutForm
+          module="contacts"
+          recordId={contact.id}
+          layout={contactLayout?.layout ?? defaultLayoutForModule("contacts")}
+          fields={contactLayout?.fields ?? []}
+          values={mergeRecordSystemValues(
+            contact as unknown as Record<string, unknown>,
+            contactLayout?.stored ?? {},
+            contactLayout?.fields ?? [],
+          )}
+          saveLabel="Save contact"
+        />
       </div>
       <RecordModuleMacros module="contacts" recordId={contact.id} />
       <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Account 360</p>

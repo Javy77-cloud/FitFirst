@@ -37,6 +37,20 @@ describe("lead form fields", () => {
     });
   });
 
+  it("reads Edit Layout field_* names when classic inputs are absent", () => {
+    const form = new FormData();
+    form.set("field_first_name", "Javy");
+    form.set("field_last_name", "Garcia");
+    form.set("field_email", "javy@fitfirst.local");
+    form.set("field_source", "referral");
+    expect(leadValuesFromForm(form)).toMatchObject({
+      firstName: "Javy",
+      lastName: "Garcia",
+      email: "javy@fitfirst.local",
+      source: "referral",
+    });
+  });
+
   it("rejects unknown insurance types and builds a named insured with middle", () => {
     expect(insuranceTypeFromForm("HO")).toBe("HO");
     expect(insuranceTypeFromForm("not-a-line")).toBeNull();

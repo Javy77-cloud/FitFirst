@@ -8,7 +8,7 @@ import {
   type DeskCustomField,
 } from "@/lib/db/schema";
 import type { ConvertLead } from "@/lib/crm/convert";
-import { catalogForLines, CORE_FIELDS, defaultFieldsForLine, defaultLayoutForLine, DEAL_LAYOUT_LINES } from "./defaults";
+import { catalogForLines, CORE_FIELDS, defaultFieldsForLine, DEAL_LAYOUT_LINES } from "./defaults";
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import {
   defaultFieldsForModule,
@@ -17,6 +17,7 @@ import {
   type FieldLayoutModule,
 } from "./modules";
 import { dealValuesFromLead } from "./transfer";
+import { pickSavedModuleLayout, resolveLayoutFields } from "./resolve-layout";
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
@@ -178,51 +179,32 @@ export async function deleteFieldDef(key: string, module: FieldLayoutModule = "d
     );
 }
 
-export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
-  const lob = (LINES as readonly string[]).includes(line) ? line : "HO";
-  try {
-    const [row] = await db
-      .select()
-      .from(deskFieldLayouts)
-      .where(
-        and(
-          eq(deskFieldLayouts.tenantId, DEFAULT_TENANT_ID),
-          eq(deskFieldLayouts.module, "deals"),
-          eq(deskFieldLayouts.lineOfBusiness, lob),
-        ),
-      );
-    if (row) {
-      const parsed = parseLayout(row.columns);
-      if (!needsEssentialDealMigration(parsed)) return parsed;
-      const stripped = stripLegacyDealLayout(parsed);
-      await db
-        .update(deskFieldLayouts)
-        .set({ columns: stripped, updatedAt: new Date() })
-        .where(
-          and(
-            eq(deskFieldLayouts.tenantId, DEFAULT_TENANT_ID),
-            eq(deskFieldLayouts.module, "deals"),
-            eq(deskFieldLayouts.lineOfBusiness, lob),
-          ),
-        );
-      return stripped;
-    }
-    const layout = defaultLayoutForLine(lob);
+async function loadSavedLayoutRows(module: FieldLayoutModule) {
+  return db
+    .select()
+    .from(deskFieldLayouts)
+    .where(and(eq(deskFieldLayouts.tenantId, DEFAULT_TENANT_ID), eq(deskFieldLayouts.module, module)));
+}
+
+async function migratePackedDealLayouts(
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (!needsEssentialDealMigration(picked)) return picked;
+  const stripped = stripLegacyDealLayout(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    if (!needsEssentialDealMigration(parsed)) continue;
     await db
-      .insert(deskFieldLayouts)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        module: "deals",
-        lineOfBusiness: lob,
-        columns: layout,
-      })
-      .onConflictDoNothing({
-        target: [deskFieldLayouts.tenantId, deskFieldLayouts.module, deskFieldLayouts.lineOfBusiness],
-      });
-    return layout;
-  } catch {
-    return defaultLayoutForLine(lob);
+      .update(deskFieldLayouts)
+      .set({ columns: stripLegacyDealLayout(parsed), updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
   }
+  return stripped;
+}
+
+export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
+  return loadLayoutForModule("deals", line);
 }
 
 export async function saveLayoutForLine(line: string, layout: FieldLayout) {
@@ -250,31 +232,28 @@ export async function saveLayoutForEveryLine(layout: FieldLayout) {
 }
 
 export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"): Promise<FieldLayout> {
-  if (module === "deals") return loadLayoutForLine(line);
+  const preferred =
+    module === "deals" ? ((LINES as readonly string[]).includes(line) ? line : "HO") : MODULE_LAYOUT_LINE;
   try {
-    const [row] = await db
-      .select()
-      .from(deskFieldLayouts)
-      .where(
-        and(
-          eq(deskFieldLayouts.tenantId, DEFAULT_TENANT_ID),
-          eq(deskFieldLayouts.module, module),
-          eq(deskFieldLayouts.lineOfBusiness, MODULE_LAYOUT_LINE),
-        ),
-      );
-    if (row) return parseLayout(row.columns);
+    const rows = await loadSavedLayoutRows(module);
+    const picked = pickSavedModuleLayout(rows, module, preferred);
+    if (picked) {
+      return module === "deals" ? migratePackedDealLayouts(rows, picked) : picked;
+    }
     const layout = defaultLayoutForModule(module);
-    await db
-      .insert(deskFieldLayouts)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        module,
-        lineOfBusiness: MODULE_LAYOUT_LINE,
-        columns: layout,
-      })
-      .onConflictDoNothing({
-        target: [deskFieldLayouts.tenantId, deskFieldLayouts.module, deskFieldLayouts.lineOfBusiness],
-      });
+    if (rows.length === 0) {
+      await db
+        .insert(deskFieldLayouts)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          module,
+          lineOfBusiness: preferred,
+          columns: layout,
+        })
+        .onConflictDoNothing({
+          target: [deskFieldLayouts.tenantId, deskFieldLayouts.module, deskFieldLayouts.lineOfBusiness],
+        });
+    }
     return layout;
   } catch {
     return defaultLayoutForModule(module);
@@ -309,13 +288,17 @@ export async function ensureFieldsForModule(module: FieldLayoutModule, line = "H
   await ensureModuleFieldCatalog(module);
 }
 
-export async function loadRecordValues(recordId: string): Promise<Record<string, string>> {
-  const map = await loadRecordValuesForIds([recordId]);
+export async function loadRecordValues(
+  recordId: string,
+  module: FieldLayoutModule = "deals",
+): Promise<Record<string, string>> {
+  const map = await loadRecordValuesForIds([recordId], module);
   return map.get(recordId) ?? {};
 }
 
 export async function loadRecordValuesForIds(
   recordIds: readonly string[],
+  module: FieldLayoutModule = "deals",
 ): Promise<Map<string, Record<string, string>>> {
   const out = new Map<string, Record<string, string>>();
   if (recordIds.length === 0) return out;
@@ -326,7 +309,7 @@ export async function loadRecordValuesForIds(
       .where(
         and(
           eq(deskCustomFieldValues.tenantId, DEFAULT_TENANT_ID),
-          eq(deskCustomFieldValues.module, "deals"),
+          eq(deskCustomFieldValues.module, module),
           inArray(deskCustomFieldValues.recordId, [...recordIds]),
         ),
       );
@@ -341,13 +324,17 @@ export async function loadRecordValuesForIds(
   return out;
 }
 
-export async function writeRecordValues(recordId: string, values: Record<string, string>) {
+export async function writeRecordValues(
+  recordId: string,
+  values: Record<string, string>,
+  module: FieldLayoutModule = "deals",
+) {
   for (const [fieldKey, value] of Object.entries(values)) {
     await db
       .insert(deskCustomFieldValues)
       .values({
         tenantId: DEFAULT_TENANT_ID,
-        module: "deals",
+        module,
         recordId,
         fieldKey,
         value,
@@ -374,6 +361,20 @@ export async function writeCarriedLeadValues(
   const values = dealValuesFromLead(lead, fields, carry);
   if (Object.keys(values).length === 0) return;
   await writeRecordValues(dealId, values);
+}
+
+export async function loadModuleLayoutBundle(module: FieldLayoutModule, recordId?: string) {
+  await ensureFieldsForModule(module).catch(() => null);
+  const [layout, fields, stored] = await Promise.all([
+    loadLayoutForModule(module),
+    listFieldDefs(module),
+    recordId ? loadRecordValues(recordId, module) : Promise.resolve({} as Record<string, string>),
+  ]);
+  return {
+    layout,
+    fields: resolveLayoutFields(layout, fields),
+    stored,
+  };
 }
 
 export async function ensureFieldsForLine(line: string) {

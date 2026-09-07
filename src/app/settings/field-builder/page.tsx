@@ -6,6 +6,7 @@ import {
   fieldLayoutModuleLabel,
   parseLayoutModule,
 } from "@/lib/custom-fields/modules";
+import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { ensureFieldsForModule, listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ export default async function FieldBuilderPage({
     listFieldPicklists(),
   ]);
   const label = fieldLayoutModuleLabel(module);
+  const resolvedFields = resolveLayoutFields(layout, fields);
 
   return (
     <SettingsShell title={`${label} field builder`} current="field-builder">
@@ -39,10 +41,11 @@ export default async function FieldBuilderPage({
       </p>
       <ModuleLayoutNav current={module} />
       <FieldBuilder
+        key={module}
         module={module}
         line={line}
         initialLayout={layout}
-        fields={fields}
+        fields={resolvedFields}
         picklists={picklists}
       />
     </SettingsShell>
