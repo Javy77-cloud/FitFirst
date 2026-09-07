@@ -20,7 +20,7 @@ export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number];
 
 export const CUSTOM_FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   single_line: "Single line",
-  multi_line: "Multi-line",
+  multi_line: "Notes",
   email: "Email",
   phone: "Phone",
   picklist: "Picklist",

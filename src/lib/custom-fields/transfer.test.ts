@@ -31,6 +31,7 @@ describe("selective lead → deal carry", () => {
     expect(page).toMatch(/carryField/);
     expect(page).toMatch(/LEAD_CARRY_FIELDS/);
     expect(page).toMatch(/createDealFromLead/);
+    expect(page).toMatch(/every lead field copies onto the deal automatically/);
     expect(LEAD_CARRY_FIELDS.map((field) => field.key)).toEqual(
       expect.arrayContaining(["firstName", "email", "phone", "mailingAddress", "notes"]),
     );

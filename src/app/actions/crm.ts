@@ -56,7 +56,6 @@ import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
-import { parseCarryFieldsFromForm } from "@/lib/custom-fields/transfer";
 import { writeCarriedLeadValues } from "@/lib/custom-fields/store";
 import {
   documentLinesFromDocs,
@@ -324,7 +323,7 @@ export async function createDealFromLead(formData: FormData) {
     str(formData, "line") || str(formData, "insuranceTypeDesired") || lead?.insuranceTypeDesired || "HO",
     str(formData, "state") || lead?.state || "FL",
     parseSelectedShopLines(str(formData, "shopLines")),
-    parseCarryFieldsFromForm(formData),
+    null,
   );
   revalidatePath("/deals");
   revalidatePath("/leads");

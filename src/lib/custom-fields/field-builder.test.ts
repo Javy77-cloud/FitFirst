@@ -43,6 +43,7 @@ describe("deal field builder", () => {
       "image",
     ]);
     expect(CUSTOM_FIELD_TYPE_LABELS.image).toBe("Image upload");
+    expect(CUSTOM_FIELD_TYPE_LABELS.multi_line).toBe("Notes");
     expect(PALETTE_ITEMS).toContain("section");
     expect(PALETTE_LABELS.section).toBe("Section");
     const builder = source("src/components/custom-fields/field-builder.tsx");

@@ -39,21 +39,26 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "stage", label: "Stage", defaultOn: true },
     { key: "line", label: "Line", defaultOn: true },
     { key: "subType", label: "Life / Health type", defaultOn: false },
-    { key: "state", label: "State", defaultOn: true },
-    { key: "city", label: "City", defaultOn: false },
-    { key: "zip", label: "ZIP", defaultOn: false },
-    { key: "address", label: "Property address", defaultOn: false },
     { key: "shopLines", label: "Shop lines", defaultOn: false },
     { key: "source", label: "Source", defaultOn: true },
     { key: "tags", label: "Tags", defaultOn: true },
-    { key: "email", label: "Email", defaultOn: false },
     { key: "assigned", label: "Assigned", defaultOn: true },
     { key: "value", label: "Value", defaultOn: true },
     { key: "premium", label: "Coverage $", defaultOn: false },
-    { key: "nextAction", label: "Next", defaultOn: true },
     { key: "updated", label: "Updated", defaultOn: false },
-    { key: "esign", label: "E-sign", defaultOn: true },
-    { key: "comms", label: "Comms", defaultOn: true },
+    { key: "phone", label: "Phone", defaultOn: true },
+    { key: "email", label: "Email", defaultOn: false },
+    { key: "first_name", label: "First name", defaultOn: false },
+    { key: "middle_name", label: "Middle name", defaultOn: false },
+    { key: "last_name", label: "Last name", defaultOn: false },
+    { key: "date_of_birth", label: "Date of birth", defaultOn: false },
+    { key: "mailing_address", label: "Address", defaultOn: false },
+    { key: "city", label: "City", defaultOn: false },
+    { key: "state", label: "State", defaultOn: true },
+    { key: "zip", label: "ZIP", defaultOn: false },
+    { key: "notes", label: "Notes", defaultOn: false },
+    { key: "named_insured", label: "Named insured", defaultOn: false },
+    { key: "preferred_language", label: "Preferred language", defaultOn: false },
   ],
   contacts: [
     { key: "name", label: "Name", defaultOn: true },
@@ -292,9 +297,11 @@ export function defaultColumns(tableKey: string): string[] {
   return tableKey === "deals" ? normalizeDealsVisibleColumns(keys) : keys;
 }
 
-/** Phone lives under the deal name. Contact is not a deal-list column — a deal is not a contact until bind. */
+const DEAD_DEAL_COLUMNS = new Set(["esign", "comms", "contact"]);
+
+/** Contact / E-sign / Comms are not deal fields. Phone stays — it is a deal field. */
 export function normalizeDealsVisibleColumns(ids: string[]): string[] {
-  return ids.filter((id) => id !== "phone" && id !== "contact");
+  return ids.filter((id) => !DEAD_DEAL_COLUMNS.has(id));
 }
 
 export function parseColumns(tableKey: string, raw: string | null | undefined): string[] {
@@ -302,9 +309,13 @@ export function parseColumns(tableKey: string, raw: string | null | undefined): 
   const picked = (raw ?? "")
     .split(",")
     .map((s) => s.trim())
-    .filter((s) => allowed.has(s));
+    .filter((s) => {
+      if (!s) return false;
+      if (tableKey === "deals") return !DEAD_DEAL_COLUMNS.has(s) && (allowed.has(s) || !["pick"].includes(s));
+      return allowed.has(s);
+    });
   const next = picked.length ? picked : defaultColumns(tableKey);
-  if ((tableKey === "deals" || tableKey === "policies") && !next.includes("esign")) {
+  if (tableKey === "policies" && !next.includes("esign")) {
     next.push("esign");
   }
   return tableKey === "deals" ? normalizeDealsVisibleColumns(next) : next;
