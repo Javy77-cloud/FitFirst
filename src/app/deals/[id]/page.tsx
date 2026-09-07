@@ -325,7 +325,7 @@ export default async function DealPage({
               <DealMotivation stats={motivation} />
             </div>
             <div className="ff-card min-w-0 w-full max-w-full p-3">
-              <RecordTags>
+              <RecordTags
                 module="deals"
                 recordId={deal.id}
                 tags={deal.tags}
