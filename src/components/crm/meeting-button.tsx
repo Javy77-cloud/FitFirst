@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type CSSProperties } from "react";
 import { loadMeetingDefaults, scheduleDealMeeting, type MeetingDefaults } from "@/app/actions/meetings";
+import { flashAction } from "@/lib/flash-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,6 +107,7 @@ export function MeetingButton({
               startTransition(async () => {
                 try {
                   await scheduleDealMeeting(formData);
+                  flashAction("meeting-saved");
                   setOpen(false);
                 } catch (err) {
                   setError(err instanceof Error ? err.message : "Could not save the meeting.");

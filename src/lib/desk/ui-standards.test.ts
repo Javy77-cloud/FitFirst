@@ -36,14 +36,14 @@ describe("platform UI standards", () => {
     expect(button).not.toMatch(/<Button/);
   });
 
-  it("create actions toast then redirect to the list", () => {
-    expect(source("src/app/actions/crm.ts")).toMatch(/redirect\("\/leads\?saved=1"\)/);
-    expect(source("src/app/actions/record-edit.ts")).toMatch(/redirect\("\/leads\?saved=1"\)/);
-    expect(source("src/app/actions/crm.ts")).toMatch(/redirect\("\/contacts\?saved=1"\)/);
+  it("create and save actions toast through flashAction then land on the list", () => {
+    expect(source("src/app/actions/crm.ts")).toMatch(/flashAction\("\/leads", "lead-saved"\)/);
+    expect(source("src/app/actions/record-edit.ts")).toMatch(/flashAction\("\/leads", "lead-saved"\)/);
+    expect(source("src/app/actions/crm.ts")).toMatch(/flashAction\("\/contacts", "contact-saved"\)/);
     expect(source("src/app/actions/crm.ts")).toMatch(/redirect\("\/deals\?saved=1"\)/);
-    expect(source("src/app/actions/activities.ts")).toMatch(/redirect\("\/accounts\?saved=1"\)/);
-    expect(source("src/app/actions/claims.ts")).toMatch(/redirect\("\/claims\?saved=1"\)/);
-    expect(source("src/app/actions/campaigns.ts")).toMatch(/redirect\("\/campaigns\?saved=1"\)/);
+    expect(source("src/app/actions/activities.ts")).toMatch(/flashAction\("\/accounts", "business-saved"\)/);
+    expect(source("src/app/actions/claims.ts")).toMatch(/flashAction\("\/claims", "claim-saved"\)/);
+    expect(source("src/app/actions/campaigns.ts")).toMatch(/flashAction\("\/campaigns", "campaign-saved"\)/);
     expect(source("src/components/desk/saved-toast.tsx")).toMatch(/router\.replace\(listHref/);
   });
 

@@ -80,7 +80,7 @@ describe("lead detail layout + per-line documents", () => {
     expect(desk).not.toMatch(/FormPrimaryActions/);
     expect(desk).not.toMatch(/ff-convert-action/);
     expect(desk).not.toMatch(/ff-primary-action/);
-    expect(save).toMatch(/redirect\("\/leads\?saved=1"\)/);
+    expect(save).toMatch(/flashAction\("\/leads", "lead-saved"\)/);
   });
 
   it("keeps Call SMS Email Task in the global top bar, not as local lead-form pills", () => {

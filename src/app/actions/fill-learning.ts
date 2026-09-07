@@ -10,6 +10,7 @@ import { isFillLearningDocType } from "@/lib/fill-learning/doc-types";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { isUuid } from "@/lib/ids";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -103,4 +104,5 @@ export async function saveFillLearningCorrection(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/logs/fill-learning");
   revalidatePath("/logs");
+  flashAction(`/deals/${dealId}`, "Correction saved");
 }

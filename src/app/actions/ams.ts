@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
+import { flashAction } from "@/lib/flash-action";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
@@ -1006,7 +1007,7 @@ export async function saveAdditionalInterest(formData: FormData) {
     dealId: workspace.policy.dealId,
   });
   refreshPolicy(policyId);
-  bounce(`/policies/${policyId}`, undefined, `interest_${row.kind}`);
+  flashAction(`/policies/${policyId}`, "interest-saved");
 }
 
 export async function deleteAdditionalInterest(formData: FormData) {
@@ -1291,7 +1292,7 @@ export async function saveHolderContact(formData: FormData) {
     revalidatePath("/certificates/holders");
     revalidatePath("/certificates");
     revalidatePath("/book-health");
-    bounce("/certificates/holders", undefined, "holder_updated");
+    flashAction("/certificates/holders", "holder-saved");
   }
   const [row] = await db
     .insert(certificateHolderContacts)
@@ -1318,7 +1319,7 @@ export async function saveHolderContact(formData: FormData) {
   revalidatePath("/certificates/holders");
   revalidatePath("/certificates");
   revalidatePath("/book-health");
-  bounce("/certificates/holders", undefined, "holder_saved");
+  flashAction("/certificates/holders", "holder-saved");
 }
 
 export async function archiveHolderContact(formData: FormData) {

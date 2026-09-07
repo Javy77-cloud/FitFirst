@@ -6,7 +6,6 @@
  * + `activity_logs`. Calendar and phone stay stubs.
  */
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -18,6 +17,7 @@ import {
   logDeskActivity,
   saveCallOutcome as saveDeskCallOutcome,
 } from "@/app/actions/activities-desk";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -25,6 +25,8 @@ function str(form: FormData, key: string) {
 
 export async function upsertActivity(formData: FormData) {
   await logDeskActivity(formData);
+  const { flashStay } = await import("@/lib/flash-action");
+  flashStay(formData, "/tasks", "Activity saved");
 }
 
 export async function setActivityStatus(formData: FormData) {
@@ -114,7 +116,7 @@ export async function logCallDuration(formData: FormData): Promise<void> {
 
 export async function finishCall(formData: FormData) {
   const { returnTo } = await saveDeskCallOutcome(formData);
-  redirect(returnTo);
+  flashAction(returnTo, "outcome-saved");
 }
 
 export async function addTimelineNote(formData: FormData) {
@@ -139,7 +141,7 @@ export async function createBusiness(formData: FormData) {
     .returning();
   revalidatePath("/accounts");
   revalidatePath("/businesses");
-  redirect("/accounts?saved=1");
+  flashAction("/accounts", "business-saved");
 }
 
 export async function currentDeskActor() {

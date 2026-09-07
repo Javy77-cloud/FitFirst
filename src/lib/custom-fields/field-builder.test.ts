@@ -102,6 +102,9 @@ describe("deal field builder", () => {
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveLayoutForEveryLine/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveDealFieldLayout/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(
+      /flashAction\("\/settings\/field-builder", "layout-saved"\)/,
+    );
   });
 
   it("renders each field type as that type — not a text-box fake", () => {

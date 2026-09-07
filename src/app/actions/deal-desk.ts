@@ -179,6 +179,7 @@ export async function saveCarrierHistoryRule(formData: FormData) {
 
   revalidatePath("/admin/operations/carrier-history");
   revalidatePath("/logs/fill-learning");
+  flashAction("/admin/operations/carrier-history", "rule-saved");
 }
 
 export async function assertAnaUnboundForBind(dealId: string) {

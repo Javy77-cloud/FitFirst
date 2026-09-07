@@ -10,6 +10,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isDeskUuid } from "@/lib/desk-id";
 import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
+import { flashAction } from "@/lib/flash-action";
 
 function revalidateNotificationSurfaces() {
   revalidatePath("/");
@@ -96,7 +97,7 @@ export async function createReviewTask(formData: FormData) {
     })
     .returning();
   revalidatePath("/tasks");
-  if (row) redirect(`/tasks/${row.id}`);
+  if (row) flashAction(`/tasks/${row.id}`, "task-saved");
 }
 
 function revalidateTasks(task?: { contactId?: string | null; policyId?: string | null; dealId?: string | null }) {
@@ -159,6 +160,7 @@ export async function updateTask(formData: FormData) {
     })
     .where(eq(reviewTasks.id, id));
   revalidateTasks(task);
+  flashAction("/tasks", "task-saved");
 }
 
 export async function deleteTask(formData: FormData) {
@@ -185,4 +187,5 @@ export async function updateReviewTask(formData: FormData) {
     .where(eq(reviewTasks.id, id));
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
+  flashAction(`/tasks/${id}`, "changes-saved");
 }

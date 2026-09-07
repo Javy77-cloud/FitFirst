@@ -7,6 +7,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { findOpenRecovery, issueRecoveryLink, loadUserById, markRecoveryUsed } from "@/lib/auth/store";
+import { flashAction } from "@/lib/flash-action";
 
 function agentsNotice(kind: string, userId: string, token?: string) {
   const params = new URLSearchParams({ notice: kind, user: userId });
@@ -75,7 +76,7 @@ export async function completePasswordReset(formData: FormData) {
     .set({ passwordHash: hashPassword(next), updatedAt: new Date() })
     .where(eq(users.id, row.userId));
   await markRecoveryUsed(row.id);
-  redirect("/login?reset=1");
+  flashAction("/login", "password-saved");
 }
 
 export async function completeMfaReset(formData: FormData) {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { flashAction } from "@/lib/flash-action";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -178,7 +179,7 @@ export async function saveProposedTerm(formData: FormData) {
   revalidatePath(`/policies/${policyId}`);
   revalidatePath(`/policies/${policyId}/compare`);
   revalidatePath("/policies");
-  bounceCompare(policyId);
+  flashAction(`/policies/${policyId}/compare`, "term-saved");
 }
 
 export async function recordRenewalCompare(formData: FormData) {

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { campaignSendLogs, emailCampaigns } from "@/lib/db/schema";
 import { resolveCampaignAudience } from "@/lib/db/ops-queries";
 import { sendCampaignEmail } from "@/lib/integrations/email";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -35,14 +36,14 @@ export async function upsertCampaign(formData: FormData) {
     revalidatePath(`/campaigns/${id}`);
     revalidatePath("/automations");
     revalidatePath("/automations/campaigns");
-    redirect(`/campaigns/${id}`);
+    flashAction(`/campaigns/${id}`, "draft-saved");
   }
 
   await db.insert(emailCampaigns).values(values);
   revalidatePath("/campaigns");
   revalidatePath("/automations");
   revalidatePath("/automations/campaigns");
-  redirect("/campaigns?saved=1");
+  flashAction("/campaigns", "campaign-saved");
 }
 
 export async function stubSendCampaign(formData: FormData) {

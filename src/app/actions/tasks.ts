@@ -7,6 +7,7 @@ import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { reviewTasks } from "@/lib/db/schema";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -55,7 +56,7 @@ export async function updateReviewTask(formData: FormData) {
     .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, id)));
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
-  redirect("/tasks");
+  flashAction("/tasks", "task-saved");
 }
 
 export async function deleteReviewTask(formData: FormData) {

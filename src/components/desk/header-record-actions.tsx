@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Inbox, ListChecks, MessageSquare, Phone } from "lucide-react";
 import { logDeskActivity } from "@/app/actions/activities-desk";
+import { flashAction } from "@/lib/flash-client";
 import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
 import { Button } from "@/components/ui/button";
 import {
@@ -358,6 +359,7 @@ function TaskComposer({
         action={async (formData) => {
           formData.set("kind", "task");
           await logDeskActivity(formData);
+          flashAction("task-saved");
           onDone();
         }}
         className="space-y-3"

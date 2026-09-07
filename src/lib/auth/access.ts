@@ -121,6 +121,7 @@ export function isPublicPath(pathname: string): boolean {
   if (path.startsWith("/api/session")) return true;
   if (path === "/api/v1" || path.startsWith("/api/v1/")) return true;
   if (path.startsWith("/api/dev/")) return true;
+  if (path === "/ff-sheet.js" || path === "/ff-softphone.js") return true;
   return false;
 }
 

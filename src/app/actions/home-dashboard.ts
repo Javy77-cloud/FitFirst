@@ -30,6 +30,7 @@ import {
   upsertNamedHomeLayout,
 } from "@/lib/home/custom-layouts";
 import { mergeHomeLayout, type NamedHomeLayout } from "@/lib/home/layout";
+import { flashAction } from "@/lib/flash-action";
 
 function refreshHome() {
   revalidatePath("/");
@@ -71,6 +72,7 @@ export async function saveHomeHiddenWidgets(formData: FormData) {
     : layouts;
   await upsertPrefs(session.userId, { hiddenWidgets: hidden, customLayouts });
   refreshHome();
+  flashAction("/", "widgets-saved");
 }
 
 export async function saveResizeTiles(formData: FormData) {
@@ -104,6 +106,7 @@ export async function saveCustomHomeLayout(formData: FormData) {
   if (customLayouts === layouts) return;
   await upsertPrefs(session.userId, { customLayouts, activeLayoutId: layout.id });
   refreshHome();
+  flashAction("/", "home-layout-saved");
 }
 
 export async function renameCustomHomeLayout(formData: FormData) {
@@ -163,6 +166,7 @@ export async function saveShowCompanyWidgets(formData: FormData) {
     .set({ showCompanyWidgets: on, updatedAt: new Date() })
     .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID));
   refreshHome();
+  flashAction("/settings/agency", "widgets-saved");
 }
 
 export async function postContest(formData: FormData) {

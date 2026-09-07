@@ -12,6 +12,7 @@ import {
   upsertColumnLayout,
 } from "@/lib/crm/desk-agent";
 import { moveColumn } from "@/lib/crm/lists";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -54,6 +55,19 @@ async function redirectBack() {
   redirect("/deals");
 }
 
+async function flashBack(message: string): Promise<never> {
+  const referer = (await headers()).get("referer");
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      flashAction(url.pathname + url.search, message);
+    } catch (error) {
+      if (typeof error === "object" && error && "digest" in error) throw error;
+    }
+  }
+  flashAction("/deals", message);
+}
+
 export async function switchDeskAgent(formData: FormData) {
   const { currentDeskSession } = await import("@/lib/auth/session");
   const session = await currentDeskSession();
@@ -83,6 +97,7 @@ export async function saveAgentColumnLayout(formData: FormData) {
   const agent = await getCurrentAgent();
   await upsertColumnLayout({ tableId, columnIds, agentId: agent.id });
   revalidateLists();
+  await flashBack("columns-saved");
 }
 
 export async function saveAgencyColumnDefault(formData: FormData) {
@@ -95,6 +110,7 @@ export async function saveAgencyColumnDefault(formData: FormData) {
   if (!tableId || columnIds.length === 0) return;
   await upsertColumnLayout({ tableId, columnIds, agentId: null });
   revalidateLists();
+  await flashBack("columns-saved");
 }
 
 export async function resetAgentColumnLayout(formData: FormData) {

@@ -18,7 +18,6 @@ import {
   tagChipStyle,
   type TagColorMap,
 } from "@/lib/tags/tag-colors";
-import { flashAction } from "@/lib/flash-client";
 
 export function RecordTags({
   module,
@@ -62,8 +61,9 @@ export function RecordTags({
     form.set("module", module);
     form.set("name", tag);
     form.set("color", hex);
+    form.set("next", `${window.location.pathname}${window.location.search}`);
     startTransition(() => {
-      void updateModuleTagColor(form).then(() => flashAction("tag-color-saved"));
+      void updateModuleTagColor(form);
     });
   }
 

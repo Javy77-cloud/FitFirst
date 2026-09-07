@@ -13,6 +13,7 @@ import { db } from "@/lib/db";
 import { getAgencyBrand } from "@/lib/db/brand-queries";
 import { getAgencySettings, getDealWorkspace } from "@/lib/db/queries";
 import { deals, documents } from "@/lib/db/schema";
+import { flashAction } from "@/lib/flash-action";
 import { collectCompareQuotes, parseSelectedIds } from "@/lib/quotes/compare";
 import { buildBrandedProposalPdf, PROPOSAL_PDF_DOC_TYPE, PROPOSAL_SLOT, proposalFilename } from "@/lib/quotes/proposal-pdf";
 import { normalizeVideoProposalUrl } from "@/lib/quotes/video-proposal";
@@ -46,7 +47,7 @@ export async function saveVideoProposalUrl(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath(`/deals/${dealId}/compare`);
-  redirect(`/deals/${dealId}/compare?notice=${url ? "video-saved" : "video-cleared"}`);
+  flashAction(`/deals/${dealId}/compare`, url ? "video-saved" : "Link removed");
 }
 
 export async function generateBrandedProposal(formData: FormData) {

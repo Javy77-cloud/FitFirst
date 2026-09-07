@@ -19,7 +19,7 @@ import {
   parseTagColorsFromForm,
   type TagColorMap,
 } from "@/lib/tags/tag-colors";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashStay } from "@/lib/flash-action";
 
 const PATHS: Record<TagModule, { list: string; detail: (id: string) => string }> = {
   leads: { list: "/leads", detail: (id) => `/leads/${id}` },
@@ -227,4 +227,5 @@ export async function updateModuleTagColor(formData: FormData) {
     });
   revalidatePath(PATHS[module].list);
   revalidatePath("/settings/tags");
+  flashStay(formData, `/settings/tags?module=${module}`, "tag-color-saved");
 }

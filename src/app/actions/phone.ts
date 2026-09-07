@@ -1,7 +1,7 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { saveCallOutcome } from "@/app/actions/activities-desk";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -24,5 +24,5 @@ export async function logPhoneStubCall(formData: FormData) {
     Boolean(str(formData, "leadId"));
   if (!hasRelated) formData.set("allowOrphan", "1");
   const { returnTo } = await saveCallOutcome(formData);
-  redirect(returnTo);
+  flashAction(returnTo, "outcome-saved");
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createCompanyMeeting, updateCompanyMeeting } from "@/app/actions/company-meetings";
+import { flashAction } from "@/lib/flash-client";
 import { deleteDeskActivity } from "@/app/actions/activities-desk";
 import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ export function CompanyMeetingForm({
               try {
                 if (event) await updateCompanyMeeting(formData);
                 else await createCompanyMeeting(formData);
+                flashAction("meeting-saved");
                 onClose();
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Could not save the company meeting.");

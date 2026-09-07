@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { commissionEvents, commissions, policies } from "@/lib/db/schema";
 import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { computePolicyCommission } from "@/lib/commissions/policy-math";
+import { flashAction } from "@/lib/flash-action";
 import { commissionFamilyFromInsurance, insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
 
 function str(form: FormData, key: string) {
@@ -133,6 +134,7 @@ export async function savePolicyCommission(formData: FormData) {
 
   revalidatePath(`/policies/${policyId}`);
   revalidatePath("/commissions");
+  flashAction(`/policies/${policyId}`, "commission-saved");
 }
 
 export async function markCommissionPaid(formData: FormData) {

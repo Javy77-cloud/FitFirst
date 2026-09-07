@@ -52,6 +52,6 @@ export async function savePersonalPrefsAction(formData: FormData) {
   };
   await upsertStoredNavLayout(session.userId, next);
   refreshNav();
-  const { redirect } = await import("next/navigation");
-  redirect("/me?saved=1");
+  const { flashAction } = await import("@/lib/flash-action");
+  flashAction("/me", "settings-saved");
 }

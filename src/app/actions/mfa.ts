@@ -10,6 +10,7 @@ import { requireSignedInAllowMfaSetup } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
 import { consumeStubChallenge, issueStubChallenge } from "@/lib/auth/store";
+import { flashAction } from "@/lib/flash-action";
 
 export async function startMfaPending(user: User) {
   if (userSkipsMfaChallenge(user)) {
@@ -153,7 +154,7 @@ export async function changeOwnPassword(formData: FormData) {
     .update(users)
     .set({ passwordHash: hashPassword(next), mustSetPassword: false, updatedAt: new Date() })
     .where(eq(users.id, session.userId));
-  redirect("/settings/security?saved=password");
+  flashAction("/settings/security", "password-saved");
 }
 
 export async function saveOwnProfile(formData: FormData) {
@@ -166,5 +167,5 @@ export async function saveOwnProfile(formData: FormData) {
     .update(users)
     .set({ name, meetingAddress: meetingAddress || null, updatedAt: new Date() })
     .where(eq(users.id, session.userId));
-  redirect("/settings/profile?saved=1");
+  flashAction("/settings/profile", "profile-saved");
 }

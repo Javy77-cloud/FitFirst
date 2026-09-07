@@ -12,6 +12,7 @@ import {
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { commissionEvents, commissionReconciliations, commissions } from "@/lib/db/schema";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -91,13 +92,16 @@ export async function recordReconReceived(formData: FormData): Promise<void> {
   const received = parseReceivedAmount(str(formData, "received"));
   if (!reconId || received == null) return;
   const note = str(formData, "note");
-  await writeRecon({
+  const result = await writeRecon({
     reconId,
     actorId: session.userId ?? "",
     received,
     note: note || undefined,
     status: received === 0 ? "pending" : undefined,
   });
+  if (result && "ok" in result && result.ok) {
+    flashAction("/commissions", "commission-saved");
+  }
 }
 
 export async function markReconStatus(formData: FormData): Promise<void> {

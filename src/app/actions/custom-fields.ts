@@ -98,6 +98,11 @@ export async function saveDealFieldLayout(formData: FormData) {
     await saveLayoutForModule(module, layout);
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
+  if (module === "deals") {
+    flashAction("/settings/field-builder", "layout-saved");
+  } else {
+    flashAction(fieldLayoutListHref(module), "home-layout-saved");
+  }
 }
 
 export async function addDealLayoutSection(formData: FormData) {

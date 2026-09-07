@@ -18,6 +18,7 @@ import {
 } from "@/lib/domain";
 import { persistFile } from "@/app/actions/documents";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
+import { flashAction } from "@/lib/flash-action";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
@@ -170,7 +171,7 @@ export async function createLead(formData: FormData) {
     autoRoute,
   });
   revalidatePath("/leads");
-  redirect("/leads?saved=1");
+  flashAction("/leads", "lead-saved");
 }
 
 export async function convertLeadToDeal(
@@ -680,6 +681,7 @@ export async function updateDealCrmNotes(formData: FormData) {
     })
     .where(eq(deals.id, dealId));
   revalidateCrm([`/deals/${dealId}`]);
+  flashAction(`/deals/${dealId}`, "notes-saved");
 }
 
 export async function updateRisk(formData: FormData) {
@@ -727,6 +729,7 @@ export async function updateRisk(formData: FormData) {
   const dealId = str(formData, "dealId");
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/settings/master-risk");
+  flashAction(`/deals/${dealId}`, "worksheet-saved");
 }
 
 export async function findMatchingContact(input: {
@@ -777,7 +780,7 @@ export async function createContact(formData: FormData) {
     name: `${row.firstName} ${row.lastName}`.trim(),
   });
   revalidatePath("/contacts");
-  redirect("/contacts?saved=1");
+  flashAction("/contacts", "contact-saved");
 }
 
 async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteSheetFieldValue>> {
