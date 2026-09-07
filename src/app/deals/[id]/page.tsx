@@ -8,7 +8,6 @@ import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { SheetHealthToggle } from "@/components/deal/sheet-health-toggle";
 import { DealMotivation } from "@/components/deal/deal-motivation";
-import { RelatedRecordNav } from "@/components/crm/related-record-nav";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
@@ -168,11 +167,11 @@ export default async function DealPage({
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
         <div className="-mt-5 space-y-1" data-ff-deal-flush-tabs>
-        <div className="flex items-start justify-between gap-3" data-ff-deal-title-row>
+        <div className="flex items-start justify-between gap-3" data-ff-deal-topband>
           <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
             {deal.title}
           </h1>
-          <div className="flex shrink-0 items-start gap-3" data-ff-deal-title-meta>
+          <div className="flex shrink-0 items-start gap-3" data-ff-deal-top-right>
             {health ? (
               <SheetHealthToggle
                 report={health}
@@ -284,15 +283,6 @@ export default async function DealPage({
                 }
                 rail={
                   <div className="space-y-4 lg:sticky lg:top-4">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm" data-ff-deal-identity>
-                      {lead ? (
-                        <RelatedRecordNav
-                          href={`/leads/${lead.id}`}
-                          label="View source lead"
-                          testId="view-source-lead"
-                        />
-                      ) : null}
-                    </div>
                     <div className="ff-card p-3">
                       <RecordTags
                         module="deals"

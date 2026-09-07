@@ -23,8 +23,11 @@ describe("lead + deal worksheet entry checklist", () => {
 
   it("strips bind chrome from the deal worksheet top strip", () => {
     const src = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
-    expect(src).toMatch(/data-ff-deal-identity/);
-    expect(src).toMatch(/View source lead/);
+    expect(src).toMatch(/data-ff-deal-topband/);
+    expect(src).toMatch(/data-ff-deal-top-right/);
+    expect(src).not.toMatch(/data-ff-deal-identity/);
+    expect(src).not.toMatch(/RelatedRecordNav/);
+    expect(src).not.toMatch(/View source lead/);
     expect(src).toMatch(/utilityChrome/);
     expect(src).toMatch(/QuickCommsBoard/);
     expect(src).not.toMatch(/bindDeal/);
