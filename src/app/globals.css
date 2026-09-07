@@ -183,25 +183,26 @@
   box-shadow: var(--ff-shadow);
 }
 
-/* Same-row band from the page inset: Attach, small gap, Activity. Never edge-slam. */
+/* Measured red boxes: Attach 819px / 44.8%, gap 4px, Activity 797px / 43.6%. */
 .deal-upload-activity {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 1.5rem;
+  gap: 4px;
   overflow: visible;
 }
 .deal-attach-slot {
-  width: min(36rem, 54%);
-  max-width: min(36rem, 54%);
+  width: min(819px, 44.8%);
+  max-width: min(819px, 44.8%);
   min-width: 0;
-  flex: 0 0 auto;
+  flex: 0 0 min(819px, 44.8%);
 }
 .deal-today-slot {
-  width: max-content;
-  flex: 0 0 auto;
+  width: min(797px, 43.6%);
+  max-width: min(797px, 43.6%);
+  flex: 0 0 min(797px, 43.6%);
 }
 
 /* Activity strip is open to the page — no panel fill behind chips. */

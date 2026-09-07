@@ -42,7 +42,8 @@ describe("Deals page sep7h", () => {
     expect(page).toMatch(/justify-start/);
     expect(page).toMatch(/deal-attach-slot/);
     expect(page).toMatch(/deal-today-slot/);
-    expect(page).toMatch(/w-\[min\(36rem,54%\)\]/);
+    expect(page).toMatch(/w-\[min\(819px,44\.8%\)\]/);
+    expect(page).toMatch(/w-\[min\(797px,43\.6%\)\]/);
     expect(page).not.toMatch(/justify-between/);
     expect(page).not.toMatch(/w-\[66%\]/);
     expect(page).not.toMatch(/max-w-\[66%\]/);
@@ -113,7 +114,9 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/\.deal-upload-activity/);
     expect(chrome).toMatch(/flex-wrap: nowrap/);
     expect(chrome).toMatch(/\.deal-attach-slot/);
-    expect(chrome).toMatch(/width: min\(36rem, 54%\)/);
+    expect(chrome).toMatch(/width: min\(819px, 44\.8%\)/);
+    expect(chrome).toMatch(/width: min\(797px, 43\.6%\)/);
+    expect(chrome).toMatch(/gap: 4px/);
     expect(chrome).toMatch(/justify-content: flex-start/);
     expect(chrome).toMatch(/\.deal-today-chip/);
     expect(chrome).toMatch(/overflow: visible/);
