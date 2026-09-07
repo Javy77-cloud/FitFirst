@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7br`)
 
-Header notification bell unread highlight, from `cursor/live-ff-tip-sep7az`. When any in-app notification is **unread**, the top-bar bell (next to profile) is highlighted: filled icon, terracotta ring, and a count badge. Mark as read / zero unread clears the highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `334f9e38`.
+Header notification bell unread highlight, from `cursor/live-ff-tip-sep7az`. When any in-app notification is **unread**, the top-bar bell (next to profile) is highlighted: filled icon, terracotta ring, and a count badge. Mark as read / zero unread clears the highlight. In-app only — nothing emails Javy. Global app shell only. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `bb2e3bf7`.
 
 ```bash
 cd ~/FitFirst
