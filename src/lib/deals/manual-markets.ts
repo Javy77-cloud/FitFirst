@@ -31,16 +31,18 @@ export function marketBucketLabel(bucket: MarketBucket): string {
 }
 
 /**
- * True only after the agent added a carrier or ran a lookup/shop.
- * Auto-evaluated evaluateDeal matches are not lookup data.
+ * True after the agent saved master-sheet values (and we have matches / a shop),
+ * added a carrier, or ran a lookup. Empty sheet: ignore leftover matches / logs.
  */
 export function hasMarketLookupData(
   matches: { carrierId: string }[],
   manualIds: string[] = [],
   explicitLookup = false,
+  sheetHasValues = false,
 ): boolean {
-  void matches;
-  return manualIds.length > 0 || explicitLookup;
+  if (manualIds.length > 0) return true;
+  if (!sheetHasValues) return false;
+  return matches.length > 0 || explicitLookup;
 }
 
 const SHEET_LOOKUP_IGNORE = new Set(["sheet_product"]);
@@ -99,10 +101,13 @@ export function sheetHasMarketFacts(
   });
 }
 
-/** True only when the deal has entered risk/sheet facts worth evaluating. */
+/**
+ * Markets evaluate only from a filled master sheet — not leftover risk-row facts.
+ */
 export function hasMarketLookupInput(
   risk: Parameters<typeof riskHasMarketFacts>[0],
   sheetValues?: Record<string, { value?: string | null } | null> | null,
 ): boolean {
-  return riskHasMarketFacts(risk) || sheetHasMarketFacts(sheetValues);
+  void risk;
+  return sheetHasMarketFacts(sheetValues);
 }

@@ -32,7 +32,9 @@ describe("manual markets", () => {
     expect(hasMarketLookupData([], [])).toBe(false);
     expect(hasMarketLookupData([], ["c1"])).toBe(true);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(true);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true, true)).toBe(true);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], false, true)).toBe(true);
     const panel = readFileSync("src/components/deal/markets-panel.tsx", "utf8");
     expect(panel).toMatch(/data-ff-markets-empty/);
     expect(panel).toMatch(/hasMarketLookupData/);
@@ -65,7 +67,8 @@ describe("manual markets", () => {
     expect(hasMarketLookupInput({ state: "FL" } as never, { sheet_product: { value: "homeowners" } })).toBe(
       false,
     );
-    expect(hasMarketLookupInput({ coverageA: 321000 }, null)).toBe(true);
+    expect(hasMarketLookupInput({ coverageA: 321000 }, null)).toBe(false);
+    expect(hasMarketLookupInput({ coverageA: 321000 }, { coverage_a: { value: "321000" } })).toBe(true);
   });
 
   it("renders a blank Markets tab when there are no matches and no manual carriers", () => {

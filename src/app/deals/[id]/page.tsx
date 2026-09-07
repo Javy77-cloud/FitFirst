@@ -36,7 +36,7 @@ import { loadRecordContext } from "@/lib/record-context";
 import { SHOP_LINE_LABELS } from "@/lib/domain";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
-import { manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import { manualCarrierIdsFromLogs, sheetHasMarketFacts } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
@@ -77,7 +77,6 @@ export default async function DealPage({
     jobs,
     boundPolicies,
   } = workspace;
-  const matches = risk ? await evaluateDealMarkets(risk) : [];
   const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra, dealLayout, dealFields, dealValues] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
@@ -111,6 +110,9 @@ export default async function DealPage({
   });
   const activeSheet =
     sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
+  const sheetReady = sheetHasMarketFacts(activeSheet.values);
+  const matches =
+    risk && sheetReady ? await evaluateDealMarkets(risk, activeSheet.values) : [];
   const selectedProduct = resolveDealProduct({
     productParam: product,
     sheetProduct: activeSheet.values.sheet_product?.value,
@@ -253,11 +255,13 @@ export default async function DealPage({
                       />
                     ) : id === "markets" ? (
                       <MarketsPanel
+                        key={sheetReady ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
-                        matches={matches}
+                        matches={sheetReady ? matches : []}
                         unlocked={unlocked}
                         manualIds={manualIds}
-                        explicitLookup={logs.length > 0}
+                        explicitLookup={sheetReady && logs.length > 0}
+                        sheetHasValues={sheetReady}
                         carriers={carrierOptions}
                         dealLine={deal.lineOfBusiness}
                       />

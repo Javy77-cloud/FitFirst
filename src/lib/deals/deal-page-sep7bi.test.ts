@@ -58,32 +58,51 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(css).toMatch(/max-width: 320px;/);
   });
 
-  it("BI4 — auto-evaluated matches are not Markets lookup data", () => {
+  it("BI4 — empty master sheet ignores leftover matches, logs, and risk-row appetite", () => {
     expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(true);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true, true)).toBe(true);
     expect(hasMarketLookupData([], ["c1"])).toBe(true);
+    const leftover = {
+      carrierId: "c1",
+      carrierName: "Home Co",
+      band: "green" as const,
+      fitScore: 88,
+      reasons: [],
+      learnedDecline: false,
+      shoppable: true,
+    };
     const html = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-auto",
-        matches: [
-          {
-            carrierId: "c1",
-            carrierName: "Home Co",
-            band: "green",
-            fitScore: 88,
-            reasons: [],
-            learnedDecline: false,
-            shoppable: true,
-          },
-        ],
+        matches: [leftover],
         manualIds: [],
+        explicitLookup: true,
+        sheetHasValues: false,
         carriers: [],
       }),
     );
     expect(html).toMatch(/data-ff-markets-empty/);
     expect(html).not.toMatch(/In appetite/);
     expect(html).not.toMatch(/Home Co/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/explicitLookup=\{logs\.length > 0\}/);
+    const filled = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-filled",
+        matches: [leftover],
+        manualIds: [],
+        sheetHasValues: true,
+        carriers: [],
+      }),
+    );
+    expect(filled).toMatch(/In appetite/);
+    expect(filled).toMatch(/Home Co/);
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/sheetHasMarketFacts/);
+    expect(page).toMatch(/sheetReady \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
+    expect(page).toMatch(/sheetHasValues=\{sheetReady\}/);
+    expect(page).toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
+    expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/sheetHasMarketFacts/);
   });
 
   it("BI5 — Quotes with no rows is a blank panel", () => {

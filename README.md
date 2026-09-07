@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bi`)
 
-Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank until the agent adds a carrier or shops — auto `evaluateDeal` matches do not count. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `100241de`.
+Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank when the active master sheet has no saved values — the page does not run `evaluateDealMarkets` and leftover risk-row / log matches are ignored. After the agent saves sheet values (or adds a carrier / shops), Markets may show. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `100241de`.
 
 ```bash
 cd ~/FitFirst
@@ -26,7 +26,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal fiel
 | BI1 | Builder columns | Settings → Deal field builder is `grid-cols-3` — Field types \| Left \| Right on one row. Palette chips are `w-full` (same width). |
 | BI2 | No LOB filters | Field builder has no Homeowners / Auto / Flood clips. One layout for all lines. |
 | BI3 | Rail 320 | `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px]`. Sheet health is not 28rem. Measured 320px. |
-| BI4 | Markets empty | Deal with no agent market action: Markets completely blank, even if evaluateDeal returned matches. |
+| BI4 | Markets empty | Empty master sheet → Markets completely blank. No evaluateDeal, no leftover In appetite. |
 | BI5 | Quotes empty | Deal with no quotes: blank `data-ff-quotes-empty`. No placeholder text. |
 | BI6 | Tests | `deal-page-sep7bi`, field-builder, manual-markets, and quotes empty assertions cover the lock. |
 
