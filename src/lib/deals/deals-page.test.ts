@@ -37,11 +37,16 @@ describe("Deals page sep7h", () => {
   it("keeps attach-documents on the left band, ~120px, beside Today's Activity", () => {
     const page = source("src/app/deals/page.tsx");
     expect(page).toMatch(/deal-upload-activity/);
-    expect(page).toMatch(/lg:flex-row/);
-    expect(page).toMatch(/lg:flex-wrap/);
-    expect(page).toMatch(/lg:justify-between/);
+    expect(page).toMatch(/flex-row/);
+    expect(page).toMatch(/flex-nowrap/);
+    expect(page).toMatch(/justify-between/);
     expect(page).toMatch(/deal-attach-slot/);
     expect(page).toMatch(/deal-today-slot/);
+    expect(page).toMatch(/w-\[66%\]/);
+    expect(page).toMatch(/max-w-\[66%\]/);
+    expect(page).toMatch(/max-w-\[34%\]/);
+    expect(page).not.toMatch(/flex-col/);
+    expect(page).not.toMatch(/lg:flex-wrap/);
     expect(page).not.toMatch(/lg:grid-cols-12/);
     expect(page).not.toMatch(/lg:col-span-7/);
     expect(page).not.toMatch(/lg:col-span-5/);
@@ -88,7 +93,7 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/items-center/);
     expect(strip).toMatch(/text-center/);
     expect(strip).toMatch(/justify-center/);
-    expect(strip).toMatch(/deal-today-chip/);
+    expect(strip).toMatch(/deal-today-chip inline-flex shrink-0 flex-col/);
     expect(strip).toMatch(/bg-transparent/);
     expect(strip).toMatch(/--chip-mid/);
     expect(strip).toMatch(/--chip-bottom/);
@@ -101,9 +106,15 @@ describe("Deals page sep7h", () => {
     expect(strip).not.toMatch(/border-black/);
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);
     const chrome = source("src/app/globals.css");
+    expect(chrome).toMatch(/\.deal-upload-activity/);
+    expect(chrome).toMatch(/flex-wrap: nowrap/);
+    expect(chrome).toMatch(/\.deal-attach-slot/);
+    expect(chrome).toMatch(/max-width: 66%/);
     expect(chrome).toMatch(/\.deal-today-chip/);
     expect(chrome).toMatch(/overflow: visible/);
-    expect(chrome).toMatch(/height: 36px/);
+    expect(chrome).toMatch(/width: 72px/);
+    expect(chrome).toMatch(/height: 72px/);
+    expect(chrome).toMatch(/aspect-ratio: 1 \/ 1/);
     expect(chrome).toMatch(/border-radius: 4px/);
     expect(chrome).toMatch(/background: none/);
     expect(chrome).toMatch(/translateY\(-6px\)/);
@@ -115,6 +126,7 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\] \.ff-file-delete/);
     expect(chrome).toMatch(/margin-left: 0/);
     expect(chrome).not.toMatch(/margin-left: 24px/);
+    expect(chrome).not.toMatch(/height: 36px/);
     expect(chrome).not.toMatch(/translateY\(-2px\)/);
     expect(chrome).not.toMatch(/translateY\(-4px\)/);
     expect(chrome).not.toMatch(/translateY\(-7px\)/);

@@ -4,7 +4,29 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7y`)
+## Mac test now (`cursor/live-ff-tip-sep7aa`)
+
+Red-box layout on `cursor/live-ff-tip-sep7y` @ `0a8ea92`. **Attach LEFT** (~two-thirds, never full page). **Today's Activity RIGHT** on the **same row**. Chips are **colored squares** (not flat 36px rectangles), 3D + 6px hover lift, no panel behind them. Trash stays on document rows inside Attach. Deal detail unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7aa && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AA — Pipeline list (sep7aa)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AA1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Attach does **not** stretch full page. Activity is **not** stacked under Attach. |
+| AA2 | Widths | Attach stays in the **larger left** red-box (~**2/3**). Today's Activity stays in the **smaller right** red-box (~**1/3**). |
+| AA3 | Square chips | Each counter is a **colored square** (72×72, ≤**4px** radius) with 3D fill. Hover **lifts 6px**. No card/panel behind the row. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7y`)
 
 Pipeline placement + Activity chips on consolidator `cursor/live-ff-tip-sep7z` @ `4e9571e` / tip SHA `2555bf3` (sep7w Pipeline + sep7x Deal detail). **Attach LEFT** (compact, left red-box region). **Today's Activity RIGHT** (right red-box region). **No card/panel fill** behind the counters — only colored 3D chip boxes + hover lift. Trash stays on document rows inside Attach. Deal detail is unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `48b78b4`.
 

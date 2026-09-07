@@ -183,6 +183,27 @@
   box-shadow: var(--ff-shadow);
 }
 
+/* Same-row band: Attach stays ~2/3 left. Activity stays ~1/3 right. Never wrap/stack. */
+.deal-upload-activity {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  overflow: visible;
+}
+.deal-attach-slot {
+  width: 66%;
+  max-width: 66%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+.deal-today-slot {
+  width: max-content;
+  max-width: 34%;
+  flex: 0 0 auto;
+}
+
 /* Attach stays a compact left card. Activity strip is open to the page — no panel fill. */
 .deal-today-strip {
   width: max-content;
@@ -203,9 +224,17 @@
   overflow: visible;
 }
 
-/* Colored 3D chip boxes — 4px max radius, raised depth, soft shadow. Hover lifts clear. */
+/* Colored 3D square chips — 4px max radius, raised depth, soft shadow. Hover lifts clear. */
 .deal-today-chip {
-  height: 36px;
+  width: 72px;
+  height: 72px;
+  aspect-ratio: 1 / 1;
+  padding: 4px 2px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   box-sizing: border-box;
   border-radius: 4px;
   background-color: var(--chip-mid);
