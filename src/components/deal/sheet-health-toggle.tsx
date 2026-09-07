@@ -16,7 +16,7 @@ export function SheetHealthToggle({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col items-end gap-2" data-ff-sheet-health-toggle>
+    <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2" data-ff-sheet-health-toggle>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -29,7 +29,7 @@ export function SheetHealthToggle({
         </span>
       </button>
       {open ? (
-        <div className="w-full min-w-[16rem] sm:w-[28rem]">
+        <div className="w-full min-w-0 max-w-full">
           <HealthStrip report={report} title="Sheet health" href={href} dealId={dealId} />
         </div>
       ) : null}

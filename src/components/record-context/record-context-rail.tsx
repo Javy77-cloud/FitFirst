@@ -53,7 +53,7 @@ export function RecordContextRail({
   const person = context.people.find((row) => row.key === personKey) ?? context.people[0] ?? null;
 
   return (
-    <div className="ff-card overflow-hidden">
+    <div className="ff-card min-w-0 w-full max-w-full overflow-hidden">
       {context.people.length > 1 ? (
         <div className="border-b border-border px-3 py-2">
           <label className="sr-only" htmlFor="rail-person">

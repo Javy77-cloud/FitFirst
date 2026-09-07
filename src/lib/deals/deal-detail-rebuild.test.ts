@@ -50,10 +50,11 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-top-left/);
     expect(page).toMatch(/data-ff-deal-right-rail/);
     expect(page).toMatch(/flex w-full/);
-    expect(page).toMatch(/flex-1 lg:w-\[72%\]/);
-    expect(page).toMatch(/lg:w-\[320px\] max-w-\[320px\] shrink-0/);
+    expect(page).toMatch(/min-w-0 flex-1 space-y-1/);
+    expect(page).not.toMatch(/lg:w-\[72%\]/);
+    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
-    expect(page).toMatch(/flex w-full flex-col items-end/);
+    expect(page).toMatch(/flex w-full min-w-0 max-w-full flex-col items-end/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
     expect(page).toMatch(/DealLineSelector/);
     expect(page).not.toMatch(/RecordDetailLayout/);
@@ -197,7 +198,9 @@ describe("deal detail final rebuild", () => {
   it("leaves Quotes empty until Markets returns rows", () => {
     const quotes = source("src/components/deal/quotes-panel.tsx");
     expect(quotes).toMatch(/data-ff-deal-quotes-empty/);
-    expect(quotes).toMatch(/Quotes land here after Markets sends them back/);
+    expect(quotes).toMatch(/data-ff-quotes-empty/);
+    expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);
+    expect(quotes).not.toMatch(/border-dashed/);
     expect(quotes.indexOf("sorted.length === 0")).toBeLessThan(quotes.indexOf("Quote results"));
   });
 
@@ -209,9 +212,9 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/DealMotivation/);
     expect(page).toMatch(/SheetHealthToggle/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
-    expect(page).toMatch(/flex w-full flex-col items-end/);
-    expect(page).toMatch(/lg:w-\[72%\]/);
-    expect(page).toMatch(/lg:w-\[320px\] max-w-\[320px\] shrink-0/);
+    expect(page).toMatch(/flex w-full min-w-0 max-w-full flex-col items-end/);
+    expect(page).not.toMatch(/lg:w-\[72%\]/);
+    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
     expect(page.indexOf("data-ff-deal-quotes-corner")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
     expect(page.indexOf("data-ff-deal-top-left")).toBeLessThan(page.indexOf("<SectionTabs"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("data-ff-deal-right-rail"));

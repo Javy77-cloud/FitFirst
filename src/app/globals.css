@@ -689,6 +689,19 @@ body[data-ff-col-resize] {
   text-decoration: underline;
 }
 
+/* Deal right rail is exactly 320px — children must fit inside, never 28rem. */
+[data-ff-deal-right-rail] {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  flex-shrink: 0;
+  overflow-x: hidden;
+}
+[data-ff-deal-right-rail] > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
 @media print {
   .ff-no-print {
     display: none !important;

@@ -193,7 +193,7 @@ export default async function DealPage({
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
         <div className="-mt-5 flex w-full items-start gap-5" data-ff-deal-flush-tabs data-ff-deal-topband>
-          <div className="min-w-0 flex-1 lg:w-[72%] space-y-1" data-ff-deal-top-left>
+          <div className="min-w-0 flex-1 space-y-1" data-ff-deal-top-left>
           <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
             {deal.title}
           </h1>
@@ -257,6 +257,7 @@ export default async function DealPage({
                         matches={matches}
                         unlocked={unlocked}
                         manualIds={manualIds}
+                        explicitLookup={logs.length > 0}
                         carriers={carrierOptions}
                         dealLine={deal.lineOfBusiness}
                       />
@@ -306,10 +307,10 @@ export default async function DealPage({
         />
           </div>
           <aside
-            className="w-full space-y-3 lg:sticky lg:top-4 lg:w-[320px] max-w-[320px] shrink-0"
+            className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden space-y-3 lg:sticky lg:top-4"
             data-ff-deal-right-rail
           >
-            <div className="flex w-full flex-col items-end" data-ff-deal-quotes-corner>
+            <div className="flex w-full min-w-0 max-w-full flex-col items-end" data-ff-deal-quotes-corner>
               {health ? (
                 <SheetHealthToggle
                   report={health}
@@ -319,8 +320,8 @@ export default async function DealPage({
               ) : null}
               <DealMotivation stats={motivation} />
             </div>
-            <div className="ff-card p-3">
-              <RecordTags
+            <div className="ff-card min-w-0 w-full max-w-full p-3">
+              <RecordTags>
                 module="deals"
                 recordId={deal.id}
                 tags={deal.tags}
@@ -328,7 +329,7 @@ export default async function DealPage({
                 colors={dealTagColors}
               />
             </div>
-            <div data-ff-deal-quick-comms>
+            <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms>
               <QuickCommsBoard items={comms} dealId={deal.id} />
             </div>
             <RecordContextRail context={context} />

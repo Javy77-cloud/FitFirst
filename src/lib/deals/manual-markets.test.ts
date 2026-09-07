@@ -31,7 +31,8 @@ describe("manual markets", () => {
   it("treats Markets as empty until a lookup or manual carrier exists", () => {
     expect(hasMarketLookupData([], [])).toBe(false);
     expect(hasMarketLookupData([], ["c1"])).toBe(true);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(true);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(true);
     const panel = readFileSync("src/components/deal/markets-panel.tsx", "utf8");
     expect(panel).toMatch(/data-ff-markets-empty/);
     expect(panel).toMatch(/hasMarketLookupData/);
@@ -82,6 +83,31 @@ describe("manual markets", () => {
     expect(html).not.toMatch(/Skip/);
     expect(html).not.toMatch(/Approve & request quotes/);
     expect(html).not.toMatch(/Add carrier manually/);
+    expect(html).not.toMatch(/in appetite/i);
+  });
+
+  it("stays blank when evaluateDeal auto-returns matches and the agent has not acted", () => {
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-auto",
+        matches: [
+          {
+            carrierId: "c1",
+            carrierName: "Home Co",
+            band: "green",
+            fitScore: 90,
+            reasons: [],
+            learnedDecline: false,
+            shoppable: true,
+          },
+        ],
+        manualIds: [],
+        carriers: [],
+      }),
+    );
+    expect(html).toMatch(/data-ff-markets-empty/);
+    expect(html).not.toMatch(/In appetite/);
+    expect(html).not.toMatch(/Home Co/);
     expect(html).not.toMatch(/in appetite/i);
   });
 });

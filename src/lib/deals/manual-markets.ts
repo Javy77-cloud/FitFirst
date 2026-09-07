@@ -30,12 +30,17 @@ export function marketBucketLabel(bucket: MarketBucket): string {
   return "Skip";
 }
 
-/** True only after a lookup returned carriers or the agent added one. */
+/**
+ * True only after the agent added a carrier or ran a lookup/shop.
+ * Auto-evaluated evaluateDeal matches are not lookup data.
+ */
 export function hasMarketLookupData(
   matches: { carrierId: string }[],
   manualIds: string[] = [],
+  explicitLookup = false,
 ): boolean {
-  return matches.length > 0 || manualIds.length > 0;
+  void matches;
+  return manualIds.length > 0 || explicitLookup;
 }
 
 const SHEET_LOOKUP_IGNORE = new Set(["sheet_product"]);

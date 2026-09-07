@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bh`)
+## Mac test now (`cursor/live-ff-tip-sep7bi`)
+
+Builder three equal columns, hard 320px rail, Markets truly empty, Quotes blank, from `cursor/live-ff-tip-sep7az` @ `495978c`. **Settings → Deal field builder** is Field types | Left | Right on one row (`grid-cols-3`), every palette chip `w-full`. Deal right rail `data-ff-deal-right-rail` is **exactly 320px** (`w/min/max`, `shrink-0`, `overflow-x-hidden`); Sheet health is `w-full max-w-full` (no 28rem). Left column is `flex-1` into leftover — no 72%. **Markets** stays blank until the agent adds a carrier or shops — auto `evaluateDeal` matches do not count. **Quotes** empty is a blank `data-ff-quotes-empty` div, no dashed placeholder. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bi-125d && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**: three equal columns side by side; every field-type chip the same width. Open a deal: right rail is **320px**; Sheet health does not blow it out. **Markets** with no agent add/shop is completely blank (no "In appetite") even if evaluateDeal would have matches. **Quotes** with no rows is blank — no dashed box. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BI — Equal builder, 320 rail, empty Markets/Quotes
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BI1 | Builder columns | Settings → Deal field builder is `grid-cols-3` — Field types \| Left \| Right on one row. Palette chips are `w-full` (same width). |
+| BI2 | No LOB filters | Field builder has no Homeowners / Auto / Flood clips. One layout for all lines. |
+| BI3 | Rail 320 | `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px]`. Sheet health is not 28rem. Measured 320px. |
+| BI4 | Markets empty | Deal with no agent market action: Markets completely blank, even if evaluateDeal returned matches. |
+| BI5 | Quotes empty | Deal with no quotes: blank `data-ff-quotes-empty`. No placeholder text. |
+| BI6 | Tests | `deal-page-sep7bi`, field-builder, manual-markets, and quotes empty assertions cover the lock. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bh`)
 
 Deal naming rule, search, and drop the Contact column, from `cursor/live-ff-tip-sep7az` latest HEAD. Separate crew from toast (bf) and deal-four-fixes (bg). Every deal auto-names **First Last Lob** — `Javier Canales Home`, `Javier Canales Auto`. Applies on convert and on any line-of-business change. Existing titles backfill (additive migrate `0086_deal_titles` + boot rename). No `… - HO shop` leftovers. Deal search matches first name, last name, or line of business. Pipeline / deals table **has no Contact column**; Contact is not required on the deal. Stages, filters, and other columns stay. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
 
