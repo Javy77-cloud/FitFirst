@@ -144,7 +144,7 @@ export function DealDocsUpload({
 
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
         {rows.map((row, index) => (
-          <div key={row.id} className="flex flex-nowrap items-center gap-2">
+          <div key={row.id} className="deal-doc-row flex flex-nowrap items-center gap-2">
             <select
               name={`docType_${index}`}
               value={row.docType}
@@ -166,15 +166,18 @@ export function DealDocsUpload({
               onFile={(file) => patchRow(row.id, { fileName: file?.name ?? "" })}
             />
             {row.fileName ? (
-              <span className="min-w-0 truncate text-sm text-navy" data-testid="deal-doc-filename">
+              <span className="deal-doc-filename min-w-0 truncate text-sm text-navy" data-testid="deal-doc-filename">
                 {row.fileName}
               </span>
             ) : null}
-            <FileDeleteIcon
-              type="button"
-              label={row.fileName ? `Remove ${row.fileName}` : "Remove file row"}
-              onClick={() => removeRow(row.id)}
-            />
+            {row.fileName || rows.length > 1 ? (
+              <FileDeleteIcon
+                type="button"
+                className="ml-0"
+                label={row.fileName ? `Remove ${row.fileName}` : "Remove file row"}
+                onClick={() => removeRow(row.id)}
+              />
+            ) : null}
           </div>
         ))}
         <button

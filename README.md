@@ -4,7 +4,38 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7z`)
+## Mac test now (`cursor/live-ff-tip-sep7y`)
+
+Pipeline placement + Activity chips on consolidator `cursor/live-ff-tip-sep7z` @ `4e9571e` / tip SHA `2555bf3` (sep7w Pipeline + sep7x Deal detail). **Attach LEFT** (compact, left red-box region). **Today's Activity RIGHT** (right red-box region). **No card/panel fill** behind the counters — only colored 3D chip boxes + hover lift. Trash stays on document rows inside Attach. Deal detail is unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7y && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### Y — Pipeline list (sep7y)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| Y1 | Red-box placement | Attach documents sits in the **left** band. Today's Activity sits in the **right** band. They are two separate items — Attach is a compact card, Activity is not inside Attach's card. |
+| Y2 | Activity chips | **No card/panel fill** behind the counters. Title + date + calendar stay. Each chip is a **colored square box** (≤**4px** radius) using Call / Email / Task / Meeting / Training colors, raised **3D** depth, soft shadow. Hover **lifts 6px** with a stronger shadow. Strip `overflow: visible` so the lift is not clipped. |
+| Y3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). It does not float in the gap between Attach and Activity. |
+
+### B — Deal detail (sep7x @ `6ca87d0`, unchanged)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| X1 | No e-sign | Documents has **no** “In-desk signature” block. Upload + master sheet stay. |
+| X2 | Markets flush | **In appetite / Stretch / Skip** and **Approve & request quotes** sit **directly under** the tab bar. No empty gap above them. Manual add still lists only carriers that write this line. |
+| X3 | Line of business | Documents opens with a **Line of business.** dropdown (Homeowners, Renters, Landlord, Auto, RV, Motorcycle, Flood, GL, Workers' Comp, Commercial Auto, plus niche). Default **Homeowners**. Changing it swaps the master sheet. One deal, one product. Uses existing deal LOB / quoting line / `policySubType` / sheet product — no schema. |
+| X4 | Quotes empty | Quotes is empty until Markets sends quotes back. No results chrome, bind gate, or attempt log while empty. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7z`)
 
 Consolidator: live Pipeline tip `cursor/live-ff-tip-sep7w` @ `0c79cfa` / `8f9bc84` (chips / attach rows / no deal-name field) plus Deal detail `cursor/live-ff-tip-sep7x` @ `6ca87d007fc60f42469a05017a783dddc8dcd805` (kill e-sign, Markets flush, LOB selector, Quotes empty). Prefer sep7w for Deals / Pipeline list. Prefer sep7x for `/deals/[id]`. No sidebar / schema / seed. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `2555bf3`.
 

@@ -183,56 +183,89 @@
   box-shadow: var(--ff-shadow);
 }
 
-/* Pipeline band pair: same chrome. Activity is 24px in from the page edge. */
-.deal-today-strip,
+/* Attach stays a compact left card. Activity strip is open to the page — no panel fill. */
+.deal-today-strip {
+  width: max-content;
+  max-width: 100%;
+  min-height: 120px;
+  overflow: visible;
+  padding: 4px 4px 16px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+.deal-today-heading {
+  width: 100%;
+}
+.deal-today-chips {
+  overflow: visible;
+}
+
+/* Colored 3D chip boxes — 4px max radius, raised depth, soft shadow. Hover lifts clear. */
+.deal-today-chip {
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background-color: var(--chip-mid);
+  background-image: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    var(--chip-top) 14%,
+    var(--chip-mid) 52%,
+    var(--chip-bottom) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--chip-fg) 26%, transparent);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  border-bottom-color: color-mix(in srgb, var(--chip-fg) 40%, var(--chip-bottom));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 8px 10px rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 color-mix(in srgb, var(--chip-fg) 18%, transparent),
+    0 3px 0 color-mix(in srgb, var(--chip-bottom) 55%, #101c34),
+    0 6px 10px rgba(16, 28, 52, 0.18);
+  transition:
+    transform 170ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 170ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.deal-today-chip:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.98),
+    inset 0 8px 10px rgba(255, 255, 255, 0.42),
+    inset 0 -3px 0 color-mix(in srgb, var(--chip-fg) 20%, transparent),
+    0 8px 0 color-mix(in srgb, var(--chip-bottom) 55%, #101c34),
+    0 16px 22px rgba(16, 28, 52, 0.28);
+}
+.deal-today-chip[data-on="1"] {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 8px 10px rgba(255, 255, 255, 0.38),
+    inset 0 -3px 0 color-mix(in srgb, var(--chip-fg) 20%, transparent),
+    0 0 0 2px var(--chip-fg),
+    0 3px 0 color-mix(in srgb, var(--chip-bottom) 55%, #101c34),
+    0 6px 10px rgba(16, 28, 52, 0.18);
+}
+
+/* Attach: compact ~120px card. Trash stays on the document row — never margin-auto into the gap. */
 [data-testid="deal-docs-upload"] {
+  height: 120px;
+  overflow: hidden;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-sizing: border-box;
 }
-.deal-today-strip {
-  width: max-content;
-  max-width: 100%;
-  height: 120px;
-  margin-left: 24px;
-  overflow: hidden;
-  padding: 4px;
-}
-.deal-today-heading {
-  width: 100%;
-}
-
-/* 36px chips — no fill, 4px max radius, thin border, soft shadow. Hover lift 4px. */
-.deal-today-chip {
-  height: 36px;
-  box-sizing: border-box;
-  border-radius: 4px;
-  background: none;
-  background-color: transparent;
-  background-image: none;
-  border: 1px solid color-mix(in srgb, var(--chip-fg) 28%, transparent);
-  box-shadow: 0 1px 3px rgba(16, 28, 52, 0.14);
-  transition:
-    transform 150ms ease,
-    box-shadow 150ms ease;
-}
-.deal-today-chip:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(16, 28, 52, 0.22);
-}
-.deal-today-chip[data-on="1"] {
-  box-shadow:
-    0 0 0 1px var(--chip-fg),
-    0 1px 3px rgba(16, 28, 52, 0.14);
-}
-
-/* Attach matches the activity strip: ~120px, single inline row. */
-[data-testid="deal-docs-upload"] {
-  height: 120px;
-}
 [data-testid="deal-docs-upload"] .ff-file-choose {
   height: 2.25rem;
+}
+[data-testid="deal-docs-upload"] .ff-file-delete {
+  margin-left: 0;
+}
+[data-testid="deal-docs-upload"] .deal-doc-row {
+  width: fit-content;
+  max-width: 100%;
 }
 
 /* Shared type scale — whole desk one step up; helper/caption stay readable. */

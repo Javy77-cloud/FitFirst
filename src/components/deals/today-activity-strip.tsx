@@ -29,7 +29,7 @@ export function TodayActivityStrip({
   const dated = formatTodayActivityDate(now);
   return (
     <aside
-      className="deal-today-strip ff-card inline-grid max-w-full justify-items-center"
+      className="deal-today-strip inline-grid max-w-full justify-items-center bg-transparent"
       data-testid="deal-today-activity"
     >
       <div className="deal-today-heading flex w-full flex-col items-center justify-center text-center">
@@ -49,7 +49,7 @@ export function TodayActivityStrip({
           {dated}
         </p>
       </div>
-      <div className="mt-1 flex flex-nowrap items-center justify-center gap-2">
+      <div className="deal-today-chips mt-2 flex flex-nowrap items-center justify-center gap-2 overflow-visible">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -61,6 +61,9 @@ export function TodayActivityStrip({
               className="deal-today-chip inline-flex shrink-0 items-center gap-1.5 px-2.5"
               style={{
                 color: tone.chipFg,
+                ["--chip-top" as string]: tone.chipBgLight,
+                ["--chip-mid" as string]: tone.chipBg,
+                ["--chip-bottom" as string]: tone.chipBgDark,
                 ["--chip-fg" as string]: tone.chipFg,
               }}
               data-on={on ? "1" : "0"}
