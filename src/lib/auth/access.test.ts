@@ -101,6 +101,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/api/portal/harbor-key-2026/files/x")).toBe(true);
     expect(isPublicPath("/sign/idesk-demo")).toBe(true);
     expect(isPublicPath("/api/sign/idesk-demo/file")).toBe(true);
+    expect(isPublicPath("/ff-sheet.js")).toBe(true);
+    expect(isPublicPath("/ff-softphone.js")).toBe(true);
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/settings")).toBe(false);
     expect(adminRedirectPath()).toContain("admin-only");
