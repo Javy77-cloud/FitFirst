@@ -4,18 +4,34 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ar`)
+## Mac test now (`cursor/live-ff-tip-sep7av`)
 
-Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` keeps the real server `action` and confirms **once** via `onClickCapture` + `confirmHardDelete` (cancel `preventDefault` / `stopPropagation`). `FileDeleteIcon` has no `name` / `formAction`. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `2cbb5fb`.
+Learning data pipeline only, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. **New infrastructure.** Do not merge Deal Details (sep7as) or extraction maps (sep7at). Three layers: **raw tenant** (documents / extractions / corrections never leave the agency), **anonymize** (strips names, addresses, policy numbers, FEINs, phones, emails — keeps source label, field type, form version, carrier, mapping correction), **global pool** (admin-only, anonymized records). Consent checkbox on `/onboarding/purchase` is **dormant / unchecked**. Global pool writes stay blocked unless a consent record exists **and** `LEARNING_POOL_CONSENT_LIVE` is on (default off). Seed library is a fixture catalog (400-row capacity). Additive migrate `0081_learning_pipeline` — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `9c43360`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7ar && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7av && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
+
+### AV — Learning pipeline (this tip)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AV1 | Three layers | `src/lib/learning-pipeline/{raw,anonymize,pool}` exist. Raw never exports outside the tenant. Pool is admin-only. |
+| AV2 | Consent storage | Record has agency / tenant id, timestamp, terms version. Default opt-out (no row = decline). Checkbox default unchecked. |
+| AV3 | Pool gate | `writeAnonymizedToGlobalPool` refuses without consent **and** `LEARNING_POOL_CONSENT_LIVE`. Flag default off. |
+| AV4 | LEGAL todos | Onboarding module and anonymization service carry the `TODO(LEGAL)` markers. |
+| AV5 | Anonymize tests | PII fields stripped; source label / field type / form version / carrier / mapping kept. |
+| AV6 | Additive only | No Deal detail, Pipeline, sidebar, or `db:seed` changes. |
+
+## Prior tip (`cursor/live-ff-tip-sep7ar`)
+
+Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` keeps the real server `action` and confirms **once** via `onClickCapture` + `confirmHardDelete` (cancel `preventDefault` / `stopPropagation`). `FileDeleteIcon` has no `name` / `formAction`. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `2cbb5fb`.
+
 
 Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
