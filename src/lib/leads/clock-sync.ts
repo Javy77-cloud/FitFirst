@@ -12,13 +12,26 @@ type Listener = (patch: LeadClockPatch) => void;
 const listeners = new Set<Listener>();
 const byLead = new Map<string, LeadClockPatch>();
 
-export function publishLeadClock(patch: LeadClockPatch) {
-  if (!patch.leadId) return;
-  byLead.set(patch.leadId, patch);
-  for (const listener of listeners) listener(patch);
+export function publishLeadClock(patch: LeadClockPatch | null | undefined) {
+  if (!patch?.leadId) return;
+  const next: LeadClockPatch = {
+    leadId: patch.leadId,
+    dueAt: patch.dueAt ?? null,
+    followUpName: patch.followUpName ?? null,
+    done: Boolean(patch.done),
+  };
+  byLead.set(next.leadId, next);
+  for (const listener of listeners) {
+    try {
+      listener(next);
+    } catch {
+      /* one row must not take down the table */
+    }
+  }
 }
 
-export function peekLeadClock(leadId: string): LeadClockPatch | null {
+export function peekLeadClock(leadId: string | null | undefined): LeadClockPatch | null {
+  if (!leadId) return null;
   return byLead.get(leadId) ?? null;
 }
 

@@ -64,10 +64,11 @@ function triggerOptions() {
   return [...seeded, ...extra];
 }
 
-export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTemplateView[] }) {
+export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemplateView[] | null }) {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
 
+  const list = Array.isArray(templates) ? templates.filter((row) => row?.id) : [];
   const editing =
     editingId === "new"
       ? {
@@ -77,11 +78,11 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
           enabled: true,
           steps: [],
         }
-      : templates.find((row) => row.id === editingId) ?? null;
+      : list.find((row) => row.id === editingId) ?? null;
 
   const stepDefaults = editing
     ? [0, 1, 2, 3].map((index) => {
-        const step = dedupeFollowUpSteps(editing.steps)[index];
+        const step = dedupeFollowUpSteps(editing.steps ?? [])[index];
         const fallback = EMPTY_STEP_DEFAULTS[index];
         return {
           method: step?.method || fallback.method,
@@ -247,11 +248,11 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                 <Button type="button" size="sm" onClick={() => setEditingId("new")}>
                   New template
                 </Button>
-                {templates.length === 0 ? (
+                {list.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No templates yet.</p>
                 ) : (
                   <ul className="space-y-2">
-                    {templates.map((template) => (
+                    {list.map((template) => (
                       <li key={template.id} className="rounded-md border border-border bg-card p-3">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div>
@@ -283,7 +284,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates: FollowUpTempl
                           </div>
                         </div>
                         <ol className="mt-2 space-y-1 text-xs text-muted-foreground">
-                          {dedupeFollowUpSteps(template.steps).map((step) => (
+                          {dedupeFollowUpSteps(template.steps ?? []).map((step) => (
                             <li key={step.id}>
                               {step.method} · {step.delayAmount}{" "}
                               {FOLLOW_UP_DELAY_UNIT_LABELS[

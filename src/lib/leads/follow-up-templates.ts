@@ -171,13 +171,20 @@ export function isDefaultFollowUpTrigger(value: string | null | undefined): bool
 export function isDefaultFollowUpTemplate(template: {
   name?: string | null;
   triggerStatus?: string | null;
-}): boolean {
+} | null | undefined): boolean {
+  if (!template) return false;
   if (isDefaultFollowUpTrigger(template.triggerStatus)) return true;
   return (template.name ?? "").trim().toLowerCase() === "default";
 }
 
-export function findDefaultFollowUpTemplate<T extends FollowUpTemplateRecord>(templates: T[]): T | null {
-  const enabled = templates.filter((row) => row.enabled);
+function asTemplateList<T>(templates: T[] | null | undefined): T[] {
+  return Array.isArray(templates) ? templates.filter((row): row is T => row != null) : [];
+}
+
+export function findDefaultFollowUpTemplate<T extends FollowUpTemplateRecord>(
+  templates: T[] | null | undefined,
+): T | null {
+  const enabled = asTemplateList(templates).filter((row) => row.enabled !== false);
   return (
     enabled.find((row) => row.triggerStatus === DEFAULT_FOLLOW_UP_TRIGGER) ??
     enabled.find((row) => isDefaultFollowUpTemplate(row)) ??
@@ -209,10 +216,11 @@ export function canStartFollowUpClock(status: string | null | undefined): boolea
 }
 
 export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
-  templates: T[],
-  lead: { followUpTemplateId?: string | null; status: string },
+  templates: T[] | null | undefined,
+  lead: { followUpTemplateId?: string | null; status?: string | null } | null | undefined,
 ): T | null {
-  const enabled = templates.filter((row) => row.enabled);
+  const enabled = asTemplateList(templates).filter((row) => row.enabled !== false && row.id);
+  if (!lead) return null;
   if (lead.followUpTemplateId) {
     const override = enabled.find((row) => row.id === lead.followUpTemplateId);
     if (override && !isDefaultFollowUpTemplate(override)) return override;
@@ -222,7 +230,13 @@ export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
     return findDefaultFollowUpTemplate(enabled);
   }
   if (!isClockTriggerStatus(status)) return null;
-  return enabled.find((row) => row.triggerStatus === status) ?? null;
+  const boundName = CLOCK_TRIGGER_STATUSES[status];
+  return (
+    enabled.find((row) => normalizeClockStatus(row.triggerStatus) === status) ??
+    enabled.find((row) => followUpTemplateChipName(row) === boundName) ??
+    enabled.find((row) => (row.name ?? "").trim() === boundName) ??
+    null
+  );
 }
 
 /** Hold when the status has no bound template and there is no override. */
@@ -233,12 +247,18 @@ export function shouldHoldFollowUpUntilFirstContact(lead: {
   return !canStartFollowUpClock(lead.status);
 }
 
-export function dedupeFollowUpSteps<T extends { id: string; sortOrder: number }>(steps: T[]): T[] {
+export function dedupeFollowUpSteps<T extends { id?: string | null; sortOrder?: number | null }>(
+  steps: T[] | null | undefined,
+): Array<T & { id: string; sortOrder: number }> {
+  const list = Array.isArray(steps) ? steps : [];
   const seen = new Set<string>();
-  return [...steps]
+  return list
+    .filter((step): step is T & { id: string; sortOrder: number } =>
+      Boolean(step && step.id && Number.isFinite(step.sortOrder)),
+    )
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .filter((step) => {
-      if (!step.id || seen.has(step.id)) return false;
+      if (seen.has(step.id)) return false;
       seen.add(step.id);
       return true;
     })
@@ -246,12 +266,13 @@ export function dedupeFollowUpSteps<T extends { id: string; sortOrder: number }>
 }
 
 export function nextTemplateStep<T extends { id?: string; sortOrder: number }>(
-  steps: T[],
+  steps: T[] | null | undefined,
   afterSortOrder = -1,
 ): T | null {
-  const unique = steps.some((step) => step.id)
-    ? dedupeFollowUpSteps(steps.filter((step): step is T & { id: string } => Boolean(step.id)))
-    : [...steps].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, MAX_FOLLOW_UP_STEPS);
+  const list = Array.isArray(steps) ? steps.filter((step) => step != null) : [];
+  const unique = list.some((step) => step.id)
+    ? dedupeFollowUpSteps(list.filter((step): step is T & { id: string } => Boolean(step?.id)))
+    : [...list].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, MAX_FOLLOW_UP_STEPS);
   return unique.find((step) => step.sortOrder > afterSortOrder) ?? null;
 }
 
@@ -288,21 +309,25 @@ export function shouldShowFollowUpModal(
 }
 
 export function followUpTemplateChipName(template: {
-  name: string;
-  triggerStatus: string;
-}): string {
+  name?: string | null;
+  triggerStatus?: string | null;
+} | null | undefined): string {
+  if (!template) return "";
   if (isDefaultFollowUpTemplate(template)) return "Default";
-  const trigger = TEMPLATE_TRIGGER_STATUSES.find((row) => row.value === template.triggerStatus);
+  const trigger = TEMPLATE_TRIGGER_STATUSES.find(
+    (row) => row.value === normalizeClockStatus(template.triggerStatus),
+  );
   if (trigger) return trigger.templateName;
-  return template.name;
+  return (template.name ?? "").trim();
 }
 
 export function followUpTemplateFullName(template: {
-  name: string;
-  triggerStatus: string;
-}): string {
+  name?: string | null;
+  triggerStatus?: string | null;
+} | null | undefined): string {
+  if (!template) return "";
   const chip = followUpTemplateChipName(template);
-  return template.name.trim() || chip;
+  return (template.name ?? "").trim() || chip;
 }
 
 export function outboundStubLabel(method: FollowUpMethod): string {

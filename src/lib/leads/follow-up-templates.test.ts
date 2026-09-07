@@ -77,6 +77,18 @@ describe("follow-up templates", () => {
     expect(canStartFollowUpClock("warm")).toBe(true);
     expect(canStartFollowUpClock("cold")).toBe(true);
     expect(canStartFollowUpClock("qualified")).toBe(false);
+    expect(pickTemplateForLead(undefined, { status: "new" })).toBeNull();
+    expect(pickTemplateForLead(null, { status: "new" })).toBeNull();
+    expect(pickTemplateForLead([hot, warm, cold, contactedDefault], null)).toBeNull();
+    expect(
+      pickTemplateForLead([{ id: "hot", name: "Aggressive", triggerStatus: "new" } as never], {
+        status: "new",
+      })?.id,
+    ).toBe("hot");
+    expect(followUpTemplateChipName(undefined)).toBe("");
+    expect(followUpTemplateFullName({ name: null, triggerStatus: "new" })).toBe("Aggressive");
+    expect(dedupeFollowUpSteps(undefined)).toEqual([]);
+    expect(nextTemplateStep(undefined)).toBeNull();
   });
 
   it("starts the clock from status alone — new does not wait for a contact stamp or Aggressive pick", () => {

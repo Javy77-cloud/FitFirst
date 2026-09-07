@@ -18,9 +18,10 @@ export function LeadsQueueToolbar({
 }: {
   sources: { value: string; label: string }[];
   haystacks: string[];
-  templates: FollowUpTemplateView[];
+  templates?: FollowUpTemplateView[] | null;
   dueCount: number;
 }) {
+  const templateList = Array.isArray(templates) ? templates : [];
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -105,7 +106,7 @@ export function LeadsQueueToolbar({
           </button>
         ))}
       </div>
-      <FollowUpTemplatesPanel templates={templates} />
+      <FollowUpTemplatesPanel templates={templateList} />
       {dueCount > 0 ? (
         <a href="/tasks" className="text-xs font-medium text-primary hover:underline">
           {dueCount === 1 ? "1 follow-up due" : `${dueCount} follow-ups due`}

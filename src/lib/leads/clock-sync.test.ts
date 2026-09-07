@@ -16,4 +16,9 @@ describe("lead clock sync", () => {
     publishLeadClock({ leadId: "lead-1", dueAt: null, followUpName: "" });
     expect(seen).toEqual(["lead-1:2026-09-06T12:05:00.000Z:Default"]);
   });
+
+  it("ignores a missing patch so one row cannot crash the table", () => {
+    expect(() => publishLeadClock(undefined)).not.toThrow();
+    expect(() => publishLeadClock({ leadId: "", dueAt: null })).not.toThrow();
+  });
 });

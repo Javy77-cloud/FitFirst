@@ -20,6 +20,7 @@ import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
 import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
 import { resetLeadsWithoutLoggedContact } from "@/lib/leads/reset-untouched";
 import {
+  dueAtMs,
   isLeadOnQueue,
   isParkedFromDefaultLeadsView,
   matchesLeadQueueFilters,
@@ -51,7 +52,11 @@ export default async function LeadsPage({
   const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
-  const [all, templates] = await Promise.all([listLeads(), listFollowUpTemplates()]);
+  const [all, loadedTemplates] = await Promise.all([
+    listLeads(),
+    listFollowUpTemplates().catch(() => []),
+  ]);
+  const templates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
   const queue = sortLeadQueue(all.filter((lead) => isLeadOnQueue(lead)));
   const rows = queue.filter((lead) =>
     matchesLeadQueueFilters(
@@ -63,19 +68,26 @@ export default async function LeadsPage({
       filter,
     ),
   );
-  const followUps = await listLeadFollowUps(rows.map((lead) => lead.id));
-  const dueCount = followUps.filter((row) => row.status === "queued" && row.dueAt.getTime() <= Date.now()).length;
+  const followUps = await listLeadFollowUps(rows.map((lead) => lead.id)).catch(() => []);
+  const dueCount = followUps.filter((row) => {
+    if (row.status !== "queued") return false;
+    const ms = dueAtMs(row.dueAt);
+    return ms != null && ms <= Date.now();
+  }).length;
   const nextByLead = new Map<string, Date>();
   const releasedByLead = new Map<string, Date>();
   const finishedByLead = new Set<string>();
   for (const item of followUps) {
+    const dueMs = dueAtMs(item.dueAt);
+    const due = dueMs == null ? null : new Date(dueMs);
+    if (!due) continue;
     if (item.status === "queued") {
       const current = nextByLead.get(item.leadId);
-      if (!current || item.dueAt < current) nextByLead.set(item.leadId, item.dueAt);
+      if (!current || due < current) nextByLead.set(item.leadId, due);
     }
     if (item.status === "released") {
       const current = releasedByLead.get(item.leadId);
-      if (!current || item.dueAt > current) releasedByLead.set(item.leadId, item.dueAt);
+      if (!current || due > current) releasedByLead.set(item.leadId, due);
     }
     if (item.status === "completed") finishedByLead.add(item.leadId);
   }
@@ -185,6 +197,7 @@ export default async function LeadsPage({
                   followUpTemplateId: lead.followUpTemplateId,
                   status,
                 });
+                const followUpName = picked ? followUpTemplateChipName(picked) : "";
                 return {
                   key: lead.id,
                   id: lead.id,
@@ -196,7 +209,7 @@ export default async function LeadsPage({
                     source: sourceLabel(lead.source),
                     timer: nextDue ? String(nextDue.getTime()) : "0",
                     heat: lead.temperature ?? "hot",
-                    followUp: picked ? followUpTemplateChipName(picked) : "",
+                    followUp: followUpName,
                     shop: lead.convertedDealId ? "open" : "convert",
                   },
                   cells: {
@@ -230,7 +243,8 @@ export default async function LeadsPage({
                           leadId={lead.id}
                           templateId={lead.followUpTemplateId}
                           templates={templates}
-                          resolvedName={picked ? followUpTemplateChipName(picked) : "—"}
+                          resolvedName={followUpName || "—"}
+                          resolvedTemplateId={picked?.id ?? ""}
                         />
                         {nextDue ? (
                           <div className="text-[11px] text-muted-foreground">

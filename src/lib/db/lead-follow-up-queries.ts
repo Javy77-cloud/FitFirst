@@ -23,7 +23,7 @@ export type FollowUpTemplateWithSteps = {
 };
 
 export async function listFollowUpTemplates(): Promise<FollowUpTemplateWithSteps[]> {
-  await ensureFollowUpPlaybooks();
+  await ensureFollowUpPlaybooks().catch(() => null);
   const [templates, steps] = await Promise.all([
     db
       .select()

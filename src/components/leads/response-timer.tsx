@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { releaseDueLeadFollowUpsNow } from "@/app/actions/lead-follow-up";
-import { subscribeLeadClock } from "@/lib/leads/clock-sync";
+import { peekLeadClock, subscribeLeadClock } from "@/lib/leads/clock-sync";
 import { formatCountdownClock, responseTimerState } from "@/lib/leads/queue";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +33,14 @@ export function ResponseTimer({
 
   useEffect(() => {
     if (!leadId) return;
+    const peek = peekLeadClock(leadId);
+    if (peek) {
+      setLocalDue(peek.dueAt ?? null);
+      setLocalDone(Boolean(peek.done) && !peek.dueAt);
+    }
     return subscribeLeadClock((patch) => {
-      if (patch.leadId !== leadId) return;
-      setLocalDue(patch.dueAt);
+      if (!patch || patch.leadId !== leadId) return;
+      setLocalDue(patch.dueAt ?? null);
       setLocalDone(Boolean(patch.done) && !patch.dueAt);
     });
   }, [leadId]);
@@ -56,7 +61,8 @@ export function ResponseTimer({
 
   useEffect(() => {
     if (!localDue || now === null || fired.current) return;
-    if (now < new Date(localDue).getTime()) return;
+    const dueMs = new Date(localDue).getTime();
+    if (!Number.isFinite(dueMs) || now < dueMs) return;
     fired.current = true;
     void releaseDueLeadFollowUpsNow().then(() => {
       router.refresh();

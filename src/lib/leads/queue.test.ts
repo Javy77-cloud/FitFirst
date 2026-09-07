@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatCountdownClock,
   formatElapsedClock,
+  dueAtMs,
   toIsoString,
   isConvertedLead,
   isLeadOnQueue,
@@ -129,6 +130,9 @@ describe("response timer", () => {
     expect(toIsoString("2026-09-06T12:30:00.000Z")).toBe("2026-09-06T12:30:00.000Z");
     expect(toIsoString(null)).toBeNull();
     expect(toIsoString("not-a-date")).toBeNull();
+    expect(dueAtMs(due)).toBe(due.getTime());
+    expect(dueAtMs(null)).toBeNull();
+    expect(dueAtMs("not-a-date")).toBeNull();
   });
 
   it("labels live search matches", () => {
