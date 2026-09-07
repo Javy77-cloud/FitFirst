@@ -14,6 +14,7 @@ import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { TagChips } from "@/components/tags/tag-chips";
+import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTagColors } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
@@ -145,6 +146,19 @@ export default async function PoliciesPage({
               account?.name,
               ...(policy.tags ?? []),
             ]),
+            sort: {
+              pick: "",
+              policy: policy.policyNumber,
+              status: policy.status,
+              party: contact
+                ? `${contact.lastName}, ${contact.firstName}`
+                : (account?.name ?? ""),
+              carrier: carrier?.name ?? "",
+              premium: policy.premium ?? "",
+              expires: policy.expirationDate.toISOString(),
+              esign: policy.esignStatus ?? "",
+              tags: tagSortText(policy.tags),
+            },
             cells: {
               pick: <SelectRowCheckbox id={policy.id} />,
               policy: (

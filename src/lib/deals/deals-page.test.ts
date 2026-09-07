@@ -244,6 +244,7 @@ describe("Deals page sep7h", () => {
     expect(table).toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
     expect(table).toMatch(/DealStageSelect/);
+    expect(table).toMatch(/tags: tagSortText\(deal\.tags\)/);
     expect(table).toMatch(/dealRecordPhone/);
     expect(table).not.toMatch(/comms: ""/);
     expect(table).not.toMatch(/formatInDeskEsignList/);

@@ -17,6 +17,7 @@ import { CLIENT_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { TagChips } from "@/components/tags/tag-chips";
+import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTagColors } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
@@ -115,6 +116,15 @@ export default async function ContactsPage({
             rows={rows.map((c) => ({
               key: c.id,
               hay: haystack([c.firstName, c.lastName, c.email, c.phone, c.city, c.source, c.clientStatus, ...(c.tags ?? [])]),
+              sort: {
+                pick: "",
+                name: `${c.lastName}, ${c.firstName}`,
+                status: c.clientStatus,
+                source: sourceLabel(c.source),
+                lifetime: c.policyCount,
+                inForce: c.activePolicyCount,
+                tags: tagSortText(c.tags),
+              },
               cells: {
                 pick: <SelectRowCheckbox id={c.id} />,
                 name: (

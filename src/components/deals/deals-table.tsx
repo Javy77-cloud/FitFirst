@@ -27,6 +27,7 @@ import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { TagChips } from "@/components/tags/tag-chips";
+import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTagColors } from "@/app/actions/record-tags";
 import { dealsListColumnsFromFields } from "@/lib/list-columns";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
@@ -214,7 +215,7 @@ function dealRowCells({
     value: sheetAttr(value),
     premium: sheetAttr(deal.coverageAmount),
     updated: sheetAttr(deal.updatedAt ? new Date(deal.updatedAt).toISOString() : ""),
-    tags: sheetAttr((deal.tags ?? []).join(", ")),
+    tags: tagSortText(deal.tags),
   };
   const cells: Record<string, ReactNode> = {
     pick: <SelectRowCheckbox id={deal.id} />,
