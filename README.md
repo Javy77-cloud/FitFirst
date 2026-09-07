@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7ag`)
 
-Deal detail only, from `cursor/live-ff-tip-sep7ab` @ `9cf10e3` / tip SHA `18c6ebc`. One checkbox (**I visually reviewed this master sheet.**) and one action (**Confirm & request quotes**) — disabled until the box is ticked, then one click confirms the sheet and shops every in-appetite carrier. Documents · Markets · Quotes sit **flush under the deal header** (`-mt-5` cancels main padding). **Deals has no Quotes subfolder** — Quotes is a deal-detail tab only (`NAV_LAYOUT_VERSION` **9**). No other sidebar change. No Pipeline attach/activity change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+Deal detail only, from `cursor/live-ff-tip-sep7ab` @ `9cf10e3` / tip SHA `18c6ebc`. One checkbox (**I visually reviewed this master sheet.**) and one action (**Confirm & request quotes**) — disabled until the box is ticked, then one click confirms the sheet and shops every in-appetite carrier. Documents · Markets · Quotes sit **flush under the deal header** (`-mt-5` cancels main padding). **Deals has no Quotes subfolder** — Quotes is a deal-detail tab only (`NAV_LAYOUT_VERSION` **9**). No other sidebar change. No Pipeline attach/activity change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `dcfeae7`.
 
 ```bash
 cd ~/FitFirst
