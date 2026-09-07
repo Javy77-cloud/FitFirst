@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
+import { sourceTag } from "@/lib/quote-sheet/apply";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
@@ -189,7 +190,6 @@ function SheetGroup({
   title,
   groupFields,
   values,
-  extractedByKey,
 }: {
   title: string;
   groupFields: ReturnType<typeof fieldsForLine>;
@@ -211,14 +211,15 @@ function SheetGroup({
         </thead>
         <tbody>
           {asList(groupFields).map((field) => {
-            const extracted = extractedByKey.get(field.key) ?? extractedByKey.get(field.extractKey ?? "");
             const cell = values[field.key];
             const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
-            const sourceText = extracted?.normalizedValue || extracted?.rawValue || "";
+            const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "—";
             return (
               <tr key={field.key} id={`sheet-field-${field.key}`}>
                 <td className="align-top font-medium">{field.label}</td>
-                <td className="align-top text-muted-foreground">{sourceText || "—"}</td>
+                <td className="align-top text-muted-foreground" data-ff-sheet-source={field.key}>
+                  {sourceText}
+                </td>
                 <td className="align-top">
                   <SheetCell fieldKey={field.key} input={field.input} cell={cell} />
                   {cell?.status && filled ? (

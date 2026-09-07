@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7az`)
+## Mac test now (`cursor/live-ff-tip-sep7cd`)
+
+Master sheet parser **synonym dictionary** for dec / 4-point / wind mitigation / related insured docs. The extractor matches the printed label (or an alternate the form actually uses), then takes the value after the first colon, dash, or equals — **never the label or the question text**. Empty after the delimiter stays **yellow and blank**. When two synonyms hit the same line, the longer, more specific phrase wins. Every filled cell’s Source column shows **4pt inspection**, **dec page**, **wind mitigation**, or **related insured**. Upload UI, Confirm buttons, and every page outside the master sheet stay theirs. No Pipeline List/Grid work. No `db:seed`. Ana unbound. Cov A **$321,000**.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7cd-63a0 && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Deals → any deal → Documents → Master sheet**. Fill from a dec / 4-point / wind mit (or an existing source doc). Applicant, property, roof, and coverage cells should show real values (`Ana Unbound`, `$321,000`, `hip`) — not question text like “activities” or “what is the roof shape”. A label with nothing after the colon stays yellow and empty. Source column reads **dec page**, **4pt inspection**, or **wind mitigation**. Do not bind or edit Ana Cov A (**$321,000**).
+
+### CD — Synonym dictionary + value-after-delimiter
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| CD1 | Synonym match | “Applicant's Legal Name”, “Residence Premises”, “Coverage A – Dwelling”, “Roof Surfacing Material” land on the right master-sheet fields. |
+| CD2 | Value after delimiter | Value is whatever follows `:`, `-`, or `=`. Checkbox marks (`☐`, `[ ]`) are stripped. The label never becomes the value. |
+| CD3 | Yellow blank | “Roof Shape:” or “Roof Shape: what is the roof shape” stays blank and yellow. “activities” never lands as a value. |
+| CD4 | Longer synonym | “Construction Type: Frame” is construction=`Frame`, not `Type`. “Roof Deck Attachment” beats “Roof Deck”. |
+| CD5 | Source tags | Source column shows **4pt inspection**, **dec page**, or **wind mitigation** — not the pulled snippet. |
+| CD6 | Scope | Upload UI, Confirm extracted, and pages outside the master sheet unchanged. No `db:seed`. Ana unbound. Cov A **$321,000**. |
+
+## Previous tip (`cursor/live-ff-tip-sep7az`)
 
 Platform-wide **FedEx address autocomplete** plus a **site-developer API vault**, merged from `cursor/live-ff-tip-sep7ca-59d4` onto the desk tip. Every address field (Lead, Deal, Contact, Business, Policy, Quote Sheet, Settings, custom Address-type fields) uses one `AddressAutocomplete` control. Without a configured FedEx key the field is plain text — no stub that pretends FedEx works. With a key: typeahead → select/confirm fills street, city, state, ZIP and marks confirmed.
 

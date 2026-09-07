@@ -8,6 +8,8 @@ export type ExtractedInput = {
   fieldKey: string;
   normalizedValue: string;
   sourceLabel?: string;
+  sourceDocTag?: string;
+  blankAfterMatch?: boolean;
 };
 
 export type PublicFact = {
@@ -44,15 +46,20 @@ export function isPublicRecordsSource(field?: QuoteSheetFieldValue | null): bool
   return field?.source === "public" || field?.source === "public-records";
 }
 
+function cellSourceDocument(item: Pick<ExtractedInput, "sourceLabel" | "sourceDocTag">, source: string): string {
+  return item.sourceLabel || item.sourceDocTag || (source === "photo-ocr" ? "Photo" : "dec page");
+}
+
 /** Desk label for a cell source — dec/photo beat public records. */
 export function sourceTag(cell: QuoteSheetFieldValue): string | null {
   if (cell.source === "javy") return "Javy-tested";
+  if (cell.sourceLabel) return cell.sourceLabel;
   if (!cell.value.trim() && cell.status === "missing") return null;
   if (cell.source === "photo-ocr") {
     return cell.status === "check" ? "CHECK · photo-OCR" : "photo-OCR";
   }
   if (cell.source === "extracted") {
-    return cell.status === "check" ? "CHECK · dec" : "dec";
+    return cell.status === "check" ? "CHECK · dec page" : "dec page";
   }
   if (cell.source === "public" || cell.source === "public-records") {
     return cell.status === "check" ? "CHECK · public" : "public";
@@ -89,12 +96,18 @@ export function applyExtractedToSheet(
       continue;
     }
     const nextValue = String(item.normalizedValue ?? "").trim();
-    if (!nextValue) continue;
+    const sourceLabel = cellSourceDocument(item, source);
+    if (!nextValue) {
+      if (item.blankAfterMatch && fieldIsBlank(current)) {
+        values[key] = { value: "", status: "missing", source: "blank", sourceLabel };
+      }
+      continue;
+    }
     values[key] = {
       value: nextValue,
       status: "check",
       source,
-      sourceLabel: item.sourceLabel ?? (source === "photo-ocr" ? "Photo" : "Uploaded dec"),
+      sourceLabel,
     };
     filledKeys.push(key);
   }

@@ -11,6 +11,13 @@ import {
   isBlockedExtractKey,
   looksLikeSsn,
 } from "./labels";
+import {
+  bestSynonymValues,
+  inferSourceDocKind,
+  isUnusableExtractValue,
+  sourceDocumentTag,
+  synonymFieldKeys,
+} from "./synonyms";
 
 export type ExtractedField = {
   fieldKey: string;
@@ -20,6 +27,10 @@ export type ExtractedField = {
   confidence: number;
   flagged: boolean;
   source: "labeled" | "inferred" | "uncertain";
+  /** dec page / 4pt inspection / wind mitigation / related insured */
+  sourceDocTag?: string;
+  /** Synonym matched with no usable value — sheet cell stays yellow/blank. */
+  blankAfterMatch?: boolean;
 };
 
 export type UnmappedExtractLabel = {
@@ -377,7 +388,23 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
   const byKey = new Map<string, ExtractedField>();
   text = normalizeExtractText(text);
   const mapType = inferFieldMapDocType(text, docType);
+  const sourceDocTag = sourceDocumentTag(inferSourceDocKind(text, docType));
   const unmappedLabels: UnmappedExtractLabel[] = [];
+  const synonymKeys = new Set<string>();
+
+  for (const hit of bestSynonymValues(text).values()) {
+    if (isBlockedExtractKey(hit.fieldKey) || looksLikeSsn(hit.value)) continue;
+    synonymKeys.add(hit.fieldKey);
+    if (hit.blank) {
+      byKey.set(hit.fieldKey, blankSynonymField(hit.fieldKey, sourceDocTag, quality.penalty));
+      continue;
+    }
+    const built = toField(hit.fieldKey, hit.value, normalizerFor(hit.fieldKey), quality.penalty);
+    if (built) {
+      built.sourceDocTag = sourceDocTag;
+      byKey.set(hit.fieldKey, built);
+    }
+  }
 
   const labeled = mapType
     ? fromMappedLines(text, mapType, quality.penalty, unmappedLabels)
@@ -385,24 +412,43 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
 
   const patterned = fromPatterns(text, quality.penalty);
   const allowed = mapType ? sheetFieldsForDocType(mapType) : null;
+  const synonymAllowed = synonymFieldKeys();
 
   for (const field of [...patterned, ...labeled]) {
     if (isBlockedExtractKey(field.fieldKey) || looksLikeSsn(field.rawValue)) continue;
-    if (allowed && !allowed.has(field.fieldKey)) continue;
+    if (isUnusableExtractValue(field.rawValue) || isUnusableExtractValue(field.normalizedValue)) continue;
+    if (synonymKeys.has(field.fieldKey)) continue;
+    if (allowed && !allowed.has(field.fieldKey) && !synonymAllowed.has(field.fieldKey)) continue;
+    field.sourceDocTag = sourceDocTag;
     const existing = byKey.get(field.fieldKey);
     if (!existing || field.confidence > existing.confidence) {
       byKey.set(field.fieldKey, field);
     }
   }
 
-  const fields = [...byKey.values()];
+  const fields = [...byKey.values()].map((field) => ({ ...field, sourceDocTag: field.sourceDocTag ?? sourceDocTag }));
   return {
     fields,
     documentQuality: quality.messy ? "messy" : "clean",
     qualityNotes: quality.notes,
-    glanceRequired: fields.some((f) => f.flagged) || unmappedLabels.length > 0,
+    glanceRequired: fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0,
     unmappedLabels,
     fieldMapDocType: mapType,
+  };
+}
+
+function blankSynonymField(key: string, sourceDocTag: string, penalty: number): ExtractedField {
+  const confidence = clamp(0.4 - penalty, 0.05, 0.99);
+  return {
+    fieldKey: key,
+    label: EXTRACT_LABELS[key] ?? key.replaceAll("_", " "),
+    rawValue: "",
+    normalizedValue: "",
+    confidence: round3(confidence),
+    flagged: true,
+    source: "uncertain",
+    sourceDocTag,
+    blankAfterMatch: true,
   };
 }
 
@@ -429,6 +475,7 @@ function fromLabeledLines(text: string, penalty: number): ExtractedField[] {
     if (!key || isBlockedExtractKey(key)) continue;
     const rawValue = match[2].trim();
     if (!rawValue || looksLikeSsn(rawValue)) continue;
+    if (isUnusableExtractValue(rawValue, match[1])) continue;
     const built = toField(key, rawValue, normalizerFor(key), penalty);
     if (built) fields.push(built);
   }
@@ -451,6 +498,7 @@ function fromMappedLines(
     const sourceLabel = match[1].trim();
     const rawValue = match[2].trim();
     if (!rawValue || looksLikeSsn(rawValue)) continue;
+    if (isUnusableExtractValue(rawValue, sourceLabel)) continue;
     const key = lookupSheetField(docType, sourceLabel);
     if (!key) {
       if (!isBlockedExtractKey(normalizeBlocked(sourceLabel))) {
@@ -551,6 +599,12 @@ function normalizerFor(key: string): (raw: string) => string {
   }
   if (key === "flood_zone") return (s) => s.trim().toUpperCase();
   if (key === "named_insured" || key === "mortgagee") return (s) => s.replace(/\s+/g, " ").trim();
+  if (key === "phone") return (s) => s.replace(/\s+/g, " ").trim();
+  if (key === "email") return (s) => s.replace(/\s+/g, "").trim();
+  if (key === "dob") return (s) => s.replace(/\s+/g, " ").trim();
+  if (key === "entity_type" || key === "roof_deck_attachment" || key === "terrain" || key === "wind_speed") {
+    return (s) => s.replace(/\s+/g, " ").trim();
+  }
   return (s) => s.replace(/\s+/g, " ").trim();
 }
 
