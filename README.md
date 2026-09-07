@@ -4,7 +4,34 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7az`)
+## Mac test now (`cursor/live-ff-tip-sep7bb`)
+
+Documents / tags / Markets only, from `cursor/live-ff-tip-sep7az` @ `270eebf` / tip SHA `911111b`. Separate crew from the field-builder tip — do not touch `/settings/field-builder`, Pipeline, Quotes, Deal Details strip, or file-action menus beyond tag color display. Documents tab gets a **Fit to screen / 100%** zoom toggle (default **fit**, PDF-viewer style, session-persisted) so the tab content stays in the viewport. Tags get a color picker on create, an edit control on existing chips, and the chosen color on every chip (deal rail, lists, settings). Markets with no carriers and no lookup is **blank** — no "In appetite", no empty buckets, no placeholder copy. Populated Markets still shows the real appetite / stretch / skip tables. Additive migrate **0084_tag_colors** only — do not `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bb && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh, open **Ana Dib** (unbound, do not bind). **Documents**: toggle Fit to screen / 100% — fit mode should not scroll the tab. **Tags** on the 300px rail: create a tag with a color, then edit the color; confirm the chip color on Deals / Leads / Contacts / Policies lists. **Markets** on a deal with no carriers: the tab is empty (no "In appetite"). Add a carrier or open a deal that already has a lookup — appetite UI returns. Do not bind or edit Ana (Cov A **$321,000**).
+
+### BB — Documents zoom, tag colors, blank Markets
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BB1 | Documents zoom | Documents tab has **Fit to screen / 100%**. Fit is the default (PDF-viewer style). Fit mode keeps tab content in the viewport without page scroll. Toggle persists in `sessionStorage` (`ff-docs-zoom`). |
+| BB2 | New tag color | Creating a tag shows a **color picker**. The chip uses that color on the deal rail and every list that renders tags. |
+| BB3 | Edit tag color | Existing tags have an **edit color** control (chip hover + Settings → Tags → Save color). Color persists on `desk_module_tags.color`. |
+| BB4 | Markets empty | Deal → Markets with no carriers and no lookup: **no** "In appetite", **no** empty buckets, **no** placeholder copy. `data-ff-markets-empty`. |
+| BB5 | Markets populated | After a lookup or a manual carrier add, appetite / stretch / skip tables still render for buckets that have rows. |
+| BB6 | Tests | `documents-zoom`, `tag-colors`, and `manual-markets` cover the toggle, color persist/display, and empty vs populated Markets. |
+| BB7 | Scope | Deal Details, Quotes, sidebar, Pipeline chips, and `/settings/field-builder` are untouched. |
+
+## Previous tip (`cursor/live-ff-tip-sep7az`)
 
 Consolidator on `cursor/live-ff-tip-sep7au-2ccf` @ `d0a6eb7` / tip SHA `4f66ea9` (Deal Details + field builder + extract maps 0081/0082). Merge order: (1) `cursor/live-ff-tip-sep7aw-5c80` @ `93bfc72` / tip SHA `f45c790` — Deal Details is Contact + Address + **Edit layout** only, builder off-page; (2) `cursor/live-ff-tip-sep7ax-f547` @ `4e63622` / tip SHA `efed45e` — Documents upload box locked **top / full-width**, never jumps; (3) `cursor/live-ff-tip-sep7av` @ `b6ce8c2` / tip SHA `9c43360` — three-layer learning pipeline + dormant purchase consent. Learning migrate renumbered **0083** so **0081_deal_field_builder** and **0082_document_field_maps** stay. sep7ar chrome stays: AppShell title **Deals**, left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`, `HardDeleteForm` confirms **once** via `onClickCapture`, Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `911111b`.
 

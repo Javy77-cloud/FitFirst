@@ -39,8 +39,9 @@ import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line"
 import { manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { RecordTags } from "@/components/tags/record-tags";
-import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { listDealFieldDefs, loadLayoutForLine, loadRecordValues } from "@/lib/custom-fields/store";
 import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
@@ -85,7 +86,7 @@ export default async function DealPage({
       listCarriers(),
       listQuoteLogs(),
       loadDealMotivationStats(),
-      listModuleTagSuggestions("deals").catch(() => [] as string[]),
+      listModuleTags("deals").catch(() => [] as { name: string; color: string | null }[]),
       loadLayoutForLine(deal.lineOfBusiness).catch(() => null),
       listDealFieldDefs().catch(() => []),
       loadRecordValues(deal.id).catch(() => ({}) as Record<string, string>),
@@ -118,6 +119,7 @@ export default async function DealPage({
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
   const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const unlocked = quotingUnlockedForDeal(deal);
+  const dealTagColors = colorsFromModuleTags(dealTagExtra);
   const manualIds = manualCarrierIdsFromLogs(logs.map((row) => row.log));
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
@@ -304,7 +306,8 @@ export default async function DealPage({
                 module="deals"
                 recordId={deal.id}
                 tags={deal.tags}
-                suggestions={suggestedTagsFor("deals", dealTagExtra)}
+                suggestions={suggestedTagsFor("deals", dealTagExtra.map((row) => row.name))}
+                colors={dealTagColors}
               />
             </div>
             <div data-ff-deal-quick-comms>

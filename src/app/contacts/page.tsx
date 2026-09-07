@@ -17,6 +17,7 @@ import { CLIENT_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { TagChips } from "@/components/tags/tag-chips";
+import { listModuleTagColors } from "@/app/actions/record-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,10 @@ export default async function ContactsPage({
   const filter = pickFilterParams(params, ["status", "source"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
-  const all = await listContacts();
+  const [all, tagColors] = await Promise.all([
+    listContacts(),
+    listModuleTagColors("contacts").catch(() => ({})),
+  ]);
   const rows = all.filter(
     (contact) =>
       matchesField(contact.clientStatus, filter.status) && matchesField(contact.source, filter.source),
@@ -124,7 +128,7 @@ export default async function ContactsPage({
                 source: sourceLabel(c.source),
                 lifetime: c.policyCount,
                 inForce: c.activePolicyCount,
-                tags: <TagChips tags={c.tags} />,
+                tags: <TagChips tags={c.tags} colors={tagColors} />,
               },
             }))}
           />

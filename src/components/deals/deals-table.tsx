@@ -17,6 +17,7 @@ import type { DealListRow } from "@/lib/db/queries";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { TagChips } from "@/components/tags/tag-chips";
+import { listModuleTagColors } from "@/app/actions/record-tags";
 
 type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account"> & {
   risk?: { coverageA?: number | null } | null;
@@ -40,6 +41,7 @@ export async function DealsTable({
   initialQuery?: string;
   nextByDeal?: Map<string, string>;
 }) {
+  const tagColors = await listModuleTagColors("deals").catch(() => ({}));
   return (
     <section className="ff-card overflow-x-auto">
       <ModuleListActions
@@ -176,7 +178,7 @@ export async function DealsTable({
                 nextAction: <DealNextActionTimer dueAt={nextDue} />,
                 updated: formatDay(deal.updatedAt),
                 esign: formatInDeskEsignList(deal.esignStatus, deal.esignSignedAt, deal.esignRequestedAt),
-                tags: <TagChips tags={deal.tags} />,
+                tags: <TagChips tags={deal.tags} colors={tagColors} />,
                 comms: (
                   <DealRowActions
                     dealId={deal.id}

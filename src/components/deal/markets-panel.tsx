@@ -5,7 +5,7 @@ import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
 import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
 import { appointmentLabel, isAppointedMatch } from "@/lib/appetite/present";
-import { bucketForMatch, marketBucketLabel } from "@/lib/deals/manual-markets";
+import { bucketForMatch, hasMarketLookupData, marketBucketLabel } from "@/lib/deals/manual-markets";
 
 export function MarketsPanel({
   dealId,
@@ -42,6 +42,20 @@ export function MarketsPanel({
   const stretch = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "stretch");
   const skip = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "skip");
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
+  const hasData = hasMarketLookupData(matches, manualIds);
+
+  if (!hasData) {
+    return (
+      <div data-ff-deal-markets="" data-ff-markets-empty="">
+        <ManualCarrierAdd
+          dealId={dealId}
+          carriers={carriers}
+          alreadyIds={[]}
+          dealLine={dealLine}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3" data-ff-deal-markets>
@@ -57,19 +71,15 @@ export function MarketsPanel({
           </Button>
         </form>
       </div>
-      <MarketTable
-        title={marketBucketLabel("appetite")}
-        rows={appetite}
-        manualIds={manual}
-        empty="No in-appetite markets. Add a carrier manually to override."
-      />
-      <MarketTable
-        title={marketBucketLabel("stretch")}
-        rows={stretch}
-        manualIds={manual}
-        empty="No stretch markets."
-      />
-      <MarketTable title={marketBucketLabel("skip")} rows={skip} manualIds={manual} empty="Nothing to skip." />
+      {appetite.length > 0 ? (
+        <MarketTable title={marketBucketLabel("appetite")} rows={appetite} manualIds={manual} />
+      ) : null}
+      {stretch.length > 0 ? (
+        <MarketTable title={marketBucketLabel("stretch")} rows={stretch} manualIds={manual} />
+      ) : null}
+      {skip.length > 0 ? (
+        <MarketTable title={marketBucketLabel("skip")} rows={skip} manualIds={manual} />
+      ) : null}
       <div className="ff-card space-y-3 p-4">
         <ManualCarrierAdd
           dealId={dealId}
@@ -93,60 +103,54 @@ export function MarketsPanel({
 function MarketTable({
   title,
   rows,
-  empty,
   manualIds,
 }: {
   title: string;
   rows: CarrierMatch[];
-  empty: string;
   manualIds: Set<string>;
 }) {
   return (
     <section className="ff-card overflow-hidden">
       <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">{title}</div>
-      {rows.length === 0 ? (
-        <p className="px-4 py-6 text-base text-muted-foreground">{empty}</p>
-      ) : (
-        <table className="ff-table">
-          <thead>
-            <tr>
-              <th>Carrier</th>
-              <th>Appointment</th>
-              <th>Fit</th>
-              <th>Score</th>
-              <th>Why</th>
+      <table className="ff-table">
+        <thead>
+          <tr>
+            <th>Carrier</th>
+            <th>Appointment</th>
+            <th>Fit</th>
+            <th>Score</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.carrierId}>
+              <td className="font-medium">
+                {row.carrierName}
+                {manualIds.has(row.carrierId) ? (
+                  <span className="ml-2 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase text-navy">
+                    manual
+                  </span>
+                ) : null}
+                {row.learnedDecline ? (
+                  <div className="text-helper text-fit-red">Learned from decline log</div>
+                ) : null}
+              </td>
+              <td>{appointmentLabel(row)}</td>
+              <td>
+                <FitBadge band={row.band} />
+              </td>
+              <td>{row.fitScore}</td>
+              <td className="text-xs">
+                {row.reasons
+                  .filter((r) => r.severity !== "pass")
+                  .map((r) => r.message)
+                  .join(" · ") || "Clears structured appetite."}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.carrierId}>
-                <td className="font-medium">
-                  {row.carrierName}
-                  {manualIds.has(row.carrierId) ? (
-                    <span className="ml-2 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase text-navy">
-                      manual
-                    </span>
-                  ) : null}
-                  {row.learnedDecline ? (
-                    <div className="text-helper text-fit-red">Learned from decline log</div>
-                  ) : null}
-                </td>
-                <td>{appointmentLabel(row)}</td>
-                <td>
-                  <FitBadge band={row.band} />
-                </td>
-                <td>{row.fitScore}</td>
-                <td className="text-xs">
-                  {row.reasons
-                    .filter((r) => r.severity !== "pass")
-                    .map((r) => r.message)
-                    .join(" · ") || "Clears structured appetite."}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

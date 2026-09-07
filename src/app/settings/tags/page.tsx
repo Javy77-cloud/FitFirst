@@ -1,9 +1,16 @@
-import { deleteModuleTag, listModuleTagSuggestions, mergeModuleTag, renameModuleTag } from "@/app/actions/record-tags";
+import {
+  deleteModuleTag,
+  listModuleTags,
+  mergeModuleTag,
+  renameModuleTag,
+  updateModuleTagColor,
+} from "@/app/actions/record-tags";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatTagLabel, isTagModule, TAG_MODULES, type TagModule } from "@/lib/tags/module-tags";
+import { DEFAULT_TAG_PICKER_COLOR, tagChipStyle } from "@/lib/tags/tag-colors";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +22,7 @@ export default async function ManageTagsPage({
 }) {
   const { module: raw } = await searchParams;
   const module: TagModule = isTagModule(raw ?? "") ? (raw as TagModule) : "deals";
-  const tags = await listModuleTagSuggestions(module);
+  const tags = await listModuleTags(module);
 
   return (
     <SettingsShell title="Manage tags" current="tags">
@@ -42,11 +49,31 @@ export default async function ManageTagsPage({
       ) : (
         <ul className="space-y-3" data-ff-tag-manager={module}>
           {tags.map((tag) => (
-            <li key={tag} className="ff-card flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-              <p className="min-w-28 text-sm font-medium text-navy">{formatTagLabel(tag)}</p>
+            <li key={tag.name} className="ff-card flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
+              <p
+                className="min-w-28 rounded-sm px-1.5 py-0.5 text-sm font-medium text-navy"
+                style={tagChipStyle(tag.color)}
+                data-ff-tag-color={tag.color ?? ""}
+              >
+                {formatTagLabel(tag.name)}
+              </p>
+              <form action={updateModuleTagColor} className="flex flex-wrap items-center gap-2" data-ff-tag-color-edit={tag.name}>
+                <input type="hidden" name="module" value={module} />
+                <input type="hidden" name="name" value={tag.name} />
+                <input
+                  type="color"
+                  name="color"
+                  defaultValue={tag.color ?? DEFAULT_TAG_PICKER_COLOR}
+                  className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0"
+                  aria-label={`Edit color for ${formatTagLabel(tag.name)}`}
+                />
+                <Button type="submit" size="xs" variant="outline">
+                  Save color
+                </Button>
+              </form>
               <form action={renameModuleTag} className="flex flex-wrap items-center gap-2">
                 <input type="hidden" name="module" value={module} />
-                <input type="hidden" name="from" value={tag} />
+                <input type="hidden" name="from" value={tag.name} />
                 <Input name="to" placeholder="New name" className="h-8 w-36" />
                 <Button type="submit" size="xs" variant="outline">
                   Rename
@@ -54,13 +81,13 @@ export default async function ManageTagsPage({
               </form>
               <form action={mergeModuleTag} className="flex flex-wrap items-center gap-2">
                 <input type="hidden" name="module" value={module} />
-                <input type="hidden" name="from" value={tag} />
+                <input type="hidden" name="from" value={tag.name} />
                 <select name="into" className="h-8 rounded-md border border-border bg-background px-2 text-sm">
                   {tags
-                    .filter((item) => item !== tag)
+                    .filter((item) => item.name !== tag.name)
                     .map((item) => (
-                      <option key={item} value={item}>
-                        Merge into {formatTagLabel(item)}
+                      <option key={item.name} value={item.name}>
+                        Merge into {formatTagLabel(item.name)}
                       </option>
                     ))}
                 </select>
@@ -68,9 +95,9 @@ export default async function ManageTagsPage({
                   Merge
                 </Button>
               </form>
-              <HardDeleteForm action={deleteModuleTag} subject={`tag ${formatTagLabel(tag)}`}>
+              <HardDeleteForm action={deleteModuleTag} subject={`tag ${formatTagLabel(tag.name)}`}>
                 <input type="hidden" name="module" value={module} />
-                <input type="hidden" name="name" value={tag} />
+                <input type="hidden" name="name" value={tag.name} />
                 <Button type="submit" size="xs" variant="ghost">
                   Delete
                 </Button>
