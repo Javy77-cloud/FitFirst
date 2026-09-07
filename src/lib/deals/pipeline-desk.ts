@@ -5,13 +5,25 @@ import { matchDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
 export const STALE_DEAL_DAYS = 14;
 export const NEXT_ACTION_FALLBACK_DAYS = 7;
 
+/** Today's Activity chip tints. Meeting row action uses the same purple. */
+export const DEAL_ACTIVITY_TONES = {
+  task: { chipBg: "#dbeafe", chipFg: "#1d4e89", buttonBg: "#1d6fb8" },
+  call: { chipBg: "#e4f5ec", chipFg: "#1f7a4d", buttonBg: "#1f7a4d" },
+  email: { chipBg: "#fff4d1", chipFg: "#8a6500", buttonBg: "#8a6500" },
+  meeting: { chipBg: "#ede9fe", chipFg: "#5b21b6", buttonBg: "#5b21b6" },
+  training: { chipBg: "#ccfbf1", chipFg: "#0f766e", buttonBg: "#0f766e" },
+} as const;
+
 export const DEAL_TODAY_ACTIVITY_CHIPS = [
-  { id: "task", label: "Tasks" },
-  { id: "call", label: "Calls" },
-  { id: "email", label: "Emails" },
-  { id: "meeting", label: "Meetings" },
-  { id: "training", label: "Training" },
+  { id: "task", label: "Tasks", tone: "blue" },
+  { id: "call", label: "Calls", tone: "green" },
+  { id: "email", label: "Emails", tone: "amber" },
+  { id: "meeting", label: "Meetings", tone: "purple" },
+  { id: "training", label: "Training", tone: "teal" },
 ] as const;
+
+export const DEAL_MEETING_ACTION_COLOR = DEAL_ACTIVITY_TONES.meeting.buttonBg;
+export const DEAL_TASK_ACTION_COLOR = DEAL_ACTIVITY_TONES.task.buttonBg;
 
 export type DealTodayActivityType = (typeof DEAL_TODAY_ACTIVITY_CHIPS)[number]["id"];
 

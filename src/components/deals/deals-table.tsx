@@ -111,7 +111,6 @@ export async function DealsTable({
                 contact: sheetAttr(
                   contact ? `${contact.lastName}, ${contact.firstName}` : account?.name,
                 ),
-                phone: sheetAttr(phone),
                 email: sheetAttr(email),
                 assigned: sheetAttr(deal.ownerId ? users.get(deal.ownerId) : ""),
                 value: sheetAttr(value),
@@ -136,6 +135,7 @@ export async function DealsTable({
                       contactId={contact?.id ?? deal.contactId}
                       accountId={account?.id ?? deal.accountId}
                       leadId={deal.leadId}
+                      homeAddress={deal.propertyOneliner ?? contact?.mailingAddress ?? account?.mailingAddress}
                     />
                     {stale ? (
                       <DealStaleBadge
@@ -166,7 +166,6 @@ export async function DealsTable({
                 ) : (
                   "—"
                 ),
-                phone: phone || "—",
                 email: email || "—",
                 assigned: deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—",
                 value: formatMoney(value),

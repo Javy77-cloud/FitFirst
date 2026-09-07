@@ -3,6 +3,8 @@
 import { createDealOutreach } from "@/app/actions/crm";
 import { logDeskActivity } from "@/app/actions/activities-desk";
 import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
+import { MeetingButton } from "@/components/crm/meeting-button";
+import { DEAL_MEETING_ACTION_COLOR, DEAL_TASK_ACTION_COLOR } from "@/lib/deals/pipeline-desk";
 import {
   contactActionButtonClass,
   contactActionButtonStyle,
@@ -19,6 +21,7 @@ export function DealQuickActions({
   contactId,
   accountId,
   leadId,
+  homeAddress,
 }: {
   dealId: string;
   phone?: string | null;
@@ -26,6 +29,7 @@ export function DealQuickActions({
   contactId?: string | null;
   accountId?: string | null;
   leadId?: string | null;
+  homeAddress?: string | null;
 }) {
   const hasPhone = Boolean(phone?.trim());
   const hasEmail = Boolean(email?.trim());
@@ -62,12 +66,19 @@ export function DealQuickActions({
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
         <button
           type="submit"
-          className="inline-flex h-6 items-center rounded border border-primary/40 bg-primary/10 px-2 text-[11px] font-semibold text-primary hover:bg-primary/15"
+          className="ff-cal-task inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white"
+          style={{ backgroundColor: DEAL_TASK_ACTION_COLOR, color: "#ffffff" }}
           title="Adds a desk task on this deal. Nothing is sent."
         >
           Task
         </button>
       </form>
+      <MeetingButton
+        dealId={dealId}
+        homeAddress={homeAddress}
+        className="inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white"
+        style={{ backgroundColor: DEAL_MEETING_ACTION_COLOR, color: "#ffffff" }}
+      />
     </div>
   );
 }

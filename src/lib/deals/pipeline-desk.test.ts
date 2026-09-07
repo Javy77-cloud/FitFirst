@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   classifyDealActivityType,
   countTodayDealActivity,
+  DEAL_ACTIVITY_TONES,
+  DEAL_TODAY_ACTIVITY_CHIPS,
   dealNextActionState,
   filterTodayDealActivity,
   isDealStale,
@@ -42,6 +44,18 @@ describe("Deals today activity strip", () => {
   it("classifies training from meetingType, not as a meeting", () => {
     expect(classifyDealActivityType({ kind: "meeting", meetingType: "training" })).toBe("training");
     expect(classifyDealActivityType({ kind: "meeting", meetingType: "video" })).toBe("meeting");
+  });
+
+  it("keeps chip tones Task blue, Call green, Email amber, Meetings purple, Training teal", () => {
+    expect(DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => [chip.id, chip.tone])).toEqual([
+      ["task", "blue"],
+      ["call", "green"],
+      ["email", "amber"],
+      ["meeting", "purple"],
+      ["training", "teal"],
+    ]);
+    expect(DEAL_ACTIVITY_TONES.task.buttonBg).toBe("#1d6fb8");
+    expect(DEAL_ACTIVITY_TONES.meeting.buttonBg).toBe("#5b21b6");
   });
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type CSSProperties } from "react";
 import { loadMeetingDefaults, scheduleDealMeeting, type MeetingDefaults } from "@/app/actions/meetings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +19,13 @@ import {
 export function MeetingButton({
   dealId,
   homeAddress,
+  className,
+  style,
 }: {
   dealId: string;
   homeAddress?: string | null;
+  className?: string;
+  style?: CSSProperties;
 }) {
   const [open, setOpen] = useState(false);
   const [defaults, setDefaults] = useState<MeetingDefaults | null>(null);
@@ -86,7 +90,11 @@ export function MeetingButton({
       <button
         type="button"
         onClick={() => void openForm()}
-        className="rounded-md border border-border bg-background px-2 py-0.5 text-xs font-medium text-navy hover:bg-muted"
+        className={
+          className ??
+          "rounded-md border border-border bg-background px-2 py-0.5 text-xs font-medium text-navy hover:bg-muted"
+        }
+        style={style}
       >
         Meeting
       </button>

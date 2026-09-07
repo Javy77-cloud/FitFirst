@@ -111,7 +111,7 @@ export default async function DealsPage({
 
   return (
     <AppShell
-      title="Pipeline"
+      title="Deals / Pipeline"
       eyebrow=""
       actions={
         <Link href="/deals/new" className={cn(buttonVariants())}>

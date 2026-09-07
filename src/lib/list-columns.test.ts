@@ -69,10 +69,15 @@ describe("list column visibility", () => {
   it("keeps Deal title and e-sign locked and hides optional deal columns by default", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")?.locked).toBe(true);
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "stage", "esign", "comms", "value"]),
+      expect.arrayContaining(["pick", "title", "contact", "stage", "esign", "comms", "value"]),
     );
+    const dealsVisible = defaultVisibleIds(DEALS_LIST_COLUMNS);
+    expect(dealsVisible.indexOf("contact")).toBe(dealsVisible.indexOf("title") + 1);
+    expect(dealsVisible).not.toContain("phone");
+    expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("phone");
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")?.label).toBe("Value");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("city");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("premium");
