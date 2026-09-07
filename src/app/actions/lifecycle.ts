@@ -25,6 +25,7 @@ import { MELBOURNE_HO_DEC_TEXT } from "@/lib/fixtures/sample-docs";
 import { inferMimeFromName } from "@/lib/files/urls";
 import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import { textFromUpload } from "@/lib/extraction/pdf";
+import { withFlash } from "@/lib/flash";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -222,7 +223,7 @@ export async function fillQuoteSheetBlanks(formData: FormData) {
   const line = (str(formData, "line") || "home") as ShopLine;
   await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}?tab=documents&line=${line}&notice=filled`);
+  redirect(withFlash(`/deals/${dealId}?tab=documents&line=${line}&notice=filled`, "sheet-filled"));
 }
 
 export async function ensureLeadNotes(leadId: string, extra: string) {

@@ -145,6 +145,7 @@ export function MasterSheetCompare({
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="sheet_product" value={product} />
+        <input type="hidden" name="returnTo" value={`/deals/${dealId}?tab=documents&line=${line}`} />
         <div data-ff-master-sheet-scroll="" className="overflow-visible">
           {groups.map((group) =>
             group.group === "Vehicle" && line === "auto" ? (

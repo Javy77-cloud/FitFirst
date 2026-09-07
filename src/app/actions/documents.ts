@@ -7,6 +7,8 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
+import { withFlash } from "@/lib/flash";
+import { flashAction } from "@/lib/flash-action";
 import { lineTag } from "@/lib/leads/line-documents";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
 import { db } from "@/lib/db";
@@ -251,10 +253,13 @@ export async function uploadDocument(formData: FormData) {
   if (last?.dealId && String(formData.get("after") ?? "") === "fill-sheet") {
     const line = String(formData.get("line") ?? "home") || "home";
     const tab = String(formData.get("returnTab") ?? "documents") || "documents";
-    redirect(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`);
+    redirect(withFlash(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`, "sheet-filled"));
   }
   if (formData.get("library")) {
-    redirect(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }));
+    redirect(withFlash(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }), "document-uploaded"));
+  }
+  if (last?.dealId) {
+    flashAction(`/deals/${last.dealId}?tab=documents`, "document-uploaded");
   }
 }
 
@@ -401,7 +406,7 @@ export async function uploadDealDocuments(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath(`/deals/${match.id}`);
   revalidatePath("/documents");
-  redirect(`/deals/${match.id}?tab=documents&notice=filled`);
+  redirect(withFlash(`/deals/${match.id}?tab=documents&notice=filled`, "document-uploaded"));
 }
 
 export async function uploadSampleDocument(formData: FormData) {
@@ -435,7 +440,7 @@ export async function uploadSampleDocument(formData: FormData) {
   }
   await fillDealSheetIfReady(dealId, String(formData.get("line") ?? ""));
   revalidateDocumentPaths(doc);
-  redirect(`/deals/${dealId}?tab=documents&notice=filled`);
+  redirect(withFlash(`/deals/${dealId}?tab=documents&notice=filled`, "document-uploaded"));
 }
 
 export async function markDocumentType(formData: FormData) {
@@ -640,6 +645,9 @@ export async function deleteUploadedFile(formData: FormData) {
   if (mode === "hide") {
     await db.update(documents).set({ status: "hidden" }).where(eq(documents.id, documentId));
     revalidateDocumentPaths(doc);
+    const hiddenReturn = String(formData.get("returnTo") ?? "").trim();
+    if (hiddenReturn) redirect(withFlash(hiddenReturn, "document-deleted"));
+    if (doc.dealId) flashAction(`/deals/${doc.dealId}?tab=documents`, "document-deleted");
     return;
   }
 
@@ -695,7 +703,11 @@ export async function deleteUploadedFile(formData: FormData) {
   }
 
   revalidateDocumentPaths(doc);
-  if (String(formData.get("returnTo") ?? "").trim()) {
-    redirect(String(formData.get("returnTo")).trim());
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (returnTo) {
+    redirect(withFlash(returnTo, "document-deleted"));
+  }
+  if (doc.dealId) {
+    flashAction(`/deals/${doc.dealId}?tab=documents`, "document-deleted");
   }
 }

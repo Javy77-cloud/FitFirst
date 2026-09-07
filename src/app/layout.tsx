@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
+import { ActionToastHost } from "@/components/desk/action-toast";
 import { AppNotificationHost } from "@/components/desk/app-notification-host";
 import { SheetBoot } from "@/components/sheet/sheet-boot";
 import "./globals.css";
@@ -30,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${plex.variable} ${plexMono.variable} h-full`}>
       <body className="min-h-full">
         {children}
+        <Suspense fallback={null}>
+          <ActionToastHost />
+        </Suspense>
         <AppNotificationHost />
         <SheetBoot />
         <Script src="/ff-sheet.js" strategy="afterInteractive" />

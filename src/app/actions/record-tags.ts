@@ -19,6 +19,7 @@ import {
   parseTagColorsFromForm,
   type TagColorMap,
 } from "@/lib/tags/tag-colors";
+import { flashAction } from "@/lib/flash-action";
 
 const PATHS: Record<TagModule, { list: string; detail: (id: string) => string }> = {
   leads: { list: "/leads", detail: (id) => `/leads/${id}` },
@@ -37,6 +38,7 @@ export async function saveRecordTags(formData: FormData) {
   const paths = PATHS[module];
   revalidatePath(paths.list);
   revalidatePath(paths.detail(recordId));
+  flashAction(paths.detail(recordId), "tags-saved");
 }
 
 export async function writeRecordTags(

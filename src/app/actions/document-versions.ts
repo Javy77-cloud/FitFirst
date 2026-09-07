@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { replaceDocumentFile } from "@/lib/documents/version-store";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -17,7 +18,9 @@ export async function replaceDocument(formData: FormData) {
   const returnTo = str(formData, "returnTo");
   const note = str(formData, "note");
   const file = formData.get("file");
-  if (!documentId || !(file instanceof File) || file.size === 0) return;
+  if (!documentId || !(file instanceof File) || file.size === 0) {
+    throw new Error("Document could not be replaced.");
+  }
 
   await replaceDocumentFile({
     documentId,
@@ -34,4 +37,16 @@ export async function replaceDocument(formData: FormData) {
   if (returnTo) revalidatePath(returnTo);
   revalidatePath("/documents");
   revalidatePath(`/files/${documentId}`);
+  const dest =
+    returnTo ||
+    (dealId
+      ? `/deals/${dealId}?tab=documents`
+      : policyId
+        ? `/policies/${policyId}`
+        : leadId
+          ? `/leads/${leadId}`
+          : contactId
+            ? `/contacts/${contactId}`
+            : "/documents");
+  flashAction(dest, "document-replaced");
 }
