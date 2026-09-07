@@ -1,6 +1,7 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import { extractKeyToSheetKey, fieldsForLine } from "./catalog";
+import { isRepeatableSheetKey } from "./repeatable-units";
 
 export type ExtractedInput = {
   fieldKey: string;
@@ -348,6 +349,14 @@ export function mergeAgentEdits(
       continue;
     }
     next[field.key] = { value: typed, status: "confirmed", source: "agent" };
+  }
+  for (const [key, raw] of Object.entries(submitted)) {
+    if (key in next) continue;
+    if (!isRepeatableSheetKey(key)) continue;
+    const typed = raw.trim();
+    next[key] = typed
+      ? { value: typed, status: "confirmed", source: "agent" }
+      : { value: "", status: "missing", source: "blank" };
   }
   return next;
 }

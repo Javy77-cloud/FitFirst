@@ -268,10 +268,11 @@
     box-shadow 170ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .deal-today-chip-count {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--chip-fg, currentColor) 42%, #101c34);
 }
 .deal-today-chip-word {
   font-size: 13px;

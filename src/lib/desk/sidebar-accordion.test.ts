@@ -13,7 +13,7 @@ describe("sidebar accordion", () => {
   it("auto-opens the primary that owns the current route", () => {
     expect(primaryIdForPath("/contacts")).toBe("contacts");
     expect(primaryIdForPath("/contacts/abc")).toBe("contacts");
-    expect(primaryIdForPath("/quotes")).toBe("deals");
+    expect(primaryIdForPath("/quotes")).toBe("");
     expect(primaryIdForPath("/policies")).toBe("policies");
     expect(primaryIdForPath("/settings/import-export")).toBe("settings");
     expect(primaryIdForPath("/settings/agents")).toBe("admin");

@@ -29,6 +29,7 @@ describe("integrations catalog", () => {
         "instagram",
         "google_business_profile",
         "twilio",
+        "eight_by_eight",
         "docusign",
         "dropbox_sign",
         "ezlynx",

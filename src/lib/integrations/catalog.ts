@@ -29,7 +29,7 @@ export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   calendar: "Desk calendar stays here. Connect Google, Outlook, or Zoho Calendar when the agency is ready.",
   social:
     "Facebook, Instagram, X, LinkedIn, and Google Business Profile. Paste the agency’s developer app and try OAuth. FitFirst does not buy ads or API seats. Maps stay free public search links.",
-  phone_sms: "Call log and SMS. Connect Twilio, RingCentral, or Lightspeed Voice when the agency is ready.",
+  phone_sms: "Call log and SMS. Connect 8x8, Twilio, RingCentral, or Lightspeed Voice when the agency is ready.",
   esign: "In-desk signing on Deal or Policy. DocuSign / Dropbox Sign are not wired.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
   campaigns: "Bulk and drip later. Mailchimp, Constant Contact, or SendGrid — agency pays the vendor.",
@@ -50,6 +50,7 @@ export const INTEGRATION_PROVIDER_IDS = [
   "x",
   "linkedin",
   "twilio",
+  "eight_by_eight",
   "ringcentral",
   "lightspeed_voice",
   "docusign",
@@ -224,6 +225,16 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     adminGated: true,
   },
   {
+    id: "eight_by_eight",
+    category: "phone_sms",
+    name: "8x8",
+    initials: "8x",
+    blurb: "Phone and SMS provider. Agency 8x8 seat for logged calls and texts.",
+    byoNote: "Agency pays 8x8. FitFirst does not buy a number or store an API key.",
+    tone: "sms",
+    adminGated: true,
+  },
+  {
     id: "ringcentral",
     category: "phone_sms",
     name: "RingCentral",
@@ -359,7 +370,7 @@ export const CONNECT_HUB_SECTIONS = [
     id: "sms",
     title: "SMS",
     blurb: "Logged texts only. FitFirst does not buy a number or call Twilio.",
-    providerIds: ["twilio"] as const,
+    providerIds: ["eight_by_eight", "twilio"] as const,
   },
   {
     id: "esign",
@@ -419,6 +430,8 @@ export function stubAccountLabel(id: IntegrationProviderId): string {
       return "agency@zoho.calendar.stub";
     case "twilio":
       return "FitFirst main · SMS demo";
+    case "eight_by_eight":
+      return "FitFirst main · 8x8 stub";
     case "ringcentral":
       return "FitFirst main · RingCentral stub";
     case "lightspeed_voice":

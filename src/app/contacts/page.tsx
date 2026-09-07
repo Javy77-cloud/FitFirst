@@ -16,6 +16,7 @@ import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { CLIENT_STATUSES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
+import { TagChips } from "@/components/tags/tag-chips";
 
 export const dynamic = "force-dynamic";
 
@@ -109,7 +110,7 @@ export default async function ContactsPage({
             empty="Empty book. Bind a deal or add an existing client."
             rows={rows.map((c) => ({
               key: c.id,
-              hay: haystack([c.firstName, c.lastName, c.email, c.phone, c.city, c.source, c.clientStatus]),
+              hay: haystack([c.firstName, c.lastName, c.email, c.phone, c.city, c.source, c.clientStatus, ...(c.tags ?? [])]),
               cells: {
                 pick: <SelectRowCheckbox id={c.id} />,
                 name: (
@@ -123,6 +124,7 @@ export default async function ContactsPage({
                 source: sourceLabel(c.source),
                 lifetime: c.policyCount,
                 inForce: c.activePolicyCount,
+                tags: <TagChips tags={c.tags} />,
               },
             }))}
           />

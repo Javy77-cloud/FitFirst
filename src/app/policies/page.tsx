@@ -13,6 +13,7 @@ import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { LINES } from "@/lib/domain";
 import { firstParam } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
+import { TagChips } from "@/components/tags/tag-chips";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +139,7 @@ export default async function PoliciesPage({
               carrier?.name,
               contact ? `${contact.lastName} ${contact.firstName}` : null,
               account?.name,
+              ...(policy.tags ?? []),
             ]),
             cells: {
               pick: <SelectRowCheckbox id={policy.id} />,
@@ -164,6 +166,7 @@ export default async function PoliciesPage({
                 policy.esignSignedAt,
                 policy.esignRequestedAt,
               ),
+              tags: <TagChips tags={policy.tags} />,
             },
           }))}
         />

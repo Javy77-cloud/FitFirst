@@ -17,6 +17,9 @@ import { RecordComms } from "@/components/record-comms";
 import { updateContactRecord } from "@/app/actions/record-edit";
 import { sourceLabel } from "@/lib/crm/sources";
 import { Button } from "@/components/ui/button";
+import { RecordTags } from "@/components/tags/record-tags";
+import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +43,10 @@ export default async function ContactDetailPage({
     locations,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
-  const templates = await listEmailTemplates();
+  const [templates, tagExtra] = await Promise.all([
+    listEmailTemplates(),
+    listModuleTagSuggestions("contacts").catch(() => [] as string[]),
+  ]);
   const context = await loadRecordContext({
     contactId: contact.id,
     accountId: businesses[0]?.id,
@@ -64,6 +70,14 @@ export default async function ContactDetailPage({
           {contact.phone ?? contact.email ?? "No phone or email"}
         </span>
         <span className="text-muted-foreground">Source · {sourceLabel(contact.source)}</span>
+      </div>
+      <div className="mb-4 max-w-lg">
+        <RecordTags
+          module="contacts"
+          recordId={contact.id}
+          tags={contact.tags}
+          suggestions={suggestedTagsFor("contacts", tagExtra)}
+        />
       </div>
 
       <RecordDetailLayout

@@ -4,7 +4,56 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ah`)
+## Mac test now (`cursor/live-ff-tip-sep7ai`)
+
+Consolidator: Pipeline from `cursor/live-ff-tip-sep7ah` @ `2a1480c` / tip SHA `079243c` (inline flex band, Attach left, Activity centered, rounded chips, Attach `minHeight` 168 / `height` auto) plus Deal detail + nav from `cursor/live-ff-tip-sep7ag` @ `ced7ae9` / tip SHA `dcfeae7` (confirm one-button, flush tabs, vehicles/drivers, tags/8x8, no Deals→Quotes folder). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7ah except one locked micro tweak: `.deal-today-chip-count` is **28px** and a **darker navy**. Chip size, placement, labels, chip-body colors, Attach, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ai && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AH — Pipeline list (sep7ah, locked)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
+| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
+| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
+| AI1 | Count | Chip **number only** is **slightly larger (~28px)** and **slightly darker** (stronger navy). Chip cards, labels, Attach, and band layout stay sep7ah. |
+
+### AG — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AG1 | One button | Documents has **no** separate **Confirm sheet** button. One checkbox: **I visually reviewed this master sheet.** The only action is **Confirm & request quotes**, disabled until the box is ticked. One click confirms the sheet and requests quotes from every in-appetite carrier. |
+| AG2 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+| AG3 | No Quotes folder | Sidebar **Deals** has **no** nested Quotes child. No dead `/deals/quotes` link. Quotes lives only as the Deal detail tab. Customize can still add the catalog Quotes row; it is not a default Deals subfolder. |
+
+### AB — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB1 | Vehicle blocks | Auto master sheet opens with **Vehicle 1** (VIN, year, make, model, usage, garaging ZIP, address). Vehicle 2 is not alone. **+ Add vehicle** under the last block. Personal lines cap at **five**. Commercial Auto is unlimited. |
+| AB2 | Driver blocks | **Driver 1** by default. **+ Add driver** grows the list. Same personal / commercial cap as vehicles. |
+| AB3 | Upload rows | Each document is its own row with a trash can. **+ Add another document** under the last row. Filename is **plain text**, not a button. |
+| AB4 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+
+### AB — Tags + 8x8
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB5 | Sheet tags | Lead, Contact, Policy, and Deal data sheets show **Tags** with suggested defaults. Agents can add their own. Lead tags that make sense (referral, custom) carry onto the Contact at convert / bind. |
+| AB6 | List tags | Leads, Contacts, Deals, and Policies table rows show the same tags. |
+| AB7 | 8x8 | Settings → Integrations → Phone / SMS lists **8x8** as a Phone and SMS provider, next to the **Mac Continuity** on/off toggle. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ah`)
 
 Pipeline band only, from `cursor/live-ff-tip-sep7ad` @ `de0c1b3` / tip SHA `38a53d9`. Same layout as AD — **Attach** LEFT `min(819px, 44.8%)`, **Today's Activity** centered in leftover (`flex: 1`), **100px rounded chips**. The flex row + chip box are **baked as JSX inline styles** so the CSS cascade cannot stack Activity under Attach or crush the chips. Colors, labels, tones, and leftover-centering unchanged. Deal detail / table / sidebar / seed untouched. Live Zoho stays book of record. Tip SHA `079243c`.
 
@@ -70,9 +119,72 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 | AC2 | Widths | Attach is **819px / 44.8%** (left red box). Activity is **797px / 43.6%** (right red box). Neither stretches to fill. Extra viewport width stays empty on the right. |
 | AC3 | Square chips | Each counter is a **60×60 square** (width = height, ≤**4px** radius), icon + count inside, tiny label under. Solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
 
+## Mac test prior (`cursor/live-ff-tip-sep7ag`)
+
+Deal detail only, from `cursor/live-ff-tip-sep7ab` @ `9cf10e3` / tip SHA `18c6ebc`. One checkbox (**I visually reviewed this master sheet.**) and one action (**Confirm & request quotes**) — disabled until the box is ticked, then one click confirms the sheet and shops every in-appetite carrier. Documents · Markets · Quotes sit **flush under the deal header** (`-mt-5` cancels main padding). **Deals has no Quotes subfolder** — Quotes is a deal-detail tab only (`NAV_LAYOUT_VERSION` **9**). No other sidebar change. No Pipeline attach/activity change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `dcfeae7`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ag && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal detail** (Ana unbound). Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AG — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AG1 | One button | Documents has **no** separate **Confirm sheet** button. One checkbox: **I visually reviewed this master sheet.** The only action is **Confirm & request quotes**, disabled until the box is ticked. One click confirms the sheet and requests quotes from every in-appetite carrier. |
+| AG2 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+| AG3 | No Quotes folder | Sidebar **Deals** has **no** nested Quotes child. No dead `/deals/quotes` link. Quotes lives only as the Deal detail tab. Customize can still add the catalog Quotes row; it is not a default Deals subfolder. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ab`)
+
+Deal detail + Integrations, from `cursor/live-ff-tip-sep7aa` @ `011c324` / tip SHA `a86a834` (later sep7aa Pipeline band left alone). Vehicle and driver blocks start at **one**. Documents upload is repeatable rows. Tabs sit **flush under the deal header**. Tags on lead / contact / policy / deal sheets and list rows. **8x8** + **Mac Continuity** on Settings → Integrations. No sidebar change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `18c6ebc`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ab && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal detail** (Ana unbound) and **Settings → Integrations**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AB — Deal detail
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB1 | Vehicle blocks | Auto master sheet opens with **Vehicle 1** (VIN, year, make, model, usage, garaging ZIP, address). Vehicle 2 is not alone. **+ Add vehicle** under the last block. Personal lines cap at **five**. Commercial Auto is unlimited. |
+| AB2 | Driver blocks | **Driver 1** by default. **+ Add driver** grows the list. Same personal / commercial cap as vehicles. |
+| AB3 | Upload rows | Each document is its own row with a trash can. **+ Add another document** under the last row. Filename is **plain text**, not a button. |
+| AB4 | Tabs flush | Documents · Markets · Quotes sit **flush under the deal header**. No empty band between the name and the first tab. |
+
+### AB — Tags + 8x8
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AB5 | Sheet tags | Lead, Contact, Policy, and Deal data sheets show **Tags** with suggested defaults. Agents can add their own. Lead tags that make sense (referral, custom) carry onto the Contact at convert / bind. |
+| AB6 | List tags | Leads, Contacts, Deals, and Policies table rows show the same tags. |
+| AB7 | 8x8 | Settings → Integrations → Phone / SMS lists **8x8** as a Phone and SMS provider, next to the **Mac Continuity** on/off toggle. |
+
+### AA — Pipeline list (sep7aa, unchanged)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AA1 | Same row | Attach LEFT compact (~60%). Today's Activity RIGHT. One horizontal band. No stack. No wrap. |
+| AA2 | Square chips | Each counter is a **72×72 square** (width = height, ≤**4px** radius), solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
+| AA3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). +Add another document still works. |
+
 ## Mac test prior (`cursor/live-ff-tip-sep7aa`)
 
-Red-box layout on `cursor/live-ff-tip-sep7y` @ `0a8ea92`. **Attach LEFT** (~two-thirds, never full page). **Today's Activity RIGHT** on the **same row**. Chips are **colored squares** (not flat 36px rectangles), 3D + 6px hover lift, no panel behind them. Trash stays on document rows inside Attach. Deal detail unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `a86a834`.
+Pipeline band only, from `cursor/live-ff-tip-sep7y` @ `0a8ea92` / tip SHA `48b78b4`. **Attach LEFT** (compact ~60%, not full-page). **Today's Activity RIGHT on the same row** — never under Attach, no wrap. Activity counters are **72×72 squares** (≤4px radius), solid colored fills, 3D depth, 6px hover lift. **No panel fill** behind chips. Attach multi-row / trash / +Add stay. Deal detail from sep7z/sep7x is untouched. No table / filter / sidebar / seed / Ana changes. Live Zoho stays book of record. Tip SHA `a323bf6`.
 
 ```bash
 cd ~/FitFirst
@@ -88,33 +200,11 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do 
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| AA1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Attach does **not** stretch full page. Activity is **not** stacked under Attach. |
-| AA2 | Widths | Attach stays in the **larger left** red-box (~**2/3**). Today's Activity stays in the **smaller right** red-box (~**1/3**). |
-| AA3 | Square chips | Each counter is a **colored square** (72×72, ≤**4px** radius) with 3D fill. Hover **lifts 6px**. No card/panel behind the row. |
+| AA1 | Same row | Attach LEFT compact (~60%). Today's Activity RIGHT. One horizontal band. No stack. No wrap. |
+| AA2 | Square chips | Each counter is a **72×72 square** (width = height, ≤**4px** radius), solid Call / Email / Task / Meeting / Training fill, raised **3D** depth. Hover **lifts 6px**. No gray/white panel behind the chips. |
+| AA3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). +Add another document still works. |
 
-## Mac test prior (`cursor/live-ff-tip-sep7y`)
-
-Pipeline placement + Activity chips on consolidator `cursor/live-ff-tip-sep7z` @ `4e9571e` / tip SHA `2555bf3` (sep7w Pipeline + sep7x Deal detail). **Attach LEFT** (compact, left red-box region). **Today's Activity RIGHT** (right red-box region). **No card/panel fill** behind the counters — only colored 3D chip boxes + hover lift. Trash stays on document rows inside Attach. Deal detail is unchanged from sep7x. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `48b78b4`.
-
-```bash
-cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7y && git pull
-npm install
-# skip db:migrate / db:seed on the live Zoho book
-npm run dev -- --port 43147
-```
-
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
-
-### Y — Pipeline list (sep7y)
-
-| # | Check | Pass when |
-| --- | --- | --- |
-| Y1 | Red-box placement | Attach documents sits in the **left** band. Today's Activity sits in the **right** band. They are two separate items — Attach is a compact card, Activity is not inside Attach's card. |
-| Y2 | Activity chips | **No card/panel fill** behind the counters. Title + date + calendar stay. Each chip is a **colored square box** (≤**4px** radius) using Call / Email / Task / Meeting / Training colors, raised **3D** depth, soft shadow. Hover **lifts 6px** with a stronger shadow. Strip `overflow: visible` so the lift is not clipped. |
-| Y3 | No orphan trash | Trash appears **only on a document row** inside Attach (when a file is chosen, or on extra rows). It does not float in the gap between Attach and Activity. |
-
-### B — Deal detail (sep7x @ `6ca87d0`, unchanged)
+### B — Deal detail (sep7x @ `6ca87d0`, unchanged on sep7aa)
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -985,7 +1075,7 @@ npm test
 
 **`cursor/live-ff-tip-sep6f`** is **`cursor/live-ff-tip-sep6e`** (`1ab3f69`) plus menu-structure only: Policies kids and Admin → Operations. No page redesign. No AMS. No new migration. No seed. Do not seed Ana. Keep Zoho scripts. Do not wipe the book.
 
-Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (Quotes only), **Contacts** (no kids), **Policies** (My Book / Renewals / Certificates — parent click lands on My Book), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome), **Operations** (admin only, own top-level row). Operations children (admin only): Billing, Claims, Endorsements, Compliance, Carrier Downloads, Book of Health, Book of Life, Marketplace. Customize can nest or promote any folder — kids stay with the folder. Agents never see Settings, Admin, Operations, or anything inside Operations. `NAV_LAYOUT_VERSION` is **8**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept). No `db:seed` / no Zoho wipe.
+Default rail, top → bottom: **Home**, **Leads** (no kids), **Deals** (no kids — Quotes is a Deal detail tab only), **Contacts** (no kids), **Policies** (My Book / Renewals / Certificates — parent click lands on My Book), **Business** (collapsed), **Carriers** (collapsed), divider, then **Tasks** (no kids), **Calendar** (no kids), **Templates** (email signatures / email templates / document templates), **Reports** (no kids), **Settings** (agency, admin only, empty kids), **Admin** (admin only: People, Integrations, Automations, Triggers, Commission rates, Lines of business, Offices, Agency chrome), **Operations** (admin only, own top-level row). Operations children (admin only): Billing, Claims, Endorsements, Compliance, Carrier Downloads, Book of Health, Book of Life, Marketplace. Customize can nest or promote any folder — kids stay with the folder. Agents never see Settings, Admin, Operations, or anything inside Operations. `NAV_LAYOUT_VERSION` is **9**; older per-user `nav_layout` blobs reset to this rail (personal timezone / signature prefs are kept). No `db:seed` / no Zoho wipe.
 
 Profile avatar (top right): **Edit Profile**, **Password**, **Settings** (`/me` — personal only), **Sign Out**. **Switch role** stays for Admin view-as and writes `role_switch` to the E&O trail.
 

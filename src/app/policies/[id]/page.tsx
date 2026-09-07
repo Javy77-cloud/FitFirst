@@ -44,6 +44,9 @@ import { RecordDetailLayout } from "@/components/record-context/record-detail-la
 import { loadRecordContext } from "@/lib/record-context";
 import { parseMoney, premiumChange } from "@/lib/renewal/compare";
 import { isInForceStatus } from "@/lib/policy/status";
+import { RecordTags } from "@/components/tags/record-tags";
+import { listModuleTagSuggestions } from "@/app/actions/record-tags";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +61,7 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
-  const [servicing, policyClaims, session, envelope, serviceTimeline, inspections, installments] = await Promise.all([
+  const [servicing, policyClaims, session, envelope, serviceTimeline, inspections, installments, tagExtra] = await Promise.all([
     loadPolicyServicing(id),
     listClaimsForPolicy(id),
     currentDeskSession(),
@@ -66,6 +69,7 @@ export default async function PolicyDetailPage({
     listServiceTimeline(id),
     listPolicyInspections(id),
     listPolicyInstallments(id),
+    listModuleTagSuggestions("policies").catch(() => [] as string[]),
   ]);
   const {
     policy,
@@ -118,6 +122,14 @@ export default async function PolicyDetailPage({
         {policy.endedAt ? (
           <span className="text-fit-red">Ended {formatDay(policy.endedAt)}</span>
         ) : null}
+      </div>
+      <div className="mb-4 max-w-lg">
+        <RecordTags
+          module="policies"
+          recordId={policy.id}
+          tags={policy.tags}
+          suggestions={suggestedTagsFor("policies", tagExtra)}
+        />
       </div>
       <div className="mb-4 flex flex-wrap gap-3 text-sm">
         {contact ? (

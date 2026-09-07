@@ -16,6 +16,7 @@ import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
+import { TagChips } from "@/components/tags/tag-chips";
 
 type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account"> & {
   risk?: { coverageA?: number | null } | null;
@@ -95,6 +96,7 @@ export async function DealsTable({
                 account?.name,
                 account?.phone,
                 account?.email,
+                ...(deal.tags ?? []),
               ]),
               sort: {
                 pick: "",
@@ -174,6 +176,7 @@ export async function DealsTable({
                 nextAction: <DealNextActionTimer dueAt={nextDue} />,
                 updated: formatDay(deal.updatedAt),
                 esign: formatInDeskEsignList(deal.esignStatus, deal.esignSignedAt, deal.esignRequestedAt),
+                tags: <TagChips tags={deal.tags} />,
                 comms: (
                   <DealRowActions
                     dealId={deal.id}

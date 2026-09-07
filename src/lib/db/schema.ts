@@ -220,9 +220,27 @@ export const agencySettings = pgTable(
     showCompanyWidgets: boolean("show_company_widgets").notNull().default(false),
     /** Admin must enable this before agents can see GBP pulse / inquiries. */
     allowAgentsMonitorGbp: boolean("allow_agents_monitor_gbp").notNull().default(false),
+    macContinuity: boolean("mac_continuity").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
+);
+
+/** Per-module agent-created tags. Suggested defaults live in code. */
+export const deskModuleTags = pgTable(
+  "desk_module_tags",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    name: text("name").notNull(),
+    createdBy: uuid("created_by"),
+    ...timestamps,
+  },
+  (t) => [
+    index("desk_module_tags_tenant_idx").on(t.tenantId, t.module),
+    uniqueIndex("desk_module_tags_uidx").on(t.tenantId, t.module, t.name),
+  ],
 );
 
 /** Physical desks. An agent can sit in more than one office (different states ok). */
@@ -390,6 +408,7 @@ export const leads = pgTable(
     followUpTemplateId: uuid("follow_up_template_id"),
     nurtureUntil: timestamp("nurture_until", { withTimezone: true }),
     nurtureRemindVia: text("nurture_remind_via"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [
@@ -494,6 +513,7 @@ export const deals = pgTable(
     esignDocumentId: uuid("esign_document_id"),
     zohoId: text("zoho_id"),
     sourceId: text("source_id"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [
@@ -694,6 +714,7 @@ export const policies = pgTable(
     esignSignedAt: timestamp("esign_signed_at", { withTimezone: true }),
     esignSignerName: text("esign_signer_name"),
     esignDocumentId: uuid("esign_document_id"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [

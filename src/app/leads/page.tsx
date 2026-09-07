@@ -38,6 +38,7 @@ import {
 } from "@/components/leads/lead-queue-controls";
 import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
+import { TagChips } from "@/components/tags/tag-chips";
 
 export const dynamic = "force-dynamic";
 
@@ -202,7 +203,7 @@ export default async function LeadsPage({
                   key: lead.id,
                   id: lead.id,
                   parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
-                  hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status]),
+                  hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status, ...(lead.tags ?? [])]),
                   sort: {
                     name: `${lead.lastName}, ${lead.firstName}`,
                     status,
@@ -260,6 +261,7 @@ export default async function LeadsPage({
                     ) : (
                       <StartShopForm leadId={lead.id} />
                     ),
+                    tags: <TagChips tags={lead.tags} />,
                   },
                 };
               })}

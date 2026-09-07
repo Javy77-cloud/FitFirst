@@ -18,6 +18,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { shopDealQuotes } from "@/app/actions/quotes";
 import { runFillDealSheets } from "@/app/actions/quote-sheet";
 import {
   canUnlockQuoting,
@@ -140,6 +141,12 @@ export async function approveMasterSheet(formData: FormData) {
         updatedAt: now,
       })
       .where(eq(quoteSheets.id, sheet.id));
+  }
+
+  if (str(formData, "requestQuotes") === "yes") {
+    await shopDealQuotes(dealId, "appetite");
+    revalidatePath(`/deals/${dealId}`);
+    redirect(`/deals/${dealId}?tab=quotes&line=${line}`);
   }
 
   revalidatePath(`/deals/${dealId}`);

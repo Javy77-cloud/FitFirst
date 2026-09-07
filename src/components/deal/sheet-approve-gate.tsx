@@ -32,7 +32,7 @@ export function SheetApproveGate({
         <form action={requestAppetiteQuotesAction}>
           <input type="hidden" name="dealId" value={dealId} />
           <Button type="submit" size="sm">
-            Approve & request quotes
+            Confirm & request quotes
           </Button>
         </form>
       </div>
@@ -46,22 +46,16 @@ export function SheetApproveGate({
       setError("Check that you visually reviewed this sheet first.");
       return;
     }
-    const sure = window.confirm(
-      `Are you sure? This unlocks quoting for ${formLabel}. Quotes are not coverage and do not bind.`,
-    );
-    if (!sure) {
-      setError("Second confirmation cancelled. Quoting stays locked.");
-      return;
-    }
     setPending(true);
     const data = new FormData(event.currentTarget);
     data.set("reviewed", "yes");
     data.set("sure", "yes");
+    data.set("requestQuotes", "yes");
     try {
       await approveMasterSheet(data);
     } catch (err) {
       setPending(false);
-      setError(err instanceof Error ? err.message : "Could not unlock quoting.");
+      setError(err instanceof Error ? err.message : "Could not confirm the sheet or request quotes.");
     }
   }
 
@@ -75,8 +69,8 @@ export function SheetApproveGate({
       <input type="hidden" name="line" value={line} />
       <p className="text-sm font-semibold text-navy">Confirm this sheet</p>
       <p className="mt-1 text-helper text-muted-foreground">
-        Glance the {formLabel} master sheet. Confirm it, then{" "}
-        <span className="font-medium">Approve & request quotes</span> unlocks.
+        Glance the {formLabel} master sheet. One click confirms it and requests quotes from every
+        in-appetite carrier.
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input
@@ -89,10 +83,7 @@ export function SheetApproveGate({
       </label>
       <div className="mt-3">
         <Button type="submit" size="sm" disabled={!reviewed || pending}>
-          {pending ? "Unlocking…" : "Confirm sheet"}
-        </Button>
-        <Button type="button" size="sm" className="ml-2" disabled>
-          Approve & request quotes
+          {pending ? "Requesting quotes…" : "Confirm & request quotes"}
         </Button>
       </div>
       {error ? <p className="mt-2 text-xs text-fit-flag">{error}</p> : null}

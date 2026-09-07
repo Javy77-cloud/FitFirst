@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,8 @@ export function SectionTabs({
   param = "tab",
   extraQuery,
   panelClassName,
+  toolbar,
+  banner,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
@@ -26,6 +29,8 @@ export function SectionTabs({
   param?: string;
   extraQuery?: Record<string, string | undefined>;
   panelClassName?: string;
+  toolbar?: ReactNode;
+  banner?: ReactNode;
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
 
@@ -42,6 +47,7 @@ export function SectionTabs({
 
   return (
     <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
       <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
@@ -83,6 +89,9 @@ export function SectionTabs({
           );
         })}
       </div>
+      {toolbar}
+      </div>
+      {banner}
       <div role="tabpanel" className={panelClassName ?? "mt-4"}>
         {current?.content}
       </div>

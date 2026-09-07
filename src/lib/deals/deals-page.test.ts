@@ -136,6 +136,9 @@ describe("Deals page sep7h", () => {
     expect(chrome).not.toMatch(/height: 120px/);
     expect(chrome).toMatch(/deal-today-heading/);
     expect(chrome).toMatch(/deal-today-chip-word/);
+    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*font-size: 28px;/);
+    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*font-weight: 800;/);
+    expect(chrome).not.toMatch(/\.deal-today-chip-count \{[\s\S]*font-size: 24px;/);
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\]/);
     expect(chrome).toMatch(/border-radius: var\(--radius\)/);
     expect(chrome).toMatch(/linear-gradient/);

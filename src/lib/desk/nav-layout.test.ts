@@ -90,13 +90,13 @@ describe("nav layout defaults", () => {
     expect(isHidablePrimaryId("leads")).toBe(true);
   });
 
-  it("nests Quotes under Deals and template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(8);
+  it("leaves Deals without a Quotes child and keeps template / admin / policies children only", () => {
+    expect(NAV_LAYOUT_VERSION).toBe(9);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
     );
-    expect(byId.deals.submenu.map((item) => item.id)).toEqual(["quotes"]);
+    expect(byId.deals.submenu.map((item) => item.id)).toEqual([]);
     expect(byId.leads.submenu).toEqual([]);
     expect(byId.contacts.submenu).toEqual([]);
     expect(DEFAULT_SUBMENUS.policies).toEqual([...POLICIES_DEFAULT_KIDS]);
@@ -219,9 +219,10 @@ describe("nav layout defaults", () => {
   it("keeps live desk destinations reachable and omits stubs", () => {
     const hrefs = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.href);
     const ids = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.id);
-    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/quotes", "/tasks", "/calendar", "/settings", "/admin", "/templates", "/reports"]) {
+    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/tasks", "/calendar", "/settings", "/admin", "/templates", "/reports"]) {
       expect(hrefs).toContain(href);
     }
+    expect(hrefs).not.toContain("/quotes");
     expect(ids).not.toContain("merge");
     expect(ids).not.toContain("social");
     expect(ids).toContain("my-book");
@@ -263,7 +264,7 @@ describe("nav layout defaults", () => {
       hiddenPrimaryIds: ["operations", "billing"],
       submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(8);
+    expect(next.version).toBe(9);
     expect(next.primaryOrder.at(-1)).toBe("operations");
     expect(next.hiddenPrimaryIds).toEqual([]);
     expect(next.submenus.admin).not.toContain("operations");
@@ -384,7 +385,7 @@ describe("normalizeNavLayout", () => {
 
 describe("free rearrange", () => {
   it("pulls a folder child up to the main rail", () => {
-    const start = defaultStoredNavLayout();
+    const start = addSubmenuLink(defaultStoredNavLayout(), "deals", "quotes");
     const next = applyNavDrop(start, "quotes", { type: "before", id: "contacts" });
     expect(next.primaryOrder).toContain("quotes");
     expect(next.primaryOrder.indexOf("quotes")).toBe(next.primaryOrder.indexOf("contacts") - 1);
@@ -430,7 +431,7 @@ describe("free rearrange", () => {
   });
 
   it("reorders, adds, and removes submenu links", () => {
-    const start = defaultStoredNavLayout();
+    const start = addSubmenuLink(defaultStoredNavLayout(), "deals", "quotes");
     const reordered = reorderSubmenu(start, "deals", "quotes", "quotes");
     expect(reordered.submenus.deals).toEqual(["quotes"]);
     const added = addSubmenuLink(start, "deals", "tasks");
@@ -448,7 +449,7 @@ describe("free rearrange", () => {
     expect(nudgePrimary(start, "leads", -1).primaryOrder[0]).toBe("leads");
     expect(nudgePrimary(start, "home", -1).primaryOrder[0]).toBe("home");
     expect(nudgePrimary(start, "settings", -1).primaryOrder).not.toEqual(start.primaryOrder);
-    expect(nudgeSubmenu(start, "deals", "quotes", 1).submenus.deals[0]).toBe("quotes");
+    expect(nudgeSubmenu(addSubmenuLink(start, "deals", "quotes"), "deals", "quotes", 1).submenus.deals[0]).toBe("quotes");
   });
 
   it("parses drop keys for before / after / into / folder end", () => {
@@ -479,7 +480,7 @@ describe("free rearrange", () => {
   });
 
   it("does not create a hidden nested folder when dropping into a child", () => {
-    const start = defaultStoredNavLayout();
+    const start = addSubmenuLink(defaultStoredNavLayout(), "deals", "quotes");
     const next = applyNavDrop(start, "leads", { type: "into", id: "quotes" });
     expect(next.submenus.deals).toContain("leads");
     expect(next.submenus.quotes ?? []).not.toContain("leads");
@@ -540,12 +541,12 @@ describe("free rearrange", () => {
     const dealsUnderPolicies = applyNavDrop(start, "deals", { type: "into", id: "policies" });
     expect(dealsUnderPolicies.primaryOrder).not.toContain("deals");
     expect(dealsUnderPolicies.submenus.policies).toContain("deals");
-    expect(dealsUnderPolicies.submenus.deals).toEqual(["quotes"]);
+    expect(dealsUnderPolicies.submenus.deals).toEqual([]);
     const dealsBack = applyNavDrop(dealsUnderPolicies, "deals", { type: "before", id: "contacts" });
     expect(dealsBack.primaryOrder).toContain("deals");
-    expect(dealsBack.submenus.deals).toEqual(["quotes"]);
+    expect(dealsBack.submenus.deals).toEqual([]);
     expect(dealsBack.submenus.policies).not.toContain("deals");
-    expect(normalizeNavLayout(dealsBack).submenus.deals).toEqual(["quotes"]);
+    expect(normalizeNavLayout(dealsBack).submenus.deals).toEqual([]);
   });
 });
 
@@ -574,7 +575,7 @@ describe("primaryIdForPath", () => {
   it("opens the primary that owns the route, including submenu leaves", () => {
     expect(primaryIdForPath("/")).toBe("");
     expect(primaryIdForPath("/leads")).toBe("leads");
-    expect(primaryIdForPath("/quotes")).toBe("deals");
+    expect(primaryIdForPath("/quotes")).toBe("");
     expect(primaryIdForPath("/accounts/abc")).toBe("business");
     expect(primaryIdForPath("/settings")).toBe("settings");
     expect(primaryIdForPath("/settings/import-export")).toBe("settings");

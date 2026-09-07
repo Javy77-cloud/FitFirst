@@ -71,7 +71,7 @@ describe("primary desk nav", () => {
     expect(labels).not.toContain("Search");
   });
 
-  it("keeps Quotes under Deals and omits demo stubs and Pipeline", () => {
+  it("omits Quotes under Deals and omits demo stubs and Pipeline", () => {
     const calendar = NAV_GROUPS.find((group) => group.id === "calendar");
     const home = NAV_GROUPS.find((group) => group.id === "home");
     const deals = NAV_GROUPS.find((group) => group.id === "deals");
@@ -99,7 +99,8 @@ describe("primary desk nav", () => {
       "Renewals",
       "Certificates",
     ]);
-    expect(deals?.items.some((item) => item.label === "Quotes")).toBe(true);
+    expect(deals?.items.some((item) => item.label === "Quotes")).toBe(false);
+    expect(deals?.items).toEqual([]);
     expect(pathIsActive("/deals", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
     expect(pathIsActive("/pipeline", { href: "/deals", label: "Deals", icon: deals!.icon, match: "/deals" })).toBe(true);
     expect(groupIdForPath("/pipeline")).toBe("deals");
