@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7ab`)
 
-Deal detail + Integrations, from `cursor/live-ff-tip-sep7aa` @ `011c324` / tip SHA `a86a834` (later sep7aa Pipeline band left alone). Vehicle and driver blocks start at **one**. Documents upload is repeatable rows. Tabs sit **flush under the deal header**. Tags on lead / contact / policy / deal sheets and list rows. **8x8** + **Mac Continuity** on Settings → Integrations. No sidebar change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record.
+Deal detail + Integrations, from `cursor/live-ff-tip-sep7aa` @ `011c324` / tip SHA `a86a834` (later sep7aa Pipeline band left alone). Vehicle and driver blocks start at **one**. Documents upload is repeatable rows. Tabs sit **flush under the deal header**. Tags on lead / contact / policy / deal sheets and list rows. **8x8** + **Mac Continuity** on Settings → Integrations. No sidebar change. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `18c6ebc`.
 
 ```bash
 cd ~/FitFirst
