@@ -4,10 +4,13 @@ import { SavedToast } from "@/components/desk/saved-toast";
 import { buttonVariants } from "@/components/ui/button";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
+import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { DealsTable } from "@/components/deals/deals-table";
+import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
 import { PipelineCreateDealForm } from "@/components/pipeline/create-deal-form";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
 import { requireSignedIn } from "@/lib/auth/guards";
+import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import {
   getPipelineBoard,
   listBoundPendingDeals,
@@ -46,6 +49,7 @@ export default async function DealsPage({
   const view = parsePipelineView(first(params.view));
   const stage = first(params.stage);
   const q = first(params.q) ?? "";
+  const queue = first(params.queue);
   const filter: DealListFilter = {
     stage,
     attention: first(params.attention),
@@ -56,7 +60,7 @@ export default async function DealsPage({
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || (view === "table" ? undefined : "p-c");
-  const [boardData, listRows, userRows, lineSettings, lookup, parties] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, lookup, parties, desk] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
@@ -72,6 +76,7 @@ export default async function DealsPage({
     loadDeskLineSettings(),
     listDealLookup(),
     listPartyTypeahead(),
+    loadDealPipelineDesk(queue),
   ]);
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
@@ -106,7 +111,7 @@ export default async function DealsPage({
 
   return (
     <AppShell
-      title="Deals"
+      title="Pipeline"
       eyebrow=""
       actions={
         <Link href="/deals/new" className={cn(buttonVariants())}>
@@ -126,6 +131,16 @@ export default async function DealsPage({
           Add at least one file on a line.
         </p>
       ) : null}
+      {notice === "selected" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Existing deal selected. Attach files to that record — no duplicate was created.
+        </p>
+      ) : null}
+      {notice === "created" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          New deal created. Search for it, then attach files.
+        </p>
+      ) : null}
 
       <DealWorkspaceBar
         boards={boards.map((item) => ({ slug: item.slug, name: item.name }))}
@@ -143,6 +158,7 @@ export default async function DealsPage({
       {board && board.kind === "shopping" && (pipeline || view !== "table") ? (
         <PipelineCreateDealForm
           parties={parties}
+          deals={lookup}
           pipelineSlug={board.slug}
           lineOfBusiness={lineForPipelineSlug(board.slug)}
           lifeOptions={settings.lifeOptions}
@@ -151,8 +167,13 @@ export default async function DealsPage({
         />
       ) : null}
 
-      <div className="mb-4">
-        <DealDocsUpload deals={lookup} parties={parties} />
+      {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
+
+      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <DealDocsUpload deals={lookup} parties={parties} />
+        </div>
+        <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
       </div>
 
       {view === "table" ? (
@@ -170,7 +191,13 @@ export default async function DealsPage({
               </Link>
             </p>
           ) : null}
-          <DealsTable rows={tableRows} users={users} agents={agents} initialQuery={q} />
+          <DealsTable
+            rows={tableRows}
+            users={users}
+            agents={agents}
+            initialQuery={q}
+            nextByDeal={desk.nextByDeal}
+          />
         </>
       ) : board ? (
         <PipelineWorkspace

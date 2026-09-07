@@ -1,5 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
+import { isAnaDeal } from "@/lib/crm/bind-path";
+import {
+  quoteToBindFields,
+  quoteToBindNotes,
+  shouldAutoBindOnEsign,
+  stubBoundPolicyNumber,
+} from "@/lib/deals/quote-to-bind";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, documents, policies, risks, signatureEnvelopes } from "@/lib/db/schema";
@@ -241,7 +248,45 @@ export async function performInDeskComplete(input: InDeskCompleteInput): Promise
       signerName: completed.signerName,
       documentId: envelope.documentId,
     });
+    if (recordKind === "deal" && envelope.dealId) {
+      await applyQuoteToBind(envelope.dealId, completed.signedAt);
+    }
   }
 
   return { ok: true, token, role: completed.role, signedAt: completed.signedAt };
+}
+
+async function applyQuoteToBind(dealId: string, signedAt: Date) {
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal || !shouldAutoBindOnEsign(deal)) return;
+  if (isAnaDeal(deal.id)) return;
+
+  const existing = await db.select().from(policies).where(eq(policies.dealId, dealId));
+  let policyNumber = existing[0]?.policyNumber ?? "";
+  if (!policyNumber) {
+    policyNumber = stubBoundPolicyNumber(deal.title, signedAt.getTime());
+    const effective = signedAt;
+    const expiration = new Date(effective);
+    expiration.setFullYear(expiration.getFullYear() + 1);
+    await db.insert(policies).values({
+      tenantId: DEFAULT_TENANT_ID,
+      contactId: deal.contactId,
+      accountId: deal.accountId,
+      dealId: deal.id,
+      policyNumber,
+      lineOfBusiness: deal.lineOfBusiness,
+      status: "bound",
+      effectiveDate: effective,
+      expirationDate: expiration,
+    });
+  }
+
+  const patch = quoteToBindFields(signedAt);
+  await db
+    .update(deals)
+    .set({
+      ...patch,
+      notes: quoteToBindNotes(deal.notes, policyNumber),
+    })
+    .where(eq(deals.id, deal.id));
 }

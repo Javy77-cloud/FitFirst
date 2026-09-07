@@ -115,10 +115,7 @@ export function DealWorkspaceBar({
             {pipelineTabLabel(item)}
           </Link>
         ))}
-        <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="Pipeline">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Pipeline
-          </span>
+        <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="Table Board Funnel">
           {VIEWS.map(([id, label]) => (
             <Link
               key={id}

@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7a`)
+## Mac test now (`cursor/live-ff-tip-sep7c`)
+
+Deals page only. Branched from `cursor/live-ff-tip-sep7a`. Does **not** retouch Leads follow-up (sep7a), lead-detail layout (sep7b), or the sidebar. No schema. No seed wipe.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7c && git pull
+npm install
+# skip db:migrate — no new schema
+# skip db:seed — keep the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals**.
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| 1 | Title | Header says **Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
+| 2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's activity**: Tasks, Calls, Emails, Meetings, Training with today’s counts. One row. Click a chip → work queue of that type. |
+| 3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task**. Comms column is **Send quote / Change owner / Meeting**. No “Text”. |
+| 4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
+| 5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
+| 6 | Quote-to-bind | **Send quote** opens the proposal. Mark the in-desk e-sign **signed** — deal stage becomes **Bound** and a policy number is attached. Ana stays unbound. |
+| 7 | Stale flag | A deal untouched past 14 days shows a **Stale** badge with **Re-engage** or **Archive**. |
+| 8 | Kept from sep6z | Filters, pagination 25/50/100/200 (default 25), Value column, no null `data-sort`, Change owner names the agent, receiver gets a ping. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7a`)
 
 Follow-up engine + shared pagination + Leads bulk delete. Rebased onto `cursor/live-ff-tip-sep6y` (`56e7552`). Does **not** retouch lead-detail docs layout (sep6x) or Deals polish (sep6z). No schema. No seed wipe.
 

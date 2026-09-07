@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { DealNextActionTimer } from "@/components/deals/deal-next-action";
+import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { LinkedValue } from "@/components/crm/linked-value";
@@ -10,6 +12,7 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
+import { nextDealActionAt } from "@/lib/deals/pipeline-desk";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { PIPELINE_LIST_COLUMNS } from "@/lib/list-columns";
 import { dealMatchesStage, pipelineHref } from "@/lib/wire/pipeline";
@@ -73,9 +76,25 @@ export function PipelineTableView({
           },
           cells: {
             title: (
-              <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                {deal.title}
-              </Link>
+              <div>
+                <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
+                  {deal.title}
+                </Link>
+                <div className="text-sm text-muted-foreground">{deal.phone || "—"}</div>
+                <DealQuickActions
+                  dealId={deal.id}
+                  phone={deal.phone}
+                  email={deal.email}
+                  contactId={deal.contactId}
+                  accountId={deal.accountId}
+                  leadId={deal.leadId}
+                />
+                <div className="mt-1">
+                  <DealNextActionTimer
+                    dueAt={nextDealActionAt({ updatedAt: deal.updatedAt })?.toISOString() ?? null}
+                  />
+                </div>
+              </div>
             ),
             insured: <InsuredLink href={deal.insuredHref} name={deal.insured} />,
             phone: <LinkedValue value={deal.phone} kind="tel" />,

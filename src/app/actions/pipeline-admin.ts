@@ -10,6 +10,8 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { formatPersonName } from "@/lib/crm/display";
 import { defaultStageColor } from "@/lib/desk/status-colors";
 import { isUuid } from "@/lib/ids";
+import { matchDealLookup } from "@/lib/deals/lookup";
+import { listDealLookup } from "@/lib/db/queries";
 import { dealStageForPipeline } from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
@@ -51,6 +53,19 @@ export async function createPipelineDeal(formData: FormData) {
     "";
   const pipelineSlug = str(formData, "pipelineSlug") || "p-c";
   const stageSlug = str(formData, "stageSlug") || "gather";
+  const existingDealId = isUuid(str(formData, "existingDealId")) ? str(formData, "existingDealId") : "";
+  if (existingDealId) {
+    revalidatePath("/deals");
+    redirect(`/deals/${existingDealId}`);
+  }
+  if (title) {
+    const lookup = await listDealLookup();
+    const existing = matchDealLookup(lookup, title);
+    if (existing) {
+      revalidatePath("/deals");
+      redirect(`/deals/${existing.id}`);
+    }
+  }
   if (!title) return;
   const [pipeline] = await db
     .select()
