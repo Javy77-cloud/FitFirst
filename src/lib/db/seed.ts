@@ -593,4 +593,7 @@ async function seedUnlocked() {
   await seedAmsWave8();
   const { seedAmsWave9 } = await import("./seed-ams-wave9");
   await seedAmsWave9();
+  const { ensureDealTitles, resetDealTitleBoot } = await import("@/lib/deals/retitle");
+  resetDealTitleBoot();
+  await ensureDealTitles().catch(() => null);
 }
