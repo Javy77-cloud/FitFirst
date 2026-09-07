@@ -46,14 +46,17 @@ describe("Deals today activity strip", () => {
     expect(classifyDealActivityType({ kind: "meeting", meetingType: "video" })).toBe("meeting");
   });
 
-  it("keeps chip tones Task blue, Call green, Email amber, Meetings purple, Training teal", () => {
-    expect(DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => [chip.id, chip.tone])).toEqual([
-      ["task", "blue"],
-      ["call", "green"],
-      ["email", "amber"],
-      ["meeting", "purple"],
-      ["training", "teal"],
+  it("orders chips like row actions and uses the same Call Email Task Meeting fills", () => {
+    expect(DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => chip.id)).toEqual([
+      "call",
+      "email",
+      "task",
+      "meeting",
+      "training",
     ]);
+    expect(DEAL_TODAY_ACTIVITY_CHIPS.some((chip) => chip.id === "sms")).toBe(false);
+    expect(DEAL_ACTIVITY_TONES.call.chipFg).toBe("#7A5C18");
+    expect(DEAL_ACTIVITY_TONES.email.chipFg).toBe("#101C34");
     expect(DEAL_ACTIVITY_TONES.task.buttonBg).toBe("#1d6fb8");
     expect(DEAL_ACTIVITY_TONES.meeting.buttonBg).toBe("#5b21b6");
   });

@@ -1,23 +1,25 @@
 import { isDueToday, isOverdue, whenForActivity } from "@/lib/activities/rules";
+import { CONTACT_ACTION_COLORS } from "@/lib/desk/contact-actions";
 import { formatCountdownClock, responseTimerState } from "@/lib/leads/queue";
 import { matchDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
 
 export const STALE_DEAL_DAYS = 14;
 export const NEXT_ACTION_FALLBACK_DAYS = 7;
 
-/** Today's Activity chip tints. Meeting row action uses the same purple. */
+/** Chip tints match row quick-action fills: Call mustard, Email navy, Task blue, Meeting purple. */
 export const DEAL_ACTIVITY_TONES = {
-  task: { chipBg: "#dbeafe", chipFg: "#1d4e89", buttonBg: "#1d6fb8" },
-  call: { chipBg: "#e4f5ec", chipFg: "#1f7a4d", buttonBg: "#1f7a4d" },
-  email: { chipBg: "#fff4d1", chipFg: "#8a6500", buttonBg: "#8a6500" },
+  call: { chipBg: "#f3ead4", chipFg: CONTACT_ACTION_COLORS.call, buttonBg: CONTACT_ACTION_COLORS.call },
+  email: { chipBg: "#e4e6eb", chipFg: CONTACT_ACTION_COLORS.email, buttonBg: CONTACT_ACTION_COLORS.email },
+  task: { chipBg: "#dbeafe", chipFg: "#1d6fb8", buttonBg: "#1d6fb8" },
   meeting: { chipBg: "#ede9fe", chipFg: "#5b21b6", buttonBg: "#5b21b6" },
   training: { chipBg: "#ccfbf1", chipFg: "#0f766e", buttonBg: "#0f766e" },
 } as const;
 
+/** Same order as row actions Call / SMS / Email / Task / Meeting — SMS has no today counter. */
 export const DEAL_TODAY_ACTIVITY_CHIPS = [
+  { id: "call", label: "Calls", tone: "mustard" },
+  { id: "email", label: "Emails", tone: "navy" },
   { id: "task", label: "Tasks", tone: "blue" },
-  { id: "call", label: "Calls", tone: "green" },
-  { id: "email", label: "Emails", tone: "amber" },
   { id: "meeting", label: "Meetings", tone: "purple" },
   { id: "training", label: "Training", tone: "teal" },
 ] as const;

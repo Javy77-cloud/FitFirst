@@ -70,7 +70,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | # | Check | Pass when |
 | --- | --- | --- |
 | C1 | Title | Header says **Deals / Pipeline**. View switcher is only **Table / Board / Funnel** — no “Pipeline” label there. |
-| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Task blue, Call green, Email amber, Meetings purple, Training teal. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
+| C2 | Attach + today | Upload block is ~two-thirds width and titled **Attach documents to a deal**. Right strip is **Today's Activity**: tinted chips on the page color (no white box), centered. Order matches row actions minus SMS: **Calls, Emails, Tasks, Meetings, Training**. Colors match Call mustard / Email navy / Task blue / Meeting purple (Training stays teal). No SMS chip. Bold count ~1.5× the label. Hover lifts. Click a chip → work queue of that type. One row. No mini-calendar. |
 | C3 | Row actions | Under the deal name: phone, then **Call / SMS / Email / Task / Meeting**. Task is calendar blue. Meeting is the blue-purple chip color. Comms column is **Send quote / Change owner / Bind policy**. No “Text”. No duplicate phone column. |
 | C4 | Create vs select | Search Gonzalez (existing). Button is **Select this deal** — files attach to that record. **Create deal** only appears when search has no match. |
 | C5 | Next-action timer | Every row has a live countdown to the next follow-up. Turns **red** the moment it is overdue. |
