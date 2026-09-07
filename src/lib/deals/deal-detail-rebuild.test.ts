@@ -111,7 +111,7 @@ describe("deal detail final rebuild", () => {
     expect(gate).not.toMatch(/Approve & request quotes/);
     expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
     expect(gate).toMatch(/requestQuotes/);
-    expect(docs).toMatch(/DeleteUploadedFileButton/);
+    expect(docs).toMatch(/FileActionMenu/);
     expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));
     expect(docs).toMatch(/deal-doc-row flex w-full/);

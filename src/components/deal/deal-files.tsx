@@ -1,7 +1,7 @@
 "use client";
 
 import { SheetDrop } from "@/components/deal/sheet-drop";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import type { Document, ExtractedFieldRow, ExtractionJob } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 
@@ -44,18 +44,20 @@ export function DealFiles({
             <tbody>
               {docs.map((doc) => (
                 <tr key={doc.id}>
-                  <td className="font-medium">{doc.filename}</td>
-                  <td className="uppercase">{doc.docType.replaceAll("_", " ")}</td>
-                  <td>{doc.status.replaceAll("_", " ")}</td>
-                  <td>
-                    <DeleteUploadedFileButton
+                  <td className="font-medium">
+                    <FileActionMenu
                       documentId={doc.id}
                       filename={doc.filename}
                       slot={doc.slot}
                       docType={doc.docType}
                       dealId={dealId}
-                    />
+                    >
+                      {doc.filename}
+                    </FileActionMenu>
                   </td>
+                  <td className="uppercase">{doc.docType.replaceAll("_", " ")}</td>
+                  <td>{doc.status.replaceAll("_", " ")}</td>
+                  <td></td>
                 </tr>
               ))}
             </tbody>

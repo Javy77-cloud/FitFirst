@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import type { Document, DocumentFolder } from "@/lib/db/schema";
 import { DOC_TYPE_LABELS, DOC_TYPES, FOLDER_KIND_LABELS, FOLDER_KINDS } from "@/lib/domain";
 import { fileGlyph, folderHref } from "@/lib/ops/documents";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { SendForSignature } from "@/components/ops/entity-upload";
 import { cn } from "@/lib/utils";
 
@@ -118,28 +118,30 @@ export function FileGrid({
         const Icon = ICONS[glyph.icon];
         return (
           <div key={doc.id} className="ff-doc-tile">
-            <span className={`ff-doc-icon ff-doc-${glyph.tone}`}>
-              <Icon className="size-4" />
-            </span>
-            <div>
-              <div className="line-clamp-2 text-sm font-semibold text-navy">{doc.filename}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {DOC_TYPE_LABELS[doc.docType as keyof typeof DOC_TYPE_LABELS] ?? doc.docType}
-                {(doc.tags ?? []).length ? ` · ${(doc.tags ?? []).join(", ")}` : ""}
+            <FileActionMenu
+              documentId={doc.id}
+              filename={doc.filename}
+              slot={doc.slot}
+              docType={doc.docType}
+              dealId={doc.dealId}
+              policyId={doc.policyId}
+              contactId={doc.contactId}
+              returnTo={returnTo}
+              triggerClassName="flex-col items-start gap-1"
+            >
+              <span className={`ff-doc-icon ff-doc-${glyph.tone}`}>
+                <Icon className="size-4" />
+              </span>
+              <div>
+                <div className="line-clamp-2 text-sm font-semibold text-navy">{doc.filename}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {DOC_TYPE_LABELS[doc.docType as keyof typeof DOC_TYPE_LABELS] ?? doc.docType}
+                  {(doc.tags ?? []).length ? ` · ${(doc.tags ?? []).join(", ")}` : ""}
+                </div>
               </div>
-            </div>
+            </FileActionMenu>
             <div className="flex flex-wrap items-center gap-2">
               <SendForSignature document={doc} returnTo={returnTo} compact />
-              <DeleteUploadedFileButton
-                documentId={doc.id}
-                filename={doc.filename}
-                slot={doc.slot}
-                docType={doc.docType}
-                dealId={doc.dealId}
-                policyId={doc.policyId}
-                contactId={doc.contactId}
-                returnTo={returnTo}
-              />
             </div>
           </div>
         );

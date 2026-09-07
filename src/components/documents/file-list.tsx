@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { File, FileSpreadsheet, FileText, ImageIcon, Megaphone, Newspaper } from "lucide-react";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import type { Document } from "@/lib/db/schema";
 import { docTypeLabel, fillHref } from "@/lib/documents/library";
 import { fileGlyph } from "@/lib/ops/documents";
@@ -67,14 +67,23 @@ export function FileList({
               return (
                 <tr key={doc.id}>
                   <td>
-                    <span className="inline-flex items-center gap-2">
-                      <span className={`ff-doc-icon ff-doc-${glyph.tone} !size-7`}>
-                        <Icon className="size-3.5" />
+                    <FileActionMenu
+                      documentId={doc.id}
+                      filename={doc.filename}
+                      slot={doc.slot}
+                      docType={doc.docType}
+                      dealId={doc.dealId}
+                      policyId={doc.policyId}
+                      contactId={doc.contactId}
+                      returnTo="/documents"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className={`ff-doc-icon ff-doc-${glyph.tone} !size-7`}>
+                          <Icon className="size-3.5" />
+                        </span>
+                        <span className="font-medium text-navy">{doc.filename}</span>
                       </span>
-                      <a href={`/files/${doc.id}`} className="font-medium text-navy hover:underline">
-                        {doc.filename}
-                      </a>
-                    </span>
+                    </FileActionMenu>
                   </td>
                   <td>{docTypeLabel(doc.docType)}</td>
                   <td>
@@ -91,18 +100,7 @@ export function FileList({
                       "—"
                     )}
                   </td>
-                  <td className="text-right">
-                    <DeleteUploadedFileButton
-                      documentId={doc.id}
-                      filename={doc.filename}
-                      slot={doc.slot}
-                      docType={doc.docType}
-                      dealId={doc.dealId}
-                      policyId={doc.policyId}
-                      contactId={doc.contactId}
-                      returnTo="/documents"
-                    />
-                  </td>
+                  <td></td>
                 </tr>
               );
             })}

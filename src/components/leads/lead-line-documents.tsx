@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { uploadLeadLineDocument } from "@/app/actions/documents";
 import { ChooseFileButton } from "@/components/choose-file-button";
-import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { fileViewHref } from "@/lib/files/urls";
@@ -229,28 +229,7 @@ function LineCard({
                   className="ff-file-row min-w-0 overflow-hidden rounded-md border border-border/70 px-2 py-1.5"
                   data-ff-line-file={doc.id}
                 >
-                  {isImageDoc(doc) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={fileViewHref(doc.id)}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-secondary text-[10px] font-semibold uppercase text-muted-foreground">
-                      {doc.filename.split(".").pop()?.slice(0, 4) || "file"}
-                    </span>
-                  )}
-                  <a
-                    href={fileViewHref(doc.id)}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={doc.filename}
-                    className="min-w-0 flex-1 truncate whitespace-nowrap text-sm font-medium text-navy hover:underline"
-                  >
-                    {doc.filename}
-                  </a>
-                  <DeleteUploadedFileButton
+                  <FileActionMenu
                     documentId={doc.id}
                     filename={doc.filename}
                     slot={doc.slot}
@@ -258,9 +237,27 @@ function LineCard({
                     leadId={leadId}
                     dealId={dealId}
                     returnTo={`/leads/${leadId}`}
-                    icon
-                    immediate
-                  />
+                    className="min-w-0 flex-1"
+                  >
+                    {isImageDoc(doc) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fileViewHref(doc.id)}
+                        alt=""
+                        className="h-10 w-10 shrink-0 rounded object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-secondary text-[10px] font-semibold uppercase text-muted-foreground">
+                        {doc.filename.split(".").pop()?.slice(0, 4) || "file"}
+                      </span>
+                    )}
+                    <span
+                      title={doc.filename}
+                      className="min-w-0 flex-1 truncate whitespace-nowrap text-sm font-medium text-navy"
+                    >
+                      {doc.filename}
+                    </span>
+                  </FileActionMenu>
                 </li>
               ))}
             </ul>

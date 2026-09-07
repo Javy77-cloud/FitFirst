@@ -31,10 +31,10 @@ describe("upload surfaces offer delete + one confirm", () => {
     for (const row of SURFACES.filter((item) => item.stored)) {
       const text = source(row.file);
       expect(text, row.label).toMatch(
-        /DeleteUploadedFileButton|FileDeleteIcon|data-ff-delete-file|HardDeleteForm/,
+        /DeleteUploadedFileButton|FileActionMenu|FileDeleteIcon|data-ff-delete-file|HardDeleteForm/,
       );
       expect(text, `${row.label} confirm gate`).toMatch(
-        /DeleteUploadedFileButton|confirmHardDelete|HardDeleteForm/,
+        /DeleteUploadedFileButton|FileActionMenu|confirmHardDelete|HardDeleteForm/,
       );
     }
   });
