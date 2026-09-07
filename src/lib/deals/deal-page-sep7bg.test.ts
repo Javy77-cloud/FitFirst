@@ -49,8 +49,7 @@ describe("sep7bg deal page four fixes", () => {
   it("BG3 — deal right rail is exactly 320px", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/data-ff-deal-right-rail/);
-    expect(page).toMatch(/lg:w-\[320px\] max-w-\[320px\]/);
-    expect(page).toMatch(/lg:min-w-\[320px\]/);
+    expect(page).toMatch(/lg:w-\[320px\] max-w-\[320px\] shrink-0/);
     expect(page).not.toMatch(/lg:w-\[300px\]/);
     expect(page).not.toMatch(/max-w-\[300px\]/);
   });

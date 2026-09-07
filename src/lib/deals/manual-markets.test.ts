@@ -45,7 +45,7 @@ describe("manual markets", () => {
     expect(panel).toMatch(/Approve & request quotes/);
     const emptyBranch = panel.slice(
       panel.indexOf("if (!hasData)"),
-      panel.indexOf("return (", panel.indexOf("if (!hasData)") + 1),
+      panel.indexOf("className=\"space-y-3\""),
     );
     expect(emptyBranch).toMatch(/data-ff-markets-empty/);
     expect(emptyBranch).not.toMatch(/ManualCarrierAdd/);
