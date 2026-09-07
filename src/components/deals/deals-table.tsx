@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DealNextActionTimer } from "@/components/deals/deal-next-action";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealStageSelect } from "@/components/deals/deal-stage-select";
 import { DealStaleBadge } from "@/components/deals/deal-stale-badge";
@@ -131,7 +130,6 @@ export async function DealsTable({
               email,
               address,
               stage,
-              nextDue,
               contactId: contact?.id ?? deal.contactId,
               accountId: account?.id ?? deal.accountId,
               leadId: deal.leadId,
@@ -180,7 +178,6 @@ function dealRowCells({
   email,
   address,
   stage,
-  nextDue,
   contactId,
   accountId,
   leadId,
@@ -196,7 +193,6 @@ function dealRowCells({
   email: string;
   address: string;
   stage: ReturnType<typeof dealStageView>;
-  nextDue: string | null;
   contactId: string | null | undefined;
   accountId: string | null | undefined;
   leadId: string | null | undefined;
@@ -234,9 +230,6 @@ function dealRowCells({
           leadId={leadId}
           homeAddress={address || deal.propertyOneliner}
         />
-        <div className="mt-1">
-          <DealNextActionTimer dueAt={nextDue} />
-        </div>
         {stale ? <DealStaleBadge dealId={deal.id} contactId={contactId} leadId={leadId} /> : null}
       </div>
     ),

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { DealNextActionTimer } from "@/components/deals/deal-next-action";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
@@ -12,7 +11,6 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
 import { formatMoney } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
-import { nextDealActionAt } from "@/lib/deals/pipeline-desk";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { PIPELINE_LIST_COLUMNS } from "@/lib/list-columns";
@@ -95,11 +93,6 @@ export function PipelineTableView({
                   accountId={deal.accountId}
                   leadId={deal.leadId}
                 />
-                <div className="mt-1">
-                  <DealNextActionTimer
-                    dueAt={nextDealActionAt({ updatedAt: deal.updatedAt })?.toISOString() ?? null}
-                  />
-                </div>
               </div>
             ),
             insured: <InsuredLink href={deal.insuredHref} name={deal.insured} />,
