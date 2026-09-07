@@ -39,13 +39,23 @@ describe("upload surfaces offer delete + one confirm", () => {
     }
   });
 
-  it("HardDeleteForm confirms inside the form action before the server action", () => {
+  it("HardDeleteForm keeps the server action and confirms once on click capture", () => {
     const text = source("src/components/desk/hard-delete-form.tsx");
-    expect(text).toMatch(/action=\{async \(formData\) => \{/);
-    expect(text).toMatch(/if \(confirm && !confirmHardDelete\(subject\)\) return;/);
-    expect(text).toMatch(/await action\(formData\);/);
+    expect(text).toMatch(/action=\{action\}/);
+    expect(text).not.toMatch(/action=\{async/);
+    expect(text).toMatch(/onClickCapture/);
+    expect(text).toMatch(/if \(!confirmHardDelete\(subject\)\)/);
+    expect(text).toMatch(/preventDefault/);
+    expect(text).toMatch(/stopPropagation/);
     expect(text).not.toMatch(/onSubmit/);
-    expect(text).not.toMatch(/preventDefault/);
+  });
+
+  it("FileDeleteIcon never puts name or formAction on the trash button", () => {
+    const icon = source("src/components/ui/file-delete-icon.tsx");
+    expect(icon).toMatch(/name: _name/);
+    expect(icon).toMatch(/formAction: _formAction/);
+    expect(icon).not.toMatch(/\bname=/);
+    expect(icon).not.toMatch(/\bformAction=/);
   });
 
   it("delete action hard-deletes shopping docs and hides issued policy files", () => {

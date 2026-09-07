@@ -5,6 +5,8 @@ export function FileDeleteIcon({
   label = "Delete",
   className,
   type = "submit",
+  name: _name,
+  formAction: _formAction,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { label?: string }) {
   return (

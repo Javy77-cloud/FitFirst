@@ -27,6 +27,10 @@ describe("platform UI standards", () => {
     const icon = source("src/components/ui/file-delete-icon.tsx");
     expect(icon).toMatch(/Trash2/);
     expect(icon).toMatch(/ff-file-delete/);
+    expect(icon).toMatch(/name: _name/);
+    expect(icon).toMatch(/formAction: _formAction/);
+    expect(icon).not.toMatch(/\bname=/);
+    expect(icon).not.toMatch(/\bformAction=/);
     const button = source("src/components/documents/delete-uploaded-file.tsx");
     expect(button).toMatch(/FileDeleteIcon/);
     expect(button).not.toMatch(/<Button/);
