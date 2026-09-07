@@ -4,7 +4,29 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ad`)
+## Mac test now (`cursor/live-ff-tip-sep7ah`)
+
+Pipeline band only, from `cursor/live-ff-tip-sep7ad` @ `de0c1b3` / tip SHA `38a53d9`. Same layout as AD — **Attach** LEFT `min(819px, 44.8%)`, **Today's Activity** centered in leftover (`flex: 1`), **100px rounded chips**. The flex row + chip box are **baked as JSX inline styles** so the CSS cascade cannot stack Activity under Attach or crush the chips. Colors, labels, tones, and leftover-centering unchanged. Deal detail / table / sidebar / seed untouched. Live Zoho stays book of record. Tip SHA `079243c`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ah && git pull
+npm install
+# skip db:migrate / db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### AH — Pipeline list (sep7ah)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
+| AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
+| AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7ad`)
 
 Pipeline band only, from `cursor/live-ff-tip-sep7ac` @ `746501c` / tip SHA `95c423b`. **Attach** stays `min(819px, 44.8%)` LEFT — same place and width, **taller** (`168px`) so search + doc type + Choose file + Add another can breathe. **Today's Activity** sits in the leftover space to the right (`flex: 1`) and is **centered** in that region — not pinned to the far right, not a second `797px / 43.6%` slot. Chips are **soft-rounded 100px cards** (12px radius), **bigger** than the 60px squares, with **Phone / SMS / Task / Meeting / Training** + icon + count **inside**. 3D fill + 6px hover lift. **No panel fill** behind chips. Deal detail / table / sidebar / seed untouched. Live Zoho stays book of record. Tip SHA `38a53d9`.
 
