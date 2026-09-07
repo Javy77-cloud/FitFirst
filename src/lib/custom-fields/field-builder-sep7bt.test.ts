@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { defaultLayoutForLine } from "./defaults";
 import {
   applyResolvedFieldDrop,
+  columnIdFromHitStack,
   moveField,
   resolveFieldDrop,
   resolveSectionDrop,
@@ -55,6 +56,9 @@ describe("sep7bt field builder drag across sections", () => {
     expect(builder).toMatch(/data-ff-drop-line/);
     expect(builder).toMatch(/data-ff-drop-section/);
     expect(builder).toMatch(/data-ff-section-handle/);
+    expect(builder).toMatch(/data-ff-field-handle/);
+    expect(builder).toMatch(/data-ff-drag-ghost/);
+    expect(builder).toMatch(/beginPointerDrag/);
     expect(builder).toMatch(/GripVertical/);
     expect(builder).toMatch(/event\.stopPropagation\(\)/);
     expect(builder).toMatch(/resolveFieldDrop/);
@@ -110,6 +114,18 @@ describe("sep7bt field builder drag across sections", () => {
 
     const saved = JSON.parse(JSON.stringify(crossed)) as typeof crossed;
     expect(saved.columns[1].sections[0].fieldKeys).toContain("email");
+  });
+
+  it("reads the column under the pointer while skipping the dragged row", () => {
+    const dragging = {
+      closest: (sel: string) => (sel === "[data-ff-dragging]" ? dragging : null),
+    };
+    const column = {
+      closest: (sel: string) => (sel === "[data-ff-builder-col]" ? column : null),
+      getAttribute: (name: string) => (name === "data-ff-builder-col" ? "right" : null),
+    };
+    expect(columnIdFromHitStack([dragging, column])).toBe("right");
+    expect(columnIdFromHitStack([dragging])).toBeNull();
   });
 
   it("places a dragged section by pointer without taking field drops", () => {

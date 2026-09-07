@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GripVertical, MoreHorizontal } from "lucide-react";
 import { saveDealFieldLayout } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
@@ -34,6 +34,7 @@ import {
   moveSection,
   relabelSection,
   removeFieldFromLayout,
+  columnIdFromHitStack,
   resolveFieldDrop,
   resolveSectionDrop,
   type FieldDropSectionHit,
@@ -96,6 +97,13 @@ function columnFromEvent(event: React.DragEvent): HTMLElement | null {
   return (event.currentTarget as HTMLElement).closest("[data-ff-builder-col]");
 }
 
+function columnElFromPoint(clientX: number, clientY: number): HTMLElement | null {
+  const stack = document.elementsFromPoint(clientX, clientY);
+  const id = columnIdFromHitStack(stack);
+  if (!id) return null;
+  return document.querySelector<HTMLElement>(`[data-ff-builder-col="${id}"]`);
+}
+
 function hintsEqual(left: DropHint | null, right: DropHint | null) {
   return (
     left?.columnId === right?.columnId &&
@@ -122,18 +130,77 @@ export function FieldBuilder({
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [dialog, setDialog] = useState<FieldDialog>(null);
   const [preview, setPreview] = useState(false);
+  const dragRef = useRef<DragPayload | null>(null);
+  const dropHintRef = useRef<DropHint | null>(null);
+  const ghostRef = useRef<HTMLDivElement | null>(null);
+  const pointerListenersRef = useRef<{
+    move: (event: PointerEvent) => void;
+    up: (event: PointerEvent) => void;
+  } | null>(null);
   const byKey = useMemo(() => Object.fromEntries(fields.map((field) => [field.key, field])), [fields]);
   const dialogField = dialog ? byKey[dialog.key] : undefined;
 
   function onDragStart(payload: DragPayload, event: React.DragEvent) {
     event.stopPropagation();
+    dragRef.current = payload;
     setDrag(payload);
     setDropHint(null);
     event.dataTransfer.setData("text/plain", JSON.stringify(payload));
     event.dataTransfer.effectAllowed = payload.kind === "type" || payload.kind === "new-section" ? "copy" : "move";
   }
 
+  function detachPointerListeners() {
+    const listeners = pointerListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.move);
+    window.removeEventListener("pointerup", listeners.up);
+    window.removeEventListener("pointercancel", listeners.up);
+    pointerListenersRef.current = null;
+    document.body.style.userSelect = "";
+  }
+
+  function beginPointerDrag(payload: DragPayload, event: React.PointerEvent) {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("input, textarea, select, [data-ff-field-menu], [data-slot='dropdown-menu-trigger']")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current = payload;
+    dropHintRef.current = null;
+    setDrag(payload);
+    setDropHint(null);
+    detachPointerListeners();
+    document.body.style.userSelect = "none";
+    const move = (moveEvent: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current) return;
+      const next = dropHintFromPoint(moveEvent.clientX, moveEvent.clientY, current);
+      dropHintRef.current = next;
+      setDropHint((existing) => (hintsEqual(existing, next) ? existing : next));
+      if (ghostRef.current) {
+        ghostRef.current.style.left = `${moveEvent.clientX + 10}px`;
+        ghostRef.current.style.top = `${moveEvent.clientY + 10}px`;
+      }
+    };
+    const up = (upEvent: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current) {
+        detachPointerListeners();
+        return;
+      }
+      const hint = dropHintFromPoint(upEvent.clientX, upEvent.clientY, current) ?? dropHintRef.current;
+      applyLayoutDrop(current, hint);
+    };
+    pointerListenersRef.current = { move, up };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  }
+
   function endDrag() {
+    detachPointerListeners();
+    dragRef.current = null;
+    dropHintRef.current = null;
     setDrag(null);
     setDropHint(null);
   }
@@ -174,54 +241,78 @@ export function FieldBuilder({
     setDialog({ kind: "properties", key });
   }
 
-  function dropPointFromEvent(event: React.DragEvent, columnId: string): DropHint {
-    const column = columnFromEvent(event);
-    const hits = column ? sectionHitsFromColumn(column) : [];
-    const y = event.clientY;
+  function dropHintFromPoint(clientX: number, clientY: number, payload: DragPayload): DropHint | null {
+    const column = columnElFromPoint(clientX, clientY);
+    const columnId = column?.getAttribute("data-ff-builder-col") ?? "";
+    if (!column || !columnId) return null;
+    const hits = sectionHitsFromColumn(column);
+    const y = clientY;
     if (!hits.length) {
       return { columnId, beforeKey: insertIndexFromClientY(y, []).beforeKey };
     }
-    if (drag?.kind === "section" || drag?.kind === "new-section") {
+    if (payload.kind === "section" || payload.kind === "new-section") {
       const sectionTarget = resolveSectionDrop(y, hits, {
-        draggingId: drag.kind === "section" ? drag.id : undefined,
+        draggingId: payload.kind === "section" ? payload.id : undefined,
       });
       return { columnId, ...sectionTarget, sectionId: sectionTarget.beforeSectionId };
     }
-    const fieldTarget = resolveFieldDrop(y, hits, {
-      draggingKey: drag?.kind === "field" ? drag.key : undefined,
-    });
-    return { columnId, ...fieldTarget };
+    return {
+      columnId,
+      ...resolveFieldDrop(y, hits, {
+        draggingKey: payload.kind === "field" ? payload.key : undefined,
+      }),
+    };
+  }
+
+  function dropPointFromEvent(event: React.DragEvent, columnId: string): DropHint {
+    const payload = dragRef.current ?? drag;
+    if (!payload) return { columnId };
+    return dropHintFromPoint(event.clientX, event.clientY, payload) ?? { columnId };
   }
 
   function updateDropHint(columnId: string, event: React.DragEvent) {
-    if (!drag) return;
+    const payload = dragRef.current ?? drag;
+    if (!payload) return;
+    void columnId;
     const next = dropPointFromEvent(event, columnId);
+    dropHintRef.current = next;
     setDropHint((current) => (hintsEqual(current, next) ? current : next));
   }
 
-  function handleDrop(columnId: string, event: React.DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!drag) return;
-    const target = dropPointFromEvent(event, columnId);
-    if (drag.kind === "new-section") {
+  function applyLayoutDrop(payload: DragPayload, target: DropHint | null) {
+    if (!target) {
+      endDrag();
+      return;
+    }
+    const { columnId } = target;
+    if (payload.kind === "new-section") {
       setLayout((current) => {
         const next = addSection(current, columnId, "New section");
         const added = next.columns.find((col) => col.id === columnId)?.sections.at(-1);
         if (!added || !target.beforeSectionId) return next;
         return moveSection(next, added.id, { columnId, beforeSectionId: target.beforeSectionId });
       });
-    } else if (drag.kind === "type") {
-      placeNewField(drag.type, columnId, target.sectionId, target.beforeKey);
-    } else if (drag.kind === "field") {
+    } else if (payload.kind === "type") {
+      placeNewField(payload.type, columnId, target.sectionId, target.beforeKey);
+    } else if (payload.kind === "field") {
       setLayout((current) =>
-        moveField(current, drag.key, { columnId, sectionId: target.sectionId, beforeKey: target.beforeKey }),
+        moveField(current, payload.key, { columnId, sectionId: target.sectionId, beforeKey: target.beforeKey }),
       );
     } else {
-      setLayout((current) => moveSection(current, drag.id, { columnId, beforeSectionId: target.beforeSectionId }));
+      setLayout((current) => moveSection(current, payload.id, { columnId, beforeSectionId: target.beforeSectionId }));
     }
     endDrag();
   }
+
+  function handleDrop(columnId: string, event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const payload = dragRef.current ?? drag;
+    if (!payload) return;
+    applyLayoutDrop(payload, dropPointFromEvent(event, columnId));
+  }
+
+  useEffect(() => () => detachPointerListeners(), []);
 
   function patchField(key: string, patch: Partial<CustomFieldDef>) {
     setFields((current) => current.map((field) => (field.key === key ? { ...field, ...patch } : field)));
@@ -244,7 +335,7 @@ export function FieldBuilder({
       data-ff-field-builder
       data-ff-builder-preview={preview ? "on" : "off"}
       data-ff-page-layout
-      onDragEnd={endDrag}
+      data-ff-dragging-kind={drag?.kind ?? undefined}
     >
       <form action={saveDealFieldLayout}>
         <input type="hidden" name="line" value={line} />
@@ -287,6 +378,9 @@ export function FieldBuilder({
                 draggable
                 onDragStart={(event) =>
                   onDragStart(type === "section" ? { kind: "new-section" } : { kind: "type", type }, event)
+                }
+                onPointerDown={(event) =>
+                  beginPointerDrag(type === "section" ? { kind: "new-section" } : { kind: "type", type }, event)
                 }
                 className="flex w-max max-w-full cursor-grab items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-background px-1.5 py-1 text-xs text-navy"
                 data-ff-palette-type={type}
@@ -347,6 +441,7 @@ export function FieldBuilder({
                           className="inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-navy"
                           data-ff-section-handle={section.id}
                           onDragStart={(event) => onDragStart({ kind: "section", id: section.id }, event)}
+                          onPointerDown={(event) => beginPointerDrag({ kind: "section", id: section.id }, event)}
                         >
                           <GripVertical className="size-3.5" />
                         </button>
@@ -397,6 +492,7 @@ export function FieldBuilder({
                           dragging={drag?.kind === "field" && drag.key === key}
                           values={Object.fromEntries(fields.map((item) => [item.key, item.defaultValue ?? ""]))}
                           onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
+                          onPointerDown={(event) => beginPointerDrag({ kind: "field", key }, event)}
                           onDragOver={(event) => {
                             event.preventDefault();
                             updateDropHint(column.id, event);
@@ -446,6 +542,21 @@ export function FieldBuilder({
           }}
         />
       ) : null}
+
+      {drag ? (
+        <div
+          ref={ghostRef}
+          className="pointer-events-none fixed z-[80] rounded-md border border-sky-400 bg-background px-2 py-1 text-xs text-navy shadow-md"
+          data-ff-drag-ghost
+          style={{ left: -9999, top: -9999 }}
+        >
+          {drag.kind === "field"
+            ? (byKey[drag.key]?.label ?? drag.key)
+            : drag.kind === "type"
+              ? CUSTOM_FIELD_TYPE_LABELS[drag.type]
+              : "Section"}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -466,6 +577,7 @@ function BuilderFieldRow({
   dragging,
   values,
   onDragStart,
+  onPointerDown,
   onDragOver,
   onDrop,
   onRequired,
@@ -478,6 +590,7 @@ function BuilderFieldRow({
   dragging?: boolean;
   values: Record<string, string>;
   onDragStart: (event: React.DragEvent) => void;
+  onPointerDown: (event: React.PointerEvent) => void;
   onDragOver: (event: React.DragEvent) => void;
   onDrop: (event: React.DragEvent) => void;
   onRequired: () => void;
@@ -490,9 +603,10 @@ function BuilderFieldRow({
       <div
         draggable
         onDragStart={onDragStart}
+        onPointerDown={onPointerDown}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        className={cn("cursor-grab space-y-1", dragging && "opacity-40")}
+        className={cn("cursor-grab space-y-1", dragging && "pointer-events-none opacity-40")}
         data-ff-builder-field={field.key}
         data-ff-preview-field={field.key}
         data-ff-dragging={dragging ? "1" : undefined}
@@ -511,17 +625,19 @@ function BuilderFieldRow({
     <div
       draggable
       onDragStart={onDragStart}
+      onPointerDown={onPointerDown}
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
         "flex cursor-grab items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5",
-        dragging && "opacity-40",
+        dragging && "pointer-events-none opacity-40",
       )}
       data-ff-builder-field={field.key}
       data-ff-field-row="collapsed"
       data-ff-dragging={dragging ? "1" : undefined}
     >
       <span className="flex min-w-0 items-center gap-1.5 truncate text-sm text-navy">
+        <GripVertical className="size-3.5 shrink-0 text-muted-foreground" data-ff-field-handle={field.key} />
         <FieldTypeIcon type={field.type} />
         <span className="truncate" data-ff-field-label={field.key}>
           {field.label}

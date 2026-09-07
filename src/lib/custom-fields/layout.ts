@@ -176,6 +176,18 @@ export function applyResolvedFieldDrop(
   return moveField(layout, fieldKey, { columnId, ...target });
 }
 
+/** Skip the dragging row / ghost when reading the column under the pointer. */
+export function columnIdFromHitStack(stack: Array<{ closest: (sel: string) => { getAttribute: (name: string) => string | null } | null } | null>): string | null {
+  for (const node of stack) {
+    if (!node) continue;
+    if (node.closest("[data-ff-drag-ghost]") || node.closest("[data-ff-dragging]")) continue;
+    const column = node.closest("[data-ff-builder-col]");
+    const id = column?.getAttribute("data-ff-builder-col");
+    if (id) return id;
+  }
+  return null;
+}
+
 /** Insert before the first item whose midpoint is below the pointer. */
 export function insertIndexFromClientY(
   clientY: number,
