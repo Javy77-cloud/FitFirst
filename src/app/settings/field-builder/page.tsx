@@ -3,6 +3,7 @@ import { FieldBuilder } from "@/components/custom-fields/field-builder";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { DEAL_LAYOUT_LINES } from "@/lib/custom-fields/defaults";
+import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
 import { ensureFieldsForLine, listDealFieldDefs, loadLayoutForLine } from "@/lib/custom-fields/store";
 import { LINES, type LineOfBusiness } from "@/lib/domain";
 
@@ -16,14 +17,18 @@ export default async function FieldBuilderPage({
   const { line: raw } = await searchParams;
   const line = (LINES as readonly string[]).includes(raw ?? "") ? (raw as LineOfBusiness) : "HO";
   await ensureFieldsForLine(line).catch(() => null);
-  const [layout, fields] = await Promise.all([loadLayoutForLine(line), listDealFieldDefs()]);
+  const [layout, fields, picklists] = await Promise.all([
+    loadLayoutForLine(line),
+    listDealFieldDefs(),
+    listFieldPicklists(),
+  ]);
 
   return (
     <SettingsShell title="Deal field builder" current="field-builder">
       <p className="mb-4 text-sm text-muted-foreground">
-        Drag a field type onto a column, drop it, and type the label. Reorder by dragging fields
-        or sections. Save applies this layout to every {LINE_LABELS[line]} deal — homeowners and
-        general liability do not share a sheet.
+        Three locked columns: types on the left, then the two canvas columns. Drag a type —
+        including Section — onto a column. Currency, percent, checkbox, and picklist render as
+        those controls. Save applies this layout to every {LINE_LABELS[line]} deal.
       </p>
       <div className="mb-4 flex flex-wrap gap-2" data-ff-builder-lobs>
         {DEAL_LAYOUT_LINES.map((item) => (
@@ -38,7 +43,7 @@ export default async function FieldBuilderPage({
           </Link>
         ))}
       </div>
-      <FieldBuilder line={line} initialLayout={layout} fields={fields} />
+      <FieldBuilder line={line} initialLayout={layout} fields={fields} picklists={picklists} />
     </SettingsShell>
   );
 }

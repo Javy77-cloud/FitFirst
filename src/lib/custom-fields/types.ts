@@ -44,6 +44,18 @@ export type CustomFieldDef = {
   formula?: string | null;
   lookupModule?: string | null;
   systemKey?: string | null;
+  required?: boolean;
+  defaultValue?: string | null;
+  picklistId?: string | null;
+};
+
+/** Palette includes field types plus Section, which is a layout block — not a field type. */
+export const PALETTE_ITEMS = [...CUSTOM_FIELD_TYPES, "section"] as const;
+export type PaletteItem = (typeof PALETTE_ITEMS)[number];
+
+export const PALETTE_LABELS: Record<PaletteItem, string> = {
+  ...CUSTOM_FIELD_TYPE_LABELS,
+  section: "Section",
 };
 
 export type LayoutSection = {

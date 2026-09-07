@@ -28,6 +28,8 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV_IDS).toContain("master-risk");
     expect(SETTINGS_NAV_IDS).toContain("outbound");
     expect(SETTINGS_NAV_IDS).toContain("import");
+    expect(SETTINGS_NAV_IDS).toContain("picklists");
+    expect(settingsGroupFor("picklists")).toBe("agency-people");
     expect(settingsGroupFor("agents")).toBe("agency-people");
     expect(settingsGroupFor("people")).toBe("agency-people");
     expect(settingsGroupFor("profile")).toBe("security");

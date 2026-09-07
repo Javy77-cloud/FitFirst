@@ -63,6 +63,9 @@ export async function saveDealFieldLayout(formData: FormData) {
             formula: field.formula ?? null,
             lookupModule: field.lookupModule ?? null,
             systemKey: field.systemKey ?? null,
+            required: Boolean(field.required),
+            defaultValue: field.defaultValue ?? null,
+            picklistId: field.picklistId ?? null,
           });
         }
       }

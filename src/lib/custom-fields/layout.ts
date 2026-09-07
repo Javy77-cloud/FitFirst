@@ -55,6 +55,22 @@ export function removeFieldFromLayout(layout: FieldLayout, fieldKey: string): Fi
   return next;
 }
 
+export function insertFieldAfter(layout: FieldLayout, afterKey: string, fieldKey: string): FieldLayout {
+  const next = removeFieldFromLayout(layout, fieldKey);
+  for (const column of next.columns) {
+    for (const section of column.sections) {
+      const at = section.fieldKeys.indexOf(afterKey);
+      if (at >= 0) {
+        section.fieldKeys.splice(at + 1, 0, fieldKey);
+        return next;
+      }
+    }
+  }
+  const first = next.columns[0]?.sections[0];
+  if (first) first.fieldKeys.push(fieldKey);
+  return next;
+}
+
 export function moveField(
   layout: FieldLayout,
   fieldKey: string,
