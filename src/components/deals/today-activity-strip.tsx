@@ -58,7 +58,7 @@ export function TodayActivityStrip({
             <Link
               key={chip.id}
               href={todayActivityWorkHref(chip.id)}
-              className="deal-today-chip inline-flex shrink-0 flex-col items-center justify-center text-center"
+              className="deal-today-item inline-flex shrink-0 flex-col items-center justify-center text-center"
               style={{
                 color: tone.chipFg,
                 ["--chip-top" as string]: tone.chipBgLight,
@@ -70,9 +70,11 @@ export function TodayActivityStrip({
               data-testid={`deal-today-${chip.id}`}
               data-tone={chip.tone}
             >
-              <Icon className="size-4 shrink-0" aria-hidden />
-              <span className="text-[11px] font-semibold leading-none">{chip.label}</span>
-              <span className="text-[23px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+              <span className="deal-today-chip">
+                <Icon className="size-4 shrink-0" aria-hidden />
+                <span className="text-[18px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+              </span>
+              <span className="deal-today-chip-label">{chip.label}</span>
             </Link>
           );
         })}
