@@ -63,7 +63,7 @@ describe("site-wide action confirmation toast", () => {
 
   it("wires the same helper on other silent deal/desk mutations", () => {
     expect(source("src/app/actions/record-tags.ts")).toMatch(
-      /flashAction\(paths\.detail\(recordId\), "tags-saved"\)/,
+      /flashAction\(pathsFor\(module\)\.detail\(recordId\), "tags-saved"\)/,
     );
     expect(source("src/app/actions/documents.ts")).toMatch(
       /redirect\(withFlash\(returnTo, "document-deleted"\)\)/,
