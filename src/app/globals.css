@@ -272,7 +272,7 @@
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--chip-fg, currentColor) 24%, #101c34);
+  color: var(--chip-fg, currentColor);
 }
 .deal-today-chip-word {
   font-size: 13px;
