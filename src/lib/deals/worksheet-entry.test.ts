@@ -4,19 +4,20 @@ import { describe, expect, it } from "vitest";
 describe("lead + deal worksheet entry checklist", () => {
   it("removes Ask a teammate and Activity timeline from the lead page", () => {
     const src = readFileSync("src/app/leads/[id]/page.tsx", "utf8");
+    const desk = readFileSync("src/components/leads/lead-detail-workspace.tsx", "utf8");
     expect(src).not.toMatch(/RecordAskPanel|AskOnRecord|ActivityTimeline/);
     expect(src).not.toMatch(/Ask a teammate/);
     expect(src).not.toMatch(/Activity timeline/);
     expect(src).toMatch(/utilityChrome/);
-    const convertAt = src.indexOf("data-ff-convert-deal");
+    const convertAt = desk.indexOf("data-ff-convert-deal");
     expect(convertAt).toBeGreaterThan(0);
-    expect(src.slice(convertAt, convertAt + 220)).toMatch(/>\s*Convert\s*</);
+    expect(desk.slice(convertAt, convertAt + 280)).toMatch(/>\s*Convert\s*</);
     expect(src).not.toMatch(/Start shop/);
     expect(src).not.toMatch(/Convert to deal/);
-    expect(src.slice(Math.max(0, convertAt - 180), convertAt)).not.toMatch(/variant="outline"/);
-    expect(src).toMatch(/data-ff-lead-layout="two-col"/);
+    expect(desk.slice(Math.max(0, convertAt - 180), convertAt)).not.toMatch(/variant="outline"/);
+    expect(desk).toMatch(/data-ff-lead-layout="two-col"/);
     expect(src).toMatch(/View related deal/);
-    expect(src).toMatch(/LeadLineDocuments/);
+    expect(desk).toMatch(/LeadLineDocuments/);
     expect(src).not.toMatch(/source docs wait for the deal/i);
   });
 
@@ -51,6 +52,7 @@ describe("lead + deal worksheet entry checklist", () => {
     expect(shell).toMatch(/utilityChrome/);
     expect(header).toMatch(/utilityChrome/);
     expect(header).toMatch(/data-ff-utility-chrome/);
+    expect(header).not.toMatch(/Personal lines worksheet/);
     expect(contacts).not.toMatch(/utilityChrome/);
   });
 });

@@ -33,10 +33,10 @@ describe("Deals page sep6z", () => {
   it("uses a Choose file button, trash delete, and + Add file", () => {
     const upload = source("src/components/deal/deal-docs-upload.tsx");
     expect(upload).toMatch(/Search deals/);
-    expect(upload).toMatch(/Choose file/);
+    expect(upload).toMatch(/Choose file|ChooseFileButton/);
     expect(upload).not.toMatch(/Choose Files/);
     expect(upload).toMatch(/\+ Add file/);
-    expect(upload).toMatch(/Trash2/);
+    expect(upload).toMatch(/FileDeleteIcon|Trash2/);
     expect(upload).toMatch(/setLiveQuery\("deals"/);
   });
 

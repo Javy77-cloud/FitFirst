@@ -17,6 +17,7 @@ export function DeleteUploadedFileButton({
   returnTo,
   label,
   icon: _icon = false,
+  immediate = false,
 }: {
   documentId: string;
   filename: string;
@@ -29,6 +30,7 @@ export function DeleteUploadedFileButton({
   returnTo?: string;
   label?: string;
   icon?: boolean;
+  immediate?: boolean;
 }) {
   const mode = uploadedFileDeleteMode({ slot, docType });
   return (
@@ -36,6 +38,7 @@ export function DeleteUploadedFileButton({
       action={deleteUploadedFile}
       subject={deleteUploadedFileSubject(filename, mode)}
       className="inline"
+      confirm={!immediate}
     >
       <input type="hidden" name="documentId" value={documentId} />
       {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { uploadLeadLineDocument } from "@/app/actions/documents";
+import { ChooseFileButton } from "@/components/choose-file-button";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
 import { Button } from "@/components/ui/button";
 import { fileViewHref } from "@/lib/files/urls";
@@ -28,13 +29,16 @@ export function LeadLineDocuments({
   dealId,
   insuranceTypeDesired,
   docs,
+  extraLines,
+  onExtraLines,
 }: {
   leadId: string;
   dealId?: string | null;
   insuranceTypeDesired?: string | null;
   docs: LeadLineDoc[];
+  extraLines: ShopLine[];
+  onExtraLines: (lines: ShopLine[]) => void;
 }) {
-  const [extraLines, setExtraLines] = useState<ShopLine[]>([]);
   const documentLines = documentLinesFromDocs(docs);
   const lines = leadDocumentCardLines({
     insuranceTypeDesired,
@@ -46,11 +50,38 @@ export function LeadLineDocuments({
 
   return (
     <aside className="ff-card p-4" data-ff-lead-line-docs>
-      <h2 className="text-base font-semibold text-navy">Documents by line</h2>
-      <p className="mb-3 text-xs text-muted-foreground">
-        Drop a file on the coverage it belongs to. Nothing sits on the lead as a whole — convert
-        carries each file onto the deal in the same line.
-      </p>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-navy">Documents by line</h2>
+          <p className="text-xs text-muted-foreground">
+            Each line has its own files. Convert carries them onto the deal in the same groups.
+          </p>
+        </div>
+        {leftover.length > 0 ? (
+          <label className="text-xs font-medium text-navy">
+            Add line
+            <select
+              className="mt-1 h-8 w-40 rounded-md border border-input bg-card px-2 text-sm"
+              defaultValue=""
+              aria-label="Add line"
+              data-ff-add-line=""
+              onChange={(event) => {
+                const next = event.target.value as ShopLine;
+                if (!next) return;
+                onExtraLines(extraLines.includes(next) ? extraLines : [...extraLines, next]);
+                event.target.value = "";
+              }}
+            >
+              <option value="">Choose a line</option>
+              {leftover.map((line) => (
+                <option key={line} value={line}>
+                  {SHOP_LINE_LABELS[line]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
       <div className="space-y-2">
         {lines.map((line) => (
           <LineCard
@@ -63,30 +94,6 @@ export function LeadLineDocuments({
           />
         ))}
       </div>
-      {leftover.length > 0 ? (
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="min-w-[10rem] flex-1 text-xs">
-            Add another line
-            <select
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              defaultValue=""
-              onChange={(event) => {
-                const next = event.target.value as ShopLine;
-                if (!next) return;
-                setExtraLines((current) => (current.includes(next) ? current : [...current, next]));
-                event.target.value = "";
-              }}
-            >
-              <option value="">Choose a line</option>
-              {leftover.map((line) => (
-                <option key={line} value={line}>
-                  {SHOP_LINE_LABELS[line]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      ) : null}
     </aside>
   );
 }
@@ -114,6 +121,10 @@ function LineCard({
     if (docs.length === 1) return "1 file";
     return `${docs.length} files`;
   }, [docs.length]);
+
+  function submitSoon() {
+    window.setTimeout(() => formRef.current?.requestSubmit(), 0);
+  }
 
   return (
     <article className="overflow-hidden rounded-md border border-border" data-ff-line-card={line}>
@@ -148,30 +159,27 @@ function LineCard({
                 const transfer = new DataTransfer();
                 for (const file of files) transfer.items.add(file);
                 first.files = transfer.files;
+                first.dispatchEvent(new Event("change", { bubbles: true }));
                 formRef.current.requestSubmit();
               }}
             >
               <p className="mb-2 text-xs text-muted-foreground">
-                Drop a {label.toLowerCase()} file here, or pick one below.
+                Drop a {label.toLowerCase()} file here, or choose one below.
               </p>
               <div className="space-y-2">
                 {slots.map((id, index) => (
-                  <label
-                    key={id}
-                    className="flex min-h-9 cursor-pointer items-center rounded-md border border-border bg-card px-2 text-xs text-muted-foreground"
-                    data-ff-file-slot={index}
-                  >
-                    <span className="mr-2 shrink-0 font-medium text-navy">File {index + 1}</span>
-                    <input
-                      type="file"
+                  <div key={id} className="flex items-center" data-ff-file-slot={index}>
+                    <ChooseFileButton
                       name={`files_${index}`}
                       accept=".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
-                      className="min-w-0 flex-1 text-xs"
+                      onFile={(file) => {
+                        if (file) submitSoon();
+                      }}
                     />
-                  </label>
+                  </div>
                 ))}
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2">
                 <Button
                   type="button"
                   size="sm"
@@ -183,9 +191,6 @@ function LineCard({
                 >
                   + Add file
                 </Button>
-                <Button type="submit" size="sm">
-                  Upload
-                </Button>
               </div>
             </div>
           </form>
@@ -196,7 +201,7 @@ function LineCard({
               {docs.map((doc) => (
                 <li
                   key={doc.id}
-                  className="flex items-center gap-2 rounded-md border border-border/70 px-2 py-1.5"
+                  className="ff-file-row rounded-md border border-border/70 px-2 py-1.5"
                   data-ff-line-file={doc.id}
                 >
                   {isImageDoc(doc) ? (
@@ -228,6 +233,7 @@ function LineCard({
                     dealId={dealId}
                     returnTo={`/leads/${leadId}`}
                     icon
+                    immediate
                   />
                 </li>
               ))}

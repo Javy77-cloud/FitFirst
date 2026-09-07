@@ -531,6 +531,13 @@ body[data-ff-col-resize] {
   height: 2.5rem;
   justify-content: center;
 }
+.ff-convert-action {
+  width: 100%;
+  height: 3.25rem;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 650;
+}
 .ff-form-secondary {
   display: flex;
   flex-wrap: wrap;

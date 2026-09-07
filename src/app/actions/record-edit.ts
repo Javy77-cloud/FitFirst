@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
@@ -122,6 +123,8 @@ export async function updateLeadRecord(formData: FormData) {
     })
     .where(eq(leads.id, id));
   revalidatePath(`/leads/${id}`);
+  revalidatePath("/leads");
+  redirect("/leads?saved=1");
 }
 
 export async function updateDealRecord(formData: FormData) {

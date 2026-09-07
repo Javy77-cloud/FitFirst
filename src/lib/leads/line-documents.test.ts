@@ -8,6 +8,7 @@ import {
   leadDocumentCardLines,
   lineFromTags,
   lineTag,
+  parseSelectedShopLines,
   remainingShopLines,
   shopLinesForConvertWithDocs,
 } from "./line-documents";
@@ -55,7 +56,14 @@ describe("lead line documents", () => {
       "flood",
     ]);
     expect(shopLinesForConvertWithDocs("HO", ["auto", "flood"])).toEqual(["home", "auto", "flood"]);
+    expect(shopLinesForConvertWithDocs("HO", [], ["life", "umbrella"])).toEqual([
+      "home",
+      "umbrella",
+      "life",
+    ]);
     expect(isImageDoc({ filename: "roof.jpg", mimeType: "application/octet-stream" })).toBe(true);
     expect(isImageDoc({ filename: "dec.pdf", mimeType: "application/pdf" })).toBe(false);
+    expect(parseSelectedShopLines("home,life,umbrella")).toEqual(["home", "umbrella", "life"]);
+    expect(parseSelectedShopLines("nope")).toEqual([]);
   });
 });

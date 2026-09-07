@@ -4,35 +4,56 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7a`)
+## Mac test now (`cursor/live-ff-tip-sep7d`)
 
-Follow-up engine + shared pagination + Leads bulk delete. Rebased onto `cursor/live-ff-tip-sep6y` (`56e7552`). Does **not** retouch lead-detail docs layout (sep6x) or Deals polish (sep6z). No schema. No seed wipe.
+Consolidator: Crew D follow-up engine (`cursor/live-ff-tip-sep7a` @ `f615a08`) plus Crew E lead-detail brief (`cursor/live-ff-tip-sep7b`). Does **not** include Deals tip sep7c. No sidebar changes. No schema. No seed wipe. `0079_documents_lead_id` is already on this branch.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7a && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7d && git pull
 npm install
-# skip db:migrate — no new schema
+# skip db:migrate unless this desk is behind sep6x (`0079_documents_lead_id`)
 # skip db:seed — keep the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then open a **Lead**.
+
+### A — Leads list / follow-up / delete / pagination (sep7a)
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| 1 | Aggressive on new | Create a lead. Within ~1s Follow-up shows **Aggressive** and Response starts a live countdown. No manual Aggressive pick. |
-| 2 | Status isolation | Change one row cold → contacted. Only that row flips. Other rows keep their status, clock, and template. |
-| 3 | Snooze labels | Follow-up modal presets are **Snooze 15 min**, **Snooze 1 hour**, **Snooze 1 day**. **Custom snooze** expands to number + unit + **Apply**. Apply actually reschedules. |
-| 4 | Mark as read | **Mark as read** advances to the next template step (clock resets, black). Last step: clock stops, Response shows a dash. |
-| 5 | Clock bindings | Aggressive → new, Default → contacted, Steady → warm, Drip → cold. Red only when overdue. Edit a template delay — pending clocks reschedule live. |
-| 6 | Template steps | Follow-up Templates list shows each step once. Edit view matches the list. |
-| 7 | Pagination | Leads and Contacts (or Deals) share the same bottom-right bar: 25 / 50 / 100 / 200 (default 25), **Page 1 of N**, **Showing 1–25 of …**. |
-| 8 | Bulk delete | Tick one lead → Actions → Delete → **one** confirm. Lead is gone (search by name/phone finds nothing). No runtime error. Selection clears. |
+| A1 | Aggressive on new | Create a lead. Within ~1s Follow-up shows **Aggressive** and Response starts a live countdown. No manual Aggressive pick. |
+| A2 | Status isolation | Change one row cold → contacted. Only that row flips. Other rows keep their status, clock, and template. |
+| A3 | Snooze labels | Follow-up modal presets are **Snooze 15 min**, **Snooze 1 hour**, **Snooze 1 day**. **Custom snooze** expands to number + unit + **Apply**. Apply actually reschedules. |
+| A4 | Mark as read | **Mark as read** advances to the next template step (clock resets, black). Last step: clock stops, Response shows a dash. |
+| A5 | Clock bindings | Aggressive → new, Default → contacted, Steady → warm, Drip → cold. Red only when overdue. Edit a template delay — pending clocks reschedule live. |
+| A6 | Template steps | Follow-up Templates list shows each step once. Edit view matches the list. |
+| A7 | Pagination | Leads and Contacts (or Deals) share the same bottom-right bar: 25 / 50 / 100 / 200 (default 25), **Page 1 of N**, **Showing 1–25 of …**. |
+| A8 | Bulk delete | Tick one lead → Actions → Delete → **one** confirm. Lead is gone (search by name/phone finds nothing). No runtime error. Selection clears. |
 
 **Shared-state root cause:** row status / clock / template were not keyed per lead — `publishLeadClock` and React reuse could apply one row’s patch across the table, and `resetLeadsWithoutLoggedContact` rewrote other rows on refresh. Clock patches now require `leadId`; each control is keyed to that lead; the one-shot reset no longer cancels new-lead queues or flips other statuses.
 
 **Delete root cause:** `deleteSelectedLeads` ran `UPDATE eo_audit_logs SET lead_id = NULL`. That table is append-only (`eo_audit_logs is append-only`). Historical audit rows are left as-is. Duplicate confirm was `confirmHardDelete` asking the same question twice.
+
+### B — Lead detail (sep7b)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| B1 | Two-column | Left is the lead form. Right is Documents by line. Side by side on a normal desk — does not stack until a phone-narrow window. Address / City / State / ZIP share one row. Email and Phone share one row. Header title is **Leads**. No “Personal Lines Worksheet.” |
+| B2 | One line control | Home / Auto / Flood cards are the lines of interest. One **Add line** dropdown at the top of the cards creates another card. No “Add another line” at the bottom. No second line picker on Convert. Selected cards transfer to the deal on convert. |
+| B3 | Per-line files | Each card has its own drop zone, starts with one file slot, **+ Add file** adds another. Uploaded rows show a right-aligned trash can that deletes immediately (no confirm). No global lead upload. Files carry onto the deal grouped by the same line. |
+| B4 | Choose file | The picker is a **Choose file** button, not a text field. The whole button is the click target. After a pick, the button text becomes the filename. |
+| B5 | Lead ↔ Deal | Lead top shows **View related deal**. Deal top shows **View source lead**. |
+| B6 | Shared chrome | Convert is centered and bigger than **Save lead**. Save lead shows the navy toast, then lands on the Leads list. Upload button, trash, Columns, funnel sort, row dividers, and status/temp badges stay the shared platform set. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7a`)
+
+Follow-up engine + shared pagination + Leads bulk delete. Rebased onto `cursor/live-ff-tip-sep6y` (`56e7552`). Tip SHA `f615a08`.
+
+## Mac test prior (`cursor/live-ff-tip-sep7b`)
+
+Lead detail only. Two-column layout, one lines-of-interest control, per-line documents, and the shared Choose file / trash / Convert+Save chrome. Branched from `cursor/live-ff-tip-sep6y`.
 
 ## Mac test prior (`cursor/live-ff-tip-sep6y`)
 

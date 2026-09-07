@@ -52,12 +52,22 @@ export function remainingShopLines(shown: readonly ShopLine[]): ShopLine[] {
   return SHOP_LINES.filter((line) => !have.has(line));
 }
 
+export function parseSelectedShopLines(raw: string | null | undefined): ShopLine[] {
+  const found = new Set<ShopLine>();
+  for (const part of (raw ?? "").split(/[,\s]+/)) {
+    if (isShopLine(part)) found.add(part);
+  }
+  return SHOP_LINES.filter((line) => found.has(line));
+}
+
 export function shopLinesForConvertWithDocs(
   primaryLine: string,
   documentLines: readonly ShopLine[] = [],
+  selectedLines: readonly ShopLine[] = [],
 ): ShopLine[] {
   const selected = new Set<ShopLine>(shopLinesForConvert(primaryLine));
   for (const line of documentLines) selected.add(line);
+  for (const line of selectedLines) selected.add(line);
   return SHOP_LINES.filter((line) => selected.has(line));
 }
 

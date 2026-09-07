@@ -26,9 +26,12 @@ export type LeadFieldDefaults = {
 export function LeadFormFields({
   lead,
   requireName = true,
+  hideLineSelect = false,
 }: {
   lead?: LeadFieldDefaults;
   requireName?: boolean;
+  /** Detail page uses line cards as the only lines-of-interest control. */
+  hideLineSelect?: boolean;
 }) {
   const language = lead?.preferredLanguage ?? "en";
   const knownLanguage = LEAD_LANGUAGES.some((lang) => lang.value === language);
@@ -127,17 +130,22 @@ export function LeadFormFields({
           <Input id="zip" name="zip" defaultValue={lead?.zip ?? ""} className="mt-1 h-8" />
         </div>
       </div>
+      {hideLineSelect ? (
+        <input type="hidden" name="insuranceTypeDesired" value={lead?.insuranceTypeDesired ?? "HO"} />
+      ) : null}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="insuranceTypeDesired" className="text-xs">
-            Insurance type desired
-          </Label>
-          <LineSelect
-            id="insuranceTypeDesired"
-            name="insuranceTypeDesired"
-            defaultValue={lead?.insuranceTypeDesired ?? "HO"}
-          />
-        </div>
+        {hideLineSelect ? null : (
+          <div>
+            <Label htmlFor="insuranceTypeDesired" className="text-xs">
+              Insurance type desired
+            </Label>
+            <LineSelect
+              id="insuranceTypeDesired"
+              name="insuranceTypeDesired"
+              defaultValue={lead?.insuranceTypeDesired ?? "HO"}
+            />
+          </div>
+        )}
         <SourceSelect defaultValue={lead?.source ?? "manual"} />
         <div>
           <Label htmlFor="preferredLanguage" className="text-xs">

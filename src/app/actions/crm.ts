@@ -55,7 +55,11 @@ import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
-import { documentLinesFromDocs, shopLinesForConvertWithDocs } from "@/lib/leads/line-documents";
+import {
+  documentLinesFromDocs,
+  parseSelectedShopLines,
+  shopLinesForConvertWithDocs,
+} from "@/lib/leads/line-documents";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { isKnownStageToken, nextMorning, resolveStageMove } from "@/lib/wire/pipeline";
@@ -166,7 +170,12 @@ export async function createLead(formData: FormData) {
   redirect("/leads?saved=1");
 }
 
-export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL") {
+export async function convertLeadToDeal(
+  leadId: string,
+  line = "HO",
+  state = "FL",
+  selectedLines: readonly ShopLine[] = [],
+) {
   const actor = await getActor();
   const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   if (!lead) throw new Error("Lead not found");
@@ -184,7 +193,11 @@ export async function convertLeadToDeal(leadId: string, line = "HO", state = "FL
         ne(documents.status, "hidden"),
       ),
     );
-  const shopLines = shopLinesForConvertWithDocs(dealLine, documentLinesFromDocs(leadDocs));
+  const shopLines = shopLinesForConvertWithDocs(
+    dealLine,
+    documentLinesFromDocs(leadDocs),
+    selectedLines,
+  );
   const [pipeline] = await db
     .select()
     .from(pipelines)
@@ -292,8 +305,9 @@ export async function createDealFromLead(formData: FormData) {
   const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
   const dealId = await convertLeadToDeal(
     leadId,
-    str(formData, "line") || lead?.insuranceTypeDesired || "HO",
+    str(formData, "line") || str(formData, "insuranceTypeDesired") || lead?.insuranceTypeDesired || "HO",
     str(formData, "state") || lead?.state || "FL",
+    parseSelectedShopLines(str(formData, "shopLines")),
   );
   revalidatePath("/deals");
   revalidatePath("/leads");

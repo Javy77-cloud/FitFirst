@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { uploadDealDocuments } from "@/app/actions/documents";
+import { ChooseFileButton } from "@/components/choose-file-button";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -233,8 +234,6 @@ function FilePickRow({
   onDocType: (docType: string) => void;
   onRemove: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
   return (
     <div className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
       <div>
@@ -255,39 +254,16 @@ function FilePickRow({
       <div>
         <Label className="text-xs">File</Label>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <input
-            ref={inputRef}
+          <ChooseFileButton
             name={`files_${index}`}
-            type="file"
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              onFileName(file?.name ?? "");
-            }}
+            onFile={(file) => onFileName(file?.name ?? "")}
           />
-          <Button
-            type="button"
-            size="sm"
-            data-testid={index === 0 ? "deal-choose-file" : undefined}
-            onClick={() => inputRef.current?.click()}
-          >
-            Choose file
-          </Button>
           {row.fileName ? (
-            <span className="inline-flex items-center gap-1 text-xs text-navy">
-              <span className="max-w-[14rem] truncate">{row.fileName}</span>
-              <button
-                type="button"
-                aria-label={`Remove ${row.fileName}`}
-                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-fit-flag"
-                onClick={() => {
-                  if (inputRef.current) inputRef.current.value = "";
-                  onRemove();
-                }}
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </span>
+            <FileDeleteIcon
+              type="button"
+              label={`Remove ${row.fileName}`}
+              onClick={onRemove}
+            />
           ) : null}
         </div>
       </div>
