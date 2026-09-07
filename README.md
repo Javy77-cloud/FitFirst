@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bz`)
 
-Edit Layout opens the **existing** module layout, and the live record form matches it, from `cursor/live-ff-tip-sep7az`. Clicking a layout chip / **Edit Layout** for Leads, Deals, Policies, Contacts, Business, or Carriers loads that module’s **saved** page layout (sections and fields). It does not open a blank new layout when one already exists, and it does not insert a second empty row. The Deal Details form is the Deal layout from Edit Layouts — same for Lead / Contact / Business / Policy / Carrier record forms. Builder UX from the desk tip stays: one layout for all lines, three locked columns, collapsed rows, equal-width type chips, sitewide save toast on Save. Pipeline, Markets, bell, and rail width untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Edit Layout opens the **existing** module layout, and the live record form matches it, from `cursor/live-ff-tip-sep7az`. Clicking a layout chip / **Edit Layout** for Leads, Deals, Policies, Contacts, Business, or Carriers loads that module’s **saved** page layout (sections and fields). It does not open a blank new layout when one already exists, and it does not insert a second empty row. The Deal Details form is the Deal layout from Edit Layouts — same for Lead / Contact / Business / Policy / Carrier record forms. Builder UX from the desk tip stays: one layout for all lines, three locked columns, collapsed rows, equal-width type chips, sitewide save toast on Save. Pipeline, Markets, bell, and rail width untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `2ad1c862`.
 
 ```bash
 cd ~/FitFirst
