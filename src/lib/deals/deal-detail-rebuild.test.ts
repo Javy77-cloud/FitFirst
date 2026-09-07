@@ -45,7 +45,9 @@ describe("deal detail final rebuild", () => {
     const docs = source("src/components/deal/documents-panel.tsx");
     expect(page).toMatch(/data-ff-deal-title/);
     expect(page).toMatch(/data-ff-deal-topband/);
+    expect(page).toMatch(/data-ff-deal-top-left/);
     expect(page).toMatch(/data-ff-deal-top-right/);
+    expect(page).toMatch(/min-w-0 flex-1 space-y-1/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
     expect(page).toMatch(/DealLineSelector/);
     expect(page).not.toMatch(/data-ff-deal-identity/);
@@ -55,11 +57,11 @@ describe("deal detail final rebuild", () => {
     expect(page).not.toMatch(/StagePill/);
     expect(page).not.toMatch(/Source ·/);
     expect(page).not.toMatch(/sourceLabel/);
-    expect(page.indexOf("data-ff-deal-title")).toBeLessThan(page.indexOf("data-ff-deal-top-right"));
+    expect(page.indexOf("data-ff-deal-top-left")).toBeLessThan(page.indexOf("data-ff-deal-title"));
+    expect(page.indexOf("data-ff-deal-title")).toBeLessThan(page.indexOf("<SectionTabs"));
+    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("data-ff-deal-top-right"));
     expect(page.indexOf("data-ff-deal-top-right")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
     expect(page.indexOf("<SheetHealthToggle")).toBeLessThan(page.indexOf("<DealMotivation"));
-    expect(page.indexOf("<DealMotivation")).toBeLessThan(page.indexOf("<SectionTabs"));
-    expect(page.indexOf("data-ff-deal-title")).toBeLessThan(page.indexOf("<SectionTabs"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DealLineSelector"));
     expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<MarketsPanel"));
@@ -177,8 +179,10 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/lg:sticky/);
     expect(page).toMatch(/DealMotivation/);
     expect(page).toMatch(/SheetHealthToggle/);
+    expect(page.indexOf("data-ff-deal-top-left")).toBeLessThan(page.indexOf("<SectionTabs"));
+    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("data-ff-deal-top-right"));
     expect(page.indexOf("data-ff-deal-top-right")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
-    expect(page.indexOf("<DealMotivation")).toBeLessThan(page.indexOf("<SectionTabs"));
+    expect(page.indexOf("<SheetHealthToggle")).toBeLessThan(page.indexOf("<DealMotivation"));
     expect(page).not.toMatch(/RelatedRecordNav/);
     expect(page).not.toMatch(/data-ff-deal-identity/);
     const comms = source("src/components/comms/quick-comms-board.tsx");

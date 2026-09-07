@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7aq`)
 
-Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; `data-ff-deal-topband` title left with **Sheet health** + **Quotes pulled today** in `data-ff-deal-top-right`; no StagePill / Source · Referral / RelatedRecordNav rail strip. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `b62215c`.
+Consolidator: Deal layout from `cursor/live-ff-tip-sep7ao` @ `ebef125` / tip SHA `df5e03b` (Deal title top-left, tabs flush above LOB, close top gap) plus Pipeline counter from `cursor/live-ff-tip-sep7ap` @ `fec899f` / tip SHA `9b1ef9a` (`.deal-today-chip-count` **24px** / **500**, `color-mix` 78% `--chip-fg` into `#ffffff`). Feel-pass: desk header **Deals** then search; `data-ff-deal-topband` left stack is title → tabs → LOB → panels (`data-ff-deal-top-left`, almost no gap); **Sheet health** + **Quotes pulled today** stay `data-ff-deal-top-right` and do not push tabs down. No StagePill / Source · Referral / RelatedRecordNav rail strip. Pipeline attach/activity/chip CSS and JSX otherwise stay **locked**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA pending.
 
 ```bash
 cd ~/FitFirst
@@ -25,12 +25,12 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | --- | --- | --- |
 | AO1 | Title left | Deal name is the **page title, top-left**. Not in the tabs toolbar. Not hanging mid/right. |
 | AO2 | No right chrome | No **Shopping / Source / Referral** strip on the top-right. Stage · Source · Referral is not a right-side title. |
-| AO3 | Flush stack | Top → bottom, minimal gap: **Deal title + health/motivation band** → **Documents \| Markets \| Quotes** → **Line of business** → Upload / sheet / Markets / Quotes. No dead band under the shell header. |
+| AO3 | Flush stack | Left stack, almost no gap: **Deal title** → **Documents \| Markets \| Quotes** → **Line of business** → panels. Motivation on the right does **not** push tabs down. |
 | AO4 | Upload trash | Each uploaded file row still has a **trash can**. **+ Add another document** stays. |
 | AO5 | Pipeline locked | Attach / Activity chips stay put except the **78%** count color. |
 | AQ1 | Header Deals | Desk header top-left shows **Deals**, then the global search bar. Not blank. Not the long deal name in the header. Deal name stays the in-page `data-ff-deal-title` h1. |
-| AQ2 | Title-row meta | `data-ff-deal-topband`: deal title left, **Sheet health** + **Quotes pulled today** in `data-ff-deal-top-right`. Not mid-page left. Not buried in the rail. |
-| AQ3 | Motivation right | Motivation stays the **right corner**. Rest of the stack is pulled up under that band. |
+| AQ2 | Title-row meta | `data-ff-deal-topband`: `data-ff-deal-top-left` is title → tabs → LOB → panels. `data-ff-deal-top-right` is **Sheet health** + **Quotes pulled today**. |
+| AQ3 | Motivation right | Motivation stays the **right corner**, top-aligned. Tabs sit immediately under the deal title on the left. |
 
 ### AH — Pipeline list (sep7ah, locked)
 

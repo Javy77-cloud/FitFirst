@@ -166,22 +166,12 @@ export default async function DealPage({
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
-        <div className="-mt-5 space-y-1" data-ff-deal-flush-tabs>
+        <div className="-mt-5" data-ff-deal-flush-tabs>
         <div className="flex items-start justify-between gap-3" data-ff-deal-topband>
+          <div className="min-w-0 flex-1 space-y-1" data-ff-deal-top-left>
           <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
             {deal.title}
           </h1>
-          <div className="flex shrink-0 items-start gap-3" data-ff-deal-top-right>
-            {health ? (
-              <SheetHealthToggle
-                report={health}
-                href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
-                dealId={deal.id}
-              />
-            ) : null}
-            <DealMotivation stats={motivation} />
-          </div>
-        </div>
         <SectionTabs
           defaultValue="documents"
           active={activeTab}
@@ -301,6 +291,18 @@ export default async function DealPage({
             ),
           }))}
         />
+          </div>
+          <div className="flex shrink-0 items-start gap-3" data-ff-deal-top-right>
+            {health ? (
+              <SheetHealthToggle
+                report={health}
+                href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
+                dealId={deal.id}
+              />
+            ) : null}
+            <DealMotivation stats={motivation} />
+          </div>
+        </div>
         </div>
       )}
     </AppShell>
