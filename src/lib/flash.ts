@@ -2,6 +2,8 @@ export const FLASH_PARAM = "flash";
 export const FLASH_KIND_PARAM = "flashKind";
 export const FLASH_EVENT = "ff-flash";
 export const FLASH_DISMISS_MS = 2500;
+/** sessionStorage key so ActionToastHost survives Suspense remount after ?flash= strip. */
+export const FLASH_STORAGE_KEY = "ff-action-toast";
 
 export type FlashKind = "success" | "error";
 
@@ -29,6 +31,65 @@ export type FlashPayload = {
   message: string;
   kind: FlashKind;
 };
+
+function storage(): Storage | null {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist flash copy before router.replace so a remount can restore the toast. */
+export function persistFlash(payload: FlashPayload): void {
+  const store = storage();
+  if (!store) return;
+  try {
+    store.setItem(FLASH_STORAGE_KEY, JSON.stringify({ message: payload.message, kind: payload.kind }));
+  } catch {
+    // quota / private mode — toast still paints from in-memory state when it can
+  }
+}
+
+/** Read a durable flash. Survives ActionToastHost remount after query strip. */
+export function readPersistedFlash(): FlashPayload | null {
+  const store = storage();
+  if (!store) return null;
+  try {
+    const raw = store.getItem(FLASH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { message?: unknown; kind?: unknown };
+    const message = resolveFlashMessage(typeof parsed.message === "string" ? parsed.message : null);
+    if (!message) return null;
+    return { message, kind: parsed.kind === "error" ? "error" : "success" };
+  } catch {
+    return null;
+  }
+}
+
+export function clearPersistedFlash(): void {
+  const store = storage();
+  if (!store) return;
+  try {
+    store.removeItem(FLASH_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/** Land Save Deal Details on the details tab; keep line/product when the form sent them. */
+export function dealDetailsSavedHref(
+  dealId: string,
+  extras?: { line?: string | null; product?: string | null },
+): string {
+  const query = new URLSearchParams({ tab: "details" });
+  const line = extras?.line?.trim();
+  const product = extras?.product?.trim();
+  if (line) query.set("line", line);
+  if (product) query.set("product", product);
+  return `/deals/${dealId}?${query.toString()}`;
+}
 
 const FLASH_ORIGIN = "https://fitfirst.local";
 

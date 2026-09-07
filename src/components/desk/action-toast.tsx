@@ -8,6 +8,9 @@ import {
   FLASH_EVENT,
   FLASH_KIND_PARAM,
   FLASH_PARAM,
+  clearPersistedFlash,
+  persistFlash,
+  readPersistedFlash,
   resolveFlashMessage,
   type FlashKind,
 } from "@/lib/flash";
@@ -60,16 +63,43 @@ export function ActionToastHost() {
   const router = useRouter();
   const [toast, setToast] = useState<ToastState | null>(null);
 
+  function showToast(message: string, kind: FlashKind) {
+    persistFlash({ message, kind });
+    setToast({ id: Date.now(), message, kind });
+  }
+
+  function dismissToast() {
+    clearPersistedFlash();
+    setToast(null);
+  }
+
+  // Restore after Suspense remount / replace — query may already be stripped.
+  useEffect(() => {
+    const stored = readPersistedFlash();
+    if (!stored) return;
+    setToast({ id: Date.now(), message: stored.message, kind: stored.kind });
+  }, []);
+
   useEffect(() => {
     const message = resolveFlashMessage(searchParams.get(FLASH_PARAM));
     if (!message) return;
     const kind: FlashKind = searchParams.get(FLASH_KIND_PARAM) === "error" ? "error" : "success";
-    setToast({ id: Date.now(), message, kind });
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete(FLASH_PARAM);
-    next.delete(FLASH_KIND_PARAM);
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // Persist before strip so a remount still has copy. Do not replace until after paint.
+    showToast(message, kind);
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => {
+        const next = new URLSearchParams(searchParams.toString());
+        next.delete(FLASH_PARAM);
+        next.delete(FLASH_KIND_PARAM);
+        const qs = next.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(outer);
+      window.cancelAnimationFrame(inner);
+    };
   }, [searchParams, pathname, router]);
 
   useEffect(() => {
@@ -77,11 +107,7 @@ export function ActionToastHost() {
       const detail = (event as CustomEvent<{ message?: string; kind?: FlashKind }>).detail;
       const message = resolveFlashMessage(detail?.message);
       if (!message) return;
-      setToast({
-        id: Date.now(),
-        message,
-        kind: detail?.kind === "error" ? "error" : "success",
-      });
+      showToast(message, detail?.kind === "error" ? "error" : "success");
     }
     window.addEventListener(FLASH_EVENT, onFlash);
     return () => window.removeEventListener(FLASH_EVENT, onFlash);
@@ -89,7 +115,7 @@ export function ActionToastHost() {
 
   useEffect(() => {
     if (!toast) return;
-    const hide = window.setTimeout(() => setToast(null), FLASH_DISMISS_MS);
+    const hide = window.setTimeout(dismissToast, FLASH_DISMISS_MS);
     return () => window.clearTimeout(hide);
   }, [toast]);
 
@@ -104,7 +130,7 @@ export function ActionToastHost() {
           key={toast.id}
           message={toast.message}
           kind={toast.kind}
-          onClose={() => setToast(null)}
+          onClose={dismissToast}
         />
       ) : null}
     </div>

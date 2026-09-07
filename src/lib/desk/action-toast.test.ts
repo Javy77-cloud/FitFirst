@@ -24,6 +24,10 @@ describe("site-wide action confirmation toast", () => {
     expect(host).toMatch(/aria-label="Dismiss"/);
     expect(host).toMatch(/searchParams\.get\(FLASH_PARAM\)/);
     expect(host).toMatch(/FLASH_EVENT/);
+    expect(host).toMatch(/persistFlash/);
+    expect(host).toMatch(/readPersistedFlash/);
+    expect(host).toMatch(/requestAnimationFrame/);
+    expect(host).toMatch(/router\.replace/);
 
     const layout = source("src/app/layout.tsx");
     expect(layout).toMatch(/ActionToastHost/);
@@ -32,7 +36,10 @@ describe("site-wide action confirmation toast", () => {
 
   it("saves Deal Details and the master sheet through flashAction", () => {
     const values = source("src/app/actions/custom-fields.ts");
-    expect(values).toMatch(/flashAction\(`\/deals\/\$\{dealId\}`, "deal-details-saved"\)/);
+    expect(values).toMatch(/dealDetailsSavedHref\(dealId/);
+    expect(values).toMatch(/"deal-details-saved"/);
+    expect(values).toMatch(/line: str\(formData, "line"\)/);
+    expect(values).toMatch(/product: str\(formData, "product"\)/);
     expect(values).toMatch(/throw new Error\("Deal details could not be saved\."\)/);
 
     const sheet = source("src/app/actions/quote-sheet.ts");
@@ -73,5 +80,27 @@ describe("site-wide action confirmation toast", () => {
     );
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashAction/);
     expect(source("src/lib/flash-client.ts")).toMatch(/export function flashAction/);
+  });
+
+  it("persists flash in sessionStorage so remount after replace still shows the toast", () => {
+    const host = source("src/components/desk/action-toast.tsx");
+    expect(host).toMatch(/persistFlash\(\{ message, kind \}\)/);
+    expect(host).toMatch(/readPersistedFlash\(\)/);
+    expect(host).toMatch(/clearPersistedFlash/);
+    // Persist and paint before stripping ?flash= — remount can restore from storage.
+    const persistAt = host.indexOf("showToast(message, kind)");
+    const rafAt = host.indexOf("requestAnimationFrame");
+    const replaceAt = host.lastIndexOf("router.replace");
+    expect(persistAt).toBeGreaterThan(-1);
+    expect(rafAt).toBeGreaterThan(persistAt);
+    expect(replaceAt).toBeGreaterThan(rafAt);
+
+    const flash = source("src/lib/flash.ts");
+    expect(flash).toMatch(/FLASH_STORAGE_KEY = "ff-action-toast"/);
+    expect(flash).toMatch(/sessionStorage/);
+    expect(flash).toMatch(/export function persistFlash/);
+    expect(flash).toMatch(/export function readPersistedFlash/);
+    expect(flash).toMatch(/tab: "details"/);
+    expect(flash).toMatch(/Deal details saved/);
   });
 });

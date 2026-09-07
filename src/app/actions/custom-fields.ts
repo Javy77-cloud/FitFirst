@@ -30,6 +30,7 @@ import {
   type CustomFieldDef,
   type CustomFieldType,
 } from "@/lib/custom-fields/types";
+import { dealDetailsSavedHref } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
@@ -189,7 +190,10 @@ export async function saveDealFieldValues(formData: FormData) {
   await writeRecordValues(dealId, custom);
   await applySystemDealValues(dealId, system);
   revalidatePath(`/deals/${dealId}`);
-  flashAction(`/deals/${dealId}`, "deal-details-saved");
+  flashAction(
+    dealDetailsSavedHref(dealId, { line: str(formData, "line"), product: str(formData, "product") }),
+    "deal-details-saved",
+  );
 }
 
 async function applySystemDealValues(dealId: string, system: Record<string, string>) {

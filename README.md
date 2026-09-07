@@ -4,9 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bh`)
+## Mac test now (`cursor/live-ff-tip-sep7bj`)
 
-Deal naming rule, search, and drop the Contact column, from `cursor/live-ff-tip-sep7az` latest HEAD. Separate crew from toast (bf) and deal-four-fixes (bg). Every deal auto-names **First Last Lob** — `Javier Canales Home`, `Javier Canales Auto`. Applies on convert and on any line-of-business change. Existing titles backfill (additive migrate `0086_deal_titles` + boot rename). No `… - HO shop` leftovers. Deal search matches first name, last name, or line of business. Pipeline / deals table **has no Contact column**; Contact is not required on the deal. Stages, filters, and other columns stay. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Durable top-center action toast, from `cursor/live-ff-tip-sep7az` latest HEAD. **Save deal details** must show **Deal details saved** every time — the prior host read `?flash=` then `router.replace` stripped it, and a Suspense remount wiped the toast before paint. `ActionToastHost` now persists message+kind in `sessionStorage`, paints the toast, then strips the query after rAF; on remount it restores from storage. Save Deal Details lands on `/deals/{id}?tab=details&flash=deal-details-saved` (keeps line/product when the form sent them). Same host covers Save sheet and every other `flashAction`. Center top, ~2.5s dismiss. No layout redesign. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7bj && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a deal → **Deal Details** → change a field → **Save deal details**. A top-center toast **Deal details saved** must appear every save. Save the master sheet — toast is **Sheet saved**. Do not bind or edit Ana Cov A (**$321,000**).
+
+### BJ — Durable Deal details saved toast
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BJ1 | Save deal details | Every **Save deal details** shows a top-center toast **Deal details saved**. |
+| BJ2 | Remount / replace | Suspense remount and `router.replace` stripping `?flash=` do not kill the toast. |
+| BJ3 | Save sheet | **Save sheet** still shows **Sheet saved**. |
+| BJ4 | Tests | `flash` + `action-toast` cover sessionStorage durability, details-tab redirect, and copy. |
+
+## Previous tip (`cursor/live-ff-tip-sep7bh`)
+
+Deal naming rule, search, and drop the Contact column, from `cursor/live-ff-tip-sep7az` latest HEAD. Separate crew from toast (bf) and deal-four-fixes (bg). Every deal auto-names **First Last Lob** — `Javier Canales Home`, `Javier Canales Auto`. Applies on convert and on any line-of-business change. Existing titles backfill (additive migrate `0086_deal_titles` + boot rename). No `… - HO shop` leftovers. Deal search matches first name, last name, or line of business. Pipeline / deals table **has no Contact column**; Contact is not required on the deal. Stages, filters, and other columns stay. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `87d895b2`.
 
 ```bash
 cd ~/FitFirst
