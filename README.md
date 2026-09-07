@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ai`)
+## Mac test now (`cursor/live-ff-tip-sep7aj`)
 
-Consolidator: Pipeline from `cursor/live-ff-tip-sep7ah` @ `2a1480c` / tip SHA `079243c` (inline flex band, Attach left, Activity centered, rounded chips, Attach `minHeight` 168 / `height` auto) plus Deal detail + nav from `cursor/live-ff-tip-sep7ag` @ `ced7ae9` / tip SHA `dcfeae7` (confirm one-button, flush tabs, vehicles/drivers, tags/8x8, no Deals→Quotes folder). Pipeline attach/activity/chip CSS and JSX stay **exactly** sep7ah except one locked micro tweak: `.deal-today-chip-count` is **28px** and a **darker navy**. Chip size, placement, labels, chip-body colors, Attach, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `9d56da4`.
+From `cursor/live-ff-tip-sep7ai` @ `0cba5ac` / tip SHA `9d56da4`. MICRO only: `.deal-today-chip-count` numbers are a **shade darker** (more navy — `24%` chip-fg into `#101c34`). Font-size stays **28px**, weight **800**. Chip size, placement, labels, Attach, Deal detail, and layout do not move. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `dcc74b3`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7ai && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7aj && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
@@ -26,7 +26,8 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, the
 | AH1 | Same row | Attach and Today's Activity sit on **one horizontal band**. Activity is **not** stacked under a full-width Attach. |
 | AH2 | Activity | To the **right of Attach**, **centered in leftover space**. Same leftover-centering as sep7ad. |
 | AH3 | Chips | Soft **rounded 100px** cards. Icon + count + word **inside**: **Phone**, **SMS**, **Task**, **Meeting**, **Training**. 3D depth + hover lift. Not crushed. |
-| AI1 | Count | Chip **number only** is **slightly larger (~28px)** and **slightly darker** (stronger navy). Chip cards, labels, Attach, and band layout stay sep7ah. |
+| AI1 | Count | Chip **number only** is **28px** / **800**. |
+| AJ1 | Count color | Chip **number only** is a **shade darker** (more navy toward `#101c34`). Cards, labels, Attach, and band stay sep7ai. |
 
 ### AG — Deal detail
 
