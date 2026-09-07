@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7w`)
 
-Three Pipeline-page fixes only, on top of `cursor/live-ff-tip-sep7v` @ `9dede457fabeac939ce10e33d6726674a5607575`. Band order is unchanged: **Attach LEFT**, **Activity RIGHT**. No Deal detail. No other pages. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes.
+Three Pipeline-page fixes only, on top of `cursor/live-ff-tip-sep7v` @ `9dede457fabeac939ce10e33d6726674a5607575`. Band order is unchanged: **Attach LEFT**, **Activity RIGHT**. No Deal detail. No other pages. No table-column / filter / sidebar / schema / seed changes. Ana unbound. Live Zoho stays book of record — no live Zoho writes. Tip SHA `8f9bc84`.
 
 ```bash
 cd ~/FitFirst
