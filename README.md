@@ -4,13 +4,13 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7ar`)
+## Mac test now (`cursor/live-ff-tip-sep7as`)
 
-Deal detail layout only, from `cursor/live-ff-tip-sep7aq` @ `e3a87df` / tip SHA `fceea29`. Outer row `flex w-full`: left `flex-1 lg:w-[72%]` (title → tabs → LOB → panels, grow LEFT to close the middle gap), right aside exactly `lg:w-[300px] max-w-[300px] shrink-0` — **do not widen the rail**. Quotes-pulled (`DealMotivation`, max-w 11rem) + sheet health sit **`items-end` / flush to the far RIGHT corner** of that 300px aside. Tags, Quick comms, Record context stay stacked under quotes at original card size. AppShell title **Deals**. `HardDeleteForm` keeps the real server `action` and confirms **once** via `onClickCapture` + `confirmHardDelete` (cancel `preventDefault` / `stopPropagation`). `FileDeleteIcon` has no `name` / `formAction`. No Shopping / Source strip. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `2cbb5fb`.
+Deal Details + field builder, from `cursor/live-ff-tip-sep7ar` @ `ab7d406` / tip SHA `2cbb5fb`. Tabs: **Deal Details · Documents · Markets · Quotes**. Details is the lead two-column desk with inline add/delete/relabel. Field builder is its own Settings screen (`/settings/field-builder`) — drag fields between two columns, all Javy types, formula math, image upload, **per-LOB layouts**. Tag chip **× on hover** removes from this deal; **Manage tags** opens the module catalog (rename / merge / delete). Convert is selective — agent checks which lead fields carry. Outer row `flex w-full`: left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`. AppShell title **Deals**. `HardDeleteForm` confirms **once** via `onClickCapture`. Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `ce2d72d`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7ar && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7as-ae16 && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
