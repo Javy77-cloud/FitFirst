@@ -4,32 +4,30 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7bo`)
+## Mac test now (`cursor/live-ff-tip-sep7bp`)
 
-Deal field builder collapsed rows, compact type palette, and slash deal names, from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder → Edit Page Layout**: every field is one closed row (label left, three-dot menu right). Menu is only **Mark as required**, **Set permissions**, **Edit properties**, **Remove field** — no Create layout rules / Validation rule. Edit properties is a popup (name, type, lookup module). Field-type chips are compact (`w-max`) so Left and Right sit beside the palette. Preview still lets you drag a field in between existing ones. Deal auto-name is **First / Last / Lob** — `Javier / Canales / Home`. Applies on convert and any LOB change; existing titles backfill (additive migrate `0087_deal_title_slashes` + boot rename). No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `ebbbb1a2`.
+Hide call / next-action clocks from Pipeline table rows, from `cursor/live-ff-tip-sep7az`. **Deals → Pipeline → Table** no longer shows a ticking `HH:MM:SS` under each deal (those were `DealNextActionTimer` countdowns from `updatedAt + 7 days`, not live call duration). They auto-started on mount. Call / SMS / Email / Task / Meeting chips stay. In-call softphone timer is unchanged. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `bf6d0c9f`.
 
 ```bash
 cd ~/FitFirst
-git fetch && git checkout cursor/live-ff-tip-sep7bo-8512 && git pull
+git fetch && git checkout cursor/live-ff-tip-sep7bp-b754 && git pull
 npm install
 npm run db:migrate
 # skip db:seed on the live Zoho book
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**: compact type chips beside Left | Right; every field is a closed row. Open the three-dot menu — four items only. Edit properties saves and returns to the closed row. Preview: drag a field between two others. Convert or change LOB — title is `First / Last / Home`. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals** table. Confirm no `167:51:26`-style clocks under deal names. Click **Call** — still logs / opens tel. Do not bind or edit Ana Cov A (**$321,000**).
 
-### BO — Collapsed rows, compact palette, slash titles
+### BP — No idle timers on Pipeline rows
 
 | # | Check | Pass when |
 | --- | --- | --- |
-| BO1 | Collapsed rows | Every field is one closed row: label left, ⋯ menu right. Nothing expanded by default. |
-| BO2 | Menu | Three-dot items are Mark as required, Set permissions, Edit properties, Remove field. No layout/validation rules. |
-| BO3 | Edit properties | Popup has field name, type, and a lookup module selector for lookups. Save closes it. |
-| BO4 | Compact palette | Type chips are ~half width (`w-max`); Left and Right sit beside types on one row. |
-| BO5 | Preview drag | Preview is not view-only — you can drop a field between existing ones. |
-| BO6 | Deal names | New / convert / LOB change titles are `Javier / Canales / Home`. Existing deals retitled. |
-| BO7 | Tests | `field-builder-sep7bo`, `deal-title`, convert, and field-builder cover naming, menu, and collapsed default. |
+| BP1 | Table rows | Hard refresh Deals / Pipeline table: no `HH:MM:SS` or `--:--` under the title / Call chips. |
+| BP2 | Call chip | Call button still present and still logs a call / opens `tel:`. |
+| BP3 | In-call | Softphone / in-call timer still starts only when an agent starts a call. |
+| BP4 | Scope | Attach-Activity chips, stages, hydration, Markets, other columns unchanged. |
+| BP5 | Tests | `deals-page` asserts list rows do not mount `DealNextActionTimer`. |
 
 ## Previous tip (`cursor/live-ff-tip-sep7bi`)
 

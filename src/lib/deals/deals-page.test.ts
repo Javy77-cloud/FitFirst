@@ -197,6 +197,26 @@ describe("Deals page sep7h", () => {
     expect(DEAL_MEETING_ACTION_COLOR).toBe("#5b21b6");
   });
 
+  it("does not render an idle next-action / call-duration timer on pipeline list rows", () => {
+    const dealsTable = source("src/components/deals/deals-table.tsx");
+    const pipelineTable = source("src/components/pipeline/table-view.tsx");
+    expect(dealsTable).not.toMatch(/DealNextActionTimer/);
+    expect(dealsTable).not.toMatch(/deal-next-action/);
+    expect(dealsTable).not.toMatch(/setInterval/);
+    expect(pipelineTable).not.toMatch(/DealNextActionTimer/);
+    expect(pipelineTable).not.toMatch(/deal-next-action/);
+    expect(pipelineTable).not.toMatch(/nextDealActionAt/);
+    expect(pipelineTable).not.toMatch(/setInterval/);
+    expect(dealsTable).toMatch(/DealQuickActions/);
+    expect(pipelineTable).toMatch(/DealQuickActions/);
+    const quick = source("src/components/deals/deal-quick-actions.tsx");
+    expect(quick).toMatch(/label="Call"/);
+    expect(quick).not.toMatch(/DealNextActionTimer/);
+    const timer = source("src/components/deals/deal-next-action.tsx");
+    expect(timer).toMatch(/if \(!dueAt\)/);
+    expect(timer).toMatch(/setInterval/);
+  });
+
   it("keeps Send quote, Change owner, and Bind policy on Comms and drops Text", () => {
     const actions = source("src/components/crm/deal-row-actions.tsx");
     expect(actions).toMatch(/Send quote/);
@@ -241,7 +261,7 @@ describe("Deals page sep7h", () => {
     expect(table).toMatch(/showMacrosLink=\{false\}/);
     expect(table).toMatch(/dealNativeColumnText\("value"/);
     expect(table).toMatch(/sheetAttr/);
-    expect(table).toMatch(/DealNextActionTimer/);
+    expect(table).not.toMatch(/DealNextActionTimer/);
     expect(table).toMatch(/DealStaleBadge/);
     expect(table).toMatch(/DealStageSelect/);
     expect(table).toMatch(/tags: tagSortText\(deal\.tags\)/);
