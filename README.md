@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7bt`)
 
-Deal field builder drag-and-drop across sections, from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder** (Edit layout / Preview): grab any collapsed field row and drop it between fields in the same section or into another section — left or right column. A sky drop line and section ring mark the target. Order is in the Save payload. Collapsed rows, compact palette, and the four-item ⋯ menu from sep7bo stay. Preview stays editable with the same insert-between / cross-section move. Pipeline table, Markets, bell, Stage colors, and picklist catalogs are untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Deal field builder drag-and-drop across sections, from `cursor/live-ff-tip-sep7az`. **Settings → Deal field builder** (Edit layout / Preview): grab any collapsed field row and drop it between fields in the same section or into another section — left or right column. A sky drop line and section ring mark the target. Order is in the Save payload. Collapsed rows, compact palette, and the four-item ⋯ menu from sep7bo stay. Preview stays editable with the same insert-between / cross-section move. Pipeline table, Markets, bell, Stage colors, and picklist catalogs are untouched. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `cf5d93c0`.
 
 ```bash
 cd ~/FitFirst
