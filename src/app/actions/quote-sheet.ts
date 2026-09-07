@@ -8,6 +8,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
+  accounts,
+  contacts,
   deals,
   documents,
   extractedFields,
@@ -15,6 +17,7 @@ import {
   propertyEnrichmentCache,
   fillFeedbackLogs,
   fillLearningLogs,
+  leads,
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
@@ -69,6 +72,7 @@ import {
   shopLineForProduct,
 } from "@/lib/deals/deal-line";
 import { flashAction } from "@/lib/flash-action";
+import { dealTitleForRecords } from "@/lib/deals/deal-title";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -253,13 +257,29 @@ export async function setDealSheetProduct(formData: FormData) {
   if (!deal) throw new Error("Deal not found");
   const line = shopLineForProduct(productRaw);
   const formId = quotingFormForProduct(productRaw);
+  const lineOfBusiness = lobForProduct(productRaw);
+  const [contact] = deal.contactId
+    ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
+    : [];
+  const [lead] = deal.leadId ? await db.select().from(leads).where(eq(leads.id, deal.leadId)) : [];
+  const [account] = deal.accountId
+    ? await db.select().from(accounts).where(eq(accounts.id, deal.accountId))
+    : [];
   await db
     .update(deals)
     .set({
-      lineOfBusiness: lobForProduct(productRaw),
+      lineOfBusiness,
       quotingLine: line,
       quotingForm: formId ?? deal.quotingForm,
       policySubType: productRaw,
+      title: dealTitleForRecords({
+        lineOfBusiness,
+        primaryNamedInsured: deal.primaryNamedInsured,
+        title: deal.title,
+        contact,
+        lead,
+        account,
+      }),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));

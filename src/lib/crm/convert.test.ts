@@ -36,7 +36,7 @@ describe("lead → deal convert copy", () => {
 
   it("copies every lead field that has a home on the deal / risk / sheet", () => {
     const copy = convertFieldCopy(elena, "HO", "FL");
-    expect(copy.title).toBe("Ruiz · HO shop");
+    expect(copy.title).toBe("Elena Ruiz Home");
     expect(copy.primaryNamedInsured).toBe("Elena M Ruiz");
     expect(copy.dealState).toBe("FL");
     expect(copy.pipelineSlug).toBe("p-c");

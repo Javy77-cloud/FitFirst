@@ -23,7 +23,7 @@ export function PipelineBoard({
   filter?: DealListFilter;
 }) {
   const known = new Set(stages.map((stage) => stage.slug));
-  const filtered = rows.filter(({ deal, lead, contact, risk }) =>
+  const filtered = rows.filter(({ deal, lead, contact, account, risk }) =>
     matchesDealFilters(
       {
         title: deal.title,
@@ -36,6 +36,9 @@ export function PipelineBoard({
           contact,
           lead,
         }),
+        firstName: contact?.firstName ?? lead?.firstName,
+        lastName: contact?.lastName ?? lead?.lastName,
+        accountName: account?.name,
         phone: contact?.phone ?? lead?.phone,
         email: contact?.email ?? lead?.email,
         city: risk?.city ?? contact?.city,

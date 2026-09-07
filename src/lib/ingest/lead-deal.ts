@@ -1,5 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, type AccountKind, type ShopLine } from "@/lib/domain";
+import { formatDealTitle } from "@/lib/deals/deal-title";
 import { db } from "@/lib/db";
 import { deals, leads, policies, quoteSheets, risks } from "@/lib/db/schema";
 import { persistDealFile } from "@/lib/documents/store";
@@ -75,7 +76,11 @@ export async function ensureShoppingDealForLead(input: {
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
-      title: `${input.lastName} · ${SHOP_LINE_TO_LOB[input.line]} shop`,
+      title: formatDealTitle({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        line: SHOP_LINE_TO_LOB[input.line],
+      }),
       pipelineStage: "shopping",
       lineOfBusiness: SHOP_LINE_TO_LOB[input.line],
       state: "FL",

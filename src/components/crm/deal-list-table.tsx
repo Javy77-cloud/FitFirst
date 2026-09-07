@@ -17,6 +17,7 @@ import {
   riskAddress,
   type DealListFilter,
 } from "@/lib/crm/lists";
+import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { formatMoney } from "@/lib/domain";
 import type { DealListRow } from "@/lib/db/queries";
@@ -56,7 +57,7 @@ export function DealListTable({
 }) {
   const labels = new Map(stages.map((stage) => [stage.slug, stage.name]));
   const colors = new Map(stages.map((stage) => [stage.slug, stage.color]));
-  const visible = rows.filter(({ deal, lead, contact, risk }) =>
+  const visible = rows.filter(({ deal, lead, contact, account, risk }) =>
     matchesDealFilters(
       {
         title: deal.title,
@@ -69,6 +70,9 @@ export function DealListTable({
           contact,
           lead,
         }),
+        firstName: contact?.firstName ?? lead?.firstName,
+        lastName: contact?.lastName ?? lead?.lastName,
+        accountName: account?.name,
         phone: contact?.phone ?? lead?.phone,
         email: contact?.email ?? lead?.email,
         city: risk?.city ?? contact?.city,
@@ -107,7 +111,7 @@ export function DealListTable({
                 </td>
               </tr>
             ) : (
-              visible.map(({ deal, lead, contact, risk }) => {
+              visible.map(({ deal, lead, contact, account, risk }) => {
                 const insured = insuredContactName({
                   primaryNamedInsured: deal.primaryNamedInsured,
                   secondaryNamedInsured: deal.secondaryNamedInsured,
@@ -121,12 +125,18 @@ export function DealListTable({
                   <tr
                     key={deal.id}
                     data-hay={haystack([
-                      deal.title,
+                      dealSearchHaystack({
+                        title: deal.title,
+                        firstName: contact?.firstName ?? lead?.firstName,
+                        lastName: contact?.lastName ?? lead?.lastName,
+                        accountName: account?.name,
+                        primaryNamedInsured: deal.primaryNamedInsured,
+                        lineOfBusiness: deal.lineOfBusiness,
+                      }),
                       insured,
                       phone,
                       email,
                       riskAddress(risk),
-                      deal.lineOfBusiness,
                       deal.state,
                       risk?.city ?? contact?.city,
                     ])}

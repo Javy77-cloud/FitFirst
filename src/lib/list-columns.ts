@@ -39,7 +39,6 @@ export function allColumnIds(columns: ListColumn[]): string[] {
 function isDealsListColumns(columns: ListColumn[]): boolean {
   return (
     columns.some((column) => column.id === "title" && column.label === "Deal") &&
-    columns.some((column) => column.id === "contact") &&
     columns.some((column) => column.id === "comms")
   );
 }
@@ -289,7 +288,7 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
 
 export const DEALS_LIST_COLUMNS: ListColumn[] = fromDeskColumns(TABLE_COLUMNS.deals ?? [], {
   pick: true,
-  lock: ["title", "contact", "esign"],
+  lock: ["title", "esign"],
 }).map((column) => (column.id === "title" ? { ...column, liveSearch: true } : column));
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [

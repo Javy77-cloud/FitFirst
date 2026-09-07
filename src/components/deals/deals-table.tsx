@@ -14,12 +14,13 @@ import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
+import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { TagChips } from "@/components/tags/tag-chips";
 import { listModuleTagColors } from "@/app/actions/record-tags";
 
-type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account"> & {
+type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account" | "lead"> & {
   risk?: { coverageA?: number | null } | null;
 };
 
@@ -66,7 +67,7 @@ export async function DealsTable({
           initialQuery={initialQuery}
           columns={DEALS_LIST_COLUMNS}
           empty="No deals match this filter. Shopping stays on the deal list — quotes are not policies."
-          rows={rows.map(({ deal, contact, account, risk }) => {
+          rows={rows.map(({ deal, contact, account, lead, risk }) => {
             const value = dealValue({ deal, contact, account, risk });
             const phone = contact?.phone ?? account?.phone ?? "";
             const email = contact?.email ?? account?.email ?? "";
@@ -84,20 +85,25 @@ export async function DealsTable({
             return {
               key: deal.id,
               hay: haystack([
-                deal.title,
+                dealSearchHaystack({
+                  title: deal.title,
+                  firstName: contact?.firstName ?? lead?.firstName,
+                  lastName: contact?.lastName ?? lead?.lastName,
+                  accountName: account?.name,
+                  primaryNamedInsured: deal.primaryNamedInsured,
+                  lineOfBusiness: deal.lineOfBusiness,
+                }),
                 deal.pipelineStage,
-                deal.lineOfBusiness,
                 deal.state,
                 deal.propertyOneliner,
                 deal.source,
-                contact?.firstName,
-                contact?.lastName,
                 contact?.phone,
                 contact?.email,
                 contact?.city,
-                account?.name,
                 account?.phone,
                 account?.email,
+                lead?.firstName,
+                lead?.lastName,
                 ...(deal.tags ?? []),
               ]),
               sort: {
@@ -112,9 +118,6 @@ export async function DealsTable({
                 address: sheetAttr(deal.propertyOneliner ?? contact?.mailingAddress ?? account?.mailingAddress),
                 shopLines: sheetAttr((deal.shopLines ?? []).join(", ")),
                 source: sheetAttr(sourceLabel(deal.source)),
-                contact: sheetAttr(
-                  contact ? `${contact.lastName}, ${contact.firstName}` : account?.name,
-                ),
                 email: sheetAttr(email),
                 assigned: sheetAttr(deal.ownerId ? users.get(deal.ownerId) : ""),
                 value: sheetAttr(value),
@@ -160,17 +163,6 @@ export async function DealsTable({
                 address: deal.propertyOneliner ?? contact?.mailingAddress ?? account?.mailingAddress ?? "—",
                 shopLines: (deal.shopLines ?? []).join(", ") || "—",
                 source: sourceLabel(deal.source),
-                contact: contact ? (
-                  <Link href={`/contacts/${contact.id}`} className="text-primary hover:underline">
-                    {contact.lastName}, {contact.firstName}
-                  </Link>
-                ) : account ? (
-                  <Link href={`/accounts/${account.id}`} className="text-primary hover:underline">
-                    {account.name}
-                  </Link>
-                ) : (
-                  "—"
-                ),
                 email: email || "—",
                 assigned: deal.ownerId ? users.get(deal.ownerId) ?? "—" : "—",
                 value: formatMoney(value),

@@ -70,13 +70,14 @@ describe("list column visibility", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBe(true);
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")?.locked).toBe(true);
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "contact", "stage", "esign", "comms", "value"]),
+      expect.arrayContaining(["pick", "title", "stage", "esign", "comms", "value"]),
     );
     const dealsVisible = defaultVisibleIds(DEALS_LIST_COLUMNS);
-    expect(dealsVisible.indexOf("contact")).toBe(dealsVisible.indexOf("title") + 1);
+    expect(dealsVisible).not.toContain("contact");
+    expect(dealsVisible.indexOf("stage")).toBe(dealsVisible.indexOf("title") + 1);
     expect(dealsVisible).not.toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("phone");
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")?.label).toBe("Value");

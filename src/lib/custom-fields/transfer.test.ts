@@ -49,7 +49,7 @@ describe("selective lead → deal carry", () => {
     expect(copy.risk.city).toBe("Melbourne");
     expect(copy.sheetValues.named_insured?.value ?? "").toBe("");
     expect(copy.primaryNamedInsured).toBeNull();
-    expect(copy.title).toBe("Ruiz · HO shop");
+    expect(copy.title).toBe("Elena Ruiz Home");
   });
 
   it("treats a missing carry list as all-fields (legacy convert)", () => {

@@ -24,6 +24,7 @@ import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
+import { formatDealTitle } from "@/lib/deals/deal-title";
 import { isUuid } from "@/lib/ids";
 import { defaultStageColor } from "@/lib/desk/status-colors";
 import { db } from "@/lib/db";
@@ -386,7 +387,6 @@ export async function createDeal(formData: FormData) {
         : str(formData, "policySubType") || null;
   const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
-  const partyTitle = pickedAccount && !pickedContact ? pickedAccount.name : lastName;
   const [deal] = await db
     .insert(deals)
     .values({
@@ -394,7 +394,12 @@ export async function createDeal(formData: FormData) {
       leadId: lead.id,
       contactId: pickedContact?.id ?? null,
       accountId: pickedAccount?.id ?? null,
-      title: `${partyTitle} · ${line} shop`,
+      title: formatDealTitle({
+        firstName,
+        lastName: pickedAccount && !pickedContact ? "" : lastName,
+        accountName: pickedAccount && !pickedContact ? pickedAccount.name : null,
+        line,
+      }),
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
@@ -479,7 +484,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
       ownerId: lead.ownerId,
-      title: `${lastName} · ${line} shop`,
+      title: formatDealTitle({ firstName, lastName, line }),
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",

@@ -570,6 +570,8 @@ export type DealListFilter = {
 };
 
 export async function listDeals(filter: DealListFilter = {}) {
+  const { ensureDealTitles } = await import("@/lib/deals/retitle");
+  await ensureDealTitles().catch(() => null);
   const lineOptions = await loadDeskLineSettings();
   const rows = await db
     .select({
@@ -628,14 +630,17 @@ export type DealListRow = Awaited<ReturnType<typeof listDeals>>[number];
 
 export async function listDealLookup() {
   const rows = await listDeals();
-  return rows.map(({ deal, contact, account }) => ({
+  return rows.map(({ deal, contact, account, lead }) => ({
     id: deal.id,
     title: deal.title,
-    partyName: partyLabel({ contact, account }),
+    partyName: partyLabel({ contact, account }) || [lead?.firstName, lead?.lastName].filter(Boolean).join(" ") || null,
     email: contact?.email ?? account?.email ?? null,
     phone: contact?.phone ?? account?.phone ?? null,
     contactId: deal.contactId ?? contact?.id ?? null,
     accountId: deal.accountId ?? account?.id ?? null,
+    firstName: contact?.firstName ?? lead?.firstName ?? null,
+    lastName: contact?.lastName ?? lead?.lastName ?? null,
+    lineOfBusiness: deal.lineOfBusiness,
   }));
 }
 
@@ -1613,6 +1618,8 @@ export async function getPipelineBoard(
   const { ensureSeededPipelines } = await import("@/lib/wire/ensure-pipelines");
   const { dealMatchesBoard, switcherBoards } = await import("@/lib/wire/pipeline");
   await ensureSeededPipelines();
+  const { ensureDealTitles } = await import("@/lib/deals/retitle");
+  await ensureDealTitles().catch(() => null);
   const lineSettings = await loadDeskLineSettings();
   const boards = visiblePipelineBoards(switcherBoards(await listPipelines()), lineSettings);
   const wanted = fallbackPipelineSlug(slug, lineSettings);

@@ -36,7 +36,6 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
   ],
   deals: [
     { key: "title", label: "Deal", defaultOn: true },
-    { key: "contact", label: "Contact", defaultOn: true },
     { key: "stage", label: "Stage", defaultOn: true },
     { key: "line", label: "Line", defaultOn: true },
     { key: "subType", label: "Life / Health type", defaultOn: false },
@@ -293,18 +292,9 @@ export function defaultColumns(tableKey: string): string[] {
   return tableKey === "deals" ? normalizeDealsVisibleColumns(keys) : keys;
 }
 
-/** Phone lives under the deal name. Contact stays the column immediately after Deal. */
+/** Phone lives under the deal name. Contact is not a deal-list column — a deal is not a contact until bind. */
 export function normalizeDealsVisibleColumns(ids: string[]): string[] {
-  const rest = ids.filter((id) => id !== "phone" && id !== "contact");
-  const titleIdx = rest.indexOf("title");
-  if (titleIdx >= 0) {
-    return [...rest.slice(0, titleIdx + 1), "contact", ...rest.slice(titleIdx + 1)];
-  }
-  const pickIdx = rest.indexOf("pick");
-  if (pickIdx >= 0) {
-    return [...rest.slice(0, pickIdx + 1), "contact", ...rest.slice(pickIdx + 1)];
-  }
-  return ["contact", ...rest];
+  return ids.filter((id) => id !== "phone" && id !== "contact");
 }
 
 export function parseColumns(tableKey: string, raw: string | null | undefined): string[] {

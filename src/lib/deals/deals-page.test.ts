@@ -212,21 +212,23 @@ describe("Deals page sep7h", () => {
     expect(comms).not.toMatch(/label="Text"/);
   });
 
-  it("places Contact second after Deal and removes the phone column", () => {
+  it("removes the Contact column and the phone column", () => {
     const keys = (TABLE_COLUMNS.deals ?? []).map((column) => column.key);
     expect(keys[0]).toBe("title");
-    expect(keys[1]).toBe("contact");
+    expect(keys[1]).toBe("stage");
+    expect(keys).not.toContain("contact");
     expect(keys).not.toContain("phone");
     const visible = defaultVisibleIds(DEALS_LIST_COLUMNS);
     expect(visible[0]).toBe("pick");
     expect(visible[1]).toBe("title");
-    expect(visible[2]).toBe("contact");
+    expect(visible[2]).toBe("stage");
+    expect(visible).not.toContain("contact");
     expect(visible).not.toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("phone");
+    expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("contact");
     expect(normalizeDealsVisibleColumns(["pick", "title", "stage", "contact", "phone"])).toEqual([
       "pick",
       "title",
-      "contact",
       "stage",
     ]);
   });

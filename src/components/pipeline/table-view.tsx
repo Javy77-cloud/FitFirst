@@ -14,6 +14,7 @@ import { formatMoney } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import { nextDealActionAt } from "@/lib/deals/pipeline-desk";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
+import { dealSearchHaystack } from "@/lib/deals/deal-title";
 import { PIPELINE_LIST_COLUMNS } from "@/lib/list-columns";
 import { dealMatchesStage, pipelineHref } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
@@ -58,6 +59,11 @@ export function PipelineTableView({
         }
         rows={filtered.map((deal) => ({
           key: deal.id,
+          hay: dealSearchHaystack({
+            title: deal.title,
+            primaryNamedInsured: deal.insured,
+            lineOfBusiness: deal.lineOfBusiness,
+          }),
           sort: {
             title: sheetAttr(deal.title),
             insured: sheetAttr(deal.insured),

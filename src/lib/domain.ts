@@ -663,7 +663,6 @@ export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[
     { key: "zip", label: "ZIP" },
     { key: "address", label: "Property address" },
     { key: "shopLines", label: "Shop lines" },
-    { key: "contact", label: "Contact" },
     { key: "phone", label: "Phone" },
     { key: "email", label: "Email" },
     { key: "assigned", label: "Assigned" },
