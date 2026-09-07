@@ -33,7 +33,8 @@ describe("lead detail layout + per-line documents", () => {
     expect(panel).toMatch(/data-ff-add-line/);
     expect(panel).toMatch(/aria-label="Add line"/);
     expect(panel).not.toMatch(/Add another line/);
-    expect(page).not.toMatch(/LineSelect/);
+    expect(page).not.toMatch(/<LineSelect/);
+    expect(page).not.toMatch(/from "@\/components\/crm\/line-select"/);
     expect(page).toMatch(/hideLineSelect/);
     expect(form).toMatch(/hideLineSelect/);
   });
