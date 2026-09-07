@@ -34,13 +34,14 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/gap-x-6/);
   });
 
-  it("keeps attach-documents on the left band, ≤ half page, beside Today's Activity", () => {
+  it("keeps attach-documents on the left band, ~1.6× card, beside Today's Activity", () => {
     const page = source("src/app/deals/page.tsx");
     expect(page).toMatch(/deal-upload-activity/);
     expect(page).toMatch(/lg:flex-row/);
     expect(page).toMatch(/lg:flex-wrap/);
     expect(page).toMatch(/lg:justify-start/);
-    expect(page).toMatch(/lg:max-w-\[min\(50%,28rem\)\]/);
+    expect(page).toMatch(/lg:min-w-\[29rem\]/);
+    expect(page).toMatch(/lg:max-w-\[min\(62%,45rem\)\]/);
     expect(page).not.toMatch(/lg:grid-cols-12/);
     expect(page).not.toMatch(/lg:col-span-7/);
     expect(page).not.toMatch(/lg:col-span-5/);
@@ -52,8 +53,10 @@ describe("Deals page sep7h", () => {
     const upload = source("src/components/deal/deal-docs-upload.tsx");
     expect(upload).toMatch(/Attach documents to a deal/);
     expect(upload).not.toMatch(/Upload documents onto a deal/);
-    expect(upload).toMatch(/space-y-3\.5 p-5/);
-    expect(upload).toMatch(/h-9/);
+    expect(upload).toMatch(/space-y-6 p-8/);
+    expect(upload).toMatch(/h-14/);
+    expect(upload).toMatch(/w-\[17\.6rem\]/);
+    expect(upload).not.toMatch(/space-y-3\.5 p-5/);
     expect(upload).not.toMatch(/space-y-2\.5 p-3/);
     expect(upload).not.toMatch(/h-full space-y-3 p-4/);
     expect(upload).not.toMatch(/sr-only/);
@@ -74,25 +77,34 @@ describe("Deals page sep7h", () => {
     expect(strip).toMatch(/text-center/);
     expect(strip).toMatch(/justify-center/);
     expect(strip).toMatch(/deal-today-chip/);
-    expect(strip).toMatch(/text-\[20px\]/);
+    expect(strip).toMatch(/text-base font-semibold/);
+    expect(strip).toMatch(/text-\[16px\]/);
+    expect(strip).toMatch(/text-\[23px\]/);
+    expect(strip).toMatch(/size-6/);
     expect(strip).toMatch(/px-5 py-3/);
     expect(strip).toMatch(/mt-5/);
+    expect(strip).toMatch(/py-8/);
     expect(strip).not.toMatch(/border-black/);
     expect(strip).not.toMatch(/bg-card/);
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);
     const chrome = source("src/app/globals.css");
     expect(chrome).toMatch(/\.deal-today-chip/);
     expect(chrome).toMatch(/inset 0 2\.5px 0/);
-    expect(chrome).toMatch(/translateY\(-3px\)/);
+    expect(chrome).toMatch(/translateY\(-7px\) scale\(1\.04\)/);
+    expect(chrome).toMatch(/cubic-bezier\(0\.2, 0\.8, 0\.2, 1\)/);
     expect(chrome).toMatch(/linear-gradient/);
     expect(chrome).toMatch(/deal-today-heading/);
     expect(chrome).toMatch(/to bottom/);
     expect(chrome).toMatch(/0 6px 0 color-mix/);
+    expect(chrome).toMatch(/0 12px 0 color-mix/);
     expect(chrome).toMatch(/0 8px 8px rgba\(16, 28, 52/);
     expect(chrome).toMatch(/0 20px 30px rgba\(16, 28, 52/);
+    expect(chrome).toMatch(/0 36px 48px rgba\(16, 28, 52/);
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\] \.ff-file-choose/);
+    expect(chrome).toMatch(/height: 3\.5rem/);
     expect(chrome).not.toMatch(/inset 0 1\.5px 0/);
     expect(chrome).not.toMatch(/0 1px 0 rgba\(255, 255, 255/);
+    expect(chrome).not.toMatch(/translateY\(-3px\)/);
     const chips = source("src/lib/deals/pipeline-desk.ts");
     expect(chips).toMatch(/label: "Calls"/);
     expect(chips).toMatch(/label: "Emails"/);

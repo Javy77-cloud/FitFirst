@@ -41,15 +41,15 @@ export function TodayActivityStrip({
             aria-label="Open work queue"
             data-testid="deal-today-calendar"
           >
-            <CalendarDays className="size-5" aria-hidden />
+            <CalendarDays className="size-6" aria-hidden />
           </Link>
-          <p className="text-sm font-semibold tracking-wide text-navy">Today&apos;s Activity</p>
+          <p className="text-base font-semibold tracking-wide text-navy">Today&apos;s Activity</p>
         </div>
-        <p className="mt-1 text-[13px] text-muted-foreground" data-testid="deal-today-date">
+        <p className="mt-1 text-[16px] text-muted-foreground" data-testid="deal-today-date">
           {dated}
         </p>
       </div>
-      <div className="mt-5 flex flex-nowrap items-center justify-center gap-4 overflow-x-auto overflow-y-visible py-5">
+      <div className="mt-5 flex flex-nowrap items-center justify-center gap-4 overflow-x-auto overflow-y-visible py-8">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -71,10 +71,10 @@ export function TodayActivityStrip({
               data-tone={chip.tone}
             >
               <span className="inline-flex items-center gap-2">
-                <Icon className="size-4 shrink-0" aria-hidden />
-                <span className="text-[13px] font-semibold leading-none">{chip.label}</span>
+                <Icon className="size-5 shrink-0" aria-hidden />
+                <span className="text-[16px] font-semibold leading-none">{chip.label}</span>
               </span>
-              <span className="mt-2 text-[20px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
+              <span className="mt-2 text-[23px] font-bold leading-none tabular-nums">{counts[chip.id]}</span>
             </Link>
           );
         })}

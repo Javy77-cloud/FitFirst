@@ -63,6 +63,11 @@ describe("Deals today activity strip", () => {
     expect(DEAL_ACTIVITY_TONES.email.chipFg).toBe("#101C34");
     expect(DEAL_ACTIVITY_TONES.task.buttonBg).toBe("#1d6fb8");
     expect(DEAL_ACTIVITY_TONES.meeting.buttonBg).toBe("#5b21b6");
+    expect(DEAL_ACTIVITY_TONES.call.chipBgDark).toBe("#eadfb8");
+    expect(DEAL_ACTIVITY_TONES.email.chipBgDark).toBe("#c8cdd6");
+    expect(DEAL_ACTIVITY_TONES.task.chipBgDark).toBe("#b6d4f5");
+    expect(DEAL_ACTIVITY_TONES.meeting.chipBgDark).toBe("#d4c6f5");
+    expect(DEAL_ACTIVITY_TONES.training.chipBgDark).toBe("#9ee0d4");
   });
 });
 

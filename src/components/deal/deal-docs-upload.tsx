@@ -77,14 +77,14 @@ export function DealDocsUpload({
   const primary = rows[0]!;
 
   return (
-    <form action={uploadDealDocuments} className="ff-card space-y-3.5 p-5" data-testid="deal-docs-upload">
+    <form action={uploadDealDocuments} className="ff-card space-y-6 p-8" data-testid="deal-docs-upload">
       <div>
-        <h2 className="text-base font-semibold text-navy">Attach documents to a deal</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Search this page, pick a deal, then attach files.</p>
+        <h2 className="text-xl font-semibold text-navy">Attach documents to a deal</h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">Search this page, pick a deal, then attach files.</p>
       </div>
 
       <div>
-        <Label htmlFor="dealName" className="text-xs">
+        <Label htmlFor="dealName" className="text-sm">
           Search deals
         </Label>
         <Input
@@ -93,7 +93,7 @@ export function DealDocsUpload({
           required
           value={dealName}
           onChange={(event) => onNameChange(event.target.value)}
-          className="mt-1.5 h-9"
+          className="mt-2 h-14"
           placeholder="Type a deal, contact, or business name"
           autoComplete="off"
           aria-label="Search deals"
@@ -176,9 +176,9 @@ export function DealDocsUpload({
         </ul>
       ) : null}
 
-      <div className="flex flex-wrap items-end gap-2.5">
+      <div className="flex flex-wrap items-end gap-3.5">
         <div>
-          <Label className="text-xs">Doc type</Label>
+          <Label className="text-sm">Doc type</Label>
           <select
             name="docType_0"
             value={primary.docType}
@@ -188,7 +188,7 @@ export function DealDocsUpload({
               )
             }
             aria-label="Doc type"
-            className="mt-1.5 h-9 w-[11rem] rounded-md border border-input bg-card px-2.5 text-sm"
+            className="mt-2 h-14 w-[17.6rem] rounded-md border border-input bg-card px-3 text-base"
           >
             {DEAL_UPLOAD_DOC_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -199,7 +199,7 @@ export function DealDocsUpload({
         </div>
         <ChooseFileButton
           name="files_0"
-          className="h-9"
+          className="h-14"
           onFile={(file) =>
             setRows((current) =>
               current.map((item) => (item.id === primary.id ? { ...item, fileName: file?.name ?? "" } : item)),
@@ -245,7 +245,7 @@ export function DealDocsUpload({
       {rows.slice(1).map((row, extraIndex) => {
         const index = extraIndex + 1;
         return (
-          <div key={row.id} className="mt-1 flex flex-wrap items-center gap-2">
+          <div key={row.id} className="mt-1 flex flex-wrap items-center gap-3">
             <select
               name={`docType_${index}`}
               value={row.docType}
@@ -255,7 +255,7 @@ export function DealDocsUpload({
                 )
               }
               aria-label="Doc type"
-              className="h-9 w-[11rem] rounded-md border border-input bg-card px-2.5 text-sm"
+              className="h-14 w-[17.6rem] rounded-md border border-input bg-card px-3 text-base"
             >
               {DEAL_UPLOAD_DOC_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -265,7 +265,7 @@ export function DealDocsUpload({
             </select>
             <ChooseFileButton
               name={`files_${index}`}
-              className="h-9"
+              className="h-14"
               onFile={(file) =>
                 setRows((current) =>
                   current.map((item) => (item.id === row.id ? { ...item, fileName: file?.name ?? "" } : item)),
@@ -282,7 +282,7 @@ export function DealDocsUpload({
       })}
       <button
         type="button"
-        className="mt-1 text-xs font-medium text-primary hover:underline"
+        className="mt-1 text-sm font-medium text-primary hover:underline"
         data-testid="deal-add-file"
         onClick={() => {
           setRows((current) => [...current, { id: nextId, docType: "dec", fileName: "" }]);

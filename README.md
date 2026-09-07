@@ -4,7 +4,33 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7r`)
+## Mac test now (`cursor/live-ff-tip-sep7t`)
+
+Feel-pass polish on **Deals / Pipeline list only**, on top of `cursor/live-ff-tip-sep7r` @ `cb23a8f`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Attach is **~1.6×** taller and wider. Activity chips keep raised 3D but use **lighter faces** (especially the lower shade) so the count stays readable. Title, chip labels/counts, and the calendar icon are a step larger. Hover lifts farther with a slight scale and deeper shadow. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7t && git pull
+npm install
+# db:migrate / db:seed only if this desk is behind
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+
+### T — Pipeline list (sep7t)
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| T1 | Band order | Same as `cb23a8f`: Attach documents is on the **left**. Today's Activity counters are to the **right of** Attach. |
+| T2 | Attach size | Attach card is ~**60% bigger** in height **and** width (~1.6× the sep7r card). Search, doc type, file picker, Store still work. |
+| T3 | Readable chips | Chip faces are lighter, especially the **lower shade**. Count and label stay readable at the bottom. Raised 3D is still there. |
+| T4 | Bigger type | **Today's Activity** title, chip labels, and counts are a little bigger. Calendar icon matches. Title + date + calendar stay centered over the counters. |
+| T5 | Hover motion | Hover lifts farther (`translateY` + ~1.04 scale) with a deeper shadow. No clipping. Click still opens that type's work queue. |
+| T6 | Unchanged | Mass update, record picker, Bind, Deal detail, sidebar, and schema are the same as sep7r @ `cb23a8f`. |
+
+## Mac test prior (`cursor/live-ff-tip-sep7r`)
 
 Polish on **Deals / Pipeline list only**, on top of `cursor/live-ff-tip-sep7q` @ `9f5e807`. Band order is unchanged: **Attach documents on the left**, **Today's Activity counters on the right**. Attach is a little roomier. Chips stay the **same size** with **deeper 3D** only. Title + date + calendar stay **centered over the counters**. No mass update / picker / Bind / Deal detail / sidebar / schema changes. No seed wipe. Live Zoho stays book of record — no live Zoho writes.
 
