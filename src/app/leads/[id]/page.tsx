@@ -12,6 +12,7 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
+import { RecordQuickActions } from "@/components/desk/record-quick-actions";
 import { routeLeadNow } from "@/app/actions/lead-routing";
 import { latestRoutingLog } from "@/lib/leads/apply-routing";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -78,15 +79,24 @@ export default async function LeadDetailPage({
         }))}
       />
       <div className="mb-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold text-navy">{formatPersonName(lead)}</h1>
-          {deal ? (
-            <RelatedRecordNav
-              href={`/deals/${deal.id}`}
-              label="View related deal"
-              testId="view-related-deal"
-            />
-          ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="text-xl font-semibold text-navy">{formatPersonName(lead)}</h1>
+            {deal ? (
+              <RelatedRecordNav
+                href={`/deals/${deal.id}`}
+                label="View related deal"
+                testId="view-related-deal"
+              />
+            ) : null}
+          </div>
+          <RecordQuickActions
+            className="mt-0 shrink-0"
+            leadId={lead.id}
+            dealId={deal?.id ?? null}
+            phone={lead.phone}
+            email={lead.email}
+          />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
           <span className="uppercase text-muted-foreground">{lead.status}</span>

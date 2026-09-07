@@ -49,7 +49,8 @@ describe("Deals page sep7c", () => {
     const table = source("src/components/deals/deals-table.tsx");
     expect(table).toMatch(/DealQuickActions/);
     expect(table).toMatch(/deal-quick-actions|phone \|\| "—"/);
-    const quick = source("src/components/deals/deal-quick-actions.tsx");
+    const quick = source("src/components/desk/record-quick-actions.tsx");
+    expect(source("src/components/deals/deal-quick-actions.tsx")).toMatch(/RecordQuickActions/);
     expect(quick).toMatch(/label="Call"/);
     expect(quick).toMatch(/\bSMS\b/);
     expect(quick).toMatch(/\bEmail\b/);

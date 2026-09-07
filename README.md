@@ -25,6 +25,9 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead*
 | 2 | Title | Header title is **Leads**. No “FitFirst Leads” in the top-left. |
 | 3 | Lines | No Home / Auto / Flood card until the agent picks from **Add line**. Empty state reads **Add a line of interest.** |
 | 4 | Documents | Documents-by-line is ~60% of the width, form ~40%. Long filenames truncate with an ellipsis; hover shows the full name. Layout does not wrap. |
+| 5 | Quick actions | Header row, right of the lead name: **Call / SMS / Email / Task**. Same compact pills as Deals `DealQuickActions`. Not inside the form. Not below it. |
+
+**Standing platform rule:** Call / SMS / Email / Task stay on every record/detail header (Leads, Deals, Contacts, Policies, Business). Shared chrome is `RecordQuickActions`. Do not bury or drop them.
 
 ## Mac test prior (`cursor/live-ff-tip-sep7f`)
 
