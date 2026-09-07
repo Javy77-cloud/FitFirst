@@ -6,7 +6,7 @@ This is not a Zoho clone and does not call a live CRM or rater. Runtime is singl
 
 ## Mac test now (`cursor/live-ff-tip-sep7by`)
 
-Hard-lock the Deal detail right rail to **exactly 320px**, from `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden` on every viewport (not lg-only) plus a CSS `!important` lock (`flex: 0 0 320px`). Tags, Quick Communications, Sheet health, quotes-pulled, and Record context are `w-full max-w-full min-w-0` — no `28rem`, no min-width that can blow the rail. Left column is leftover `flex-1`. Quick Comms When/Notes stack so datetime-local cannot crush or overflow 320. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `TBD`.
+Hard-lock the Deal detail right rail to **exactly 320px**, from `cursor/live-ff-tip-sep7az`. `data-ff-deal-right-rail` is `w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden` on every viewport (not lg-only) plus a CSS `!important` lock (`flex: 0 0 320px`). Tags, Quick Communications, Sheet health, quotes-pulled, and Record context are `w-full max-w-full min-w-0` — no `28rem`, no min-width that can blow the rail. Left column is leftover `flex-1`. Quick Comms When/Notes stack so datetime-local cannot crush or overflow 320. No `db:seed`. Ana unbound. Cov A **$321,000**. Tip SHA `a4b8c377`.
 
 ```bash
 cd ~/FitFirst
