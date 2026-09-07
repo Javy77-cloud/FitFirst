@@ -2,10 +2,28 @@
 
 export const MANUAL_MARKET_MARKER = "[manual]";
 
+/**
+ * Written only by Confirm & request quotes / shop and Add carrier.
+ * Leftover seed logs, quote stubs, and evaluateDeal matches never carry this.
+ */
+export const EXPLICIT_MARKET_ACTION_MARKER = "[ff-markets]";
+
 export type MarketBucket = "appetite" | "stretch" | "skip";
 
 export function isManualMarketWhy(why: string | null | undefined): boolean {
   return (why ?? "").includes(MANUAL_MARKET_MARKER);
+}
+
+export function isExplicitMarketActionText(value: string | null | undefined): boolean {
+  return (value ?? "").includes(EXPLICIT_MARKET_ACTION_MARKER);
+}
+
+export function hasExplicitMarketAction(
+  logs: { why?: string | null }[] = [],
+  quotes: { notes?: string | null }[] = [],
+): boolean {
+  if (logs.some((log) => isExplicitMarketActionText(log.why))) return true;
+  return quotes.some((quote) => isExplicitMarketActionText(quote.notes));
 }
 
 export function manualCarrierIdsFromLogs(
@@ -13,7 +31,9 @@ export function manualCarrierIdsFromLogs(
 ): string[] {
   const ids = new Set<string>();
   for (const log of logs) {
-    if (isManualMarketWhy(log.why)) ids.add(log.carrierId);
+    if (isManualMarketWhy(log.why) && isExplicitMarketActionText(log.why)) {
+      ids.add(log.carrierId);
+    }
   }
   return [...ids];
 }
@@ -31,8 +51,8 @@ export function marketBucketLabel(bucket: MarketBucket): string {
 }
 
 /**
- * True after the agent saved master-sheet values (and we have matches / a shop),
- * added a carrier, or ran a lookup. Empty sheet: ignore leftover matches / logs.
+ * Markets paint only after an explicit shop or add on this deal.
+ * Leftover evaluateDeal matches, filled sheets, and seed quote logs do not count.
  */
 export function hasMarketLookupData(
   matches: { carrierId: string }[],
@@ -40,9 +60,9 @@ export function hasMarketLookupData(
   explicitLookup = false,
   sheetHasValues = false,
 ): boolean {
+  void sheetHasValues;
   if (manualIds.length > 0) return true;
-  if (!sheetHasValues) return false;
-  return matches.length > 0 || explicitLookup;
+  return explicitLookup && matches.length > 0;
 }
 
 const SHEET_LOOKUP_IGNORE = new Set(["sheet_product"]);

@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import {
+  EXPLICIT_MARKET_ACTION_MARKER,
   MANUAL_MARKET_MARKER,
   bucketForMatch,
+  hasExplicitMarketAction,
   hasMarketLookupData,
   hasMarketLookupInput,
   manualCarrierIdsFromLogs,
@@ -22,8 +24,9 @@ describe("manual markets", () => {
     expect(marketBucketLabel("appetite")).toBe("In appetite");
     expect(
       manualCarrierIdsFromLogs([
-        { carrierId: "c1", why: `${MANUAL_MARKET_MARKER} override` },
+        { carrierId: "c1", why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} override` },
         { carrierId: "c2", why: "portal closed" },
+        { carrierId: "c3", why: `${MANUAL_MARKET_MARKER} leftover seed` },
       ]),
     ).toEqual(["c1"]);
   });
@@ -32,9 +35,21 @@ describe("manual markets", () => {
     expect(hasMarketLookupData([], [])).toBe(false);
     expect(hasMarketLookupData([], ["c1"])).toBe(true);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(true);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [], true, true)).toBe(true);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [], false, true)).toBe(true);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], false, true)).toBe(false);
+    expect(hasExplicitMarketAction([{ why: "seeded decline" }], [{ notes: "Stub quote." }])).toBe(
+      false,
+    );
+    expect(
+      hasExplicitMarketAction(
+        [{ why: `${EXPLICIT_MARKET_ACTION_MARKER} Agent requested appetite quotes.` }],
+        [],
+      ),
+    ).toBe(true);
+    expect(
+      hasExplicitMarketAction([], [{ notes: `${EXPLICIT_MARKET_ACTION_MARKER} portal stub` }]),
+    ).toBe(true);
     const panel = readFileSync("src/components/deal/markets-panel.tsx", "utf8");
     expect(panel).toMatch(/data-ff-markets-empty/);
     expect(panel).toMatch(/hasMarketLookupData/);

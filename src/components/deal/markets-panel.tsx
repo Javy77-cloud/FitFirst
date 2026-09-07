@@ -48,11 +48,11 @@ export function MarketsPanel({
   const stretch = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "stretch");
   const skip = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "skip");
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
-  const displayMatches = sheetHasValues ? matchList : [];
+  const displayMatches = explicitLookup || manual.size > 0 ? matchList : [];
   const hasData = hasMarketLookupData(
     displayMatches,
     asList(manualIds),
-    sheetHasValues && explicitLookup,
+    explicitLookup,
     sheetHasValues,
   );
 
