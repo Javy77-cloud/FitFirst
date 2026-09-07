@@ -13,6 +13,8 @@ import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import { filterLeadForCarry, systemValueFromLead } from "./transfer";
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { parseLayout } from "./types";
+import { listFieldPicklists } from "./picklist-store";
+import { resolveFieldOptions } from "./picklists";
 
 export function toFieldDef(row: DeskCustomField): CustomFieldDef {
   return {
@@ -23,6 +25,9 @@ export function toFieldDef(row: DeskCustomField): CustomFieldDef {
     formula: row.formula,
     lookupModule: row.lookupModule,
     systemKey: row.systemKey,
+    required: Boolean(row.required),
+    defaultValue: row.defaultValue ?? null,
+    picklistId: row.picklistId ?? null,
   };
 }
 
@@ -31,7 +36,7 @@ export async function ensureDealFieldCatalog() {
     .select()
     .from(deskCustomFields)
     .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
-  if (existing.length > 0) return existing.map(toFieldDef);
+  if (existing.length > 0) return applyPicklists(existing.map(toFieldDef));
   const catalog = catalogForLines(DEAL_LAYOUT_LINES);
   for (const field of catalog) {
     await db
@@ -46,6 +51,9 @@ export async function ensureDealFieldCatalog() {
         formula: field.formula ?? null,
         lookupModule: field.lookupModule ?? null,
         systemKey: field.systemKey ?? null,
+        required: field.required ?? false,
+        defaultValue: field.defaultValue ?? null,
+        picklistId: field.picklistId ?? null,
       })
       .onConflictDoNothing({
         target: [deskCustomFields.tenantId, deskCustomFields.module, deskCustomFields.key],
@@ -55,7 +63,14 @@ export async function ensureDealFieldCatalog() {
     .select()
     .from(deskCustomFields)
     .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
-  return rows.map(toFieldDef);
+  return applyPicklists(rows.map(toFieldDef));
+}
+
+async function applyPicklists(fields: CustomFieldDef[]): Promise<CustomFieldDef[]> {
+  const lists = await listFieldPicklists().catch(() => []);
+  return fields.map((field) =>
+    field.picklistId ? { ...field, options: resolveFieldOptions(field, lists) } : field,
+  );
 }
 
 export async function listDealFieldDefs(): Promise<CustomFieldDef[]> {
@@ -79,6 +94,9 @@ export async function upsertFieldDef(field: CustomFieldDef) {
       formula: field.formula ?? null,
       lookupModule: field.lookupModule ?? null,
       systemKey: field.systemKey ?? null,
+      required: field.required ?? false,
+      defaultValue: field.defaultValue ?? null,
+      picklistId: field.picklistId ?? null,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -90,6 +108,9 @@ export async function upsertFieldDef(field: CustomFieldDef) {
         formula: field.formula ?? null,
         lookupModule: field.lookupModule ?? null,
         systemKey: field.systemKey ?? null,
+        required: field.required ?? false,
+        defaultValue: field.defaultValue ?? null,
+        picklistId: field.picklistId ?? null,
         updatedAt: new Date(),
       },
     });

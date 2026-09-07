@@ -4,7 +4,36 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Mac test now (`cursor/live-ff-tip-sep7az`)
+## Mac test now (`cursor/live-ff-tip-sep7ba`)
+
+Field builder lock + honest field types, from `cursor/live-ff-tip-sep7az` @ `270eebf` / tip SHA `911111b`. **Builder screen only** — Deal Details, Documents, Markets, Quotes, sidebar, Pipeline, and FileActionMenu stay put. `/settings/field-builder` is three **fixed** columns (types | left canvas | right canvas) with no bottom reflow. **Section** is a palette type you drag in; the bottom **Add section** drop zone is gone. Currency / % / checkbox / picklist (and the rest) render as those controls. Picklist and multi-select open a config panel (manual options, value count, or a global list). Global lists live at **Settings → Picklists**. Shared type icons on palette, canvas, and settings. Required, default value, duplicate, and preview mode are on the builder; required/default persist and the existing Details `FieldControl` enforces them. Additive migrate **0084_field_builder_picklists** only — do not `db:seed`. Ana unbound, Cov A **$321,000**. Live Zoho stays book of record.
+
+```bash
+cd ~/FitFirst
+git fetch && git checkout cursor/live-ff-tip-sep7ba-2c4f && git pull
+npm install
+npm run db:migrate
+# skip db:seed on the live Zoho book
+npm run dev -- --port 43147
+```
+
+Login **javy@fitfirst.local** / **javy**. Open **Settings → Deal field builder** (or **Edit layout** on a deal). Confirm three columns stay put on load/refresh. Drag **Section**, **Currency**, **Percentage**, **Checkbox**, **Picklist**, and **Single line**. Open **Settings → Picklists** and create a reusable list. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+
+### BA — Field builder lock + honest types
+
+| # | Check | Pass when |
+| --- | --- | --- |
+| BA1 | Layout lock | Three fixed columns: field types \| left canvas \| right canvas. Nothing reflows to the bottom on load or refresh. |
+| BA2 | Section palette | No bottom **Add section** drop zone. **Section** is a palette type you drag onto a column. |
+| BA3 | Real controls | Currency is a `$` input. Percentage has a `%` suffix. Checkbox is a checkbox. Picklist is a dropdown. |
+| BA4 | Type = type | Dragging **Single line** creates a single-line text field. Multi-line, email, phone, date, lookup, formula, image, multi-select match their type. |
+| BA5 | Picklists | Dropping picklist / multi-select opens a config panel. **Settings → Picklists** holds reusable global lists. |
+| BA6 | Icons | Same icon set on palette, canvas, and Settings (text, paragraph, envelope, phone, list, calendar, `$`, `%`, check, link, sigma, image, section). |
+| BA7 | Extras | **Required**, **default value** (e.g. state = Florida), **Duplicate**, and **Preview** work. |
+| BA8 | Scope | Deal page / Documents / Markets / Quotes / sidebar unchanged. Required uses the existing Details `FieldControl`. |
+| BA9 | Tests | `field-builder` covers layout lock, type render, picklist config, icons, required / default / duplicate / preview. |
+
+## Previous tip (`cursor/live-ff-tip-sep7az`)
 
 Consolidator on `cursor/live-ff-tip-sep7au-2ccf` @ `d0a6eb7` / tip SHA `4f66ea9` (Deal Details + field builder + extract maps 0081/0082). Merge order: (1) `cursor/live-ff-tip-sep7aw-5c80` @ `93bfc72` / tip SHA `f45c790` — Deal Details is Contact + Address + **Edit layout** only, builder off-page; (2) `cursor/live-ff-tip-sep7ax-f547` @ `4e63622` / tip SHA `efed45e` — Documents upload box locked **top / full-width**, never jumps; (3) `cursor/live-ff-tip-sep7av` @ `b6ce8c2` / tip SHA `9c43360` — three-layer learning pipeline + dormant purchase consent. Learning migrate renumbered **0083** so **0081_deal_field_builder** and **0082_document_field_maps** stay. sep7ar chrome stays: AppShell title **Deals**, left `flex-1 lg:w-[72%]`, right aside `lg:w-[300px] max-w-[300px] shrink-0` with quotes-pulled `items-end`, `HardDeleteForm` confirms **once** via `onClickCapture`, Pipeline chip count **78%**. Additive migrate only — do not `db:seed`. Ana unbound. Live Zoho stays book of record. Tip SHA `911111b`.
 

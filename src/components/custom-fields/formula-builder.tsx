@@ -13,13 +13,19 @@ export function FormulaBuilder({
   name = "formula",
   defaultValue = "",
   sampleValues,
+  onChange,
 }: {
   fields: CustomFieldDef[];
   name?: string;
   defaultValue?: string;
   sampleValues?: Record<string, string>;
+  onChange?: (expression: string) => void;
 }) {
   const [expression, setExpression] = useState(defaultValue);
+  function setExpr(next: string) {
+    setExpression(next);
+    onChange?.(next);
+  }
   const numeric = fields.filter((field) =>
     ["number", "currency", "percentage", "formula"].includes(field.type),
   );
@@ -29,7 +35,7 @@ export function FormulaBuilder({
   );
 
   function insert(token: string) {
-    setExpression((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}${token} `);
+    setExpr(`${expression}${expression && !expression.endsWith(" ") ? " " : ""}${token} `);
   }
 
   return (
@@ -37,7 +43,7 @@ export function FormulaBuilder({
       <input type="hidden" name={name} value={expression} />
       <Input
         value={expression}
-        onChange={(event) => setExpression(event.target.value)}
+        onChange={(event) => setExpr(event.target.value)}
         placeholder="coverage_a * 0.1"
         className="h-8 font-mono text-sm"
         aria-label="Formula"

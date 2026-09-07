@@ -257,11 +257,30 @@ export const deskCustomFields = pgTable(
     formula: text("formula"),
     lookupModule: text("lookup_module"),
     systemKey: text("system_key"),
+    required: boolean("required").notNull().default(false),
+    defaultValue: text("default_value"),
+    picklistId: uuid("picklist_id"),
     ...timestamps,
   },
   (t) => [
     index("desk_custom_fields_tenant_idx").on(t.tenantId, t.module),
     uniqueIndex("desk_custom_fields_uidx").on(t.tenantId, t.module, t.key),
+  ],
+);
+
+/** Reusable picklists for builder fields. Settings → Picklists. Additive — no seed wipe. */
+export const deskFieldPicklists = pgTable(
+  "desk_field_picklists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    name: text("name").notNull(),
+    options: jsonb("options").$type<string[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [
+    index("desk_field_picklists_tenant_idx").on(t.tenantId),
+    uniqueIndex("desk_field_picklists_uidx").on(t.tenantId, t.name),
   ],
 );
 
@@ -302,6 +321,7 @@ export const deskCustomFieldValues = pgTable(
 export type DeskCustomField = typeof deskCustomFields.$inferSelect;
 export type DeskFieldLayout = typeof deskFieldLayouts.$inferSelect;
 export type DeskCustomFieldValue = typeof deskCustomFieldValues.$inferSelect;
+export type DeskFieldPicklist = typeof deskFieldPicklists.$inferSelect;
 
 /** Physical desks. An agent can sit in more than one office (different states ok). */
 export const offices = pgTable(
