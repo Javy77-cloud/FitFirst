@@ -50,4 +50,21 @@ describe("master sheet save / reload", () => {
     expect(quoting).toMatch(/submittedSheetValues/);
     expect(quotes).toMatch(/applySavedSheetToDeal/);
   });
+
+  it("Save sheet leaves a notice=sheet-saved flash that a toast layer can hook", () => {
+    const action = source("src/app/actions/quote-sheet.ts");
+    const page = source("src/app/deals/[id]/page.tsx");
+    const flash = source("src/lib/desk/action-flash.ts");
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    expect(flash).toMatch(/sheet-saved/);
+    expect(flash).toMatch(/dealActionFlashHref/);
+    expect(action).toMatch(/ACTION_FLASH.sheetSaved/);
+    expect(action).toMatch(/dealActionFlashHref/);
+    expect(action).toMatch(/notice: ACTION_FLASH.sheetSaved/);
+    expect(action).toMatch(/str\(formData, "flash"\) === "0"/);
+    expect(sheet).toMatch(/flash", "0"/);
+    expect(page).toMatch(/data-ff-action-flash/);
+    expect(page).toMatch(/SavedToast/);
+    expect(page).toMatch(/isActionFlash\(notice, "sheetSaved"\)/);
+  });
 });

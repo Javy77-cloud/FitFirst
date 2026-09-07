@@ -50,6 +50,7 @@ import {
   mergeAgentEdits,
   submittedSheetValues,
 } from "@/lib/quote-sheet/apply";
+import { ACTION_FLASH, ACTION_FLASH_MESSAGE, dealActionFlashHref } from "@/lib/desk/action-flash";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
@@ -158,6 +159,21 @@ export async function saveQuoteSheet(formData: FormData) {
   await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
+  const flash = {
+    ok: true as const,
+    notice: ACTION_FLASH.sheetSaved,
+    message: ACTION_FLASH_MESSAGE[ACTION_FLASH.sheetSaved],
+  };
+  if (str(formData, "flash") === "0") return flash;
+  redirect(
+    dealActionFlashHref({
+      dealId,
+      tab: "documents",
+      line: lineRaw,
+      product: product || undefined,
+      notice: ACTION_FLASH.sheetSaved,
+    }),
+  );
 }
 
 export async function confirmQuoteSheetField(formData: FormData) {

@@ -38,10 +38,12 @@ export function MasterSheetWorkspace({
   unlocked: boolean;
   approvedBy?: string | null;
 }) {
-  async function persistSheet() {
+  async function persistSheet(opts?: { flash?: boolean }) {
     const form = document.getElementById(MASTER_SHEET_FORM_ID) as HTMLFormElement | null;
     if (!form) throw new Error("Master sheet form is missing.");
-    await saveQuoteSheet(new FormData(form));
+    const data = new FormData(form);
+    if (opts?.flash === false) data.set("flash", "0");
+    await saveQuoteSheet(data);
   }
 
   return (
@@ -54,7 +56,7 @@ export function MasterSheetWorkspace({
         product={product}
         sourceDocCount={sourceDocCount}
         formId={MASTER_SHEET_FORM_ID}
-        persistSheet={persistSheet}
+        persistSheet={() => persistSheet()}
       />
       <SheetApproveGate
         dealId={dealId}
@@ -62,7 +64,7 @@ export function MasterSheetWorkspace({
         formLabel={formLabel}
         unlocked={unlocked}
         approvedBy={approvedBy}
-        persistSheet={persistSheet}
+        persistSheet={() => persistSheet({ flash: false })}
       />
     </>
   );

@@ -46,6 +46,8 @@ import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel"
 import { listDealFieldDefs, loadLayoutForLine, loadRecordValues } from "@/lib/custom-fields/store";
 import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
+import { SavedToast } from "@/components/desk/saved-toast";
+import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +59,7 @@ export default async function DealPage({
   searchParams: Promise<{ tab?: string; notice?: string; field?: string; line?: string; product?: string }>;
 }) {
   const { id } = await params;
-  const { tab, field, line: lineParam, product } = await searchParams;
+  const { tab, field, line: lineParam, product, notice } = await searchParams;
   const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
@@ -169,6 +171,22 @@ export default async function DealPage({
           body: script.body,
         }))}
       />
+      {isActionFlash(notice, "sheetSaved") ? (
+        <>
+          <p
+            hidden
+            data-ff-action-flash={ACTION_FLASH.sheetSaved}
+            data-ff-action-flash-message={ACTION_FLASH_MESSAGE[ACTION_FLASH.sheetSaved]}
+          >
+            {ACTION_FLASH_MESSAGE[ACTION_FLASH.sheetSaved]}
+          </p>
+          <SavedToast
+            show
+            message={ACTION_FLASH_MESSAGE[ACTION_FLASH.sheetSaved]}
+            listHref={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
+          />
+        </>
+      ) : null}
       {health ? <SheetFieldFocus field={focusField} /> : null}
 
       {!risk ? (
