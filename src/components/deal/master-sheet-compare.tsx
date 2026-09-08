@@ -40,9 +40,9 @@ export function MasterSheetWorkspace({
   approvedBy?: string | null;
 }) {
   async function persistSheet(opts?: { flash?: boolean }) {
-    const form = document.getElementById(MASTER_SHEET_FORM_ID) as HTMLFormElement | null;
-    if (!form) throw new Error("Master sheet form is missing.");
-    const data = new FormData(form);
+    const el = document.getElementById(MASTER_SHEET_FORM_ID);
+    if (!(el instanceof HTMLFormElement)) throw new Error("Master sheet form is missing.");
+    const data = new FormData(el);
     if (opts?.flash === false) data.set("flash", "0");
     await saveQuoteSheet(data);
   }
