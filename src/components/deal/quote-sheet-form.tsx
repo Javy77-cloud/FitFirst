@@ -258,9 +258,10 @@ function SheetField({
           {cell.status === "check" && !printable ? (
             <Button
               type="submit"
-              formAction={confirmQuoteSheetField}
-              name="fieldKey"
-              value={fieldKey}
+              formAction={async (formData) => {
+                formData.set("fieldKey", fieldKey);
+                await confirmQuoteSheetField(formData);
+              }}
               variant="ghost"
               size="xs"
             >
@@ -270,9 +271,10 @@ function SheetField({
           {cell.value.trim() && editing && cell.source !== "javy" ? (
             <Button
               type="submit"
-              formAction={markPasteFieldWrong}
-              name="fieldKey"
-              value={fieldKey}
+              formAction={async (formData) => {
+                formData.set("fieldKey", fieldKey);
+                await markPasteFieldWrong(formData);
+              }}
               variant="ghost"
               size="xs"
             >

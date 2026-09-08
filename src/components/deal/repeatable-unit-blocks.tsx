@@ -107,9 +107,10 @@ function BlockCell({
       {cell?.status === "check" ? (
         <Button
           type="submit"
-          formAction={confirmQuoteSheetField}
-          name="fieldKey"
-          value={fieldKey}
+          formAction={async (formData) => {
+            formData.set("fieldKey", fieldKey);
+            await confirmQuoteSheetField(formData);
+          }}
           variant="ghost"
           size="xs"
         >
