@@ -50,11 +50,11 @@ export function MarketsSelectTable({
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="default"
           disabled={!selected.length || pending}
           onClick={onRemove}
           data-ff-markets-remove-selected=""
-          className="border-fit-flag/40 bg-fit-flag/10 text-fit-flag hover:bg-fit-flag hover:text-white hover:border-fit-flag disabled:opacity-40"
+          className="border border-fit-flag bg-fit-flag-bg text-fit-flag shadow-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-fit-flag hover:text-white hover:border-fit-flag hover:shadow-md active:translate-y-0 disabled:opacity-45"
         >
           {pending ? "Removing…" : `Remove selected${selected.length ? ` (${selected.length})` : ""}`}
         </Button>
