@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
-import { sourceTag } from "@/lib/quote-sheet/apply";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
