@@ -12,7 +12,7 @@ type JobLite = {
 
 /**
  * After upload/delete, Fill runs in after(). RSC payload stays stale until refresh.
- * Poll router.refresh while watching; toast when a gemini/pdf done job shows filledKeys.
+ * Poll router.refresh while watching; toast when a done job shows filledKeys.
  */
 export function BackgroundFillRefresh({
   dealId,
@@ -64,7 +64,9 @@ export function BackgroundFillRefresh({
       toasted.current = false;
       setWatching(true);
     }
-  }, [enabled, watchFromFlash]); // eslint-disable-line react-hooks/exhaustive-deps
+    // intentionally omit doneFillCount — baseline only when watch starts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, watchFromFlash]);
 
   useEffect(() => {
     if (!watching) return;

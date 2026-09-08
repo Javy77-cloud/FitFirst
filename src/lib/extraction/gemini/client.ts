@@ -5,8 +5,8 @@ import type { ExtractionResult } from "@/lib/extraction/extract";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
-const MAX_ATTEMPTS = 4;
-const WIND_MIT_MAX_ATTEMPTS = 6;
+const MAX_ATTEMPTS = 6;
+const WIND_MIT_MAX_ATTEMPTS = 8;
 const RETRYABLE_STATUS = new Set([429, 503]);
 
 export type GeminiClientResult = {
@@ -104,6 +104,7 @@ function retryDelayMs(attempt: number, response: Response | null): number {
  * Send PDF bytes to Gemini (Google AI Studio / generativelanguage REST).
  * Model from GEMINI_MODEL (default gemini-3.6-flash). Retries 429/503 with
  * exponential backoff; wind_mit gets extra attempts for large PDFs.
+ * Sustained 503/429 also tries capacity fallback model ids.
  */
 export async function extractWithGeminiPdf(
   pdfBytes: Buffer | Uint8Array,
@@ -115,13 +116,18 @@ export async function extractWithGeminiPdf(
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
-  const model = resolveGeminiModel(options?.model ?? readGeminiModel());
+  const primaryModel = resolveGeminiModel(options?.model ?? readGeminiModel());
+  // Capacity fallbacks — raw ids (not remapped) so we can leave a saturated primary.
+  const modelCandidates = Array.from(
+    new Set(
+      [primaryModel, "gemini-flash-latest", "gemini-2.0-flash-001"].filter(Boolean),
+    ),
+  );
   if (!apiKey) {
     return emptyFail(docType, "missing_gemini_key", ["missing_gemini_key"]);
   }
 
   const b64 = Buffer.from(pdfBytes).toString("base64");
-  const url = `${GENERATIVE_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const body = {
     systemInstruction: {
       parts: [{ text: buildGeminiSystemPrompt(docType) }],
@@ -150,39 +156,62 @@ export async function extractWithGeminiPdf(
   const maxAttempts = maxAttemptsFor(docType);
   let response: Response | null = null;
   let errText = "";
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      response = await fetchImpl(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "gemini_network_error";
-      if (attempt < maxAttempts) {
-        await sleep(retryDelayMs(attempt, null));
+  let lastStatus = 0;
+  outer: for (const model of modelCandidates) {
+    const url = `${GENERATIVE_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        response = await fetchImpl(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "gemini_network_error";
+        if (attempt < maxAttempts) {
+          await sleep(retryDelayMs(attempt, null));
+          continue;
+        }
+        errText = message;
+        continue outer;
+      }
+
+      if (response.ok) break outer;
+      lastStatus = response.status;
+      errText = await response.text().catch(() => "");
+      if (RETRYABLE_STATUS.has(response.status) && attempt < maxAttempts) {
+        await sleep(retryDelayMs(attempt, response));
         continue;
       }
-      return emptyFail(docType, message, ["gemini_network_error"]);
+      if (RETRYABLE_STATUS.has(response.status)) {
+        continue outer;
+      }
+      // Retired / unknown model id on a fallback — try the next candidate.
+      if (response.status === 404 && model !== primaryModel) {
+        continue outer;
+      }
+      const snippet = apiErrorSnippet(errText);
+      return emptyFail(
+        docType,
+        snippet ? `gemini_http_${response.status}: ${snippet}` : `gemini_http_${response.status}`,
+        [`gemini_http_${response.status}`],
+        errText.slice(0, 500),
+      );
     }
-
-    if (response.ok) break;
-    errText = await response.text().catch(() => "");
-    if (RETRYABLE_STATUS.has(response.status) && attempt < maxAttempts) {
-      await sleep(retryDelayMs(attempt, response));
-      continue;
-    }
-    const snippet = apiErrorSnippet(errText);
-    return emptyFail(
-      docType,
-      snippet ? `gemini_http_${response.status}: ${snippet}` : `gemini_http_${response.status}`,
-      [`gemini_http_${response.status}`],
-      errText.slice(0, 500),
-    );
   }
 
   if (!response || !response.ok) {
-    return emptyFail(docType, "gemini_http_error", ["gemini_http_error"], errText.slice(0, 500));
+    const snippet = apiErrorSnippet(errText);
+    return emptyFail(
+      docType,
+      snippet
+        ? `gemini_http_${lastStatus || "error"}: ${snippet}`
+        : lastStatus
+          ? `gemini_http_${lastStatus}`
+          : "gemini_http_error",
+      [lastStatus ? `gemini_http_${lastStatus}` : "gemini_http_error"],
+      errText.slice(0, 500),
+    );
   }
 
   const payload = (await response.json()) as {
