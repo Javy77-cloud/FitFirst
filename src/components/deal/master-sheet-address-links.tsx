@@ -59,7 +59,7 @@ export function MasterSheetAddressLinks({
         rel="noopener noreferrer"
         className={cn(
           base,
-          "hover:bg-fit-green-bg hover:border-fit-green hover:text-fit-green",
+          "hover:bg-fit-check-bg hover:border-fit-check hover:text-fit-check",
         )}
         data-ff-sheet-maps=""
         title={`Google Maps: ${links.formatted}`}
