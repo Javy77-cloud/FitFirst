@@ -56,7 +56,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "terrain", label: "Terrain", group: "Roof / wind", extractKey: "terrain", products: [...HO_LL] },
   { key: "wind_speed", label: "Design wind speed", group: "Roof / wind", extractKey: "wind_speed", products: [...HO_LL] },
   { key: "wind_mit_form", label: "Wind mit form", group: "Roof / wind", extractKey: "wind_mit_form", products: [...HO_LL] },
-  { key: "wind_mit_date", label: "Wind mit date", group: "Roof / wind", products: [...HO_LL] },
+  { key: "wind_mit_date", label: "Wind mit date", group: "Roof / wind", extractKey: "wind_mit_date", products: [...HO_LL] },
   { key: "wind_mit_inspector", label: "Wind mit inspector", group: "Roof / wind", extractKey: "wind_mit_inspector", products: [...HO_LL] },
   { key: "building_code", label: "Building code", group: "Roof / wind", extractKey: "building_code", products: [...HO_LL] },
   { key: "inspection_company", label: "Inspection company", group: "Roof / wind", extractKey: "inspection_company", products: [...HO_LL] },

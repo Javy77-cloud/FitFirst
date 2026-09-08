@@ -17,7 +17,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   roof_deck_attachment: ["roof_deck_attachment", "roof_deck"],
   roof_to_wall: ["roof_to_wall"],
   roof_shape: ["roof_shape"],
-  swr: ["swr"],
+  swr: ["swr", "secondary_water"],
   opening_protection: ["opening_protection"],
   building_code: ["building_code"],
   design_wind_speed: ["wind_speed", "design_wind_speed"],
@@ -46,6 +46,9 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   county: ["county"],
   roof_year: ["roof_year"],
   named_insured: ["named_insured"],
+  wind_mit_form: ["wind_mit_form"],
+  wind_mit_date: ["wind_mit_date"],
+  terrain: ["terrain"],
 };
 
 export type GeminiFieldPayload = {
@@ -78,6 +81,62 @@ function asPayload(raw: unknown): { value: string; confidence: number } | null {
   if (!value || value.toLowerCase() === "null") return null;
   const confidence = clampConfidence(Number(obj.confidence ?? 0.5));
   return { value, confidence };
+}
+
+/** Sheet keys that must store OIR-B1-1802 letter codes (not long option text). */
+const OIR_LETTER_SHEET_KEYS = new Set([
+  "roof_shape",
+  "roof_deck",
+  "roof_deck_attachment",
+  "roof_to_wall",
+  "swr",
+  "secondary_water",
+  "opening_protection",
+  "building_code",
+  "terrain",
+]);
+
+/**
+ * Coerce Gemini OIR checkbox text → letter-only for carrier fill.
+ * Mapping (OIR-B1-1802):
+ * - Leading "A." / "B." / "C." / "ATC." etc. → that letter/code
+ * - roof_shape words: hip→A, flat→B, gable|other→C
+ * - roof_to_wall words: toenails→A, clips→B, single wrap→C, double wrap→D, structural→E
+ * - opening_protection "Class A …" → A (same for B/C/N/X)
+ * - Bare short codes (A–H, N, X, ATC) kept uppercase; ambiguous shorts like building_code "4" left as-is
+ * Full label stays in rawValue for audit; normalizedValue uses the letter.
+ */
+export function normalizeOirLetterCode(fieldKey: string, raw: string): string {
+  if (!OIR_LETTER_SHEET_KEYS.has(fieldKey)) return raw;
+  const s = raw.trim();
+  if (!s) return s;
+
+  if (/^(ATC|[A-HNXhnx])$/i.test(s)) return s.toUpperCase();
+
+  const lead = s.match(/^(ATC|[A-HNXhnx])\s*[.)\-:]/i);
+  if (lead) return lead[1].toUpperCase();
+
+  if (fieldKey === "opening_protection") {
+    const cls = s.match(/\bClass\s*([A-CNX])\b/i);
+    if (cls) return cls[1].toUpperCase();
+  }
+
+  const low = s.toLowerCase();
+  if (fieldKey === "roof_shape") {
+    if (/\bhip\b/.test(low)) return "A";
+    if (/\bflat\b/.test(low)) return "B";
+    if (/\bgable\b|\bother\b/.test(low)) return "C";
+  }
+
+  if (fieldKey === "roof_to_wall") {
+    if (/\btoenail/.test(low)) return "A";
+    if (/\bclips?\b/.test(low)) return "B";
+    if (/\bsingle\s*wrap/.test(low)) return "C";
+    if (/\bdouble\s*wrap/.test(low)) return "D";
+    if (/\bstructural/.test(low)) return "E";
+  }
+
+  return s;
 }
 
 /** Parse city / state / zip from a US-style address line when possible. */
@@ -162,11 +221,12 @@ export function mapGeminiJsonToFields(
     for (const fieldKey of sheetKeys) {
       if (seen.has(fieldKey)) continue;
       seen.add(fieldKey);
+      const letterValue = normalizeOirLetterCode(fieldKey, payload.value);
       fields.push({
         fieldKey,
         label: labelForKey(fieldKey),
         rawValue: payload.value,
-        normalizedValue: above ? payload.value : "",
+        normalizedValue: above ? letterValue : "",
         confidence: payload.confidence,
         flagged: !above,
         source: above ? "labeled" : "uncertain",

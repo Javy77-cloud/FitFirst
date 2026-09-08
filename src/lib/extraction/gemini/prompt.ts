@@ -47,6 +47,9 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "county",
   "roof_year",
   "named_insured",
+  "wind_mit_form",
+  "wind_mit_date",
+  "terrain",
 ] as const;
 
 export type GeminiExtractKey = (typeof GEMINI_EXTRACT_JSON_KEYS)[number];
@@ -66,8 +69,12 @@ Rules:
   where confidence is 0..1 (1 = clearly printed / checked on the form).
 - Extract ONLY what is written or clearly checked on the page. Never invent.
 - If unknown, illegible, unchecked, or not present: value null and low confidence.
-- Prefer full printable labels for OIR checkbox sections when a letter is checked
-  (e.g. roof_to_wall "clips", roof_shape "hip", opening_protection "A", building_code "B").
+- OIR wind-mit checkbox sections: store the LETTER CODE ONLY in value
+  (A, B, C, D, F, N, X, ATC, etc.) — never the long printable sentence.
+  Examples: roof_shape "A" (not "hip" / not "A. Hip Roof…"); roof_deck_attachment "C"
+  (not "C. Plywood/OSB…"); roof_to_wall "A"; swr "A"|"B"|"C"; opening_protection "A";
+  building_code "A"|"B"|"C"|"D" (or short form digit if that is what the form shows);
+  terrain "B"|"C"|"D". Full label text may be omitted; do not put it in value.
 - design_wind_speed: use mph number when Region 1/2/3 is checked (140 / 130 / 120-style).
 - property_address / mailing_address: full street line; include city/state/zip separately when clear.
 - current_policy_name_insured: named insured on a dec/policy.
@@ -78,7 +85,8 @@ Rules:
 Field meaning guidance (from desk synonym brief):
 - Wind mit: Owner Name→applicant_name; Address Inspected→property_address; Qualified Inspector→wind_mit_inspector;
   License or Certificate #→license_number; Inspection Company; Roof covering / deck / roof-to-wall / shape / SWR /
-  Opening protection / Building Code / Design wind speed (Region).
+  Opening protection / Building Code / Design wind speed (Region); Terrain Exposure; form id→wind_mit_form;
+  inspection/form date→wind_mit_date; Roof covering year→roof_year. Checkbox sections: letter only.
 - Four-point: Insured/Applicant Name; Address Inspected; year built; stories; roof covering / year; electrical/plumbing/HVAC ages when labeled.
 - Dec: Named insured; Residence premises / Location; Coverage A; hurricane / AOP / wind-hail deductibles;
   policy number; premium; effective/expiration; mortgagee; loan number; ordinance or law; water backup; scheduled personal property.
@@ -91,7 +99,7 @@ export function buildGeminiUserPrompt(docType?: string | null): string {
     "Extract every listed key that is clearly printed or checked. Prefer a non-empty value when the form shows one.";
   if (kind === "wind_mit" || kind.includes("wind")) {
     focus =
-      "This is a wind mitigation (OIR-B1-1802). MUST fill when present: applicant_name, property_address, wind_mit_inspector, license_number, inspection_company, roof_covering, roof_deck_attachment, roof_to_wall, roof_shape, swr, opening_protection, building_code, design_wind_speed, year_built. Use checkbox letter/label text.";
+      "This is a wind mitigation (OIR-B1-1802). MUST fill when present: applicant_name, property_address, wind_mit_inspector, license_number, inspection_company, roof_covering, roof_deck_attachment, roof_to_wall, roof_shape, swr, opening_protection, building_code, design_wind_speed, year_built, wind_mit_form, wind_mit_date, terrain, roof_year. OIR checkbox fields: LETTER CODES ONLY (A/B/C/…). wind_mit_form is typically OIR-B1-1802; wind_mit_date is the inspection/form date; terrain is Terrain Exposure Category (B/C/D); roof_year is the year roof covering installed when printed.";
   } else if (kind === "four_point" || kind.includes("four") || kind.includes("4pt") || kind.includes("4-point")) {
     focus =
       "This is a four-point inspection. MUST fill when present: applicant_name, property_address, year_built, stories, roof_covering, roof_year, construction_type. Capture electrical/plumbing/HVAC ages into notes-capable keys when labeled.";
