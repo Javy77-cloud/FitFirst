@@ -36,8 +36,9 @@ export function QuotesPanel({
     policies: { id: string; policyNumber: string }[];
   };
 }) {
+  const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesCheapestFirst(
-    quotes.map((row) => ({ ...row, premium: row.quote.premium })),
+    liveQuotes.map((row) => ({ ...row, premium: row.quote.premium })),
   );
   const cheapest = sorted[0] ?? null;
   const resultByCarrier = new Map(logs.map((row) => [row.log.carrierId, row.log.result]));

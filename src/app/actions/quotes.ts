@@ -105,16 +105,16 @@ export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch
     await db.delete(quotes).where(eq(quotes.dealId, dealId));
   } else {
     const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
-    if (existing.length === 0) {
-      throw new Error("Request in-appetite quotes first. Stretch is a manual second pass.");
+    const already = new Set(existing.map((row) => row.carrierId));
+    for (const match of matches.filter((row) => row.band === "yellow")) {
+      if (!already.has(match.carrierId)) shopIds.add(match.carrierId);
     }
-    for (const match of matches.filter((row) => row.band === "yellow")) shopIds.add(match.carrierId);
-    for (const row of existing) shopIds.delete(row.carrierId);
   }
 
   const named = await db.select({ id: carriers.id, name: carriers.name }).from(carriers);
   const nameById = new Map(named.map((row) => [row.id, row.name]));
 
+  // Live desk: do not invent stub premiums. Real quotes come from Chrome Fill / portal paste.
   for (const carrierId of shopIds) {
     const match = byId.get(carrierId);
     const carrierName = match?.carrierName ?? nameById.get(carrierId) ?? "Carrier";
@@ -124,36 +124,23 @@ export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch
       dealId,
       riskId: risk.id,
     });
-    const premium = risk.coverageA ? String(Math.round(risk.coverageA * 0.0165)) : null;
     const manual = manualIds.has(carrierId);
-    await db.insert(quotes).values({
-      tenantId: DEFAULT_TENANT_ID,
-      dealId,
-      riskId: risk.id,
-      carrierId,
-      quoteNumber: `STUB-${carrierName.slice(0, 4).toUpperCase()}-${Date.now().toString().slice(-5)}`,
-      premium,
-      hurricaneDeductible: "2%",
-      aopDeductible: "$2,500",
-      coverageA: risk.coverageA,
-      bindable: true,
-      coverageGaps: risk.openingProtection === "none" ? ["No opening protection credit"] : [],
-      notes: `${EXPLICIT_MARKET_ACTION_MARKER} ${portalResult.message} ${manual ? `${MANUAL_MARKET_MARKER} Manual override. ` : ""}Ranked fit score ${match?.fitScore ?? "—"}.`,
-      stub: true,
-    });
-  }
-
-  const actedCarrierId = [...shopIds][0] ?? named[0]?.id;
-  if (actedCarrierId) {
     await db.insert(quoteAttemptLogs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       riskId: risk.id,
-      carrierId: actedCarrierId,
+      carrierId,
       lineOfBusiness: deal.lineOfBusiness || "HO",
       result: "maybe",
       bindable: false,
-      why: `${EXPLICIT_MARKET_ACTION_MARKER} Agent requested ${pass} quotes.`,
+      why: `${EXPLICIT_MARKET_ACTION_MARKER} ${pass} shop · ${portalResult.message}${manual ? ` ${MANUAL_MARKET_MARKER}` : ""} · no stub premium (Fill/portal for real quote). Fit ${match?.fitScore ?? "—"}.`,
+      snapYearBuilt: risk.yearBuilt,
+      snapRoofYear: risk.roofYear,
+      snapRoofCovering: risk.roofCovering,
+      snapConstruction: risk.construction,
+      snapCounty: risk.county,
+      snapMilesToCoast: risk.milesToCoast,
+      snapCoverageA: risk.coverageA,
     });
   }
 
