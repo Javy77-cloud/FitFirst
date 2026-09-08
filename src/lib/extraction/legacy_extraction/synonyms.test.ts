@@ -1,7 +1,8 @@
+/** LEGACY — not imported by Fill. */
 import { describe, expect, it } from "vitest";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./extract-text";
 import {
   SOURCE_DOC_TAGS,
   inferSourceDocKind,

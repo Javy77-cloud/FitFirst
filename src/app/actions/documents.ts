@@ -43,12 +43,16 @@ import { libraryHref } from "@/lib/documents/library";
 import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import {
   coerceRiskValue,
-  extractFieldsFromText,
   fieldKeyToRiskColumn,
 } from "@/lib/extraction/extract";
+import {
+  docTypeUsesGemini,
+  extractWithGeminiPdf,
+  geminiKeyReady,
+  loadGeminiApiKey,
+  MISSING_GEMINI_KEY_MESSAGE,
+} from "@/lib/extraction/gemini";
 import { inferMimeFromName } from "@/lib/files/urls";
-import { classifyIngest } from "@/lib/extraction/ocr";
-import { readUploadText } from "@/lib/extraction/pdf";
 import {
   CLEAN_DEC_FILENAME,
   CLEAN_DEC_TEXT,
@@ -502,17 +506,8 @@ async function runExtraction(documentId: string, dealId: string) {
     }
     return;
   }
-  let text = "";
-  let engine: "pdf_text" | "ocr" = classifyIngest(doc.mimeType, doc.filename, buffer).engine;
-  try {
-    const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
-    text = uploaded.text;
-    engine = uploaded.engine === "ocr" ? "ocr" : "pdf_text";
-    if (!text.trim()) {
-      throw new Error(`Could not read text from ${doc.filename}.`);
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not read document";
+  const geminiKey = await loadGeminiApiKey();
+  if (docTypeUsesGemini(doc.docType) && !geminiKeyReady(geminiKey)) {
     await db
       .update(documents)
       .set({ status: "failed" })
@@ -522,14 +517,45 @@ async function runExtraction(documentId: string, dealId: string) {
         tenantId: DEFAULT_TENANT_ID,
         dealId,
         documentId,
-        engine,
+        engine: "gemini",
         status: "failed",
-        message,
+        message: MISSING_GEMINI_KEY_MESSAGE,
       });
     }
     return;
   }
-  const result = extractFieldsFromText(text, doc.docType);
+
+  let result;
+  let engine: "pdf_text" | "ocr" | "gemini" = "gemini";
+  if (docTypeUsesGemini(doc.docType)) {
+    const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey });
+    engine = "gemini";
+    if (!gemini.ok) {
+      await db
+        .update(documents)
+        .set({ status: "failed" })
+        .where(eq(documents.id, documentId));
+      if (dealId) {
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          documentId,
+          engine,
+          status: "failed",
+          message: `Gemini extract failed for ${doc.filename}: ${gemini.message}`,
+        });
+      }
+      return;
+    }
+    result = gemini.result;
+  } else {
+    // Non-source docs: no legacy synonym Fill; mark skipped.
+    await db
+      .update(documents)
+      .set({ status: "extracted" })
+      .where(eq(documents.id, documentId));
+    return;
+  }
 
   await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
 

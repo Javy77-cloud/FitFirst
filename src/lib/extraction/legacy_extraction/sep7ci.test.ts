@@ -1,3 +1,4 @@
+/** LEGACY — not imported by Fill. */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,11 +7,11 @@ import {
   resolveCheckboxOption,
   WIND_MIT_CHECKBOX_MAPS,
 } from "./checkbox-maps";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./extract-text";
 import { matchSynonymsOnLine } from "./synonyms";
 
 const FIXTURE = readFileSync(
-  resolve(__dirname, "../../../fixtures/don-myler-wind-mit-pdf-text-redacted.txt"),
+  resolve(__dirname, "../../../../fixtures/don-myler-wind-mit-pdf-text-redacted.txt"),
   "utf8",
 );
 

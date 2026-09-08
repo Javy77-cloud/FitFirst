@@ -11,11 +11,11 @@ import {
 import type { ExtractedField } from "@/lib/extraction/extract";
 import { isCoverageALocked } from "@/lib/extraction/audit-helpers";
 export { isCoverageALocked, nextCandidateTimesSeen } from "@/lib/extraction/audit-helpers";
-import { synonymsForField } from "@/lib/extraction/synonyms";
+import { synonymsForField } from "@/lib/extraction/legacy_extraction/synonyms";
 import { extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
 import type { ShopLine } from "@/lib/domain";
 
-export type AuditEngine = "pdf_text" | "ocr" | "api";
+export type AuditEngine = "pdf_text" | "ocr" | "api" | "gemini";
 export type AuditStatus = "done" | "failed" | "needs_glance" | "skipped";
 
 export async function insertExtractionAttempt(input: {

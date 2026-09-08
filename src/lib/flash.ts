@@ -68,6 +68,7 @@ export const FLASH_COPY = {
   "sheet-filled": "Sheet filled from source",
   "property-records-filled": "Filled empty fields from property records",
   "property-records-needs-key": "Florida Property API key is not configured. Set FLORIDA_PROPERTY_API_KEY.",
+  "gemini-needs-key": "Gemini API key is not configured. Set GEMINI_API_KEY.",
   "property-records-no-address": "Add a property address on the sheet or the deal first.",
   "property-records-not-found": "No parcel matched that address.",
   "property-records-error": "Florida Property API did not return fields. Empty cells were left alone.",

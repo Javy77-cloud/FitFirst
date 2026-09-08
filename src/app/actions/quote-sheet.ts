@@ -34,10 +34,17 @@ import { applyLoggedCorrections } from "@/lib/fill-feedback/prefer";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
 import {
   coerceRiskValue,
-  extractFieldsFromText,
   fieldKeyToRiskColumn,
   type ExtractedField,
 } from "@/lib/extraction/extract";
+import {
+  docTypeUsesGemini,
+  extractWithGeminiPdf,
+  fillableGeminiFields,
+  geminiKeyReady,
+  loadGeminiApiKey,
+  MISSING_GEMINI_KEY_MESSAGE,
+} from "@/lib/extraction/gemini";
 import { classifyIngest } from "@/lib/extraction/ocr";
 import { inferShopLine, isQuoteAttachment, sourceDocFillsHome } from "@/lib/ingest/identity";
 import { readUploadText } from "@/lib/extraction/pdf";
@@ -405,6 +412,10 @@ export async function fillQuoteSheet(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const geminiKey = await loadGeminiApiKey();
+  if (!geminiKeyReady(geminiKey)) {
+    flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "gemini-needs-key", "error");
+  }
   await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
   flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "sheet-filled");
@@ -643,18 +654,16 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
     }
 
     try {
-      const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
-      const text = uploaded.text;
-      const engine = uploaded.engine === "ocr" ? "ocr" : "pdf_text";
-      if (!text.trim()) {
+      const geminiKey = await loadGeminiApiKey();
+      if (docTypeUsesGemini(doc.docType) && !geminiKeyReady(geminiKey)) {
         await db.insert(extractionJobs).values({
           tenantId: DEFAULT_TENANT_ID,
           dealId,
           documentId: doc.id,
           quoteSheetId: sheet.id,
-          engine,
+          engine: "gemini",
           status: "failed",
-          message: `Could not read text from ${doc.filename}.`,
+          message: MISSING_GEMINI_KEY_MESSAGE,
         });
         await insertExtractionAttempt({
           dealId,
@@ -662,14 +671,23 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           quoteSheetId: sheet.id,
           shopLine: line,
           docType: doc.docType || "",
-          engine,
+          engine: "gemini",
           status: "failed",
-          message: `Could not read text from ${doc.filename}.`,
+          message: MISSING_GEMINI_KEY_MESSAGE,
           startedAt,
         });
         continue;
       }
-      const inferred = inferShopLine(text, doc.filename, doc.docType);
+
+      // Prefer filename / typed docType for shop-line gate (no synonym text extract).
+      let textForLine = "";
+      try {
+        const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
+        textForLine = uploaded.text;
+      } catch {
+        textForLine = "";
+      }
+      const inferred = inferShopLine(textForLine, doc.filename, doc.docType);
       const hoOntoHome = sourceDocFillsHome(doc.docType) && line === "home";
       if (inferred !== line && !hoOntoHome) {
         await insertExtractionAttempt({
@@ -679,7 +697,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           shopLine: line,
           docType: doc.docType || inferred || "",
           docTypeInferred: !doc.docType,
-          engine,
+          engine: "gemini",
           status: "skipped",
           message: `Wrong shop line for ${doc.filename}: inferred ${inferred}, sheet is ${line}. No field attempts.`,
           startedAt,
@@ -689,16 +707,57 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           dealId,
           documentId: doc.id,
           quoteSheetId: sheet.id,
-          engine,
+          engine: "gemini",
           status: "skipped",
           message: `Skipped ${doc.filename} — wrong shop line (inferred ${inferred}).`,
         });
         continue;
       }
-      const extracted = extractFieldsFromText(text, doc.docType);
+
+      if (!docTypeUsesGemini(doc.docType)) {
+        await insertExtractionAttempt({
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          shopLine: line,
+          docType: doc.docType || "",
+          engine: "gemini",
+          status: "skipped",
+          message: `Skipped ${doc.filename} — not a Gemini source doc type.`,
+          startedAt,
+        });
+        continue;
+      }
+
+      const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey });
+      const engine = "gemini" as const;
+      if (!gemini.ok) {
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          engine,
+          status: "failed",
+          message: `Gemini extract failed for ${doc.filename}: ${gemini.message}`,
+        });
+        await insertExtractionAttempt({
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          shopLine: line,
+          docType: doc.docType || "",
+          engine,
+          status: "failed",
+          message: `Gemini extract failed for ${doc.filename}: ${gemini.message}`,
+          startedAt,
+        });
+        continue;
+      }
+      const extracted = gemini.result;
       const feedback = applyLoggedCorrections(extracted.fields, doc.docType, corrections);
       const learned = applyLearningToExtracted(
-        feedback.fields.map((field) => ({
+        fillableGeminiFields(feedback.fields).map((field) => ({
           fieldKey: field.fieldKey,
           normalizedValue: field.normalizedValue,
           sourceLabel: field.sourceDocTag || sourceLabelForDoc(doc.docType, doc.filename),
@@ -713,7 +772,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         learningLogs,
         { docType: doc.docType || "dec", dealId },
       );
-      const source = uploaded.engine === "ocr" ? "photo-ocr" : "extracted";
+      const source = "extracted";
       const applied = applyExtractedToSheet(line, values, learned, { source });
       values = applied.values;
       await syncNamedInsuredFromExtract(dealId, extracted.fields);

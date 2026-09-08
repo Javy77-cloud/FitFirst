@@ -63,7 +63,7 @@ describe("sep7ce Fill from property records", () => {
   });
 
   it("does not rewrite document extraction maps", () => {
-    const maps = source("src/lib/extraction/field-maps.ts");
+    const maps = source("src/lib/extraction/legacy_extraction/field-maps.ts");
     expect(maps).toMatch(/sourceLabel: "Year built"/);
     expect(maps).toMatch(/sheetField: "year_built"/);
   });

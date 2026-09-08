@@ -1,3 +1,4 @@
+/** LEGACY — not imported by Fill. */
 import { describe, expect, it } from "vitest";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues, fieldsForLine } from "@/lib/quote-sheet/catalog";
@@ -6,7 +7,7 @@ import {
   extractWindMitCheckboxes,
   resolveCheckboxOption,
 } from "./checkbox-maps";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./extract-text";
 import { matchSynonymsOnLine } from "./synonyms";
 
 describe("sep7ch wind checkbox maps", () => {
