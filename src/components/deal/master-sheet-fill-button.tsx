@@ -83,10 +83,11 @@ export function MasterSheetFillButton({
 
   return (
     <>
-      <Button
+            <Button
         type="button"
-        size="xs"
-        variant="outline"
+        size="sm"
+        variant="default"
+        className="h-9 px-3.5 text-sm font-semibold bg-fit-yellow text-navy hover:bg-fit-yellow/90 border-fit-yellow shadow-sm"
         data-ff-fill-master-sheet=""
         disabled={busy}
         onClick={() => void runFill()}

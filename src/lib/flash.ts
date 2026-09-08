@@ -79,7 +79,7 @@ export const FLASH_COPY = {
   "tag-color-saved": "Tag color saved",
   "document-deleted": "Document deleted",
   "document-replaced": "Document replaced",
-  "document-uploaded": "Document uploaded",
+  "document-uploaded": "Files saved",
   "image-uploaded": "Image uploaded",
   "market-added": "Market added",
   "deal-updated": "Deal updated",

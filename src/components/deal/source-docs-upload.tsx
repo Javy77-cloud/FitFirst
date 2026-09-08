@@ -83,7 +83,7 @@ export function SourceDocsUpload({
           />
         </div>
       ))}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col items-start gap-2">
         <button
           type="button"
           className="text-sm font-medium text-primary hover:underline"
@@ -96,7 +96,7 @@ export function SourceDocsUpload({
           + Add another document
         </button>
         <Button type="submit" size="sm">
-          Create
+          Save
         </Button>
       </div>
     </form>
