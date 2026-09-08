@@ -8,6 +8,8 @@ import { fedexCredentialsReady } from "@/lib/fedex/client";
 import {
   FEDEX_VAULT_LABEL,
   FEDEX_VAULT_PROVIDER,
+  FLORIDA_PROPERTY_VAULT_LABEL,
+  FLORIDA_PROPERTY_VAULT_PROVIDER,
   publicVaultStatus,
   type VaultPublicStatus,
 } from "./vault-public";
@@ -15,13 +17,12 @@ import {
 export {
   FEDEX_VAULT_LABEL,
   FEDEX_VAULT_PROVIDER,
+  FLORIDA_PROPERTY_VAULT_LABEL,
+  FLORIDA_PROPERTY_VAULT_PROVIDER,
   SECRET_MASK,
   publicVaultStatus,
   type VaultPublicStatus,
 } from "./vault-public";
-
-export const FLORIDA_PROPERTY_VAULT_PROVIDER = "florida_property";
-export const FLORIDA_PROPERTY_VAULT_LABEL = "Florida Property API";
 
 function envFedExCredentials(): FedExCredentials | null {
   const apiKey = process.env.FEDEX_API_KEY?.trim() || "";
@@ -182,3 +183,124 @@ export async function clearFedExVault(actorId: string | null): Promise<VaultPubl
   }
   return publicVaultStatus({ configured: false, source: "none", environment: "sandbox" });
 }
+
+function envFloridaPropertyKey(): string | null {
+  const key = process.env.FLORIDA_PROPERTY_API_KEY?.trim() || "";
+  return key || null;
+}
+
+export async function loadFloridaPropertyVaultRow() {
+  try {
+    const [row] = await db
+      .select()
+      .from(developerApiVault)
+      .where(
+        and(
+          eq(developerApiVault.tenantId, DEFAULT_TENANT_ID),
+          eq(developerApiVault.provider, FLORIDA_PROPERTY_VAULT_PROVIDER),
+        ),
+      )
+      .limit(1);
+    return row ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadFloridaPropertyPublicStatus(): Promise<VaultPublicStatus> {
+  const row = await loadFloridaPropertyVaultRow();
+  if (row?.configured && row.apiKeyEnc && row.apiKeyIv) {
+    return publicVaultStatus({
+      configured: true,
+      source: "vault",
+      provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+      label: FLORIDA_PROPERTY_VAULT_LABEL,
+    });
+  }
+  if (envFloridaPropertyKey()) {
+    return publicVaultStatus({
+      configured: true,
+      source: "env",
+      provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+      label: FLORIDA_PROPERTY_VAULT_LABEL,
+    });
+  }
+  return publicVaultStatus({
+    configured: false,
+    source: "none",
+    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+    label: FLORIDA_PROPERTY_VAULT_LABEL,
+  });
+}
+
+export async function saveFloridaPropertyVault(input: {
+  apiKey: string;
+  actorId: string | null;
+}): Promise<VaultPublicStatus> {
+  if (isMaskedSecretInput(input.apiKey) || !input.apiKey.trim()) {
+    throw new Error("Enter a real Florida Property API key. Masked values are not saved.");
+  }
+  const key = encryptSecret(input.apiKey.trim());
+  const existing = await loadFloridaPropertyVaultRow();
+  const values = {
+    tenantId: DEFAULT_TENANT_ID,
+    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+    label: FLORIDA_PROPERTY_VAULT_LABEL,
+    configured: true,
+    apiKeyEnc: key.enc,
+    apiKeyIv: key.iv,
+    apiSecretEnc: null,
+    apiSecretIv: null,
+    accountNumberEnc: null,
+    accountNumberIv: null,
+    environment: "sandbox",
+    updatedBy: input.actorId,
+    updatedAt: new Date(),
+  };
+  if (existing) {
+    await db.update(developerApiVault).set(values).where(eq(developerApiVault.id, existing.id));
+  } else {
+    await db.insert(developerApiVault).values(values);
+  }
+  return publicVaultStatus({
+    configured: true,
+    source: "vault",
+    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+    label: FLORIDA_PROPERTY_VAULT_LABEL,
+  });
+}
+
+export async function clearFloridaPropertyVault(actorId: string | null): Promise<VaultPublicStatus> {
+  const existing = await loadFloridaPropertyVaultRow();
+  if (existing) {
+    await db
+      .update(developerApiVault)
+      .set({
+        configured: false,
+        apiKeyEnc: null,
+        apiKeyIv: null,
+        apiSecretEnc: null,
+        apiSecretIv: null,
+        accountNumberEnc: null,
+        accountNumberIv: null,
+        updatedBy: actorId,
+        updatedAt: new Date(),
+      })
+      .where(eq(developerApiVault.id, existing.id));
+  }
+  if (envFloridaPropertyKey()) {
+    return publicVaultStatus({
+      configured: true,
+      source: "env",
+      provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+      label: FLORIDA_PROPERTY_VAULT_LABEL,
+    });
+  }
+  return publicVaultStatus({
+    configured: false,
+    source: "none",
+    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
+    label: FLORIDA_PROPERTY_VAULT_LABEL,
+  });
+}
+
