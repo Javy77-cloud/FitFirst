@@ -45,7 +45,7 @@ export function DocumentsPanel({
 
   return (
     <div className="flex w-full flex-col space-y-4" data-ff-deal-docs data-ff-docs-zoom="100">
-      <BackgroundFillRefresh dealId={dealId} jobs={(jobs as { engine?: string; status?: string; filledKeys?: string[] }[]) ?? []} enabled={pendingFill} />
+      <BackgroundFillRefresh dealId={dealId} jobs={(jobs as { engine?: string; status?: string; filledKeys?: string[]; skippedKeys?: string[]; message?: string | null }[]) ?? []} enabled={pendingFill} />
       <div className="w-full min-w-0" data-ff-deal-upload>
         <section className="ff-card w-full p-3">
           <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>

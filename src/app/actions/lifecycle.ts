@@ -26,6 +26,7 @@ import { inferMimeFromName } from "@/lib/files/urls";
 import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import { textFromUpload } from "@/lib/extraction/pdf";
 import { withFlash } from "@/lib/flash";
+import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -221,9 +222,17 @@ export async function finalizeQuoteResults(formData: FormData) {
 export async function fillQuoteSheetBlanks(formData: FormData) {
   const dealId = str(formData, "dealId");
   const line = (str(formData, "line") || "home") as ShopLine;
-  await runFillDealSheets(dealId, line);
+  const counts = await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
-  redirect(withFlash(`/deals/${dealId}?tab=documents&line=${line}&notice=filled`, "sheet-filled"));
+  redirect(
+    withFlash(
+      `/deals/${dealId}?tab=documents&line=${line}&notice=filled`,
+      toastForFillCounts({
+        filledCount: counts.filledKeys.length,
+        skippedCount: counts.skippedKeys.length,
+      }),
+    ),
+  );
 }
 
 export async function ensureLeadNotes(leadId: string, extra: string) {

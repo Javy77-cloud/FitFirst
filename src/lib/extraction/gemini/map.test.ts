@@ -44,6 +44,9 @@ describe("gemini map key mapping", () => {
     expect(sheetKeysForGeminiKey("electrical_updated")).toEqual(["electrical_updated"]);
     expect(sheetKeysForGeminiKey("roof_condition")).toEqual(["roof_condition"]);
     expect(sheetKeysForGeminiKey("four_point_date")).toEqual(["four_point_date"]);
+    expect(sheetKeysForGeminiKey("occupancy")).toEqual(["occupancy"]);
+    expect(sheetKeysForGeminiKey("months_occupied")).toEqual(["months_occupied"]);
+    expect(sheetKeysForGeminiKey("stories")).toEqual(["stories"]);
   });
 
   it("maps four-point system years onto sheet fields from Gemini JSON", () => {

@@ -77,6 +77,7 @@ import {
   enrichPropertyOnAddressConfirm,
 } from "@/lib/property-enrichment/service";
 import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
+import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
 import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
 import { toastForPropertyFill } from "@/lib/property-fill/merge";
@@ -419,12 +420,16 @@ export async function fillFromPropertyRecords(formData: FormData) {
   await syncRiskFromSheet(dealId, applied.values, "fill");
   await syncHeaderFromSheet(dealId, applied.values, "fill");
   revalidatePath(`/deals/${dealId}`);
-  const toast = applied.filledKeys.length
-    ? toastForPropertyFill({
-        filledCount: applied.filledKeys.length,
-        sourcesUsed: bundle.sourcesUsed,
-      })
-    : "property-records-no-blanks";
+  const toast =
+    applied.filledKeys.length || applied.skippedKeys.length
+      ? toastForFillCounts({
+          filledCount: applied.filledKeys.length,
+          skippedCount: applied.skippedKeys.length,
+        })
+      : toastForPropertyFill({
+          filledCount: 0,
+          sourcesUsed: bundle.sourcesUsed,
+        });
   flashAction(dest, toast);
 }
 
@@ -436,23 +441,40 @@ export async function fillQuoteSheet(formData: FormData) {
   if (!geminiKeyReady(geminiKey)) {
     flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "gemini-needs-key", "error");
   }
-  await runFillDealSheets(dealId, lineRaw);
+  const counts = await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
-  flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "sheet-filled");
+  flashAction(
+    `/deals/${dealId}?tab=documents&line=${lineRaw}`,
+    toastForFillCounts({
+      filledCount: counts.filledKeys.length,
+      skippedCount: counts.skippedKeys.length,
+    }),
+  );
 }
 
-export async function runFillDealSheets(dealId: string, primary: ShopLine) {
-  await runFillQuoteSheet(dealId, primary);
-  await fillOtherShopLines(dealId, primary);
+export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[] };
+
+export async function runFillDealSheets(dealId: string, primary: ShopLine): Promise<FillDealCounts> {
+  const primaryCounts = await runFillQuoteSheet(dealId, primary);
+  const other = await fillOtherShopLines(dealId, primary);
+  return {
+    filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
+    skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
+  };
 }
 
-async function fillOtherShopLines(dealId: string, already: ShopLine) {
+async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<FillDealCounts> {
+  const filledKeys: string[] = [];
+  const skippedKeys: string[] = [];
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   for (const line of deal?.shopLines ?? []) {
     if (line !== already && isShopLine(line)) {
-      await runFillQuoteSheet(dealId, line);
+      const counts = await runFillQuoteSheet(dealId, line);
+      filledKeys.push(...counts.filledKeys);
+      skippedKeys.push(...counts.skippedKeys);
     }
   }
+  return { filledKeys, skippedKeys };
 }
 
 export async function attachSampleMelbourneDec(formData: FormData) {
@@ -698,7 +720,7 @@ async function logExtractionJob(input: {
   }
 }
 
-export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
+export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise<FillDealCounts> {
   const sheet = await ensureQuoteSheet(dealId, line);
   const docs = await db
     .select()
@@ -712,6 +734,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
   let values: Record<string, QuoteSheetFieldValue> = { ...sheet.values };
   if (Object.keys(values).length === 0) values = emptySheetValues(line);
+  const aggregateFilled: string[] = [];
+  const aggregateSkipped: string[] = [];
 
   for (const doc of docs) {
     if (isQuoteAttachment(doc.docType, doc.filename)) continue;
@@ -872,11 +896,22 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         { docType: doc.docType || "dec", dealId },
       );
       const source = "extracted";
+      const isFourPoint =
+        doc.docType === "four_point" ||
+        /four[\s_-]?point|4[\s_-]?pt|4pt/i.test(doc.docType || "") ||
+        /four[\s_-]?point|4[\s_-]?pt|4pt/i.test(doc.filename || "");
       // Re-read immediately before apply+write so concurrent property Fill (beds/baths)
       // is not wiped by a stale in-memory snapshot from ~20s earlier.
       const freshValues = await loadFreshSheetValues(sheet.id, values);
-      const applied = applyExtractedToSheet(line, freshValues, learned, { source });
+      const applied = applyExtractedToSheet(line, freshValues, learned, {
+        source,
+        overwriteWeakCheck: isFourPoint,
+        recordMismatches: true,
+        mismatchIncomingLabel: isFourPoint ? "4pt" : "Gemini",
+      });
       values = applied.values;
+      aggregateFilled.push(...applied.filledKeys);
+      aggregateSkipped.push(...applied.skippedKeys);
       // Persist IMMEDIATELY so a later audit FK failure / delete race cannot leave
       // "Filled N fields" jobs with an empty sheet.
       await persistSheetValues(sheet.id, values);
@@ -887,10 +922,11 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       });
       await syncNamedInsuredFromExtract(dealId, extracted.fields);
 
-      const doneMessage =
-        applied.filledKeys.length === 0
-          ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
-          : `Filled ${applied.filledKeys.length} fields from ${doc.filename}. CHECK = use the value. Source files stay on Files.`;
+      const countsToast = toastForFillCounts({
+        filledCount: applied.filledKeys.length,
+        skippedCount: applied.skippedKeys.length,
+      });
+      const doneMessage = `${countsToast} (${doc.filename}). CHECK = use the value. Source files stay on Files.`;
 
       try {
         const attempt = await insertExtractionAttempt({
@@ -904,10 +940,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           documentQuality: extracted.documentQuality,
           qualityNotes: extracted.qualityNotes,
           status: extracted.glanceRequired ? "needs_glance" : "done",
-          message:
-            applied.filledKeys.length === 0
-              ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
-              : `Filled ${applied.filledKeys.length} fields from ${doc.filename}.`,
+          message: `${countsToast} (${doc.filename}).`,
           startedAt,
         });
         await insertFieldAttempts({
@@ -1017,7 +1050,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       skippedKeys: [],
       message: "No source files on this deal. Drop a dec, wind mit, or 4-point first.",
     });
-    return;
+    return { filledKeys: [], skippedKeys: [] };
   }
 
   // Re-read before public gap-fill / final write — never clobber concurrent Fill.
@@ -1026,6 +1059,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
   if (publicLookup.facts.length) {
     const publicApplied = applyPublicToSheet(line, values, publicLookup.facts);
     values = publicApplied.values;
+    aggregateFilled.push(...publicApplied.filledKeys);
+    aggregateSkipped.push(...publicApplied.skippedKeys);
     await db.insert(extractionJobs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
@@ -1042,6 +1077,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");
+  return { filledKeys: aggregateFilled, skippedKeys: aggregateSkipped };
 }
 
 async function syncNamedInsuredFromExtract(dealId: string, fields: ExtractedField[]) {

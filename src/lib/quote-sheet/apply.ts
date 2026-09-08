@@ -2,6 +2,13 @@ import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import { extractKeyToSheetKey, fieldsForLine } from "./catalog";
 import type { SheetProduct } from "./products";
+import {
+  appendRecordsCheck,
+  fieldLabelFor,
+  mismatchLine,
+  sheetSourcePhrase,
+  valuesDiffer,
+} from "./records-check";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 
 export type ExtractedInput = {
@@ -81,7 +88,31 @@ export function sourceTag(cell: QuoteSheetFieldValue): string | null {
 
 export type ApplyFillOptions = {
   source?: QuoteSheetFieldValue["source"];
+  /**
+   * four_point only: overwrite status=check cells from extracted / property-records.
+   * Never touches agent / confirmed / javy.
+   */
+  overwriteWeakCheck?: boolean;
+  /** When skipping a non-blank cell whose value differs, append Records check. */
+  recordMismatches?: boolean;
+  /** Label for mismatch lines (Gemini / 4pt / API). */
+  mismatchIncomingLabel?: string;
 };
+
+/** CHECK cells from weak sources that a 4pt re-Fill may replace. */
+export function isWeakCheckOverwriteable(field?: QuoteSheetFieldValue | null): boolean {
+  if (!field || fieldIsBlank(field)) return false;
+  if (field.status !== "check") return false;
+  if (field.source === "agent" || field.source === "javy") return false;
+  return field.source === "extracted" || field.source === "property-records";
+}
+
+export function isProtectedSheetSource(field?: QuoteSheetFieldValue | null): boolean {
+  if (!field) return false;
+  if (field.source === "agent" || field.source === "javy") return true;
+  if (field.status === "confirmed" && field.value.trim()) return true;
+  return false;
+}
 
 export function applyExtractedToSheet(
   line: ShopLine,
@@ -93,16 +124,15 @@ export function applyExtractedToSheet(
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
   const source = options?.source ?? "extracted";
+  const overwriteWeakCheck = Boolean(options?.overwriteWeakCheck);
+  const recordMismatches = Boolean(options?.recordMismatches);
+  const mismatchIncomingLabel = options?.mismatchIncomingLabel ?? "Gemini";
 
   for (const item of extracted) {
     const key = extractKeyToSheetKey(line, item.fieldKey);
     if (!key) continue;
     const current = values[key];
     if (neverCheckCoverageA(key, current)) {
-      skippedKeys.push(key);
-      continue;
-    }
-    if (!fieldIsBlank(current) && !isPublicRecordsSource(current)) {
       skippedKeys.push(key);
       continue;
     }
@@ -114,6 +144,34 @@ export function applyExtractedToSheet(
       }
       continue;
     }
+
+    const canFillBlank = fieldIsBlank(current);
+    const canReplacePublic = !fieldIsBlank(current) && isPublicRecordsSource(current);
+    const canReplaceWeakCheck =
+      overwriteWeakCheck && isWeakCheckOverwriteable(current) && !isProtectedSheetSource(current);
+
+    if (!canFillBlank && !canReplacePublic && !canReplaceWeakCheck) {
+      skippedKeys.push(key);
+      if (
+        recordMismatches &&
+        current &&
+        !fieldIsBlank(current) &&
+        valuesDiffer(nextValue, current.value)
+      ) {
+        appendRecordsCheck(
+          values,
+          mismatchLine(
+            fieldLabelFor(key),
+            nextValue,
+            current.value,
+            sheetSourcePhrase(current),
+            mismatchIncomingLabel,
+          ),
+        );
+      }
+      continue;
+    }
+
     values[key] = {
       value: nextValue,
       status: "check",

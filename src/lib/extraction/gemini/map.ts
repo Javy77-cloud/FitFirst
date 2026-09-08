@@ -23,6 +23,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   design_wind_speed: ["wind_speed", "design_wind_speed"],
   mailing_address: ["mailing_address"],
   months_occupied: ["months_occupied"],
+  occupancy: ["occupancy"],
   usage: ["usage"],
   entity_type: ["entity_type"],
   construction_type: ["construction"],

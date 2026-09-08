@@ -82,7 +82,7 @@ describe("site-wide action confirmation toast", () => {
       /flashAction\(`\/deals\/\$\{dealId\}\?tab=quotes`, "quotes-requested"\)/,
     );
     expect(source("src/app/actions/lifecycle.ts")).toMatch(
-      /withFlash\(`\/deals\/\$\{dealId\}\?tab=documents&line=\$\{line\}&notice=filled`, "sheet-filled"\)/,
+      /withFlash\(\s*`\/deals\/\$\{dealId\}\?tab=documents&line=\$\{line\}&notice=filled`,\s*toastForFillCounts\(/,
     );
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashAction/);
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashStay/);

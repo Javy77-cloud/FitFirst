@@ -3,16 +3,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { flashAction } from "@/lib/flash-client";
+import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 
 type JobLite = {
   engine?: string;
   status?: string;
   filledKeys?: string[];
+  skippedKeys?: string[];
+  message?: string | null;
 };
+
+function isDoneFillJob(job: JobLite): boolean {
+  return job.status === "done" || job.status === "needs_glance";
+}
+
+function jobDidWork(job: JobLite): boolean {
+  const filled = Array.isArray(job.filledKeys) ? job.filledKeys.length : 0;
+  const skipped = Array.isArray(job.skippedKeys) ? job.skippedKeys.length : 0;
+  return filled > 0 || skipped > 0 || Boolean(job.message?.trim());
+}
 
 /**
  * After upload/delete, Fill runs in after(). RSC payload stays stale until refresh.
- * Poll router.refresh while watching; toast when a done job shows filledKeys.
+ * Poll router.refresh while watching; toast when a done job shows filled/skipped work.
  */
 export function BackgroundFillRefresh({
   dealId,
@@ -36,27 +49,27 @@ export function BackgroundFillRefresh({
   const toasted = useRef(false);
 
   const doneFillCount = useMemo(() => {
-    return jobs.filter(
-      (job) =>
-        (job.status === "done" || job.status === "needs_glance") &&
-        Array.isArray(job.filledKeys) &&
-        job.filledKeys.length > 0,
-    ).length;
+    return jobs.filter((job) => isDoneFillJob(job) && jobDidWork(job)).length;
   }, [jobs]);
 
-  const latestFilled = useMemo(() => {
+  const latestJob = useMemo(() => {
     for (let i = jobs.length - 1; i >= 0; i -= 1) {
       const job = jobs[i];
-      if (
-        (job.status === "done" || job.status === "needs_glance") &&
-        Array.isArray(job.filledKeys) &&
-        job.filledKeys.length > 0
-      ) {
-        return job.filledKeys.length;
-      }
+      if (isDoneFillJob(job) && jobDidWork(job)) return job;
     }
-    return 0;
+    return null;
   }, [jobs]);
+
+  const latestFilled = latestJob
+    ? Array.isArray(latestJob.filledKeys)
+      ? latestJob.filledKeys.length
+      : 0
+    : 0;
+  const latestSkipped = latestJob
+    ? Array.isArray(latestJob.skippedKeys)
+      ? latestJob.skippedKeys.length
+      : 0
+    : 0;
 
   useEffect(() => {
     if (enabled || watchFromFlash) {
@@ -86,13 +99,15 @@ export function BackgroundFillRefresh({
 
   useEffect(() => {
     if (!watching || toasted.current) return;
-    if (doneFillCount > baselineDone.current && latestFilled > 0) {
+    if (doneFillCount > baselineDone.current && latestJob) {
       toasted.current = true;
-      flashAction("sheet-filled");
+      flashAction(
+        toastForFillCounts({ filledCount: latestFilled, skippedCount: latestSkipped }),
+      );
       setWatching(false);
       router.refresh();
     }
-  }, [doneFillCount, latestFilled, watching, router]);
+  }, [doneFillCount, latestJob, latestFilled, latestSkipped, watching, router]);
 
   if (!watching) return null;
   return (
@@ -101,7 +116,9 @@ export function BackgroundFillRefresh({
       data-ff-fill-watching=""
     >
       Fill running in the background — sheet refreshes when CHECK cells land.
-      {latestFilled > 0 ? ` Last fill wrote ${latestFilled} keys.` : null}
+      {latestFilled > 0 || latestSkipped > 0
+        ? ` Last fill: ${toastForFillCounts({ filledCount: latestFilled, skippedCount: latestSkipped })}.`
+        : null}
     </p>
   );
 }
