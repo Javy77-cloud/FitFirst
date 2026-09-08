@@ -22,6 +22,7 @@ import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms"
 import {
   EXPLICIT_MARKET_ACTION_MARKER,
   MANUAL_MARKET_MARKER,
+  excludedCarrierIdsFromLogs,
   manualCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
 import { flashAction } from "@/lib/flash-action";
@@ -96,6 +97,7 @@ export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch
 
   const dealLogs = logs.filter((log) => log.dealId === dealId);
   const manualIds = new Set(manualCarrierIdsFromLogs(dealLogs));
+  const excludedIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
   const byId = new Map(matches.map((match) => [match.carrierId, match]));
 
   const shopIds = new Set<string>();
@@ -115,7 +117,7 @@ export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch
   const nameById = new Map(named.map((row) => [row.id, row.name]));
 
   // Live desk: do not invent stub premiums. Real quotes come from Chrome Fill / portal paste.
-  for (const carrierId of shopIds) {
+  for (const carrierId of [...shopIds].filter((id) => !excludedIds.has(id))) {
     const match = byId.get(carrierId);
     const carrierName = match?.carrierName ?? nameById.get(carrierId) ?? "Carrier";
     const portal = portalFor(carrierId, carrierName);

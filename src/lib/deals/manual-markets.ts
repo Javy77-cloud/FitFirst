@@ -8,6 +8,9 @@ export const MANUAL_MARKET_MARKER = "[manual]";
  */
 export const EXPLICIT_MARKET_ACTION_MARKER = "[ff-markets]";
 
+/** Agent removed this carrier from deal Markets — do not shop it. */
+export const EXCLUDE_MARKET_MARKER = "[ff-markets-exclude]";
+
 export type MarketBucket = "appetite" | "stretch" | "skip";
 
 export function isManualMarketWhy(why: string | null | undefined): boolean {
@@ -34,6 +37,21 @@ export function manualCarrierIdsFromLogs(
     if (isManualMarketWhy(log.why) && isExplicitMarketActionText(log.why)) {
       ids.add(log.carrierId);
     }
+  }
+  return [...ids];
+}
+
+
+export function isExcludedMarketWhy(why: string | null | undefined): boolean {
+  return (why ?? "").includes(EXCLUDE_MARKET_MARKER);
+}
+
+export function excludedCarrierIdsFromLogs(
+  logs: { carrierId: string; why?: string | null }[],
+): string[] {
+  const ids = new Set<string>();
+  for (const log of logs) {
+    if (isExcludedMarketWhy(log.why)) ids.add(log.carrierId);
   }
   return [...ids];
 }

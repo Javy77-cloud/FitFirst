@@ -2,6 +2,7 @@ import { requestAppetiteQuotesAction, requestStretchQuotesAction } from "@/app/a
 import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
+import { ClearDealMarketsButton, MarketsSelectTable } from "@/components/deal/markets-select-table";
 import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
 import { appointmentLabel, isAppointedMatch } from "@/lib/appetite/present";
@@ -77,15 +78,18 @@ export function MarketsPanel({
         </form>
       </div>
       {appetite.length > 0 ? (
-        <MarketTable title={marketBucketLabel("appetite")} rows={appetite} manualIds={manual} />
+        <MarketsSelectTable dealId={dealId} title={marketBucketLabel("appetite")} rows={appetite} manualIds={manual} />
       ) : null}
       {stretch.length > 0 ? (
-        <MarketTable title={marketBucketLabel("stretch")} rows={stretch} manualIds={manual} />
+        <MarketsSelectTable dealId={dealId} title={marketBucketLabel("stretch")} rows={stretch} manualIds={manual} />
       ) : null}
       {skip.length > 0 ? (
-        <MarketTable title={marketBucketLabel("skip")} rows={skip} manualIds={manual} />
+        <MarketsSelectTable dealId={dealId} title={marketBucketLabel("skip")} rows={skip} manualIds={manual} />
       ) : null}
       <div className="ff-card space-y-3 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <ClearDealMarketsButton dealId={dealId} />
+        </div>
         <ManualCarrierAdd
           dealId={dealId}
           carriers={carriers}
@@ -102,60 +106,5 @@ export function MarketsPanel({
         <PaidApiWall />
       </div>
     </div>
-  );
-}
-
-function MarketTable({
-  title,
-  rows,
-  manualIds,
-}: {
-  title: string;
-  rows: CarrierMatch[];
-  manualIds: Set<string>;
-}) {
-  return (
-    <section className="ff-card overflow-hidden">
-      <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">{title}</div>
-      <table className="ff-table">
-        <thead>
-          <tr>
-            <th>Carrier</th>
-            <th>Appointment</th>
-            <th>Fit</th>
-            <th>Score</th>
-            <th>Why</th>
-          </tr>
-        </thead>
-        <tbody>
-          {asList(rows).map((row) => (
-            <tr key={row.carrierId}>
-              <td className="font-medium">
-                {row.carrierName}
-                {manualIds.has(row.carrierId) ? (
-                  <span className="ml-2 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase text-navy">
-                    manual
-                  </span>
-                ) : null}
-                {row.learnedDecline ? (
-                  <div className="text-helper text-fit-red">Learned from decline log</div>
-                ) : null}
-              </td>
-              <td>{appointmentLabel(row)}</td>
-              <td>
-                <FitBadge band={row.band} />
-              </td>
-              <td>{row.fitScore}</td>
-              <td className="text-xs">
-                {asList(row.reasons)
-                  .filter((r) => r.severity !== "pass")
-                  .map((r) => r.message)
-                  .join(" · ") || "Clears structured appetite."}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
   );
 }

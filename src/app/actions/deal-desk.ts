@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { requireAdminAction } from "@/lib/auth/guards";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -16,7 +16,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { isUuid } from "@/lib/ids";
-import { EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER } from "@/lib/deals/manual-markets";
+import { EXCLUDE_MARKET_MARKER, EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER, isExplicitMarketActionText } from "@/lib/deals/manual-markets";
 import { confirmWhy, type QuoteConfirmKind } from "@/lib/deals/quote-confirm";
 import { flashAction } from "@/lib/flash-action";
 import { DEAL_ID } from "@/lib/fixtures/ids";
@@ -185,3 +185,51 @@ export async function saveCarrierHistoryRule(formData: FormData) {
 export async function assertAnaUnboundForBind(dealId: string) {
   if (dealId === DEAL_ID) throw new Error("Ana stays shopping. Do not bind this shop.");
 }
+
+export async function removeSelectedMarketsAction(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const ids = formData
+    .getAll("carrierId")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  if (!dealId) throw new Error("Deal is missing.");
+  if (ids.length === 0) throw new Error("Select at least one carrier to remove.");
+
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  if (!deal || !risk) throw new Error("Deal or master risk is missing.");
+
+  for (const carrierId of ids) {
+    await db.insert(quoteAttemptLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      riskId: risk.id,
+      carrierId,
+      lineOfBusiness: deal.lineOfBusiness || "HO",
+      result: "declined",
+      bindable: false,
+      why: `${EXPLICIT_MARKET_ACTION_MARKER} ${EXCLUDE_MARKET_MARKER} Agent removed carrier from Markets — do not shop.`,
+    });
+  }
+
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(
+    `/deals/${dealId}?tab=markets`,
+    ids.length === 1 ? "Carrier removed from Markets" : `${ids.length} carriers removed from Markets`,
+  );
+}
+
+export async function clearDealMarketsAction(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  if (!dealId) throw new Error("Deal is missing.");
+  const rows = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
+  const ids = rows
+    .filter((row) => isExplicitMarketActionText(row.why) || (row.why ?? "").includes(EXCLUDE_MARKET_MARKER))
+    .map((row) => row.id);
+  if (ids.length) {
+    await db.delete(quoteAttemptLogs).where(and(eq(quoteAttemptLogs.dealId, dealId), inArray(quoteAttemptLogs.id, ids)));
+  }
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(`/deals/${dealId}?tab=markets`, "Markets list cleared");
+}
+

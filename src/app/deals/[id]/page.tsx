@@ -36,7 +36,7 @@ import { loadRecordContext } from "@/lib/record-context";
 import { SHOP_LINE_LABELS } from "@/lib/domain";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
-import { hasExplicitMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import { excludedCarrierIdsFromLogs, hasExplicitMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
@@ -115,8 +115,10 @@ export default async function DealPage({
     logs.map((row) => row.log),
     quotes.map((row) => row.quote),
   );
-  const matches =
+  const rawMatches =
     agentMarketsAction && risk ? await evaluateDealMarkets(risk, activeSheet.values) : [];
+  const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(logs.map((row) => row.log)));
+  const matches = rawMatches.filter((row) => !excludedMarketIds.has(row.carrierId));
   const selectedProduct = resolveDealProduct({
     productParam: product,
     sheetProduct: activeSheet.values.sheet_product?.value,
@@ -129,7 +131,7 @@ export default async function DealPage({
   const unlocked = quotingUnlockedForDeal(deal);
   const dealTagColors = colorsFromModuleTags(dealTagExtra);
   const manualIds = agentMarketsAction
-    ? manualCarrierIdsFromLogs(logs.map((row) => row.log))
+    ? manualCarrierIdsFromLogs(logs.map((row) => row.log)).filter((id) => !excludedMarketIds.has(id))
     : [];
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
