@@ -1,7 +1,7 @@
 "use client";
 
-import { confirmQuoteSheetField, fillFromPropertyRecords, saveQuoteSheet } from "@/app/actions/quote-sheet";
-import { fillQuoteSheetBlanks } from "@/app/actions/lifecycle";
+import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
+import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
 import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { Button } from "@/components/ui/button";
@@ -129,20 +129,8 @@ export function MasterSheetCompare({
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
-            <form action={fillQuoteSheetBlanks}>
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="line" value={line} />
-              <Button type="submit" size="xs" variant="outline" disabled={sourceDocCount === 0}>
-                Fill from source
-              </Button>
-            </form>
-            <form action={fillFromPropertyRecords} data-ff-fill-property-records="">
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="line" value={line} />
-              <Button type="submit" size="xs" variant="outline">
-                Fill from property records
-              </Button>
-            </form>
+            <MasterSheetFillButton dealId={dealId} line={line} />
+            <span className="sr-only" data-ff-master-source-docs={sourceDocCount} />
           </div>
         </div>
       </div>

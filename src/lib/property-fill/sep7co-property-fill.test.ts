@@ -14,14 +14,15 @@ function source(file: string) {
 }
 
 describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
-  it("keeps a single Fill from property records button and orchestrates free APIs", () => {
+  it("keeps a single master Fill button and orchestrates free APIs", () => {
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(sheet).toMatch(/Fill from property records/);
-    expect(sheet).toMatch(/fillFromPropertyRecords/);
-    expect(sheet.match(/Fill from property records/g)?.length).toBe(1);
+    expect(sheet).toMatch(/MasterSheetFillButton/);
+    expect(sheet.match(/MasterSheetFillButton/g)?.length).toBeGreaterThanOrEqual(1);
+    expect(sheet.match(/<MasterSheetFillButton/g)?.length).toBe(1);
     const action = source("src/app/actions/quote-sheet.ts");
     expect(action).toMatch(/orchestratePropertyFill/);
     expect(action).toMatch(/toastForPropertyFill/);
+    expect(action).toMatch(/runFillFromPropertyRecords/);
     expect(action).not.toMatch(/Fill from FEMA/);
     expect(action).not.toMatch(/Fill from county/);
   });

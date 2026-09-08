@@ -1,7 +1,12 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { fieldsForLine } from "@/lib/quote-sheet/catalog";
 
@@ -10,11 +15,12 @@ function source(file: string) {
 }
 
 describe("sep7cl Fill from property records via getparceldata", () => {
-  it("keeps the Fill from property records button in the sheet header", () => {
+  it("keeps property-records Fill wired through the master Fill button", () => {
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(sheet).toMatch(/Fill from property records/);
-    expect(sheet).toMatch(/fillFromPropertyRecords/);
-    expect(sheet).toMatch(/data-ff-fill-property-records/);
+    expect(sheet).toMatch(/MasterSheetFillButton/);
+    const action = source("src/app/actions/quote-sheet.ts");
+    expect(action).toMatch(/fillFromPropertyRecords/);
+    expect(action).toMatch(/runFillFromPropertyRecords/);
     const html = renderToString(
       createElement(MasterSheetCompare, {
         dealId: "deal-1",
@@ -24,7 +30,7 @@ describe("sep7cl Fill from property records via getparceldata", () => {
         product: "homeowners",
       }),
     );
-    expect(html).toContain("Fill from property records");
+    expect(html).toContain("Fill master sheet");
   });
 
   it("wires getparceldata point URL, BYO key, and vault provider", () => {

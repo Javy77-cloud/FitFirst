@@ -1,7 +1,12 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { fieldsForLine } from "@/lib/quote-sheet/catalog";
 
@@ -10,14 +15,14 @@ function source(file: string) {
 }
 
 describe("sep7ce Fill from property records", () => {
-  it("places the button above the sheet next to the existing header actions", () => {
+  it("places the master Fill control above the sheet next to header actions", () => {
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(sheet).toMatch(/Fill from property records/);
-    expect(sheet).toMatch(/fillFromPropertyRecords/);
-    expect(sheet).toMatch(/data-ff-fill-property-records/);
+    expect(sheet).toMatch(/MasterSheetFillButton/);
     expect(sheet).toMatch(/Confirm extracted/);
-    expect(sheet.indexOf("Fill from property records")).toBeLessThan(sheet.indexOf("Save sheet"));
-    expect(sheet.indexOf("Fill from source")).toBeLessThan(sheet.indexOf("Fill from property records"));
+    expect(sheet.indexOf("MasterSheetFillButton")).toBeLessThan(sheet.indexOf("Save sheet"));
+    const action = source("src/app/actions/quote-sheet.ts");
+    expect(action).toMatch(/fillFromPropertyRecords/);
+    expect(action).toMatch(/runFillFromPropertyRecords/);
     const html = renderToString(
       createElement(MasterSheetCompare, {
         dealId: "deal-1",
@@ -27,13 +32,12 @@ describe("sep7ce Fill from property records", () => {
         product: "homeowners",
       }),
     );
-    expect(html).toContain("Fill from property records");
-    expect(html).toContain("Fill from source");
+    expect(html).toContain("Fill master sheet");
     expect(html).toContain("Parcel ID");
     expect(html).toContain("Assessed value");
     expect(html).toContain("Records check");
     expect(html).toContain("Square footage");
-    expect(html.indexOf("Fill from property records")).toBeLessThan(html.indexOf("Save sheet"));
+    expect(html.indexOf("Fill master sheet")).toBeLessThan(html.indexOf("Save sheet"));
   });
 
   it("adds Parcel ID, Assessed value, Records check, and Square footage on the HO sheet", () => {

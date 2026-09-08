@@ -81,6 +81,17 @@ import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
 import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
 import { toastForPropertyFill } from "@/lib/property-fill/merge";
+import { fillSheetFromDealDetails } from "@/lib/quote-sheet/fill-from-deal";
+import { loadRecordValues } from "@/lib/custom-fields/store";
+import {
+  MASTER_FILL_SKIP_NEEDS_KEY,
+  MASTER_FILL_SKIP_NO_ADDRESS,
+  MASTER_FILL_SKIP_NO_DEAL,
+  MASTER_FILL_SKIP_NO_DOCS,
+  MASTER_FILL_SKIP_NOT_FOUND,
+  type MasterFillStepId,
+  type MasterFillStepResult,
+} from "@/lib/quote-sheet/master-fill";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -355,10 +366,20 @@ function addressFromDealRecord(input: {
   };
 }
 
-export async function fillFromPropertyRecords(formData: FormData) {
-  const dealId = str(formData, "dealId");
-  const lineRaw = str(formData, "line") || "home";
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+export type PropertyFillRunResult = {
+  status: "ok" | "needs_key" | "no_address" | "not_found" | "error";
+  filledKeys: string[];
+  skippedKeys: string[];
+  sourcesUsed: string[];
+  message: string;
+  toast: string;
+};
+
+/** Core Property Fill — returns counts (no redirect). Used by master Fill + form action. */
+export async function runFillFromPropertyRecords(
+  dealId: string,
+  lineRaw: ShopLine,
+): Promise<PropertyFillRunResult> {
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   // Property Fill uses quote-sheet property address only (not applicant/Lead/PDF).
   // One button → GetParcelData + County PA GIS + FEMA NFHL (empty-only merge).
@@ -372,17 +393,15 @@ export async function fillFromPropertyRecords(formData: FormData) {
   };
   const apiKey = await loadGetParcelDataApiKey();
   const bundle = await orchestratePropertyFill({ address, apiKey });
-  const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
-  if (bundle.status === "needs_key") {
-    flashAction(dest, "property-records-needs-key", "error");
-  }
-  if (bundle.status === "no_address") {
-    flashAction(dest, "property-records-no-address", "error");
-  }
   if (bundle.status !== "ok") {
-    const flash =
-      bundle.status === "not_found" ? "property-records-not-found" : "property-records-error";
-    flashAction(dest, flash, "error");
+    return {
+      status: bundle.status,
+      filledKeys: [],
+      skippedKeys: [],
+      sourcesUsed: bundle.sourcesUsed,
+      message: bundle.message,
+      toast: "",
+    };
   }
   // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
   const freshPropertyValues = await loadFreshSheetValues(sheet.id, sheet.values);
@@ -419,7 +438,6 @@ export async function fillFromPropertyRecords(formData: FormData) {
   });
   await syncRiskFromSheet(dealId, applied.values, "fill");
   await syncHeaderFromSheet(dealId, applied.values, "fill");
-  revalidatePath(`/deals/${dealId}`);
   const toast =
     applied.filledKeys.length || applied.skippedKeys.length
       ? toastForFillCounts({
@@ -430,7 +448,205 @@ export async function fillFromPropertyRecords(formData: FormData) {
           filledCount: 0,
           sourcesUsed: bundle.sourcesUsed,
         });
-  flashAction(dest, toast);
+  return {
+    status: "ok",
+    filledKeys: applied.filledKeys,
+    skippedKeys: applied.skippedKeys,
+    sourcesUsed: bundle.sourcesUsed,
+    message: bundle.message,
+    toast,
+  };
+}
+
+export async function fillFromPropertyRecords(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const lineRaw = str(formData, "line") || "home";
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
+  const result = await runFillFromPropertyRecords(dealId, lineRaw);
+  revalidatePath(`/deals/${dealId}`);
+  if (result.status === "needs_key") {
+    flashAction(dest, "property-records-needs-key", "error");
+  }
+  if (result.status === "no_address") {
+    flashAction(dest, "property-records-no-address", "error");
+  }
+  if (result.status !== "ok") {
+    const flash =
+      result.status === "not_found" ? "property-records-not-found" : "property-records-error";
+    flashAction(dest, flash, "error");
+  }
+  flashAction(dest, result.toast);
+}
+
+export type DealFillRunResult = {
+  filledKeys: string[];
+  skippedKeys: string[];
+  note?: string;
+};
+
+/** Deal page → blank master-sheet fields (CHECK only — never auto-confirm). */
+export async function runFillFromDealDetails(
+  dealId: string,
+  lineRaw: ShopLine,
+): Promise<DealFillRunResult> {
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) {
+    return { filledKeys: [], skippedKeys: [], note: MASTER_FILL_SKIP_NO_DEAL };
+  }
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const [contact] = deal.contactId
+    ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
+    : [];
+  const [lead] = deal.leadId ? await db.select().from(leads).where(eq(leads.id, deal.leadId)) : [];
+  const stored = await loadRecordValues(dealId, "deals");
+  const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  const applied = fillSheetFromDealDetails(
+    {
+      primaryNamedInsured: deal.primaryNamedInsured,
+      secondaryNamedInsured: deal.secondaryNamedInsured,
+      propertyOneliner: deal.propertyOneliner,
+      currentCarrier: deal.currentCarrier,
+      coverageAmount: deal.coverageAmount,
+      stored,
+      risk: risk ?? null,
+      contact: contact
+        ? {
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            email: contact.email,
+            phone: contact.phone,
+            dateOfBirth: contact.dateOfBirth,
+            mailingAddress: contact.mailingAddress,
+            city: contact.city,
+            state: contact.state,
+            zip: contact.zip,
+          }
+        : null,
+      lead: lead
+        ? {
+            firstName: lead.firstName,
+            middleName: lead.middleName,
+            lastName: lead.lastName,
+            email: lead.email,
+            phone: lead.phone,
+            dateOfBirth: lead.dateOfBirth,
+            mailingAddress: lead.mailingAddress,
+            city: lead.city,
+            state: lead.state,
+            zip: lead.zip,
+            notes: lead.notes,
+            source: lead.source,
+            preferredLanguage: lead.preferredLanguage,
+          }
+        : null,
+    },
+    fresh,
+  );
+  if (!applied.filledKeys.length) {
+    return {
+      filledKeys: [],
+      skippedKeys: applied.skippedKeys,
+      note: MASTER_FILL_SKIP_NO_DEAL,
+    };
+  }
+  await db
+    .update(quoteSheets)
+    .set({ values: applied.values, updatedAt: new Date() })
+    .where(eq(quoteSheets.id, sheet.id));
+  await db.insert(extractionJobs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId,
+    quoteSheetId: sheet.id,
+    engine: "deal_details",
+    status: "done",
+    filledKeys: applied.filledKeys,
+    skippedKeys: applied.skippedKeys,
+    message: "Copied deal details into blank master-sheet fields (CHECK).",
+  });
+  await syncRiskFromSheet(dealId, applied.values, "fill");
+  await syncHeaderFromSheet(dealId, applied.values, "fill");
+  return { filledKeys: applied.filledKeys, skippedKeys: applied.skippedKeys };
+}
+
+/**
+ * One master-sheet Fill step for the progress modal.
+ * Deal → Property → Docs. Returns counts; does not redirect/toast.
+ */
+export async function fillMasterSheetStep(input: {
+  dealId: string;
+  line: string;
+  step: MasterFillStepId;
+}): Promise<MasterFillStepResult> {
+  const dealId = String(input.dealId ?? "").trim();
+  const lineRaw = String(input.line ?? "home").trim() || "home";
+  if (!dealId) throw new Error("Missing deal");
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const step = input.step;
+
+  if (step === "deal") {
+    const result = await runFillFromDealDetails(dealId, lineRaw);
+    revalidatePath(`/deals/${dealId}`);
+    return {
+      step,
+      filledCount: result.filledKeys.length,
+      skippedCount: result.skippedKeys.length,
+      note: result.note,
+    };
+  }
+
+  if (step === "property") {
+    const result = await runFillFromPropertyRecords(dealId, lineRaw);
+    revalidatePath(`/deals/${dealId}`);
+    if (result.status === "no_address") {
+      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_ADDRESS };
+    }
+    if (result.status === "needs_key") {
+      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NEEDS_KEY };
+    }
+    if (result.status === "not_found") {
+      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NOT_FOUND };
+    }
+    if (result.status !== "ok") {
+      return {
+        step,
+        filledCount: 0,
+        skippedCount: 0,
+        error: result.message || "Property records error",
+      };
+    }
+    return {
+      step,
+      filledCount: result.filledKeys.length,
+      skippedCount: result.skippedKeys.length,
+    };
+  }
+
+  // docs
+  const docs = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+  if (docs.length === 0) {
+    return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_DOCS };
+  }
+  const geminiKey = await loadGeminiApiKey();
+  if (!geminiKeyReady(geminiKey)) {
+    return {
+      step,
+      filledCount: 0,
+      skippedCount: 0,
+      error: "Gemini API key is not configured — docs fill skipped",
+    };
+  }
+  const counts = await runFillDealSheets(dealId, lineRaw);
+  revalidatePath(`/deals/${dealId}`);
+  return {
+    step,
+    filledCount: counts.filledKeys.length,
+    skippedCount: counts.skippedKeys.length,
+  };
 }
 
 export async function fillQuoteSheet(formData: FormData) {
