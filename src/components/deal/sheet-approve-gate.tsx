@@ -5,6 +5,14 @@ import { requestAppetiteQuotesAction } from "@/app/actions/quotes";
 import { approveMasterSheet } from "@/app/actions/quoting";
 import { Button } from "@/components/ui/button";
 
+function mergeSheetFields(data: FormData) {
+  const sheetForm = document.getElementById("ff-master-sheet-save");
+  if (!(sheetForm instanceof HTMLFormElement)) return;
+  for (const [key, value] of new FormData(sheetForm).entries()) {
+    if (!data.has(key)) data.set(key, String(value));
+  }
+}
+
 export function SheetApproveGate({
   dealId,
   line,
@@ -35,8 +43,10 @@ export function SheetApproveGate({
           action={requestAppetiteQuotesAction}
           onSubmit={async (event) => {
             event.preventDefault();
+            const gateForm = event.currentTarget;
+            const data = new FormData(gateForm);
             if (persistSheet) await persistSheet();
-            const data = new FormData(event.currentTarget);
+            mergeSheetFields(data);
             await requestAppetiteQuotesAction(data);
           }}
         >
@@ -51,6 +61,7 @@ export function SheetApproveGate({
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const gateForm = event.currentTarget;
     setError(null);
     if (!reviewed) {
       setError("Check that you visually reviewed this sheet first.");
@@ -58,14 +69,9 @@ export function SheetApproveGate({
     }
     setPending(true);
     try {
+      const data = new FormData(gateForm);
       if (persistSheet) await persistSheet();
-      const sheetForm = document.getElementById("ff-master-sheet-save") as HTMLFormElement | null;
-      const data = new FormData(event.currentTarget);
-      if (sheetForm) {
-        for (const [key, value] of new FormData(sheetForm).entries()) {
-          if (!data.has(key)) data.set(key, String(value));
-        }
-      }
+      mergeSheetFields(data);
       data.set("reviewed", "yes");
       data.set("sure", "yes");
       data.set("requestQuotes", "yes");
