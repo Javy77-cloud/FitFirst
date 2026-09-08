@@ -36,7 +36,7 @@ import { loadRecordContext } from "@/lib/record-context";
 import { SHOP_LINE_LABELS } from "@/lib/domain";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
-import { excludedCarrierIdsFromLogs, hasExplicitMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import { excludedCarrierIdsFromLogs, hasShopMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
@@ -111,14 +111,16 @@ export default async function DealPage({
   });
   const activeSheet =
     sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
-  const agentMarketsAction = hasExplicitMarketAction(
-    logs.map((row) => row.log),
+  const dealLogs = logs.map((row) => row.log);
+  const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
+  const shopMarketsAction = hasShopMarketAction(
+    dealLogs,
     quotes.map((row) => row.quote),
   );
   const rawMatches =
-    agentMarketsAction && risk ? await evaluateDealMarkets(risk, activeSheet.values) : [];
-  const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(logs.map((row) => row.log)));
+    shopMarketsAction && risk ? await evaluateDealMarkets(risk, activeSheet.values) : [];
   const matches = rawMatches.filter((row) => !excludedMarketIds.has(row.carrierId));
+  const agentMarketsAction = shopMarketsAction || manualCarrierIdsFromLogs(dealLogs).some((id) => !excludedMarketIds.has(id));
   const selectedProduct = resolveDealProduct({
     productParam: product,
     sheetProduct: activeSheet.values.sheet_product?.value,
@@ -130,9 +132,7 @@ export default async function DealPage({
   const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const unlocked = quotingUnlockedForDeal(deal);
   const dealTagColors = colorsFromModuleTags(dealTagExtra);
-  const manualIds = agentMarketsAction
-    ? manualCarrierIdsFromLogs(logs.map((row) => row.log)).filter((id) => !excludedMarketIds.has(id))
-    : [];
+  const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
     name: row.carrier.name,
@@ -266,10 +266,10 @@ export default async function DealPage({
                       <MarketsPanel
                         key={agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
-                        matches={agentMarketsAction ? matches : []}
+                        matches={shopMarketsAction ? matches : []}
                         unlocked={unlocked}
                         manualIds={manualIds}
-                        explicitLookup={agentMarketsAction}
+                        explicitLookup={shopMarketsAction}
                         sheetHasValues={agentMarketsAction}
                         carriers={carrierOptions}
                         dealLine={deal.lineOfBusiness}

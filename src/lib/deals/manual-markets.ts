@@ -29,6 +29,23 @@ export function hasExplicitMarketAction(
   return quotes.some((quote) => isExplicitMarketActionText(quote.notes));
 }
 
+/**
+ * Full in-appetite matcher paint only after Confirm & request quotes / shop.
+ * Manual "Add carrier" alone must NOT reopen the whole appetite list.
+ */
+export function hasShopMarketAction(
+  logs: { why?: string | null }[] = [],
+  quotes: { notes?: string | null }[] = [],
+): boolean {
+  if (quotes.some((quote) => isExplicitMarketActionText(quote.notes))) return true;
+  return logs.some(
+    (log) =>
+      isExplicitMarketActionText(log.why) &&
+      !isManualMarketWhy(log.why) &&
+      !(log.why ?? "").includes(EXCLUDE_MARKET_MARKER),
+  );
+}
+
 export function manualCarrierIdsFromLogs(
   logs: { carrierId: string; why?: string | null }[],
 ): string[] {
