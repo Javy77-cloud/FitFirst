@@ -1,14 +1,8 @@
 import { finalizeQuoteResults } from "@/app/actions/lifecycle";
 import { BindConfirmGate } from "@/components/deal/bind-confirm-gate";
-import { QuoteConfirmRow } from "@/components/deal/quote-confirm-row";
+import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/domain";
 import type { BindPathTarget } from "@/lib/crm/bind-path";
-import {
-  isLowConfidencePull,
-  quotePullNeedsConfirm,
-  type QuoteConfirmKind,
-} from "@/lib/deals/quote-confirm";
 import { sortQuotesCheapestFirst } from "@/lib/deals/quote-sort";
 import type { Carrier, Quote, QuoteAttemptLog } from "@/lib/db/schema";
 
@@ -41,7 +35,7 @@ export function QuotesPanel({
     liveQuotes.map((row) => ({ ...row, premium: row.quote.premium })),
   );
   const cheapest = sorted[0] ?? null;
-  const resultByCarrier = new Map(logs.map((row) => [row.log.carrierId, row.log.result]));
+  const resultByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.result]));
 
   if (sorted.length === 0) {
     return <div data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
@@ -55,7 +49,7 @@ export function QuotesPanel({
             <h3 className="text-base font-semibold text-navy">Quote results</h3>
             <p className="mt-1 text-base text-muted-foreground">
               Cheapest on top. Premium, coverages, deductibles, and carrier status per market.
-              A quote never becomes a policy.
+              A quote never becomes a policy. Check rows to delete one or many.
             </p>
           </div>
           <form action={finalizeQuoteResults}>
@@ -70,64 +64,13 @@ export function QuotesPanel({
             {quoteResultsNote}
           </pre>
         ) : null}
-        <table className="ff-table">
-            <thead>
-              <tr>
-                <th>Carrier</th>
-                <th>Premium</th>
-                <th>Coverages</th>
-                <th>Deductibles</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map(({ quote, carrier }) => {
-                const denied = resultByCarrier.get(carrier.id) === "declined";
-                const kind: QuoteConfirmKind = quotePullNeedsConfirm({
-                  quoteId: quote.id,
-                  carrierId: carrier.id,
-                  formId,
-                  logs: confirmLogs,
-                  denied,
-                  lowConfidence: isLowConfidencePull(quote),
-                });
-                return (
-                  <tr key={quote.id}>
-                    <td className="font-medium">
-                      {carrier.name}
-                      {quote.stub ? (
-                        <div className="text-base text-muted-foreground">Stub · no paid rater</div>
-                      ) : null}
-                      <QuoteConfirmRow
-                        dealId={dealId}
-                        quoteId={quote.id}
-                        carrierId={carrier.id}
-                        carrierName={carrier.name}
-                        formId={formId}
-                        kind={kind}
-                      />
-                    </td>
-                    <td>{formatMoney(quote.premium)}</td>
-                    <td className="text-xs">
-                      Cov A {formatMoney(quote.coverageA)}
-                      {quote.coverageGaps.length ? (
-                        <div className="text-fit-flag">{quote.coverageGaps.join("; ")}</div>
-                      ) : (
-                        <div className="text-muted-foreground">Gaps none noted</div>
-                      )}
-                    </td>
-                    <td className="text-xs">
-                      AOP {quote.aopDeductible ?? "—"}
-                      <div>Hurricane {quote.hurricaneDeductible ?? "—"}</div>
-                    </td>
-                    <td className="text-xs uppercase">
-                      {denied ? "Denied" : quote.bindable ? "Quoted" : "Not bindable"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <QuotesResultsTable
+          dealId={dealId}
+          rows={sorted}
+          formId={formId}
+          confirmLogs={confirmLogs}
+          resultByCarrier={resultByCarrier}
+        />
       </section>
 
       {bind ? (

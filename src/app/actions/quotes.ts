@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
@@ -195,3 +195,24 @@ export async function recordManualAttempt(formData: FormData) {
   revalidatePath("/carriers/logs");
   revalidatePath("/logs");
 }
+
+export async function deleteSelectedQuotesAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const ids = formData
+    .getAll("quoteId")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  if (!dealId) throw new Error("Deal is missing.");
+  if (ids.length === 0) throw new Error("Select at least one quote to delete.");
+
+  await db
+    .delete(quotes)
+    .where(and(eq(quotes.dealId, dealId), inArray(quotes.id, ids), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
+
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(
+    `/deals/${dealId}?tab=quotes`,
+    ids.length === 1 ? "Quote deleted" : `${ids.length} quotes deleted`,
+  );
+}
+
