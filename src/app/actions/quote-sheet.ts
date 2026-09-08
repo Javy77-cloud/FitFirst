@@ -77,8 +77,8 @@ import {
   enrichPropertyOnAddressConfirm,
 } from "@/lib/property-enrichment/service";
 import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
-import { searchFloridaPropertyRecords } from "@/lib/florida-property/client";
-import { loadFloridaPropertyApiKey } from "@/lib/florida-property/key";
+import { searchGetParcelDataRecords } from "@/lib/getparceldata/client";
+import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -358,11 +358,17 @@ export async function fillFromPropertyRecords(formData: FormData) {
   const lineRaw = str(formData, "line") || "home";
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
-  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  const address = addressFromDealRecord({ sheet: sheet.values, risk, deal });
-  const apiKey = await loadFloridaPropertyApiKey();
-  const lookup = await searchFloridaPropertyRecords(address, apiKey);
+  // Property Fill uses quote-sheet property address only (not applicant/Lead/PDF).
+  const sheetAddr = addressFromSheet(sheet.values);
+  const address = {
+    address1: sheetAddr.address1,
+    city: sheetAddr.city,
+    state: sheetAddr.state,
+    zip: sheetAddr.zip,
+    county: sheet.values.county?.value?.trim() || "",
+  };
+  const apiKey = await loadGetParcelDataApiKey();
+  const lookup = await searchGetParcelDataRecords(address, apiKey);
   const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
   if (lookup.status === "needs_key") {
     flashAction(dest, "property-records-needs-key", "error");
@@ -400,12 +406,15 @@ export async function fillFromPropertyRecords(formData: FormData) {
     status: "done",
     message: lookup.message,
     documentQuality: "clean",
-    qualityNotes: ["property_records_api"],
+    qualityNotes: ["property_records_api", "getparceldata"],
   });
   await syncRiskFromSheet(dealId, applied.values, "fill");
   await syncHeaderFromSheet(dealId, applied.values, "fill");
   revalidatePath(`/deals/${dealId}`);
-  flashAction(dest, "property-records-filled");
+  flashAction(
+    dest,
+    applied.filledKeys.length ? "property-records-filled" : "property-records-no-blanks",
+  );
 }
 
 export async function fillQuoteSheet(formData: FormData) {

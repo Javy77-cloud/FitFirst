@@ -1,15 +1,15 @@
 import { ApiVaultPanel } from "@/components/developer-hub/api-vault-panel";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { loadFedExPublicStatus, loadFloridaPropertyPublicStatus } from "@/lib/developer/vault";
+import { loadFedExPublicStatus, loadGetParcelDataPublicStatus } from "@/lib/developer/vault";
 
 export const dynamic = "force-dynamic";
 
 export default async function DeveloperApiVaultPage() {
   const session = await requireAdminPage();
-  const [fedex, floridaProperty] = await Promise.all([
+  const [fedex, getParcelData] = await Promise.all([
     loadFedExPublicStatus(),
-    loadFloridaPropertyPublicStatus(),
+    loadGetParcelDataPublicStatus(),
   ]);
 
   return (
@@ -19,7 +19,7 @@ export default async function DeveloperApiVaultPage() {
         with no reveal. Only a site developer can unlock, rotate, or clear. Keys are encrypted at
         rest with the same AES-256-GCM pattern as carrier portal / PII secrets.
       </p>
-      <ApiVaultPanel canEdit={session.isSiteDeveloper} fedex={fedex} floridaProperty={floridaProperty} />
+      <ApiVaultPanel canEdit={session.isSiteDeveloper} fedex={fedex} getParcelData={getParcelData} />
     </SettingsShell>
   );
 }

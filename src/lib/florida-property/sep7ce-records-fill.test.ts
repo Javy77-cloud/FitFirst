@@ -46,20 +46,12 @@ describe("sep7ce Fill from property records", () => {
     );
   });
 
-  it("wires the Florida Property search URL and BYO key wall", () => {
-    const client = source("src/lib/florida-property/client.ts");
-    const key = source("src/lib/florida-property/key.ts");
+  it("keeps empty-only apply wired from Fill action (provider is getparceldata)", () => {
     const action = source("src/app/actions/quote-sheet.ts");
-    const env = source(".env.example");
-    expect(key).toMatch(/https:\/\/floridapropertyapi\.com\/api\/v1\/parcels\/search/);
-    expect(client).toMatch(/Authorization: `Bearer/);
-    expect(key).toMatch(/FLORIDA_PROPERTY_API_KEY/);
-    expect(key).toMatch(/No lookup ran/);
     expect(action).toMatch(/fillFromPropertyRecords/);
     expect(action).toMatch(/applyPropertyRecordsToSheet/);
-    expect(action).toMatch(/loadFloridaPropertyApiKey/);
-    expect(env).toMatch(/FLORIDA_PROPERTY_API_KEY=/);
-    expect(env).toMatch(/no fake parcel/);
+    expect(action).toMatch(/searchGetParcelDataRecords/);
+    expect(action).toMatch(/loadGetParcelDataApiKey/);
   });
 
   it("does not rewrite document extraction maps", () => {

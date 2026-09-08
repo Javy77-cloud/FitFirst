@@ -67,11 +67,11 @@ export const FLASH_COPY = {
   "sheet-saved": "Sheet saved",
   "sheet-filled": "Sheet filled from source",
   "property-records-filled": "Filled empty fields from property records",
-  "property-records-needs-key": "Florida Property API key is not configured. Set FLORIDA_PROPERTY_API_KEY.",
+  "property-records-needs-key": "GetParcelData API key is not configured. Set GETPARCELDATA_API_KEY.",
   "gemini-needs-key": "Gemini API key is not configured. Set GEMINI_API_KEY.",
-  "property-records-no-address": "Add a property address on the sheet or the deal first.",
+  "property-records-no-address": "Add a property address on the quote sheet first.",
   "property-records-not-found": "No parcel matched that address.",
-  "property-records-error": "Florida Property API did not return fields. Empty cells were left alone.",
+  "property-records-error": "GetParcelData did not return fields. Empty cells were left alone.",
   "field-confirmed": "Field confirmed",
   "tags-saved": "Tags saved",
   "tag-added": "Tag added",
@@ -90,8 +90,9 @@ export const FLASH_COPY = {
   "filter-saved": "Filter saved",
   "fedex-vault-saved": "FedEx credentials saved",
   "fedex-vault-cleared": "FedEx credentials cleared",
-  "florida-property-vault-saved": "Florida Property API key saved",
-  "florida-property-vault-cleared": "Florida Property API key cleared",
+  "getparceldata-vault-saved": "GetParcelData API key saved",
+  "getparceldata-vault-cleared": "GetParcelData API key cleared",
+  "property-records-no-blanks": "Property records matched, but no blank fields to fill.",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

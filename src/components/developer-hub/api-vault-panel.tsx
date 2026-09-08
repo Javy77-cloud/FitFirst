@@ -3,9 +3,9 @@
 import { useState } from "react";
 import {
   clearFedExVaultAction,
-  clearFloridaPropertyVaultAction,
+  clearGetParcelDataVaultAction,
   saveFedExVaultAction,
-  saveFloridaPropertyVaultAction,
+  saveGetParcelDataVaultAction,
 } from "@/app/actions/developer-vault";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,12 +142,12 @@ function FedExVaultCard({ canEdit, fedex }: { canEdit: boolean; fedex: VaultPubl
   );
 }
 
-function FloridaPropertyVaultCard({
+function GetParcelDataVaultCard({
   canEdit,
-  floridaProperty,
+  getParcelData,
 }: {
   canEdit: boolean;
-  floridaProperty: VaultPublicStatus;
+  getParcelData: VaultPublicStatus;
 }) {
   const [unlocked, setUnlocked] = useState(false);
 
@@ -155,23 +155,25 @@ function FloridaPropertyVaultCard({
     <section
       className="ff-card space-y-4 p-4"
       data-ff-api-vault
-      data-ff-vault-provider="florida_property"
+      data-ff-vault-provider="getparceldata"
       data-ff-vault-can-edit={canEdit ? "1" : "0"}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-navy">{floridaProperty.label}</h2>
+          <h2 className="text-sm font-semibold text-navy">{getParcelData.label}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Agency BYO. Paste a single Florida Property API key so &quot;Fill from property records&quot; can pull
-            parcel details when <code className="text-[11px]">FLORIDA_PROPERTY_API_KEY</code> is not in{" "}
-            <code className="text-[11px]">.env</code>. FitFirst never invents parcels.
+            Agency BYO. Paste a GetParcelData API key so &quot;Fill from property records&quot; can geocode the
+            quote-sheet address and pull parcel details when{" "}
+            <code className="text-[11px]">GETPARCELDATA_API_KEY</code> is not in{" "}
+            <code className="text-[11px]">.env</code>. FitFirst never invents parcels or Coverage A from
+            assessed value.
           </p>
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
-          data-ff-vault-status={floridaProperty.configured ? "configured" : "empty"}
+          data-ff-vault-status={getParcelData.configured ? "configured" : "empty"}
         >
-          {floridaProperty.configured ? "Configured" : "Not configured"}
+          {getParcelData.configured ? "Configured" : "Not configured"}
         </span>
       </div>
 
@@ -179,21 +181,21 @@ function FloridaPropertyVaultCard({
         <Label className="text-xs">API key</Label>
         <Input
           readOnly
-          value={floridaProperty.configured ? SECRET_MASK : ""}
+          value={getParcelData.configured ? SECRET_MASK : ""}
           placeholder="Not configured"
           className="mt-1 h-8"
           data-ff-vault-mask="apiKey"
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        {floridaProperty.source === "env" ? "Configured from server env (vault row empty). " : null}
+        {getParcelData.source === "env" ? "Configured from server env (vault row empty). " : null}
         Admins see this mask only — there is no reveal.
       </p>
 
       {canEdit ? (
         unlocked ? (
           <form
-            action={saveFloridaPropertyVaultAction}
+            action={saveGetParcelDataVaultAction}
             className="space-y-3 border-t border-border pt-3"
             data-ff-vault-unlock
           >
@@ -201,11 +203,11 @@ function FloridaPropertyVaultCard({
               Vault unlocked. Enter a new key to rotate. Previous secrets are never shown.
             </p>
             <div className="max-w-md">
-              <Label htmlFor="florida-property-api-key" className="text-xs">
+              <Label htmlFor="getparceldata-api-key" className="text-xs">
                 New API key
               </Label>
               <Input
-                id="florida-property-api-key"
+                id="getparceldata-api-key"
                 name="apiKey"
                 type="password"
                 required
@@ -215,9 +217,9 @@ function FloridaPropertyVaultCard({
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" size="sm">
-                Save Florida Property key
+                Save GetParcelData key
               </Button>
-              <Button type="submit" size="sm" variant="outline" formAction={clearFloridaPropertyVaultAction}>
+              <Button type="submit" size="sm" variant="outline" formAction={clearGetParcelDataVaultAction}>
                 Clear
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={() => setUnlocked(false)}>
@@ -240,16 +242,16 @@ function FloridaPropertyVaultCard({
 export function ApiVaultPanel({
   canEdit,
   fedex,
-  floridaProperty,
+  getParcelData,
 }: {
   canEdit: boolean;
   fedex: VaultPublicStatus;
-  floridaProperty: VaultPublicStatus;
+  getParcelData: VaultPublicStatus;
 }) {
   return (
     <div className="space-y-4">
       <FedExVaultCard canEdit={canEdit} fedex={fedex} />
-      <FloridaPropertyVaultCard canEdit={canEdit} floridaProperty={floridaProperty} />
+      <GetParcelDataVaultCard canEdit={canEdit} getParcelData={getParcelData} />
     </div>
   );
 }

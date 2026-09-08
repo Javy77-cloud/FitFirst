@@ -2,8 +2,11 @@ import type { FedExEnvironment } from "@/lib/fedex/client";
 
 export const FEDEX_VAULT_PROVIDER = "fedex";
 export const FEDEX_VAULT_LABEL = "FedEx Address API";
+/** @deprecated Prefer GETPARCELDATA — kept for any legacy vault rows. */
 export const FLORIDA_PROPERTY_VAULT_PROVIDER = "florida_property";
 export const FLORIDA_PROPERTY_VAULT_LABEL = "Florida Property API";
+export const GETPARCELDATA_VAULT_PROVIDER = "getparceldata";
+export const GETPARCELDATA_VAULT_LABEL = "GetParcelData";
 export const SECRET_MASK = "****************";
 
 export type VaultPublicStatus = {
@@ -11,7 +14,7 @@ export type VaultPublicStatus = {
   label: string;
   configured: boolean;
   source: "vault" | "env" | "none";
-  /** FedEx only; Florida Property ignores this. */
+  /** FedEx only; GetParcelData ignores this. */
   environment: FedExEnvironment;
   masked: string;
 };

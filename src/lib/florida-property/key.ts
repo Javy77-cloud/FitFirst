@@ -1,7 +1,6 @@
 /**
- * Agency BYO Florida Property API key.
- * Env first (FLORIDA_PROPERTY_API_KEY), then developer vault if a row exists.
- * Missing key is a hard wall — never invent a parcel.
+ * Legacy Florida Property API key helpers (Fill path moved to getparceldata).
+ * Env-only; vault provider florida_property is no longer written by Developer Hub.
  */
 
 export const FLORIDA_PROPERTY_ENV = "FLORIDA_PROPERTY_API_KEY";
@@ -22,12 +21,5 @@ export function floridaPropertyKeyReady(key: string | null | undefined): boolean
 }
 
 export async function loadFloridaPropertyApiKey(): Promise<string> {
-  const fromEnv = readFloridaPropertyApiKey();
-  if (fromEnv) return fromEnv;
-  try {
-    const { loadFloridaPropertyVaultKey } = await import("@/lib/developer/vault");
-    return (await loadFloridaPropertyVaultKey()) ?? "";
-  } catch {
-    return "";
-  }
+  return readFloridaPropertyApiKey();
 }

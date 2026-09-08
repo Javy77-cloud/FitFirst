@@ -8,8 +8,8 @@ import { fedexCredentialsReady } from "@/lib/fedex/client";
 import {
   FEDEX_VAULT_LABEL,
   FEDEX_VAULT_PROVIDER,
-  FLORIDA_PROPERTY_VAULT_LABEL,
-  FLORIDA_PROPERTY_VAULT_PROVIDER,
+  GETPARCELDATA_VAULT_LABEL,
+  GETPARCELDATA_VAULT_PROVIDER,
   publicVaultStatus,
   type VaultPublicStatus,
 } from "./vault-public";
@@ -17,6 +17,8 @@ import {
 export {
   FEDEX_VAULT_LABEL,
   FEDEX_VAULT_PROVIDER,
+  GETPARCELDATA_VAULT_LABEL,
+  GETPARCELDATA_VAULT_PROVIDER,
   FLORIDA_PROPERTY_VAULT_LABEL,
   FLORIDA_PROPERTY_VAULT_PROVIDER,
   SECRET_MASK,
@@ -139,7 +141,7 @@ export async function saveFedExVault(input: {
 }
 
 /** Server-only. Single-key paid plug. Never log the raw key. */
-export async function loadFloridaPropertyVaultKey(): Promise<string | null> {
+export async function loadGetParcelDataVaultKey(): Promise<string | null> {
   try {
     const [row] = await db
       .select()
@@ -147,7 +149,7 @@ export async function loadFloridaPropertyVaultKey(): Promise<string | null> {
       .where(
         and(
           eq(developerApiVault.tenantId, DEFAULT_TENANT_ID),
-          eq(developerApiVault.provider, FLORIDA_PROPERTY_VAULT_PROVIDER),
+          eq(developerApiVault.provider, GETPARCELDATA_VAULT_PROVIDER),
         ),
       )
       .limit(1);
@@ -184,12 +186,12 @@ export async function clearFedExVault(actorId: string | null): Promise<VaultPubl
   return publicVaultStatus({ configured: false, source: "none", environment: "sandbox" });
 }
 
-function envFloridaPropertyKey(): string | null {
-  const key = process.env.FLORIDA_PROPERTY_API_KEY?.trim() || "";
+function envGetParcelDataKey(): string | null {
+  const key = process.env.GETPARCELDATA_API_KEY?.trim() || "";
   return key || null;
 }
 
-export async function loadFloridaPropertyVaultRow() {
+export async function loadGetParcelDataVaultRow() {
   try {
     const [row] = await db
       .select()
@@ -197,7 +199,7 @@ export async function loadFloridaPropertyVaultRow() {
       .where(
         and(
           eq(developerApiVault.tenantId, DEFAULT_TENANT_ID),
-          eq(developerApiVault.provider, FLORIDA_PROPERTY_VAULT_PROVIDER),
+          eq(developerApiVault.provider, GETPARCELDATA_VAULT_PROVIDER),
         ),
       )
       .limit(1);
@@ -207,45 +209,45 @@ export async function loadFloridaPropertyVaultRow() {
   }
 }
 
-export async function loadFloridaPropertyPublicStatus(): Promise<VaultPublicStatus> {
-  const row = await loadFloridaPropertyVaultRow();
+export async function loadGetParcelDataPublicStatus(): Promise<VaultPublicStatus> {
+  const row = await loadGetParcelDataVaultRow();
   if (row?.configured && row.apiKeyEnc && row.apiKeyIv) {
     return publicVaultStatus({
       configured: true,
       source: "vault",
-      provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-      label: FLORIDA_PROPERTY_VAULT_LABEL,
+      provider: GETPARCELDATA_VAULT_PROVIDER,
+      label: GETPARCELDATA_VAULT_LABEL,
     });
   }
-  if (envFloridaPropertyKey()) {
+  if (envGetParcelDataKey()) {
     return publicVaultStatus({
       configured: true,
       source: "env",
-      provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-      label: FLORIDA_PROPERTY_VAULT_LABEL,
+      provider: GETPARCELDATA_VAULT_PROVIDER,
+      label: GETPARCELDATA_VAULT_LABEL,
     });
   }
   return publicVaultStatus({
     configured: false,
     source: "none",
-    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-    label: FLORIDA_PROPERTY_VAULT_LABEL,
+    provider: GETPARCELDATA_VAULT_PROVIDER,
+    label: GETPARCELDATA_VAULT_LABEL,
   });
 }
 
-export async function saveFloridaPropertyVault(input: {
+export async function saveGetParcelDataVault(input: {
   apiKey: string;
   actorId: string | null;
 }): Promise<VaultPublicStatus> {
   if (isMaskedSecretInput(input.apiKey) || !input.apiKey.trim()) {
-    throw new Error("Enter a real Florida Property API key. Masked values are not saved.");
+    throw new Error("Enter a real GetParcelData API key. Masked values are not saved.");
   }
   const key = encryptSecret(input.apiKey.trim());
-  const existing = await loadFloridaPropertyVaultRow();
+  const existing = await loadGetParcelDataVaultRow();
   const values = {
     tenantId: DEFAULT_TENANT_ID,
-    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-    label: FLORIDA_PROPERTY_VAULT_LABEL,
+    provider: GETPARCELDATA_VAULT_PROVIDER,
+    label: GETPARCELDATA_VAULT_LABEL,
     configured: true,
     apiKeyEnc: key.enc,
     apiKeyIv: key.iv,
@@ -265,13 +267,13 @@ export async function saveFloridaPropertyVault(input: {
   return publicVaultStatus({
     configured: true,
     source: "vault",
-    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-    label: FLORIDA_PROPERTY_VAULT_LABEL,
+    provider: GETPARCELDATA_VAULT_PROVIDER,
+    label: GETPARCELDATA_VAULT_LABEL,
   });
 }
 
-export async function clearFloridaPropertyVault(actorId: string | null): Promise<VaultPublicStatus> {
-  const existing = await loadFloridaPropertyVaultRow();
+export async function clearGetParcelDataVault(actorId: string | null): Promise<VaultPublicStatus> {
+  const existing = await loadGetParcelDataVaultRow();
   if (existing) {
     await db
       .update(developerApiVault)
@@ -288,19 +290,18 @@ export async function clearFloridaPropertyVault(actorId: string | null): Promise
       })
       .where(eq(developerApiVault.id, existing.id));
   }
-  if (envFloridaPropertyKey()) {
+  if (envGetParcelDataKey()) {
     return publicVaultStatus({
       configured: true,
       source: "env",
-      provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-      label: FLORIDA_PROPERTY_VAULT_LABEL,
+      provider: GETPARCELDATA_VAULT_PROVIDER,
+      label: GETPARCELDATA_VAULT_LABEL,
     });
   }
   return publicVaultStatus({
     configured: false,
     source: "none",
-    provider: FLORIDA_PROPERTY_VAULT_PROVIDER,
-    label: FLORIDA_PROPERTY_VAULT_LABEL,
+    provider: GETPARCELDATA_VAULT_PROVIDER,
+    label: GETPARCELDATA_VAULT_LABEL,
   });
 }
-

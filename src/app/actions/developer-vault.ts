@@ -5,9 +5,9 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { userIsSiteDeveloper } from "@/lib/developer/site-developer";
 import {
   clearFedExVault,
-  clearFloridaPropertyVault,
+  clearGetParcelDataVault,
   saveFedExVault,
-  saveFloridaPropertyVault,
+  saveGetParcelDataVault,
 } from "@/lib/developer/vault";
 import { flashAction } from "@/lib/flash-action";
 
@@ -66,7 +66,7 @@ export async function clearFedExVaultAction() {
   flashAction(VAULT_HREF, "fedex-vault-cleared");
 }
 
-export async function saveFloridaPropertyVaultAction(formData: FormData) {
+export async function saveGetParcelDataVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
@@ -75,24 +75,24 @@ export async function saveFloridaPropertyVaultAction(formData: FormData) {
   }
   const apiKey = String(formData.get("apiKey") ?? "");
   try {
-    await saveFloridaPropertyVault({
+    await saveGetParcelDataVault({
       apiKey,
       actorId: session.userId,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not save Florida Property API key.";
+    const message = error instanceof Error ? error.message : "Could not save GetParcelData API key.";
     flashAction(VAULT_HREF, message, "error");
   }
-  flashAction(VAULT_HREF, "florida-property-vault-saved");
+  flashAction(VAULT_HREF, "getparceldata-vault-saved");
 }
 
-export async function clearFloridaPropertyVaultAction() {
+export async function clearGetParcelDataVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
   } catch {
     flashAction(VAULT_HREF, "Site developer only.", "error");
   }
-  await clearFloridaPropertyVault(session.userId);
-  flashAction(VAULT_HREF, "florida-property-vault-cleared");
+  await clearGetParcelDataVault(session.userId);
+  flashAction(VAULT_HREF, "getparceldata-vault-cleared");
 }
