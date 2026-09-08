@@ -1,5 +1,6 @@
 import {
   AlignLeft,
+  Cake,
   Calendar,
   CalendarClock,
   DollarSign,
@@ -30,6 +31,7 @@ const ICONS: Record<PaletteItem, LucideIcon> = {
   picklist: List,
   multi_select: ListChecks,
   date: Calendar,
+  dob: Cake,
   date_time: CalendarClock,
   number: Hash,
   currency: DollarSign,
