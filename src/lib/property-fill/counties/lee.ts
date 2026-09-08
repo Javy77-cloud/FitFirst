@@ -27,7 +27,7 @@ const OUT_FIELDS = [
   "MINBUILTY",
   "JUST",
   "LAND",
-  "BLDG",
+  "BUILDING",
   "LANDUSEDES",
   "LANDUSECOD",
   "ZONINGAREA",
@@ -84,7 +84,7 @@ function mapAttrs(attrs: ArcgisAttrs): PropertyRecordsFact[] {
   push(facts, "year_built", attrString(attrs, ["MAXBUILTY", "MINBUILTY"]));
   push(facts, "assessed_value", attrString(attrs, ["JUST"]));
   push(facts, "land_value", attrString(attrs, ["LAND"]));
-  push(facts, "improvement_value", attrString(attrs, ["BLDG"]));
+  push(facts, "improvement_value", attrString(attrs, ["BUILDING"]));
   push(facts, "land_use", attrString(attrs, ["LANDUSEDES", "LANDUSECOD"]));
   push(facts, "zoning", attrString(attrs, ["ZONINGAREA"]));
   push(facts, "sale_price", attrString(attrs, ["S_1AMOUNT"]));

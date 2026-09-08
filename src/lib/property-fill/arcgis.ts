@@ -7,6 +7,15 @@ export async function queryArcgis(
   params: Record<string, string>,
   fetchImpl: FetchLike = fetch,
 ): Promise<{ attributes: ArcgisAttrs }[]> {
+  return queryArcgisOnce(url, params, fetchImpl, true);
+}
+
+async function queryArcgisOnce(
+  url: string,
+  params: Record<string, string>,
+  fetchImpl: FetchLike,
+  allowStarRetry: boolean,
+): Promise<{ attributes: ArcgisAttrs }[]> {
   const body = new URLSearchParams(params);
   const res = await fetchImpl(url, {
     method: "POST",
@@ -18,12 +27,33 @@ export async function queryArcgis(
     body,
     signal: AbortSignal.timeout(12000),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    if (allowStarRetry && params.outFields && params.outFields !== "*") {
+      console.warn("[property-fill/arcgis] HTTP", res.status, "— retrying with outFields=*");
+      return queryArcgisOnce(url, { ...params, outFields: "*" }, fetchImpl, false);
+    }
+    return [];
+  }
   const payload = (await res.json()) as {
     features?: Array<{ attributes?: ArcgisAttrs }>;
-    error?: unknown;
+    error?: { code?: number; message?: string } | unknown;
   };
-  if (payload.error || !Array.isArray(payload.features)) return [];
+  if (payload.error || !Array.isArray(payload.features)) {
+    if (allowStarRetry && params.outFields && params.outFields !== "*") {
+      const err =
+        payload.error && typeof payload.error === "object"
+          ? (payload.error as { code?: number; message?: string })
+          : undefined;
+      console.warn(
+        "[property-fill/arcgis] payload.error",
+        err?.code ?? "",
+        err?.message ?? "unknown",
+        "— retrying with outFields=*",
+      );
+      return queryArcgisOnce(url, { ...params, outFields: "*" }, fetchImpl, false);
+    }
+    return [];
+  }
   return payload.features
     .map((f) => ({ attributes: f.attributes ?? {} }))
     .filter((f) => Object.keys(f.attributes).length > 0);

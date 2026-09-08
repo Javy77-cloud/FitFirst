@@ -6,6 +6,8 @@ import { wiredCountyIds } from "./counties/registry";
 import { factsFromLeeCountyPa } from "./counties/lee";
 import { factsFromFemaNfhl } from "./fema";
 import type { PropertyRecordsFact } from "@/lib/getparceldata/map";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -95,6 +97,7 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
               MAXBUILTY: 1978,
               JUST: 218997,
               LAND: 99426,
+              BUILDING: 117171,
               LANDUSEDES: "SINGLE FAMILY RESIDENTIAL, GOLF COURSE",
               O_NAME: "CASTELLANOS ROSA L &",
               S_1AMOUNT: 325000,
@@ -114,9 +117,65 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(facts.find((f) => f.sheetKey === "stories")?.value).toBe("1");
     expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("garage");
     expect(facts.find((f) => f.sheetKey === "acres")?.value).toBe("0.303");
+    expect(facts.find((f) => f.sheetKey === "improvement_value")?.value).toBe("117171");
     expect(facts.every((f) => f.sourceLabel === "county PA")).toBe(true);
     expect(facts.some((f) => f.sheetKey === "coverage_a")).toBe(false);
   });
+
+  it("Lee OUT_FIELDS uses BUILDING not invalid BLDG", () => {
+    const lee = source("src/lib/property-fill/counties/lee.ts");
+    expect(lee).toMatch(/"BUILDING"/);
+    expect(lee).not.toMatch(/"BLDG"/);
+    expect(lee).toMatch(/attrString\(attrs, \["BUILDING"\]\)/);
+  });
+
+  it("queryArcgis soft-fails invalid outFields and retries with *", async () => {
+    const { queryArcgis } = await import("./arcgis");
+    let calls = 0;
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      calls += 1;
+      const body = String(init?.body ?? "");
+      if (calls === 1) {
+        expect(body).toContain("outFields=BLDG");
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ error: { code: 400, message: "Failed to execute query." } }),
+        };
+      }
+      expect(body.includes("outFields=*") || body.includes("outFields=%2A")).toBe(true);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          features: [{ attributes: { BEDROOMS: 3, BATHROOMS: 2, HEATEDAREA: 1224 } }],
+        }),
+      };
+    });
+    const features = await queryArcgis(
+      "https://example.test/query",
+      { where: "1=1", outFields: "BLDG", f: "json" },
+      fetchImpl as unknown as typeof fetch,
+    );
+    expect(calls).toBe(2);
+    expect(features[0]?.attributes.BEDROOMS).toBe(3);
+  });
+
+  it("live smoke: Lee PA Cypress Point returns beds/baths/sqft/stories/garage", async () => {
+    const facts = await factsFromLeeCountyPa({
+      address1: "18025 Cypress Point Rd",
+      city: "Fort Myers",
+      state: "FL",
+      zip: "33967",
+      county: "Lee",
+    });
+    expect(facts.find((f) => f.sheetKey === "beds")?.value).toBe("3");
+    expect(facts.find((f) => f.sheetKey === "baths")?.value).toBe("2");
+    expect(facts.find((f) => f.sheetKey === "square_feet")?.value).toBe("1224");
+    expect(facts.find((f) => f.sheetKey === "stories")?.value).toBe("1");
+    expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("garage");
+    expect(facts.find((f) => f.sheetKey === "improvement_value")?.value).toBe("117171");
+  }, 20000);
 
   it("maps FEMA NFHL zone + FIRM panel", async () => {
     const fetchImpl = vi.fn(async (url: string) => {
@@ -144,5 +203,21 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(facts.find((f) => f.sheetKey === "firm_effective_date")?.value).toMatch(/^2008-/);
     expect(facts.find((f) => f.sheetKey === "bfe")).toBeUndefined();
     expect(facts.every((f) => f.sourceLabel === "FEMA")).toBe(true);
+  });
+
+  it("firm_panel can fill when flood_zone already set (empty-only per key)", () => {
+    const existing = emptySheetValues("home");
+    existing.flood_zone = { value: "X", status: "confirmed", source: "agent", sourceLabel: "agent" };
+    const facts: PropertyRecordsFact[] = [
+      { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "AE", sourceLabel: "FEMA", kind: "fema" },
+      { fieldKey: "firm_panel", sheetKey: "firm_panel", value: "12071C0581F", sourceLabel: "FEMA", kind: "fema" },
+      { fieldKey: "firm_effective_date", sheetKey: "firm_effective_date", value: "2008-08-28", sourceLabel: "FEMA", kind: "fema" },
+    ];
+    const result = applyPropertyRecordsToSheet("home", existing, facts);
+    expect(result.values.flood_zone.value).toBe("X");
+    expect(result.skippedKeys).toContain("flood_zone");
+    expect(result.values.firm_panel.value).toBe("12071C0581F");
+    expect(result.values.firm_effective_date.value).toBe("2008-08-28");
+    expect(result.filledKeys).toEqual(expect.arrayContaining(["firm_panel", "firm_effective_date"]));
   });
 });
