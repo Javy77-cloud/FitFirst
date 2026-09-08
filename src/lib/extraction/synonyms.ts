@@ -145,7 +145,7 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "stories",
-    synonyms: ["# of Stories", "Stories", "#"],
+    synonyms: ["# of Stories", "Number of Stories", "Stories"],
   },
   {
     fieldKey: "coverage_a",
@@ -269,7 +269,7 @@ export const WIND_MIT_SYNONYMS: SynonymEntry[] = [
   },
   {
     fieldKey: "stories",
-    synonyms: ["#", "# of Stories", "Stories"],
+    synonyms: ["# of Stories", "Number of Stories", "Stories"],
     docTypes: ["wind_mit"],
   },
   {
@@ -576,6 +576,15 @@ export function isUnusableExtractValue(value: string, synonym = ""): boolean {
   const compactV = compactLabel(v);
   const compactS = compactLabel(synonym);
   if (compactV && compactS && compactV === compactS) return true;
+  // Adjacent blank label pulled as value: "Cell Phone:" / "Email:"
+  if (/^[A-Za-z][A-Za-z0-9/# ]{0,40}:\s*$/.test(v)) return true;
+  // OIR option-body prose (not a filled answer)
+  if (
+    v.length > 80 ||
+    /glazed openings|permit application|roof sheathing|truss\/rafter|product approval/i.test(v)
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -689,16 +698,16 @@ function resolveOverlaps(
 function nextHitStart(
   ranked: SynonymMatch[],
   current: SynonymMatch,
-  claimed: Array<{ start: number; end: number }>,
+  _claimed: Array<{ start: number; end: number }>,
   synonymEnd: number,
 ): number {
+  // Always cut at the next synonym label on the line — even if that label was
+  // already claimed (longer synonyms are ranked first). Skipping claimed hits
+  // caused "County: Cell Phone:" to pull "Cell Phone:" into county.
   let next = Number.POSITIVE_INFINITY;
   for (const other of ranked) {
     if (other === current) continue;
     if (other.start < synonymEnd) continue;
-    const otherSynEnd = other.start + normalizeHaystack(other.synonym.replace(/[:–—=\-]\s*$/, "")).length;
-    const overlapsClaimed = claimed.some((span) => other.start < span.end && otherSynEnd > span.start);
-    if (overlapsClaimed) continue;
     next = Math.min(next, other.start);
   }
   return next;

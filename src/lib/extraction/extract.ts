@@ -461,9 +461,6 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
   if (sourceKind === "wind_mit" || mapType === "wind_mit") {
     for (const hit of extractWindMitCheckboxes(text)) {
       if (isBlockedExtractKey(hit.fieldKey)) continue;
-      if (synonymKeys.has(hit.fieldKey) && byKey.get(hit.fieldKey) && !byKey.get(hit.fieldKey)!.blankAfterMatch) {
-        continue;
-      }
       const built = toField(hit.fieldKey, hit.value, normalizerFor(hit.fieldKey), quality.penalty);
       if (!built) continue;
       built.sourceDocTag = sourceDocTag;
@@ -471,11 +468,10 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
       built.matchedSynonym = hit.section;
       built.sourceLine = hit.sourceLine;
       built.sourceLineNo = hit.sourceLineNo;
-      const existing = byKey.get(hit.fieldKey);
-      if (!existing || existing.blankAfterMatch || built.confidence >= existing.confidence) {
-        synonymKeys.add(hit.fieldKey);
-        byKey.set(hit.fieldKey, built);
-      }
+      // Checkbox / caption maps beat synonym prose pulls on OIR option lines
+      // (e.g. "Exterior Opening Protection- Cyclic Pressure..." → junk value).
+      synonymKeys.add(hit.fieldKey);
+      byKey.set(hit.fieldKey, built);
     }
   }
 
@@ -1015,7 +1011,27 @@ function normalizeConstruction(raw: string): string {
 }
 
 function normalizeRoof(raw: string): string {
-  const s = raw.toLowerCase();
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  const s = trimmed.toLowerCase();
+  // Preserve full OIR / wind-mit checkbox labels (not bare OCR tokens).
+  if (
+    /asphalt\s*\/?\s*fiberglass/.test(s) ||
+    /architectural\s*\/?\s*dimensional\s+shingle/.test(s) ||
+    /architectural\s+shingle/.test(s)
+  ) {
+    return "Asphalt/Fiberglass Shingle";
+  }
+  if (/concrete\s*\/?\s*clay\s+tile/.test(s)) {
+    return "Concrete/Clay Tile";
+  }
+  if (/synthetic\s*\/?\s*composite\s+tile/.test(s)) {
+    return "Synthetic/Composite Tile";
+  }
+  if (/built[\s-]?up(\s*\/?\s*rolled\s+asphalt)?/.test(s) && /roof|covering|asphalt|built/.test(s)) {
+    if (/built[\s-]?up/.test(s) || /rolled\s+asphalt/.test(s)) return "Built Up";
+  }
+  if (/^membrane$/.test(s)) return "Membrane";
+  if (/^metal$/.test(s)) return "Metal";
   const parts: string[] = [];
   if (/clay|t1le|tile/.test(s)) parts.push("clay tile");
   if (/metal|mtl|m3tal/.test(s)) parts.push("metal");
