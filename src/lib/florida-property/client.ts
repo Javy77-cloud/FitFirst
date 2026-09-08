@@ -58,13 +58,17 @@ export async function searchFloridaPropertyRecords(
   }
 
   const params = new URLSearchParams();
-  const query = formatPropertyAddress(address);
-  params.set("query", query);
-  params.set("address", query);
+  const street = (address.address1 ?? "").trim();
+  const city = address.city?.trim() ?? "";
+  const zip = address.zip?.trim() ?? "";
   const county = countySlug(address.county);
+  // Prefer street-only in query when city/zip/county filters are also sent
+  // (API rejects unknown `address=` and works with query/q + filters).
+  const hasLocationFilters = Boolean(county || city || zip);
+  params.set("query", hasLocationFilters ? street : formatPropertyAddress(address));
   if (county) params.set("county", county);
-  if (address.city?.trim()) params.set("city", address.city.trim());
-  if (address.zip?.trim()) params.set("zip", address.zip.trim());
+  if (city) params.set("city", city);
+  if (zip) params.set("zip", zip);
   params.set("limit", "1");
 
   const url = `${FLORIDA_PROPERTY_SEARCH_URL}?${params.toString()}`;

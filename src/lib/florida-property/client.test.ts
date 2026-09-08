@@ -29,11 +29,13 @@ describe("Florida Property API client", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("searches with Bearer auth, address, and county — no fake parcel", async () => {
+  it("searches with Bearer auth, street-only query, and county — no fake parcel", async () => {
     const fetchImpl = vi.fn(async (url: string, init?: { headers?: Record<string, string> }) => {
       expect(String(url)).toContain(FLORIDA_PROPERTY_SEARCH_URL);
-      expect(String(url)).toContain("address=");
-      expect(String(url)).toContain("query=");
+      expect(String(url)).not.toContain("address=");
+      expect(String(url)).toContain("query=412");
+      expect(String(url)).toContain("city=Melbourne");
+      expect(String(url)).toContain("zip=32935");
       expect(String(url)).toContain("county=brevard");
       expect(init?.headers?.Authorization).toBe("Bearer fpapi_test_demo");
       return {

@@ -51,7 +51,7 @@ describe("sep7ce Fill from property records", () => {
     const key = source("src/lib/florida-property/key.ts");
     const action = source("src/app/actions/quote-sheet.ts");
     const env = source(".env.example");
-    expect(key).toMatch(/https:\/\/api\.floridapropertyapi\.com\/v1\/parcels\/search/);
+    expect(key).toMatch(/https:\/\/floridapropertyapi\.com\/api\/v1\/parcels\/search/);
     expect(client).toMatch(/Authorization: `Bearer/);
     expect(key).toMatch(/FLORIDA_PROPERTY_API_KEY/);
     expect(key).toMatch(/No lookup ran/);

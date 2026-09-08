@@ -6,7 +6,7 @@
 
 export const FLORIDA_PROPERTY_ENV = "FLORIDA_PROPERTY_API_KEY";
 export const FLORIDA_PROPERTY_VAULT_PROVIDER = "florida_property";
-export const FLORIDA_PROPERTY_SEARCH_URL = "https://api.floridapropertyapi.com/v1/parcels/search";
+export const FLORIDA_PROPERTY_SEARCH_URL = "https://floridapropertyapi.com/api/v1/parcels/search";
 
 export const MISSING_KEY_MESSAGE =
   "Florida Property API key is not configured. Set FLORIDA_PROPERTY_API_KEY (agency BYO) in env or the developer vault. No lookup ran.";

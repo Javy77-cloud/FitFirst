@@ -19,6 +19,7 @@ const FIELD_ALIASES: Array<{ sheetKey: string; keys: string[] }> = [
     sheetKey: "square_feet",
     keys: [
       "living_area",
+      "living_area_sqft",
       "heated_area",
       "sqft",
       "square_feet",
