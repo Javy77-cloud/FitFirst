@@ -61,6 +61,9 @@ import {
   ADDRESS_CONFIRM_KEYS,
   enrichPropertyOnAddressConfirm,
 } from "@/lib/property-enrichment/service";
+import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
+import { searchFloridaPropertyRecords } from "@/lib/florida-property/client";
+import { loadFloridaPropertyApiKey } from "@/lib/florida-property/key";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -312,6 +315,69 @@ export async function addShopLine(formData: FormData) {
   await ensureQuoteSheet(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
   redirect(withFlash(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "deal-updated"));
+}
+
+function addressFromDealRecord(input: {
+  sheet: Record<string, QuoteSheetFieldValue>;
+  risk?: { address1?: string | null; city?: string | null; county?: string | null; state?: string | null; zip?: string | null } | null;
+  deal?: { propertyOneliner?: string | null } | null;
+}) {
+  const sheet = addressFromSheet(input.sheet);
+  const county = input.sheet.county?.value?.trim() || input.risk?.county || "";
+  if ((sheet.address1 ?? "").trim()) {
+    return { ...sheet, county };
+  }
+  const street = (input.risk?.address1 ?? "").trim() || (input.deal?.propertyOneliner ?? "").split("·")[0].trim();
+  return {
+    address1: street,
+    city: input.risk?.city ?? sheet.city ?? "",
+    county,
+    state: input.risk?.state ?? sheet.state ?? "",
+    zip: input.risk?.zip ?? sheet.zip ?? "",
+  };
+}
+
+export async function fillFromPropertyRecords(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const lineRaw = str(formData, "line") || "home";
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const address = addressFromDealRecord({ sheet: sheet.values, risk, deal });
+  const apiKey = await loadFloridaPropertyApiKey();
+  const lookup = await searchFloridaPropertyRecords(address, apiKey);
+  const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
+  if (lookup.status === "needs_key") {
+    flashAction(dest, "property-records-needs-key", "error");
+  }
+  if (lookup.status === "no_address") {
+    flashAction(dest, "property-records-no-address", "error");
+  }
+  if (lookup.status !== "ok") {
+    const flash =
+      lookup.status === "not_found" ? "property-records-not-found" : "property-records-error";
+    flashAction(dest, flash, "error");
+  }
+  const applied = applyPropertyRecordsToSheet(lineRaw, sheet.values, lookup.facts);
+  await db
+    .update(quoteSheets)
+    .set({ values: applied.values, updatedAt: new Date() })
+    .where(eq(quoteSheets.id, sheet.id));
+  await db.insert(extractionJobs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId,
+    quoteSheetId: sheet.id,
+    engine: "property_records",
+    status: "done",
+    filledKeys: applied.filledKeys,
+    skippedKeys: applied.skippedKeys,
+    message: lookup.message,
+  });
+  await syncRiskFromSheet(dealId, applied.values, "fill");
+  await syncHeaderFromSheet(dealId, applied.values, "fill");
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dest, "property-records-filled");
 }
 
 export async function fillQuoteSheet(formData: FormData) {
