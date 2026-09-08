@@ -1,4 +1,10 @@
-import { GEMINI_DEFAULT_MODEL, readGeminiApiKey, readGeminiModel, resolveGeminiModel } from "./key";
+import {
+  GEMINI_CAPACITY_FALLBACKS,
+  GEMINI_DEFAULT_MODEL,
+  readGeminiApiKey,
+  readGeminiModel,
+  resolveGeminiModel,
+} from "./key";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
@@ -7,6 +13,8 @@ const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
 const MAX_ATTEMPTS = 6;
 const WIND_MIT_MAX_ATTEMPTS = 8;
+/** Fewer attempts once we leave primary — fallbacks are for quota/capacity, not long 503 storms. */
+const FALLBACK_MAX_ATTEMPTS = 3;
 const RETRYABLE_STATUS = new Set([429, 503]);
 
 export type GeminiClientResult = {
@@ -79,21 +87,64 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** True when Google reports per-model free-tier / daily generateContent quota exhausted. */
+export function isGeminiDailyQuotaExhausted(errText: string): boolean {
+  return /GenerateRequestsPerDayPerProjectPerModel|generate_content_free_tier_requests|free_tier_requests/i.test(
+    errText,
+  );
+}
+
+/** Prefer RetryInfo.retryDelay / "Please retry in Ns" from Gemini error JSON. */
+function retryDelayFromErrorBody(errText: string): number | null {
+  if (!errText) return null;
+  try {
+    const parsed = JSON.parse(errText) as {
+      error?: { message?: string; details?: Array<{ retryDelay?: string }> };
+    };
+    for (const detail of parsed.error?.details ?? []) {
+      const raw = detail.retryDelay;
+      if (!raw) continue;
+      const m = String(raw).match(/([\d.]+)/);
+      if (m) {
+        const secs = Number(m[1]);
+        if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 60_000);
+      }
+    }
+    const msg = parsed.error?.message ?? "";
+    const m2 = msg.match(/retry in\s+([\d.]+)\s*s/i);
+    if (m2) {
+      const secs = Number(m2[1]);
+      if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 60_000);
+    }
+  } catch {
+    /* ignore */
+  }
+  const m3 = errText.match(/retry in\s+([\d.]+)\s*s/i);
+  if (m3) {
+    const secs = Number(m3[1]);
+    if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 60_000);
+  }
+  return null;
+}
+
 function isWindMitDoc(docType?: string | null): boolean {
   const t = (docType ?? "").trim().toLowerCase();
   return t === "wind_mit" || t.includes("wind");
 }
 
-function maxAttemptsFor(docType?: string | null): number {
+function maxAttemptsFor(docType?: string | null, isPrimary = true): number {
+  if (!isPrimary) return FALLBACK_MAX_ATTEMPTS;
   return isWindMitDoc(docType) ? WIND_MIT_MAX_ATTEMPTS : MAX_ATTEMPTS;
 }
 
-/** Exponential backoff with jitter. Honors Retry-After seconds when present. */
-function retryDelayMs(attempt: number, response: Response | null): number {
+/** Exponential backoff with jitter. Honors Retry-After / body retryDelay. Cap 60s. */
+function retryDelayMs(attempt: number, response: Response | null, errText = ""): number {
+  const fromBody = retryDelayFromErrorBody(errText);
+  if (fromBody != null) return fromBody;
   const retryAfter = response?.headers?.get?.("retry-after");
   if (retryAfter) {
     const secs = Number(retryAfter);
-    if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 20_000);
+    if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 60_000);
   }
   const base = Math.min(1000 * 2 ** (attempt - 1), 12_000);
   const jitter = Math.floor(Math.random() * 400);
@@ -102,9 +153,10 @@ function retryDelayMs(attempt: number, response: Response | null): number {
 
 /**
  * Send PDF bytes to Gemini (Google AI Studio / generativelanguage REST).
- * Model hard-pinned to gemini-3.6-flash (stale GEMINI_MODEL remapped). Retries 429/503 with
- * exponential backoff; wind_mit gets extra attempts for large PDFs.
- * Sustained 503/429 also tries capacity fallback model ids.
+ * Primary model hard-pinned to gemini-3.6-flash (stale GEMINI_MODEL remapped).
+ * Retries transient 429/503 with backoff; wind_mit gets extra attempts.
+ * Daily free-tier exhaustion on primary immediately tries GEMINI_CAPACITY_FALLBACKS
+ * (sibling flash ids with separate per-model daily caps — NOT remapped to 3.6).
  */
 export async function extractWithGeminiPdf(
   pdfBytes: Buffer | Uint8Array,
@@ -116,17 +168,10 @@ export async function extractWithGeminiPdf(
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
-  // Hard-pin: every request uses gemini-3.6-flash (remap options/env leftovers).
+  // Hard-pin primary only. Fallbacks keep their own ids (separate free-tier quotas).
   const primaryModel = resolveGeminiModel(options?.model ?? readGeminiModel() ?? GEMINI_DEFAULT_MODEL);
-  // Capacity fallbacks — also remapped so retired ids never hit the wire.
   const modelCandidates = Array.from(
-    new Set(
-      [
-        primaryModel,
-        resolveGeminiModel("gemini-flash-latest"),
-        GEMINI_DEFAULT_MODEL,
-      ].filter(Boolean),
-    ),
+    new Set([primaryModel, ...GEMINI_CAPACITY_FALLBACKS].filter(Boolean)),
   );
   if (!apiKey) {
     return emptyFail(docType, "missing_gemini_key", ["missing_gemini_key"]);
@@ -158,11 +203,12 @@ export async function extractWithGeminiPdf(
   };
 
   const fetchImpl = options?.fetchImpl ?? fetch;
-  const maxAttempts = maxAttemptsFor(docType);
   let response: Response | null = null;
   let errText = "";
   let lastStatus = 0;
   outer: for (const model of modelCandidates) {
+    const isPrimary = model === primaryModel;
+    const maxAttempts = maxAttemptsFor(docType, isPrimary);
     const url = `${GENERATIVE_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -181,11 +227,25 @@ export async function extractWithGeminiPdf(
         continue outer;
       }
 
-      if (response.ok) break outer;
+      if (response.ok) {
+        if (!isPrimary) {
+          console.info("[extractWithGeminiPdf] capacity fallback ok", { model, primaryModel, docType });
+        }
+        break outer;
+      }
       lastStatus = response.status;
       errText = await response.text().catch(() => "");
+      // Daily / free-tier per-model cap: do not burn remaining retries on a dead model.
+      if (response.status === 429 && isGeminiDailyQuotaExhausted(errText)) {
+        console.warn("[extractWithGeminiPdf] daily quota — next model", {
+          model,
+          docType,
+          snippet: apiErrorSnippet(errText),
+        });
+        continue outer;
+      }
       if (RETRYABLE_STATUS.has(response.status) && attempt < maxAttempts) {
-        await sleep(retryDelayMs(attempt, response));
+        await sleep(retryDelayMs(attempt, response, errText));
         continue;
       }
       if (RETRYABLE_STATUS.has(response.status)) {

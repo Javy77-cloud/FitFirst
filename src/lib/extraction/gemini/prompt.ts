@@ -86,5 +86,18 @@ Field meaning guidance (from desk synonym brief):
 }
 
 export function buildGeminiUserPrompt(docType?: string | null): string {
-  return `Extract the JSON field object from this ${docType || "insurance"} PDF. Invent nothing.`;
+  const kind = (docType ?? "").trim().toLowerCase();
+  let focus =
+    "Extract every listed key that is clearly printed or checked. Prefer a non-empty value when the form shows one.";
+  if (kind === "wind_mit" || kind.includes("wind")) {
+    focus =
+      "This is a wind mitigation (OIR-B1-1802). MUST fill when present: applicant_name, property_address, wind_mit_inspector, license_number, inspection_company, roof_covering, roof_deck_attachment, roof_to_wall, roof_shape, swr, opening_protection, building_code, design_wind_speed, year_built. Use checkbox letter/label text.";
+  } else if (kind === "four_point" || kind.includes("four") || kind.includes("4pt") || kind.includes("4-point")) {
+    focus =
+      "This is a four-point inspection. MUST fill when present: applicant_name, property_address, year_built, stories, roof_covering, roof_year, construction_type. Capture electrical/plumbing/HVAC ages into notes-capable keys when labeled.";
+  } else if (kind === "dec" || kind.includes("dec") || kind.includes("declar") || kind === "policy") {
+    focus =
+      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, property_address, coverage_a, hurricane_deductible, aop_deductible, policy_number, current_premium, effective_date, expiration_date, mortgagee, loan_number.";
+  }
+  return `Extract the JSON field object from this ${docType || "insurance"} PDF. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

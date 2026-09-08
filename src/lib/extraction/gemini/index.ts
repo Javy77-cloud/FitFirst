@@ -1,4 +1,5 @@
 export {
+  GEMINI_CAPACITY_FALLBACKS,
   GEMINI_DEFAULT_MODEL,
   GEMINI_ENV_KEY,
   GEMINI_ENV_MODEL,
@@ -19,7 +20,7 @@ export {
   sheetKeysForGeminiKey,
   GEMINI_KEY_TO_SHEET,
 } from "./map";
-export { extractWithGeminiPdf, parseGeminiResponseText } from "./client";
+export { extractWithGeminiPdf, isGeminiDailyQuotaExhausted, parseGeminiResponseText } from "./client";
 
 /** Doc types that Fill from source routes through Gemini (not legacy synonym extract). */
 export function docTypeUsesGemini(docType?: string | null): boolean {

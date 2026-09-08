@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  GEMINI_CAPACITY_FALLBACKS,
   GEMINI_DEFAULT_MODEL,
   readGeminiModel,
   resolveGeminiModel,
@@ -23,4 +24,13 @@ describe("resolveGeminiModel", () => {
     expect(resolveGeminiModel("gemini-flash-latest")).toBe("gemini-3.6-flash");
     expect(resolveGeminiModel("gemini-2.0-flash-001")).toBe("gemini-3.6-flash");
   });
+
+  it("lists capacity fallbacks that are not remapped to 3.6", () => {
+    expect(GEMINI_CAPACITY_FALLBACKS.length).toBeGreaterThan(0);
+    for (const id of GEMINI_CAPACITY_FALLBACKS) {
+      expect(id).not.toBe(GEMINI_DEFAULT_MODEL);
+      expect(id.startsWith("gemini-")).toBe(true);
+    }
+  });
+
 });

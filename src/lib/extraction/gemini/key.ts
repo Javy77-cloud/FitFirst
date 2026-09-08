@@ -13,6 +13,18 @@ export const GEMINI_ENV_MODEL = "GEMINI_MODEL";
 export const GEMINI_DEFAULT_MODEL = "gemini-3.6-flash";
 export const GEMINI_VAULT_PROVIDER = "gemini";
 
+/**
+ * Per-model free-tier daily caps are separate. When primary 3.6 is exhausted
+ * (GenerateRequestsPerDayPerProjectPerModel), try these WITHOUT remapping
+ * through resolveGeminiModel — otherwise every "fallback" collapses to 3.6.
+ */
+export const GEMINI_CAPACITY_FALLBACKS = [
+  "gemini-3.5-flash",
+  "gemini-3.7-flash",
+  "gemini-3.8-flash",
+  "gemini-flash-latest",
+] as const;
+
 /** Retired / wrong model ids → current Fill model. Stale shell env often pins 2.5-flash. */
 export const GEMINI_RETIRED_MODEL_MAP: Record<string, string> = {
   "gemini-2.5-flash": GEMINI_DEFAULT_MODEL,
