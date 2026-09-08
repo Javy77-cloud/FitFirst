@@ -4,7 +4,7 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
 import { withFlash } from "@/lib/flash";
@@ -20,6 +20,8 @@ import {
   documentVersions,
   documents,
   extractedFields,
+  extractionAttempts,
+  extractionCorrections,
   extractionJobs,
   fillFeedbackLogs,
   fillLearningLogs,
@@ -29,6 +31,7 @@ import {
   quoteSheets,
   risks,
   signatureEnvelopes,
+  synonymCandidates,
 } from "@/lib/db/schema";
 import {
   clearExtractedSheetCells,
@@ -669,6 +672,32 @@ export async function deleteUploadedFile(formData: FormData) {
     .update(fillLearningLogs)
     .set({ documentId: null })
     .where(eq(fillLearningLogs.documentId, documentId));
+  // sep7cg audit: delete doc-tied corrections + attempts (field_attempts CASCADE).
+  // Learning retained in fill_learning_logs (nulled above). Synonym proposals kept.
+  const correctionRows = await db
+    .select({ id: extractionCorrections.id })
+    .from(extractionCorrections)
+    .where(eq(extractionCorrections.documentId, documentId));
+  const correctionIds = correctionRows.map((row) => row.id);
+  if (correctionIds.length > 0) {
+    await db
+      .update(synonymCandidates)
+      .set({ evidenceCorrectionId: null, updatedAt: new Date() })
+      .where(inArray(synonymCandidates.evidenceCorrectionId, correctionIds));
+    await db.delete(extractionCorrections).where(inArray(extractionCorrections.id, correctionIds));
+  }
+  const attemptRows = await db
+    .select({ id: extractionAttempts.id })
+    .from(extractionAttempts)
+    .where(eq(extractionAttempts.documentId, documentId));
+  const attemptIds = attemptRows.map((row) => row.id);
+  if (attemptIds.length > 0) {
+    await db
+      .update(synonymCandidates)
+      .set({ evidenceAttemptId: null, updatedAt: new Date() })
+      .where(inArray(synonymCandidates.evidenceAttemptId, attemptIds));
+    await db.delete(extractionAttempts).where(inArray(extractionAttempts.id, attemptIds));
+  }
   await db
     .update(formFills)
     .set({ sourceDocumentId: null })

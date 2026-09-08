@@ -1334,7 +1334,7 @@ export const extractionAttempts = pgTable(
     dealId: uuid("deal_id")
       .notNull()
       .references(() => deals.id),
-    documentId: uuid("document_id").references(() => documents.id),
+    documentId: uuid("document_id").references(() => documents.id, { onDelete: "cascade" }),
     quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
     shopLine: text("shop_line").notNull().default("home"),
     docType: text("doc_type").notNull().default(""),
@@ -1394,9 +1394,9 @@ export const extractionCorrections = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    fieldAttemptId: uuid("field_attempt_id").references(() => extractionFieldAttempts.id),
+    fieldAttemptId: uuid("field_attempt_id").references(() => extractionFieldAttempts.id, { onDelete: "set null" }),
     dealId: uuid("deal_id").references(() => deals.id),
-    documentId: uuid("document_id").references(() => documents.id),
+    documentId: uuid("document_id").references(() => documents.id, { onDelete: "cascade" }),
     docType: text("doc_type").notNull().default("dec"),
     fieldKey: text("field_key").notNull(),
     shopLine: text("shop_line").notNull().default("home"),
@@ -1426,8 +1426,8 @@ export const synonymCandidates = pgTable(
     tenantId: tenantCol(),
     fieldKey: text("field_key").notNull(),
     proposedSynonym: text("proposed_synonym").notNull(),
-    evidenceCorrectionId: uuid("evidence_correction_id").references(() => extractionCorrections.id),
-    evidenceAttemptId: uuid("evidence_attempt_id").references(() => extractionAttempts.id),
+    evidenceCorrectionId: uuid("evidence_correction_id").references(() => extractionCorrections.id, { onDelete: "set null" }),
+    evidenceAttemptId: uuid("evidence_attempt_id").references(() => extractionAttempts.id, { onDelete: "set null" }),
     timesSeen: integer("times_seen").notNull().default(1),
     status: text("status").notNull().default("proposed"),
     approvedBy: text("approved_by"),
