@@ -4,7 +4,13 @@ import {
   MISSING_KEY_MESSAGE,
   getParcelDataKeyReady,
 } from "./key";
-import { factsFromGetParcel, pickFirstParcel, type PropertyRecordsFact } from "./map";
+import {
+  factsFromGetParcel,
+  pickFirstParcel,
+  summarizeGetParcelFill,
+  type GetParcelHit,
+  type PropertyRecordsFact,
+} from "./map";
 
 export type PropertyAddressQuery = {
   address1?: string | null;
@@ -19,6 +25,9 @@ export type GetParcelDataSearchResult = {
   facts: PropertyRecordsFact[];
   message: string;
   called: boolean;
+  hit?: GetParcelHit | null;
+  lat?: number;
+  lng?: number;
 };
 
 export const NO_ADDRESS_MESSAGE =
@@ -45,6 +54,7 @@ export async function searchGetParcelDataRecords(
   address: PropertyAddressQuery,
   apiKey: string | null | undefined,
   fetchImpl: FetchLike = fetch,
+  prefetchedGeo?: { lat: number; lng: number } | null,
 ): Promise<GetParcelDataSearchResult> {
   if (!getParcelDataKeyReady(apiKey)) {
     return { status: "needs_key", facts: [], message: MISSING_KEY_MESSAGE, called: false };
@@ -53,7 +63,9 @@ export async function searchGetParcelDataRecords(
     return { status: "no_address", facts: [], message: NO_ADDRESS_MESSAGE, called: false };
   }
 
-  const geo = await geocodePropertyAddress(address, fetchImpl);
+  const geo = prefetchedGeo
+    ? { ok: true as const, lat: prefetchedGeo.lat, lng: prefetchedGeo.lng }
+    : await geocodePropertyAddress(address, fetchImpl);
   if (!geo.ok) {
     return {
       status: "error",
@@ -103,20 +115,27 @@ export async function searchGetParcelDataRecords(
       };
     }
     const payload = await res.json();
-    const facts = factsFromGetParcel(pickFirstParcel(payload));
+    const hit = pickFirstParcel(payload);
+    const facts = factsFromGetParcel(hit);
     if (!facts.length) {
       return {
         status: "not_found",
         facts: [],
         message: "No parcel matched that address. Empty cells were left alone.",
         called: true,
+        hit,
+        lat: geo.lat,
+        lng: geo.lng,
       };
     }
     return {
       status: "ok",
       facts,
-      message: `GetParcelData returned ${facts.length} field(s) for empty-only fill.`,
+      message: summarizeGetParcelFill(hit, facts.length),
       called: true,
+      hit,
+      lat: geo.lat,
+      lng: geo.lng,
     };
   } catch {
     return {
