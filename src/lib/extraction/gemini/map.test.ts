@@ -37,6 +37,36 @@ describe("gemini map key mapping", () => {
     expect(sheetKeysForGeminiKey("terrain")).toEqual(["terrain"]);
     expect(sheetKeysForGeminiKey("swr")).toEqual(["swr", "secondary_water"]);
     expect(sheetKeysForGeminiKey("roof_year")).toEqual(["roof_year"]);
+    expect(sheetKeysForGeminiKey("electrical_year")).toEqual(["electrical_year"]);
+    expect(sheetKeysForGeminiKey("plumbing_year")).toEqual(["plumbing_year"]);
+    expect(sheetKeysForGeminiKey("hvac_year")).toEqual(["hvac_year"]);
+    expect(sheetKeysForGeminiKey("water_heater_year")).toEqual(["water_heater_year"]);
+    expect(sheetKeysForGeminiKey("electrical_updated")).toEqual(["electrical_updated"]);
+    expect(sheetKeysForGeminiKey("roof_condition")).toEqual(["roof_condition"]);
+    expect(sheetKeysForGeminiKey("four_point_date")).toEqual(["four_point_date"]);
+  });
+
+  it("maps four-point system years onto sheet fields from Gemini JSON", () => {
+    const result = mapGeminiJsonToFields(
+      {
+        electrical_year: { value: "2008", confidence: 0.92 },
+        plumbing_year: { value: "1998", confidence: 0.9 },
+        hvac_year: { value: "2019", confidence: 0.91 },
+        water_heater_year: { value: "2016", confidence: 0.88 },
+        electrical_updated: { value: "2015", confidence: 0.85 },
+        roof_condition: { value: "Good", confidence: 0.9 },
+        four_point_date: { value: "01/15/2024", confidence: 0.93 },
+      },
+      "four_point",
+    );
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.fieldKey, f]));
+    expect(byKey.electrical_year.normalizedValue).toBe("2008");
+    expect(byKey.plumbing_year.normalizedValue).toBe("1998");
+    expect(byKey.hvac_year.normalizedValue).toBe("2019");
+    expect(byKey.water_heater_year.normalizedValue).toBe("2016");
+    expect(byKey.electrical_updated.normalizedValue).toBe("2015");
+    expect(byKey.roof_condition.normalizedValue).toBe("Good");
+    expect(byKey.four_point_date.normalizedValue).toBe("01/15/2024");
   });
 
   it("parses city/state/zip from property_address when possible", () => {

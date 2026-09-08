@@ -383,7 +383,9 @@ export async function fillFromPropertyRecords(formData: FormData) {
       bundle.status === "not_found" ? "property-records-not-found" : "property-records-error";
     flashAction(dest, flash, "error");
   }
-  const applied = applyPropertyRecordsToSheet(lineRaw, sheet.values, bundle.facts);
+  // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
+  const freshPropertyValues = await loadFreshSheetValues(sheet.id, sheet.values);
+  const applied = applyPropertyRecordsToSheet(lineRaw, freshPropertyValues, bundle.facts);
   await db
     .update(quoteSheets)
     .set({ values: applied.values, updatedAt: new Date() })
@@ -636,6 +638,19 @@ async function persistSheetValues(
     .where(eq(quoteSheets.id, sheetId));
 }
 
+/** Re-read sheet values from DB so concurrent Fill (e.g. property records) is not wiped. */
+async function loadFreshSheetValues(
+  sheetId: string,
+  fallback: Record<string, QuoteSheetFieldValue>,
+): Promise<Record<string, QuoteSheetFieldValue>> {
+  const [fresh] = await db
+    .select({ values: quoteSheets.values })
+    .from(quoteSheets)
+    .where(eq(quoteSheets.id, sheetId));
+  if (!fresh?.values || typeof fresh.values !== "object") return fallback;
+  return fresh.values as Record<string, QuoteSheetFieldValue>;
+}
+
 async function logExtractionJob(input: {
   dealId: string;
   documentId?: string | null;
@@ -857,7 +872,10 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         { docType: doc.docType || "dec", dealId },
       );
       const source = "extracted";
-      const applied = applyExtractedToSheet(line, values, learned, { source });
+      // Re-read immediately before apply+write so concurrent property Fill (beds/baths)
+      // is not wiped by a stale in-memory snapshot from ~20s earlier.
+      const freshValues = await loadFreshSheetValues(sheet.id, values);
+      const applied = applyExtractedToSheet(line, freshValues, learned, { source });
       values = applied.values;
       // Persist IMMEDIATELY so a later audit FK failure / delete race cannot leave
       // "Filled N fields" jobs with an empty sheet.
@@ -1002,6 +1020,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
     return;
   }
 
+  // Re-read before public gap-fill / final write — never clobber concurrent Fill.
+  values = await loadFreshSheetValues(sheet.id, values);
   const publicLookup = await lookupPublicFacts(addressFromSheet(values));
   if (publicLookup.facts.length) {
     const publicApplied = applyPublicToSheet(line, values, publicLookup.facts);
@@ -1018,10 +1038,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
     });
   }
 
-  await db
-    .update(quoteSheets)
-    .set({ values, updatedAt: new Date() })
-    .where(eq(quoteSheets.id, sheet.id));
+  await persistSheetValues(sheet.id, values);
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");

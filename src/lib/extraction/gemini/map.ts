@@ -49,6 +49,13 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   wind_mit_form: ["wind_mit_form"],
   wind_mit_date: ["wind_mit_date"],
   terrain: ["terrain"],
+  electrical_year: ["electrical_year"],
+  plumbing_year: ["plumbing_year"],
+  hvac_year: ["hvac_year"],
+  water_heater_year: ["water_heater_year"],
+  electrical_updated: ["electrical_updated"],
+  roof_condition: ["roof_condition"],
+  four_point_date: ["four_point_date"],
 };
 
 export type GeminiFieldPayload = {
