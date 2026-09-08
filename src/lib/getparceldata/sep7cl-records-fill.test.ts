@@ -39,7 +39,7 @@ describe("sep7cl Fill from property records via getparceldata", () => {
     expect(key).toMatch(/GETPARCELDATA_API_KEY/);
     expect(key).toMatch(/No lookup ran/);
     expect(action).toMatch(/fillFromPropertyRecords/);
-    expect(action).toMatch(/searchGetParcelDataRecords/);
+    expect(action).toMatch(/orchestratePropertyFill/);
     expect(action).toMatch(/loadGetParcelDataApiKey/);
     expect(action).toMatch(/addressFromSheet/);
     expect(env).toMatch(/GETPARCELDATA_API_KEY=/);
@@ -49,7 +49,7 @@ describe("sep7cl Fill from property records via getparceldata", () => {
   it("still exposes Parcel ID / Assessed value / Records check on HO", () => {
     const home = fieldsForLine("home", "homeowners");
     expect(home.map((field) => field.key)).toEqual(
-      expect.arrayContaining(["parcel_id", "assessed_value", "records_check", "square_feet"]),
+      expect.arrayContaining(["parcel_id", "assessed_value", "records_check", "square_feet", "acres", "firm_panel"]),
     );
   });
 });

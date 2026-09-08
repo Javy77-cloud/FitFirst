@@ -1,0 +1,148 @@
+import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { fieldsForLine } from "@/lib/quote-sheet/catalog";
+import { mergePropertyFillFacts, toastForPropertyFill } from "./merge";
+import { wiredCountyIds } from "./counties/registry";
+import { factsFromLeeCountyPa } from "./counties/lee";
+import { factsFromFemaNfhl } from "./fema";
+import type { PropertyRecordsFact } from "@/lib/getparceldata/map";
+
+function source(file: string) {
+  return readFileSync(file, "utf8");
+}
+
+describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
+  it("keeps a single Fill from property records button and orchestrates free APIs", () => {
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    expect(sheet).toMatch(/Fill from property records/);
+    expect(sheet).toMatch(/fillFromPropertyRecords/);
+    expect(sheet.match(/Fill from property records/g)?.length).toBe(1);
+    const action = source("src/app/actions/quote-sheet.ts");
+    expect(action).toMatch(/orchestratePropertyFill/);
+    expect(action).toMatch(/toastForPropertyFill/);
+    expect(action).not.toMatch(/Fill from FEMA/);
+    expect(action).not.toMatch(/Fill from county/);
+  });
+
+  it("exposes catalog keys for widened parcel + FIRM fields", () => {
+    const home = fieldsForLine("home", "homeowners");
+    const keys = home.map((f) => f.key);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        "acres",
+        "living_units",
+        "square_feet",
+        "year_effective",
+        "land_value",
+        "improvement_value",
+        "sale_price",
+        "homestead",
+        "zoning",
+        "land_use",
+        "assessment_year",
+        "firm_panel",
+        "firm_effective_date",
+        "bfe",
+        "flood_zone",
+      ]),
+    );
+  });
+
+  it("wires Lee / Hillsborough / Orange free PA adapters", () => {
+    expect(wiredCountyIds()).toEqual(expect.arrayContaining(["lee", "hillsborough", "orange"]));
+  });
+
+  it("merges GetParcel → County PA → FEMA with FEMA winning flood_zone", () => {
+    const gpd: PropertyRecordsFact[] = [
+      { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "X", sourceLabel: "property records", kind: "county" },
+      { fieldKey: "acres", sheetKey: "acres", value: "0.3", sourceLabel: "property records", kind: "county" },
+    ];
+    const county: PropertyRecordsFact[] = [
+      { fieldKey: "beds", sheetKey: "beds", value: "3", sourceLabel: "county PA", kind: "county" },
+      { fieldKey: "square_feet", sheetKey: "square_feet", value: "1224", sourceLabel: "county PA", kind: "county" },
+    ];
+    const fema: PropertyRecordsFact[] = [
+      { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "AE", sourceLabel: "FEMA", kind: "fema" },
+      { fieldKey: "firm_panel", sheetKey: "firm_panel", value: "12071C0581F", sourceLabel: "FEMA", kind: "fema" },
+    ];
+    const { facts, sourcesUsed } = mergePropertyFillFacts({ getParcel: gpd, countyPa: county, fema });
+    expect(sourcesUsed).toEqual(["property-records", "county-pa", "fema"]);
+    expect(facts.find((f) => f.sheetKey === "flood_zone")?.value).toBe("AE");
+    expect(facts.find((f) => f.sheetKey === "flood_zone")?.sourceLabel).toBe("FEMA");
+    expect(facts.find((f) => f.sheetKey === "beds")?.value).toBe("3");
+    expect(facts.find((f) => f.sheetKey === "acres")?.value).toBe("0.3");
+    expect(toastForPropertyFill({ filledCount: 4, sourcesUsed })).toMatch(/county PA/);
+    expect(toastForPropertyFill({ filledCount: 4, sourcesUsed })).toMatch(/FEMA/);
+  });
+
+  it("maps Lee PA Cypress Point house fields from ArcGIS attrs", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        features: [
+          {
+            attributes: {
+              SITEADDR: "18025 CYPRESS POINT RD",
+              STRAP: "17462514000020270",
+              BEDROOMS: 3,
+              BATHROOMS: 2,
+              HEATEDAREA: 1224,
+              MAXSTORIES: 1,
+              GARAGE: "Y",
+              POOL: null,
+              GISACRES: 0.303,
+              MAXBUILTY: 1978,
+              JUST: 218997,
+              LAND: 99426,
+              LANDUSEDES: "SINGLE FAMILY RESIDENTIAL, GOLF COURSE",
+              O_NAME: "CASTELLANOS ROSA L &",
+              S_1AMOUNT: 325000,
+              S_1DATE: 1646370000000,
+            },
+          },
+        ],
+      }),
+    }));
+    const facts = await factsFromLeeCountyPa(
+      { address1: "18025 Cypress Point Rd", city: "Fort Myers", state: "FL", zip: "33967", county: "Lee" },
+      fetchImpl as unknown as typeof fetch,
+    );
+    expect(facts.find((f) => f.sheetKey === "beds")?.value).toBe("3");
+    expect(facts.find((f) => f.sheetKey === "baths")?.value).toBe("2");
+    expect(facts.find((f) => f.sheetKey === "square_feet")?.value).toBe("1224");
+    expect(facts.find((f) => f.sheetKey === "stories")?.value).toBe("1");
+    expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("garage");
+    expect(facts.find((f) => f.sheetKey === "acres")?.value).toBe("0.303");
+    expect(facts.every((f) => f.sourceLabel === "county PA")).toBe(true);
+    expect(facts.some((f) => f.sheetKey === "coverage_a")).toBe(false);
+  });
+
+  it("maps FEMA NFHL zone + FIRM panel", async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      const u = String(url);
+      if (u.includes("/28/query")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            features: [{ attributes: { FLD_ZONE: "AE", SFHA_TF: "T", STATIC_BFE: -9999 } }],
+          }),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          features: [{ attributes: { FIRM_PAN: "12071C0581F", EFF_DATE: 1219881600000 } }],
+        }),
+      };
+    });
+    const facts = await factsFromFemaNfhl(26.485, -81.807, fetchImpl as unknown as typeof fetch);
+    expect(facts.find((f) => f.sheetKey === "flood_zone")?.value).toBe("AE");
+    expect(facts.find((f) => f.sheetKey === "firm_panel")?.value).toBe("12071C0581F");
+    expect(facts.find((f) => f.sheetKey === "firm_effective_date")?.value).toMatch(/^2008-/);
+    expect(facts.find((f) => f.sheetKey === "bfe")).toBeUndefined();
+    expect(facts.every((f) => f.sourceLabel === "FEMA")).toBe(true);
+  });
+});

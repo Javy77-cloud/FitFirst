@@ -77,8 +77,9 @@ import {
   enrichPropertyOnAddressConfirm,
 } from "@/lib/property-enrichment/service";
 import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
-import { searchGetParcelDataRecords } from "@/lib/getparceldata/client";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
+import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
+import { toastForPropertyFill } from "@/lib/property-fill/merge";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -359,6 +360,7 @@ export async function fillFromPropertyRecords(formData: FormData) {
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   // Property Fill uses quote-sheet property address only (not applicant/Lead/PDF).
+  // One button → GetParcelData + County PA GIS + FEMA NFHL (empty-only merge).
   const sheetAddr = addressFromSheet(sheet.values);
   const address = {
     address1: sheetAddr.address1,
@@ -368,20 +370,20 @@ export async function fillFromPropertyRecords(formData: FormData) {
     county: sheet.values.county?.value?.trim() || "",
   };
   const apiKey = await loadGetParcelDataApiKey();
-  const lookup = await searchGetParcelDataRecords(address, apiKey);
+  const bundle = await orchestratePropertyFill({ address, apiKey });
   const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
-  if (lookup.status === "needs_key") {
+  if (bundle.status === "needs_key") {
     flashAction(dest, "property-records-needs-key", "error");
   }
-  if (lookup.status === "no_address") {
+  if (bundle.status === "no_address") {
     flashAction(dest, "property-records-no-address", "error");
   }
-  if (lookup.status !== "ok") {
+  if (bundle.status !== "ok") {
     const flash =
-      lookup.status === "not_found" ? "property-records-not-found" : "property-records-error";
+      bundle.status === "not_found" ? "property-records-not-found" : "property-records-error";
     flashAction(dest, flash, "error");
   }
-  const applied = applyPropertyRecordsToSheet(lineRaw, sheet.values, lookup.facts);
+  const applied = applyPropertyRecordsToSheet(lineRaw, sheet.values, bundle.facts);
   await db
     .update(quoteSheets)
     .set({ values: applied.values, updatedAt: new Date() })
@@ -394,7 +396,7 @@ export async function fillFromPropertyRecords(formData: FormData) {
     status: "done",
     filledKeys: applied.filledKeys,
     skippedKeys: applied.skippedKeys,
-    message: lookup.message,
+    message: bundle.message,
   });
   // Optional Why-drawer audit only — engine=api, NO synonym candidates from API.
   await insertExtractionAttempt({
@@ -404,17 +406,24 @@ export async function fillFromPropertyRecords(formData: FormData) {
     docType: "property_records",
     engine: "api",
     status: "done",
-    message: lookup.message,
+    message: bundle.message,
     documentQuality: "clean",
-    qualityNotes: ["property_records_api", "getparceldata"],
+    qualityNotes: [
+      "property_records_api",
+      "getparceldata",
+      ...bundle.sourcesUsed,
+    ],
   });
   await syncRiskFromSheet(dealId, applied.values, "fill");
   await syncHeaderFromSheet(dealId, applied.values, "fill");
   revalidatePath(`/deals/${dealId}`);
-  flashAction(
-    dest,
-    applied.filledKeys.length ? "property-records-filled" : "property-records-no-blanks",
-  );
+  const toast = applied.filledKeys.length
+    ? toastForPropertyFill({
+        filledCount: applied.filledKeys.length,
+        sourcesUsed: bundle.sourcesUsed,
+      })
+    : "property-records-no-blanks";
+  flashAction(dest, toast);
 }
 
 export async function fillQuoteSheet(formData: FormData) {

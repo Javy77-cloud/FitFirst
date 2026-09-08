@@ -50,7 +50,7 @@ describe("sep7ce Fill from property records", () => {
     const action = source("src/app/actions/quote-sheet.ts");
     expect(action).toMatch(/fillFromPropertyRecords/);
     expect(action).toMatch(/applyPropertyRecordsToSheet/);
-    expect(action).toMatch(/searchGetParcelDataRecords/);
+    expect(action).toMatch(/orchestratePropertyFill/);
     expect(action).toMatch(/loadGetParcelDataApiKey/);
   });
 

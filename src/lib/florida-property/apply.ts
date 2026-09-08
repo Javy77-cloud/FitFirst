@@ -91,11 +91,12 @@ export function applyPropertyRecordsToSheet(
       continue;
     }
     if (fieldIsBlank(current)) {
+      const label = (fact.sourceLabel || PROPERTY_RECORDS_LABEL).trim() || PROPERTY_RECORDS_LABEL;
       values[key] = {
         value: nextValue,
         status: "check",
         source: PROPERTY_RECORDS_SOURCE,
-        sourceLabel: PROPERTY_RECORDS_LABEL,
+        sourceLabel: label,
       };
       filledKeys.push(key);
       continue;
