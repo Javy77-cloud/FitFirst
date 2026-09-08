@@ -78,7 +78,7 @@ export function controlForFieldType(type: CustomFieldType): PipelineGridControl 
   if (type === "picklist" || type === "multi_select") return "picklist";
   if (type === "lookup") return "text";
   if (type === "checkbox") return "boolean";
-  if (type === "date") return "date";
+  if (type === "date" || type === "dob") return "date";
   if (type === "date_time") return "datetime";
   if (type === "number" || type === "percentage") return "number";
   if (type === "currency") return "currency";

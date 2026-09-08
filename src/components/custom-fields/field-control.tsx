@@ -218,7 +218,7 @@ function TypedControl({
   const inputType =
     field.type === "email"
       ? "email"
-      : field.type === "date"
+      : field.type === "date" || field.type === "dob"
         ? "date"
         : field.type === "date_time"
           ? "datetime-local"

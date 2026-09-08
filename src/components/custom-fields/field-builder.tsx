@@ -280,7 +280,7 @@ export function FieldBuilder({
   }
 
   function placeNewField(type: CustomFieldType, columnId: string, sectionId?: string, beforeKey?: string) {
-    const baseLabel = CUSTOM_FIELD_TYPE_LABELS[type];
+    const baseLabel = type === "dob" ? "Date of birth" : CUSTOM_FIELD_TYPE_LABELS[type];
     let key = slugifyFieldKey(baseLabel);
     if (fields.some((field) => field.key === key)) {
       key = `${key}_${Date.now().toString(36).slice(-4)}`;

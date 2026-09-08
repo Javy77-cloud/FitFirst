@@ -10,6 +10,7 @@ export const FIELD_TYPE_ICON_NAMES = {
   picklist: "List",
   multi_select: "ListChecks",
   date: "Calendar",
+  dob: "Cake",
   date_time: "CalendarClock",
   number: "Hash",
   currency: "DollarSign",

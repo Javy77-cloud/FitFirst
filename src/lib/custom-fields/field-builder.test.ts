@@ -50,6 +50,7 @@ describe("deal field builder", () => {
       "picklist",
       "multi_select",
       "date",
+      "dob",
       "date_time",
       "number",
       "currency",
@@ -59,6 +60,7 @@ describe("deal field builder", () => {
       "formula",
       "image",
     ]);
+    expect(CUSTOM_FIELD_TYPE_LABELS.dob).toBe("DOB");
     expect(CUSTOM_FIELD_TYPE_LABELS.image).toBe("Image upload");
     expect(CUSTOM_FIELD_TYPE_LABELS.multi_line).toBe("Notes");
     expect(PALETTE_ITEMS).toContain("section");
