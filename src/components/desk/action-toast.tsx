@@ -94,6 +94,8 @@ export function ActionToastHost() {
         next.delete(FLASH_KIND_PARAM);
         const qs = next.toString();
         router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+        // Strip must not restore a stale RSC payload (deleted docs reappearing).
+        router.refresh();
       });
     });
     return () => {

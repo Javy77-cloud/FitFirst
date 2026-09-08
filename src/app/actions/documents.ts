@@ -4,6 +4,7 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
@@ -680,84 +681,104 @@ export async function deleteUploadedFile(formData: FormData) {
     return;
   }
 
-  const versions = await db
-    .select()
-    .from(documentVersions)
-    .where(eq(documentVersions.documentId, documentId));
+  let refillDealId: string | null = null;
+  let refillLine = "";
+  try {
+    const versions = await db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, documentId));
 
-  await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
-  await db
-    .update(extractionJobs)
-    .set({ documentId: null })
-    .where(eq(extractionJobs.documentId, documentId));
-  await db
-    .update(fillFeedbackLogs)
-    .set({ documentId: null })
-    .where(eq(fillFeedbackLogs.documentId, documentId));
-  await db
-    .update(fillLearningLogs)
-    .set({ documentId: null })
-    .where(eq(fillLearningLogs.documentId, documentId));
-  // sep7cg audit: delete doc-tied corrections + attempts (field_attempts CASCADE).
-  // Learning retained in fill_learning_logs (nulled above). Synonym proposals kept.
-  const correctionRows = await db
-    .select({ id: extractionCorrections.id })
-    .from(extractionCorrections)
-    .where(eq(extractionCorrections.documentId, documentId));
-  const correctionIds = correctionRows.map((row) => row.id);
-  if (correctionIds.length > 0) {
+    await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
     await db
-      .update(synonymCandidates)
-      .set({ evidenceCorrectionId: null, updatedAt: new Date() })
-      .where(inArray(synonymCandidates.evidenceCorrectionId, correctionIds));
-    await db.delete(extractionCorrections).where(inArray(extractionCorrections.id, correctionIds));
-  }
-  const attemptRows = await db
-    .select({ id: extractionAttempts.id })
-    .from(extractionAttempts)
-    .where(eq(extractionAttempts.documentId, documentId));
-  const attemptIds = attemptRows.map((row) => row.id);
-  if (attemptIds.length > 0) {
+      .update(extractionJobs)
+      .set({ documentId: null })
+      .where(eq(extractionJobs.documentId, documentId));
     await db
-      .update(synonymCandidates)
-      .set({ evidenceAttemptId: null, updatedAt: new Date() })
-      .where(inArray(synonymCandidates.evidenceAttemptId, attemptIds));
-    await db.delete(extractionAttempts).where(inArray(extractionAttempts.id, attemptIds));
-  }
-  await db
-    .update(formFills)
-    .set({ sourceDocumentId: null })
-    .where(eq(formFills.sourceDocumentId, documentId));
-  await db.delete(signatureEnvelopes).where(eq(signatureEnvelopes.documentId, documentId));
-  await db.delete(documentVersions).where(eq(documentVersions.documentId, documentId));
-  await db.delete(documents).where(eq(documents.id, documentId));
-
-  await unlinkStoredPath(doc.storagePath);
-  for (const version of versions) {
-    if (version.storagePath !== doc.storagePath) {
-      await unlinkStoredPath(version.storagePath);
-    }
-  }
-
-  if (doc.dealId) {
-    const sheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, doc.dealId));
-    for (const sheet of sheets) {
+      .update(fillFeedbackLogs)
+      .set({ documentId: null })
+      .where(eq(fillFeedbackLogs.documentId, documentId));
+    await db
+      .update(fillLearningLogs)
+      .set({ documentId: null })
+      .where(eq(fillLearningLogs.documentId, documentId));
+    // sep7cg audit: delete doc-tied corrections + attempts (field_attempts CASCADE).
+    // Learning retained in fill_learning_logs (nulled above). Synonym proposals kept.
+    const correctionRows = await db
+      .select({ id: extractionCorrections.id })
+      .from(extractionCorrections)
+      .where(eq(extractionCorrections.documentId, documentId));
+    const correctionIds = correctionRows.map((row) => row.id);
+    if (correctionIds.length > 0) {
       await db
-        .update(quoteSheets)
-        .set({
-          values: clearExtractedSheetCells(sheet.values),
-          updatedAt: new Date(),
-        })
-        .where(eq(quoteSheets.id, sheet.id));
+        .update(synonymCandidates)
+        .set({ evidenceCorrectionId: null, updatedAt: new Date() })
+        .where(inArray(synonymCandidates.evidenceCorrectionId, correctionIds));
+      await db.delete(extractionCorrections).where(inArray(extractionCorrections.id, correctionIds));
     }
-    const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
-    const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
-    if (hasSource) {
-      await fillDealSheetIfReady(doc.dealId, String(formData.get("line") ?? ""));
+    const attemptRows = await db
+      .select({ id: extractionAttempts.id })
+      .from(extractionAttempts)
+      .where(eq(extractionAttempts.documentId, documentId));
+    const attemptIds = attemptRows.map((row) => row.id);
+    if (attemptIds.length > 0) {
+      await db
+        .update(synonymCandidates)
+        .set({ evidenceAttemptId: null, updatedAt: new Date() })
+        .where(inArray(synonymCandidates.evidenceAttemptId, attemptIds));
+      await db.delete(extractionAttempts).where(inArray(extractionAttempts.id, attemptIds));
     }
+    await db
+      .update(formFills)
+      .set({ sourceDocumentId: null })
+      .where(eq(formFills.sourceDocumentId, documentId));
+    await db.delete(signatureEnvelopes).where(eq(signatureEnvelopes.documentId, documentId));
+    await db.delete(documentVersions).where(eq(documentVersions.documentId, documentId));
+    await db.delete(documents).where(eq(documents.id, documentId));
+
+    await unlinkStoredPath(doc.storagePath);
+    for (const version of versions) {
+      if (version.storagePath !== doc.storagePath) {
+        await unlinkStoredPath(version.storagePath);
+      }
+    }
+
+    if (doc.dealId) {
+      const sheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, doc.dealId));
+      for (const sheet of sheets) {
+        await db
+          .update(quoteSheets)
+          .set({
+            values: clearExtractedSheetCells(sheet.values),
+            updatedAt: new Date(),
+          })
+          .where(eq(quoteSheets.id, sheet.id));
+      }
+      const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
+      const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
+      if (hasSource) {
+        // Do not await Fill here — it blocked redirect so the Documents list stayed stale
+        // until the last source doc was removed (no Fill) or a hard refresh.
+        refillDealId = doc.dealId;
+        refillLine = String(formData.get("line") ?? "");
+      }
+    }
+  } catch (error) {
+    console.error("[deleteUploadedFile]", error);
+    const dealId = doc.dealId || String(formData.get("dealId") ?? "").trim();
+    const returnTo = String(formData.get("returnTo") ?? "").trim();
+    const message = "Could not delete document";
+    if (returnTo) redirect(withFlash(returnTo, message, "error"));
+    if (dealId) flashAction(`/deals/${dealId}?tab=documents`, message, "error");
+    throw error;
   }
 
   revalidateDocumentPaths(doc);
+  if (refillDealId) {
+    const dealId = refillDealId;
+    const line = refillLine;
+    after(() => fillDealSheetIfReady(dealId, line));
+  }
   const returnTo = String(formData.get("returnTo") ?? "").trim();
   if (returnTo) {
     redirect(withFlash(returnTo, "document-deleted"));

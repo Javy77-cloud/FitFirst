@@ -9,7 +9,7 @@ function source(file: string) {
 const MENU = "src/components/documents/file-action-menu.tsx";
 
 const FILE_LIST_SURFACES = [
-  { file: "src/components/deal/documents-panel.tsx", label: "Deal Documents rows" },
+  { file: "src/components/deal/source-file-row.tsx", label: "Deal Documents rows" },
   { file: "src/components/leads/lead-line-documents.tsx", label: "Lead line files" },
   { file: "src/components/policy/policy-file-attach.tsx", label: "Policy attachments" },
   { file: "src/app/policies/[id]/page.tsx", label: "Policy issued files" },
@@ -91,7 +91,10 @@ describe("standard file action menu", () => {
       expect(text, `${row.label} no ad-hoc delete`).not.toMatch(/DeleteUploadedFileButton/);
     }
     const docs = source("src/components/deal/documents-panel.tsx");
-    expect(docs).toMatch(/data-ff-file-action-menu|FileActionMenu/);
-    expect(docs.indexOf("<FileActionMenu")).toBeLessThan(docs.indexOf("{doc.filename}"));
+    expect(docs).toMatch(/SourceFileRow/);
+    const row = source("src/components/deal/source-file-row.tsx");
+    expect(row).toMatch(/data-ff-file-action-menu|FileActionMenu/);
+    expect(row.indexOf("<FileActionMenu")).toBeLessThan(row.indexOf("{doc.filename}"));
+    expect(row).toMatch(/onDeleted/);
   });
 });

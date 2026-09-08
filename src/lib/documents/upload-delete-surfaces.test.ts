@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const SURFACES: Array<{ file: string; label: string; stored: boolean }> = [
-  { file: "src/components/deal/documents-panel.tsx", label: "Deal source docs + quote PDFs", stored: true },
+  { file: "src/components/deal/source-file-row.tsx", label: "Deal source docs + quote PDFs", stored: true },
   { file: "src/components/deal/sheet-drop.tsx", label: "Quote Sheet drop", stored: true },
   { file: "src/components/deal/deal-files.tsx", label: "Deal source files table", stored: true },
   { file: "src/components/deal/source-vs-sheet.tsx", label: "Source vs sheet", stored: true },
@@ -66,6 +66,9 @@ describe("upload surfaces offer delete + one confirm", () => {
     expect(action).toMatch(/delete\(extractedFields\)/);
     expect(action).toMatch(/clearExtractedSheetCells/);
     expect(action).toMatch(/unlinkStoredPath/);
+    // Refill must not block redirect / list refresh (await Fill left stale rows until last doc).
+    expect(action).toMatch(/after\(\(\) => fillDealSheetIfReady/);
+    expect(action).not.toMatch(/await fillDealSheetIfReady\(doc\.dealId/);
   });
 
   it("Javy confirm asks Are you sure you want to delete … once", () => {

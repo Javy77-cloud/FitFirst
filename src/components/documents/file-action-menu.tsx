@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Download, Eye, Replace, Trash2 } from "lucide-react";
 import { deleteUploadedFile } from "@/app/actions/documents";
@@ -31,6 +31,8 @@ export type FileActionMenuProps = {
   returnTo?: string;
   className?: string;
   triggerClassName?: string;
+  /** Optimistic hide after the one confirm (deal Documents list). */
+  onDeleted?: () => void;
   children: ReactNode;
 };
 
@@ -46,15 +48,19 @@ export function FileActionMenu({
   returnTo,
   className,
   triggerClassName,
+  onDeleted,
   children,
 }: FileActionMenuProps) {
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceFormRef = useRef<HTMLFormElement>(null);
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
+  const [gone, setGone] = useState(false);
   const viewHref = fileViewHref(documentId);
   const downloadHref = fileDownloadHref(documentId);
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);
+
+  if (gone) return null;
 
   return (
     <div className={cn("flex min-w-0 items-center gap-1", className)} data-ff-file-action-menu="">
@@ -76,7 +82,15 @@ export function FileActionMenu({
         />
       </form>
       {/* One HardDeleteForm: menu Delete + visible trash both click this submitter (one confirm). */}
-      <HardDeleteForm action={deleteUploadedFile} subject={subject} className="hidden">
+      <HardDeleteForm
+        action={deleteUploadedFile}
+        subject={subject}
+        className="hidden"
+        onConfirmed={() => {
+          setGone(true);
+          onDeleted?.();
+        }}
+      >
         <input type="hidden" name="documentId" value={documentId} />
         {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}

@@ -28,6 +28,7 @@ describe("site-wide action confirmation toast", () => {
     expect(host).toMatch(/readPersistedFlash/);
     expect(host).toMatch(/requestAnimationFrame/);
     expect(host).toMatch(/router\.replace/);
+    expect(host).toMatch(/router\.refresh/);
 
     const layout = source("src/app/layout.tsx");
     expect(layout).toMatch(/ActionToastHost/);
@@ -159,9 +160,11 @@ describe("site-wide action confirmation toast", () => {
     const persistAt = host.indexOf("showToast(message, kind)");
     const rafAt = host.indexOf("requestAnimationFrame");
     const replaceAt = host.lastIndexOf("router.replace");
+    const refreshAt = host.lastIndexOf("router.refresh");
     expect(persistAt).toBeGreaterThan(-1);
     expect(rafAt).toBeGreaterThan(persistAt);
     expect(replaceAt).toBeGreaterThan(rafAt);
+    expect(refreshAt).toBeGreaterThan(replaceAt);
 
     const flash = source("src/lib/flash.ts");
     expect(flash).toMatch(/FLASH_STORAGE_KEY = "ff-action-toast"/);
