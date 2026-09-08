@@ -4,7 +4,9 @@ import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const MAX_ATTEMPTS = 3;
+/** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
+const MAX_ATTEMPTS = 4;
+const WIND_MIT_MAX_ATTEMPTS = 6;
 const RETRYABLE_STATUS = new Set([429, 503]);
 
 export type GeminiClientResult = {
@@ -77,9 +79,31 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isWindMitDoc(docType?: string | null): boolean {
+  const t = (docType ?? "").trim().toLowerCase();
+  return t === "wind_mit" || t.includes("wind");
+}
+
+function maxAttemptsFor(docType?: string | null): number {
+  return isWindMitDoc(docType) ? WIND_MIT_MAX_ATTEMPTS : MAX_ATTEMPTS;
+}
+
+/** Exponential backoff with jitter. Honors Retry-After seconds when present. */
+function retryDelayMs(attempt: number, response: Response | null): number {
+  const retryAfter = response?.headers?.get?.("retry-after");
+  if (retryAfter) {
+    const secs = Number(retryAfter);
+    if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 20_000);
+  }
+  const base = Math.min(1000 * 2 ** (attempt - 1), 12_000);
+  const jitter = Math.floor(Math.random() * 400);
+  return base + jitter;
+}
+
 /**
  * Send PDF bytes to Gemini (Google AI Studio / generativelanguage REST).
- * Model from GEMINI_MODEL (default gemini-3.6-flash). Retries 429/503.
+ * Model from GEMINI_MODEL (default gemini-3.6-flash). Retries 429/503 with
+ * exponential backoff; wind_mit gets extra attempts for large PDFs.
  */
 export async function extractWithGeminiPdf(
   pdfBytes: Buffer | Uint8Array,
@@ -123,9 +147,10 @@ export async function extractWithGeminiPdf(
   };
 
   const fetchImpl = options?.fetchImpl ?? fetch;
+  const maxAttempts = maxAttemptsFor(docType);
   let response: Response | null = null;
   let errText = "";
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       response = await fetchImpl(url, {
         method: "POST",
@@ -134,8 +159,8 @@ export async function extractWithGeminiPdf(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "gemini_network_error";
-      if (attempt < MAX_ATTEMPTS) {
-        await sleep(400 * attempt);
+      if (attempt < maxAttempts) {
+        await sleep(retryDelayMs(attempt, null));
         continue;
       }
       return emptyFail(docType, message, ["gemini_network_error"]);
@@ -143,8 +168,8 @@ export async function extractWithGeminiPdf(
 
     if (response.ok) break;
     errText = await response.text().catch(() => "");
-    if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS) {
-      await sleep(600 * attempt);
+    if (RETRYABLE_STATUS.has(response.status) && attempt < maxAttempts) {
+      await sleep(retryDelayMs(attempt, response));
       continue;
     }
     const snippet = apiErrorSnippet(errText);

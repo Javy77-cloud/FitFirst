@@ -36,6 +36,7 @@ import {
 } from "@/lib/db/schema";
 import {
   clearExtractedSheetCells,
+  clearExtractedSheetCellsFromDoc,
   uploadedFileDeleteMode,
 } from "@/lib/documents/delete-file";
 import { inferDocType } from "@/lib/ingest/identity";
@@ -270,7 +271,7 @@ export async function uploadDocument(formData: FormData) {
     redirect(withFlash(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }), "document-uploaded"));
   }
   if (last?.dealId) {
-    flashAction(`/deals/${last.dealId}?tab=documents`, "document-uploaded");
+    flashAction(`/deals/${last.dealId}?tab=documents&notice=filled`, "document-uploaded");
   }
 }
 
@@ -484,7 +485,10 @@ async function fillDealSheetIfReady(dealId: string, lineHint: string) {
   const line = (lineHint || deal?.quotingLine || "home") as ShopLine;
   try {
     await runFillDealSheets(dealId, line);
+    // Soft-refresh deal Documents + sheet so CHECK cells appear without a hard reload.
     revalidatePath(`/deals/${dealId}`);
+    revalidatePath(`/deals/${dealId}`, "page");
+    revalidatePath("/documents");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Fill failed";
     try {
@@ -767,18 +771,23 @@ export async function deleteUploadedFile(formData: FormData) {
     }
 
     if (doc.dealId) {
+      const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
+      const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
       const sheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, doc.dealId));
       for (const sheet of sheets) {
+        // Only wipe this file's extract cells (or all extract cells if no source docs remain).
+        // Clearing everything before refill left Javy with an empty sheet when Fill raced/failed.
+        const nextValues = hasSource
+          ? clearExtractedSheetCellsFromDoc(sheet.values, doc.filename)
+          : clearExtractedSheetCells(sheet.values);
         await db
           .update(quoteSheets)
           .set({
-            values: clearExtractedSheetCells(sheet.values),
+            values: nextValues,
             updatedAt: new Date(),
           })
           .where(eq(quoteSheets.id, sheet.id));
       }
-      const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
-      const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
       if (hasSource) {
         // Do not await Fill here — it blocked redirect so the Documents list stayed stale
         // until the last source doc was removed (no Fill) or a hard refresh.

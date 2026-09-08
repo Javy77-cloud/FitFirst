@@ -6,7 +6,7 @@ import { PHOTO_DEC_TEXT } from "@/lib/fixtures/sample-photo-dec";
 import { TINY_PNG, buildImageOnlyPdf, buildTextLayerPdf } from "@/lib/fixtures/build-pdf";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { HOME_FIELDS, emptySheetValues } from "@/lib/quote-sheet/catalog";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./legacy_extraction/extract-text";
 import { extractFromImage, recognizeImageText } from "./ocr";
 import { isPdfUpload, pdfTextLooksEmpty, readUploadText } from "./pdf";
 import { extractTextWithPdfjs, rasterizePdfPages, rasterizeWithPdfjs } from "./pdf-raster";

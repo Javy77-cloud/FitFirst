@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clearExtractedSheetCells,
+  clearExtractedSheetCellsFromDoc,
   deleteUploadedFileSubject,
   uploadedFileDeleteMode,
   visibleUploadedFiles,
@@ -53,5 +54,31 @@ describe("clearExtractedSheetCells", () => {
     expect(next.roof_year).toEqual({ value: "", status: "missing", source: "blank" });
     expect(next.coverage_a).toEqual({ value: "425000", status: "confirmed", source: "javy" });
     expect(next.notes).toEqual({ value: "typed", status: "confirmed", source: "agent" });
+  });
+});
+
+describe("clearExtractedSheetCellsFromDoc", () => {
+  it("clears only cells that cite the deleted filename", () => {
+    const next = clearExtractedSheetCellsFromDoc(
+      {
+        coverage_a: {
+          value: "425000",
+          status: "check",
+          source: "extracted",
+          sourceLabel: "Jennifer Brooks Tower Hilll HO3 Dec Page.pdf",
+        },
+        roof_shape: {
+          value: "Hip",
+          status: "check",
+          source: "extracted",
+          sourceLabel: "Don Myler wind mitigation.pdf",
+        },
+        notes: { value: "typed", status: "confirmed", source: "agent" },
+      },
+      "Jennifer Brooks Tower Hilll HO3 Dec Page.pdf",
+    );
+    expect(next.coverage_a).toEqual({ value: "", status: "missing", source: "blank" });
+    expect(next.roof_shape?.value).toBe("Hip");
+    expect(next.notes?.value).toBe("typed");
   });
 });

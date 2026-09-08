@@ -1,6 +1,6 @@
 import path from "node:path";
 import { looksLikePdf } from "@/lib/files/urls";
-import { extractFieldsFromText, type ExtractedField } from "./extract";
+import type { ExtractedField } from "./extract";
 
 export type IngestEngine = "pdf_text" | "ocr";
 
@@ -81,7 +81,7 @@ export async function recognizeImageText(buffer: Buffer): Promise<string> {
   return (result.data.text ?? "").replace(/\r/g, "").trim();
 }
 
-/** Photo / scan OCR. Shares extractFieldsFromText with the PDF path. Invents nothing. */
+/** Photo / scan OCR text + archived field map (tests/helpers). Fill from source uses Gemini, not this. */
 export async function extractFromImage(
   buffer: Buffer,
   filename?: string,
@@ -107,16 +107,12 @@ export async function extractFromImage(
         message: `Photo OCR found no readable text on ${name}. Try a sharper scan. ${PHOTO_OCR_ENGINE}`,
       };
     }
-    const extracted = extractFieldsFromText(text);
-    const keys = extracted.fields.map((f) => f.fieldKey);
+    // Text only — field mapping for Fill is Gemini. Legacy synonym extract is archived.
     return {
       status: "done",
-      fields: extracted.fields,
+      fields: [] as ExtractedField[],
       text,
-      message:
-        keys.length === 0
-          ? `Photo OCR read ${name} but found no labeled Quote Sheet fields. Type the blanks or try a clearer photo. ${PHOTO_OCR_ENGINE}`
-          : `Photo OCR mapped ${keys.join(", ")} from ${name}. Needs review fields need a glance. ${PHOTO_OCR_ENGINE}`,
+      message: `Photo OCR read ${name}. Fill from source uses Gemini for wind_mit / four_point / dec. ${PHOTO_OCR_ENGINE}`,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Photo OCR failed";

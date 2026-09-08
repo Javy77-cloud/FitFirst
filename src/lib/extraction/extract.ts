@@ -1,7 +1,9 @@
 /**
  * Extraction public types + risk helpers.
  * Synonym / checkbox / field-map text extract lives under legacy_extraction/
- * and is NOT used by Fill from source (Gemini). Re-exported only for tests / OCR helpers.
+ * and is NOT used by Fill from source (Gemini).
+ * Do not re-export extractFieldsFromText from this module — import the archived
+ * path only from tests / OCR helpers that intentionally exercise legacy.
  */
 
 export type ExtractedField = {
@@ -38,13 +40,6 @@ export type ExtractionResult = {
   unmappedLabels: UnmappedExtractLabel[];
   fieldMapDocType: string | null;
 };
-
-/** LEGACY re-export — tests / OCR only. Fill from source uses Gemini. */
-export {
-  extractFieldsFromText,
-  assessDocumentQuality,
-  normalizeExtractText,
-} from "./legacy_extraction/extract-text";
 
 export function fieldKeyToRiskColumn(fieldKey: string): string | null {
   const map: Record<string, string> = {

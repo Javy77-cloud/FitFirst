@@ -38,3 +38,22 @@ export function clearExtractedSheetCells(
   }
   return next;
 }
+
+/** Clear extract/photo cells that cite this filename so sibling docs keep their fills. */
+export function clearExtractedSheetCellsFromDoc(
+  values: Record<string, QuoteSheetFieldValue>,
+  filename: string,
+): Record<string, QuoteSheetFieldValue> {
+  const needle = filename.trim().toLowerCase();
+  if (!needle) return clearExtractedSheetCells(values);
+  const next: Record<string, QuoteSheetFieldValue> = { ...values };
+  for (const [key, cell] of Object.entries(next)) {
+    if (cell.source !== "extracted" && cell.source !== "photo-ocr") continue;
+    const label = (cell.sourceLabel ?? "").trim().toLowerCase();
+    // Match filename in sourceLabel; also clear unlabeled legacy extract cells.
+    if (!label || label.includes(needle)) {
+      next[key] = { value: "", status: "missing", source: "blank" };
+    }
+  }
+  return next;
+}

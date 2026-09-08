@@ -1,3 +1,4 @@
+import { BackgroundFillRefresh } from "@/components/deal/background-fill-refresh";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetWorkspace } from "@/components/deal/master-sheet-compare";
 import { SourceFileRow } from "@/components/deal/source-file-row";
@@ -13,6 +14,7 @@ export function DocumentsPanel({
   riskId,
   docs,
   fields,
+  jobs,
   health,
   sheetLine,
   sheetValues,
@@ -20,6 +22,7 @@ export function DocumentsPanel({
   unlocked,
   approvedBy,
   product,
+  pendingFill = false,
 }: {
   dealId: string;
   riskId: string;
@@ -33,6 +36,7 @@ export function DocumentsPanel({
   unlocked: boolean;
   approvedBy?: string | null;
   product: SheetProduct;
+  pendingFill?: boolean;
 }) {
   const sourceDocs = asList(docs).filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
   const lineDocs = sourceDocs.filter((d) => lineFromTags(d.tags));
@@ -41,6 +45,7 @@ export function DocumentsPanel({
 
   return (
     <div className="flex w-full flex-col space-y-4" data-ff-deal-docs data-ff-docs-zoom="100">
+      <BackgroundFillRefresh dealId={dealId} jobs={(jobs as { engine?: string; status?: string; filledKeys?: string[] }[]) ?? []} enabled={pendingFill} />
       <div className="w-full min-w-0" data-ff-deal-upload>
         <section className="ff-card w-full p-3">
           <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>

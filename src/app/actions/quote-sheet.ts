@@ -607,6 +607,64 @@ export async function markPasteFieldWrong(formData: FormData) {
   revalidatePath("/logs/synonym-candidates");
 }
 
+
+async function persistSheetValues(
+  sheetId: string,
+  values: Record<string, QuoteSheetFieldValue>,
+) {
+  await db
+    .update(quoteSheets)
+    .set({ values, updatedAt: new Date() })
+    .where(eq(quoteSheets.id, sheetId));
+}
+
+async function logExtractionJob(input: {
+  dealId: string;
+  documentId?: string | null;
+  quoteSheetId: string;
+  engine: string;
+  status: string;
+  filledKeys: string[];
+  skippedKeys: string[];
+  message: string;
+}) {
+  try {
+    await db.insert(extractionJobs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: input.dealId,
+      documentId: input.documentId ?? null,
+      quoteSheetId: input.quoteSheetId,
+      engine: input.engine,
+      status: input.status,
+      filledKeys: input.filledKeys,
+      skippedKeys: input.skippedKeys,
+      message: input.message,
+    });
+  } catch (error) {
+    // Document may have been deleted mid-fill (FK). Retry without documentId.
+    const message = error instanceof Error ? error.message : "job insert failed";
+    if (input.documentId) {
+      try {
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId: input.dealId,
+          documentId: null,
+          quoteSheetId: input.quoteSheetId,
+          engine: input.engine,
+          status: input.status,
+          filledKeys: input.filledKeys,
+          skippedKeys: input.skippedKeys,
+          message: input.message,
+        });
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+    console.error("[logExtractionJob]", message.slice(0, 300));
+  }
+}
+
 export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
   const sheet = await ensureQuoteSheet(dealId, line);
   const docs = await db
@@ -783,66 +841,88 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       const source = "extracted";
       const applied = applyExtractedToSheet(line, values, learned, { source });
       values = applied.values;
+      // Persist IMMEDIATELY so a later audit FK failure / delete race cannot leave
+      // "Filled N fields" jobs with an empty sheet.
+      await persistSheetValues(sheet.id, values);
+      console.info("[runFillQuoteSheet] persisted", {
+        dealId,
+        filename: doc.filename,
+        filledKeyNames: applied.filledKeys,
+      });
       await syncNamedInsuredFromExtract(dealId, extracted.fields);
 
-      const attempt = await insertExtractionAttempt({
-        dealId,
-        documentId: doc.id,
-        quoteSheetId: sheet.id,
-        shopLine: line,
-        docType: doc.docType || extracted.fieldMapDocType || "",
-        docTypeInferred: !doc.docType,
-        engine,
-        documentQuality: extracted.documentQuality,
-        qualityNotes: extracted.qualityNotes,
-        status: extracted.glanceRequired ? "needs_glance" : "done",
-        message:
-          applied.filledKeys.length === 0
-            ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
-            : `Filled ${applied.filledKeys.length} fields from ${doc.filename}.`,
-        startedAt,
-      });
-      await insertFieldAttempts({
-        attemptId: attempt.id,
-        line,
-        fields: extracted.fields,
-        filledSheetKeys: applied.filledKeys,
-        sourceLabel: sourceLabelForDoc(doc.docType, doc.filename),
-      });
+      const doneMessage =
+        applied.filledKeys.length === 0
+          ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
+          : `Filled ${applied.filledKeys.length} fields from ${doc.filename}. CHECK = use the value. Source files stay on Files.`;
 
-      await db.delete(extractedFields).where(eq(extractedFields.documentId, doc.id));
-      for (const field of extracted.fields) {
-        await db.insert(extractedFields).values({
-          tenantId: DEFAULT_TENANT_ID,
+      try {
+        const attempt = await insertExtractionAttempt({
+          dealId,
           documentId: doc.id,
-          riskId: doc.riskId,
-          fieldKey: field.fieldKey,
-          rawValue: field.rawValue,
-          normalizedValue: field.normalizedValue,
-          confidence: field.confidence.toFixed(3),
-          flagged: field.flagged,
-          appliedToRisk: applied.filledKeys.includes(
-            extractKeyToSheetKey(line, field.fieldKey) ?? field.fieldKey,
-          ),
+          quoteSheetId: sheet.id,
+          shopLine: line,
+          docType: doc.docType || extracted.fieldMapDocType || "",
+          docTypeInferred: !doc.docType,
+          engine,
+          documentQuality: extracted.documentQuality,
+          qualityNotes: extracted.qualityNotes,
+          status: extracted.glanceRequired ? "needs_glance" : "done",
+          message:
+            applied.filledKeys.length === 0
+              ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
+              : `Filled ${applied.filledKeys.length} fields from ${doc.filename}.`,
+          startedAt,
+        });
+        await insertFieldAttempts({
+          attemptId: attempt.id,
+          line,
+          fields: extracted.fields,
+          filledSheetKeys: applied.filledKeys,
+          sourceLabel: sourceLabelForDoc(doc.docType, doc.filename),
+        });
+
+        await db.delete(extractedFields).where(eq(extractedFields.documentId, doc.id));
+        for (const field of extracted.fields) {
+          await db.insert(extractedFields).values({
+            tenantId: DEFAULT_TENANT_ID,
+            documentId: doc.id,
+            riskId: doc.riskId,
+            fieldKey: field.fieldKey,
+            rawValue: field.rawValue,
+            normalizedValue: field.normalizedValue,
+            confidence: field.confidence.toFixed(3),
+            flagged: field.flagged,
+            appliedToRisk: applied.filledKeys.includes(
+              extractKeyToSheetKey(line, field.fieldKey) ?? field.fieldKey,
+            ),
+          });
+        }
+        for (const unmapped of extracted.unmappedLabels) {
+          await db.insert(extractedFields).values({
+            tenantId: DEFAULT_TENANT_ID,
+            documentId: doc.id,
+            riskId: doc.riskId,
+            fieldKey: "needs_review",
+            rawValue: `${unmapped.sourceLabel}: ${unmapped.rawValue}`,
+            normalizedValue: "",
+            confidence: "0.000",
+            flagged: true,
+            appliedToRisk: false,
+            reviewerNote: unmapped.sourceLabel,
+          });
+        }
+      } catch (auditError) {
+        const auditMessage =
+          auditError instanceof Error ? auditError.message : "audit insert failed";
+        console.error("[runFillQuoteSheet] audit failed after persist", {
+          dealId,
+          filename: doc.filename,
+          auditMessage: auditMessage.slice(0, 400),
         });
       }
-      for (const unmapped of extracted.unmappedLabels) {
-        await db.insert(extractedFields).values({
-          tenantId: DEFAULT_TENANT_ID,
-          documentId: doc.id,
-          riskId: doc.riskId,
-          fieldKey: "needs_review",
-          rawValue: `${unmapped.sourceLabel}: ${unmapped.rawValue}`,
-          normalizedValue: "",
-          confidence: "0.000",
-          flagged: true,
-          appliedToRisk: false,
-          reviewerNote: unmapped.sourceLabel,
-        });
-      }
 
-      await db.insert(extractionJobs).values({
-        tenantId: DEFAULT_TENANT_ID,
+      await logExtractionJob({
         dealId,
         documentId: doc.id,
         quoteSheetId: sheet.id,
@@ -850,19 +930,19 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         status: "done",
         filledKeys: applied.filledKeys,
         skippedKeys: applied.skippedKeys,
-        message:
-          applied.filledKeys.length === 0
-            ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
-            : `Filled ${applied.filledKeys.length} fields from ${doc.filename}. CHECK = use the value. Source files stay on Files.`,
+        message: doneMessage,
       });
-      await db
-        .update(documents)
-        .set({ status: extracted.glanceRequired ? "needs_glance" : "extracted" })
-        .where(eq(documents.id, doc.id));
+      try {
+        await db
+          .update(documents)
+          .set({ status: extracted.glanceRequired ? "needs_glance" : "extracted" })
+          .where(eq(documents.id, doc.id));
+      } catch {
+        /* doc may have been deleted mid-fill */
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Extract failed";
-      await db.insert(extractionJobs).values({
-        tenantId: DEFAULT_TENANT_ID,
+      await logExtractionJob({
         dealId,
         documentId: doc.id,
         quoteSheetId: sheet.id,
@@ -872,17 +952,21 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         skippedKeys: [],
         message,
       });
-      await insertExtractionAttempt({
-        dealId,
-        documentId: doc.id,
-        quoteSheetId: sheet.id,
-        shopLine: line,
-        docType: doc.docType || "",
-        engine: classifyIngest(doc.mimeType, doc.filename, buffer).engine === "ocr" ? "ocr" : "pdf_text",
-        status: "failed",
-        message,
-        startedAt,
-      });
+      try {
+        await insertExtractionAttempt({
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          shopLine: line,
+          docType: doc.docType || "",
+          engine: classifyIngest(doc.mimeType, doc.filename, buffer).engine === "ocr" ? "ocr" : "pdf_text",
+          status: "failed",
+          message,
+          startedAt,
+        });
+      } catch {
+        /* audit optional — sheet values already persisted when apply succeeded */
+      }
     }
   }
 

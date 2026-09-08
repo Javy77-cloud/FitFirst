@@ -4,7 +4,7 @@ import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { anaHomeSheetValues } from "@/lib/quote-sheet/ana-home";
 import fixture from "@/lib/fixtures/ana-dib-ho3-2026-09-02.json";
 import { PHOTO_DEC_TEXT, loadSamplePhotoDecPng } from "@/lib/fixtures/sample-photo-dec";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./legacy_extraction/extract-text";
 import {
   classifyIngest,
   extractFromImage,
@@ -96,7 +96,7 @@ describe("photo OCR ingest", () => {
   });
 
   it(
-    "OCRs the in-repo fixture image into the same mapped fields",
+    "OCRs the in-repo fixture image; archived map still works on OCR text",
     { timeout: 60_000 },
     async () => {
       const ocr = await extractFromImage(
@@ -106,7 +106,9 @@ describe("photo OCR ingest", () => {
       );
       expect(ocr.status).toBe("done");
       expect(ocr.text).toMatch(/Luis Vega/i);
-      const byKey = Object.fromEntries(ocr.fields.map((f) => [f.fieldKey, f]));
+      // Fill from source uses Gemini; archived synonym map is intentional here only.
+      const extracted = extractFieldsFromText(ocr.text);
+      const byKey = Object.fromEntries(extracted.fields.map((f) => [f.fieldKey, f]));
       expect(byKey.named_insured.normalizedValue).toBe("Luis Vega");
       expect(byKey.year_built.normalizedValue).toBe("2011");
       expect(byKey.roof_year.normalizedValue).toBe("2019");
@@ -116,7 +118,7 @@ describe("photo OCR ingest", () => {
       expect(byKey.hurricane_deductible.normalizedValue).toBe("2%");
       expect(byKey.aop_deductible.normalizedValue).toBe("2500");
 
-      const filled = applyExtractedToSheet("home", emptySheetValues("home"), ocr.fields, {
+      const filled = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields, {
         source: "photo-ocr",
       });
       expect(filled.values.coverage_a.source).toBe("photo-ocr");

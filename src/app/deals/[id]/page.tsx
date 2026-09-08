@@ -251,6 +251,7 @@ export default async function DealPage({
                         docs={docs}
                         fields={fields}
                         jobs={jobs}
+                        pendingFill={notice === "filled"}
                         health={health}
                         sheetLine={sheetLine}
                         sheetValues={activeSheet.values}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./legacy_extraction/extract-text";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { MELBOURNE_FOUR_POINT_TEXT, MELBOURNE_WIND_MIT_TEXT } from "@/lib/fixtures/sample-docs";

@@ -8,7 +8,7 @@ import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { anaHomeSheetValues } from "@/lib/quote-sheet/ana-home";
 import fixture from "@/lib/fixtures/ana-dib-ho3-2026-09-02.json";
-import { extractFieldsFromText } from "./extract";
+import { extractFieldsFromText } from "./legacy_extraction/extract-text";
 
 describe("dec extraction coverage vs the 12-field miss", () => {
   it("maps a full Francisco Garcia dec onto 24+ Home Quote Sheet fields", () => {

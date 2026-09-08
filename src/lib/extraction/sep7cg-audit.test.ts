@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
-import { extractFieldsFromText, type ExtractedField } from "@/lib/extraction/extract";
+import type { ExtractedField } from "@/lib/extraction/extract";
+import { extractFieldsFromText } from "@/lib/extraction/legacy_extraction/extract-text";
 import { nextCandidateTimesSeen, isCoverageALocked } from "@/lib/extraction/audit-helpers";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
 import { DEAL_ID } from "@/lib/fixtures/ids";
