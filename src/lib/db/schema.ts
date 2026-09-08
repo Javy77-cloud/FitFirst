@@ -1324,6 +1324,123 @@ export const fillLearningLogs = pgTable(
   ],
 );
 
+
+/** Per-document Fill audit row. Evidence only — never mutates SYNONYM_DICTIONARY. */
+export const extractionAttempts = pgTable(
+  "extraction_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    quoteSheetId: uuid("quote_sheet_id").references(() => quoteSheets.id),
+    shopLine: text("shop_line").notNull().default("home"),
+    docType: text("doc_type").notNull().default(""),
+    docTypeInferred: boolean("doc_type_inferred").notNull().default(false),
+    engine: text("engine").notNull(),
+    documentQuality: text("document_quality"),
+    qualityNotes: jsonb("quality_notes").$type<string[]>().notNull().default([]),
+    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    status: text("status").notNull(),
+    message: text("message"),
+    ...timestamps,
+  },
+  (t) => [
+    index("extraction_attempts_deal_idx").on(t.tenantId, t.dealId),
+    index("extraction_attempts_doc_idx").on(t.tenantId, t.documentId),
+  ],
+);
+
+/** Per-field hit inside an extraction attempt. */
+export const extractionFieldAttempts = pgTable(
+  "extraction_field_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    attemptId: uuid("attempt_id")
+      .notNull()
+      .references(() => extractionAttempts.id, { onDelete: "cascade" }),
+    fieldKey: text("field_key").notNull(),
+    matchPath: text("match_path").notNull().default("none"),
+    matchedSynonym: text("matched_synonym"),
+    sourceLine: text("source_line"),
+    sourceLineNo: integer("source_line_no"),
+    rawValue: text("raw_value").notNull().default(""),
+    normalizedValue: text("normalized_value").notNull().default(""),
+    confidence: numeric("confidence", { precision: 4, scale: 3 }),
+    flagged: boolean("flagged").notNull().default(false),
+    blankAfterMatch: boolean("blank_after_match").notNull().default(false),
+    missReason: text("miss_reason"),
+    appliedToSheet: boolean("applied_to_sheet").notNull().default(false),
+    sheetKey: text("sheet_key"),
+    sheetSourceLabel: text("sheet_source_label"),
+    ...timestamps,
+  },
+  (t) => [
+    index("extraction_field_attempts_attempt_idx").on(t.tenantId, t.attemptId),
+    index("extraction_field_attempts_field_idx").on(t.tenantId, t.fieldKey),
+  ],
+);
+
+/**
+ * Desk correction with fill evidence. Mirrors into fill_learning_logs.
+ * locked=true (Ana Cov A / javy Cov A) never applies on next fill.
+ */
+export const extractionCorrections = pgTable(
+  "extraction_corrections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fieldAttemptId: uuid("field_attempt_id").references(() => extractionFieldAttempts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    documentId: uuid("document_id").references(() => documents.id),
+    docType: text("doc_type").notNull().default("dec"),
+    fieldKey: text("field_key").notNull(),
+    shopLine: text("shop_line").notNull().default("home"),
+    extractedValue: text("extracted_value").notNull().default(""),
+    correctedValue: text("corrected_value").notNull(),
+    reason: text("reason").notNull().default("agent_edit"),
+    correctedBy: text("corrected_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    applyOnNextFill: boolean("apply_on_next_fill").notNull().default(true),
+    locked: boolean("locked").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("extraction_corrections_lookup_idx").on(t.tenantId, t.docType, t.fieldKey),
+    index("extraction_corrections_deal_idx").on(t.tenantId, t.dealId),
+  ],
+);
+
+/**
+ * Proposed synonym labels from corrections. Approve sets status only —
+ * never edits synonyms.ts. shipped only after a human notes a PR.
+ */
+export const synonymCandidates = pgTable(
+  "synonym_candidates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    fieldKey: text("field_key").notNull(),
+    proposedSynonym: text("proposed_synonym").notNull(),
+    evidenceCorrectionId: uuid("evidence_correction_id").references(() => extractionCorrections.id),
+    evidenceAttemptId: uuid("evidence_attempt_id").references(() => extractionAttempts.id),
+    timesSeen: integer("times_seen").notNull().default(1),
+    status: text("status").notNull().default("proposed"),
+    approvedBy: text("approved_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    note: text("note"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("synonym_candidates_field_syn_uidx").on(t.tenantId, t.fieldKey, t.proposedSynonym),
+    index("synonym_candidates_queue_idx").on(t.tenantId, t.status, t.timesSeen),
+  ],
+);
+
 export const alerts = pgTable(
   "alerts",
   {
@@ -3617,6 +3734,11 @@ export const learningSeedLibrary = pgTable(
   },
   (t) => [index("learning_seed_library_form_idx").on(t.formId, t.formVersion)],
 );
+
+export type ExtractionAttempt = typeof extractionAttempts.$inferSelect;
+export type ExtractionFieldAttempt = typeof extractionFieldAttempts.$inferSelect;
+export type ExtractionCorrection = typeof extractionCorrections.$inferSelect;
+export type SynonymCandidate = typeof synonymCandidates.$inferSelect;
 
 export type LearningRawDocument = typeof learningRawDocuments.$inferSelect;
 export type LearningRawExtraction = typeof learningRawExtractions.$inferSelect;

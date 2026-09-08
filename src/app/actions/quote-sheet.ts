@@ -21,6 +21,14 @@ import {
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
+import {
+  findLatestFieldAttempt,
+  insertExtractionAttempt,
+  insertFieldAttempts,
+  listExtractionCorrectionsForLookup,
+  recordExtractionCorrection,
+} from "@/lib/extraction/audit";
+import { mergeLearningHints } from "@/lib/fill-learning/lookup";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { applyLoggedCorrections } from "@/lib/fill-feedback/prefer";
 import { persistDealFile, uploadRoot } from "@/lib/documents/store";
@@ -75,6 +83,7 @@ import {
   shopLineForProduct,
 } from "@/lib/deals/deal-line";
 import { flashAction } from "@/lib/flash-action";
+import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
 
 function str(form: FormData, key: string) {
@@ -374,6 +383,18 @@ export async function fillFromPropertyRecords(formData: FormData) {
     skippedKeys: applied.skippedKeys,
     message: lookup.message,
   });
+  // Optional Why-drawer audit only — engine=api, NO synonym candidates from API.
+  await insertExtractionAttempt({
+    dealId,
+    quoteSheetId: sheet.id,
+    shopLine: lineRaw,
+    docType: "property_records",
+    engine: "api",
+    status: "done",
+    message: lookup.message,
+    documentQuality: "clean",
+    qualityNotes: ["property_records_api"],
+  });
   await syncRiskFromSheet(dealId, applied.values, "fill");
   await syncHeaderFromSheet(dealId, applied.values, "fill");
   revalidatePath(`/deals/${dealId}`);
@@ -478,12 +499,11 @@ async function logSheetCorrections(input: {
   for (const [key, next] of Object.entries(input.after)) {
     const prev = input.before[key];
     if (!prev) continue;
-    const extracted = prev.source === "extracted" || prev.source === "public";
+    const extracted = prev.source === "extracted" || prev.source === "public" || prev.source === "photo-ocr";
     if (!extracted) continue;
     if (next.source !== "agent") continue;
     if (prev.value.trim() === next.value.trim()) continue;
     if (!prev.value.trim() || !next.value.trim()) continue;
-    if (input.dealId === DEAL_ID && key === "coverage_a") continue;
     const tag = prev.sourceLabel?.toLowerCase() ?? "";
     const docType = tag.includes("wind")
       ? "wind_mit"
@@ -504,17 +524,24 @@ async function logSheetCorrections(input: {
       line: input.line,
       createdBy: who,
     });
-    await db.insert(fillLearningLogs).values({
-      tenantId: DEFAULT_TENANT_ID,
+    const latest = await findLatestFieldAttempt(input.dealId, key);
+    await recordExtractionCorrection({
       dealId: input.dealId,
+      documentId: latest?.attempt.documentId ?? null,
+      fieldAttemptId: latest?.field.id ?? null,
+      evidenceAttemptId: latest?.attempt.id ?? null,
       docType,
       fieldKey: key,
+      shopLine: input.line,
       extractedValue: prev.value,
       correctedValue: next.value,
+      reason: (input.reason as "agent_edit" | "paste_wrong" | "mapping_wrong") || "agent_edit",
       correctedBy: who,
       correctedByUserId: session?.userId ?? null,
       note: `form:${formId}`,
-      shopLine: input.line,
+      existingSource: prev.source,
+      missReason: latest?.field.missReason ?? null,
+      proposedSynonym: latest?.field.matchedSynonym ?? null,
     });
   }
 }
@@ -529,20 +556,44 @@ export async function markPasteFieldWrong(formData: FormData) {
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   const session = await currentDeskSession().catch(() => null);
+  const docType = str(formData, "docType") || "dec";
+  const who = session?.name || "desk";
   await db.insert(fillFeedbackLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
     quoteSheetId: sheet.id,
-    docType: str(formData, "docType") || "dec",
+    docType,
     fieldKey,
     wrongValue,
     correctedValue: note,
     reason: "paste_wrong",
     line: lineRaw,
-    createdBy: session?.name || "desk",
+    createdBy: who,
+  });
+  const latest = await findLatestFieldAttempt(dealId, fieldKey);
+  const pasteProposed = str(formData, "proposedSynonym");
+  const proposedSynonym = latest?.field.matchedSynonym ?? (pasteProposed.length > 0 ? pasteProposed : null);
+  await recordExtractionCorrection({
+    dealId,
+    documentId: latest?.attempt.documentId ?? null,
+    fieldAttemptId: latest?.field.id ?? null,
+    evidenceAttemptId: latest?.attempt.id ?? null,
+    docType,
+    fieldKey,
+    shopLine: lineRaw,
+    extractedValue: wrongValue,
+    correctedValue: note,
+    reason: "paste_wrong",
+    correctedBy: who,
+    correctedByUserId: session?.userId ?? null,
+    note,
+    existingSource: sheet.values[fieldKey]?.source,
+    missReason: latest?.field.missReason ?? null,
+    proposedSynonym,
   });
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
+  revalidatePath("/logs/synonym-candidates");
 }
 
 export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
@@ -552,13 +603,17 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
   const corrections = await loadFillCorrections();
-  const learningLogs = await listFillLearningForLookup();
+  const learningLogs = mergeLearningHints(
+    await listFillLearningForLookup(),
+    await listExtractionCorrectionsForLookup(),
+  );
 
   let values: Record<string, QuoteSheetFieldValue> = { ...sheet.values };
   if (Object.keys(values).length === 0) values = emptySheetValues(line);
 
   for (const doc of docs) {
     if (isQuoteAttachment(doc.docType, doc.filename)) continue;
+    const startedAt = new Date();
     const abs = path.join(uploadRoot, doc.storagePath);
     let buffer: Buffer;
     try {
@@ -573,27 +628,71 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         status: "failed",
         message: `Could not read ${doc.filename} from storage.`,
       });
+      await insertExtractionAttempt({
+        dealId,
+        documentId: doc.id,
+        quoteSheetId: sheet.id,
+        shopLine: line,
+        docType: doc.docType || "",
+        engine: classifyIngest(doc.mimeType, doc.filename, undefined).engine === "ocr" ? "ocr" : "pdf_text",
+        status: "failed",
+        message: `Could not read ${doc.filename} from storage.`,
+        startedAt,
+      });
       continue;
     }
 
     try {
       const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
       const text = uploaded.text;
+      const engine = uploaded.engine === "ocr" ? "ocr" : "pdf_text";
       if (!text.trim()) {
         await db.insert(extractionJobs).values({
           tenantId: DEFAULT_TENANT_ID,
           dealId,
           documentId: doc.id,
           quoteSheetId: sheet.id,
-          engine: uploaded.engine === "ocr" ? "ocr" : "pdf_text",
+          engine,
           status: "failed",
           message: `Could not read text from ${doc.filename}.`,
+        });
+        await insertExtractionAttempt({
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          shopLine: line,
+          docType: doc.docType || "",
+          engine,
+          status: "failed",
+          message: `Could not read text from ${doc.filename}.`,
+          startedAt,
         });
         continue;
       }
       const inferred = inferShopLine(text, doc.filename, doc.docType);
       const hoOntoHome = sourceDocFillsHome(doc.docType) && line === "home";
       if (inferred !== line && !hoOntoHome) {
+        await insertExtractionAttempt({
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          shopLine: line,
+          docType: doc.docType || inferred || "",
+          docTypeInferred: !doc.docType,
+          engine,
+          status: "skipped",
+          message: `Wrong shop line for ${doc.filename}: inferred ${inferred}, sheet is ${line}. No field attempts.`,
+          startedAt,
+        });
+        await db.insert(extractionJobs).values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          documentId: doc.id,
+          quoteSheetId: sheet.id,
+          engine,
+          status: "skipped",
+          message: `Skipped ${doc.filename} — wrong shop line (inferred ${inferred}).`,
+        });
         continue;
       }
       const extracted = extractFieldsFromText(text, doc.docType);
@@ -602,7 +701,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         feedback.fields.map((field) => ({
           fieldKey: field.fieldKey,
           normalizedValue: field.normalizedValue,
-          sourceLabel: sourceLabelForDoc(doc.docType, doc.filename),
+          sourceLabel: field.sourceDocTag || sourceLabelForDoc(doc.docType, doc.filename),
+          sourceDocTag: field.sourceDocTag,
+          blankAfterMatch: field.blankAfterMatch,
+          matchPath: field.matchPath,
+          matchedSynonym: field.matchedSynonym,
+          sourceLine: field.sourceLine,
+          sourceLineNo: field.sourceLineNo,
+          missReason: field.missReason,
         })),
         learningLogs,
         { docType: doc.docType || "dec", dealId },
@@ -611,6 +717,31 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       const applied = applyExtractedToSheet(line, values, learned, { source });
       values = applied.values;
       await syncNamedInsuredFromExtract(dealId, extracted.fields);
+
+      const attempt = await insertExtractionAttempt({
+        dealId,
+        documentId: doc.id,
+        quoteSheetId: sheet.id,
+        shopLine: line,
+        docType: doc.docType || extracted.fieldMapDocType || "",
+        docTypeInferred: !doc.docType,
+        engine,
+        documentQuality: extracted.documentQuality,
+        qualityNotes: extracted.qualityNotes,
+        status: extracted.glanceRequired ? "needs_glance" : "done",
+        message:
+          applied.filledKeys.length === 0
+            ? `Parsed ${doc.filename}. No blank Quote Sheet fields to fill (existing values were left alone).`
+            : `Filled ${applied.filledKeys.length} fields from ${doc.filename}.`,
+        startedAt,
+      });
+      await insertFieldAttempts({
+        attemptId: attempt.id,
+        line,
+        fields: extracted.fields,
+        filledSheetKeys: applied.filledKeys,
+        sourceLabel: sourceLabelForDoc(doc.docType, doc.filename),
+      });
 
       await db.delete(extractedFields).where(eq(extractedFields.documentId, doc.id));
       for (const field of extracted.fields) {
@@ -648,7 +779,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         dealId,
         documentId: doc.id,
         quoteSheetId: sheet.id,
-        engine: uploaded.engine === "ocr" ? "ocr" : "pdf_text",
+        engine,
         status: "done",
         filledKeys: applied.filledKeys,
         skippedKeys: applied.skippedKeys,
@@ -671,6 +802,17 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         engine: classifyIngest(doc.mimeType, doc.filename, buffer).engine,
         status: "failed",
         message,
+      });
+      await insertExtractionAttempt({
+        dealId,
+        documentId: doc.id,
+        quoteSheetId: sheet.id,
+        shopLine: line,
+        docType: doc.docType || "",
+        engine: classifyIngest(doc.mimeType, doc.filename, buffer).engine === "ocr" ? "ocr" : "pdf_text",
+        status: "failed",
+        message,
+        startedAt,
       });
     }
   }

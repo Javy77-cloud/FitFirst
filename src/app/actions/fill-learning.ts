@@ -5,12 +5,13 @@ import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, SHOP_LINES, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { deals, fillLearningLogs, quoteSheets } from "@/lib/db/schema";
+import { deals, quoteSheets } from "@/lib/db/schema";
 import { isFillLearningDocType } from "@/lib/fill-learning/doc-types";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { isUuid } from "@/lib/ids";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { flashAction } from "@/lib/flash-action";
+import { findLatestFieldAttempt, recordExtractionCorrection } from "@/lib/extraction/audit";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -66,18 +67,30 @@ export async function saveFillLearningCorrection(formData: FormData) {
     throw new Error("Javy-tested Coverage A is locked.");
   }
 
-  await db.insert(fillLearningLogs).values({
-    tenantId: DEFAULT_TENANT_ID,
+  const latest = await findLatestFieldAttempt(dealId, fieldKey);
+  const missFromForm = str(formData, "missReason");
+  const missReason = latest?.field.missReason ?? (missFromForm.length > 0 ? missFromForm : "no_synonym");
+  const proposedFromForm = str(formData, "proposedSynonym");
+  const proposedSynonym =
+    latest?.field.matchedSynonym ?? (proposedFromForm.length > 0 ? proposedFromForm : null);
+  await recordExtractionCorrection({
     dealId,
+    documentId: latest?.attempt.documentId ?? null,
+    fieldAttemptId: latest?.field.id ?? null,
+    evidenceAttemptId: latest?.attempt.id ?? null,
     docType,
     fieldKey,
+    shopLine: lineRaw,
     extractedValue,
     correctedValue,
+    reason: "mapping_wrong",
     correctedBy,
     correctedByUserId: session.userId,
     note: note || null,
     carrierId: isUuid(carrierId) ? carrierId : null,
-    shopLine: lineRaw,
+    existingSource: current?.source,
+    missReason,
+    proposedSynonym,
   });
 
   values[fieldKey] = {
@@ -103,6 +116,7 @@ export async function saveFillLearningCorrection(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/logs/fill-learning");
+  revalidatePath("/logs/synonym-candidates");
   revalidatePath("/logs");
   flashAction(`/deals/${dealId}`, "Correction saved");
 }

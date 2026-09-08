@@ -4,16 +4,18 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/carriers/logs", label: "Appetite" },
   { href: "/logs/fill-learning", label: "Fill Learning" },
+  { href: "/logs/synonym-candidates", label: "Synonym candidates" },
   { href: "/compliance", label: "Compliance" },
 ] as const;
 
-export function LogsTabs({ current }: { current: "appetite" | "fill-learning" | "compliance" }) {
+export function LogsTabs({ current }: { current: "appetite" | "fill-learning" | "synonym-candidates" | "compliance" }) {
   return (
     <div className="mb-4 flex flex-wrap gap-1">
       {TABS.map((tab) => {
         const active =
           (current === "appetite" && tab.href === "/carriers/logs") ||
           (current === "fill-learning" && tab.href === "/logs/fill-learning") ||
+          (current === "synonym-candidates" && tab.href === "/logs/synonym-candidates") ||
           (current === "compliance" && tab.href === "/compliance");
         return (
           <Link

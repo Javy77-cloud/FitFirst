@@ -15,6 +15,8 @@ import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/produ
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
+import { WhyCellDrawer } from "@/components/deal/why-cell-drawer";
+import { useState } from "react";
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
 
@@ -178,6 +180,8 @@ export function MasterSheetCompare({
               <SheetGroup
                 key={group.group}
                 title={group.group}
+                dealId={dealId}
+                line={line}
                 groupFields={asList(group.fields)}
                 values={values}
                 extractedByKey={extractedByKey}
@@ -197,10 +201,14 @@ export function MasterSheetCompare({
 
 function SheetGroup({
   title,
+  dealId,
+  line,
   groupFields,
   values,
 }: {
   title: string;
+  dealId: string;
+  line: ShopLine;
   groupFields: ReturnType<typeof fieldsForLine>;
   values: Record<string, QuoteSheetFieldValue>;
   extractedByKey: Map<string, ExtractedFieldRow>;
@@ -230,7 +238,14 @@ function SheetGroup({
                   {sourceText}
                 </td>
                 <td className="align-top">
-                  <SheetCell fieldKey={field.key} input={field.input} cell={cell} />
+                  <SheetCell
+                    dealId={dealId}
+                    line={line}
+                    fieldKey={field.key}
+                    fieldLabel={field.label}
+                    input={field.input}
+                    cell={cell}
+                  />
                   {cell && sourceTag(cell) ? (
                     <span className="mt-0.5 block text-[10px] text-muted-foreground" data-ff-sheet-source="">
                       {sourceTag(cell)}
@@ -259,17 +274,24 @@ function SheetGroup({
 }
 
 function SheetCell({
+  dealId,
+  line,
   fieldKey,
+  fieldLabel,
   input = "text",
   cell,
 }: {
+  dealId: string;
+  line: ShopLine;
   fieldKey: string;
+  fieldLabel: string;
   input?: "text" | "number" | "textarea";
   cell?: QuoteSheetFieldValue;
 }) {
+  const [whyOpen, setWhyOpen] = useState(false);
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
   const className = cn(
-    "h-8 text-sm",
+    "h-8 text-sm cursor-pointer",
     cell?.status === "check" && "ff-field-check",
     (!cell?.value.trim() || cell.status === "missing") && "ff-field-missing",
   );
@@ -283,6 +305,8 @@ function SheetCell({
           rows={2}
           readOnly={locked}
           className={cn("text-sm", className)}
+          onClick={() => setWhyOpen(true)}
+          data-ff-why-cell={fieldKey}
         />
       ) : (
         <Input
@@ -291,8 +315,18 @@ function SheetCell({
           defaultValue={cell?.value ?? ""}
           readOnly={locked}
           className={className}
+          onClick={() => setWhyOpen(true)}
+          data-ff-why-cell={fieldKey}
         />
       )}
+      <button
+        type="button"
+        className="self-start text-[10px] text-primary hover:underline"
+        onClick={() => setWhyOpen(true)}
+        data-ff-why-open={fieldKey}
+      >
+        Why this cell?
+      </button>
       {cell?.status === "check" && !locked ? (
         <Button
           type="submit"
@@ -306,6 +340,15 @@ function SheetCell({
         </Button>
       ) : null}
       {locked ? <span className="text-[10px] text-muted-foreground">Ana Cov A locked</span> : null}
+      <WhyCellDrawer
+        dealId={dealId}
+        line={line}
+        fieldKey={fieldKey}
+        fieldLabel={fieldLabel}
+        extractedValue={cell?.value ?? ""}
+        open={whyOpen}
+        onOpenChange={setWhyOpen}
+      />
     </div>
   );
 }

@@ -8,12 +8,22 @@ export type FillLearningHint = {
   correctedValue: string;
   dealId?: string | null;
   loggedAt?: Date | string;
+  /** extraction_corrections.locked — never apply Ana / javy Cov A. */
+  locked?: boolean | null;
+  applyOnNextFill?: boolean | null;
 };
 
 export type ExtractedLike = {
   fieldKey: string;
   normalizedValue: string;
   sourceLabel?: string;
+  sourceDocTag?: string;
+  blankAfterMatch?: boolean;
+  matchPath?: string;
+  matchedSynonym?: string;
+  sourceLine?: string;
+  sourceLineNo?: number;
+  missReason?: string;
 };
 
 export function normalizeFillValue(value: string | null | undefined): string {
@@ -29,6 +39,8 @@ export function isSafeAgencyCorrection(
   extractedValue: string,
   existing?: QuoteSheetFieldValue | null,
 ): boolean {
+  if (hint.locked) return false;
+  if (hint.applyOnNextFill === false) return false;
   if (!hint.correctedValue.trim()) return false;
   if (normalizeFillValue(hint.extractedValue) !== normalizeFillValue(extractedValue)) {
     return false;
@@ -89,4 +101,12 @@ export function applyLearningToExtracted<T extends ExtractedLike>(
       sourceLabel: `Fill learning · ${ctx.docType}`,
     };
   });
+}
+
+/** Merge fill_learning_logs + extraction_corrections for applyLearning. */
+export function mergeLearningHints(
+  fillLogs: FillLearningHint[],
+  extractionLogs: FillLearningHint[],
+): FillLearningHint[] {
+  return [...fillLogs, ...extractionLogs];
 }

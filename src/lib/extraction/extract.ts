@@ -31,6 +31,12 @@ export type ExtractedField = {
   sourceDocTag?: string;
   /** Synonym matched with no usable value — sheet cell stays yellow/blank. */
   blankAfterMatch?: boolean;
+  /** How this value was found — audit trail. */
+  matchPath?: "synonym" | "field_map" | "pattern" | "none";
+  matchedSynonym?: string;
+  sourceLine?: string;
+  sourceLineNo?: number;
+  missReason?: string;
 };
 
 export type UnmappedExtractLabel = {
@@ -393,15 +399,38 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
   const synonymKeys = new Set<string>();
 
   for (const hit of bestSynonymValues(text).values()) {
-    if (isBlockedExtractKey(hit.fieldKey) || looksLikeSsn(hit.value)) continue;
+    if (isBlockedExtractKey(hit.fieldKey)) continue;
+    if (looksLikeSsn(hit.value)) {
+      synonymKeys.add(hit.fieldKey);
+      byKey.set(hit.fieldKey, {
+        ...blankSynonymField(hit.fieldKey, sourceDocTag, quality.penalty),
+        matchPath: "synonym",
+        matchedSynonym: hit.synonym,
+        sourceLine: hit.sourceLine,
+        sourceLineNo: hit.sourceLineNo,
+        missReason: "blocked_ssn",
+        blankAfterMatch: true,
+      });
+      continue;
+    }
     synonymKeys.add(hit.fieldKey);
     if (hit.blank) {
-      byKey.set(hit.fieldKey, blankSynonymField(hit.fieldKey, sourceDocTag, quality.penalty));
+      const blank = blankSynonymField(hit.fieldKey, sourceDocTag, quality.penalty);
+      blank.matchPath = "synonym";
+      blank.matchedSynonym = hit.synonym;
+      blank.sourceLine = hit.sourceLine;
+      blank.sourceLineNo = hit.sourceLineNo;
+      blank.missReason = hit.blankReason ?? "no_delimiter";
+      byKey.set(hit.fieldKey, blank);
       continue;
     }
     const built = toField(hit.fieldKey, hit.value, normalizerFor(hit.fieldKey), quality.penalty);
     if (built) {
       built.sourceDocTag = sourceDocTag;
+      built.matchPath = "synonym";
+      built.matchedSynonym = hit.synonym;
+      built.sourceLine = hit.sourceLine;
+      built.sourceLineNo = hit.sourceLineNo;
       byKey.set(hit.fieldKey, built);
     }
   }
@@ -459,7 +488,10 @@ function fromPatterns(text: string, penalty: number): ExtractedField[] {
     const raw = (match?.[1] ?? match?.[2] ?? "").trim();
     if (!raw) continue;
     const built = toField(pattern.key, raw, pattern.normalize, penalty);
-    if (built) fields.push(built);
+    if (built) {
+      built.matchPath = "pattern";
+      fields.push(built);
+    }
   }
   return fields;
 }
@@ -477,7 +509,10 @@ function fromLabeledLines(text: string, penalty: number): ExtractedField[] {
     if (!rawValue || looksLikeSsn(rawValue)) continue;
     if (isUnusableExtractValue(rawValue, match[1])) continue;
     const built = toField(key, rawValue, normalizerFor(key), penalty);
-    if (built) fields.push(built);
+    if (built) {
+      built.matchPath = "field_map";
+      fields.push(built);
+    }
   }
   return fields;
 }
@@ -508,7 +543,10 @@ function fromMappedLines(
     }
     if (isBlockedExtractKey(key)) continue;
     const built = toField(key, rawValue, normalizerFor(key), penalty);
-    if (built) fields.push(built);
+    if (built) {
+      built.matchPath = "field_map";
+      fields.push(built);
+    }
   }
   return fields;
 }

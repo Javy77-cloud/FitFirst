@@ -199,8 +199,12 @@ export type SynonymMatch = {
   value: string;
   /** Label matched but nothing usable after the delimiter. */
   blank: boolean;
+  /** Why blank — used for synonym_candidates (no_synonym / no_delimiter only). */
+  blankReason?: "no_delimiter" | "unusable_question" | null;
   start: number;
   end: number;
+  sourceLine?: string;
+  sourceLineNo?: number;
 };
 
 const CHECKBOX_MARKERS = /[☐☑☒□■▢▣]|\[\s*[xX ]\s*\]|\(\s*[xX ]\s*\)/g;
@@ -362,20 +366,32 @@ function sliceValueUntil(
   const rest = haystack.slice(synonymEnd, Number.isFinite(nextStart) ? nextStart : undefined);
   const pulled = valueAfterDelimiter(rest);
   const raw = pulled.hasDelimiter ? pulled.value : "";
-  const blank = !pulled.hasDelimiter || isUnusableExtractValue(raw, hit.synonym);
+  let blankReason: SynonymMatch["blankReason"] = null;
+  if (!pulled.hasDelimiter || !raw.trim()) blankReason = "no_delimiter";
+  else if (isUnusableExtractValue(raw, hit.synonym)) blankReason = "unusable_question";
+  const blank = blankReason != null;
   const value = blank ? "" : stripCheckboxMarkers(raw);
   return {
     ...hit,
     value,
     blank,
+    blankReason,
     end: Number.isFinite(nextStart) ? nextStart : synonymEnd + rest.length,
   };
 }
 
 export function matchSynonymsInText(text: string): SynonymMatch[] {
   const hits: SynonymMatch[] = [];
-  for (const rawLine of text.split(/\r?\n/)) {
-    hits.push(...matchSynonymsOnLine(rawLine));
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i] ?? "";
+    for (const hit of matchSynonymsOnLine(rawLine)) {
+      hits.push({
+        ...hit,
+        sourceLine: rawLine.replace(/\s+/g, " ").trim(),
+        sourceLineNo: i + 1,
+      });
+    }
   }
   return hits;
 }
@@ -418,4 +434,9 @@ export function inferSourceDocKind(text: string, docType?: string | null): Sourc
 
 export function synonymFieldKeys(): Set<string> {
   return new Set(SYNONYM_DICTIONARY.map((row) => row.fieldKey));
+}
+
+/** Printed labels tried for a field — Why drawer blanks. */
+export function synonymsForField(fieldKey: string): string[] {
+  return SYNONYM_DICTIONARY.find((row) => row.fieldKey === fieldKey)?.synonyms ?? [];
 }
