@@ -2,6 +2,7 @@ import { requestAppetiteQuotesAction, requestStretchQuotesAction } from "@/app/a
 import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
+import { LoadHomeShopListButton } from "@/components/deal/load-home-shop-list-button";
 import { ClearDealMarketsButton, MarketsSelectTable } from "@/components/deal/markets-select-table";
 import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
@@ -67,6 +68,9 @@ export function MarketsPanel({
             (carriers that write this line), or confirm the sheet and request quotes to
             build a fresh list — then remove any you do not want.
           </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <LoadHomeShopListButton dealId={dealId} />
+          </div>
           <ManualCarrierAdd
             dealId={dealId}
             carriers={carriers}
@@ -103,6 +107,7 @@ export function MarketsPanel({
       ) : null}
       <div className="ff-card space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
+          <LoadHomeShopListButton dealId={dealId} />
           <ClearDealMarketsButton dealId={dealId} />
         </div>
         <ManualCarrierAdd
