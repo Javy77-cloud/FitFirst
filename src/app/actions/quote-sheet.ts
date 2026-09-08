@@ -637,6 +637,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         quoteSheetId: sheet.id,
         engine: classifyIngest(doc.mimeType, doc.filename, undefined).engine,
         status: "failed",
+        filledKeys: [],
+        skippedKeys: [],
         message: `Could not read ${doc.filename} from storage.`,
       });
       await insertExtractionAttempt({
@@ -663,6 +665,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           quoteSheetId: sheet.id,
           engine: "gemini",
           status: "failed",
+          filledKeys: [],
+          skippedKeys: [],
           message: MISSING_GEMINI_KEY_MESSAGE,
         });
         await insertExtractionAttempt({
@@ -709,6 +713,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           quoteSheetId: sheet.id,
           engine: "gemini",
           status: "skipped",
+          filledKeys: [],
+          skippedKeys: [],
           message: `Skipped ${doc.filename} — wrong shop line (inferred ${inferred}).`,
         });
         continue;
@@ -739,6 +745,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
           quoteSheetId: sheet.id,
           engine,
           status: "failed",
+          filledKeys: [],
+          skippedKeys: [],
           message: `Gemini extract failed for ${doc.filename}: ${gemini.message}`,
         });
         await insertExtractionAttempt({
@@ -860,6 +868,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
         quoteSheetId: sheet.id,
         engine: classifyIngest(doc.mimeType, doc.filename, buffer).engine,
         status: "failed",
+        filledKeys: [],
+        skippedKeys: [],
         message,
       });
       await insertExtractionAttempt({
@@ -883,6 +893,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine) {
       quoteSheetId: sheet.id,
       engine: "pdf_text",
       status: "failed",
+      filledKeys: [],
+      skippedKeys: [],
       message: "No source files on this deal. Drop a dec, wind mit, or 4-point first.",
     });
     return;

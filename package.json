@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 43147 --hostname 0.0.0.0",
+    "dev": "GEMINI_MODEL=gemini-3.6-flash next dev --port 43147 --hostname 0.0.0.0",
     "build": "next build",
-    "start": "next start --port 43147 --hostname 0.0.0.0",
+    "start": "GEMINI_MODEL=gemini-3.6-flash next start --port 43147 --hostname 0.0.0.0",
     "lint": "eslint",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",

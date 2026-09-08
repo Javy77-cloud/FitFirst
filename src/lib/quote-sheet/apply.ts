@@ -41,9 +41,17 @@ export function neverCheckCoverageA(fieldKey: string, existing?: QuoteSheetField
   return existing?.source === "javy";
 }
 
-/** Public-records gap-fill loses to a value read from the dec / photo. */
+/**
+ * Gap-fill sources lose to a value read from the dec / photo / Gemini.
+ * Includes Florida property-records so Fill from source can replace them.
+ */
 export function isPublicRecordsSource(field?: QuoteSheetFieldValue | null): boolean {
-  return field?.source === "public" || field?.source === "public-records";
+  return (
+    field?.source === "public" ||
+    field?.source === "public-records" ||
+    field?.source === "property-records" ||
+    field?.source === "blank"
+  );
 }
 
 function cellSourceDocument(item: Pick<ExtractedInput, "sourceLabel" | "sourceDocTag">, source: string): string {

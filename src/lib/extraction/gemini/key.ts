@@ -9,6 +9,14 @@ export const GEMINI_ENV_MODEL = "GEMINI_MODEL";
 export const GEMINI_DEFAULT_MODEL = "gemini-3.6-flash";
 export const GEMINI_VAULT_PROVIDER = "gemini";
 
+/** Retired model ids → current Fill model. Stale shell env often pins 2.5-flash. */
+export const GEMINI_RETIRED_MODEL_MAP: Record<string, string> = {
+  "gemini-2.5-flash": GEMINI_DEFAULT_MODEL,
+  "gemini-2.5-flash-lite": GEMINI_DEFAULT_MODEL,
+  "gemini-2.0-flash": GEMINI_DEFAULT_MODEL,
+  "gemini-1.5-flash": GEMINI_DEFAULT_MODEL,
+};
+
 export const MISSING_GEMINI_KEY_MESSAGE =
   "Gemini API key is not configured. Set GEMINI_API_KEY (agency BYO) in env or the developer vault. No Fill from source ran.";
 
@@ -18,11 +26,16 @@ export function readGeminiApiKey(
   return (env[GEMINI_ENV_KEY] ?? "").trim();
 }
 
+export function resolveGeminiModel(model: string | null | undefined): string {
+  const trimmed = (model ?? "").trim();
+  if (!trimmed) return GEMINI_DEFAULT_MODEL;
+  return GEMINI_RETIRED_MODEL_MAP[trimmed] ?? trimmed;
+}
+
 export function readGeminiModel(
   env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
 ): string {
-  const model = (env[GEMINI_ENV_MODEL] ?? "").trim();
-  return model || GEMINI_DEFAULT_MODEL;
+  return resolveGeminiModel(env[GEMINI_ENV_MODEL]);
 }
 
 export function geminiKeyReady(key: string | null | undefined): boolean {

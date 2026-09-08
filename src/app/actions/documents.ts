@@ -248,14 +248,17 @@ export async function uploadDocument(formData: FormData) {
         slot,
         tags: parseTags(formData.get("tags")),
       });
-      if (doc.riskId) {
+      // Gemini source docs: Fill (below) extracts once — avoid a second API hit that 503s.
+      if (doc.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
         await runExtraction(doc.id, doc.dealId ?? "");
       }
       last = doc;
     }
   }
   if (last?.dealId && last.slot === "source_doc") {
-    await fillDealSheetIfReady(last.dealId, String(formData.get("line") ?? ""));
+    const dealId = last.dealId;
+    const line = String(formData.get("line") ?? "");
+    after(() => fillDealSheetIfReady(dealId, line));
   }
   if (last) revalidateDocumentPaths(last);
   if (last?.dealId && String(formData.get("after") ?? "") === "fill-sheet") {
@@ -331,12 +334,17 @@ export async function uploadLeadLineDocument(formData: FormData) {
       slot: "source_doc",
       tags: [lineTag(lineRaw)],
     });
-    if (last.riskId && last.dealId) {
+    if (
+      last.riskId &&
+      last.dealId &&
+      !(last.slot === "source_doc" && docTypeUsesGemini(last.docType))
+    ) {
       await runExtraction(last.id, last.dealId);
     }
   }
   if (last?.dealId && last.slot === "source_doc") {
-    await fillDealSheetIfReady(last.dealId, lineRaw);
+    const dealId = last.dealId;
+    after(() => fillDealSheetIfReady(dealId, lineRaw));
   }
   if (last) revalidateDocumentPaths(last);
   redirect(`/leads/${leadId}`);
@@ -397,7 +405,11 @@ export async function uploadDealDocuments(formData: FormData) {
         docType,
         slot,
       });
-      if (doc.riskId && slot === "source_doc") {
+      if (
+        doc.riskId &&
+        slot === "source_doc" &&
+        !docTypeUsesGemini(doc.docType)
+      ) {
         await runExtraction(doc.id, match.id);
       }
       stored += 1;
@@ -405,7 +417,8 @@ export async function uploadDealDocuments(formData: FormData) {
   }
 
   if (stored > 0) {
-    await fillDealSheetIfReady(match.id, "");
+    const dealId = match.id;
+    after(() => fillDealSheetIfReady(dealId, ""));
   }
 
   if (stored === 0) {
@@ -443,10 +456,11 @@ export async function uploadSampleDocument(formData: FormData) {
     docType: pack.docType,
     tags: [pack.docType],
   });
-  if (doc.riskId) {
+  if (doc.riskId && !docTypeUsesGemini(doc.docType)) {
     await runExtraction(doc.id, dealId);
   }
-  await fillDealSheetIfReady(dealId, String(formData.get("line") ?? ""));
+  const lineHint = String(formData.get("line") ?? "");
+  after(() => fillDealSheetIfReady(dealId, lineHint));
   revalidateDocumentPaths(doc);
   redirect(withFlash(`/deals/${dealId}?tab=documents&notice=filled`, "document-uploaded"));
 }
@@ -470,15 +484,22 @@ async function fillDealSheetIfReady(dealId: string, lineHint: string) {
   const line = (lineHint || deal?.quotingLine || "home") as ShopLine;
   try {
     await runFillDealSheets(dealId, line);
+    revalidatePath(`/deals/${dealId}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Fill failed";
-    await db.insert(extractionJobs).values({
-      tenantId: DEFAULT_TENANT_ID,
-      dealId,
-      engine: "pdf_text",
-      status: "failed",
-      message,
-    });
+    try {
+      await db.insert(extractionJobs).values({
+        tenantId: DEFAULT_TENANT_ID,
+        dealId,
+        engine: "pdf_text",
+        status: "failed",
+        filledKeys: [],
+        skippedKeys: [],
+        message: message.slice(0, 1800),
+      });
+    } catch {
+      /* never let logging abort Fill recovery */
+    }
   }
 }
 
@@ -543,6 +564,8 @@ async function runExtraction(documentId: string, dealId: string) {
           documentId,
           engine,
           status: "failed",
+          filledKeys: [],
+          skippedKeys: [],
           message: `Gemini extract failed for ${doc.filename}: ${gemini.message}`,
         });
       }

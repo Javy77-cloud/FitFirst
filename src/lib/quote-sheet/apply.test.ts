@@ -94,6 +94,21 @@ describe("quote sheet fill — blanks only", () => {
     expect(result.values.coverage_a.value).toBe("275000");
   });
 
+  it("lets Gemini/extracted overwrite property-records gap-fill", () => {
+    const existing = emptySheetValues("home");
+    existing.year_built = {
+      value: "1980",
+      status: "check",
+      source: "property-records",
+      sourceLabel: "property records",
+    };
+    const extracted = extractFieldsFromText(MELBOURNE_DEC_TEXT);
+    const result = applyExtractedToSheet("home", existing, extracted.fields);
+    expect(result.values.year_built.value).toBe("2004");
+    expect(result.values.year_built.source).toBe("extracted");
+    expect(result.filledKeys).toContain("year_built");
+  });
+
   it("copies glance fields onto deal header BLANKS only", () => {
     const extracted = extractFieldsFromText(MELBOURNE_DEC_TEXT);
     const { values } = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);

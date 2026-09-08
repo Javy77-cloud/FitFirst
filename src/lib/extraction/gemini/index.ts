@@ -2,12 +2,14 @@ export {
   GEMINI_DEFAULT_MODEL,
   GEMINI_ENV_KEY,
   GEMINI_ENV_MODEL,
+  GEMINI_RETIRED_MODEL_MAP,
   GEMINI_VAULT_PROVIDER,
   MISSING_GEMINI_KEY_MESSAGE,
   geminiKeyReady,
   loadGeminiApiKey,
   readGeminiApiKey,
   readGeminiModel,
+  resolveGeminiModel,
 } from "./key";
 export { buildGeminiSystemPrompt, buildGeminiUserPrompt, GEMINI_EXTRACT_JSON_KEYS } from "./prompt";
 export {

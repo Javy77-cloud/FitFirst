@@ -1,9 +1,11 @@
-import { readGeminiApiKey, readGeminiModel } from "./key";
+import { readGeminiApiKey, readGeminiModel, resolveGeminiModel } from "./key";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const MAX_ATTEMPTS = 3;
+const RETRYABLE_STATUS = new Set([429, 503]);
 
 export type GeminiClientResult = {
   ok: boolean;
@@ -39,9 +41,45 @@ export function parseGeminiResponseText(text: string): GeminiExtractJson | null 
   }
 }
 
+function emptyFail(
+  docType: string | null | undefined,
+  message: string,
+  notes: string[],
+  rawText?: string,
+): GeminiClientResult {
+  return {
+    ok: false,
+    message,
+    rawText,
+    result: {
+      fields: [],
+      documentQuality: "messy",
+      qualityNotes: notes,
+      glanceRequired: true,
+      unmappedLabels: [],
+      fieldMapDocType: docType ?? null,
+    },
+  };
+}
+
+function apiErrorSnippet(errText: string): string {
+  try {
+    const parsed = JSON.parse(errText) as { error?: { message?: string; status?: string } };
+    const msg = parsed.error?.message?.trim();
+    if (msg) return msg.slice(0, 180);
+  } catch {
+    /* ignore */
+  }
+  return errText.replace(/\s+/g, " ").trim().slice(0, 180);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Send PDF bytes to Gemini (Google AI Studio / generativelanguage REST).
- * Model from GEMINI_MODEL (default gemini-2.5-flash).
+ * Model from GEMINI_MODEL (default gemini-3.6-flash). Retries 429/503.
  */
 export async function extractWithGeminiPdf(
   pdfBytes: Buffer | Uint8Array,
@@ -53,20 +91,9 @@ export async function extractWithGeminiPdf(
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
-  const model = (options?.model ?? readGeminiModel()).trim();
+  const model = resolveGeminiModel(options?.model ?? readGeminiModel());
   if (!apiKey) {
-    return {
-      ok: false,
-      message: "missing_gemini_key",
-      result: {
-        fields: [],
-        documentQuality: "messy",
-        qualityNotes: ["missing_gemini_key"],
-        glanceRequired: true,
-        unmappedLabels: [],
-        fieldMapDocType: docType ?? null,
-      },
-    };
+    return emptyFail(docType, "missing_gemini_key", ["missing_gemini_key"]);
   }
 
   const b64 = Buffer.from(pdfBytes).toString("base64");
@@ -96,44 +123,41 @@ export async function extractWithGeminiPdf(
   };
 
   const fetchImpl = options?.fetchImpl ?? fetch;
-  let response: Response;
-  try {
-    response = await fetchImpl(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "gemini_network_error";
-    return {
-      ok: false,
-      message,
-      result: {
-        fields: [],
-        documentQuality: "messy",
-        qualityNotes: ["gemini_network_error"],
-        glanceRequired: true,
-        unmappedLabels: [],
-        fieldMapDocType: docType ?? null,
-      },
-    };
+  let response: Response | null = null;
+  let errText = "";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      response = await fetchImpl(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "gemini_network_error";
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(400 * attempt);
+        continue;
+      }
+      return emptyFail(docType, message, ["gemini_network_error"]);
+    }
+
+    if (response.ok) break;
+    errText = await response.text().catch(() => "");
+    if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS) {
+      await sleep(600 * attempt);
+      continue;
+    }
+    const snippet = apiErrorSnippet(errText);
+    return emptyFail(
+      docType,
+      snippet ? `gemini_http_${response.status}: ${snippet}` : `gemini_http_${response.status}`,
+      [`gemini_http_${response.status}`],
+      errText.slice(0, 500),
+    );
   }
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => "");
-    return {
-      ok: false,
-      message: `gemini_http_${response.status}`,
-      rawText: errText.slice(0, 500),
-      result: {
-        fields: [],
-        documentQuality: "messy",
-        qualityNotes: [`gemini_http_${response.status}`],
-        glanceRequired: true,
-        unmappedLabels: [],
-        fieldMapDocType: docType ?? null,
-      },
-    };
+  if (!response || !response.ok) {
+    return emptyFail(docType, "gemini_http_error", ["gemini_http_error"], errText.slice(0, 500));
   }
 
   const payload = (await response.json()) as {
@@ -142,19 +166,7 @@ export async function extractWithGeminiPdf(
   const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   const json = parseGeminiResponseText(text);
   if (!json) {
-    return {
-      ok: false,
-      message: "gemini_parse_error",
-      rawText: text.slice(0, 500),
-      result: {
-        fields: [],
-        documentQuality: "messy",
-        qualityNotes: ["gemini_parse_error"],
-        glanceRequired: true,
-        unmappedLabels: [],
-        fieldMapDocType: docType ?? null,
-      },
-    };
+    return emptyFail(docType, "gemini_parse_error", ["gemini_parse_error"], text.slice(0, 500));
   }
 
   return {
