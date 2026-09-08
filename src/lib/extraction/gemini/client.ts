@@ -1,4 +1,4 @@
-import { readGeminiApiKey, readGeminiModel, resolveGeminiModel } from "./key";
+import { GEMINI_DEFAULT_MODEL, readGeminiApiKey, readGeminiModel, resolveGeminiModel } from "./key";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
@@ -102,7 +102,7 @@ function retryDelayMs(attempt: number, response: Response | null): number {
 
 /**
  * Send PDF bytes to Gemini (Google AI Studio / generativelanguage REST).
- * Model from GEMINI_MODEL (default gemini-3.6-flash). Retries 429/503 with
+ * Model hard-pinned to gemini-3.6-flash (stale GEMINI_MODEL remapped). Retries 429/503 with
  * exponential backoff; wind_mit gets extra attempts for large PDFs.
  * Sustained 503/429 also tries capacity fallback model ids.
  */
@@ -116,11 +116,16 @@ export async function extractWithGeminiPdf(
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
-  const primaryModel = resolveGeminiModel(options?.model ?? readGeminiModel());
-  // Capacity fallbacks — raw ids (not remapped) so we can leave a saturated primary.
+  // Hard-pin: every request uses gemini-3.6-flash (remap options/env leftovers).
+  const primaryModel = resolveGeminiModel(options?.model ?? readGeminiModel() ?? GEMINI_DEFAULT_MODEL);
+  // Capacity fallbacks — also remapped so retired ids never hit the wire.
   const modelCandidates = Array.from(
     new Set(
-      [primaryModel, "gemini-flash-latest", "gemini-2.0-flash-001"].filter(Boolean),
+      [
+        primaryModel,
+        resolveGeminiModel("gemini-flash-latest"),
+        GEMINI_DEFAULT_MODEL,
+      ].filter(Boolean),
     ),
   );
   if (!apiKey) {
@@ -186,8 +191,8 @@ export async function extractWithGeminiPdf(
       if (RETRYABLE_STATUS.has(response.status)) {
         continue outer;
       }
-      // Retired / unknown model id on a fallback — try the next candidate.
-      if (response.status === 404 && model !== primaryModel) {
+      // Retired / unknown model id — try next candidate (including primary 404).
+      if (response.status === 404) {
         continue outer;
       }
       const snippet = apiErrorSnippet(errText);

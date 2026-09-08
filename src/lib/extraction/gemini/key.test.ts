@@ -13,11 +13,14 @@ describe("resolveGeminiModel", () => {
 
   it("remaps retired 2.5-flash so stale shell env cannot 404 Fill", () => {
     expect(resolveGeminiModel("gemini-2.5-flash")).toBe("gemini-3.6-flash");
+    expect(resolveGeminiModel("models/gemini-2.5-flash")).toBe("gemini-3.6-flash");
     expect(readGeminiModel({ GEMINI_MODEL: "gemini-2.5-flash" })).toBe("gemini-3.6-flash");
   });
 
-  it("keeps current models untouched", () => {
+  it("hard-pins every request to gemini-3.6-flash", () => {
     expect(resolveGeminiModel("gemini-3.6-flash")).toBe("gemini-3.6-flash");
-    expect(resolveGeminiModel("gemini-3.5-flash")).toBe("gemini-3.5-flash");
+    expect(resolveGeminiModel("gemini-3.5-flash")).toBe("gemini-3.6-flash");
+    expect(resolveGeminiModel("gemini-flash-latest")).toBe("gemini-3.6-flash");
+    expect(resolveGeminiModel("gemini-2.0-flash-001")).toBe("gemini-3.6-flash");
   });
 });

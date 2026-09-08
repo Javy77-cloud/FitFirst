@@ -18,7 +18,7 @@ describe("extractWithGeminiPdf retries", () => {
       fetchImpl,
     });
     expect(result.ok).toBe(false);
-    expect(calls).toBe(6);
+    expect(calls).toBe(8);
     expect(result.message).toMatch(/gemini_http_503/);
   }, 30_000);
 
@@ -38,6 +38,6 @@ describe("extractWithGeminiPdf retries", () => {
       fetchImpl,
     });
     expect(result.ok).toBe(false);
-    expect(calls).toBe(4);
+    expect(calls).toBe(6);
   }, 20_000);
 });
