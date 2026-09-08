@@ -21,9 +21,9 @@ export function MasterSheetAddressLinks({
     zip: cellValue(values, "zip"),
   });
 
-  const chip = cn(
+  const base = cn(
     buttonVariants({ size: "sm", variant: "outline" }),
-    "h-8 px-2.5 text-xs font-medium",
+    "h-8 px-2.5 text-xs font-medium transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-sm",
   );
 
   if (!links) {
@@ -44,7 +44,10 @@ export function MasterSheetAddressLinks({
         href={links.zillow}
         target="_blank"
         rel="noopener noreferrer"
-        className={chip}
+        className={cn(
+          base,
+          "hover:bg-fit-yellow-bg hover:border-fit-yellow hover:text-navy",
+        )}
         data-ff-sheet-zillow=""
         title={`Zillow: ${links.formatted}`}
       >
@@ -54,7 +57,10 @@ export function MasterSheetAddressLinks({
         href={links.maps}
         target="_blank"
         rel="noopener noreferrer"
-        className={chip}
+        className={cn(
+          base,
+          "hover:bg-fit-green-bg hover:border-fit-green hover:text-fit-green",
+        )}
         data-ff-sheet-maps=""
         title={`Google Maps: ${links.formatted}`}
       >
