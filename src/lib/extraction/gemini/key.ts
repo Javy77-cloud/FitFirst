@@ -6,7 +6,7 @@
 
 export const GEMINI_ENV_KEY = "GEMINI_API_KEY";
 export const GEMINI_ENV_MODEL = "GEMINI_MODEL";
-export const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
+export const GEMINI_DEFAULT_MODEL = "gemini-3.6-flash";
 export const GEMINI_VAULT_PROVIDER = "gemini";
 
 export const MISSING_GEMINI_KEY_MESSAGE =
