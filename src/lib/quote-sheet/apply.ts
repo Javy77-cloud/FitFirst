@@ -119,9 +119,31 @@ export function applyExtractedToSheet(
     values.applicant_name = { ...values.named_insured };
     filledKeys.push("applicant_name");
   }
+  if (
+    fieldIsBlank(values.applicant_name) &&
+    values.current_policy_named_insured?.value?.trim()
+  ) {
+    values.applicant_name = { ...values.current_policy_named_insured };
+    filledKeys.push("applicant_name");
+  }
+  if (
+    fieldIsBlank(values.named_insured) &&
+    values.current_policy_named_insured?.value?.trim()
+  ) {
+    values.named_insured = { ...values.current_policy_named_insured };
+    filledKeys.push("named_insured");
+  }
   if (fieldIsBlank(values.applicant_address) && values.mailing_address?.value?.trim()) {
     values.applicant_address = { ...values.mailing_address };
     filledKeys.push("applicant_address");
+  }
+  if (fieldIsBlank(values.address1) && values.applicant_address?.value?.trim()) {
+    values.address1 = { ...values.applicant_address };
+    filledKeys.push("address1");
+  }
+  if (fieldIsBlank(values.mortgagee_name) && values.mortgagee?.value?.trim()) {
+    values.mortgagee_name = { ...values.mortgagee };
+    filledKeys.push("mortgagee_name");
   }
 
   return { values, filledKeys, skippedKeys };

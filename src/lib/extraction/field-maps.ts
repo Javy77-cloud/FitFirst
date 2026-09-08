@@ -53,7 +53,16 @@ export const WIND_MIT_FIELD_MAP: FieldMapRow[] = [
   { sourceLabel: "Wind mit date", sheetField: "wind_mit_date" },
   { sourceLabel: "Wind mit inspector", sheetField: "wind_mit_inspector" },
   { sourceLabel: "Terrain", sheetField: "terrain" },
-  { sourceLabel: "Design wind speed", sheetField: "wind_speed" },
+  { sourceLabel: "Design wind speed", sheetField: "wind_speed", aliases: ["Region"] },
+  { sourceLabel: "Owner Name", sheetField: "applicant_name", aliases: ["Owner's Name"] },
+  { sourceLabel: "Address Inspected", sheetField: "applicant_address", aliases: ["Address"] },
+  { sourceLabel: "Qualified Inspector Name", sheetField: "wind_mit_inspector", aliases: ["Inspector Name"] },
+  { sourceLabel: "License or Certificate #", sheetField: "license_or_certificate_number", aliases: ["License or Certificate Number"] },
+  { sourceLabel: "Inspection Company", sheetField: "inspection_company" },
+  { sourceLabel: "Building Code", sheetField: "building_code" },
+  { sourceLabel: "Cell Phone", sheetField: "phone" },
+  { sourceLabel: "Year of Home", sheetField: "year_built" },
+  { sourceLabel: "#", sheetField: "stories", aliases: ["# of Stories"] },
 ];
 
 /** Four-point inspection. Required rows first. */
@@ -80,6 +89,13 @@ export const FOUR_POINT_FIELD_MAP: FieldMapRow[] = [
   { sourceLabel: "Plumbing", sheetField: "four_point_plumbing" },
   { sourceLabel: "HVAC", sheetField: "four_point_hvac" },
   { sourceLabel: "Roof", sheetField: "roof_condition" },
+  { sourceLabel: "Insured/Applicant Name", sheetField: "applicant_name", aliases: ["Insured Name", "Applicant Name"] },
+  { sourceLabel: "Address Inspected", sheetField: "applicant_address" },
+  { sourceLabel: "Four-Point Date", sheetField: "date_inspected", aliases: ["Four Point Date", "4-Point Date"] },
+  { sourceLabel: "Panel Age", sheetField: "panel_age" },
+  { sourceLabel: "Covering Material", sheetField: "roof_covering" },
+  { sourceLabel: "Date of Last Roofing Permit", sheetField: "roof_year", aliases: ["Covering Date"] },
+  { sourceLabel: "Original to Home", sheetField: "plumbing_original" },
 ];
 
 /** HO3 declaration page — reasonable printed labels → sheet fields. */
@@ -130,6 +146,17 @@ export const DEC_PAGE_FIELD_MAP: FieldMapRow[] = [
   { sourceLabel: "4-point date", sheetField: "four_point_date" },
   { sourceLabel: "4-point result", sheetField: "four_point_result" },
   { sourceLabel: "Wind mit form", sheetField: "wind_mit_form", aliases: ["Wind mitigation form"] },
+  { sourceLabel: "Insured Name", sheetField: "mailing_address" },
+  { sourceLabel: "Type of Residence", sheetField: "usage" },
+  { sourceLabel: "Months occupied", sheetField: "months_occupied" },
+  { sourceLabel: "Personal Property Replacement Cost", sheetField: "scheduled_personal_property" },
+  { sourceLabel: "Windstorm or Hail", sheetField: "wind_hail_deductible", aliases: ["Other Than Hurricane", "Wind/Hail"] },
+  { sourceLabel: "Name Insured", sheetField: "current_policy_named_insured" },
+  { sourceLabel: "Loan Number", sheetField: "loan_number", aliases: ["Loan #"] },
+  { sourceLabel: "Additional Interest", sheetField: "mortgagee" },
+  { sourceLabel: "Water Backup and Sump Overflow Coverage", sheetField: "water_backup" },
+  { sourceLabel: "Loss assessment", sheetField: "loss_assessment" },
+  { sourceLabel: "Deadbolts", sheetField: "deadbolts" },
 ];
 
 /** Policy page scaffold — same HO3 sheet keys; do not block on this after dec. */

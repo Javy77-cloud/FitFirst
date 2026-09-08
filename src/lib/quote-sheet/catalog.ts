@@ -24,8 +24,8 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "subdivision", label: "Subdivision", group: "Property" },
   { key: "year_purchased", label: "Year purchased", group: "Property", input: "number" },
   { key: "occupancy", label: "Occupancy", group: "Property", extractKey: "occupancy" },
-  { key: "usage", label: "Usage", group: "Property" },
-  { key: "months_occupied", label: "Months occupied", group: "Property", input: "number" },
+  { key: "usage", label: "Usage", group: "Property", extractKey: "usage" },
+  { key: "months_occupied", label: "Months occupied", group: "Property", input: "number", extractKey: "months_occupied" },
   { key: "number_of_families", label: "Number of families", group: "Property", input: "number" },
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built", products: [...HO_LL] },
   { key: "stories", label: "Stories", group: "Dwelling", input: "number", extractKey: "stories", products: [...HO_LL] },
@@ -57,7 +57,11 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "wind_speed", label: "Design wind speed", group: "Roof / wind", extractKey: "wind_speed", products: [...HO_LL] },
   { key: "wind_mit_form", label: "Wind mit form", group: "Roof / wind", extractKey: "wind_mit_form", products: [...HO_LL] },
   { key: "wind_mit_date", label: "Wind mit date", group: "Roof / wind", products: [...HO_LL] },
-  { key: "wind_mit_inspector", label: "Wind mit inspector", group: "Roof / wind", products: [...HO_LL] },
+  { key: "wind_mit_inspector", label: "Wind mit inspector", group: "Roof / wind", extractKey: "wind_mit_inspector", products: [...HO_LL] },
+  { key: "building_code", label: "Building code", group: "Roof / wind", extractKey: "building_code", products: [...HO_LL] },
+  { key: "inspection_company", label: "Inspection company", group: "Roof / wind", extractKey: "inspection_company", products: [...HO_LL] },
+  { key: "license_or_certificate_number", label: "License or certificate #", group: "Roof / wind", extractKey: "license_or_certificate_number", products: [...HO_LL] },
+  { key: "date_inspected", label: "Date inspected", group: "4-point", extractKey: "date_inspected", products: [...HO_LL] },
   {
     key: "protection_class",
     label: "Protection class",
@@ -70,7 +74,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "central_alarm", label: "Central alarm", group: "Protection" },
   { key: "sprinkler", label: "Sprinkler", group: "Protection" },
   { key: "smoke_detectors", label: "Smoke detectors", group: "Protection" },
-  { key: "deadbolts", label: "Deadbolts", group: "Protection" },
+  { key: "deadbolts", label: "Deadbolts", group: "Protection", extractKey: "deadbolts" },
   {
     key: "miles_to_coast",
     label: "Miles to coast",
@@ -105,10 +109,10 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "coverage_f", label: "Coverage F (medical payments)", group: "Coverages", input: "number", extractKey: "coverage_f" },
   { key: "ordinance_or_law", label: "Ordinance or law", group: "Coverages", extractKey: "ordinance_or_law" },
   { key: "water_backup", label: "Water backup", group: "Coverages", extractKey: "water_backup" },
-  { key: "scheduled_personal", label: "Scheduled personal property", group: "Coverages" },
+  { key: "scheduled_personal", label: "Scheduled personal property", group: "Coverages", extractKey: "scheduled_personal_property" },
   { key: "jewelry_limit", label: "Jewelry limit", group: "Coverages" },
   { key: "identity_theft", label: "Identity theft", group: "Coverages" },
-  { key: "loss_assessment", label: "Loss assessment", group: "Coverages" },
+  { key: "loss_assessment", label: "Loss assessment", group: "Coverages", extractKey: "loss_assessment" },
   {
     key: "hurricane_deductible",
     label: "Hurricane deductible",
@@ -120,7 +124,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     key: "wind_hail_deductible",
     label: "Wind / hail deductible",
     group: "Coverages",
-    extractKey: "wind_deductible",
+    extractKey: "wind_hail_deductible",
   },
   { key: "sinkhole_deductible", label: "Sinkhole deductible", group: "Coverages" },
   {
@@ -133,6 +137,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   },
   { key: "rce_source", label: "RCE source", group: "Coverages", products: [...HO_LL] },
   { key: "named_insured", label: "Named insured (from dec)", group: "Current policy", extractKey: "named_insured" },
+  { key: "current_policy_named_insured", label: "Name insured (policy)", group: "Current policy", extractKey: "current_policy_named_insured" },
   {
     key: "secondary_named_insured",
     label: "Additional named insured (from dec)",
@@ -148,9 +153,9 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
   { key: "claims_3yr", label: "Claims last 3 years", group: "Current policy", input: "number" },
   { key: "claims_5yr", label: "Claims last 5 years", group: "Current policy", input: "number" },
-  { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee" },
-  { key: "mortgagee_address", label: "Mortgagee address", group: "Mortgagee" },
-  { key: "loan_number", label: "Loan number", group: "Mortgagee" },
+  { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee", extractKey: "mortgagee" },
+  { key: "mortgagee_address", label: "Mortgagee address", group: "Mortgagee", extractKey: "mortgagee_address" },
+  { key: "loan_number", label: "Loan number", group: "Mortgagee", extractKey: "loan_number" },
   { key: "tenant_name", label: "Tenant name", group: "Landlord", products: [...LL] },
   { key: "lease_term", label: "Lease term", group: "Landlord", products: [...LL] },
   { key: "landlord_liability", label: "Landlord liability", group: "Landlord", products: [...LL] },
@@ -324,7 +329,8 @@ export function emptySheetValues(
 }
 
 const EXTRACT_ALIASES: Record<string, string> = {
-  wind_hail_deductible: "wind_deductible",
+  wind_hail_deductible: "wind_hail_deductible",
+  wind_deductible: "wind_hail_deductible",
   address: "address",
   swr: "secondary_water",
   garage: "garage_type",
@@ -332,6 +338,9 @@ const EXTRACT_ALIASES: Record<string, string> = {
   construction_type: "construction",
   living_area: "square_feet",
   square_footage: "square_feet",
+  design_wind_speed: "wind_speed",
+  scheduled_personal_property: "scheduled_personal",
+  mortgagee: "mortgagee_name",
 };
 
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {

@@ -11,12 +11,14 @@ import {
   isBlockedExtractKey,
   looksLikeSsn,
 } from "./labels";
+import { extractWindMitCheckboxes } from "./checkbox-maps";
 import {
   bestSynonymValues,
   inferSourceDocKind,
   isUnusableExtractValue,
   sourceDocumentTag,
   synonymFieldKeys,
+  type SourceDocKind,
 } from "./synonyms";
 
 export type ExtractedField = {
@@ -394,11 +396,12 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
   const byKey = new Map<string, ExtractedField>();
   text = normalizeExtractText(text);
   const mapType = inferFieldMapDocType(text, docType);
-  const sourceDocTag = sourceDocumentTag(inferSourceDocKind(text, docType));
+  const sourceKind = inferSourceDocKind(text, docType);
+  const sourceDocTag = sourceDocumentTag(sourceKind);
   const unmappedLabels: UnmappedExtractLabel[] = [];
   const synonymKeys = new Set<string>();
 
-  for (const hit of bestSynonymValues(text).values()) {
+  for (const hit of bestSynonymValues(text, sourceKind).values()) {
     if (isBlockedExtractKey(hit.fieldKey)) continue;
     if (looksLikeSsn(hit.value)) {
       synonymKeys.add(hit.fieldKey);
@@ -441,7 +444,7 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
 
   const patterned = fromPatterns(text, quality.penalty);
   const allowed = mapType ? sheetFieldsForDocType(mapType) : null;
-  const synonymAllowed = synonymFieldKeys();
+  const synonymAllowed = synonymFieldKeys(sourceKind);
 
   for (const field of [...patterned, ...labeled]) {
     if (isBlockedExtractKey(field.fieldKey) || looksLikeSsn(field.rawValue)) continue;
@@ -455,6 +458,32 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
     }
   }
 
+  if (sourceKind === "wind_mit" || mapType === "wind_mit") {
+    for (const hit of extractWindMitCheckboxes(text)) {
+      if (isBlockedExtractKey(hit.fieldKey)) continue;
+      if (synonymKeys.has(hit.fieldKey) && byKey.get(hit.fieldKey) && !byKey.get(hit.fieldKey)!.blankAfterMatch) {
+        continue;
+      }
+      const built = toField(hit.fieldKey, hit.value, normalizerFor(hit.fieldKey), quality.penalty);
+      if (!built) continue;
+      built.sourceDocTag = sourceDocTag;
+      built.matchPath = "field_map";
+      built.matchedSynonym = hit.section;
+      built.sourceLine = hit.sourceLine;
+      built.sourceLineNo = hit.sourceLineNo;
+      const existing = byKey.get(hit.fieldKey);
+      if (!existing || existing.blankAfterMatch || built.confidence >= existing.confidence) {
+        synonymKeys.add(hit.fieldKey);
+        byKey.set(hit.fieldKey, built);
+      }
+    }
+  }
+
+  applyFourPointComputed(byKey, sourceKind, sourceDocTag, quality.penalty);
+  splitDecOccupancy(byKey);
+  applyDecStandards(byKey, text, sourceKind, sourceDocTag, quality.penalty);
+  normalizeScheduledPersonal(byKey);
+
   const fields = [...byKey.values()].map((field) => ({ ...field, sourceDocTag: field.sourceDocTag ?? sourceDocTag }));
   return {
     fields,
@@ -464,6 +493,235 @@ export function extractFieldsFromText(text: string, docType?: string | null): Ex
     unmappedLabels,
     fieldMapDocType: mapType,
   };
+}
+
+const DEC_BLANK_STANDARDS: Array<[string, string]> = [
+  ["coverage_e", "300000"],
+  ["coverage_f", "1000"],
+  ["loss_assessment", "1000"],
+  ["water_backup", "5000"],
+  ["deadbolts", "yes"],
+];
+
+function applyDecStandards(
+  byKey: Map<string, ExtractedField>,
+  text: string,
+  sourceKind: SourceDocKind,
+  sourceDocTag: string,
+  penalty: number,
+): void {
+  if (sourceKind !== "dec") return;
+
+  if (!byKey.has("current_carrier") || byKey.get("current_carrier")?.blankAfterMatch) {
+    const fromTitle = carrierFromPolicyTitle(text);
+    if (fromTitle) {
+      const built = toField("current_carrier", fromTitle, (s) => s.replace(/\s+/g, " ").trim(), penalty);
+      if (built) {
+        built.sourceDocTag = sourceDocTag;
+        built.matchPath = "pattern";
+        byKey.set("current_carrier", built);
+      }
+    }
+  }
+
+  if (!byKey.has("mortgagee_address") || byKey.get("mortgagee_address")?.blankAfterMatch) {
+    const addr = mortgageeAddressFromText(text);
+    if (addr) {
+      const built = toField("mortgagee_address", addr, (s) => s.replace(/\s+/g, " ").trim(), penalty);
+      if (built) {
+        built.sourceDocTag = sourceDocTag;
+        built.matchPath = "pattern";
+        byKey.set("mortgagee_address", built);
+      }
+    }
+  }
+
+  // Wind/hail falls back to AOP when the page has no wind/hail line.
+  if (
+    (!byKey.has("wind_hail_deductible") || byKey.get("wind_hail_deductible")?.blankAfterMatch) &&
+    byKey.get("aop_deductible") &&
+    !byKey.get("aop_deductible")!.blankAfterMatch
+  ) {
+    const aop = byKey.get("aop_deductible")!;
+    byKey.set("wind_hail_deductible", {
+      ...aop,
+      fieldKey: "wind_hail_deductible",
+      label: EXTRACT_LABELS.wind_hail_deductible ?? "Wind / hail deductible",
+    });
+  }
+
+  for (const [key, value] of DEC_BLANK_STANDARDS) {
+    const existing = byKey.get(key);
+    if (existing && !existing.blankAfterMatch && existing.normalizedValue.trim()) continue;
+    const built = toField(key, value, normalizerFor(key), penalty);
+    if (!built) continue;
+    built.sourceDocTag = sourceDocTag;
+    built.matchPath = "none";
+    built.confidence = round3(clamp(0.9 - penalty, 0.05, 0.99));
+    built.flagged = false;
+    byKey.set(key, built);
+  }
+}
+
+function carrierFromPolicyTitle(text: string): string | null {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 8)) {
+    if (/declaration|policy\s*number|form\s*:|named\s+insured/i.test(line)) continue;
+    const company = /(?:company|carrier|insurer)\s*[:#]\s*([A-Za-z0-9 .&'-]{3,})/i.exec(line);
+    if (company) return company[1].trim();
+    if (
+      /insurance|assurance|mutual|property\s+casualty|citizens|universal|slide|heritage|tower\s*hill/i.test(
+        line,
+      ) &&
+      line.length < 80
+    ) {
+      return line.replace(/\s+/g, " ").trim();
+    }
+  }
+  return null;
+}
+
+function mortgageeAddressFromText(text: string): string | null {
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    if (!/(?:first\s*)?mortgagee|additional\s+interest/i.test(lines[i] ?? "")) continue;
+    for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+      const line = (lines[j] ?? "").trim();
+      if (!line) continue;
+      if (/loan\s*(?:number|#)|mortgagee|interest|coverage|deductible/i.test(line)) continue;
+      // Full address line — no city/state/zip split.
+      if (/\d/.test(line) && /[A-Za-z]/.test(line)) return line.replace(/\s+/g, " ").trim();
+    }
+  }
+  return null;
+}
+
+function applyFourPointComputed(
+  byKey: Map<string, ExtractedField>,
+  sourceKind: SourceDocKind,
+  sourceDocTag: string,
+  penalty: number,
+): void {
+  if (sourceKind !== "four_point") return;
+  const year = new Date().getFullYear();
+
+  const panelAge = byKey.get("panel_age");
+  if (panelAge && !panelAge.blankAfterMatch) {
+    const age = parseInt(panelAge.normalizedValue.replace(/[^0-9]/g, ""), 10);
+    if (Number.isFinite(age) && age >= 0 && age <= 150) {
+      const computed = String(year - age);
+      const built = toField("electrical_year", computed, normalizeYear, penalty);
+      if (built) {
+        built.sourceDocTag = sourceDocTag;
+        built.matchPath = "synonym";
+        built.matchedSynonym = panelAge.matchedSynonym ?? "Panel Age";
+        built.sourceLine = panelAge.sourceLine;
+        built.sourceLineNo = panelAge.sourceLineNo;
+        byKey.set("electrical_year", built);
+      }
+    } else if (/^(19|20)\d{2}$/.test(panelAge.normalizedValue.trim())) {
+      // Already a year
+      const built = toField("electrical_year", panelAge.normalizedValue, normalizeYear, penalty);
+      if (built) {
+        built.sourceDocTag = sourceDocTag;
+        built.matchPath = "synonym";
+        byKey.set("electrical_year", built);
+      }
+    }
+  }
+
+  const heaterAge = byKey.get("water_heater_age");
+  if (heaterAge && !heaterAge.blankAfterMatch) {
+    const age = parseInt(heaterAge.normalizedValue.replace(/[^0-9]/g, ""), 10);
+    if (Number.isFinite(age) && age >= 0 && age <= 150) {
+      const computed = String(year - age);
+      const built = toField("water_heater_year", computed, normalizeYear, penalty);
+      if (built) {
+        built.sourceDocTag = sourceDocTag;
+        built.matchPath = "synonym";
+        built.matchedSynonym = heaterAge.matchedSynonym ?? "Age of Water Heater";
+        built.sourceLine = heaterAge.sourceLine;
+        built.sourceLineNo = heaterAge.sourceLineNo;
+        byKey.set("water_heater_year", built);
+      }
+    } else if (/^(19|20)\d{2}$/.test(heaterAge.normalizedValue.trim())) {
+      const built = toField("water_heater_year", heaterAge.normalizedValue, normalizeYear, penalty);
+      if (built) {
+        built.sourceDocTag = sourceDocTag;
+        built.matchPath = "synonym";
+        byKey.set("water_heater_year", built);
+      }
+    }
+  }
+
+  const original = byKey.get("plumbing_original");
+  const yearBuilt = byKey.get("year_built");
+  if (
+    original &&
+    !original.blankAfterMatch &&
+    /^(y|yes|true|checked|x)$/i.test(original.normalizedValue.trim()) &&
+    yearBuilt &&
+    !yearBuilt.blankAfterMatch &&
+    yearBuilt.normalizedValue.trim()
+  ) {
+    const built = toField("plumbing_year", yearBuilt.normalizedValue, normalizeYear, penalty);
+    if (built) {
+      built.sourceDocTag = sourceDocTag;
+      built.matchPath = "synonym";
+      built.matchedSynonym = original.matchedSynonym ?? "Original to Home";
+      byKey.set("plumbing_year", built);
+    }
+  }
+
+  // Prefer covering date for roof_year when both permit date and covering date exist —
+  // synonym order already prefers "Date of Last Roofing Permit"; if covering date also
+  // landed as roof_year via a later pass, keep the first non-blank (document order).
+}
+
+
+function splitDecOccupancy(byKey: Map<string, ExtractedField>): void {
+  const months = byKey.get("months_occupied");
+  const occ = byKey.get("occupancy");
+  const source = months ?? occ;
+  if (!source || source.blankAfterMatch) return;
+  const raw = source.normalizedValue.trim();
+  const digits = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+  const looksMonths = Number.isFinite(digits) && /\d/.test(raw) && !/owner|tenant|vacant|rental/i.test(raw);
+  if (looksMonths) {
+    byKey.set("months_occupied", {
+      ...source,
+      fieldKey: "months_occupied",
+      label: EXTRACT_LABELS.months_occupied ?? "Months occupied",
+      normalizedValue: String(digits),
+    });
+    // Drop mistaken occupancy copy when the line was months-only.
+    if (occ && occ.normalizedValue === raw) byKey.delete("occupancy");
+    return;
+  }
+  // Owner / tenant style — keep occupancy, clear non-numeric months.
+  const built = {
+    ...source,
+    fieldKey: "occupancy",
+    label: EXTRACT_LABELS.occupancy ?? "Occupancy",
+    normalizedValue: normalizeOccupancy(raw),
+  };
+  byKey.set("occupancy", built);
+  if (months && !/\d/.test(months.normalizedValue)) byKey.delete("months_occupied");
+}
+
+function normalizeScheduledPersonal(byKey: Map<string, ExtractedField>): void {
+  const field = byKey.get("scheduled_personal_property") ?? byKey.get("scheduled_personal");
+  if (!field || field.blankAfterMatch) return;
+  const raw = field.normalizedValue.toLowerCase();
+  let next = field.normalizedValue;
+  if (/include|yes|y\b|true|replacement/.test(raw) && !/exclude|no\b|false|none/.test(raw)) {
+    next = "yes";
+  } else if (/exclude|no\b|false|none|not\s+include/.test(raw)) {
+    next = "no";
+  }
+  const updated = { ...field, fieldKey: "scheduled_personal_property", normalizedValue: next };
+  byKey.set("scheduled_personal_property", updated);
+  byKey.set("scheduled_personal", { ...updated, fieldKey: "scheduled_personal" });
 }
 
 function blankSynonymField(key: string, sourceDocTag: string, penalty: number): ExtractedField {
@@ -640,9 +898,39 @@ function normalizerFor(key: string): (raw: string) => string {
   if (key === "phone") return (s) => s.replace(/\s+/g, " ").trim();
   if (key === "email") return (s) => s.replace(/\s+/g, "").trim();
   if (key === "dob") return (s) => s.replace(/\s+/g, " ").trim();
-  if (key === "entity_type" || key === "roof_deck_attachment" || key === "terrain" || key === "wind_speed") {
+  if (
+    key === "entity_type" ||
+    key === "roof_deck_attachment" ||
+    key === "terrain" ||
+    key === "wind_speed" ||
+    key === "building_code" ||
+    key === "inspection_company" ||
+    key === "license_or_certificate_number" ||
+    key === "wind_mit_inspector" ||
+    key === "applicant_name" ||
+    key === "applicant_address" ||
+    key === "date_inspected" ||
+    key === "usage" ||
+    key === "current_policy_named_insured" ||
+    key === "mortgagee_address" ||
+    key === "loan_number" ||
+    key === "loss_assessment" ||
+    key === "deadbolts" ||
+    key === "scheduled_personal" ||
+    key === "scheduled_personal_property" ||
+    key === "panel_age" ||
+    key === "water_heater_age" ||
+    key === "plumbing_original"
+  ) {
     return (s) => s.replace(/\s+/g, " ").trim();
   }
+  if (key === "months_occupied") {
+    return (s) => {
+      const n = parseInt(s.replace(/[^0-9]/g, ""), 10);
+      return Number.isFinite(n) ? String(n) : s.replace(/\s+/g, " ").trim();
+    };
+  }
+  if (key === "wind_hail_deductible") return normalizeDeductible;
   return (s) => s.replace(/\s+/g, " ").trim();
 }
 
@@ -737,7 +1025,9 @@ function normalizeRoof(raw: string): string {
 }
 
 function normalizeOpenings(raw: string): string {
-  const s = raw.toLowerCase();
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (/^[ABCNX]$/i.test(trimmed)) return trimmed.toUpperCase();
+  const s = trimmed.toLowerCase();
   if (/full|impact|shutters/.test(s)) return "full";
   if (/partial/.test(s)) return "partial";
   if (/none|n0ne|no|unk/.test(s)) return "none";

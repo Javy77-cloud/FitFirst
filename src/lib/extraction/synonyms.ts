@@ -1,10 +1,11 @@
 /**
  * Synonym dictionary for dec / 4-point / wind mitigation / related-insured docs.
  *
- * Match the printed label (or an alternate the form actually uses), then take
- * the value after the first colon, dash, or equals on that line — never the
- * label or the question text. When two synonyms overlap, the longer, more
- * specific synonym wins.
+ * Prefer doc-type-scoped entries so Address / Occupancy / Name labels do not
+ * collide across forms. Match the printed label, then take the value after the
+ * first colon, dash, or equals — never the label or the question text. When two
+ * synonyms overlap, the longer, more specific synonym wins; scoped entries beat
+ * global ones for the active doc kind.
  */
 
 export const SOURCE_DOC_TAGS = {
@@ -19,9 +20,13 @@ export type SourceDocKind = keyof typeof SOURCE_DOC_TAGS;
 export type SynonymEntry = {
   fieldKey: string;
   synonyms: string[];
+  /** When set, only apply for these doc kinds. Omit = all kinds. */
+  docTypes?: SourceDocKind[];
+  /** Also emit the same value onto these extract keys. */
+  alsoWrite?: string[];
 };
 
-/** Target field → labels documents actually print. Longer phrases first at lookup. */
+/** Shared / legacy targets. Doc-scoped rows below override collisions. */
 export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   {
     fieldKey: "named_insured",
@@ -37,7 +42,7 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "phone",
-    synonyms: ["Phone Number", "Primary Phone", "Agency Phone", "Phone"],
+    synonyms: ["Phone Number", "Primary Phone", "Agency Phone", "Cell Phone", "Phone"],
   },
   {
     fieldKey: "email",
@@ -49,21 +54,20 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "entity_type",
-    synonyms: ["Type of Residence", "Dwelling Type"],
+    synonyms: ["Dwelling Type"],
   },
   {
     fieldKey: "address",
     synonyms: [
       "Property Street Address",
-      "Residence Premises",
       "Insured Location",
       "Property address",
-      "Mailing Address",
       "Location",
     ],
   },
   {
     fieldKey: "city",
+    // Skip literal "City: Fort Myers" value-line synonym — label is just City.
     synonyms: ["City, State, and Zip Code", "Location city", "City"],
   },
   {
@@ -79,7 +83,6 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
     synonyms: [
       "Year Built / Updated",
       "Year of Construction",
-      "Actual year built",
       "Year Built",
       "Yr Built",
       "Yr Blt",
@@ -103,7 +106,14 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "roof_covering",
-    synonyms: ["Roof Surfacing Material", "Roof Covering", "Roof Material", "Roof type", "Roof cov"],
+    synonyms: [
+      "Roof Surfacing Material",
+      "Covering Material",
+      "Roof Covering",
+      "Roof Material",
+      "Roof type",
+      "Roof cov",
+    ],
   },
   {
     fieldKey: "roof_deck",
@@ -111,7 +121,7 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "roof_deck_attachment",
-    synonyms: ["Wood Deck (Type II or III)", "Roof Deck Attachment"],
+    synonyms: ["Wood Deck (Type II or III)"],
   },
   {
     fieldKey: "roof_to_wall",
@@ -132,6 +142,10 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   {
     fieldKey: "occupancy",
     synonyms: ["Occupancy", "Occ"],
+  },
+  {
+    fieldKey: "stories",
+    synonyms: ["# of Stories", "Stories", "#"],
   },
   {
     fieldKey: "coverage_a",
@@ -185,13 +199,290 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "hurricane_deductible",
-    synonyms: ["Hurricane deductible", "Hurricane"],
+    synonyms: [
+      "Hurricane or Hurricane Deductible",
+      "Hurricane deductible",
+      "Hurricane Deductible",
+      "Hurricane",
+    ],
   },
   {
     fieldKey: "current_premium",
     synonyms: ["Total Annual Policy Premium", "Annual Premium", "Total Premium", "Current premium", "Premium"],
   },
+  {
+    fieldKey: "policy_number",
+    synonyms: ["Policy Number", "Policy No", "Policy #"],
+  },
+  {
+    fieldKey: "effective_date",
+    synonyms: ["Policy Effective Date", "Effective Date", "Policy Effective"],
+  },
+  {
+    fieldKey: "expiration_date",
+    synonyms: ["Policy Expiration Date", "Expiration Date", "Policy Expiration"],
+  },
 ];
+
+/** Wind mitigation — Javy synonym list (scoped). */
+export const WIND_MIT_SYNONYMS: SynonymEntry[] = [
+  {
+    fieldKey: "applicant_name",
+    synonyms: ["Owner Name", "Owner's Name"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "applicant_address",
+    synonyms: ["Address Inspected", "Address"],
+    alsoWrite: ["mailing_address", "address"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "city",
+    synonyms: ["City"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "zip",
+    synonyms: ["Zip", "ZIP"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "county",
+    synonyms: ["County"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "email",
+    synonyms: ["Email"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "phone",
+    synonyms: ["Cell Phone"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "year_built",
+    synonyms: ["Year of Home", "Year Built"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "stories",
+    synonyms: ["#", "# of Stories", "Stories"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "wind_mit_inspector",
+    synonyms: ["Qualified Inspector Name", "Inspector Name"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "license_or_certificate_number",
+    synonyms: ["License or Certificate #", "License or Certificate Number", "License #"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "inspection_company",
+    synonyms: ["Inspection Company"],
+    docTypes: ["wind_mit"],
+  },
+  {
+    fieldKey: "building_code",
+    synonyms: ["Building Code"],
+    docTypes: ["wind_mit"],
+  },
+];
+
+/** Four-point — Javy synonym list (scoped). */
+export const FOUR_POINT_SYNONYMS: SynonymEntry[] = [
+  {
+    fieldKey: "applicant_name",
+    synonyms: ["Insured/Applicant Name", "Insured Name", "Applicant Name"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "applicant_address",
+    synonyms: ["Address Inspected"],
+    alsoWrite: ["address"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "year_built",
+    synonyms: ["Actual Year Built", "Actual year built"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "date_inspected",
+    synonyms: ["Four-Point Date", "Four Point Date", "4-Point Date", "4 Point Date"],
+    alsoWrite: ["four_point_date"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "panel_age",
+    synonyms: ["Panel Age", "Age of Electrical Panel", "Age of electrical panel"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "hvac_year",
+    synonyms: ["Year Last Updated", "Year last updated", "HVAC Year"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "water_heater_age",
+    synonyms: ["Age of Water Heater", "Age of water heater"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "plumbing_original",
+    synonyms: ["Original to Home", "Original to home"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "roof_covering",
+    synonyms: ["Covering Material", "Roof Covering", "Roof covering"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "roof_year",
+    synonyms: [
+      "Date of Last Roofing Permit",
+      "Covering Date",
+      "Roof Covering Date",
+      "Roof Year",
+    ],
+    docTypes: ["four_point"],
+  },
+];
+
+/** Dec page — Javy synonym list (scoped; Address / Occupancy do not collide). */
+export const DEC_SYNONYMS: SynonymEntry[] = [
+  {
+    fieldKey: "mailing_address",
+    synonyms: ["Insured Name"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "applicant_address",
+    synonyms: ["Residence Premises", "Residence premises"],
+    alsoWrite: ["address"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "months_occupied",
+    synonyms: ["Occupancy", "Occ"],
+    alsoWrite: ["occupancy"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "usage",
+    synonyms: ["Type of Residence"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "entity_type",
+    synonyms: ["Dwelling Type"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "construction",
+    synonyms: ["Construction Type", "Construction"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "coverage_a",
+    synonyms: ["Coverage A - Dwelling", "Coverage A – Dwelling", "Coverage A Dwelling"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "ordinance_or_law",
+    synonyms: ["Ordinance or Law", "Ordinance or law"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "water_backup",
+    synonyms: [
+      "Water Backup and Sump Overflow Coverage",
+      "Water Backup",
+      "Water backup",
+    ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "scheduled_personal_property",
+    synonyms: ["Personal Property Replacement Cost"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "hurricane_deductible",
+    synonyms: ["Hurricane or Hurricane Deductible", "Hurricane Deductible", "Hurricane"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "aop_deductible",
+    synonyms: ["All Other Perils", "AOP", "AOP deductible"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "wind_hail_deductible",
+    synonyms: [
+      "Windstorm or Hail",
+      "Other Than Hurricane",
+      "Wind / Hail",
+      "Wind/Hail",
+      "Wind Hail",
+    ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "current_policy_named_insured",
+    synonyms: ["Name Insured", "Named Insured", "Primary named insured"],
+    alsoWrite: ["named_insured"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "policy_number",
+    synonyms: ["Policy Number"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "current_premium",
+    synonyms: ["Total Annual Policy Premium", "Annual Premium"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "effective_date",
+    synonyms: ["Policy Effective Date", "Effective Date"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "expiration_date",
+    synonyms: ["Policy Expiration Date", "Expiration Date"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "mortgagee",
+    synonyms: [
+      "First Mortgagee",
+      "Additional Interest",
+      "Mortgagee",
+      "Mortgagee Clause",
+    ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "loan_number",
+    synonyms: ["Loan Number", "Loan #"],
+    docTypes: ["dec"],
+  },
+];
+
+export const DOC_SCOPED_SYNONYMS: Record<SourceDocKind, SynonymEntry[]> = {
+  wind_mit: WIND_MIT_SYNONYMS,
+  four_point: FOUR_POINT_SYNONYMS,
+  dec: DEC_SYNONYMS,
+  related_insured: [],
+};
 
 export type SynonymMatch = {
   fieldKey: string;
@@ -217,6 +508,9 @@ type PreparedSynonym = {
   synonym: string;
   needle: string;
   endsWithDelim: boolean;
+  docTypes?: SourceDocKind[];
+  alsoWrite?: string[];
+  scoped: boolean;
 };
 
 function compactLabel(raw: string): string {
@@ -227,19 +521,41 @@ function normalizeHaystack(raw: string): string {
   return raw.replace(/[–—]/g, "-").replace(/\s+/g, " ");
 }
 
-const PREPARED: PreparedSynonym[] = SYNONYM_DICTIONARY.flatMap((entry) =>
-  entry.synonyms.map((synonym) => {
-    const trimmed = synonym.trim();
-    const endsWithDelim = /[:–—=\-]\s*$/.test(trimmed);
-    const core = trimmed.replace(/[:–—=\-]\s*$/, "").trim();
-    return {
-      fieldKey: entry.fieldKey,
-      synonym: trimmed,
-      needle: normalizeHaystack(core).toLowerCase(),
-      endsWithDelim,
-    };
-  }),
-).sort((a, b) => b.needle.length - a.needle.length);
+function prepareEntries(entries: SynonymEntry[], scoped: boolean): PreparedSynonym[] {
+  return entries.flatMap((entry) =>
+    entry.synonyms.map((synonym) => {
+      const trimmed = synonym.trim();
+      const endsWithDelim = /[:–—=\-]\s*$/.test(trimmed);
+      const core = trimmed.replace(/[:–—=\-]\s*$/, "").trim();
+      return {
+        fieldKey: entry.fieldKey,
+        synonym: trimmed,
+        needle: normalizeHaystack(core).toLowerCase(),
+        endsWithDelim,
+        docTypes: entry.docTypes,
+        alsoWrite: entry.alsoWrite,
+        scoped,
+      };
+    }),
+  );
+}
+
+/** Active dictionary for a doc kind: scoped rows first, then global. */
+export function synonymEntriesFor(kind?: SourceDocKind | null): SynonymEntry[] {
+  const scoped = kind ? DOC_SCOPED_SYNONYMS[kind] ?? [] : [];
+  return [...scoped, ...SYNONYM_DICTIONARY];
+}
+
+function preparedFor(kind?: SourceDocKind | null): PreparedSynonym[] {
+  const scoped = kind ? prepareEntries(DOC_SCOPED_SYNONYMS[kind] ?? [], true) : [];
+  const global = prepareEntries(SYNONYM_DICTIONARY, false);
+  return [...scoped, ...global].sort((a, b) => {
+    const lenDelta = b.needle.length - a.needle.length;
+    if (lenDelta !== 0) return lenDelta;
+    if (a.scoped !== b.scoped) return a.scoped ? -1 : 1;
+    return 0;
+  });
+}
 
 export function stripCheckboxMarkers(raw: string): string {
   return raw.replace(CHECKBOX_MARKERS, " ").replace(/\s+/g, " ").trim();
@@ -277,17 +593,28 @@ function findNeedle(haystackLower: string, needle: string, from: number): number
   return -1;
 }
 
+function entryApplies(row: PreparedSynonym, kind?: SourceDocKind | null): boolean {
+  if (!row.docTypes || row.docTypes.length === 0) return true;
+  if (!kind) return true;
+  return row.docTypes.includes(kind);
+}
+
 /**
- * All synonym hits on one line. Overlapping hits keep the longer synonym.
+ * All synonym hits on one line. Overlapping hits keep the longer synonym;
+ * doc-scoped rows beat global when both match.
  */
-export function matchSynonymsOnLine(line: string): SynonymMatch[] {
+export function matchSynonymsOnLine(
+  line: string,
+  kind?: SourceDocKind | null,
+): SynonymMatch[] {
   const original = line.replace(/\s+/g, " ").trim();
   if (!original) return [];
   const haystack = normalizeHaystack(original);
   const haystackLower = haystack.toLowerCase();
-  const candidates: SynonymMatch[] = [];
+  const candidates: Array<SynonymMatch & { scoped: boolean; alsoWrite?: string[] }> = [];
 
-  for (const row of PREPARED) {
+  for (const row of preparedFor(kind)) {
+    if (!entryApplies(row, kind)) continue;
     let from = 0;
     while (from < haystackLower.length) {
       const idx = findNeedle(haystackLower, row.needle, from);
@@ -309,21 +636,41 @@ export function matchSynonymsOnLine(line: string): SynonymMatch[] {
         blank: true,
         start: idx,
         end: afterNeedle,
+        scoped: row.scoped,
+        alsoWrite: row.alsoWrite,
       });
       from = afterNeedle;
     }
   }
 
-  return resolveOverlaps(candidates, haystack);
+  return expandAlsoWrite(resolveOverlaps(candidates, haystack));
 }
 
-function resolveOverlaps(candidates: SynonymMatch[], haystack: string): SynonymMatch[] {
+function expandAlsoWrite(
+  hits: Array<SynonymMatch & { alsoWrite?: string[] }>,
+): SynonymMatch[] {
+  const out: SynonymMatch[] = [];
+  for (const hit of hits) {
+    const { alsoWrite: _aw, ...base } = hit as SynonymMatch & { alsoWrite?: string[] };
+    out.push(base);
+    for (const extra of hit.alsoWrite ?? []) {
+      out.push({ ...base, fieldKey: extra });
+    }
+  }
+  return out;
+}
+
+function resolveOverlaps(
+  candidates: Array<SynonymMatch & { scoped: boolean; alsoWrite?: string[] }>,
+  haystack: string,
+): Array<SynonymMatch & { alsoWrite?: string[] }> {
   const ranked = [...candidates].sort((a, b) => {
     const lenDelta = b.synonym.length - a.synonym.length;
     if (lenDelta !== 0) return lenDelta;
+    if (a.scoped !== b.scoped) return a.scoped ? -1 : 1;
     return a.start - b.start;
   });
-  const kept: SynonymMatch[] = [];
+  const kept: Array<SynonymMatch & { alsoWrite?: string[] }> = [];
   const claimed: Array<{ start: number; end: number }> = [];
 
   for (const hit of ranked) {
@@ -332,7 +679,7 @@ function resolveOverlaps(candidates: SynonymMatch[], haystack: string): SynonymM
     if (overlaps) continue;
     const nextStart = nextHitStart(ranked, hit, claimed, synonymEnd);
     const sliced = sliceValueUntil(haystack, hit, synonymEnd, nextStart);
-    kept.push(sliced);
+    kept.push({ ...sliced, alsoWrite: hit.alsoWrite });
     claimed.push({ start: hit.start, end: Math.max(synonymEnd, sliced.end) });
   }
 
@@ -380,12 +727,15 @@ function sliceValueUntil(
   };
 }
 
-export function matchSynonymsInText(text: string): SynonymMatch[] {
+export function matchSynonymsInText(
+  text: string,
+  kind?: SourceDocKind | null,
+): SynonymMatch[] {
   const hits: SynonymMatch[] = [];
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i] ?? "";
-    for (const hit of matchSynonymsOnLine(rawLine)) {
+    for (const hit of matchSynonymsOnLine(rawLine, kind)) {
       hits.push({
         ...hit,
         sourceLine: rawLine.replace(/\s+/g, " ").trim(),
@@ -397,9 +747,12 @@ export function matchSynonymsInText(text: string): SynonymMatch[] {
 }
 
 /** One value per field. First non-blank wins (document order). */
-export function bestSynonymValues(text: string): Map<string, SynonymMatch> {
+export function bestSynonymValues(
+  text: string,
+  kind?: SourceDocKind | null,
+): Map<string, SynonymMatch> {
   const byKey = new Map<string, SynonymMatch>();
-  for (const hit of matchSynonymsInText(text)) {
+  for (const hit of matchSynonymsInText(text, kind)) {
     const existing = byKey.get(hit.fieldKey);
     if (!existing) {
       byKey.set(hit.fieldKey, hit);
@@ -432,11 +785,15 @@ export function inferSourceDocKind(text: string, docType?: string | null): Sourc
   return "dec";
 }
 
-export function synonymFieldKeys(): Set<string> {
-  return new Set(SYNONYM_DICTIONARY.map((row) => row.fieldKey));
+export function synonymFieldKeys(kind?: SourceDocKind | null): Set<string> {
+  return new Set(synonymEntriesFor(kind).map((row) => row.fieldKey));
 }
 
 /** Printed labels tried for a field — Why drawer blanks. */
-export function synonymsForField(fieldKey: string): string[] {
-  return SYNONYM_DICTIONARY.find((row) => row.fieldKey === fieldKey)?.synonyms ?? [];
+export function synonymsForField(fieldKey: string, kind?: SourceDocKind | null): string[] {
+  const out: string[] = [];
+  for (const row of synonymEntriesFor(kind)) {
+    if (row.fieldKey === fieldKey) out.push(...row.synonyms);
+  }
+  return out;
 }

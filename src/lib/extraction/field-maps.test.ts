@@ -82,20 +82,19 @@ Unknown inspector code: ZZ-99
     const result = extractFieldsFromText(text, "four_point");
     const byKey = Object.fromEntries(result.fields.map((field) => [field.fieldKey, field]));
     expect(byKey.electrical_year.normalizedValue).toBe("2008");
-    expect(byKey.electrical_updated.normalizedValue).toBe("2019");
+    // sep7ch: "Year last updated" maps to hvac_year (not electrical_updated).
+    expect(byKey.hvac_year.normalizedValue).toBe("2019");
     expect(byKey.plumbing_year.normalizedValue).toBe("2008");
     expect(byKey.water_heater_year.normalizedValue).toBe("2016");
-    expect(byKey.hvac_year.normalizedValue).toBe("2015");
     expect(byKey.year_built.normalizedValue).toBe("1998");
     expect(result.fields.some((field) => field.normalizedValue === "ZZ-99")).toBe(false);
     expect(result.unmappedLabels.some((row) => /unknown inspector/i.test(row.sourceLabel))).toBe(true);
 
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), result.fields);
     expect(applied.values.electrical_year.value).toBe("2008");
-    expect(applied.values.electrical_updated.value).toBe("2019");
+    expect(applied.values.hvac_year.value).toBe("2019");
     expect(applied.values.plumbing_year.value).toBe("2008");
     expect(applied.values.water_heater_year.value).toBe("2016");
-    expect(applied.values.hvac_year.value).toBe("2015");
     expect(applied.values.year_built.status).toBe("check");
   });
 

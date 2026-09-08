@@ -13,8 +13,8 @@ export type QuoteFieldDef = {
 
 /** Shared applicant block on every master sheet. One deal, one product. */
 export const APPLICANT_CORE_FIELDS: QuoteFieldDef[] = [
-  { key: "applicant_name", label: "Applicant name", group: "Applicant", extractKey: "named_insured" },
-  { key: "applicant_address", label: "Applicant address", group: "Applicant", extractKey: "mailing_address" },
+  { key: "applicant_name", label: "Applicant name", group: "Applicant", extractKey: "applicant_name" },
+  { key: "applicant_address", label: "Applicant address", group: "Applicant", extractKey: "applicant_address" },
   { key: "applicant_phone", label: "Phone", group: "Applicant", extractKey: "phone" },
   { key: "applicant_email", label: "Email", group: "Applicant", extractKey: "email" },
   { key: "applicant_dob", label: "Date of birth", group: "Applicant", extractKey: "dob" },
