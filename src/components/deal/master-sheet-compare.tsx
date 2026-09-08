@@ -2,6 +2,7 @@
 
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
+import { MasterSheetAddressLinks } from "@/components/deal/master-sheet-address-links";
 import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ export function MasterSheetCompare({
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+            <MasterSheetAddressLinks values={values} />
             <MasterSheetFillButton dealId={dealId} line={line} />
             <span className="sr-only" data-ff-master-source-docs={sourceDocCount} />
           </div>
