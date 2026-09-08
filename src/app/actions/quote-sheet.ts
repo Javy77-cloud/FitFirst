@@ -67,6 +67,7 @@ import {
   fillDealHeaderBlanks,
   mergeAgentEdits,
   submittedSheetValues,
+  fieldIsBlank,
 } from "@/lib/quote-sheet/apply";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, dealActionFlashHref } from "@/lib/desk/action-flash";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
@@ -77,6 +78,12 @@ import {
   enrichPropertyOnAddressConfirm,
 } from "@/lib/property-enrichment/service";
 import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
+import { geocodePropertyAddress } from "@/lib/getparceldata/geocode";
+import {
+  MILES_TO_COAST_SHEET_KEY,
+  milesToNearestCoast,
+  sheetCellForMilesToCoast,
+} from "@/lib/geo/miles-to-coast";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
 import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
@@ -393,7 +400,25 @@ export async function runFillFromPropertyRecords(
   };
   const apiKey = await loadGetParcelDataApiKey();
   const bundle = await orchestratePropertyFill({ address, apiKey });
-  if (bundle.status !== "ok") {
+  // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
+  const freshPropertyValues = await loadFreshSheetValues(sheet.id, sheet.values);
+  const applied =
+    bundle.status === "ok"
+      ? applyPropertyRecordsToSheet(lineRaw, freshPropertyValues, bundle.facts)
+      : { values: freshPropertyValues, filledKeys: [] as string[], skippedKeys: [] as string[] };
+
+  // Free INTERNAL miles-to-coast when coords/address available — empty-only (same overwrite rules).
+  let coastCoords: { lat?: number; lng?: number } = {
+    lat: bundle.lookup.lat,
+    lng: bundle.lookup.lng,
+  };
+  if (coastCoords.lat == null || coastCoords.lng == null) {
+    const geo = await geocodePropertyAddress(address);
+    if (geo.ok) coastCoords = { lat: geo.lat, lng: geo.lng };
+  }
+  const withCoast = applyMilesToCoastIfBlank(applied, coastCoords);
+
+  if (bundle.status !== "ok" && !withCoast.filledKeys.includes(MILES_TO_COAST_SHEET_KEY)) {
     return {
       status: bundle.status,
       filledKeys: [],
@@ -403,12 +428,10 @@ export async function runFillFromPropertyRecords(
       toast: "",
     };
   }
-  // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
-  const freshPropertyValues = await loadFreshSheetValues(sheet.id, sheet.values);
-  const applied = applyPropertyRecordsToSheet(lineRaw, freshPropertyValues, bundle.facts);
+
   await db
     .update(quoteSheets)
-    .set({ values: applied.values, updatedAt: new Date() })
+    .set({ values: withCoast.values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
   await db.insert(extractionJobs).values({
     tenantId: DEFAULT_TENANT_ID,
@@ -416,8 +439,8 @@ export async function runFillFromPropertyRecords(
     quoteSheetId: sheet.id,
     engine: "property_records",
     status: "done",
-    filledKeys: applied.filledKeys,
-    skippedKeys: applied.skippedKeys,
+    filledKeys: withCoast.filledKeys,
+    skippedKeys: withCoast.skippedKeys,
     message: bundle.message,
   });
   // Optional Why-drawer audit only — engine=api, NO synonym candidates from API.
@@ -436,13 +459,13 @@ export async function runFillFromPropertyRecords(
       ...bundle.sourcesUsed,
     ],
   });
-  await syncRiskFromSheet(dealId, applied.values, "fill");
-  await syncHeaderFromSheet(dealId, applied.values, "fill");
+  await syncRiskFromSheet(dealId, withCoast.values, "fill");
+  await syncHeaderFromSheet(dealId, withCoast.values, "fill");
   const toast =
-    applied.filledKeys.length || applied.skippedKeys.length
+    withCoast.filledKeys.length || withCoast.skippedKeys.length
       ? toastForFillCounts({
-          filledCount: applied.filledKeys.length,
-          skippedCount: applied.skippedKeys.length,
+          filledCount: withCoast.filledKeys.length,
+          skippedCount: withCoast.skippedKeys.length,
         })
       : toastForPropertyFill({
           filledCount: 0,
@@ -450,12 +473,95 @@ export async function runFillFromPropertyRecords(
         });
   return {
     status: "ok",
-    filledKeys: applied.filledKeys,
-    skippedKeys: applied.skippedKeys,
+    filledKeys: withCoast.filledKeys,
+    skippedKeys: withCoast.skippedKeys,
     sourcesUsed: bundle.sourcesUsed,
     message: bundle.message,
     toast,
   };
+}
+
+
+type CoastApplyResult = {
+  values: Record<string, QuoteSheetFieldValue>;
+  filledKeys: string[];
+  skippedKeys: string[];
+};
+
+/** Empty-only miles_to_coast write — matches property-fill (never clobber confirmed/check cells). */
+function applyMilesToCoastIfBlank(
+  applied: CoastApplyResult,
+  coords: { lat?: number; lng?: number } | null | undefined,
+): CoastApplyResult {
+  if (coords?.lat == null || coords?.lng == null) return applied;
+  if (!Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) return applied;
+  if (!fieldIsBlank(applied.values[MILES_TO_COAST_SHEET_KEY])) {
+    return {
+      ...applied,
+      skippedKeys: applied.skippedKeys.includes(MILES_TO_COAST_SHEET_KEY)
+        ? applied.skippedKeys
+        : [...applied.skippedKeys, MILES_TO_COAST_SHEET_KEY],
+    };
+  }
+  const miles = milesToNearestCoast({ lat: coords.lat, lng: coords.lng });
+  if (!Number.isFinite(miles)) return applied;
+  return {
+    values: {
+      ...applied.values,
+      [MILES_TO_COAST_SHEET_KEY]: sheetCellForMilesToCoast(miles),
+    },
+    filledKeys: [...applied.filledKeys, MILES_TO_COAST_SHEET_KEY],
+    skippedKeys: applied.skippedKeys,
+  };
+}
+
+export type ComputeMilesToCoastResult =
+  | { ok: true; miles: string }
+  | { ok: false; error: string };
+
+/**
+ * Button entry: recalculate INTERNAL miles_to_coast and write the Home master sheet cell.
+ * Uses free ArcGIS geocode (already in product) + bundled FL shoreline — no paid Maps APIs.
+ */
+export async function runComputeMilesToCoast(input: {
+  dealId: string;
+  line: string;
+}): Promise<ComputeMilesToCoastResult> {
+  const dealId = String(input.dealId ?? "").trim();
+  const lineRaw = String(input.line ?? "home").trim() || "home";
+  if (!dealId) return { ok: false, error: "Missing deal" };
+  if (!isShopLine(lineRaw)) return { ok: false, error: "Unknown line" };
+
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const sheetAddr = addressFromSheet(sheet.values);
+  const address = {
+    address1: sheetAddr.address1,
+    city: sheetAddr.city,
+    state: sheetAddr.state,
+    zip: sheetAddr.zip,
+  };
+  if (!(address.address1 ?? "").trim()) {
+    return { ok: false, error: "Add a property address on the sheet first." };
+  }
+
+  // Free ArcGIS geocode already used by property fill / GetParcel — no paid Google Geocoding.
+  const geo = await geocodePropertyAddress(address);
+  if (!geo.ok) return { ok: false, error: geo.message || "Could not geocode that address." };
+
+  const miles = milesToNearestCoast({ lat: geo.lat, lng: geo.lng });
+  if (!Number.isFinite(miles)) {
+    return { ok: false, error: "Coastline geometry unavailable." };
+  }
+  const cell = sheetCellForMilesToCoast(miles);
+  const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  const values = { ...fresh, [MILES_TO_COAST_SHEET_KEY]: cell };
+  await db
+    .update(quoteSheets)
+    .set({ values, updatedAt: new Date() })
+    .where(eq(quoteSheets.id, sheet.id));
+  await syncRiskFromSheet(dealId, values, "save");
+  revalidatePath(`/deals/${dealId}`);
+  return { ok: true, miles: cell.value };
 }
 
 export async function fillFromPropertyRecords(formData: FormData) {

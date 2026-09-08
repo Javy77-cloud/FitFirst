@@ -3,6 +3,7 @@
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
 import { MasterSheetAddressLinks } from "@/components/deal/master-sheet-address-links";
+import { MilesToCoastButton } from "@/components/deal/miles-to-coast-button";
 import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { Button } from "@/components/ui/button";
@@ -303,20 +304,25 @@ function SheetCell({
           className={className}
         />
       )}
-      {cell?.status === "check" && !locked ? (
-        <Button
-          type="submit"
-          formAction={async (formData) => {
-            formData.set("fieldKey", fieldKey);
-            await confirmQuoteSheetField(formData);
-          }}
-          variant="ghost"
-          size="xs"
-          className="h-5 self-start px-1 text-[10px]"
-        >
-          Confirm
-        </Button>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-1">
+        {cell?.status === "check" && !locked ? (
+          <Button
+            type="submit"
+            formAction={async (formData) => {
+              formData.set("fieldKey", fieldKey);
+              await confirmQuoteSheetField(formData);
+            }}
+            variant="ghost"
+            size="xs"
+            className="h-5 self-start px-1 text-[10px]"
+          >
+            Confirm
+          </Button>
+        ) : null}
+        {fieldKey === "miles_to_coast" && !locked ? (
+          <MilesToCoastButton dealId={dealId} line={line} />
+        ) : null}
+      </div>
       {locked ? <span className="text-[9px] text-muted-foreground">Ana Cov A locked</span> : null}
     </div>
   );
