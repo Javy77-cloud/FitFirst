@@ -59,7 +59,22 @@ export function MarketsPanel({
 
   if (!hasData) {
     return (
-      <div data-ff-deal-markets="" data-ff-markets-empty="" />
+      <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
+        <div className="ff-card space-y-3 p-4">
+          <h3 className="text-sm font-semibold text-navy">Markets</h3>
+          <p className="text-sm text-muted-foreground">
+            No carriers on this deal yet. Add who you want to shop from the list below
+            (carriers that write this line), or confirm the sheet and request quotes to
+            build a fresh list — then remove any you do not want.
+          </p>
+          <ManualCarrierAdd
+            dealId={dealId}
+            carriers={carriers}
+            alreadyIds={[]}
+            dealLine={dealLine}
+          />
+        </div>
+      </div>
     );
   }
 
