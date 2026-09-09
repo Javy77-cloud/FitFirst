@@ -43,25 +43,32 @@ export const AGENT_STATUSES = [
   "new",
   "sent_to_client",
   "client_reviewing",
+  "bound",
   "waiting_on_inspection",
   "dead",
 ] as const;
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
 export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
-  new: "New",
+  new: "Quoted",
   sent_to_client: "Sent to client",
   client_reviewing: "Client reviewing",
+  bound: "Bound",
   waiting_on_inspection: "Waiting on inspection",
-  dead: "Dead",
+  dead: "Lost",
 };
 
 export function isAgentStatus(value: string | null | undefined): value is AgentStatus {
   return Boolean(value && (AGENT_STATUSES as readonly string[]).includes(value));
 }
 
+/** Aliases: quoted→new, lost→dead. Default stays `new` (label Quoted). */
 export function normalizeAgentStatus(value: string | null | undefined): AgentStatus {
-  return isAgentStatus(value) ? value : "new";
+  if (!value) return "new";
+  const raw = value.trim().toLowerCase();
+  if (raw === "quoted") return "new";
+  if (raw === "lost") return "dead";
+  return isAgentStatus(raw) ? raw : "new";
 }
 
 /** Reason-for-no when status → dead (feeds appetite). */
@@ -399,6 +406,8 @@ export function bindRequirementChips(input: {
   bindRequirements?: string[] | null;
   coverageA?: number | null;
   hurricaneDeductible?: string | null;
+  /** Deal asked Cov A — used to decide if carrier floor/forced is already met. */
+  requestedCoverageA?: number | null;
 }): string[] {
   const stored = (input.bindRequirements ?? []).map((s) => s.trim()).filter(Boolean);
   if (stored.length) return stored.slice(0, 8);
@@ -410,31 +419,64 @@ export function bindRequirementChips(input: {
   for (const gap of input.gaps ?? []) push(gap);
 
   const blob = input.notes ?? "";
+  const parseNum = (raw: string | undefined) => {
+    if (!raw) return null;
+    const n = Number(raw.replaceAll(",", ""));
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const floorOnly = /floor\s*only/i.test(blob);
+  const notBindableLang = /not\s*bindable/i.test(blob);
+  const covForcedMatch = blob.match(/cov\s*a\s*forced\s*~?\$?([\d,]+)/i);
+  const covMinMatch = blob.match(/min(?:imum)?\s*cov(?:erage)?\s*a\s*~?\$?([\d,]+)/i);
+  const parsed = parseCovATriedForced({ coverageA: input.coverageA, notes: blob });
+  const forcedNoted = parsed.forcedNoted || Boolean(covForcedMatch) || Boolean(covMinMatch);
+
+  // Carrier floor/forced = forced from notes, else min match, else coverageA when forced noted.
+  const carrierFloor =
+    parseNum(covForcedMatch?.[1]) ??
+    parseNum(covMinMatch?.[1]) ??
+    (forcedNoted && input.coverageA != null ? input.coverageA : null);
+
+  const asked = input.requestedCoverageA ?? parsed.tried ?? null;
+  const hasFloorOrCovConstraint = floorOnly || forcedNoted;
+
+  if (hasFloorOrCovConstraint) {
+    const canCompare = asked != null && carrierFloor != null;
+    // $1 float guard from tip; Ovation-style RCE rounding (~$20 on $250k) still counts as met.
+    const covATolerance = 100;
+    if (canCompare && asked >= carrierFloor - covATolerance) {
+      // Cov A requirement MET — no Minimum Coverage A chip; indicative only when notes say so.
+      if (floorOnly || notBindableLang) {
+        push("Indicative quote only — not bindable yet");
+      }
+    } else if (canCompare && asked < carrierFloor - covATolerance) {
+      push(`Minimum Coverage A $${carrierFloor.toLocaleString("en-US")} not met`);
+    } else if (floorOnly) {
+      push("Indicative quote only — not bindable yet");
+    } else if (carrierFloor != null) {
+      // Forced/min present but no usable asked to compare — still surface the floor.
+      push(`Minimum Coverage A $${carrierFloor.toLocaleString("en-US")}`);
+    }
+  }
+
   const patterns: Array<[RegExp, string]> = [
     [/4\s*pt|4[- ]?point|four[- ]?point/i, "Four-point inspection required"],
-    [/mitigation(\s+form)?/i, "Mitigation form needed"],
     [/roof\s*(cert|certificate|inspection)/i, "Roof certificate required"],
     [/inspect(ion)?\s*(required|needed)/i, "Inspection required"],
     [/elec(trical)?\s*(circuit\s*)?amps?/i, "Electrical circuit amps needed"],
-    [/floor\s*only/i, "Floor-only quote — not bindable yet"],
     [/hard\s*blocked/i, "Hard blocked — cannot bind online"],
     [/incomplete/i, "Incomplete submission"],
     [/water\s*backup/i, "Water backup limit applies"],
-    [/wind\s*(mit|mitigation)/i, "Wind mitigation required"],
     [/opening\s*protect/i, "Opening protection required"],
   ];
   for (const [re, label] of patterns) {
     if (re.test(blob)) push(label);
   }
 
-  const covForced = blob.match(/cov\s*a\s*forced\s*~?\$?([\d,]+)/i);
-  const covMin = blob.match(/min(?:imum)?\s*cov(?:erage)?\s*a\s*~?\$?([\d,]+)/i);
-  if (covForced?.[1]) {
-    push(`Minimum Coverage A $${covForced[1]}`);
-  } else if (covMin?.[1]) {
-    push(`Minimum Coverage A $${covMin[1]}`);
-  } else if (input.coverageA != null && /cov\s*a\s*forced/i.test(blob)) {
-    push(`Minimum Coverage A $${input.coverageA.toLocaleString("en-US")}`);
+  // Prefer wind mitigation wording; one chip if mitigation form and/or wind mit match.
+  if (/wind\s*(mit|mitigation)/i.test(blob) || /mitigation(\s+form)?/i.test(blob)) {
+    push("Wind mitigation form needed");
   }
 
   const windCap = blob.match(/wind\s*(?:ded(?:uctible)?)?\s*(?:capped\s*at\s*)?(\d+(?:\.\d+)?)\s*%/i);

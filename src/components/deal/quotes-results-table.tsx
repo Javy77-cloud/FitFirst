@@ -232,6 +232,7 @@ export function QuotesResultsTable({
   confirmLogs: _confirmLogs,
   resultByCarrier,
   notesByQuote = {},
+  requestedCoverageA = null,
 }: {
   dealId: string;
   rows: Row[];
@@ -239,6 +240,7 @@ export function QuotesResultsTable({
   confirmLogs: { carrierId: string; why?: string | null }[];
   resultByCarrier: Record<string, string | undefined>;
   notesByQuote?: Record<string, QuoteNote[]>;
+  requestedCoverageA?: number | null;
 }) {
   const list = asList(rows);
   const [recheckMarked, setRecheckMarked] = useState<string[]>([]);
@@ -281,6 +283,7 @@ export function QuotesResultsTable({
   const hideCount = effectiveHideMarked.length;
   const anyHide = hideCount > 0;
   const hidesEffectivelyApplied = hidesApplied && hideCount > 0;
+  const anyDetailsOpen = Object.values(expanded).some(Boolean);
 
   function toggleRecheckMark(id: string) {
     setRecheckMarked((current) =>
@@ -418,6 +421,19 @@ export function QuotesResultsTable({
             {pending ? "Queuing…" : anyRecheck ? `Recheck (${recheckCount})` : "Recheck"}
           </Button>
 
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!anyDetailsOpen}
+            onClick={() => setExpanded({})}
+            data-ff-quotes-collapse-all-details=""
+            className="gap-1.5 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
+            title="Collapse all open Details"
+          >
+            Collapse all
+          </Button>
+
           {hidesEffectivelyApplied ? (
             <Button
               type="button"
@@ -525,6 +541,7 @@ export function QuotesResultsTable({
                       bindRequirements: quote.bindRequirements,
                       coverageA: quote.coverageA,
                       hurricaneDeductible: quote.hurricaneDeductible,
+                      requestedCoverageA,
                     });
                     const agentStatus = normalizeAgentStatus(quote.agentStatus);
                     const thread = notesByQuote[quote.id] ?? [];

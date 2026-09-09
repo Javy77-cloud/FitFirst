@@ -264,6 +264,7 @@ export default async function DealPage({
                           carrierId: row.log.carrierId,
                           why: row.log.why,
                         }))}
+                        requestedCoverageA={deal.coverageAmount ?? null}
                       />
                     )}
 

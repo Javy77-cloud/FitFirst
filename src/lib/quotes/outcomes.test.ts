@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  AGENT_STATUSES,
+  AGENT_STATUS_LABELS,
   bindRequirementChips,
   quoteNeedsBindRecheckAlert,
   groupQuotesByRiskOutcome,
   groupQuotesBySection,
   inferQuoteOutcomes,
+  normalizeAgentStatus,
   normalizeRiskOutcome,
   parseCovATriedForced,
   RISK_OUTCOME_LABELS,
@@ -117,15 +120,62 @@ describe("quote outcomes", () => {
   it("builds plain-English bind requirement chips for agents", () => {
     const chips = bindRequirementChips({
       notes: "HO3 · Floor only · Cov A forced $250,400 · 4-point needed · mitigation form",
+      requestedCoverageA: 250380,
     });
     expect(chips).toEqual(
       expect.arrayContaining([
         "Four-point inspection required",
-        "Mitigation form needed",
-        "Floor-only quote — not bindable yet",
-        "Minimum Coverage A $250,400",
+        "Wind mitigation form needed",
+        "Indicative quote only — not bindable yet",
       ]),
     );
+    expect(chips.join(" ")).not.toMatch(/Floor-only quote/);
+    expect(chips.join(" ")).not.toMatch(/Minimum Coverage A/);
+    expect(chips.filter((c) => /mitigation/i.test(c))).toHaveLength(1);
+  });
+
+  it("Ovation-like: asked meets forced floor → indicative only, not Minimum Cov A", () => {
+    const chips = bindRequirementChips({
+      notes: "HO3 · Floor only · Cov A forced $250,400",
+      requestedCoverageA: 250380,
+    });
+    expect(chips).toContain("Indicative quote only — not bindable yet");
+    expect(chips.some((c) => /Minimum Coverage A/i.test(c))).toBe(false);
+    expect(chips.some((c) => /Floor-only quote/i.test(c))).toBe(false);
+  });
+
+  it("under min Cov A: one Minimum Coverage A not met chip, no floor-only", () => {
+    const chips = bindRequirementChips({
+      notes: "HO3 · Floor only · Cov A forced $317,000",
+      requestedCoverageA: 250000,
+    });
+    expect(chips).toContain("Minimum Coverage A $317,000 not met");
+    expect(chips.some((c) => /Floor-only quote|Indicative quote only/i.test(c))).toBe(false);
+  });
+
+  it("mitigation form → Wind mitigation form needed", () => {
+    const chips = bindRequirementChips({
+      notes: "Needs mitigation form and wind mit",
+    });
+    expect(chips).toContain("Wind mitigation form needed");
+    expect(chips.filter((c) => /mitigation/i.test(c))).toHaveLength(1);
+  });
+
+  it("agent status labels: Quoted / Bound / Lost; aliases normalize", () => {
+    expect(AGENT_STATUS_LABELS.new).toBe("Quoted");
+    expect(AGENT_STATUS_LABELS.bound).toBe("Bound");
+    expect(AGENT_STATUS_LABELS.dead).toBe("Lost");
+    expect(AGENT_STATUSES).toEqual([
+      "new",
+      "sent_to_client",
+      "client_reviewing",
+      "bound",
+      "waiting_on_inspection",
+      "dead",
+    ]);
+    expect(normalizeAgentStatus("quoted")).toBe("new");
+    expect(normalizeAgentStatus("lost")).toBe("dead");
+    expect(normalizeAgentStatus("bound")).toBe("bound");
   });
 
   it("short reason label stays scannable", () => {
@@ -134,9 +184,8 @@ describe("quote outcomes", () => {
         notes: "HO3 · Floor only · Cov A forced $250,400",
         riskOutcome: "conditional",
       }),
-    ).toMatch(/Floor|Coverage|follow-up/i);
+    ).toMatch(/Indicative|Coverage|follow-up|Floor/i);
   });
-});
 
   it("bind recheck alert for bindable or concrete follow-up notes", () => {
     expect(quoteNeedsBindRecheckAlert({ riskOutcome: "conditional" })).toBe(false);
@@ -161,3 +210,4 @@ describe("quote outcomes", () => {
       }),
     ).toBe(true);
   });
+});

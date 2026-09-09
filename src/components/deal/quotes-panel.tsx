@@ -10,6 +10,7 @@ export function QuotesPanel({
   formId = "HO3",
   confirmLogs = [],
   quoteNotes = [],
+  requestedCoverageA = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -19,6 +20,7 @@ export function QuotesPanel({
   formId?: string;
   confirmLogs?: { carrierId: string; why?: string | null }[];
   quoteNotes?: QuoteNote[];
+  requestedCoverageA?: number | null;
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -48,6 +50,7 @@ export function QuotesPanel({
           confirmLogs={confirmLogs}
           resultByCarrier={resultByCarrier}
           notesByQuote={notesByQuote}
+          requestedCoverageA={requestedCoverageA}
         />
       </section>
     </div>
