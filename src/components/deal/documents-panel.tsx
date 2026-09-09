@@ -7,6 +7,7 @@ import type { CompletenessReport } from "@/lib/completeness/report";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
+import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import { asList } from "@/lib/safe-list";
 
 export function DocumentsPanel({
@@ -38,7 +39,7 @@ export function DocumentsPanel({
   product: SheetProduct;
   pendingFill?: boolean;
 }) {
-  const sourceDocs = asList(docs).filter((d) => d.slot !== "quote_pdf" && d.slot !== "policy_file");
+  const sourceDocs = asList(docs).filter((d) => isDocumentsSourceDoc(d));
   const lineDocs = sourceDocs.filter((d) => lineFromTags(d.tags));
   const otherSourceDocs = sourceDocs.filter((d) => !lineFromTags(d.tags));
   const lineGroups = asList(groupDocsByLine(lineDocs));

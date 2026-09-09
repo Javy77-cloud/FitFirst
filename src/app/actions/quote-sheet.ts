@@ -110,6 +110,7 @@ import {
   shopLineForProduct,
 } from "@/lib/deals/deal-line";
 import { flashAction } from "@/lib/flash-action";
+import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
 
@@ -730,10 +731,11 @@ export async function fillMasterSheetStep(input: {
   }
 
   // docs
-  const docs = await db
-    .select({ id: documents.id })
+  const allDocs = await db
+    .select({ id: documents.id, slot: documents.slot, docType: documents.docType, tags: documents.tags })
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+  const docs = allDocs.filter((doc) => isDocumentsSourceDoc(doc));
   if (docs.length === 0) {
     return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_DOCS };
   }
@@ -1060,7 +1062,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
   const aggregateSkipped: string[] = [];
 
   for (const doc of docs) {
-    if (isQuoteAttachment(doc.docType, doc.filename)) continue;
+    if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
     const startedAt = new Date();
     const abs = path.join(uploadRoot, doc.storagePath);
     let buffer: Buffer;

@@ -1,0 +1,60 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { isDocumentsSourceDoc, isQuoteFileDoc } from "./quote-docs";
+
+function source(file: string) {
+  return readFileSync(file, "utf8");
+}
+
+describe("quote docs vs documents source docs", () => {
+  it("treats agency quote uploads as quote files, not Documents source docs", () => {
+    const agency = {
+      slot: "quote_file",
+      docType: "agency_quote",
+      tags: ["quote:q1", "source:agency", "label:Acme"],
+    };
+    expect(isQuoteFileDoc(agency)).toBe(true);
+    expect(isDocumentsSourceDoc(agency)).toBe(false);
+
+    const carrier = {
+      slot: "quote_file",
+      docType: "carrier_quote",
+      tags: ["quote:q1", "source:carrier"],
+    };
+    expect(isQuoteFileDoc(carrier)).toBe(true);
+    expect(isDocumentsSourceDoc(carrier)).toBe(false);
+
+    const taggedOnly = { slot: "source_doc", docType: "other", tags: ["quote:q1"] };
+    expect(isQuoteFileDoc(taggedOnly)).toBe(true);
+    expect(isDocumentsSourceDoc(taggedOnly)).toBe(false);
+  });
+
+  it("keeps wind mit / 4-point / dec source docs on Documents", () => {
+    for (const docType of ["wind_mit", "four_point", "dec", "photo"]) {
+      const doc = { slot: "source_doc", docType, tags: ["line:home"] };
+      expect(isQuoteFileDoc(doc)).toBe(false);
+      expect(isDocumentsSourceDoc(doc)).toBe(true);
+    }
+    expect(isDocumentsSourceDoc({ slot: "quote_pdf", docType: "other", tags: [] })).toBe(false);
+    expect(isDocumentsSourceDoc({ slot: "policy_file", docType: "other", tags: [] })).toBe(false);
+  });
+
+  it("Documents panel filters with isDocumentsSourceDoc; Quotes keeps isQuoteFileDoc", () => {
+    const docsPanel = source("src/components/deal/documents-panel.tsx");
+    expect(docsPanel).toContain("isDocumentsSourceDoc");
+    expect(docsPanel).not.toContain('d.slot !== "quote_pdf" && d.slot !== "policy_file"');
+
+    const quotesPanel = source("src/components/deal/quotes-panel.tsx");
+    expect(quotesPanel).toContain("isQuoteFileDoc");
+    expect(quotesPanel).toContain('@/lib/deals/quote-docs');
+
+    const upload = source("src/app/actions/quote-files.ts");
+    expect(upload).toContain('slot: "quote_file"');
+    expect(upload).toContain("source:agency");
+    expect(upload).toContain('docType: "agency_quote"');
+
+    const fill = source("src/app/actions/quote-sheet.ts");
+    expect(fill).toContain("isQuoteFileDoc(doc)");
+    expect(fill).toContain("isDocumentsSourceDoc(doc)");
+  });
+});

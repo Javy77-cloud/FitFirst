@@ -1,5 +1,6 @@
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
+import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
 
@@ -29,12 +30,6 @@ function isCarrierQuoteDoc(doc: Document): boolean {
 function isAgencyQuoteDoc(doc: Document): boolean {
   const tags = new Set(doc.tags ?? []);
   return tags.has("source:agency") || doc.docType === "agency_quote";
-}
-
-function isQuoteFileDoc(doc: Document): boolean {
-  if (doc.slot === "quote_file") return true;
-  if (doc.docType === "carrier_quote" || doc.docType === "agency_quote") return true;
-  return (doc.tags ?? []).some((tag) => tag.startsWith("quote:"));
 }
 
 function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRow {
