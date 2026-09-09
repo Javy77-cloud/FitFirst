@@ -3,6 +3,7 @@
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import { asList } from "@/lib/safe-list";
@@ -26,6 +27,9 @@ export function DealDetailsPanel({
 
   return (
     <div data-ff-deal-details>
+      <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+        <EditLayoutLink module="deals" line={line} />
+      </div>
       <form action={saveDealFieldValues} id="deal-details-save">
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
