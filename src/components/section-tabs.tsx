@@ -55,7 +55,7 @@ export function SectionTabs({
   }
 
   return (
-    <div>
+    <div data-ff-section-tabs="">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div role="tablist" className="inline-flex flex-wrap gap-1.5">
           {tabs.map((tab) => {
@@ -91,9 +91,12 @@ export function SectionTabs({
         {toolbar}
       </div>
       {banner}
-      {/* Real height spacer — margin-top on the panel was collapsing to 0 visually. */}
-      <div aria-hidden data-ff-deal-tab-gap="" className="h-6 w-full shrink-0" />
-      <div role="tabpanel" data-ff-deal-tab-panel="" className={cn("mt-0", panelClassName)}>
+      <div
+        role="tabpanel"
+        data-ff-deal-tab-panel=""
+        className={cn(panelClassName)}
+        style={{ paddingTop: 24 }}
+      >
         {current?.content}
       </div>
     </div>

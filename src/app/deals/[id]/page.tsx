@@ -41,6 +41,7 @@ import { listModuleTags } from "@/app/actions/record-tags";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
 import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { listDealFieldDefs, loadLayoutForModule, loadRecordValues } from "@/lib/custom-fields/store";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
@@ -185,30 +186,29 @@ export default async function DealPage({
           <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
             {deal.title}
           </h1>
+          <RecordDeveloperActions
+            module="deals"
+            recordId={deal.id}
+            macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
+            buttons={buttons.map((button) => ({
+              id: button.id,
+              label: button.label,
+              actionKind: button.actionKind,
+            }))}
+          />
         <SectionTabs
           defaultValue="details"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
           panelClassName="mt-0"
+          toolbar={<EditLayoutLink module="deals" line={deal.lineOfBusiness} />}
           banner={
-            <>
-              <RecordDeveloperActions
-                module="deals"
-                recordId={deal.id}
-                macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
-                buttons={buttons.map((button) => ({
-                  id: button.id,
-                  label: button.label,
-                  actionKind: button.actionKind,
-                }))}
-              />
-              {isAna ? (
-                <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
-                  Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-                  bind this shop. Quotes are not coverage.
-                </div>
-              ) : null}
-            </>
+            isAna ? (
+              <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
+                Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
+                bind this shop. Quotes are not coverage.
+              </div>
+            ) : null
           }
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,

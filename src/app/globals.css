@@ -750,19 +750,13 @@ body[data-ff-col-resize] {
 }
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
-/* All deal tabs: equal gap under the tab row (real spacer, not margin). */
-[data-ff-deal-tab-gap] {
-  display: block !important;
-  height: 1.5rem !important; /* ~ one line — same on Details/Documents/Markets/Quotes */
-  width: 100% !important;
-  flex-shrink: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
+/* All deal tabs: equal 24px pad under the tab row (inline style + CSS lock). */
 [data-ff-deal-tab-panel] {
   margin-top: 0 !important;
-  padding-top: 0 !important;
+  padding-top: 24px !important;
+}
+[data-ff-deal-tab-panel] > * {
+  margin-top: 0 !important;
 }
 
 /* Deal SectionTabs: idle = solid brand blue fill */
