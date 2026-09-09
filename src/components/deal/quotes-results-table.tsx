@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import {
   addQuoteNoteAction,
   recheckQuotesAction,
@@ -243,7 +243,7 @@ export function QuotesResultsTable({
   const [pendingDead, setPendingDead] = useState<Record<string, boolean>>({});
   const [alertQuoteId, setAlertQuoteId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const premiumFloorRef = useRef<Record<string, number>>({});
+  const [premiumFloors, setPremiumFloors] = useState<Record<string, number>>({});
 
   const sections = useMemo(
     () => groupQuotesBySection(list, (row) => row.quote.riskOutcome),
@@ -251,8 +251,6 @@ export function QuotesResultsTable({
   );
   const recheckCount = recheckMarked.length;
   const anyRecheck = recheckCount > 0;
-  const hideCount = hideMarked.length;
-  const anyHide = hideCount > 0;
 
   const alertRow = useMemo(
     () => list.find((row) => row.quote.id === alertQuoteId) ?? null,
@@ -263,21 +261,20 @@ export function QuotesResultsTable({
   const effectiveHideMarked = useMemo(() => {
     const kept: string[] = [];
     for (const id of hideMarked) {
-      const floor = premiumFloorRef.current[id];
+      const floor = premiumFloors[id];
       if (floor != null) {
         const row = list.find((r) => r.quote.id === id);
         const current = row ? premiumNumber(row.quote.premium) : null;
-        if (current != null && current < floor) {
-          delete premiumFloorRef.current[id];
-          continue;
-        }
+        if (current != null && current < floor) continue;
       }
       kept.push(id);
     }
     return kept;
-  }, [hideMarked, list]);
+  }, [hideMarked, list, premiumFloors]);
 
-  const hidesEffectivelyApplied = hidesApplied && effectiveHideMarked.length > 0;
+  const hideCount = effectiveHideMarked.length;
+  const anyHide = hideCount > 0;
+  const hidesEffectivelyApplied = hidesApplied && hideCount > 0;
 
   function toggleRecheckMark(id: string) {
     setRecheckMarked((current) =>
@@ -288,12 +285,19 @@ export function QuotesResultsTable({
   function toggleHideMark(id: string) {
     setHideMarked((current) => {
       if (current.includes(id)) {
-        delete premiumFloorRef.current[id];
+        setPremiumFloors((floors) => {
+          if (!(id in floors)) return floors;
+          const next = { ...floors };
+          delete next[id];
+          return next;
+        });
         return current.filter((x) => x !== id);
       }
       const row = list.find((r) => r.quote.id === id);
       const n = row ? premiumNumber(row.quote.premium) : null;
-      if (n != null) premiumFloorRef.current[id] = n;
+      if (n != null) {
+        setPremiumFloors((floors) => ({ ...floors, [id]: n }));
+      }
       return [...current, id];
     });
   }
@@ -316,12 +320,16 @@ export function QuotesResultsTable({
       setRecheckMarked([]);
       // Recheck clears hide marks for those quote ids (tip: recheck clears marks → unhide).
       setHideMarked((current) => current.filter((id) => !ids.includes(id)));
-      for (const id of ids) delete premiumFloorRef.current[id];
+      setPremiumFloors((floors) => {
+        const next = { ...floors };
+        for (const id of ids) delete next[id];
+        return next;
+      });
     });
   }
 
   function onHideMarked() {
-    if (hideMarked.length === 0) return;
+    if (effectiveHideMarked.length === 0) return;
     setHidesApplied(true);
   }
 
@@ -365,9 +373,6 @@ export function QuotesResultsTable({
     });
   }
 
-  const hiddenVisibleCount = hidesApplied
-    ? hideMarked.filter((id) => list.some((row) => row.quote.id === id)).length
-    : 0;
 
   return (
     <div className="space-y-3" data-ff-quotes-recheck-desk="" data-ff-quotes-by-outcome="">
@@ -407,19 +412,19 @@ export function QuotesResultsTable({
             {pending ? "Queuing…" : anyRecheck ? `Recheck (${recheckCount})` : "Recheck"}
           </Button>
 
-          {hidesApplied && hiddenVisibleCount > 0 ? (
+          {hidesEffectivelyApplied ? (
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={onShowHidden}
               data-ff-quotes-show-hidden=""
-              data-ff-quotes-hidden-count={hiddenVisibleCount}
+              data-ff-quotes-hidden-count={hideCount}
               className="gap-1.5"
               title="Show hide-marked quotes again"
             >
               <EyeOff className="size-3.5 text-muted-foreground" />
-              Show hidden ({hiddenVisibleCount})
+              Show hidden ({hideCount})
             </Button>
           ) : anyHide ? (
             <Button
@@ -452,10 +457,10 @@ export function QuotesResultsTable({
       <div className="space-y-4 px-3 pb-3">
         {sections.map((section) => {
           const visibleRows =
-            hidesApplied
-              ? section.rows.filter(({ quote }) => !hideMarked.includes(quote.id))
+            hidesEffectivelyApplied
+              ? section.rows.filter(({ quote }) => !effectiveHideMarked.includes(quote.id))
               : section.rows;
-          if (visibleRows.length === 0 && section.rows.length > 0 && hidesApplied) {
+          if (visibleRows.length === 0 && section.rows.length > 0 && hidesEffectivelyApplied) {
             return null;
           }
           const collapsed = section.collapseByDefault && !declinedOpen;
@@ -524,7 +529,7 @@ export function QuotesResultsTable({
                     const thread = notesByQuote[quote.id] ?? [];
                     const needsReason = pendingDead[quote.id] || agentStatus === "dead";
                     const isRecheckMarked = recheckMarked.includes(quote.id);
-                    const isHideMarked = hideMarked.includes(quote.id);
+                    const isHideMarked = effectiveHideMarked.includes(quote.id);
                     const showAlert = outcome === "conditional";
 
                     return (
@@ -636,14 +641,14 @@ export function QuotesResultsTable({
                                   <AlertTriangle className="size-3.5" />
                                 </button>
                               ) : null}
-                              <StarRating
-                                dealId={dealId}
-                                quoteId={quote.id}
-                                value={quote.agentRating}
-                                disabled={pending}
-                              />
                             </div>
 
+                            <StarRating
+                              dealId={dealId}
+                              quoteId={quote.id}
+                              value={quote.agentRating}
+                              disabled={pending}
+                            />
                             <select
                               className="h-7 max-w-[9.5rem] rounded-md border border-border bg-background px-1.5 text-[11px] text-navy"
                               value={agentStatus}
