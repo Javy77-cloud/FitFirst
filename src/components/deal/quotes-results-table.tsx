@@ -3,19 +3,12 @@
 import { Fragment, useMemo, useState, useTransition } from "react";
 import {
   addQuoteNoteAction,
-  deleteSelectedQuotesAction,
+  recheckQuotesAction,
   saveQuoteAgentRatingAction,
   saveQuoteAgentStatusAction,
 } from "@/app/actions/quotes";
-import { QuoteConfirmRow } from "@/components/deal/quote-confirm-row";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
-import {
-  isLowConfidencePull,
-  quotePullNeedsConfirm,
-  type QuoteConfirmKind,
-} from "@/lib/deals/quote-confirm";
-import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import type { Carrier, Quote, QuoteNote } from "@/lib/db/schema";
 import {
   AGENT_STATUS_LABELS,
@@ -35,7 +28,7 @@ import {
 } from "@/lib/quotes/outcomes";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Star } from "lucide-react";
+import { ChevronDown, ChevronRight, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
 
@@ -113,11 +106,30 @@ function StarRating({
   );
 }
 
+function RecheckMarkIcon({
+  lit,
+  className,
+}: {
+  lit: boolean;
+  className?: string;
+}) {
+  return (
+    <RefreshCw
+      className={cn(
+        "size-3.5 transition-colors",
+        lit ? "text-primary" : "text-muted-foreground/40",
+        className,
+      )}
+      strokeWidth={lit ? 2.5 : 2}
+    />
+  );
+}
+
 export function QuotesResultsTable({
   dealId,
   rows,
-  formId,
-  confirmLogs,
+  formId: _formId,
+  confirmLogs: _confirmLogs,
   resultByCarrier,
   notesByQuote = {},
 }: {
@@ -129,41 +141,36 @@ export function QuotesResultsTable({
   notesByQuote?: Record<string, QuoteNote[]>;
 }) {
   const list = asList(rows);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [marked, setMarked] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [declinedOpen, setDeclinedOpen] = useState(false);
-  const [recheck, setRecheck] = useState(false);
   const [pendingDead, setPendingDead] = useState<Record<string, boolean>>({});
   const [pending, startTransition] = useTransition();
-  const ids = useMemo(() => list.map((row) => row.quote.id), [list]);
-  const allOn = ids.length > 0 && ids.every((id) => selected.includes(id));
   const sections = useMemo(
     () => groupQuotesBySection(list, (row) => row.quote.riskOutcome),
     [list],
   );
+  const markedCount = marked.length;
+  const anyMarked = markedCount > 0;
 
-  function toggle(id: string, on: boolean) {
-    setSelected((current) => (on ? [...new Set([...current, id])] : current.filter((x) => x !== id)));
-  }
-
-  function toggleAll(on: boolean) {
-    setSelected(on ? [...ids] : []);
+  function toggleMark(id: string) {
+    setMarked((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    );
   }
 
   function toggleDetails(id: string) {
     setExpanded((current) => ({ ...current, [id]: !current[id] }));
   }
 
-  function onDelete() {
-    if (selected.length === 0) return;
-    const subject =
-      selected.length === 1 ? "this quote" : `these ${selected.length} quotes`;
-    if (!confirmHardDelete(subject)) return;
+  function onRecheck() {
+    if (marked.length === 0) return;
     const data = new FormData();
     data.set("dealId", dealId);
-    for (const id of selected) data.append("quoteId", id);
+    for (const id of marked) data.append("quoteId", id);
     startTransition(async () => {
-      await deleteSelectedQuotesAction(data);
+      await recheckQuotesAction(data);
+      setMarked([]);
     });
   }
 
@@ -204,40 +211,50 @@ export function QuotesResultsTable({
   }
 
   return (
-    <div className="space-y-3" data-ff-quotes-select data-ff-quotes-by-outcome="">
+    <div className="space-y-3" data-ff-quotes-recheck-desk="" data-ff-quotes-by-outcome="">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2">
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              aria-label="Select all quotes"
-              checked={allOn}
-              onChange={(event) => toggleAll(event.target.checked)}
-              data-ff-quotes-select-all=""
-            />
-            Select all
-          </label>
-          <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={recheck}
-              onChange={(event) => setRecheck(event.target.checked)}
-              data-ff-quotes-recheck=""
-              aria-label="Recheck this quote"
-            />
-            Recheck this quote
-          </label>
-        </div>
         <Button
           type="button"
           size="sm"
-          variant="outline"
-          disabled={selected.length === 0 || pending}
-          onClick={onDelete}
-          data-ff-quotes-delete-selected=""
+          variant={anyMarked ? "default" : "outline"}
+          disabled={!anyMarked || pending}
+          onClick={onRecheck}
+          data-ff-quotes-recheck=""
+          data-ff-quotes-recheck-count={markedCount}
+          className={cn(
+            "gap-1.5",
+            anyMarked && "border-primary bg-primary text-primary-foreground shadow-sm",
+          )}
+          title={
+            anyMarked
+              ? `Re-run ${markedCount} marked quote${markedCount === 1 ? "" : "s"}`
+              : "Mark quotes with the refresh icon to recheck"
+          }
         >
-          {pending ? "Deleting…" : `Delete selected${selected.length ? ` (${selected.length})` : ""}`}
+          <span
+            className={cn(
+              "inline-flex size-5 items-center justify-center rounded-md",
+              anyMarked ? "bg-primary-foreground/15" : "bg-muted/60",
+            )}
+            data-ff-quotes-recheck-icon={anyMarked ? "lit" : "muted"}
+            aria-hidden
+          >
+            <RecheckMarkIcon
+              lit={anyMarked}
+              className={anyMarked ? "text-primary-foreground" : undefined}
+            />
+          </span>
+          {pending ? "Queuing…" : anyMarked ? `Recheck (${markedCount})` : "Recheck"}
         </Button>
+        {anyMarked ? (
+          <p className="text-[11px] text-muted-foreground" data-ff-quotes-recheck-hint="">
+            Only marked carriers will be rechecked.
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground" data-ff-quotes-recheck-hint="">
+            Tap the refresh icon beside a premium to mark it for recheck.
+          </p>
+        )}
       </div>
 
       <div className="space-y-4 px-3 pb-3">
@@ -285,16 +302,6 @@ export function QuotesResultsTable({
               {collapsed ? null : (
                 <div className="space-y-2">
                   {section.rows.map(({ quote, carrier }) => {
-                    const denied = resultByCarrier[carrier.id] === "declined";
-                    const kind: QuoteConfirmKind = quotePullNeedsConfirm({
-                      quoteId: quote.id,
-                      carrierId: carrier.id,
-                      formId,
-                      logs: confirmLogs,
-                      denied,
-                      lowConfidence: isLowConfidencePull(quote),
-                    });
-                    const on = selected.includes(quote.id);
                     const outcome = outcomeFor(quote, carrier.id);
                     const canBind =
                       outcome === "bindable" || quote.nextStep === "can_bind" || quote.bindable;
@@ -315,27 +322,20 @@ export function QuotesResultsTable({
                     const agentStatus = normalizeAgentStatus(quote.agentStatus);
                     const thread = notesByQuote[quote.id] ?? [];
                     const needsReason = pendingDead[quote.id] || agentStatus === "dead";
+                    const isMarked = marked.includes(quote.id);
 
                     return (
                       <Fragment key={quote.id}>
                         <article
                           data-ff-quote-row={quote.id}
                           data-ff-quote-outcome={outcome}
+                          data-ff-quote-recheck-marked={isMarked ? "1" : "0"}
                           className={cn(
                             "rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
-                            on && "ring-1 ring-primary/30",
+                            isMarked && "ring-1 ring-primary/35",
                           )}
                         >
                           <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap">
-                            <input
-                              type="checkbox"
-                              aria-label={`Select ${carrier.name}`}
-                              checked={on}
-                              onChange={(event) => toggle(quote.id, event.target.checked)}
-                              data-ff-quote-select={quote.id}
-                              className="shrink-0"
-                            />
-
                             <span
                               data-ff-quote-status-pill={outcome}
                               className={cn(
@@ -357,20 +357,35 @@ export function QuotesResultsTable({
                                 >
                                   {reason}
                                 </span>
-                                <span className="text-sm font-semibold tabular-nums text-navy">
+                                <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-navy">
                                   {formatMoney(quote.premium)}
+                                  <button
+                                    type="button"
+                                    aria-label={
+                                      isMarked
+                                        ? `Unmark ${carrier.name} for recheck`
+                                        : `Mark ${carrier.name} for recheck`
+                                    }
+                                    aria-pressed={isMarked}
+                                    data-ff-quote-recheck-mark={quote.id}
+                                    data-ff-quote-recheck-mark-state={isMarked ? "lit" : "muted"}
+                                    onClick={() => toggleMark(quote.id)}
+                                    className={cn(
+                                      "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                      isMarked
+                                        ? "border-primary/45 bg-primary/10 text-primary shadow-sm"
+                                        : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted/50 hover:text-muted-foreground",
+                                    )}
+                                    title={
+                                      isMarked
+                                        ? "Marked for recheck — click to unmark"
+                                        : "Mark for recheck"
+                                    }
+                                  >
+                                    <RecheckMarkIcon lit={isMarked} />
+                                  </button>
                                 </span>
                               </div>
-                              {recheck && kind !== "skip" && kind !== "admin" ? (
-                                <QuoteConfirmRow
-                                  dealId={dealId}
-                                  quoteId={quote.id}
-                                  carrierId={carrier.id}
-                                  carrierName={carrier.name}
-                                  formId={formId}
-                                  kind={kind}
-                                />
-                              ) : null}
                             </div>
 
                             <StarRating

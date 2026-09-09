@@ -360,3 +360,46 @@ export async function addQuoteNoteAction(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
   flashAction(dealQuotesPath(dealId), "Note added");
 }
+
+/** Queue a recheck for specifically marked quotes (no portal automation yet). */
+export async function recheckQuotesAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const ids = formData
+    .getAll("quoteId")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  if (!dealId) throw new Error("Deal is missing.");
+  if (ids.length === 0) throw new Error("Mark at least one quote to recheck.");
+
+  const rows = await db
+    .select({ quote: quotes, carrier: carriers })
+    .from(quotes)
+    .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
+    .where(
+      and(
+        eq(quotes.dealId, dealId),
+        inArray(quotes.id, ids),
+        eq(quotes.tenantId, DEFAULT_TENANT_ID),
+      ),
+    );
+
+  if (rows.length === 0) throw new Error("No matching quotes to recheck.");
+
+  const session = await currentDeskSession();
+  const createdBy = session.name?.trim() || session.email || "agent";
+  for (const row of rows) {
+    await db.insert(quoteNotes).values({
+      tenantId: DEFAULT_TENANT_ID,
+      quoteId: row.quote.id,
+      body: `Recheck queued for ${row.carrier.name}.`,
+      createdBy,
+    });
+  }
+
+  revalidatePath(`/deals/${dealId}`);
+  const n = rows.length;
+  flashAction(
+    dealQuotesPath(dealId),
+    n === 1 ? "Recheck queued for 1 carrier" : `Recheck queued for ${n} carriers`,
+  );
+}
