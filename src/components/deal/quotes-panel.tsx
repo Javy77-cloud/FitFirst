@@ -1,7 +1,5 @@
-import { finalizeQuoteResults } from "@/app/actions/lifecycle";
 import { BindConfirmGate } from "@/components/deal/bind-confirm-gate";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
-import { Button } from "@/components/ui/button";
 import type { BindPathTarget } from "@/lib/crm/bind-path";
 import { sortQuotesCheapestFirst } from "@/lib/deals/quote-sort";
 import type { Carrier, Quote, QuoteAttemptLog } from "@/lib/db/schema";
@@ -10,7 +8,7 @@ export function QuotesPanel({
   dealId,
   quotes,
   logs,
-  quoteResultsNote,
+  quoteResultsNote: _quoteResultsNote,
   formId = "HO3",
   confirmLogs = [],
   bind,
@@ -47,26 +45,6 @@ export function QuotesPanel({
   return (
     <div className="space-y-4">
       <section className="ff-card overflow-hidden" data-ff-deal-quotes>
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
-          <div>
-            <h3 className="text-base font-semibold text-navy">Quote results</h3>
-            <p className="mt-1 text-base text-muted-foreground">
-              Grouped by outcome: Bindable, Conditional, Declined, No market. Cheapest within each group.
-              A quote never becomes a policy. Check rows to delete one or many.
-            </p>
-          </div>
-          <form action={finalizeQuoteResults}>
-            <input type="hidden" name="dealId" value={dealId} />
-            <Button type="submit" size="sm" variant="outline">
-              Finalize quote results
-            </Button>
-          </form>
-        </div>
-        {quoteResultsNote ? (
-          <pre className="whitespace-pre-wrap border-b border-border bg-muted px-4 py-2 text-sm">
-            {quoteResultsNote}
-          </pre>
-        ) : null}
         <QuotesResultsTable
           dealId={dealId}
           rows={sorted}
