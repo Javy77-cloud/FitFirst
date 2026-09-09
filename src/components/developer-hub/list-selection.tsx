@@ -2,9 +2,15 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { SelectionActionsMenu } from "@/components/lists/selection-actions-menu";
-import { MassUpdateMenu, type MassUpdateOwner, type MassUpdateTemplate } from "@/components/lists/mass-update";
+import {
+  MassUpdateMenu,
+  type MassUpdateFieldOptionMap,
+  type MassUpdateOwner,
+  type MassUpdateTemplate,
+} from "@/components/lists/mass-update";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
-import { selectAllMode } from "@/lib/lists/mass-update";
+import { massUpdateColumnsFromVisible, selectAllMode } from "@/lib/lists/mass-update";
+import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule, SelectionRecord } from "@/lib/lists/selection-actions";
 
 type MacroOption = { id: string; name: string; kind?: string };
@@ -19,9 +25,12 @@ const SelectionContext = createContext<{
   selected: string[];
   visibleIds: string[];
   matchingIds: string[];
+  listColumns: ListColumn[];
+  visibleColumnIds: string[];
   toggle: (id: string) => void;
   setAll: (ids: string[]) => void;
   setScope: (visibleIds: string[], matchingIds: string[]) => void;
+  setVisibleColumns: (columns: ListColumn[], visibleIds: string[]) => void;
   clear: () => void;
 } | null>(null);
 
@@ -30,15 +39,26 @@ function sameIds(left: string[], right: string[]) {
   return left.length === right.length && left.every((id, index) => id === right[index]);
 }
 
+function sameColumns(left: ListColumn[], right: ListColumn[]) {
+  return (
+    left.length === right.length &&
+    left.every((column, index) => column.id === right[index]?.id && column.label === right[index]?.label)
+  );
+}
+
 export function ListSelectionProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [matchingIds, setMatchingIds] = useState<string[]>([]);
+  const [listColumns, setListColumns] = useState<ListColumn[]>([]);
+  const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>([]);
   const value = useMemo(
     () => ({
       selected,
       visibleIds,
       matchingIds,
+      listColumns,
+      visibleColumnIds,
       toggle: (id: string) =>
         setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])),
       setAll: (ids: string[]) => setSelected(ids),
@@ -46,9 +66,13 @@ export function ListSelectionProvider({ children }: { children: ReactNode }) {
         setVisibleIds((prev) => (sameIds(prev, nextVisible) ? prev : nextVisible));
         setMatchingIds((prev) => (sameIds(prev, nextMatching) ? prev : nextMatching));
       },
+      setVisibleColumns: (columns: ListColumn[], nextVisible: string[]) => {
+        setListColumns((prev) => (sameColumns(prev, columns) ? prev : columns));
+        setVisibleColumnIds((prev) => (sameIds(prev, nextVisible) ? prev : nextVisible));
+      },
       clear: () => setSelected([]),
     }),
-    [matchingIds, selected, visibleIds],
+    [listColumns, matchingIds, selected, visibleColumnIds, visibleIds],
   );
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }
@@ -115,6 +139,7 @@ export function ListMassBar({
   records = [],
   owners = [],
   templates = [],
+  fieldOptions = {},
   showMacrosLink = true,
 }: {
   module: CrmListModule;
@@ -124,16 +149,21 @@ export function ListMassBar({
   records?: SelectionRecord[];
   owners?: MassUpdateOwner[];
   templates?: MassUpdateTemplate[];
+  fieldOptions?: MassUpdateFieldOptionMap;
   showFollowUp?: boolean;
   showMacrosLink?: boolean;
 }) {
-  const { selected, clear } = useSelection();
+  const { selected, clear, listColumns, visibleColumnIds } = useSelection();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [widget, setWidget] = useState<{ name: string; url: string | null } | null>(null);
   const resolvedRecords = records.length
     ? records
     : recordIds.map((id) => ({ id, label: id }));
+  const massFields = useMemo(
+    () => massUpdateColumnsFromVisible(listColumns, visibleColumnIds),
+    [listColumns, visibleColumnIds],
+  );
 
   return (
     <div className="mb-3 space-y-2 print:hidden">
@@ -162,6 +192,8 @@ export function ListMassBar({
         <MassUpdateMenu
           module={module}
           selected={selected}
+          fields={massFields}
+          fieldOptions={fieldOptions}
           owners={owners}
           templates={templates}
           busy={busy}

@@ -21,29 +21,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  MASS_UPDATE_FIELDS,
-  massUpdateAppliesTo,
-  massUpdateCustomOptions,
+  isFollowUpTemplateColumn,
+  isOwnerLikeColumn,
+  isSellingAgencyColumn,
+  isStatusLikeColumn,
+  massUpdateLineOptions,
+  massUpdateSellingAgencyOptions,
   massUpdateSourceOptions,
   massUpdateStatusOptions,
-  type MassUpdateField,
 } from "@/lib/lists/mass-update";
+import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule } from "@/lib/lists/selection-actions";
-
-const FIELD_LABEL: Record<MassUpdateField, string> = {
-  status: "Status",
-  source: "Source",
-  follow_up_template: "Follow-up template",
-  owner: "Owner",
-  custom: "Custom field",
-};
 
 export type MassUpdateOwner = { id: string; name: string };
 export type MassUpdateTemplate = { id: string; name: string };
+export type MassUpdateFieldOptionMap = Record<string, Array<{ value: string; label: string }>>;
 
 export function MassUpdateMenu({
   module,
   selected,
+  fields = [],
+  fieldOptions = {},
   owners = [],
   templates = [],
   busy,
@@ -53,6 +51,9 @@ export function MassUpdateMenu({
 }: {
   module: CrmListModule;
   selected: string[];
+  /** Visible editable list columns — same set as Columns picker (minus non-writable). */
+  fields?: ListColumn[];
+  fieldOptions?: MassUpdateFieldOptionMap;
   owners?: MassUpdateOwner[];
   templates?: MassUpdateTemplate[];
   busy: boolean;
@@ -61,113 +62,103 @@ export function MassUpdateMenu({
   onClear: () => void;
 }) {
   const router = useRouter();
-  const [field, setField] = useState<MassUpdateField | null>(null);
+  const [columnId, setColumnId] = useState<string | null>(null);
   const [value, setValue] = useState("");
-  const [customKey, setCustomKey] = useState("notes");
+  const active = (fields ?? []).find((field) => field.id === columnId) ?? null;
+
   const options = useMemo(() => {
-    if (!field) return [];
-    if (field === "status") return massUpdateStatusOptions(module);
-    if (field === "source") return massUpdateSourceOptions();
-    if (field === "owner") return owners.map((row) => ({ value: row.id, label: row.name }));
-    if (field === "follow_up_template") {
+    if (!columnId) return [];
+    if (isStatusLikeColumn(columnId)) return massUpdateStatusOptions(module);
+    if (columnId === "source") return massUpdateSourceOptions();
+    if (isOwnerLikeColumn(columnId)) return owners.map((row) => ({ value: row.id, label: row.name }));
+    if (isFollowUpTemplateColumn(columnId)) {
       return [{ value: "", label: "Default playbook" }, ...templates.map((row) => ({ value: row.id, label: row.name }))];
     }
-    return massUpdateCustomOptions();
-  }, [field, module, owners, templates]);
+    if (columnId === "line") return massUpdateLineOptions();
+    if (isSellingAgencyColumn(columnId)) {
+      return fieldOptions[columnId]?.length
+        ? fieldOptions[columnId]
+        : massUpdateSellingAgencyOptions();
+    }
+    if (fieldOptions[columnId]?.length) return fieldOptions[columnId];
+    return [];
+  }, [columnId, fieldOptions, module, owners, templates]);
 
   if (selected.length === 0) return null;
 
-  function open(next: MassUpdateField) {
-    setField(next);
-    setCustomKey("notes");
-    if (next === "status") setValue(massUpdateStatusOptions(module)[0]?.value ?? "");
+  function open(next: string) {
+    setColumnId(next);
+    if (isStatusLikeColumn(next)) setValue(massUpdateStatusOptions(module)[0]?.value ?? "");
     else if (next === "source") setValue(massUpdateSourceOptions()[0]?.value ?? "");
-    else if (next === "owner") setValue(owners[0]?.id ?? "");
-    else if (next === "follow_up_template") setValue("");
+    else if (isOwnerLikeColumn(next)) setValue(owners[0]?.id ?? "");
+    else if (isFollowUpTemplateColumn(next)) setValue("");
+    else if (next === "line") setValue(massUpdateLineOptions()[0]?.value ?? "");
+    else if (isSellingAgencyColumn(next)) {
+      const opts = fieldOptions[next]?.length ? fieldOptions[next] : massUpdateSellingAgencyOptions();
+      setValue(opts[0]?.value ?? "");
+    } else if (fieldOptions[next]?.length) setValue(fieldOptions[next][0]?.value ?? "");
     else setValue("");
   }
 
   async function apply() {
-    if (!field) return;
+    if (!columnId) return;
     onBusy(true);
     const form = new FormData();
     form.set("module", module);
-    form.set("field", field);
-    form.set("value", field === "custom" ? value : value);
-    form.set("customKey", customKey);
+    form.set("columnId", columnId);
+    form.set("value", value);
     for (const id of selected) form.append("recordId", id);
     const result = await applyMassUpdate(form);
     onMessage(result.message);
     onBusy(false);
     if (result.ok) {
-      setField(null);
+      setColumnId(null);
       onClear();
       router.refresh();
     }
   }
 
+  const useSelect = options.length > 0;
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button type="button" size="sm" variant="outline" className="gap-1" disabled={busy} />}
+          render={<Button type="button" size="sm" variant="outline" className="gap-1" disabled={busy || fields.length === 0} />}
         >
           Mass update
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-48" data-testid="mass-update-menu">
-          {MASS_UPDATE_FIELDS.map((item) => (
-            <DropdownMenuItem
-              key={item}
-              disabled={!massUpdateAppliesTo(module, item) || busy}
-              onClick={() => open(item)}
-            >
-              {FIELD_LABEL[item]}
-              {!massUpdateAppliesTo(module, item) ? (
-                <span className="ml-2 text-[11px] text-muted-foreground">Not on this list</span>
-              ) : null}
-            </DropdownMenuItem>
-          ))}
+          {fields.length === 0 ? (
+            <DropdownMenuItem disabled>No editable visible columns</DropdownMenuItem>
+          ) : (
+            fields.map((item) => (
+              <DropdownMenuItem key={item.id} disabled={busy} onClick={() => open(item.id)}>
+                {item.label}
+              </DropdownMenuItem>
+            ))
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={field !== null} onOpenChange={(openState) => !openState && setField(null)}>
+      <Dialog open={columnId !== null} onOpenChange={(openState) => !openState && setColumnId(null)}>
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>Mass update · {field ? FIELD_LABEL[field] : ""}</DialogTitle>
+            <DialogTitle>Mass update · {active?.label ?? columnId ?? ""}</DialogTitle>
             <DialogDescription>
               Writes {selected.length} selected {selected.length === 1 ? "row" : "rows"} on this list. Ana
               is skipped. Bound is signature-only.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            {field === "custom" ? (
-              <>
-                <div>
-                  <Label className="text-xs">Field</Label>
-                  <select
-                    className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-                    value={customKey}
-                    onChange={(event) => setCustomKey(event.target.value)}
-                  >
-                    {massUpdateCustomOptions().map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label className="text-xs">Value</Label>
-                  <Input className="mt-1 h-8" value={value} onChange={(event) => setValue(event.target.value)} />
-                </div>
-              </>
-            ) : (
-              <div>
-                <Label className="text-xs">{field ? FIELD_LABEL[field] : "Value"}</Label>
+            <div>
+              <Label className="text-xs">{active?.label ?? "Value"}</Label>
+              {useSelect ? (
                 <select
                   className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
                   value={value}
                   onChange={(event) => setValue(event.target.value)}
+                  data-testid="mass-update-value"
                 >
                   {options.map((option) => (
                     <option key={option.value || "default"} value={option.value}>
@@ -175,14 +166,21 @@ export function MassUpdateMenu({
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
+              ) : (
+                <Input
+                  className="mt-1 h-8"
+                  value={value}
+                  onChange={(event) => setValue(event.target.value)}
+                  data-testid="mass-update-value"
+                />
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={() => setField(null)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setColumnId(null)}>
               Cancel
             </Button>
-            <Button type="button" size="sm" disabled={busy} onClick={() => void apply()}>
+            <Button type="button" size="sm" disabled={busy || (!value && !isFollowUpTemplateColumn(columnId ?? ""))} onClick={() => void apply()}>
               Update {selected.length}
             </Button>
           </DialogFooter>

@@ -5,6 +5,8 @@ import { listEnabledMacrosFor, listVisibleButtons } from "@/lib/db/developer-hub
 import { listFollowUpTemplates } from "@/lib/db/lead-follow-up-queries";
 import { listUsers } from "@/lib/db/queries";
 import { isDevHubModule } from "@/lib/developer-hub/types";
+import { isFieldLayoutModule } from "@/lib/custom-fields/modules";
+import { listFieldDefs } from "@/lib/custom-fields/store";
 import {
   serializeSelectionRecord,
   type CrmListModule,
@@ -26,14 +28,23 @@ export async function ModuleListActions({
   showMacrosLink?: boolean;
   showFollowUp?: boolean;
 }) {
-  const [macros, buttons, userRows, templateRows] = await Promise.all([
+  const [macros, buttons, userRows, templateRows, fieldDefs] = await Promise.all([
     isDevHubModule(module) ? listEnabledMacrosFor(module) : Promise.resolve([]),
     isDevHubModule(module)
       ? listVisibleButtons({ module, placement: ["list", "mass_action"] })
       : Promise.resolve([]),
     listUsers(),
     listFollowUpTemplates().catch(() => []),
+    isFieldLayoutModule(module) ? listFieldDefs(module).catch(() => []) : Promise.resolve([]),
   ]);
+  const fieldOptions = Object.fromEntries(
+    fieldDefs
+      .filter((field) => (field.options?.length ?? 0) > 0)
+      .map((field) => [
+        field.key,
+        (field.options ?? []).map((option) => ({ value: option, label: option })),
+      ]),
+  );
   return (
     <ListSelectionProvider>
       <div className="px-3 pt-3">
@@ -43,6 +54,7 @@ export async function ModuleListActions({
           records={records.map(serializeSelectionRecord)}
           owners={userRows.map((user) => ({ id: user.id, name: user.name }))}
           templates={templateRows.map((row) => ({ id: row.id, name: row.name }))}
+          fieldOptions={fieldOptions}
           showFollowUp={showFollowUp ?? module === "leads"}
           showMacrosLink={showMacrosLink}
           macros={macros.map((macro) => ({

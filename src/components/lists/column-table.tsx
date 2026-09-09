@@ -290,6 +290,7 @@ export function ColumnTable({
   return (
     <div className="overflow-x-auto">
       <ListScopeReporter visibleIds={visibleIds} matchingIds={matchingIds} />
+      <ListVisibleColumnsReporter columns={columns} visible={visible} />
       <ListColumnsChrome>{chrome}</ListColumnsChrome>
       <table className="ff-table ff-list-table" style={{ width: tableWidth, minWidth: tableWidth }}>
         <colgroup>
@@ -540,5 +541,20 @@ function ListScopeReporter({
   useEffect(() => {
     selection?.setScope(visibleIds, matchingIds);
   }, [matchingIds, selection, visibleIds]);
+  return null;
+}
+
+/** Keep Mass Update field menu in sync with Columns picker visibility. */
+function ListVisibleColumnsReporter({
+  columns,
+  visible,
+}: {
+  columns: ListColumn[];
+  visible: string[];
+}) {
+  const selection = useOptionalSelection();
+  useEffect(() => {
+    selection?.setVisibleColumns(columns, visible);
+  }, [columns, selection, visible]);
   return null;
 }
