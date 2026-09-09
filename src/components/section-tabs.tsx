@@ -91,7 +91,7 @@ export function SectionTabs({
       {toolbar}
       </div>
       {banner}
-      <div role="tabpanel" className={panelClassName ?? "mt-4"}>
+      <div role="tabpanel" data-ff-deal-tab-panel="" className={panelClassName ?? "mt-4"}>
         {current?.content}
       </div>
     </div>

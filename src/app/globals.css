@@ -750,6 +750,13 @@ body[data-ff-col-resize] {
 }
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
+[data-ff-deal-tab-panel] {
+  margin-top: 1rem !important; /* standard tabs → first section */
+}
+[data-ff-deal-tab-panel] > :first-child {
+  margin-top: 0 !important;
+}
+
 /* Deal SectionTabs: idle = solid brand blue fill */
 [role="tablist"] a[role="tab"][aria-selected="true"] {
   background: var(--ff-accent) !important;

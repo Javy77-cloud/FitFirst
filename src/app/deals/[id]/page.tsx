@@ -41,6 +41,7 @@ import { listModuleTags } from "@/app/actions/record-tags";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
 import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { listDealFieldDefs, loadLayoutForModule, loadRecordValues } from "@/lib/custom-fields/store";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
@@ -189,7 +190,10 @@ export default async function DealPage({
           defaultValue="details"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
-          panelClassName="mt-3"
+          panelClassName="mt-4"
+          toolbar={
+            <EditLayoutLink module="deals" line={deal.lineOfBusiness} />
+          }
           banner={
             <>
               <RecordDeveloperActions
