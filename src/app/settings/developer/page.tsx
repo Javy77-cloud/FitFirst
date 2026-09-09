@@ -77,6 +77,23 @@ export default async function DeveloperHubOverviewPage() {
         wall. FitFirst does not call paid vendors and does not write to live Zoho.
       </p>
       {session.isSiteDeveloper ? (
+        <>
+        <Link
+          href="/settings/developer/appetite-engine"
+          className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
+          data-ff-dev-appetite-engine=""
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-navy">Appetite Engine</div>
+              <StatusChip status="working" />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Shadow-mode Standing/Candidate predict + accuracy graduation (FL/HO seed). Silent —
+              no Markets agent colors yet. Site developers only.
+            </p>
+          </div>
+        </Link>
         <Link
           href="/settings/developer/appetite-log"
           className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
@@ -93,6 +110,7 @@ export default async function DeveloperHubOverviewPage() {
             </p>
           </div>
         </Link>
+        </>
       ) : null}
       <p className="mb-4 text-sm">
         <Link href="/automations" className="font-semibold text-primary hover:underline">

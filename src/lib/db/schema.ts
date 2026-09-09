@@ -3768,6 +3768,138 @@ export const learningSeedLibrary = pgTable(
   (t) => [index("learning_seed_library_form_idx").on(t.formId, t.formVersion)],
 );
 
+/**
+ * sep7dl — Appetite prediction engine (shadow mode).
+ * Legacy `appetite_rules` above stays the Markets carrier-profile matcher.
+ * These tables drive silent Standing/Candidate predict + accuracy graduation.
+ */
+export const appetitePartitions = pgTable(
+  "appetite_partitions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    state: text("state").notNull(),
+    line: text("line").notNull(),
+    /** shadow | live | held */
+    status: text("status").notNull().default("shadow"),
+    shadowStartedAt: timestamp("shadow_started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    graduatedAt: timestamp("graduated_at", { withTimezone: true }),
+    accuracyPct: real("accuracy_pct"),
+    scoredShops: integer("scored_shops").notNull().default(0),
+    minSample: integer("min_sample").notNull().default(30),
+    accuracyThreshold: real("accuracy_threshold").notNull().default(0.9),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("appetite_partitions_tenant_state_line_uidx").on(
+      t.tenantId,
+      t.state,
+      t.line,
+    ),
+    index("appetite_partitions_tenant_status_idx").on(t.tenantId, t.status),
+  ],
+);
+
+/** Standing / Candidate field-operator rules (tip named appetite_rules; SQL name avoids legacy clash). */
+export const appetiteEngineRules = pgTable(
+  "appetite_engine_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    partitionId: uuid("partition_id")
+      .notNull()
+      .references(() => appetitePartitions.id, { onDelete: "cascade" }),
+    /** standing | candidate */
+    layer: text("layer").notNull().default("standing"),
+    field: text("field").notNull(),
+    /** lte | gte | eq | in | not_in */
+    operator: text("operator").notNull(),
+    threshold: jsonb("threshold").$type<unknown>().notNull(),
+    /** green | yellow | red (or bindable | conditional | declined mapped at resolve) */
+    disposition: text("disposition").notNull(),
+    reasonCode: text("reason_code").notNull().default("other"),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    confidenceCount: integer("confidence_count").notNull().default(0),
+    /** Standing live rules may drive predict; candidates never drive live colors. */
+    live: boolean("live").notNull().default(true),
+    /** seed | decline_parse | manual */
+    source: text("source").notNull().default("seed"),
+    stale: boolean("stale").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    index("appetite_engine_rules_partition_idx").on(
+      t.tenantId,
+      t.partitionId,
+      t.layer,
+    ),
+    index("appetite_engine_rules_carrier_idx").on(t.tenantId, t.carrierId),
+  ],
+);
+
+export const appetiteShadowPredictions = pgTable(
+  "appetite_shadow_predictions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    partitionId: uuid("partition_id")
+      .notNull()
+      .references(() => appetitePartitions.id, { onDelete: "cascade" }),
+    dealId: uuid("deal_id").references(() => deals.id),
+    riskId: uuid("risk_id").references(() => risks.id),
+    carrierId: uuid("carrier_id").references(() => carriers.id),
+    attemptId: uuid("attempt_id").references(() => quoteAttemptLogs.id),
+    predicted: text("predicted").notNull(),
+    triggeringRuleId: uuid("triggering_rule_id").references(
+      () => appetiteEngineRules.id,
+    ),
+    reasonCode: text("reason_code"),
+    actualDisposition: text("actual_disposition"),
+    scored: boolean("scored").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    index("appetite_shadow_predictions_partition_idx").on(
+      t.tenantId,
+      t.partitionId,
+      t.scored,
+    ),
+    index("appetite_shadow_predictions_attempt_idx").on(t.tenantId, t.attemptId),
+  ],
+);
+
+export const appetiteEdgeCases = pgTable(
+  "appetite_edge_cases",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    partitionId: uuid("partition_id")
+      .notNull()
+      .references(() => appetitePartitions.id, { onDelete: "cascade" }),
+    predictionId: uuid("prediction_id").references(
+      () => appetiteShadowPredictions.id,
+    ),
+    note: text("note").notNull().default(""),
+    /** open | resolved */
+    status: text("status").notNull().default("open"),
+    ...timestamps,
+  },
+  (t) => [
+    index("appetite_edge_cases_partition_idx").on(
+      t.tenantId,
+      t.partitionId,
+      t.status,
+    ),
+  ],
+);
+
+export type AppetitePartition = typeof appetitePartitions.$inferSelect;
+export type AppetiteEngineRule = typeof appetiteEngineRules.$inferSelect;
+export type AppetiteShadowPrediction = typeof appetiteShadowPredictions.$inferSelect;
+export type AppetiteEdgeCase = typeof appetiteEdgeCases.$inferSelect;
+
 export type ExtractionAttempt = typeof extractionAttempts.$inferSelect;
 export type ExtractionFieldAttempt = typeof extractionFieldAttempts.$inferSelect;
 export type ExtractionCorrection = typeof extractionCorrections.$inferSelect;
