@@ -177,7 +177,7 @@ describe("quote outcomes", () => {
     expect(chips.filter((c) => /mitigation/i.test(c))).toHaveLength(1);
   });
 
-  it("agent status labels: Quoted / Send / Review / Bound / Pending inspection / Won / Lost", () => {
+  it("agent status labels: Quoted / Sent / Review / Bound / Pending inspection / Won / Lost", () => {
     expect(AGENT_STATUS_LABELS.new).toBe("Quoted");
     expect(AGENT_STATUS_LABELS.sent_to_client).toBe("Sent");
     expect(AGENT_STATUS_LABELS.client_reviewing).toBe("Review");
