@@ -592,7 +592,8 @@ export async function listDeals(filter: DealListFilter = {}) {
     .leftJoin(accounts, eq(deals.accountId, accounts.id))
     .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
-    .orderBy(desc(deals.updatedAt));
+    // Tip sep7ga: stable pipeline list order — stage changes touch updatedAt, not createdAt.
+    .orderBy(desc(deals.createdAt), asc(deals.id));
   const session = await currentDeskSession();
   const seen = new Set<string>();
   return rows.filter(({ deal }) => {
@@ -1770,7 +1771,8 @@ export async function getPipelineBoard(
     .leftJoin(accounts, eq(deals.accountId, accounts.id))
     .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
-    .orderBy(desc(deals.updatedAt));
+    // Tip sep7ga: stable board/list order — stage changes touch updatedAt, not createdAt.
+    .orderBy(desc(deals.createdAt), asc(deals.id));
   const session = await currentDeskSession();
   const seen = new Set<string>();
   const cards = [];
