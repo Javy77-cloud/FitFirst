@@ -37,12 +37,12 @@ export function QuotesPanel({
   }
 
   if (sorted.length === 0) {
-    return <div data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
+    return <div className="min-h-0" data-ff-deal-quotes="" data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
   }
 
   return (
-    <div className="space-y-4">
-      <section className="ff-card overflow-hidden" data-ff-deal-quotes>
+    <div className="space-y-4" data-ff-deal-quotes="">
+      <section className="ff-card overflow-hidden">
         <QuotesResultsTable
           dealId={dealId}
           rows={sorted}

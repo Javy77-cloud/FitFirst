@@ -481,7 +481,7 @@ export function QuotesResultsTable({
 
   return (
     <div className="space-y-3" data-ff-quotes-recheck-desk="" data-ff-quotes-by-outcome="">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3 pb-1">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
