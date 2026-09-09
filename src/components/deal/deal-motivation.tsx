@@ -22,27 +22,8 @@ export function DealMotivation({ stats }: { stats: MotivationStat[] }) {
       data-ff-deal-motivation=""
       title={bindRate.hint}
     >
-      <div className="flex items-center gap-4">
-        <div className="relative size-[86px] shrink-0" aria-label={`${bindRate.label}: ${bindRate.valueLabel}`}>
-          <svg viewBox="0 0 86 86" className="size-[86px] -rotate-90" aria-hidden>
-            <circle cx="43" cy="43" r={radius} fill="none" stroke="currentColor" strokeWidth="9" className="text-muted/70" />
-            <circle
-              cx="43"
-              cy="43"
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${circumference - dash}`}
-              className="text-primary"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-lg font-bold text-navy">
-            {bindRate.valueLabel}
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
+      <div className="flex w-full items-center justify-between gap-5 px-2">
+        <div className="min-w-0 flex-1 pl-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Monthly momentum
           </p>
@@ -52,6 +33,28 @@ export function DealMotivation({ stats }: { stats: MotivationStat[] }) {
           </p>
           <div className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
             {quotes.valueLabel} quotes pulled today
+          </div>
+        </div>
+        <div
+          className="relative h-[92px] w-[92px] shrink-0"
+          aria-label={`${bindRate.label}: ${bindRate.valueLabel}`}
+          data-ff-motivation-chart=""
+        >
+          <svg viewBox="0 0 92 92" className="block h-[92px] w-[92px] -rotate-90" aria-hidden>
+            <circle cx="46" cy="46" r={radius} fill="none" stroke="#dbe3ee" strokeWidth="10" />
+            <circle
+              cx="46"
+              cy="46"
+              r={radius}
+              fill="none"
+              stroke="var(--ff-accent)"
+              strokeWidth="10"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center text-lg font-bold text-navy">
+            {bindRate.valueLabel}
           </div>
         </div>
       </div>
