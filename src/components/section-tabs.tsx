@@ -45,18 +45,22 @@ export function SectionTabs({
     return `?${query.toString()}`;
   }
 
+  function tabClass(selected: boolean) {
+    return cn(
+      "rounded-sm px-3 py-1.5 text-sm font-medium border",
+      selected
+        ? "bg-white text-black border-black"
+        : "bg-[#1d6fb8] text-white border-white hover:bg-[#185c99]",
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-      <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
+      <div role="tablist" className="inline-flex flex-wrap gap-1.5">
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
-          const className = cn(
-            "rounded-sm px-2.5 py-1 text-sm font-medium",
-            selected
-              ? "bg-card text-navy shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          );
+          const className = tabClass(selected);
           if (tab.href) {
             return (
               <Link
@@ -77,12 +81,7 @@ export function SectionTabs({
               scroll={false}
               role="tab"
               aria-selected={selected}
-              className={cn(
-                "rounded-sm px-2.5 py-1 text-sm font-medium",
-                selected
-                  ? "bg-card text-navy shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              className={className}
             >
               {tab.label}
             </Link>

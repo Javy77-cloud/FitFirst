@@ -44,6 +44,7 @@ export function TitleTipHost() {
       if (!(target instanceof Element)) return;
       const el = target.closest("[title]") as HTMLElement | null;
       if (!el) return;
+      if (el.closest("[data-ff-no-title-tip]")) return;
       const text = (el.getAttribute("title") || "").trim();
       if (!text) return;
       if (active === el) return;
