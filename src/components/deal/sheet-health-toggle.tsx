@@ -16,7 +16,7 @@ export function SheetHealthToggle({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2" data-ff-sheet-health-toggle>
+    <div className="inline-flex max-w-full flex-col items-end gap-1" data-ff-sheet-health-toggle>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}

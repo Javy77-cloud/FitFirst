@@ -12,6 +12,9 @@ export type SectionTab = {
 /**
  * Server-rendered tabs. Switching is a real navigation (`?tab=`), so Quote Sheet
  * and Quotes stay reachable even when client hydration / HMR is down.
+ *
+ * When sidePanel is set, tabs stay in the left column only; the side panel
+ * aligns with the tab content (not with the tab row).
  */
 export function SectionTabs({
   tabs,
@@ -32,7 +35,6 @@ export function SectionTabs({
   panelClassName?: string;
   toolbar?: ReactNode;
   banner?: ReactNode;
-  /** Renders beside the tab panel at the same top (e.g. Quick Comms). */
   sidePanel?: ReactNode;
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
@@ -57,63 +59,77 @@ export function SectionTabs({
     );
   }
 
-  return (
-    <div data-ff-section-tabs="">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="tablist" className="inline-flex flex-wrap gap-1.5">
-          {tabs.map((tab) => {
-            const selected = tab.id === current.id;
-            const className = tabClass(selected);
-            if (tab.href) {
-              return (
-                <Link
-                  key={tab.id}
-                  href={tab.href}
-                  role="tab"
-                  aria-selected={selected}
-                  className={className}
-                >
-                  {tab.label}
-                </Link>
-              );
-            }
+  const tabList = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div role="tablist" className="inline-flex flex-wrap gap-1.5">
+        {tabs.map((tab) => {
+          const selected = tab.id === current.id;
+          const className = tabClass(selected);
+          if (tab.href) {
             return (
-              <Link
-                key={tab.id}
-                href={hrefFor(tab.id)}
-                scroll={false}
-                role="tab"
-                aria-selected={selected}
-                className={className}
-              >
+              <Link key={tab.id} href={tab.href} role="tab" aria-selected={selected} className={className}>
                 {tab.label}
               </Link>
             );
-          })}
-        </div>
-        {toolbar}
+          }
+          return (
+            <Link
+              key={tab.id}
+              href={hrefFor(tab.id)}
+              scroll={false}
+              role="tab"
+              aria-selected={selected}
+              className={className}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
       </div>
-      {banner}
-      <div className="flex w-full items-start gap-5" data-ff-deal-tab-body="">
-        <div
-          role="tabpanel"
-          data-ff-deal-tab-panel=""
-          className={cn("min-w-0 flex-1", panelClassName)}
-          style={{ paddingTop: 50 }}
-        >
+      {toolbar}
+    </div>
+  );
+
+  if (!sidePanel) {
+    return (
+      <div data-ff-section-tabs="">
+        {tabList}
+        {banner}
+        <div role="tabpanel" data-ff-deal-tab-panel="" className={cn(panelClassName)} style={{ paddingTop: 50 }}>
           {current?.content}
         </div>
-        {sidePanel ? (
-          <aside
-            className="w-[400px] min-w-[400px] max-w-[400px] shrink-0 grow-0 basis-[400px] space-y-3 overflow-x-hidden lg:sticky lg:top-4"
-            data-ff-deal-right-rail=""
-            data-ff-deal-rail-lock="400"
-            style={{ paddingTop: 50 }}
-          >
-            {sidePanel}
-          </aside>
-        ) : null}
       </div>
+    );
+  }
+
+  return (
+    <div
+      data-ff-section-tabs=""
+      data-ff-deal-tab-body=""
+      className="grid w-full grid-cols-1 items-start gap-x-5 gap-y-0 lg:grid-cols-[minmax(0,1fr)_400px]"
+    >
+      <div className="min-w-0">
+        {tabList}
+        {banner}
+      </div>
+      {/* Empty cell beside tabs — quotes-pulled lives in the page header above this column */}
+      <div className="hidden lg:block" aria-hidden />
+      <div
+        role="tabpanel"
+        data-ff-deal-tab-panel=""
+        className={cn("min-w-0", panelClassName)}
+        style={{ paddingTop: 50 }}
+      >
+        {current?.content}
+      </div>
+      <aside
+        className="min-w-0 space-y-3 overflow-x-hidden lg:sticky lg:top-4"
+        data-ff-deal-right-rail=""
+        data-ff-deal-rail-lock="400"
+        style={{ paddingTop: 50 }}
+      >
+        {sidePanel}
+      </aside>
     </div>
   );
 }
