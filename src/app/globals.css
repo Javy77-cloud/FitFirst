@@ -693,19 +693,34 @@ body[data-ff-col-resize] {
 [data-ff-deal-topband] {
   display: block;
   width: 100%;
+  position: relative;
 }
 [data-ff-deal-title] {
   margin-bottom: 0;
+  position: relative;
+  z-index: 1;
+}
+[data-ff-section-tabs] {
+  position: relative;
+  z-index: 0;
+  clear: both;
+}
+[data-ff-deal-tab-body] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 400px !important;
+  align-items: start !important;
+  column-gap: 1.25rem !important;
 }
 [data-ff-deal-right-rail] {
   width: 400px !important;
-  min-width: 0 !important;
   max-width: 400px !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
 [data-ff-deal-quotes-corner] {
-  width: 100%;
+  width: 400px;
+  max-width: 400px;
+  flex-shrink: 0;
 }
 [data-ff-deal-right-rail] > * {
   width: 100% !important;

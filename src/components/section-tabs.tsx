@@ -10,11 +10,9 @@ export type SectionTab = {
 };
 
 /**
- * Server-rendered tabs. Switching is a real navigation (`?tab=`), so Quote Sheet
- * and Quotes stay reachable even when client hydration / HMR is down.
- *
- * When sidePanel is set, tabs stay in the left column only; the side panel
- * aligns with the tab content (not with the tab row).
+ * Server-rendered tabs. Switching is a real navigation (`?tab=`).
+ * With sidePanel: tabs left-only on row 1; content + side panel share row 2
+ * (same 50px top pad) so Quick Comms lines up with Quotes/etc.
  */
 export function SectionTabs({
   tabs,
@@ -106,27 +104,26 @@ export function SectionTabs({
     <div
       data-ff-section-tabs=""
       data-ff-deal-tab-body=""
-      className="grid w-full grid-cols-1 items-start gap-x-5 gap-y-0 lg:grid-cols-[minmax(0,1fr)_400px]"
+      className="grid w-full items-start gap-x-5"
+      style={{ gridTemplateColumns: "minmax(0, 1fr) 400px" }}
     >
-      <div className="min-w-0">
+      <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }}>
         {tabList}
         {banner}
       </div>
-      {/* Empty cell beside tabs — quotes-pulled lives in the page header above this column */}
-      <div className="hidden lg:block" aria-hidden />
       <div
         role="tabpanel"
         data-ff-deal-tab-panel=""
         className={cn("min-w-0", panelClassName)}
-        style={{ paddingTop: 50 }}
+        style={{ gridColumn: 1, gridRow: 2, paddingTop: 50 }}
       >
         {current?.content}
       </div>
       <aside
-        className="min-w-0 space-y-3 overflow-x-hidden lg:sticky lg:top-4"
+        className="min-w-0 space-y-3 overflow-x-hidden"
         data-ff-deal-right-rail=""
         data-ff-deal-rail-lock="400"
-        style={{ paddingTop: 50 }}
+        style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 400 }}
       >
         {sidePanel}
       </aside>
