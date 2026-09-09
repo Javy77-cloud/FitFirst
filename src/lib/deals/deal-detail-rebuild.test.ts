@@ -71,17 +71,13 @@ describe("deal detail final rebuild", () => {
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("data-ff-deal-right-rail"));
     expect(page.indexOf("data-ff-deal-right-rail")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
     expect(page.indexOf("<SheetHealthToggle")).toBeLessThan(page.indexOf("<DealMotivation"));
-    expect(page.indexOf("<DealMotivation")).toBeLessThan(page.indexOf("<RecordTags"));
-    expect(page.indexOf("<RecordTags")).toBeLessThan(page.indexOf("data-ff-deal-quick-comms"));
-    expect(source("src/components/tags/record-tags.tsx")).toMatch(/AssignRecordTags/);
-    expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Manage tags/);
-    expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Add a tag/);
-    expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Save tags/);
+    expect(page.indexOf("<DealMotivation")).toBeLessThan(page.indexOf("data-ff-deal-quick-comms"));
+    expect(page).not.toMatch(/<RecordTags/);
     expect(page.indexOf("data-ff-deal-quick-comms")).toBeLessThan(page.indexOf("<RecordContextRail"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<MarketsPanel"));
     expect(docs).not.toMatch(/DealLineSelector/);
-    expect(page).toMatch(/panelClassName="mt-3"/);
+    expect(page).toMatch(/panelClassName="mt-0"/);
     expect(docs).toMatch(/data-ff-deal-upload/);
     expect(docs).not.toMatch(/data-ff-deal-upload-split/);
     expect(docs).not.toMatch(/lg:grid-cols-\[minmax\(0,18rem\)/);
@@ -230,6 +226,7 @@ describe("deal detail final rebuild", () => {
     expect(comms).toMatch(/ACTIVITY_KINDS/);
     expect(comms).toMatch(/ACTIVITY_KIND_LABEL/);
     expect(comms).toMatch(/task:|meeting:|call:|email:|sms:/);
+    expect(comms).toMatch(/flex-nowrap/);
   });
 
   it("does not add a carrier-history item to the sidebar catalog", () => {
