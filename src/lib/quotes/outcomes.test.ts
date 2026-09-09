@@ -94,7 +94,8 @@ describe("quote outcomes", () => {
     );
     expect(groups.map((g) => g.key)).toEqual(["bindable", "conditional", "declined_no_market"]);
     expect(groups[2]?.rows.map((r) => r.id)).toEqual(["n", "x"]);
-    expect(groups.every((g) => g.collapseByDefault)).toBe(true);
+    expect(groups[2]?.collapseByDefault).toBe(true);
+    expect(groups[1]?.collapseByDefault).toBe(false);
   });
 
   it("parses Cov A forced from notes and prefers coverage_a", () => {

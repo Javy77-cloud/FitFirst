@@ -256,7 +256,7 @@ export type SectionGroup<T> = {
   key: QuoteSectionKey;
   label: string;
   rows: T[];
-  /** True when section starts collapsed (all Quotes sections). */
+  /** True for Declined / No market — UI collapses by default. */
   collapseByDefault: boolean;
 };
 
@@ -299,7 +299,7 @@ export function groupQuotesBySection<T>(
     key,
     label: QUOTE_SECTION_LABELS[key],
     rows: buckets.get(key) ?? [],
-    collapseByDefault: true,
+    collapseByDefault: key === "declined_no_market",
   }));
 }
 
