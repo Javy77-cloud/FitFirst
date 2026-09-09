@@ -22,24 +22,42 @@ function emptyRow(id: number): Row {
 export function DealDocsUpload({
   deals,
   parties,
+  lockedDeal = null,
 }: {
   deals: DealLookupRow[];
   parties: PartyRecord[];
+  /** When set (Actions → Attach document), deal is fixed — no name search. */
+  lockedDeal?: DealLookupRow | null;
 }) {
-  const [dealName, setDealName] = useState("");
-  const [dealId, setDealId] = useState("");
+  const locked = Boolean(lockedDeal?.id);
+  const [dealName, setDealName] = useState(
+    lockedDeal ? lockedDeal.partyName || lockedDeal.title : "",
+  );
+  const [dealId, setDealId] = useState(lockedDeal?.id ?? "");
   const [rows, setRows] = useState<Row[]>([emptyRow(0)]);
   const [nextId, setNextId] = useState(1);
 
+  const dealRows = useMemo(() => {
+    if (!lockedDeal?.id) return deals;
+    if (deals.some((row) => row.id === lockedDeal.id)) return deals;
+    return [lockedDeal, ...deals];
+  }, [deals, lockedDeal]);
+
   const match = useMemo(
-    () => matchDealLookup(deals, dealName, dealId || null),
-    [deals, dealName, dealId],
+    () => matchDealLookup(dealRows, dealName, dealId || null),
+    [dealRows, dealName, dealId],
   );
-  const dealSuggestions = useMemo(() => suggestDealLookup(deals, dealName, 8), [deals, dealName]);
-  const partySuggestions = useMemo(() => suggestParties(parties, dealName, 8), [parties, dealName]);
+  const dealSuggestions = useMemo(
+    () => (locked ? [] : suggestDealLookup(dealRows, dealName, 8)),
+    [dealRows, dealName, locked],
+  );
+  const partySuggestions = useMemo(
+    () => (locked ? [] : suggestParties(parties, dealName, 8)),
+    [parties, dealName, locked],
+  );
 
   function dealsForParty(hit: PartyHit): DealLookupRow[] {
-    return deals.filter((item) =>
+    return dealRows.filter((item) =>
       hit.kind === "contact" ? item.contactId === hit.id : item.accountId === hit.id,
     );
   }
@@ -91,32 +109,48 @@ export function DealDocsUpload({
     !match && dealName.trim()
       ? partySuggestions.flatMap((hit) => dealsForParty(hit).map((item) => ({ hit, row: item })))
       : [];
-  const cta = uploadDealCta(deals, dealName, dealId || null);
+  const cta = locked ? { kind: "idle" as const, match: null } : uploadDealCta(dealRows, dealName, dealId || null);
 
   return (
     <form
       action={uploadDealDocuments}
-      className="ff-card relative flex h-[168px] flex-col justify-center gap-1 px-3 py-2"
+      className={locked ? "relative flex flex-col justify-center gap-1 px-1 py-1" : "ff-card relative flex h-[168px] flex-col justify-center gap-1 px-3 py-2"}
       data-testid="deal-docs-upload"
+      data-deal-locked={locked ? "true" : undefined}
       style={{ minHeight: 168, height: "auto", overflow: "visible" }}
     >
-      <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
+      {locked ? null : (
+        <h2 className="text-sm font-semibold text-navy">Attach documents to a deal</h2>
+      )}
       <div className="flex flex-nowrap items-center gap-2">
-        <Input
-          id="dealName"
-          name="dealName"
-          required
-          value={dealName}
-          onChange={(event) => onNameChange(event.target.value)}
-          className="h-8 min-w-[10rem] flex-1"
-          placeholder="Search deals"
-          autoComplete="off"
-          aria-label="Search deals"
-          data-testid="deal-docs-name"
-        />
+        {locked ? (
+          <>
+            <p
+              className="h-8 min-w-[10rem] flex-1 truncate rounded-md border border-input bg-muted/40 px-2 text-sm leading-8 text-navy"
+              data-testid="deal-docs-locked-name"
+              title={dealName}
+            >
+              {dealName || lockedDeal?.title}
+            </p>
+            <input type="hidden" name="dealName" value={dealName || lockedDeal?.title || ""} />
+          </>
+        ) : (
+          <Input
+            id="dealName"
+            name="dealName"
+            required
+            value={dealName}
+            onChange={(event) => onNameChange(event.target.value)}
+            className="h-8 min-w-[10rem] flex-1"
+            placeholder="Search deals"
+            autoComplete="off"
+            aria-label="Search deals"
+            data-testid="deal-docs-name"
+          />
+        )}
         <input type="hidden" name="dealId" value={match?.id ?? dealId} />
         <input type="hidden" name="rowCount" value={rows.length} />
-        {cta.kind === "select" && cta.match ? (
+        {!locked && cta.kind === "select" && cta.match ? (
           <Button
             type="button"
             size="sm"
@@ -127,7 +161,7 @@ export function DealDocsUpload({
             {uploadDealCtaLabel("select")}
           </Button>
         ) : null}
-        {cta.kind === "create" ? (
+        {!locked && cta.kind === "create" ? (
           <Button
             type="submit"
             size="sm"
@@ -203,7 +237,7 @@ export function DealDocsUpload({
         <p className="sr-only">No unique Deal match yet. Pick a Contact, Business, or shop below.</p>
       ) : null}
 
-      {dealName.trim() && (partySuggestions.length > 0 || dealSuggestions.length > 0) ? (
+      {!locked && dealName.trim() && (partySuggestions.length > 0 || dealSuggestions.length > 0) ? (
         <ul className="absolute left-3 right-3 top-full z-20 mt-1 max-h-40 space-y-0.5 overflow-auto rounded-md border border-border bg-card p-1">
           {partySuggestions.map((hit) => {
             const related = dealsForParty(hit);

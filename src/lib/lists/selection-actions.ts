@@ -31,6 +31,7 @@ export type SelectionRecord = {
 export type SelectionActionId =
   | "convert"
   | "bind"
+  | "attach_document"
   | "duplicate"
   | "merge"
   | "email"
@@ -143,6 +144,19 @@ export function listSelectionActions(input: {
           }),
         );
       }
+    }
+
+    if (count !== 1) {
+      actions.push(
+        withReason(
+          "attach_document",
+          "Attach document",
+          false,
+          "Pick one deal to attach documents.",
+        ),
+      );
+    } else {
+      actions.push(withReason("attach_document", "Attach document", true));
     }
   }
 

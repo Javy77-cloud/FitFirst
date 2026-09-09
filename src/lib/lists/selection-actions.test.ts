@@ -26,6 +26,8 @@ describe("listSelectionActions", () => {
       selected: [rec({ id: "d1" })],
     });
     expect(deal.find((item) => item.id === "bind")?.href).toBe("/deals/d1#bind");
+    expect(deal.find((item) => item.id === "attach_document")?.enabled).toBe(true);
+    expect(deal.find((item) => item.id === "attach_document")?.label).toBe("Attach document");
 
     const bound = listSelectionActions({
       module: "deals",
@@ -33,6 +35,7 @@ describe("listSelectionActions", () => {
     });
     expect(bound.find((item) => item.id === "bind")?.label).toBe("Open bound file");
     expect(bound.find((item) => item.id === "bind")?.href).toBe("/policies/p1");
+    expect(bound.find((item) => item.id === "attach_document")?.enabled).toBe(true);
   });
 
   it("enables merge only for 2+ leads or contacts", () => {
@@ -54,6 +57,8 @@ describe("listSelectionActions", () => {
     });
     expect(deals.find((item) => item.id === "merge")?.enabled).toBe(false);
     expect(deals.find((item) => item.id === "merge")?.reason).toMatch(/Leads and Contacts/);
+    expect(deals.find((item) => item.id === "attach_document")?.enabled).toBe(false);
+    expect(deals.find((item) => item.id === "attach_document")?.reason).toMatch(/Pick one deal/);
   });
 
   it("wires email and SMS only when the selected rows have addresses", () => {

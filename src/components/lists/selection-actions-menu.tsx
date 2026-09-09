@@ -13,6 +13,7 @@ import {
   openMergeForSelection,
 } from "@/app/actions/list-selection";
 import { confirmDeleteOnce, confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
+import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -92,6 +93,7 @@ export function SelectionActionsMenu({
   });
   const hubModule = asDevHubModule(module);
   const [compose, setCompose] = useState<"email" | "sms" | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
   const [subject, setSubject] = useState("Desk follow-up");
   const [body, setBody] = useState("");
   const deleteLock = useRef(false);
@@ -251,6 +253,10 @@ export function SelectionActionsMenu({
       router.push(href);
       return;
     }
+    if (id === "attach_document") {
+      setAttachOpen(true);
+      return;
+    }
     if (id === "print") {
       window.print();
       return;
@@ -273,8 +279,12 @@ export function SelectionActionsMenu({
     if (id === "convert") void onConvert();
   }
 
-  const extras = actions.filter((item) => item.id === "convert" || item.id === "bind");
-  const core = actions.filter((item) => !["convert", "bind", "run_macro", "delete"].includes(item.id));
+  const extras = actions.filter(
+    (item) => item.id === "convert" || item.id === "bind" || item.id === "attach_document",
+  );
+  const core = actions.filter(
+    (item) => !["convert", "bind", "attach_document", "run_macro", "delete"].includes(item.id),
+  );
   const runMacro = actions.find((item) => item.id === "run_macro");
   const del = actions.find((item) => item.id === "delete");
 
@@ -392,7 +402,41 @@ export function SelectionActionsMenu({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
+        <DialogContent className="sm:max-w-3xl" showCloseButton data-testid="deal-attach-from-actions">
+          <DialogHeader>
+            <DialogTitle>Attach documents</DialogTitle>
+            <DialogDescription>
+              Deal is pre-selected from the list. Add pages or files — no deal name search.
+            </DialogDescription>
+          </DialogHeader>
+          {attachOpen && selectedRecords[0] ? (
+            <DealDocsUpload
+              key={selectedRecords[0].id}
+              lockedDeal={{
+                id: selectedRecords[0].id,
+                title: selectedRecords[0].label,
+                partyName: selectedRecords[0].label,
+                contactId: selectedRecords[0].contactId,
+                accountId: selectedRecords[0].accountId,
+              }}
+              deals={[
+                {
+                  id: selectedRecords[0].id,
+                  title: selectedRecords[0].label,
+                  partyName: selectedRecords[0].label,
+                  contactId: selectedRecords[0].contactId,
+                  accountId: selectedRecords[0].accountId,
+                },
+              ]}
+              parties={[]}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 
