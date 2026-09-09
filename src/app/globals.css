@@ -695,6 +695,9 @@ body[data-ff-col-resize] {
   width: 100%;
   align-items: flex-start;
 }
+[data-ff-deal-title] {
+  margin-bottom: 0.75rem;
+}
 [data-ff-deal-top-left] {
   flex: 1 1 0% !important;
   min-width: 0 !important;
