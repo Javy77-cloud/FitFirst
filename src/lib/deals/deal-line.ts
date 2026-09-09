@@ -56,6 +56,25 @@ const PRODUCT_TO_FORM: Partial<Record<SheetProduct, string>> = {
   workers_comp: "WC",
 };
 
+/** Master-sheet product catalog driven by quoting form / insurance subtype. */
+const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
+  HO3: "homeowners",
+  HO5: "homeowners", // stub → home catalog like HO3
+  HO6: "homeowners",
+  DP1: "landlord",
+  DP3: "landlord",
+  PA: "auto",
+  FLOOD: "flood",
+  GL: "gl",
+  WC: "workers_comp",
+  BOP: "gl",
+};
+
+export function sheetProductForQuotingForm(formId: string | null | undefined): SheetProduct | null {
+  if (!formId) return null;
+  return FORM_TO_PRODUCT[formId] ?? null;
+}
+
 export function shopLineForProduct(product: SheetProduct): ShopLine {
   return PRODUCT_TO_LINE[product];
 }
@@ -74,12 +93,19 @@ export function resolveDealProduct(input: {
   policySubType?: string | null;
   lineOfBusiness?: string | null;
   quotingLine?: string | null;
+  quotingForm?: string | null;
 }): SheetProduct {
   if (isSheetProduct(input.productParam)) return input.productParam;
+  const fromForm = sheetProductForQuotingForm(input.quotingForm);
+  if (fromForm) return fromForm;
   if (isSheetProduct(input.sheetProduct)) return input.sheetProduct;
   if (isSheetProduct(input.policySubType)) return input.policySubType;
   const picked = Boolean(
-    input.lineOfBusiness?.trim() || input.quotingLine?.trim() || input.sheetProduct || input.policySubType,
+    input.lineOfBusiness?.trim() ||
+      input.quotingLine?.trim() ||
+      input.sheetProduct ||
+      input.policySubType ||
+      input.quotingForm,
   );
   if (!picked) return "homeowners";
   const line = parseShopLine(

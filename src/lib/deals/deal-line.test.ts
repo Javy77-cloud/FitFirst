@@ -4,6 +4,7 @@ import {
   lobForProduct,
   resolveDealProduct,
   resolveDealSheetLine,
+  sheetProductForQuotingForm,
   shopLineForProduct,
 } from "./deal-line";
 
@@ -49,5 +50,16 @@ describe("deal line of business", () => {
   it("honors a stored product over the HO default", () => {
     expect(resolveDealProduct({ sheetProduct: "renters", lineOfBusiness: "HO" })).toBe("renters");
     expect(resolveDealProduct({ lineOfBusiness: "AUTO" })).toBe("auto");
+  });
+
+  it("quotingForm drives the master-sheet product (HO5→home, DP1→landlord)", () => {
+    expect(sheetProductForQuotingForm("HO3")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("HO5")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("HO6")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("DP1")).toBe("landlord");
+    expect(sheetProductForQuotingForm("DP3")).toBe("landlord");
+    expect(sheetProductForQuotingForm("PA")).toBe("auto");
+    expect(resolveDealProduct({ quotingForm: "HO6", sheetProduct: "renters" })).toBe("homeowners");
+    expect(resolveDealProduct({ quotingForm: "DP1" })).toBe("landlord");
   });
 });

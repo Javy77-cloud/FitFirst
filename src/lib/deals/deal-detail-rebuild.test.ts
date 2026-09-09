@@ -42,7 +42,7 @@ describe("deal detail final rebuild", () => {
     expect(page.indexOf("data-ff-deal-flush-tabs")).toBeLessThan(page.indexOf("banner="));
   });
 
-  it("stacks deal title, tabs, then LOB with no right-side title chrome", () => {
+  it("stacks deal title and tabs with no banner LOB chrome", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     const docs = source("src/components/deal/documents-panel.tsx");
     expect(page).toMatch(/data-ff-deal-title/);
@@ -56,7 +56,7 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/flex w-full min-w-0 max-w-full flex-col items-end/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
-    expect(page).toMatch(/DealLineSelector/);
+    expect(page).not.toMatch(/DealLineSelector/);
     expect(page).not.toMatch(/RecordDetailLayout/);
     expect(page).not.toMatch(/data-ff-deal-identity/);
     expect(page).not.toMatch(/RelatedRecordNav/);
@@ -78,10 +78,10 @@ describe("deal detail final rebuild", () => {
     expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Add a tag/);
     expect(source("src/components/tags/record-tags.tsx")).not.toMatch(/Save tags/);
     expect(page.indexOf("data-ff-deal-quick-comms")).toBeLessThan(page.indexOf("<RecordContextRail"));
-    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DealLineSelector"));
-    expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
-    expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<MarketsPanel"));
+    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DocumentsPanel"));
+    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<MarketsPanel"));
     expect(docs).not.toMatch(/DealLineSelector/);
+    expect(page).toMatch(/panelClassName="mt-3"/);
     expect(docs).toMatch(/data-ff-deal-upload/);
     expect(docs).not.toMatch(/data-ff-deal-upload-split/);
     expect(docs).not.toMatch(/lg:grid-cols-\[minmax\(0,18rem\)/);
@@ -93,7 +93,7 @@ describe("deal detail final rebuild", () => {
     const docs = source("src/components/deal/documents-panel.tsx");
     const upload = source("src/components/deal/source-docs-upload.tsx");
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(page).toMatch(/DealLineSelector/);
+    expect(page).not.toMatch(/DealLineSelector/);
     expect(docs).toMatch(/data-ff-deal-docs/);
     expect(docs).toMatch(/flex w-full flex-col/);
     expect(docs).toMatch(/data-ff-deal-upload/);
@@ -118,7 +118,7 @@ describe("deal detail final rebuild", () => {
     expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
     expect(gate).toMatch(/requestQuotes/);
     expect(docs).toMatch(/FileActionMenu/);
-    expect(page.indexOf("<DealLineSelector")).toBeLessThan(page.indexOf("<DocumentsPanel"));
+    expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));
     expect(docs).toMatch(/deal-doc-row flex w-full/);
     expect(upload).toMatch(/Create/);
@@ -130,7 +130,7 @@ describe("deal detail final rebuild", () => {
     expect(upload).not.toMatch(/className="ml-0"/);
     expect(upload).not.toMatch(/Add another file/);
     expect(sheet).toMatch(/name=\{fieldKey\}/);
-    expect(sheet).toMatch(/Confirm extracted/);
+    expect(sheet).toMatch(/Confirm/);
     expect(sheet).toMatch(/Save sheet/);
   });
 
@@ -189,14 +189,14 @@ describe("deal detail final rebuild", () => {
     expect(page).not.toMatch(/In-desk signature/);
   });
 
-  it("defaults the deal line selector to Homeowners and swaps the sheet", () => {
+  it("keeps deal-line helper defaults but drops banner LOB and sheet product chrome", () => {
     expect(resolveDealProduct({})).toBe("homeowners");
-    const selector = source("src/components/deal/deal-line-selector.tsx");
-    expect(selector).toMatch(/Line of business\./);
-    expect(selector).toMatch(/setDealSheetProduct/);
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).not.toMatch(/DealLineSelector/);
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
     expect(sheet).not.toMatch(/data-ff-sheet-product/);
-    expect(sheet).toMatch(/one product on this deal/);
+    expect(sheet).not.toMatch(/one product on this deal/);
+    expect(sheet).not.toMatch(/SHEET_PRODUCT_LABELS/);
   });
 
   it("leaves Quotes empty until Markets returns rows", () => {

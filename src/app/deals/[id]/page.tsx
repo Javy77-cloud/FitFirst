@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
-import { DealLineSelector } from "@/components/deal/deal-line-selector";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
@@ -102,9 +101,10 @@ export default async function DealPage({
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
   const activeTab = parseAgentDealTab(tab);
+  const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const sheetLine = resolveDealSheetLine({
     lineParam,
-    quotingLine: deal.quotingLine,
+    quotingLine: deal.quotingLine ?? quotingForm?.shopLine,
     lineOfBusiness: deal.lineOfBusiness,
   });
   const activeSheet =
@@ -124,10 +124,10 @@ export default async function DealPage({
     sheetProduct: activeSheet.values.sheet_product?.value,
     policySubType: deal.policySubType,
     lineOfBusiness: deal.lineOfBusiness,
-    quotingLine: deal.quotingLine ?? sheetLine,
+    quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? sheetLine,
+    quotingForm: deal.quotingForm ?? quotingForm?.id,
   });
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
-  const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const unlocked = quotingUnlockedForDeal(deal);
   const dealTagColors = colorsFromModuleTags(dealTagExtra);
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
@@ -189,10 +189,9 @@ export default async function DealPage({
           defaultValue="details"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
-          panelClassName="mt-1"
+          panelClassName="mt-3"
           banner={
             <>
-              <DealLineSelector dealId={deal.id} product={selectedProduct} />
               <RecordDeveloperActions
                 module="deals"
                 recordId={deal.id}
@@ -222,7 +221,7 @@ export default async function DealPage({
                         line={deal.lineOfBusiness}
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
                         fields={resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
-                        values={mergeDealSystemValues(deal, lead, dealValues)}
+                        values={mergeDealSystemValues(deal, lead, dealValues, dealFields)}
                       />
                     ) : id === "documents" ? (
                       <DocumentsPanel

@@ -49,3 +49,44 @@ export function quotingUnlockedForDeal(deal: {
   if (deal.quotingUnlocked) return true;
   return deal.pipelineStage === "bound" || deal.pipelineStage === "closed_won";
 }
+
+const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
+  Home: "HO3",
+  Homeowners: "HO3",
+  Renters: "HO3",
+  Landlord: "DP3",
+  Auto: "PA",
+  "Personal auto": "PA",
+  Motorcycle: "PA",
+  "Commercial Auto": "PA",
+  Flood: "FLOOD",
+  Umbrella: "HO3",
+  GL: "GL",
+  BOP: "BOP",
+  Life: "HO3",
+  Health: "HO3",
+  RV: "PA",
+  "Workers Comp": "WC",
+  "Workers' Comp": "WC",
+};
+
+/** Picklist / legacy LOB words → quoting form id (HO3, PA, …). */
+export function coerceQuotingFormId(value: string | null | undefined): QuotingFormId | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  if (isQuotingFormId(raw)) return raw;
+  const byLabel = QUOTING_FORMS.find((form) => form.label.toLowerCase() === raw.toLowerCase());
+  if (byLabel) return byLabel.id;
+  const legacy = LEGACY_INSURANCE_TYPE_TO_FORM[raw];
+  return legacy ?? null;
+}
+
+export function quotingFormLabel(id: string | null | undefined): string {
+  const form = quotingFormById(id ?? "");
+  return form?.label ?? (id ?? "").trim();
+}
+
+/** Option labels for the Deal Details Insurance subtype picklist. */
+export function insuranceSubtypeOptions(): string[] {
+  return QUOTING_FORMS.map((form) => form.label);
+}

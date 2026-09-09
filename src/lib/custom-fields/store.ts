@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/schema";
 import type { ConvertLead } from "@/lib/crm/convert";
 import { catalogForLines, CORE_FIELDS, defaultFieldsForLine, DEAL_LAYOUT_LINES } from "./defaults";
+import { insuranceSubtypeOptions } from "@/lib/quoting/forms";
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import {
   defaultFieldsForModule,
@@ -68,6 +69,28 @@ async function insertMissingDealFields(fields: CustomFieldDef[]) {
   await insertMissingFields("deals", fields);
 }
 
+
+async function ensureInsuranceSubtypeField() {
+  const existing = await db
+    .select()
+    .from(deskCustomFields)
+    .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
+  const options = insuranceSubtypeOptions();
+  const target =
+    existing.find((row) => row.systemKey === "quotingForm") ??
+    existing.find((row) => /^insurance subtype$/i.test(row.label)) ??
+    existing.find((row) => /^insurance type$/i.test(row.label)) ??
+    existing.find((row) => row.key === "picklist");
+  const key = target?.key ?? "insurance_subtype";
+  await upsertFieldDef({
+    key,
+    label: "Insurance subtype",
+    type: "picklist",
+    options,
+    systemKey: "quotingForm",
+  });
+}
+
 export async function ensureDealFieldCatalog() {
   const existing = await db
     .select()
@@ -78,6 +101,7 @@ export async function ensureDealFieldCatalog() {
   } else {
     await insertMissingDealFields(CORE_FIELDS);
   }
+  await ensureInsuranceSubtypeField();
   const rows = await db
     .select()
     .from(deskCustomFields)

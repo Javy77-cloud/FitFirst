@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
-import { parseSheetProduct, SHEET_PRODUCT_LABELS } from "@/lib/quote-sheet/products";
+import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
@@ -123,9 +123,6 @@ export function MasterSheetCompare({
             <p className="text-helper text-muted-foreground">
               Empty before extraction. Type a value or confirm what the source pulled.
               {filled === 0 ? " Fields start blank." : ` ${filled} filled.`}
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {SHEET_PRODUCT_LABELS[product]} · one product on this deal
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">

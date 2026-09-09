@@ -362,10 +362,12 @@ export function parseShopLine(value: string | null | undefined, fallback: ShopLi
 
 /** Policy form the agent picks after dropping dec / 4-point / wind mit on the Deal. */
 export const QUOTING_FORMS = [
-  { id: "HO3", label: "HO3 homeowners", shopLine: "home" as ShopLine, lob: "HO" },
-  { id: "HO6", label: "HO6 condo", shopLine: "home" as ShopLine, lob: "HO" },
-  { id: "DP3", label: "DP3 dwelling", shopLine: "home" as ShopLine, lob: "HO" },
-  { id: "PA", label: "Personal auto", shopLine: "auto" as ShopLine, lob: "AUTO" },
+  { id: "HO3", label: "HO3", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "HO5", label: "HO5", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "HO6", label: "HO6", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "DP1", label: "DP1", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "DP3", label: "DP3", shopLine: "home" as ShopLine, lob: "HO" },
+  { id: "PA", label: "Auto", shopLine: "auto" as ShopLine, lob: "AUTO" },
   { id: "GL", label: "General liability", shopLine: "general_liability" as ShopLine, lob: "GL" },
   { id: "WC", label: "Workers comp", shopLine: "workers_comp" as ShopLine, lob: "WC" },
   { id: "BOP", label: "BOP", shopLine: "general_liability" as ShopLine, lob: "BOP" },

@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { db } from "@/lib/db";
-import { deals, risks } from "@/lib/db/schema";
+import { deals, quoteSheets, risks } from "@/lib/db/schema";
 import {
   deleteFieldDef,
   ensureFieldsForLine,
@@ -41,6 +41,10 @@ import {
 } from "@/lib/custom-fields/types";
 import { dealDetailsSavedHref } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
+import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
+import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -240,8 +244,14 @@ export async function saveDealFieldValues(formData: FormData) {
   await writeRecordValues(dealId, custom);
   await applySystemDealValues(dealId, system);
   revalidatePath(`/deals/${dealId}`);
+  const formId = coerceQuotingFormId(system.quotingForm);
+  const form = formId ? quotingFormById(formId) : null;
+  const product = formId ? sheetProductForQuotingForm(formId) : null;
   flashAction(
-    dealDetailsSavedHref(dealId, { line: str(formData, "line"), product: str(formData, "product") }),
+    dealDetailsSavedHref(dealId, {
+      line: form?.shopLine || str(formData, "line"),
+      product: product || str(formData, "product"),
+    }),
     "deal-details-saved",
   );
 }
@@ -250,15 +260,62 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
   const named = system.primaryNamedInsured?.trim();
   const notes = system.notes;
   const state = system.state?.trim();
+  const formId = coerceQuotingFormId(system.quotingForm);
+  const form = formId ? quotingFormById(formId) : null;
+  const product = formId ? sheetProductForQuotingForm(formId) : null;
   await db
     .update(deals)
     .set({
       primaryNamedInsured: named || undefined,
       notes: notes ?? undefined,
       state: state || undefined,
+      ...(form
+        ? {
+            quotingForm: form.id,
+            quotingLine: form.shopLine,
+            lineOfBusiness: form.lob,
+            policySubType: product ?? undefined,
+          }
+        : {}),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
+  if (form && product) {
+    let [sheet] = await db
+      .select()
+      .from(quoteSheets)
+      .where(
+        and(
+          eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
+          eq(quoteSheets.dealId, dealId),
+          eq(quoteSheets.line, form.shopLine),
+        ),
+      );
+    if (!sheet) {
+      const [created] = await db
+        .insert(quoteSheets)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          dealId,
+          line: form.shopLine,
+          values: emptySheetValues(form.shopLine, product),
+        })
+        .returning();
+      sheet = created;
+    }
+    if (sheet) {
+      await db
+        .update(quoteSheets)
+        .set({
+          values: {
+            ...sheet.values,
+            sheet_product: { value: product, status: "confirmed", source: "agent" },
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(quoteSheets.id, sheet.id));
+    }
+  }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (risk) {
     await db

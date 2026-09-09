@@ -1,8 +1,22 @@
+import type { CustomFieldDef } from "./types";
+import { coerceQuotingFormId, quotingFormLabel } from "@/lib/quoting/forms";
+
+function insuranceSubtypeField(fields: readonly CustomFieldDef[] | undefined) {
+  if (!fields?.length) return null;
+  return (
+    fields.find((field) => field.systemKey === "quotingForm") ??
+    fields.find((field) => /^insurance subtype$/i.test(field.label)) ??
+    fields.find((field) => /^insurance type$/i.test(field.label)) ??
+    null
+  );
+}
+
 export function mergeDealSystemValues(
   deal: {
     primaryNamedInsured?: string | null;
     notes?: string | null;
     state?: string | null;
+    quotingForm?: string | null;
   },
   lead:
     | {
@@ -21,6 +35,7 @@ export function mergeDealSystemValues(
     | null
     | undefined,
   stored: Record<string, string>,
+  fields?: readonly CustomFieldDef[],
 ): Record<string, string> {
   const fromLead: Record<string, string> = {
     first_name: lead?.firstName ?? "",
@@ -36,5 +51,15 @@ export function mergeDealSystemValues(
     notes: stored.notes || deal.notes || lead?.notes || "",
     named_insured: stored.named_insured || deal.primaryNamedInsured || "",
   };
-  return { ...fromLead, ...stored };
+  const merged = { ...fromLead, ...stored };
+  const subtype = insuranceSubtypeField(fields);
+  if (!subtype) return merged;
+  const fromDeal = quotingFormLabel(deal.quotingForm ?? "");
+  if (fromDeal) {
+    merged[subtype.key] = fromDeal;
+    return merged;
+  }
+  const coerced = coerceQuotingFormId(merged[subtype.key]);
+  if (coerced) merged[subtype.key] = quotingFormLabel(coerced);
+  return merged;
 }
