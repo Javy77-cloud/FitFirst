@@ -95,7 +95,7 @@ export function TitleTipHost() {
     <div
       role="tooltip"
       data-ff-title-tip=""
-      className="ff-title-tip pointer-events-none fixed z-[9999] max-w-xs -translate-x-1/2 -translate-y-[calc(100%+8px)] px-2.5 py-1.5 text-[12px] leading-snug text-white shadow-lg"
+      className="ff-title-tip pointer-events-none fixed z-[9999] max-w-xs -translate-x-1/2 -translate-y-[calc(100%+8px)] px-2.5 py-1.5 text-[12px] leading-snug text-navy shadow-md"
       style={{ left: tip.x, top: tip.y }}
     >
       {tip.text}
