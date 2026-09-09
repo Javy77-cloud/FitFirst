@@ -175,9 +175,9 @@ export default async function DealPage({
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
-        <div className="-mt-5 w-full space-y-3" data-ff-deal-flush-tabs data-ff-deal-topband>
+        <div className="-mt-5 w-full space-y-1" data-ff-deal-flush-tabs data-ff-deal-topband>
           <div className="flex w-full items-start justify-between gap-4" data-ff-deal-top-left="">
-            <div className="min-w-0 flex-1 space-y-2">
+            <div className="min-w-0 flex-1 space-y-1">
               <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
                 {deal.title}
               </h1>
