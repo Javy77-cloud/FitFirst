@@ -695,13 +695,13 @@ body[data-ff-col-resize] {
   width: 100%;
 }
 [data-ff-deal-title] {
-  margin: 0 0 0.25rem 0;
+  margin: 0;
 }
 [data-ff-deal-workspace] {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) 400px !important;
   column-gap: 1.25rem !important;
-  row-gap: 0.5rem !important;
+  row-gap: 0.125rem !important;
   align-items: start !important;
 }
 [data-ff-deal-quotes-corner] {
