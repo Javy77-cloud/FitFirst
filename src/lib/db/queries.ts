@@ -93,6 +93,7 @@ import {
   quoteAttemptLogs,
   quoteSheets,
   quotes,
+  quoteNotes,
   recordAsks,
   renewalCompareLogs,
   reviewTasks,
@@ -1552,6 +1553,23 @@ export async function getDealWorkspace(dealId: string) {
     .where(and(eq(quotes.tenantId, tenant()), eq(quotes.dealId, dealId)))
     .orderBy(asc(quotes.premium));
 
+  const quoteNoteRows =
+    dealQuotes.length === 0
+      ? []
+      : await db
+          .select()
+          .from(quoteNotes)
+          .where(
+            and(
+              eq(quoteNotes.tenantId, tenant()),
+              inArray(
+                quoteNotes.quoteId,
+                dealQuotes.map((row) => row.quote.id),
+              ),
+            ),
+          )
+          .orderBy(asc(quoteNotes.createdAt));
+
   const logs = await db
     .select({
       log: quoteAttemptLogs,
@@ -1612,6 +1630,7 @@ export async function getDealWorkspace(dealId: string) {
     fileVersions,
     fields,
     quotes: dealQuotes,
+    quoteNotes: quoteNoteRows,
     logs,
     lead,
     contact,

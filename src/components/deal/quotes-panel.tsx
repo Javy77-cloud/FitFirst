@@ -1,8 +1,8 @@
 import { BindConfirmGate } from "@/components/deal/bind-confirm-gate";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { BindPathTarget } from "@/lib/crm/bind-path";
-import { sortQuotesCheapestFirst } from "@/lib/deals/quote-sort";
-import type { Carrier, Quote, QuoteAttemptLog } from "@/lib/db/schema";
+import { sortQuotesByRatingThenPremium, sortQuotesCheapestFirst } from "@/lib/deals/quote-sort";
+import type { Carrier, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
 
 export function QuotesPanel({
   dealId,
@@ -11,14 +11,17 @@ export function QuotesPanel({
   quoteResultsNote: _quoteResultsNote,
   formId = "HO3",
   confirmLogs = [],
+  quoteNotes = [],
   bind,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
   logs: { log: QuoteAttemptLog; carrier: Carrier }[];
+  /** Unused on agent Quotes tab — appetite / portal transcript stays in Developer Hub. */
   quoteResultsNote?: string | null;
   formId?: string;
   confirmLogs?: { carrierId: string; why?: string | null }[];
+  quoteNotes?: QuoteNote[];
   bind?: {
     defaultTarget: BindPathTarget;
     lineLabel: string;
@@ -29,14 +32,21 @@ export function QuotesPanel({
   };
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
-  const sorted = sortQuotesCheapestFirst(
-    liveQuotes.map((row) => ({ ...row, premium: row.quote.premium })),
+  const sorted = sortQuotesByRatingThenPremium(
+    liveQuotes.map((row) => ({
+      ...row,
+      premium: row.quote.premium,
+      agentRating: row.quote.agentRating,
+    })),
   );
-  const cheapest = sorted[0] ?? null;
+  const cheapest =
+    sortQuotesCheapestFirst(liveQuotes.map((row) => ({ ...row, premium: row.quote.premium })))[0] ??
+    null;
   const resultByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.result]));
-  const whyByCarrier = Object.fromEntries(
-    logs.map((row) => [row.log.carrierId, row.log.why ?? undefined]),
-  );
+  const notesByQuote: Record<string, QuoteNote[]> = {};
+  for (const note of quoteNotes) {
+    (notesByQuote[note.quoteId] ??= []).push(note);
+  }
 
   if (sorted.length === 0) {
     return <div data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
@@ -51,7 +61,7 @@ export function QuotesPanel({
           formId={formId}
           confirmLogs={confirmLogs}
           resultByCarrier={resultByCarrier}
-          whyByCarrier={whyByCarrier}
+          notesByQuote={notesByQuote}
         />
       </section>
 

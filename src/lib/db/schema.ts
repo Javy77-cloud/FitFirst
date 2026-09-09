@@ -1246,12 +1246,38 @@ export const quotes = pgTable(
     /** Optional portal / deep-link for Open in carrier (APIs later). */
     carrierOpenUrl: text("carrier_open_url"),
     lostReason: text("lost_reason"),
+    /** Agent 1–5 favorite; null = unrated. Quotes list sorts rating desc then premium. */
+    agentRating: integer("agent_rating"),
+    /** new | sent_to_client | client_reviewing | waiting_on_inspection | dead */
+    agentStatus: text("agent_status").notNull().default("new"),
+    /** too_expensive | client_dislikes_carrier | coverage_gap | inspection_failed | other — when dead */
+    reasonForNo: text("reason_for_no"),
+    /** Plain-English bind requirement chips for Details (not portal why). */
+    bindRequirements: jsonb("bind_requirements").$type<string[] | null>(),
     stub: boolean("stub").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (t) => [index("quotes_tenant_deal_idx").on(t.tenantId, t.dealId)],
+);
+
+/** Dated agent note thread per quote (Quotes tab). */
+export const quoteNotes = pgTable(
+  "quote_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("quote_notes_quote_idx").on(t.tenantId, t.quoteId)],
 );
 
 export const extractionJobs = pgTable(
@@ -2789,6 +2815,7 @@ export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type FillLearningLog = typeof fillLearningLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
+export type QuoteNote = typeof quoteNotes.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type DeskMessage = typeof deskMessages.$inferSelect;

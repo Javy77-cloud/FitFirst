@@ -666,6 +666,13 @@
       "when": 1788940000000,
       "tag": "0094_quote_outcome_labels",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1788950000000,
+      "tag": "0095_quote_agent_desk",
+      "breakpoints": true
     }
   ]
 }

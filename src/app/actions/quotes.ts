@@ -13,9 +13,17 @@ import {
   carriers,
   deals,
   quoteAttemptLogs,
+  quoteNotes,
   quotes,
   risks,
 } from "@/lib/db/schema";
+import { currentDeskSession } from "@/lib/auth/session";
+import {
+  isAgentStatus,
+  isReasonForNo,
+  type AgentStatus,
+  type ReasonForNo,
+} from "@/lib/quotes/outcomes";
 import { applySavedSheetToDeal } from "@/app/actions/quote-sheet";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
@@ -218,3 +226,137 @@ export async function deleteSelectedQuotesAction(formData: FormData) {
   );
 }
 
+function dealQuotesPath(dealId: string) {
+  return `/deals/${dealId}?tab=quotes`;
+}
+
+async function requireQuoteForDeal(dealId: string, quoteId: string) {
+  const [row] = await db
+    .select()
+    .from(quotes)
+    .where(
+      and(
+        eq(quotes.id, quoteId),
+        eq(quotes.dealId, dealId),
+        eq(quotes.tenantId, DEFAULT_TENANT_ID),
+      ),
+    );
+  if (!row) throw new Error("Quote not found on this deal.");
+  return row;
+}
+
+export async function saveQuoteAgentRatingAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  const raw = String(formData.get("rating") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  let agentRating: number | null = null;
+  if (raw === "" || raw === "0" || raw.toLowerCase() === "clear") {
+    agentRating = null;
+  } else {
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1 || n > 5) throw new Error("Rating must be 1–5.");
+    agentRating = n;
+  }
+  await requireQuoteForDeal(dealId, quoteId);
+  await db
+    .update(quotes)
+    .set({ agentRating })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), agentRating == null ? "Rating cleared" : `Rated ${agentRating}★`);
+}
+
+export async function saveQuoteAgentStatusAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  const statusRaw = String(formData.get("agentStatus") ?? "").trim();
+  const reasonRaw = String(formData.get("reasonForNo") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!isAgentStatus(statusRaw)) throw new Error("Invalid quote status.");
+  const agentStatus: AgentStatus = statusRaw;
+  let reasonForNo: ReasonForNo | null = null;
+  if (agentStatus === "dead") {
+    if (!isReasonForNo(reasonRaw)) {
+      throw new Error("Pick a reason-for-no when marking a quote dead.");
+    }
+    reasonForNo = reasonRaw;
+  }
+  const existing = await requireQuoteForDeal(dealId, quoteId);
+  await db
+    .update(quotes)
+    .set({
+      agentStatus,
+      reasonForNo: agentStatus === "dead" ? reasonForNo : null,
+    })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
+
+  if (agentStatus === "dead" && reasonForNo) {
+    await db.insert(quoteAttemptLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      riskId: existing.riskId,
+      carrierId: existing.carrierId,
+      lineOfBusiness: "HO",
+      result: "declined",
+      bindable: false,
+      why: `Agent marked dead · reason_for_no=${reasonForNo}`,
+      lostReason: reasonForNo,
+      quoteNumber: existing.quoteNumber,
+      premium: existing.premium,
+    });
+  }
+
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(
+    dealQuotesPath(dealId),
+    agentStatus === "dead" ? "Quote marked dead" : "Quote status saved",
+  );
+}
+
+export async function saveQuoteReasonForNoAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  const reasonRaw = String(formData.get("reasonForNo") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!isReasonForNo(reasonRaw)) throw new Error("Invalid reason-for-no.");
+  const existing = await requireQuoteForDeal(dealId, quoteId);
+  await db
+    .update(quotes)
+    .set({ agentStatus: "dead", reasonForNo: reasonRaw })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
+  await db.insert(quoteAttemptLogs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId,
+    riskId: existing.riskId,
+    carrierId: existing.carrierId,
+    lineOfBusiness: "HO",
+    result: "declined",
+    bindable: false,
+    why: `Agent reason_for_no=${reasonRaw}`,
+    lostReason: reasonRaw,
+    quoteNumber: existing.quoteNumber,
+    premium: existing.premium,
+  });
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), "Reason for no saved");
+}
+
+export async function addQuoteNoteAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!body) throw new Error("Note cannot be empty.");
+  if (body.length > 4000) throw new Error("Note is too long.");
+  await requireQuoteForDeal(dealId, quoteId);
+  const session = await currentDeskSession();
+  await db.insert(quoteNotes).values({
+    tenantId: DEFAULT_TENANT_ID,
+    quoteId,
+    body,
+    createdBy: session.name?.trim() || session.email || "agent",
+  });
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), "Note added");
+}

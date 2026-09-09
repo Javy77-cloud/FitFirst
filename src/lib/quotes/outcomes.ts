@@ -14,13 +14,77 @@ export const RISK_OUTCOME_LABELS: Record<RiskOutcome, string> = {
   no_market: "No market",
 };
 
-/** Display order on Quotes tab. */
+/** Display order on Quotes tab (raw outcomes). */
 export const RISK_OUTCOME_ORDER: RiskOutcome[] = [
   "bindable",
   "conditional",
   "declined",
   "no_market",
 ];
+
+/** Agent Quotes-tab stacked sections (declined + no_market combined). */
+export const QUOTE_SECTION_KEYS = ["bindable", "conditional", "declined_no_market"] as const;
+export type QuoteSectionKey = (typeof QUOTE_SECTION_KEYS)[number];
+
+export const QUOTE_SECTION_LABELS: Record<QuoteSectionKey, string> = {
+  bindable: "Bindable",
+  conditional: "Conditional",
+  declined_no_market: "Declined / No market",
+};
+
+export function sectionKeyForOutcome(outcome: RiskOutcome): QuoteSectionKey {
+  if (outcome === "bindable") return "bindable";
+  if (outcome === "conditional") return "conditional";
+  return "declined_no_market";
+}
+
+/** Agent workflow status on a quote (Quotes tab). */
+export const AGENT_STATUSES = [
+  "new",
+  "sent_to_client",
+  "client_reviewing",
+  "waiting_on_inspection",
+  "dead",
+] as const;
+export type AgentStatus = (typeof AGENT_STATUSES)[number];
+
+export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
+  new: "New",
+  sent_to_client: "Sent to client",
+  client_reviewing: "Client reviewing",
+  waiting_on_inspection: "Waiting on inspection",
+  dead: "Dead",
+};
+
+export function isAgentStatus(value: string | null | undefined): value is AgentStatus {
+  return Boolean(value && (AGENT_STATUSES as readonly string[]).includes(value));
+}
+
+export function normalizeAgentStatus(value: string | null | undefined): AgentStatus {
+  return isAgentStatus(value) ? value : "new";
+}
+
+/** Reason-for-no when status → dead (feeds appetite). */
+export const REASON_FOR_NO = [
+  "too_expensive",
+  "client_dislikes_carrier",
+  "coverage_gap",
+  "inspection_failed",
+  "other",
+] as const;
+export type ReasonForNo = (typeof REASON_FOR_NO)[number];
+
+export const REASON_FOR_NO_LABELS: Record<ReasonForNo, string> = {
+  too_expensive: "Too expensive",
+  client_dislikes_carrier: "Client dislikes carrier",
+  coverage_gap: "Coverage gap",
+  inspection_failed: "Inspection failed",
+  other: "Other",
+};
+
+export function isReasonForNo(value: string | null | undefined): value is ReasonForNo {
+  return Boolean(value && (REASON_FOR_NO as readonly string[]).includes(value));
+}
 
 /** Pre-sep7df DB values → new enum (migration renames; keep for read safety). */
 const LEGACY_RISK_OUTCOME: Record<string, RiskOutcome> = {
@@ -188,6 +252,14 @@ export type OutcomeGroup<T> = {
   rows: T[];
 };
 
+export type SectionGroup<T> = {
+  key: QuoteSectionKey;
+  label: string;
+  rows: T[];
+  /** True for Declined / No market — UI collapses by default. */
+  collapseByDefault: boolean;
+};
+
 /** Group live quotes by risk_outcome; within each group keep caller order (usually cheapest first). */
 export function groupQuotesByRiskOutcome<T>(
   rows: T[],
@@ -208,6 +280,27 @@ export function groupQuotesByRiskOutcome<T>(
       rows: buckets.get(outcome) ?? [],
     }),
   );
+}
+
+/** Three stacked Quotes sections: Bindable · Conditional · Declined/No market. */
+export function groupQuotesBySection<T>(
+  rows: T[],
+  getOutcome: (row: T) => string | null | undefined,
+): SectionGroup<T>[] {
+  const buckets = new Map<QuoteSectionKey, T[]>();
+  for (const key of QUOTE_SECTION_KEYS) buckets.set(key, []);
+
+  for (const row of rows) {
+    const outcome: RiskOutcome = normalizeRiskOutcome(getOutcome(row)) ?? "conditional";
+    buckets.get(sectionKeyForOutcome(outcome))!.push(row);
+  }
+
+  return QUOTE_SECTION_KEYS.filter((key) => (buckets.get(key)?.length ?? 0) > 0).map((key) => ({
+    key,
+    label: QUOTE_SECTION_LABELS[key],
+    rows: buckets.get(key) ?? [],
+    collapseByDefault: key === "declined_no_market",
+  }));
 }
 
 /** Parse Cov A tried/forced hints from notes; coverage_a is treated as forced when present. */
@@ -249,4 +342,91 @@ export function shortRiskChips(notes: string | null | undefined, gaps: string[] 
     if (re.test(blob) && !chips.includes(label)) chips.push(label);
   }
   return chips.slice(0, 6);
+}
+
+/**
+ * Bind-requirement chips in plain English for agent Details.
+ * Never surfaces raw PORTAL WHY / APPETITE NOTES — those stay in Developer Hub.
+ */
+export function bindRequirementChips(input: {
+  notes?: string | null;
+  gaps?: string[] | null;
+  bindRequirements?: string[] | null;
+  coverageA?: number | null;
+  hurricaneDeductible?: string | null;
+}): string[] {
+  const stored = (input.bindRequirements ?? []).map((s) => s.trim()).filter(Boolean);
+  if (stored.length) return stored.slice(0, 8);
+
+  const chips: string[] = [];
+  const push = (label: string) => {
+    if (label && !chips.includes(label)) chips.push(label);
+  };
+  for (const gap of input.gaps ?? []) push(gap);
+
+  const blob = input.notes ?? "";
+  const patterns: Array<[RegExp, string]> = [
+    [/4[- ]?point|four[- ]?point/i, "Four-point inspection required"],
+    [/mitigation(\s+form)?/i, "Mitigation form needed"],
+    [/roof\s*(cert|certificate|inspection)/i, "Roof certificate required"],
+    [/inspect(ion)?\s*(required|needed)/i, "Inspection required"],
+    [/elec(trical)?\s*(circuit\s*)?amps?/i, "Electrical circuit amps needed"],
+    [/floor\s*only/i, "Floor-only quote — not bindable yet"],
+    [/hard\s*blocked/i, "Hard blocked — cannot bind online"],
+    [/incomplete/i, "Incomplete submission"],
+    [/water\s*backup/i, "Water backup limit applies"],
+    [/wind\s*(mit|mitigation)/i, "Wind mitigation required"],
+    [/opening\s*protect/i, "Opening protection required"],
+  ];
+  for (const [re, label] of patterns) {
+    if (re.test(blob)) push(label);
+  }
+
+  const covForced = blob.match(/cov\s*a\s*forced\s*~?\$?([\d,]+)/i);
+  const covMin = blob.match(/min(?:imum)?\s*cov(?:erage)?\s*a\s*~?\$?([\d,]+)/i);
+  if (covForced?.[1]) {
+    push(`Minimum Coverage A $${covForced[1]}`);
+  } else if (covMin?.[1]) {
+    push(`Minimum Coverage A $${covMin[1]}`);
+  } else if (input.coverageA != null && /cov\s*a\s*forced/i.test(blob)) {
+    push(`Minimum Coverage A $${input.coverageA.toLocaleString("en-US")}`);
+  }
+
+  const windCap = blob.match(/wind\s*(?:ded(?:uctible)?)?\s*(?:capped\s*at\s*)?(\d+(?:\.\d+)?)\s*%/i);
+  const hurCap = blob.match(/hurricane\s*(?:ded(?:uctible)?)?\s*(?:capped\s*at\s*)?(\d+(?:\.\d+)?)\s*%/i);
+  if (windCap?.[1]) push(`Wind deductible capped at ${windCap[1]}%`);
+  else if (hurCap?.[1]) push(`Wind deductible capped at ${hurCap[1]}%`);
+  else if (input.hurricaneDeductible && /%/.test(input.hurricaneDeductible)) {
+    const pct = input.hurricaneDeductible.match(/(\d+(?:\.\d+)?)\s*%/);
+    if (pct && Number(pct[1]) <= 2) push(`Wind deductible capped at ${pct[1]}%`);
+  }
+
+  return chips.slice(0, 8);
+}
+
+/** One short reason label for the collapsed carrier row (not a notes dump). */
+export function shortReasonLabel(input: {
+  notes?: string | null;
+  riskOutcome?: string | null;
+  gaps?: string[] | null;
+}): string {
+  const chips = bindRequirementChips({
+    notes: input.notes,
+    gaps: input.gaps,
+  });
+  if (chips[0]) {
+    const first = chips[0];
+    return first.length > 42 ? `${first.slice(0, 39)}…` : first;
+  }
+  const outcome = normalizeRiskOutcome(input.riskOutcome);
+  if (outcome === "bindable") return "Ready to bind";
+  if (outcome === "conditional") return "Needs follow-up";
+  if (outcome === "declined") return "Declined";
+  if (outcome === "no_market") return "No market";
+  const notes = (input.notes ?? "").trim();
+  if (!notes) return "—";
+  const first = notes.split(/\s*[·|]\s*|\n/)[0]?.trim() || notes;
+  // Strip form prefix like "HO3"
+  const cleaned = first.replace(/^[A-Z0-9]{2,4}\s*[·\-]\s*/i, "").trim() || first;
+  return cleaned.length > 42 ? `${cleaned.slice(0, 39)}…` : cleaned;
 }

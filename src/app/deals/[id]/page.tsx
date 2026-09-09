@@ -70,6 +70,7 @@ export default async function DealPage({
     docs,
     fields,
     quotes,
+    quoteNotes,
     logs,
     lead,
     contact,
@@ -279,6 +280,7 @@ export default async function DealPage({
                         dealId={deal.id}
                         quotes={quotes}
                         logs={logs}
+                        quoteNotes={quoteNotes}
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={quotingForm?.id ?? "HO3"}
                         confirmLogs={allQuoteLogs.map((row) => ({

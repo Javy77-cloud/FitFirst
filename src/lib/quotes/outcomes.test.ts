@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  bindRequirementChips,
   groupQuotesByRiskOutcome,
+  groupQuotesBySection,
   inferQuoteOutcomes,
   normalizeRiskOutcome,
   parseCovATriedForced,
   RISK_OUTCOME_LABELS,
+  shortReasonLabel,
   shortRiskChips,
   syncQuoteOutcomes,
 } from "./outcomes";
@@ -78,6 +81,21 @@ describe("quote outcomes", () => {
     expect(groups[1]?.rows.map((r) => r.id)).toEqual(["m", "m2"]);
   });
 
+  it("stacks Declined / No market in one Quotes section", () => {
+    const groups = groupQuotesBySection(
+      [
+        { id: "n", riskOutcome: "no_market" },
+        { id: "a", riskOutcome: "bindable" },
+        { id: "m", riskOutcome: "conditional" },
+        { id: "x", riskOutcome: "declined" },
+      ],
+      (row) => row.riskOutcome,
+    );
+    expect(groups.map((g) => g.key)).toEqual(["bindable", "conditional", "declined_no_market"]);
+    expect(groups[2]?.rows.map((r) => r.id)).toEqual(["n", "x"]);
+    expect(groups[2]?.collapseByDefault).toBe(true);
+  });
+
   it("parses Cov A forced from notes and prefers coverage_a", () => {
     expect(
       parseCovATriedForced({
@@ -92,5 +110,28 @@ describe("quote outcomes", () => {
       "No flood",
       "Floor only",
     ]);
+  });
+
+  it("builds plain-English bind requirement chips for agents", () => {
+    const chips = bindRequirementChips({
+      notes: "HO3 · Floor only · Cov A forced $250,400 · 4-point needed · mitigation form",
+    });
+    expect(chips).toEqual(
+      expect.arrayContaining([
+        "Four-point inspection required",
+        "Mitigation form needed",
+        "Floor-only quote — not bindable yet",
+        "Minimum Coverage A $250,400",
+      ]),
+    );
+  });
+
+  it("short reason label stays scannable", () => {
+    expect(
+      shortReasonLabel({
+        notes: "HO3 · Floor only · Cov A forced $250,400",
+        riskOutcome: "conditional",
+      }),
+    ).toMatch(/Floor|Coverage|follow-up/i);
   });
 });
