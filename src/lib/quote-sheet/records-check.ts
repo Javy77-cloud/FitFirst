@@ -54,6 +54,7 @@ const FIELD_LABELS: Record<string, string> = {
   hvac_year: "HVAC year",
   water_heater_year: "Water heater year",
   electrical_updated: "Electrical last updated",
+  electrical_circuit_amps: "Electrical Circuit Amps",
   occupancy: "Occupancy",
   months_occupied: "Months occupied",
 };

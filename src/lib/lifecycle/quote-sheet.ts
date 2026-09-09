@@ -48,6 +48,7 @@ export const HOME_SHEET_FIELDS: QuoteFieldDef[] = [
   { key: "aop_deductible", label: "AOP deductible", group: "Coverages", extractKey: "aop_deductible" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "four_point_date", label: "4-point date", group: "Inspections", extractKey: "four_point_date" },
+  { key: "electrical_circuit_amps", label: "Electrical Circuit Amps", group: "Inspections", extractKey: "electrical_circuit_amps" },
   { key: "wind_mit_form", label: "Wind mit form", group: "Inspections", extractKey: "wind_mit_form" },
   { key: "notes", label: "Shop notes", group: "Notes" },
 ];

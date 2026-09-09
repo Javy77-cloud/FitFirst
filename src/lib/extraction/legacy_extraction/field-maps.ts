@@ -69,6 +69,7 @@ export const WIND_MIT_FIELD_MAP: FieldMapRow[] = [
 export const FOUR_POINT_FIELD_MAP: FieldMapRow[] = [
   { sourceLabel: "Age of electrical panel", sheetField: "electrical_year", aliases: ["Electrical year"] },
   { sourceLabel: "Year last updated", sheetField: "electrical_updated", aliases: ["Electrical updated"] },
+  { sourceLabel: "Total Amps", sheetField: "electrical_circuit_amps", aliases: ["Total Amp", "Circuit Amps", "Electrical Circuit Amps", "Electrical Amps", "Amps"] },
   { sourceLabel: "Age of piping supply system", sheetField: "plumbing_year", aliases: ["Plumbing year"] },
   { sourceLabel: "Age of water heater", sheetField: "water_heater_year", aliases: ["Water heater year", "Water heater"] },
   { sourceLabel: "HVAC year", sheetField: "hvac_year", aliases: ["Age of HVAC"] },

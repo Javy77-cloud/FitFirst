@@ -109,6 +109,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "plumbing_year", label: "Plumbing year", group: "4-point", input: "number", extractKey: "plumbing_year", products: [...HO_LL] },
   { key: "electrical_year", label: "Electrical year", group: "4-point", input: "number", extractKey: "electrical_year", products: [...HO_LL] },
   { key: "electrical_updated", label: "Electrical last updated", group: "4-point", input: "number", extractKey: "electrical_updated", products: [...HO_LL] },
+  { key: "electrical_circuit_amps", label: "Electrical Circuit Amps", group: "4-point", input: "number", extractKey: "electrical_circuit_amps", products: [...HO_LL] },
   { key: "water_heater_year", label: "Water heater year", group: "4-point", input: "number", extractKey: "water_heater_year", products: [...HO_LL] },
   { key: "hvac_year", label: "HVAC year", group: "4-point", input: "number", extractKey: "hvac_year", products: [...HO_LL] },
   { key: "roof_condition", label: "Roof condition (4-point)", group: "4-point", products: [...HO_LL] },

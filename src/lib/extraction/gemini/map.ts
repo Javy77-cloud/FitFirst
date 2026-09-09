@@ -55,6 +55,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   hvac_year: ["hvac_year"],
   water_heater_year: ["water_heater_year"],
   electrical_updated: ["electrical_updated"],
+  electrical_circuit_amps: ["electrical_circuit_amps"],
   roof_condition: ["roof_condition"],
   four_point_date: ["four_point_date"],
 };

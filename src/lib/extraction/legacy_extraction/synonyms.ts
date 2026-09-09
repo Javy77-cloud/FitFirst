@@ -319,6 +319,20 @@ export const FOUR_POINT_SYNONYMS: SynonymEntry[] = [
     docTypes: ["four_point"],
   },
   {
+    fieldKey: "electrical_circuit_amps",
+    synonyms: [
+      "Electrical Circuit Amps",
+      "Electrical Circuit Amp",
+      "Electrical Amps",
+      "Total Amps",
+      "Total Amp",
+      "Circuit Amps",
+      "Circuit Amp",
+      "Amps",
+    ],
+    docTypes: ["four_point"],
+  },
+  {
     fieldKey: "panel_age",
     synonyms: ["Panel Age", "Age of Electrical Panel", "Age of electrical panel"],
     docTypes: ["four_point"],

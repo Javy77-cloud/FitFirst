@@ -84,6 +84,11 @@ const PATTERNS: Pattern[] = [
     normalize: normalizeYear,
   },
   {
+    key: "electrical_circuit_amps",
+    re: /(?:total\s*amps?|circuit\s*amps?|electrical\s*circuit\s*amps?|electrical\s*amps?|amps?)\s*[=:]\s*(\d{2,4})/i,
+    normalize: normalizeAmps,
+  },
+  {
     key: "coverage_a",
     re: /(?:coverage\s*a(?:\s*\([^)]*\)|\s+dwelling)?|cov\.?\s*a|dwelling(?:\s*limit)?|building\s*limit)\s*[:#]?\s*\$?\s*([\d,]{3,})|^\s*A\.\s*Dwelling\s+\$?\s*([\d,]{3,})/im,
     normalize: normalizeMoney,
@@ -887,6 +892,9 @@ function normalizerFor(key: string): (raw: string) => string {
       return Number.isFinite(n) ? String(n) : s;
     };
   }
+  if (key === "electrical_circuit_amps") {
+    return normalizeAmps;
+  }
   if (key === "pool" || key === "mobile_home") {
     return (s) => (/^(y|yes|true)$/i.test(s.trim()) ? "true" : /^(n|no|false|none)$/i.test(s.trim()) ? "false" : s);
   }
@@ -984,6 +992,13 @@ export function coerceRiskValue(
     return normalized === "true";
   }
   return normalized;
+}
+
+function normalizeAmps(raw: string): string {
+  const m = String(raw).match(/(\d{2,4})/);
+  if (m) return m[1];
+  const n = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(n) ? String(n) : String(raw).replace(/\s+/g, " ").trim();
 }
 
 function normalizeYear(raw: string): string {
