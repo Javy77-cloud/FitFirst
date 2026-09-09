@@ -10,6 +10,7 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
+import { normalizeMonthsOccupied } from "./sheet-defaults";
 
 export type ExtractedInput = {
   fieldKey: string;
@@ -136,7 +137,8 @@ export function applyExtractedToSheet(
       skippedKeys.push(key);
       continue;
     }
-    const nextValue = String(item.normalizedValue ?? "").trim();
+    let nextValue = String(item.normalizedValue ?? "").trim();
+    if (key === "months_occupied") nextValue = normalizeMonthsOccupied(nextValue);
     const sourceLabel = cellSourceDocument(item, source);
     if (!nextValue) {
       if (item.blankAfterMatch && fieldIsBlank(current)) {

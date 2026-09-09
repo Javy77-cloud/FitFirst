@@ -71,7 +71,8 @@ import {
 } from "@/lib/quote-sheet/apply";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, dealActionFlashHref } from "@/lib/desk/action-flash";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
-import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
+import { blankSheetWithDefaults, emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
+import { applyMasterSheetDefaults } from "@/lib/quote-sheet/sheet-defaults";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import {
   ADDRESS_CONFIRM_KEYS,
@@ -140,7 +141,7 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,
-      values: emptySheetValues(line),
+      values: blankSheetWithDefaults(line),
     })
     .returning();
   return created;
@@ -677,6 +678,20 @@ export async function runFillFromDealDetails(
   return { filledKeys: applied.filledKeys, skippedKeys: applied.skippedKeys };
 }
 
+
+/** Empty-only protection/hazard defaults after a Fill step (never overwrites agent cells). */
+async function persistMasterSheetDefaults(dealId: string, lineRaw: ShopLine): Promise<number> {
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  const applied = applyMasterSheetDefaults(fresh);
+  if (!applied.filledKeys.length) return 0;
+  await db
+    .update(quoteSheets)
+    .set({ values: applied.values, updatedAt: new Date() })
+    .where(eq(quoteSheets.id, sheet.id));
+  return applied.filledKeys.length;
+}
+
 /**
  * One master-sheet Fill step for the progress modal.
  * Deal → Property → Docs. Returns counts; does not redirect/toast.
@@ -694,10 +709,11 @@ export async function fillMasterSheetStep(input: {
 
   if (step === "deal") {
     const result = await runFillFromDealDetails(dealId, lineRaw);
+    const defaultsFilled = await persistMasterSheetDefaults(dealId, lineRaw);
     revalidatePath(`/deals/${dealId}`);
     return {
       step,
-      filledCount: result.filledKeys.length,
+      filledCount: result.filledKeys.length + defaultsFilled,
       skippedCount: result.skippedKeys.length,
       note: result.note,
     };

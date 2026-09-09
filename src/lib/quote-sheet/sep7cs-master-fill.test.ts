@@ -42,8 +42,11 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).toMatch(/MASTER_FILL_STEP_DOCS/);
     expect(button).toMatch(/MASTER_FILL_REVIEW_NUDGE/);
     expect(button).toMatch(/fillMasterSheetStep/);
-    expect(button).toMatch(/tab=markets/);
-    expect(button).toMatch(/withFlash/);
+    expect(button).not.toMatch(/tab=markets/);
+    expect(button).toMatch(/flashAction\(toast\)/);
+    expect(button).toMatch(/router\.refresh\(\)/);
+    expect(button).not.toMatch(/withFlash/);
+    expect(button).toMatch(/MASTER_FILL_BUSY_COPY/);
 
     const html = renderToString(
       createElement(MasterSheetCompare, {
@@ -146,7 +149,7 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(result.values.applicant_name.status).toBe("check");
     expect(result.values.applicant_name.source).toBe("agent");
     expect(result.values.applicant_name.sourceLabel).toBe("deal details");
-    expect(result.values.applicant_dob.value).toBe("1984-03-12");
+    expect(result.values.applicant_dob.value).toBe("3/12/1984");
     expect(result.values.applicant_dob.status).toBe("check");
     expect(result.values.mailing_address.value).toBe("99 Mail Ln");
     expect(result.values.address1.value).toBe("412 Harbor Isle Dr");

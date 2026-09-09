@@ -230,6 +230,7 @@ function SheetGroup({
                   fieldKey={field.key}
                   fieldLabel={field.label}
                   input={field.input}
+                  options={field.options}
                   cell={cell}
                 />
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
@@ -262,13 +263,15 @@ function SheetCell({
   fieldKey,
   fieldLabel,
   input = "text",
+  options,
   cell,
 }: {
   dealId: string;
   line: ShopLine;
   fieldKey: string;
   fieldLabel: string;
-  input?: "text" | "number" | "textarea";
+  input?: "text" | "number" | "textarea" | "select";
+  options?: string[];
   cell?: QuoteSheetFieldValue;
 }) {
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
@@ -277,6 +280,7 @@ function SheetCell({
     cell?.status === "check" && "ff-field-check",
     (!cell?.value.trim() || cell.status === "missing") && "ff-field-missing",
   );
+  const value = cell?.value ?? "";
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -284,18 +288,42 @@ function SheetCell({
         <Textarea
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
-          defaultValue={cell?.value ?? ""}
+          defaultValue={value}
           rows={2}
           readOnly={locked}
           aria-label={fieldLabel}
           className={cn("min-h-7 py-1 text-xs", className)}
         />
+      ) : options && options.length > 0 ? (
+        <select
+          id={`ff-sheet-input-${fieldKey}`}
+          name={fieldKey}
+          defaultValue={value}
+          disabled={locked}
+          aria-label={fieldLabel}
+          data-ff-sheet-picklist={fieldKey}
+          className={cn(
+            "border-input bg-background rounded-md border px-2 shadow-xs outline-none",
+            className,
+            locked && "opacity-70",
+          )}
+        >
+          <option value="">Select…</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+          {value.trim() && !options.includes(value) ? (
+            <option value={value}>{value}</option>
+          ) : null}
+        </select>
       ) : (
         <Input
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
-          type={input}
-          defaultValue={cell?.value ?? ""}
+          type={input === "select" ? "text" : input}
+          defaultValue={value}
           readOnly={locked}
           aria-label={fieldLabel}
           className={className}

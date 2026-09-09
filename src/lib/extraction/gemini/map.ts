@@ -39,7 +39,6 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   current_premium: ["current_premium"],
   effective_date: ["effective_date"],
   expiration_date: ["expiration_date"],
-  mortgagee: ["mortgagee"],
   loan_number: ["loan_number"],
   city: ["city"],
   state: ["state"],
@@ -58,6 +57,20 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   electrical_circuit_amps: ["electrical_circuit_amps"],
   roof_condition: ["roof_condition"],
   four_point_date: ["four_point_date"],
+  date_inspected: ["date_inspected"],
+  coverage_b: ["coverage_b"],
+  coverage_c: ["coverage_c"],
+  coverage_d: ["coverage_d"],
+  coverage_e: ["coverage_e"],
+  coverage_f: ["coverage_f"],
+  jewelry_limit: ["jewelry_limit"],
+  identity_theft: ["identity_theft"],
+  loss_assessment: ["loss_assessment"],
+  sinkhole_deductible: ["sinkhole_deductible"],
+  current_carrier: ["current_carrier"],
+  secondary_named_insured: ["secondary_named_insured"],
+  mortgagee: ["mortgagee", "mortgagee_name"],
+  mortgagee_address: ["mortgagee_address"],
 };
 
 export type GeminiFieldPayload = {
@@ -301,6 +314,17 @@ export function mapGeminiJsonToFields(
         }
       }
     }
+  }
+
+  // Prefer explicit date_inspected; if only four_point_date came back, also fill date_inspected when blank.
+  const fourPoint = fields.find((f) => f.fieldKey === "four_point_date" && f.normalizedValue.trim());
+  if (fourPoint && !seen.has("date_inspected")) {
+    seen.add("date_inspected");
+    fields.push({
+      ...fourPoint,
+      fieldKey: "date_inspected",
+      label: "date inspected",
+    });
   }
 
   const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;

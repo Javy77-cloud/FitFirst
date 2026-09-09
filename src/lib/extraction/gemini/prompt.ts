@@ -60,6 +60,20 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "electrical_circuit_amps",
   "roof_condition",
   "four_point_date",
+  "date_inspected",
+  // dec coverages / carrier / mortgage / NI extras (Mario feel-pass)
+  "coverage_b",
+  "coverage_c",
+  "coverage_d",
+  "coverage_e",
+  "coverage_f",
+  "jewelry_limit",
+  "identity_theft",
+  "loss_assessment",
+  "sinkhole_deductible",
+  "current_carrier",
+  "secondary_named_insured",
+  "mortgagee_address",
 ] as const;
 
 export type GeminiExtractKey = (typeof GEMINI_EXTRACT_JSON_KEYS)[number];
@@ -85,7 +99,7 @@ Rules:
   (not "C. Plywood/OSB…"); roof_to_wall "A"; swr "A"|"B"|"C"; opening_protection "A";
   building_code "A"|"B"|"C"|"D" (or short form digit if that is what the form shows);
   terrain "B"|"C"|"D". Full label text may be omitted; do not put it in value.
-- design_wind_speed: use mph number when Region 1/2/3 is checked (140 / 130 / 120-style).
+- design_wind_speed: use mph number when Region is checked (110 / 120 / 140 region).
 - property_address / mailing_address: full street line; include city/state/zip separately when clear.
 - current_policy_name_insured: named insured on a dec/policy.
 - construction_type: frame / masonry / manufactured when stated.
@@ -97,9 +111,10 @@ Field meaning guidance (from desk synonym brief):
   License or Certificate #→license_number; Inspection Company; Roof covering / deck / roof-to-wall / shape / SWR /
   Opening protection / Building Code / Design wind speed (Region); Terrain Exposure; form id→wind_mit_form;
   inspection/form date→wind_mit_date; Roof covering year→roof_year. Checkbox sections: letter only.
-- Four-point: Insured/Applicant Name; Address Inspected; year built; stories (MUST when labeled); roof covering / year; construction_type; electrical_year / plumbing_year / hvac_year / water_heater_year (MUST when labeled — year of last update, age, or approx year); electrical_updated (MUST when labeled); electrical_circuit_amps (MUST when labeled — total/circuit amps as digits only, e.g. 200); occupancy / months_occupied when on the form; roof_condition; four_point_date; license_number; inspection_company.
+- Four-point: Insured/Applicant Name; Address Inspected; year built; stories (MUST when labeled); roof covering / year; construction_type; electrical_year / plumbing_year / hvac_year / water_heater_year (MUST when labeled — year of last update, age, or approx year); electrical_updated (MUST when labeled); electrical_circuit_amps (MUST when labeled — total/circuit amps as digits only, e.g. 200); occupancy / months_occupied when on the form; roof_condition; date_inspected (prefer label "Date Inspected" at top of 4pt — not a stale form stamp); four_point_date; license_number; inspection_company.
 - Dec: Named insured; Residence premises / Location; Coverage A; hurricane / AOP / wind-hail deductibles;
-  policy number; premium; effective/expiration; mortgagee; loan number; ordinance or law; water backup; scheduled personal property.
+  policy number; premium; effective/expiration; mortgagee + mortgagee_address; loan number; ordinance or law; water backup; scheduled personal property;
+  Cov B–F when printed; jewelry_limit; identity_theft; loss_assessment; sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured.
 `;
 }
 
@@ -109,13 +124,13 @@ export function buildGeminiUserPrompt(docType?: string | null): string {
     "Extract every listed key that is clearly printed or checked. Prefer a non-empty value when the form shows one.";
   if (kind === "wind_mit" || kind.includes("wind")) {
     focus =
-      "This is a wind mitigation (OIR-B1-1802). MUST fill when present: applicant_name, property_address, wind_mit_inspector, license_number, inspection_company, roof_covering, roof_deck_attachment, roof_to_wall, roof_shape, swr, opening_protection, building_code, design_wind_speed, year_built, wind_mit_form, wind_mit_date, terrain, roof_year. OIR checkbox fields: LETTER CODES ONLY (A/B/C/…). wind_mit_form is typically OIR-B1-1802; wind_mit_date is the inspection/form date; terrain is Terrain Exposure Category (B/C/D); roof_year is the year roof covering installed when printed.";
+      "This is a wind mitigation (OIR-B1-1802). MUST fill when present: applicant_name, property_address, wind_mit_inspector, license_number, inspection_company, roof_covering, roof_deck_attachment, roof_to_wall, roof_shape, swr, opening_protection, building_code, design_wind_speed (110/120/140 region), year_built, wind_mit_form, wind_mit_date, terrain, roof_year. OIR checkbox fields: LETTER CODES ONLY (A/B/C/…). wind_mit_form is typically OIR-B1-1802; wind_mit_date is the inspection/form date; terrain is Terrain Exposure Category (B/C/D); roof_year is the year roof covering installed when printed.";
   } else if (kind === "four_point" || kind.includes("four") || kind.includes("4pt") || kind.includes("4-point")) {
     focus =
-      "This is a four-point inspection. MUST fill when labeled on the form: applicant_name, property_address, year_built, stories, roof_covering, roof_year, construction_type, electrical_year, plumbing_year, hvac_year, water_heater_year, electrical_updated, electrical_circuit_amps, license_number, inspection_company, occupancy, months_occupied. Also fill when present: roof_condition, four_point_date, usage. stories / water_heater_year / electrical_updated / electrical_circuit_amps are required when the form shows them. electrical_circuit_amps: digits only from Total Amps / Circuit Amps / Amps = N (e.g. 200 amps → 200). For system years use the printed year of last update / age / approx year (convert age-in-years to an approximate calendar year when the form shows age only).";
+      "This is a four-point inspection. MUST fill when labeled on the form: applicant_name, property_address, year_built, stories, roof_covering, roof_year, construction_type, electrical_year, plumbing_year, hvac_year, water_heater_year, electrical_updated, electrical_circuit_amps, license_number, inspection_company, occupancy, months_occupied. Also fill when present: roof_condition, date_inspected (MUST when 'Date Inspected' / 'Date of Inspection' is labeled at top), four_point_date, usage. Prefer date_inspected from the top Date Inspected label over any other date stamp. stories / water_heater_year / electrical_updated / electrical_circuit_amps are required when the form shows them. electrical_circuit_amps: digits only from Total Amps / Circuit Amps / Amps = N (e.g. 200 amps → 200). For system years use the printed year of last update / age / approx year (convert age-in-years to an approximate calendar year when the form shows age only).";
   } else if (kind === "dec" || kind.includes("dec") || kind.includes("declar") || kind === "policy") {
     focus =
-      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, property_address, coverage_a, hurricane_deductible, aop_deductible, policy_number, current_premium, effective_date, expiration_date, mortgagee, loan_number.";
+      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, property_address, coverage_a, coverage_b, coverage_c, coverage_d, coverage_e, coverage_f, hurricane_deductible, aop_deductible, wind_hail_deductible, ordinance_law, water_backup, scheduled_personal_property, jewelry_limit, identity_theft, loss_assessment, sinkhole_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, mortgagee, mortgagee_address, loan_number. Cov A alone is OK when B–F are missing.";
   }
   return `Extract the JSON field object from this ${docType || "insurance"} PDF. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

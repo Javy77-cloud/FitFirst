@@ -133,7 +133,7 @@ export const SYNONYM_DICTIONARY: SynonymEntry[] = [
   },
   {
     fieldKey: "wind_speed",
-    synonyms: ["FBC Wind Speed", "Design wind speed", "Wind speed"],
+    synonyms: ["FBC Wind Speed", "Design wind speed", "Design Wind Speed", "Wind speed", "Wind Speed"],
   },
   {
     fieldKey: "terrain",
@@ -314,8 +314,19 @@ export const FOUR_POINT_SYNONYMS: SynonymEntry[] = [
   },
   {
     fieldKey: "date_inspected",
-    synonyms: ["Four-Point Date", "Four Point Date", "4-Point Date", "4 Point Date"],
+    synonyms: [
+      "Date Inspected",
+      "Date of Inspection",
+      "Date inspected",
+      "Inspection Date",
+    ],
     alsoWrite: ["four_point_date"],
+    docTypes: ["four_point"],
+  },
+  {
+    fieldKey: "four_point_date",
+    synonyms: ["Four-Point Date", "Four Point Date", "4-Point Date", "4 Point Date"],
+    alsoWrite: ["date_inspected"],
     docTypes: ["four_point"],
   },
   {
@@ -482,6 +493,82 @@ export const DEC_SYNONYMS: SynonymEntry[] = [
       "Mortgagee",
       "Mortgagee Clause",
     ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "current_carrier",
+    synonyms: [
+      "Current Carrier",
+      "Writing Company",
+      "Insurance Company",
+      "Company",
+      "Incumbent",
+    ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "secondary_named_insured",
+    synonyms: [
+      "Additional Named Insured",
+      "Additional named insured",
+      "Secondary Named Insured",
+      "Secondary named insured",
+    ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "mortgagee_address",
+    synonyms: [
+      "Mortgagee Address",
+      "Mortgagee address",
+      "First Mortgagee Address",
+      "Mortgagee Mailing Address",
+    ],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "coverage_b",
+    synonyms: ["Coverage B", "Cov B", "Other Structures", "Coverage B – Other Structures"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "coverage_c",
+    synonyms: ["Coverage C", "Cov C", "Personal Property", "Contents"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "coverage_d",
+    synonyms: ["Coverage D", "Cov D", "Loss of Use"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "coverage_e",
+    synonyms: ["Coverage E", "Cov E", "Personal Liability"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "coverage_f",
+    synonyms: ["Coverage F", "Cov F", "Medical Payments"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "jewelry_limit",
+    synonyms: ["Jewelry", "Jewelry Limit", "Scheduled Jewelry"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "identity_theft",
+    synonyms: ["Identity Theft", "Identity Fraud"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "loss_assessment",
+    synonyms: ["Loss Assessment", "Loss assessment"],
+    docTypes: ["dec"],
+  },
+  {
+    fieldKey: "sinkhole_deductible",
+    synonyms: ["Sinkhole Deductible", "Sinkhole"],
     docTypes: ["dec"],
   },
   {

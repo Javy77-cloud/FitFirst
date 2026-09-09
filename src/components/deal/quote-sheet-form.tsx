@@ -156,6 +156,7 @@ export function QuoteSheetForm({
                     label={field.label}
                     cell={cell}
                     input={field.input}
+                    options={field.options}
                     readOnly={locked}
                     editing={editing && !printable}
                     printable={printable}
@@ -219,6 +220,7 @@ function SheetField({
   label,
   cell,
   input = "text",
+  options,
   readOnly,
   editing,
   printable,
@@ -229,7 +231,8 @@ function SheetField({
   fieldKey: string;
   label: string;
   cell: QuoteSheetFieldValue;
-  input?: "text" | "number" | "textarea";
+  input?: "text" | "number" | "textarea" | "select";
+  options?: string[];
   readOnly?: boolean;
   editing?: boolean;
   printable?: boolean;
@@ -302,6 +305,30 @@ function SheetField({
           rows={3}
           className={cn("mt-0 text-sm", toneClass(tone), editing && "ring-1 ring-primary/30")}
         />
+      ) : options && options.length > 0 ? (
+        <select
+          id={fieldKey}
+          name={fieldKey}
+          defaultValue={cell.value}
+          disabled={readOnly}
+          data-ff-sheet-picklist={fieldKey}
+          className={cn(
+            "border-input bg-background h-8 w-full rounded-md border px-2 text-sm shadow-xs outline-none",
+            toneClass(tone),
+            editing && "ring-1 ring-primary/30",
+            readOnly && "opacity-70",
+          )}
+        >
+          <option value="">Select…</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+          {cell.value.trim() && !options.includes(cell.value) ? (
+            <option value={cell.value}>{cell.value}</option>
+          ) : null}
+        </select>
       ) : sheetAddressFill(fieldKey) ? (
         <AddressAutofill
           id={fieldKey}
@@ -315,7 +342,7 @@ function SheetField({
         <Input
           id={fieldKey}
           name={fieldKey}
-          type={input}
+          type={input === "select" ? "text" : input}
           defaultValue={cell.value}
           readOnly={readOnly}
           className={cn("h-8", toneClass(tone), editing && "ring-1 ring-primary/30")}

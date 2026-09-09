@@ -6,7 +6,7 @@ function source(file: string) {
 }
 
 describe("sep7ft Documents Save does not auto-Fill", () => {
-  it("upload helpers persist without silent runFillDealSheets; Fill button still advances to Markets", () => {
+  it("upload helpers persist without silent runFillDealSheets; Fill button stays on Documents", () => {
     const action = source("src/app/actions/documents.ts");
 
     // uploadDocument: Fill only when after=fill-sheet (SheetDrop Upload-and-fill).
@@ -51,9 +51,10 @@ describe("sep7ft Documents Save does not auto-Fill", () => {
     expect(deleteBody).toMatch(/after\(\(\) => fillDealSheetIfReady/);
 
     const button = source("src/components/deal/master-sheet-fill-button.tsx");
-    expect(button).toMatch(/tab=markets/);
+    expect(button).not.toMatch(/tab=markets/);
+    expect(button).toMatch(/flashAction\(toast\)/);
+    expect(button).toMatch(/router\.refresh\(\)/);
     expect(button).toMatch(/fillMasterSheetStep/);
-    expect(button).toMatch(/withFlash/);
 
     expect(source("src/lib/flash.ts")).toMatch(/"documents-saved": "Documents saved"/);
 

@@ -11,11 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-client";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import {
   FILL_MASTER_SHEET_LABEL,
+  MASTER_FILL_BUSY_COPY,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_DOCS,
@@ -71,8 +71,9 @@ export function MasterSheetFillButton({
       const filled = results.reduce((sum, step) => sum + step.filledCount, 0);
       const skipped = results.reduce((sum, step) => sum + step.skippedCount, 0);
       const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped });
-      // Auto-advance to Markets after a successful Fill (toast via ?flash=).
-      router.push(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, toast));
+      // Stay on Documents after Fill — Markets only after Confirm & request quotes.
+      flashAction(toast);
+      router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Master sheet fill failed";
       setSummary(message);
@@ -85,7 +86,7 @@ export function MasterSheetFillButton({
 
   return (
     <>
-            <Button
+      <Button
         type="button"
         size="default"
         variant="default"
@@ -109,7 +110,23 @@ export function MasterSheetFillButton({
               {MASTER_FILL_REVIEW_NUDGE}
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">Deal → Property → Docs. Empty cells only.</p>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">Deal → Property → Docs. Empty cells only.</p>
+              {busy ? (
+                <div
+                  className="flex items-center gap-2.5"
+                  data-ff-master-fill-busy=""
+                  aria-live="polite"
+                >
+                  <span className="inline-flex items-center gap-1" aria-hidden="true">
+                    <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-duration:0.9s] [animation-delay:-0.3s]" />
+                    <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-duration:0.9s] [animation-delay:-0.15s]" />
+                    <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-duration:0.9s]" />
+                  </span>
+                  <p className="text-xs text-muted-foreground">{MASTER_FILL_BUSY_COPY}</p>
+                </div>
+              ) : null}
+            </div>
           )}
           {done ? (
             <Button type="button" size="sm" onClick={() => setOpen(false)}>

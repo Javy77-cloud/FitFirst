@@ -16,6 +16,10 @@ export const MASTER_FILL_SKIP_NOT_FOUND = "Property records not found — skippe
 export const MASTER_FILL_REVIEW_NUDGE =
   "Review CHECK fields and Confirm when ready";
 
+/** Shown under Deal → Property → Docs while Fill is in flight (~20s). */
+export const MASTER_FILL_BUSY_COPY =
+  "Hold on — give us about 20 seconds to get this ready for you.";
+
 export type MasterFillStepId = "deal" | "property" | "docs";
 
 export type MasterFillStepResult = {

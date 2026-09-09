@@ -44,6 +44,9 @@ describe("gemini map key mapping", () => {
     expect(sheetKeysForGeminiKey("electrical_updated")).toEqual(["electrical_updated"]);
     expect(sheetKeysForGeminiKey("roof_condition")).toEqual(["roof_condition"]);
     expect(sheetKeysForGeminiKey("four_point_date")).toEqual(["four_point_date"]);
+    expect(sheetKeysForGeminiKey("date_inspected")).toEqual(["date_inspected"]);
+    expect(sheetKeysForGeminiKey("current_carrier")).toEqual(["current_carrier"]);
+    expect(sheetKeysForGeminiKey("mortgagee_address")).toEqual(["mortgagee_address"]);
     expect(sheetKeysForGeminiKey("occupancy")).toEqual(["occupancy"]);
     expect(sheetKeysForGeminiKey("months_occupied")).toEqual(["months_occupied"]);
     expect(sheetKeysForGeminiKey("stories")).toEqual(["stories"]);
@@ -70,6 +73,7 @@ describe("gemini map key mapping", () => {
     expect(byKey.electrical_updated.normalizedValue).toBe("2015");
     expect(byKey.roof_condition.normalizedValue).toBe("Good");
     expect(byKey.four_point_date.normalizedValue).toBe("01/15/2024");
+    expect(byKey.date_inspected.normalizedValue).toBe("01/15/2024");
   });
 
   it("parses city/state/zip from property_address when possible", () => {

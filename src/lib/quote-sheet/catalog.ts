@@ -2,6 +2,17 @@ import type { ShopLine } from "@/lib/domain";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { APPLICANT_CORE_FIELDS, type QuoteFieldDef } from "./applicant-core";
 import type { SheetProduct } from "./products";
+import {
+  AOP_DEDUCTIBLE_OPTIONS,
+  CONSTRUCTION_OPTIONS,
+  EXTERIOR_OPTIONS,
+  FOUNDATION_OPTIONS,
+  HURRICANE_DEDUCTIBLE_OPTIONS,
+  MONTHS_OCCUPIED_OPTIONS,
+  WIND_HAIL_DEDUCTIBLE_OPTIONS,
+  YES_NO_OPTIONS,
+  applyMasterSheetDefaults,
+} from "./sheet-defaults";
 
 export type { QuoteFieldDef } from "./applicant-core";
 export { APPLICANT_CORE_FIELDS } from "./applicant-core";
@@ -32,7 +43,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "year_purchased", label: "Year purchased", group: "Property", input: "number" },
   { key: "occupancy", label: "Occupancy", group: "Property", extractKey: "occupancy" },
   { key: "usage", label: "Usage", group: "Property", extractKey: "usage" },
-  { key: "months_occupied", label: "Months occupied", group: "Property", input: "number", extractKey: "months_occupied" },
+  { key: "months_occupied", label: "Months occupied", group: "Property", input: "select", options: [...MONTHS_OCCUPIED_OPTIONS], extractKey: "months_occupied" },
   { key: "number_of_families", label: "Number of families", group: "Property", input: "number" },
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built", products: [...HO_LL] },
   { key: "year_effective", label: "Effective year", group: "Dwelling", input: "number", products: [...HO_LL] },
@@ -40,13 +51,13 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "square_feet", label: "Square footage", group: "Dwelling", input: "number", extractKey: "square_feet", products: [...HO_LL] },
   { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number", extractKey: "beds" },
   { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number", extractKey: "baths" },
-  { key: "construction", label: "Construction", group: "Dwelling", extractKey: "construction", products: [...HO_LL] },
-  { key: "exterior", label: "Exterior", group: "Dwelling", extractKey: "exterior", products: [...HO_LL] },
-  { key: "foundation", label: "Foundation", group: "Dwelling", products: [...HO_LL] },
+  { key: "construction", label: "Construction", group: "Dwelling", input: "select", options: [...CONSTRUCTION_OPTIONS], extractKey: "construction", products: [...HO_LL] },
+  { key: "exterior", label: "Exterior", group: "Dwelling", input: "select", options: [...EXTERIOR_OPTIONS], extractKey: "exterior", products: [...HO_LL] },
+  { key: "foundation", label: "Foundation", group: "Dwelling", input: "select", options: [...FOUNDATION_OPTIONS], products: [...HO_LL] },
   { key: "living_units", label: "Living units", group: "Dwelling", input: "number", products: [...HO_LL] },
-  { key: "basement", label: "Basement", group: "Dwelling", products: [...HO_LL] },
+  { key: "basement", label: "Basement", group: "Dwelling", input: "select", options: [...YES_NO_OPTIONS], products: [...HO_LL] },
   { key: "garage_type", label: "Garage", group: "Dwelling", extractKey: "garage", products: [...HO_LL] },
-  { key: "carport", label: "Carport", group: "Dwelling", products: [...HO_LL] },
+  { key: "carport", label: "Carport", group: "Dwelling", input: "select", options: [...YES_NO_OPTIONS], products: [...HO_LL] },
   { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year", products: [...HO_LL] },
   { key: "roof_covering", label: "Roof covering", group: "Roof / wind", extractKey: "roof_covering", products: [...HO_LL] },
   { key: "roof_shape", label: "Roof shape", group: "Roof / wind", extractKey: "roof_shape", products: [...HO_LL] },
@@ -77,12 +88,12 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     extractKey: "protection_class",
   },
   { key: "fire_district", label: "Fire district", group: "Protection" },
-  { key: "hydrant", label: "Hydrant within 1,000 ft", group: "Protection" },
+  { key: "hydrant", label: "Hydrant within 1,000 ft", group: "Protection", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "miles_to_fire_station", label: "Miles to fire station", group: "Protection", input: "number" },
-  { key: "central_alarm", label: "Central alarm", group: "Protection" },
-  { key: "sprinkler", label: "Sprinkler", group: "Protection" },
-  { key: "smoke_detectors", label: "Smoke detectors", group: "Protection" },
-  { key: "deadbolts", label: "Deadbolts", group: "Protection", extractKey: "deadbolts" },
+  { key: "central_alarm", label: "Central alarm", group: "Protection", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "sprinkler", label: "Sprinkler", group: "Protection", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "smoke_detectors", label: "Smoke detectors", group: "Protection", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "deadbolts", label: "Deadbolts", group: "Protection", input: "select", options: [...YES_NO_OPTIONS], extractKey: "deadbolts" },
   {
     key: "miles_to_coast",
     label: "Miles to coast",
@@ -96,13 +107,13 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "bfe", label: "Base flood elevation", group: "Coastal / flood", input: "number" },
   { key: "flood_policy", label: "Flood policy in force", group: "Coastal / flood" },
   { key: "elevation", label: "Elevation", group: "Coastal / flood" },
-  { key: "pool", label: "Pool", group: "Hazards", extractKey: "pool" },
-  { key: "pool_fence", label: "Pool fence", group: "Hazards" },
-  { key: "trampoline", label: "Trampoline", group: "Hazards" },
-  { key: "animals", label: "Animals", group: "Hazards" },
-  { key: "dog_breed", label: "Dog breed", group: "Hazards" },
-  { key: "business_on_premises", label: "Business on premises", group: "Hazards" },
-  { key: "mobile_home", label: "Mobile / manufactured", group: "Hazards", extractKey: "mobile_home", products: [...HO_LL] },
+  { key: "pool", label: "Pool", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS], extractKey: "pool" },
+  { key: "pool_fence", label: "Pool fence", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "trampoline", label: "Trampoline", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "animals", label: "Animals", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "dog_breed", label: "Dog breed", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "business_on_premises", label: "Business on premises", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "mobile_home", label: "Mobile / manufactured", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS], extractKey: "mobile_home", products: [...HO_LL] },
   { key: "acres", label: "Acres", group: "Hazards", input: "number" },
   { key: "four_point_date", label: "4-point date", group: "4-point", extractKey: "four_point_date", products: [...HO_LL] },
   { key: "four_point_result", label: "4-point result", group: "4-point", extractKey: "four_point_result", products: [...HO_LL] },
@@ -129,13 +140,17 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     key: "hurricane_deductible",
     label: "Hurricane deductible",
     group: "Coverages",
+    input: "select",
+    options: [...HURRICANE_DEDUCTIBLE_OPTIONS],
     extractKey: "hurricane_deductible",
   },
-  { key: "aop_deductible", label: "AOP deductible", group: "Coverages", extractKey: "aop_deductible" },
+  { key: "aop_deductible", label: "AOP deductible", group: "Coverages", input: "select", options: [...AOP_DEDUCTIBLE_OPTIONS], extractKey: "aop_deductible" },
   {
     key: "wind_hail_deductible",
     label: "Wind / hail deductible",
     group: "Coverages",
+    input: "select",
+    options: [...WIND_HAIL_DEDUCTIBLE_OPTIONS],
     extractKey: "wind_hail_deductible",
   },
   { key: "sinkhole_deductible", label: "Sinkhole deductible", group: "Coverages" },
@@ -163,7 +178,6 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
   { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
   { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
-  { key: "claims_3yr", label: "Claims last 3 years", group: "Current policy", input: "number" },
   { key: "claims_5yr", label: "Claims last 5 years", group: "Current policy", input: "number" },
   { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee", extractKey: "mortgagee" },
   { key: "mortgagee_address", label: "Mortgagee address", group: "Mortgagee", extractKey: "mortgagee_address" },
@@ -340,6 +354,14 @@ export function emptySheetValues(
   return values;
 }
 
+/** New blank master sheet with protection/hazard starters (empty-only defaults). */
+export function blankSheetWithDefaults(
+  line: ShopLine,
+  product?: SheetProduct,
+): Record<string, QuoteSheetFieldValue> {
+  return applyMasterSheetDefaults(emptySheetValues(line, product)).values;
+}
+
 const EXTRACT_ALIASES: Record<string, string> = {
   wind_hail_deductible: "wind_hail_deductible",
   wind_deductible: "wind_hail_deductible",
@@ -351,6 +373,13 @@ const EXTRACT_ALIASES: Record<string, string> = {
   living_area: "square_feet",
   square_footage: "square_feet",
   design_wind_speed: "wind_speed",
+  date_inspected: "date_inspected",
+  four_point_date: "four_point_date",
+  exterior_wall: "exterior",
+  foundation_type: "foundation",
+  current_carrier: "current_carrier",
+  mortgagee_address: "mortgagee_address",
+  secondary_named_insured: "secondary_named_insured",
   scheduled_personal_property: "scheduled_personal",
   mortgagee: "mortgagee_name",
 };

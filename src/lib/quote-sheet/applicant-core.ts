@@ -4,7 +4,9 @@ export type QuoteFieldDef = {
   key: string;
   label: string;
   group: string;
-  input?: "text" | "number" | "textarea";
+  input?: "text" | "number" | "textarea" | "select";
+  /** Picklist options when input is select (or options are set). */
+  options?: string[];
   /** Maps an extraction fieldKey onto this sheet key. */
   extractKey?: string;
   /** When set, the field only shows for these products. */

@@ -5,6 +5,21 @@ import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
+/** Prefer desk-friendly M/D/YYYY when Deal Details stores ISO / Date-ish DOB. */
+export function formatDobForSheet(raw?: string | null): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const y = iso[1];
+    const m = String(Number(iso[2]));
+    const d = String(Number(iso[3]));
+    return `${m}/${d}/${y}`;
+  }
+  return text;
+}
+
+
 export type DealSheetCopyParty = {
   firstName?: string | null;
   middleName?: string | null;
@@ -97,7 +112,15 @@ export function fillSheetFromDealDetails(
 
   put(
     "applicant_dob",
-    firstFilled(stored.date_of_birth, contact?.dateOfBirth, lead?.dateOfBirth),
+    formatDobForSheet(
+      firstFilled(
+        stored.date_of_birth,
+        stored.dob,
+        stored.applicant_dob,
+        contact?.dateOfBirth,
+        lead?.dateOfBirth,
+      ),
+    ),
   );
   put("applicant_phone", firstFilled(stored.phone, contact?.phone, lead?.phone));
   put("applicant_email", firstFilled(stored.email, contact?.email, lead?.email));
