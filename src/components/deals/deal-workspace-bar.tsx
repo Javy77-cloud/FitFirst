@@ -83,7 +83,7 @@ export function DealWorkspaceBar({
           : [];
 
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-2 space-y-3">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="deal-line-filters">
           <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)}>
