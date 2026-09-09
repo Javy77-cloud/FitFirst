@@ -754,3 +754,11 @@ body[data-ff-col-resize] {
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 14px rgba(15, 39, 68, 0.12);
 }
+
+/* Clickable affordance: buttons should visibly react on hover. */
+button:enabled:not([data-ff-no-hover]):hover {
+  filter: brightness(0.97);
+}
+button:enabled:not([data-ff-no-hover]):active {
+  filter: brightness(0.94);
+}

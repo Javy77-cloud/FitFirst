@@ -31,7 +31,6 @@ import {
   REASON_FOR_NO_LABELS,
   riskOutcomeLabel,
   riskOutcomePillClass,
-  shortReasonLabel,
   type AgentStatus,
   type ReasonForNo,
   type RiskOutcome,
@@ -520,11 +519,6 @@ export function QuotesResultsTable({
                     const conditionalDefaultOpen = outcome === "conditional";
                     const detailsOpen =
                       quote.id in expanded ? Boolean(expanded[quote.id]) : conditionalDefaultOpen;
-                    const reason = shortReasonLabel({
-                      notes: quote.notes,
-                      riskOutcome: outcome,
-                      gaps: quote.coverageGaps ?? [],
-                    });
                     const reqChips = bindRequirementChips({
                       notes: quote.notes,
                       gaps: quote.coverageGaps,
@@ -589,10 +583,10 @@ export function QuotesResultsTable({
                                 data-ff-quote-recheck-mark-state={isRecheckMarked ? "lit" : "muted"}
                                 onClick={() => toggleRecheckMark(quote.id)}
                                 className={cn(
-                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-all duration-150",
                                   isRecheckMarked
-                                    ? "border-primary/45 bg-primary/10 text-primary shadow-sm"
-                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted/50 hover:text-muted-foreground",
+                                    ? "border-primary/45 bg-primary/10 text-primary shadow-sm hover:bg-primary/20"
+                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted hover:text-navy hover:shadow-sm hover:scale-105",
                                 )}
                                 title={
                                   isRecheckMarked
@@ -614,10 +608,10 @@ export function QuotesResultsTable({
                                 data-ff-quote-hide-mark-state={isHideMarked ? "lit" : "muted"}
                                 onClick={() => toggleHideMark(quote.id)}
                                 className={cn(
-                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-all duration-150",
                                   isHideMarked
-                                    ? "border-muted-foreground/40 bg-muted/70 text-navy shadow-sm"
-                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted/50 hover:text-muted-foreground",
+                                    ? "border-muted-foreground/40 bg-muted/70 text-navy shadow-sm hover:bg-muted"
+                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted hover:text-navy hover:shadow-sm hover:scale-105",
                                 )}
                                 title={
                                   isHideMarked
@@ -640,6 +634,7 @@ export function QuotesResultsTable({
                                 data-ff-quote-details={quote.id}
                                 aria-expanded={detailsOpen}
                                 onClick={() => toggleDetails(quote.id, conditionalDefaultOpen)}
+                                className="hover:bg-muted hover:text-navy hover:shadow-sm"
                               >
                                 {detailsOpen ? "Hide details" : "Details"}
                               </Button>
@@ -732,15 +727,6 @@ export function QuotesResultsTable({
                               data-ff-quote-details-panel={quote.id}
                               className="space-y-3 border-t border-border/70 px-3 py-3 text-xs"
                             >
-                              {reason ? (
-                                <div data-ff-quote-reason={quote.id}>
-                                  <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Why this outcome
-                                  </div>
-                                  <p className="mt-1 text-sm text-navy">{reason}</p>
-                                </div>
-                              ) : null}
-
                               <div>
                                 <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                   Bind requirements
