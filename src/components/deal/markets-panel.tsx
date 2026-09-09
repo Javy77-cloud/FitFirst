@@ -1,12 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import { requestAppetiteQuotesAction, requestStretchQuotesAction } from "@/app/actions/quotes";
-import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
 import { LoadHomeShopListButton } from "@/components/deal/load-home-shop-list-button";
 import { ClearDealMarketsButton, MarketsSelectTable } from "@/components/deal/markets-select-table";
 import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
-import { appointmentLabel, isAppointedMatch } from "@/lib/appetite/present";
+import { isAppointedMatch } from "@/lib/appetite/present";
 import { bucketForMatch, hasMarketLookupData, marketBucketLabel } from "@/lib/deals/manual-markets";
 import { asList } from "@/lib/safe-list";
 
@@ -29,6 +31,7 @@ export function MarketsPanel({
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
 }) {
+  const [selected, setSelected] = useState<string[]>([]);
   const manual = new Set(asList(manualIds));
   const matchList = asList(matches);
   const listedIds = matchList.map((row) => row.carrierId);
@@ -58,6 +61,14 @@ export function MarketsPanel({
     sheetHasValues,
   );
 
+  const appetiteIdSet = new Set(appetite.map((row) => row.carrierId));
+  const stretchIdSet = new Set(stretch.map((row) => row.carrierId));
+  const selectedAppetiteCount = selected.filter((id) => appetiteIdSet.has(id)).length;
+  const selectedStretchCount = selected.filter((id) => stretchIdSet.has(id)).length;
+  // When any rows are checked, both shop forms send the full selection; the
+  // server intersects with pass rules (empty intersect → shop none).
+  const shopCarrierIds = selected.length > 0 ? selected : [];
+
   if (!hasData) {
     return (
       <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
@@ -82,6 +93,17 @@ export function MarketsPanel({
     );
   }
 
+  const approveLabel =
+    unlocked
+      ? selectedAppetiteCount > 0
+        ? `Approve & request quotes (${selectedAppetiteCount})`
+        : "Approve & request quotes"
+      : "Approve sheet to request";
+  const stretchLabel =
+    selectedStretchCount > 0
+      ? `Request stretch quotes (${selectedStretchCount})`
+      : "Request stretch quotes";
+
   return (
     <div className="space-y-3" data-ff-deal-markets>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -91,19 +113,43 @@ export function MarketsPanel({
         </p>
         <form action={requestAppetiteQuotesAction}>
           <input type="hidden" name="dealId" value={dealId} />
+          {shopCarrierIds.map((id) => (
+            <input key={`appetite-${id}`} type="hidden" name="carrierId" value={id} />
+          ))}
           <Button type="submit" size="sm" disabled={appetite.length === 0 || !unlocked}>
-            {unlocked ? "Approve & request quotes" : "Approve sheet to request"}
+            {approveLabel}
           </Button>
         </form>
       </div>
       {appetite.length > 0 ? (
-        <MarketsSelectTable dealId={dealId} title={marketBucketLabel("appetite")} rows={appetite} manualIds={manual} />
+        <MarketsSelectTable
+          dealId={dealId}
+          title={marketBucketLabel("appetite")}
+          rows={appetite}
+          manualIds={manual}
+          selected={selected}
+          onSelectedChange={setSelected}
+        />
       ) : null}
       {stretch.length > 0 ? (
-        <MarketsSelectTable dealId={dealId} title={marketBucketLabel("stretch")} rows={stretch} manualIds={manual} />
+        <MarketsSelectTable
+          dealId={dealId}
+          title={marketBucketLabel("stretch")}
+          rows={stretch}
+          manualIds={manual}
+          selected={selected}
+          onSelectedChange={setSelected}
+        />
       ) : null}
       {skip.length > 0 ? (
-        <MarketsSelectTable dealId={dealId} title={marketBucketLabel("skip")} rows={skip} manualIds={manual} />
+        <MarketsSelectTable
+          dealId={dealId}
+          title={marketBucketLabel("skip")}
+          rows={skip}
+          manualIds={manual}
+          selected={selected}
+          onSelectedChange={setSelected}
+        />
       ) : null}
       <div className="ff-card space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -118,8 +164,11 @@ export function MarketsPanel({
         />
         <form action={requestStretchQuotesAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="dealId" value={dealId} />
+          {shopCarrierIds.map((id) => (
+            <input key={`stretch-${id}`} type="hidden" name="carrierId" value={id} />
+          ))}
           <Button type="submit" size="sm" variant="outline" disabled={stretch.length === 0 || !unlocked}>
-            Request stretch quotes
+            {stretchLabel}
           </Button>
           <span className="text-helper text-muted-foreground">Manual second pass. Does not replace in-appetite stubs.</span>
         </form>

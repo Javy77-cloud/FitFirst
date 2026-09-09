@@ -39,21 +39,35 @@ export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
 }
 
+function selectedCarrierIdsFromForm(formData: FormData): string[] {
+  return formData
+    .getAll("carrierId")
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+}
+
 export async function requestAppetiteQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
-  await shopDealQuotes(dealId, "appetite");
+  const selectedIds = selectedCarrierIdsFromForm(formData);
+  await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined);
   flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
 }
 
 export async function requestStretchQuotesAction(formData: FormData) {
-  await shopDealQuotes(String(formData.get("dealId") ?? ""), "stretch");
+  const dealId = String(formData.get("dealId") ?? "");
+  const selectedIds = selectedCarrierIdsFromForm(formData);
+  await shopDealQuotes(dealId, "stretch", selectedIds.length ? selectedIds : undefined);
 }
 
 export async function shopInAppetite(dealId: string) {
   return shopDealQuotes(dealId, "appetite");
 }
 
-export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch") {
+export async function shopDealQuotes(
+  dealId: string,
+  pass: "appetite" | "stretch",
+  selectedCarrierIds?: string[],
+) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (deal) {
     const line = (deal.quotingLine || "home") as ShopLine;
@@ -118,6 +132,13 @@ export async function shopDealQuotes(dealId: string, pass: "appetite" | "stretch
     const already = new Set(existing.map((row) => row.carrierId));
     for (const match of matches.filter((row) => row.band === "yellow")) {
       if (!already.has(match.carrierId)) shopIds.add(match.carrierId);
+    }
+  }
+
+  if (selectedCarrierIds?.length) {
+    const allow = new Set(selectedCarrierIds);
+    for (const id of [...shopIds]) {
+      if (!allow.has(id)) shopIds.delete(id);
     }
   }
 
