@@ -105,8 +105,12 @@ export function MarketsPanel({
       : "Request stretch quotes";
 
   return (
-    <div className="space-y-3" data-ff-deal-markets>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="relative space-y-3" data-ff-deal-markets="">
+      {/* Stats/actions sit in the 50px pad above so In appetite lines up with Quick Comms. */}
+      <div
+        className="absolute inset-x-0 bottom-full mb-2 flex flex-wrap items-center justify-between gap-2"
+        data-ff-deal-markets-stats=""
+      >
         <p className="text-sm text-muted-foreground">
           {appetite.length} in appetite · {stretch.length} stretch · {skip.length} skip · {appointed}{" "}
           appointed

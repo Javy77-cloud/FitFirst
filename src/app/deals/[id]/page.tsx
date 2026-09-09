@@ -181,7 +181,7 @@ export default async function DealPage({
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
           panelClassName="mt-0"
-          toolbar={<EditLayoutLink module="deals" line={deal.lineOfBusiness} />}
+          toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={deal.lineOfBusiness} /> : null}
           heading={
             <>
               <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
