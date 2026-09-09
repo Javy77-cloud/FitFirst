@@ -8,7 +8,7 @@ import { ModuleListActions } from "@/components/developer-hub/module-list-action
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { StagePill } from "@/components/fit-badge";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
-import { listDealFieldDefs, loadRecordValuesForIds } from "@/lib/custom-fields/store";
+import { listDealFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { sourceLabel } from "@/lib/crm/sources";
 import {
   dealFieldRawValue,
@@ -79,15 +79,16 @@ export async function DealsTable({
   nextByDeal?: Map<string, string>;
   mode?: PipelineSheetMode;
 }) {
-  const [tagCatalog, fields, valueMap, pipelines, carrierRows] = await Promise.all([
+  const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows] = await Promise.all([
     listModuleTags("deals").catch(() => []),
     listDealFieldDefs().catch(() => []),
+    loadLayoutForModule("deals").catch(() => null),
     loadRecordValuesForIds(rows.map(({ deal }) => deal.id)).catch(() => new Map()),
     listPipelines().catch(() => []),
     listCarriers().catch(() => []),
   ]);
   const boards = boardsFromPipelines(pipelines);
-  const columns = dealsListColumnsFromFields(fields);
+  const columns = dealsListColumnsFromFields(fields, layout);
   const carriers: NamedRecord[] = carrierRows.map((row) => ({
     id: row.carrier.id,
     name: row.carrier.name,

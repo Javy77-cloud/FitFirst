@@ -168,13 +168,18 @@ describe("BH6 — stages, filters, and other columns stay", () => {
     );
     const keys = (TABLE_COLUMNS.deals ?? []).map((column) => column.key);
     expect(keys).toEqual(
-      expect.arrayContaining(["title", "stage", "line", "source", "tags", "assigned", "value", "phone"]),
+      expect.arrayContaining(["title", "stage", "tags", "phone"]),
     );
+    expect(keys).not.toContain("assigned");
+    expect(keys).not.toContain("value");
+    expect(keys).not.toContain("premium");
+    expect(keys).not.toContain("preferred_language");
     expect(keys).not.toContain("esign");
     expect(keys).not.toContain("comms");
     expect(PIPELINE_LIST_COLUMNS.map((column) => column.id)).toEqual(
-      expect.arrayContaining(["title", "insured", "stage", "line", "actions"]),
+      expect.arrayContaining(["title", "stage", "tags", "actions"]),
     );
+    expect(PIPELINE_LIST_COLUMNS.map((column) => column.id)).not.toContain("coverageA");
     expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/deal-line-filters/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/deal-closed-filters/);
   });

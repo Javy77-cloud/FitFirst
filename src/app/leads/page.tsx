@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listLeads } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
-import { LEADS_LIST_COLUMNS } from "@/lib/list-columns";
+import { leadsListColumnsFromLayout } from "@/lib/list-columns";
+import { listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SourceSelect } from "@/components/crm/source-select";
@@ -55,11 +56,14 @@ export default async function LeadsPage({
   const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
-  const [all, loadedTemplates, tagCatalog] = await Promise.all([
+  const [all, loadedTemplates, tagCatalog, leadLayout, leadFields] = await Promise.all([
     listLeads(),
     listFollowUpTemplates().catch(() => []),
     listModuleTags("leads").catch(() => []),
+    loadLayoutForModule("leads").catch(() => null),
+    listFieldDefs("leads").catch(() => []),
   ]);
+  const leadColumns = leadsListColumnsFromLayout(leadLayout, leadFields);
   const templates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
   const queue = sortLeadQueue(all.filter((lead) => isLeadOnQueue(lead)));
   const rows = queue.filter((lead) =>
@@ -185,7 +189,7 @@ export default async function LeadsPage({
               moduleId="leads-queue"
               searchModuleId="leads"
               initialQuery={q}
-              columns={LEADS_LIST_COLUMNS}
+              columns={leadColumns}
               empty={
                 firstParam(params.status) || firstParam(params.source) || firstParam(params.temperature)
                   ? "No leads match this filter."
@@ -217,6 +221,13 @@ export default async function LeadsPage({
                     followUp: followUpName,
                     shop: lead.convertedDealId ? "open" : "convert",
                     tags: tagSortText(lead.tags),
+                    email: lead.email ?? "",
+                    phone: lead.phone ?? "",
+                    notes: lead.notes ?? "",
+                    mailing_address: lead.mailingAddress ?? "",
+                    city: lead.city ?? "",
+                    state: lead.state ?? "",
+                    zip: lead.zip ?? "",
                   },
                   cells: {
                     pick: <SelectRowCheckbox id={lead.id} />,
@@ -273,6 +284,13 @@ export default async function LeadsPage({
                         catalog={tagCatalog}
                       />
                     ),
+                    email: lead.email || "—",
+                    phone: lead.phone || "—",
+                    notes: lead.notes || "—",
+                    mailing_address: lead.mailingAddress || "—",
+                    city: lead.city || "—",
+                    state: lead.state || "—",
+                    zip: lead.zip || "—",
                   },
                 };
               })}

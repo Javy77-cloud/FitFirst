@@ -1,8 +1,13 @@
-import { dealsColumnsFromFields } from "@/lib/deals/deal-columns";
+import { dealsColumnsFromFields, layoutKeysForColumns } from "@/lib/deals/deal-columns";
 import { normalizeDealsVisibleColumns, TABLE_COLUMNS, type ColumnDef } from "@/lib/desk/columns";
-import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
-import { PIPELINE_FIELDS } from "@/lib/wire/pipeline";
+import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import {
+  allLayoutFieldKeys,
+  type CustomFieldDef,
+  type FieldLayout,
+} from "@/lib/custom-fields/types";
+import { PIPELINE_FIELDS, type PipelineFieldDef } from "@/lib/wire/pipeline";
 
 export type ListColumn = {
   id: string;
@@ -267,17 +272,101 @@ export const LEADS_DEFAULT_WIDTHS = {
   tags: 160,
 } as const;
 
-export const LEADS_LIST_COLUMNS: ListColumn[] = [
+/**
+ * Locked / queue system columns for Leads.
+ * name=title, status=stage, timer=activity, tags=tags. heat/followUp/shop stay for the queue.
+ */
+export const LOCKED_LEADS_LIST_COLUMN_IDS = [
+  "pick",
+  "name",
+  "status",
+  "timer",
+  "tags",
+] as const;
+
+const LEADS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.pick },
   { id: "name", label: "Name", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.name },
-  { id: "status", label: "Status", defaultWidth: LEADS_DEFAULT_WIDTHS.status },
-  { id: "source", label: "Source", defaultWidth: LEADS_DEFAULT_WIDTHS.source },
+  { id: "status", label: "Status", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.status },
   { id: "timer", label: "Response", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.timer },
   { id: "heat", label: "Temp", defaultWidth: LEADS_DEFAULT_WIDTHS.heat },
   { id: "followUp", label: "Follow-up", defaultWidth: LEADS_DEFAULT_WIDTHS.followUp },
   { id: "shop", label: "Convert", defaultWidth: LEADS_DEFAULT_WIDTHS.shop },
-  { id: "tags", label: "Tags", defaultWidth: LEADS_DEFAULT_WIDTHS.tags },
+  { id: "tags", label: "Tags", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.tags },
 ];
+
+/** Layout keys already covered by the Name / Status / queue system columns. */
+const LEADS_LAYOUT_COVERED = new Set([
+  "first_name",
+  "last_name",
+  "middle_name",
+  "status",
+  "stage",
+]);
+
+const LEADS_LAYOUT_WIDTHS: Record<string, number> = {
+  source: LEADS_DEFAULT_WIDTHS.source,
+  email: 180,
+  phone: 140,
+  notes: 200,
+  mailing_address: 200,
+  city: 120,
+  state: 80,
+  zip: 90,
+};
+
+export function leadsListColumnsFromLayout(
+  layout?: FieldLayout | null,
+  fields: readonly CustomFieldDef[] = defaultFieldsForModule("leads"),
+): ListColumn[] {
+  const layoutKeys = new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("leads")));
+  const byKey = new Map(fields.map((field) => [field.key, field]));
+  const extras: ListColumn[] = [];
+  const seen = new Set(LEADS_SYSTEM_COLUMNS.map((column) => column.id));
+
+  // Source sits after status when the layout includes it (default lead layout does).
+  if (layoutKeys.has("source") && !seen.has("source")) {
+    extras.push({
+      id: "source",
+      label: byKey.get("source")?.label ?? "Source",
+      defaultWidth: LEADS_LAYOUT_WIDTHS.source,
+    });
+    seen.add("source");
+  }
+
+  for (const key of layoutKeys) {
+    if (seen.has(key) || LEADS_LAYOUT_COVERED.has(key)) continue;
+    // Never invent junk / LOB phantoms that are not on this module layout.
+    const field = byKey.get(key);
+    extras.push({
+      id: key,
+      label:
+        field?.label ??
+        key
+          .split("_")
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" "),
+      defaultOn: false,
+      defaultWidth: LEADS_LAYOUT_WIDTHS[key],
+    });
+    seen.add(key);
+  }
+
+  const sourceCol = extras.find((column) => column.id === "source");
+  const otherExtras = extras.filter((column) => column.id !== "source");
+  const [pick, name, status, ...restSystem] = LEADS_SYSTEM_COLUMNS;
+  return [
+    pick,
+    name,
+    status,
+    ...(sourceCol ? [sourceCol] : []),
+    ...restSystem,
+    ...otherExtras,
+  ];
+}
+
+export const LEADS_LIST_COLUMNS: ListColumn[] = leadsListColumnsFromLayout();
 
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true },
@@ -289,14 +378,20 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "tags", label: "Tags" },
 ];
 
-export function dealsListColumnsFromFields(fields: readonly CustomFieldDef[]): ListColumn[] {
-  return fromDeskColumns(dealsColumnsFromFields(fields), {
+export function dealsListColumnsFromFields(
+  fields: readonly CustomFieldDef[],
+  layout?: FieldLayout | null,
+): ListColumn[] {
+  return fromDeskColumns(dealsColumnsFromFields(fields, layout), {
     pick: true,
-    lock: ["title"],
+    lock: ["title", "stage", "tags"],
   }).map((column) => (column.id === "title" ? { ...column, liveSearch: true } : column));
 }
 
-export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(CORE_FIELDS);
+export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
+  CORE_FIELDS,
+  defaultLayoutForModule("deals"),
+);
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true },
@@ -356,15 +451,48 @@ export const CLAIMS_LIST_COLUMNS: ListColumn[] = [
   { id: "status", label: "Status" },
 ];
 
-export const PIPELINE_LIST_COLUMNS: ListColumn[] = [
-  ...PIPELINE_FIELDS.map((field) => ({
-    id: field.id,
-    label: field.label,
-    locked: Boolean(field.required),
-    defaultOn: field.defaultOn,
-  })),
-  { id: "actions", label: "Call / SMS / Task / Meeting", locked: true },
-];
+const PIPELINE_LAYOUT_ALIASES: Record<string, readonly string[]> = {
+  title: ["title"],
+  insured: ["named_insured", "insured"],
+  phone: ["phone"],
+  email: ["email"],
+  address: ["mailing_address", "address"],
+  line: ["line", "line_of_business"],
+  state: ["state"],
+  city: ["city"],
+  coverageA: ["coverage_a", "coverageA", "value", "premium", "coverage_value"],
+  carrier: ["carrier", "current_carrier"],
+  stage: ["stage"],
+  updated: ["updated", "updated_at"],
+  bound: ["bound", "bound_at"],
+  tags: ["tags"],
+};
+
+const LOCKED_PIPELINE_COLUMN_IDS = new Set(["title", "stage", "tags", "actions"]);
+
+export function pipelineListColumnsFromLayout(layout?: FieldLayout | null): ListColumn[] {
+  const layoutKeys = layoutKeysForColumns(layout ?? defaultLayoutForModule("deals"));
+  const fields: PipelineFieldDef[] = PIPELINE_FIELDS.filter((field) => {
+    if (LOCKED_PIPELINE_COLUMN_IDS.has(field.id)) return true;
+    if (field.id === "coverageA" || field.id === "carrier" || field.id === "updated" || field.id === "bound") {
+      const aliases = PIPELINE_LAYOUT_ALIASES[field.id] ?? [field.id];
+      return aliases.some((key) => layoutKeys.has(key));
+    }
+    const aliases = PIPELINE_LAYOUT_ALIASES[field.id] ?? [field.id];
+    return aliases.some((key) => layoutKeys.has(key));
+  });
+  return [
+    ...fields.map((field) => ({
+      id: field.id,
+      label: field.label,
+      locked: LOCKED_PIPELINE_COLUMN_IDS.has(field.id) || Boolean(field.required),
+      defaultOn: field.defaultOn,
+    })),
+    { id: "actions", label: "Call / SMS / Task / Meeting", locked: true },
+  ];
+}
+
+export const PIPELINE_LIST_COLUMNS: ListColumn[] = pipelineListColumnsFromLayout();
 
 export const GLANCE_LIST_COLUMNS: ListColumn[] = fromDeskColumns(TABLE_COLUMNS.glance ?? [], {
   lock: ["record"],

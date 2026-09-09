@@ -43,9 +43,19 @@ export function PipelineWorkspace({
     <div className="space-y-3" data-ff-pipe>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{hint}</p>
-        <div className="flex items-center gap-2">
-          {view === "list" || view === "grid" ? null : <PipelineFieldPicker />}
-          <SheetSettingsMenu tagModule="deals" />
+        <div className="ml-auto flex items-center gap-1">
+          {view === "list" || view === "grid" ? (
+            <span
+              data-ff-list-chrome=""
+              className="inline-flex items-center gap-1"
+              aria-label="List columns and settings"
+            />
+          ) : (
+            <>
+              <PipelineFieldPicker />
+              <SheetSettingsMenu tagModule="deals" />
+            </>
+          )}
         </div>
       </div>
       {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}

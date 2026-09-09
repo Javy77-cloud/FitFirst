@@ -2,7 +2,12 @@ import { pipelineSlugForLine } from "@/lib/crm/convert";
 import { sourceLabel } from "@/lib/crm/sources";
 import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { formatCurrencyDisplay } from "@/lib/custom-fields/format";
-import type { CustomFieldDef } from "@/lib/custom-fields/types";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import {
+  allLayoutFieldKeys,
+  type CustomFieldDef,
+  type FieldLayout,
+} from "@/lib/custom-fields/types";
 import type { ColumnDef } from "@/lib/desk/columns";
 import { formatMoney } from "@/lib/domain";
 import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
@@ -10,6 +15,12 @@ import { pipelineSlugForDealStage } from "@/lib/wire/pipeline";
 
 /** Columns that are not deal fields — never offer them on the pipeline table. */
 export const DEAD_DEAL_COLUMN_IDS = ["esign", "comms", "contact"] as const;
+
+/**
+ * Locked system list columns — always offered, even when Edit Layout omits them.
+ * Activity lives on the title cell (DealQuickActions), not as its own column.
+ */
+export const LOCKED_DEAL_LIST_COLUMN_IDS = ["title", "stage", "tags"] as const;
 
 /** Native columns that live on the deal row itself (not Contact / Lead). */
 export const DEAL_NATIVE_COLUMNS: ColumnDef[] = [
@@ -21,15 +32,38 @@ export const DEAL_NATIVE_COLUMNS: ColumnDef[] = [
   { key: "source", label: "Source", defaultOn: true },
   { key: "tags", label: "Tags", defaultOn: true },
   { key: "assigned", label: "Assigned", defaultOn: true },
-  { key: "value", label: "Value", defaultOn: true },
+  { key: "value", label: "Coverage value", defaultOn: true },
   { key: "premium", label: "Coverage $", defaultOn: false },
   { key: "updated", label: "Updated", defaultOn: false },
 ];
 
 const NATIVE_KEYS = new Set(DEAL_NATIVE_COLUMNS.map((column) => column.key));
+const LOCKED_NATIVE = new Set<string>(LOCKED_DEAL_LIST_COLUMN_IDS);
+
+/** Layout field keys that unlock a native list column (Coverage value / Assigned / etc.). */
+const NATIVE_LAYOUT_ALIASES: Record<string, readonly string[]> = {
+  line: ["line", "line_of_business"],
+  subType: ["sub_type", "policy_sub_type", "subType"],
+  shopLines: ["shop_lines", "shopLines"],
+  source: ["source"],
+  assigned: ["assigned", "owner", "assigned_to", "owner_id"],
+  value: ["value", "coverage_a", "coverageA", "coverage_amount", "coverage_value"],
+  premium: ["premium", "coverage_a", "coverageA"],
+  updated: ["updated", "updated_at"],
+};
 
 /** Catalog fields that should start visible — the rest stay in the picker. */
 const DEFAULT_ON_FIELD_KEYS = new Set(["state"]);
+
+export function layoutKeysForColumns(layout: FieldLayout | null | undefined): Set<string> {
+  return new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("deals")));
+}
+
+export function nativeColumnAllowedByLayout(columnId: string, layoutKeys: Set<string>): boolean {
+  if (LOCKED_NATIVE.has(columnId)) return true;
+  const aliases = NATIVE_LAYOUT_ALIASES[columnId] ?? [columnId];
+  return aliases.some((key) => layoutKeys.has(key));
+}
 
 export type DealStageOption = {
   slug: string;
@@ -65,11 +99,19 @@ export function isDeadDealColumn(id: string): boolean {
   return (DEAD_DEAL_COLUMN_IDS as readonly string[]).includes(id);
 }
 
-export function dealsColumnsFromFields(fields: readonly CustomFieldDef[]): ColumnDef[] {
+export function dealsColumnsFromFields(
+  fields: readonly CustomFieldDef[],
+  layout?: FieldLayout | null,
+): ColumnDef[] {
+  const layoutKeys = layoutKeysForColumns(layout);
+  const natives = DEAL_NATIVE_COLUMNS.filter((column) =>
+    nativeColumnAllowedByLayout(column.key, layoutKeys),
+  );
   const fromCatalog: ColumnDef[] = [];
-  const seen = new Set(NATIVE_KEYS);
+  const seen = new Set(natives.map((column) => column.key));
   for (const field of fields) {
     if (seen.has(field.key) || isDeadDealColumn(field.key)) continue;
+    if (!layoutKeys.has(field.key)) continue;
     seen.add(field.key);
     fromCatalog.push({
       key: field.key,
@@ -77,12 +119,12 @@ export function dealsColumnsFromFields(fields: readonly CustomFieldDef[]): Colum
       defaultOn: DEFAULT_ON_FIELD_KEYS.has(field.key),
     });
   }
-  return [...DEAL_NATIVE_COLUMNS, ...fromCatalog];
+  return [...natives, ...fromCatalog];
 }
 
 /** Static fallback for tests / prefs allow-lists — same shape as a live catalog. */
 export function defaultDealFieldColumns(): ColumnDef[] {
-  return dealsColumnsFromFields(CORE_FIELDS);
+  return dealsColumnsFromFields(CORE_FIELDS, defaultLayoutForModule("deals"));
 }
 
 export function nativeValueFromDeal(

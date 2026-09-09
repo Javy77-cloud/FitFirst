@@ -66,15 +66,24 @@ describe("list column visibility", () => {
     expect(defaultVisibleIds(cols)).toEqual(["pick", "title"]);
   });
 
-  it("keeps Deal title locked and builds columns from deal fields, not E-sign or Comms", () => {
+  it("keeps Deal title locked and builds columns from deal layout fields, not E-sign or Comms", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "stage")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "tags")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "comms")).toBeUndefined();
+    // Phantoms not on default Edit Layout
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "assigned")).toBeUndefined();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")).toBeUndefined();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "premium")).toBeUndefined();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "preferred_language")).toBeUndefined();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "dependents")).toBeUndefined();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "notes")).toBeUndefined();
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "stage", "value"]),
+      expect.arrayContaining(["pick", "title", "stage", "tags"]),
     );
     const dealsVisible = defaultVisibleIds(DEALS_LIST_COLUMNS);
     expect(dealsVisible).not.toContain("contact");
@@ -83,14 +92,14 @@ describe("list column visibility", () => {
     expect(dealsVisible.indexOf("stage")).toBe(dealsVisible.indexOf("title") + 1);
     expect(dealsVisible).not.toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("phone");
-    expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("notes");
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")?.label).toBe("Value");
+    expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("state");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("city");
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).not.toContain("premium");
     expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "actions")?.locked).toBe(true);
+    expect(PIPELINE_LIST_COLUMNS.find((column) => column.id === "coverageA")).toBeUndefined();
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "stage", "phone", "value"]),
+      expect.arrayContaining(["pick", "title", "stage", "phone", "tags"]),
     );
   });
 
@@ -109,17 +118,19 @@ describe("list column visibility", () => {
 
   it("lets Leads and Contacts hide optional columns without dropping locked ones", () => {
     const leadsVisible = defaultVisibleIds(LEADS_LIST_COLUMNS);
-    const afterStatus = toggleColumnVisibility(LEADS_LIST_COLUMNS, leadsVisible, "status");
-    expect(afterStatus).toEqual(["pick", "name", "source", "timer", "heat", "followUp", "shop", "tags"]);
-    expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterStatus, "pick")).toEqual(afterStatus);
-    expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterStatus, "timer")).toEqual(afterStatus);
+    const afterHeat = toggleColumnVisibility(LEADS_LIST_COLUMNS, leadsVisible, "heat");
+    expect(afterHeat).toEqual(["pick", "name", "status", "source", "timer", "followUp", "shop", "tags"]);
+    expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterHeat, "status")).toEqual(afterHeat);
+    expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterHeat, "pick")).toEqual(afterHeat);
+    expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterHeat, "timer")).toEqual(afterHeat);
     expect(LEADS_LIST_COLUMNS.find((column) => column.id === "timer")?.locked).toBe(true);
-    expect(shownColumns(LEADS_LIST_COLUMNS, afterStatus).map((column) => column.id)).toEqual([
+    expect(LEADS_LIST_COLUMNS.find((column) => column.id === "status")?.locked).toBe(true);
+    expect(shownColumns(LEADS_LIST_COLUMNS, afterHeat).map((column) => column.id)).toEqual([
       "pick",
       "name",
+      "status",
       "source",
       "timer",
-      "heat",
       "followUp",
       "shop",
       "tags",

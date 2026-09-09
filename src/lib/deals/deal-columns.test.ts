@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
-import { CUSTOM_FIELD_TYPE_LABELS } from "@/lib/custom-fields/types";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { CUSTOM_FIELD_TYPE_LABELS, type FieldLayout } from "@/lib/custom-fields/types";
 import { convertFieldCopy } from "@/lib/crm/convert";
 import { dealValuesFromLead } from "@/lib/custom-fields/transfer";
 import { defaultStageColor, stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
@@ -33,22 +34,48 @@ const boards = [
 ];
 
 describe("pipeline table deal-field columns", () => {
-  it("builds the Columns picker from deal fields and drops E-sign / Comms", () => {
+  it("builds the Columns picker from layout fields and drops E-sign / Comms / phantoms", () => {
+    const layout: FieldLayout = {
+      columns: [
+        {
+          id: "left",
+          sections: [
+            {
+              id: "contact",
+              label: "Contact",
+              fieldKeys: ["first_name", "last_name", "email", "phone", "notes", "roof_year"],
+            },
+          ],
+        },
+        { id: "right", sections: [] },
+      ],
+    };
     const extra = { key: "roof_year", label: "Roof year", type: "number" as const };
-    const cols = dealsColumnsFromFields([...CORE_FIELDS, extra]);
+    const cols = dealsColumnsFromFields([...CORE_FIELDS, extra], layout);
     const keys = cols.map((column) => column.key);
     expect(keys[0]).toBe("title");
     expect(keys[1]).toBe("stage");
     expect(keys).toContain("phone");
     expect(keys).toContain("notes");
     expect(keys).toContain("roof_year");
+    expect(keys).not.toContain("assigned");
+    expect(keys).not.toContain("value");
+    expect(keys).not.toContain("premium");
+    expect(keys).not.toContain("preferred_language");
     expect(keys).not.toContain("esign");
     expect(keys).not.toContain("comms");
     expect(keys).not.toContain("contact");
     expect(DEAD_DEAL_COLUMN_IDS).toEqual(["esign", "comms", "contact"]);
-    const withoutRoof = dealsColumnsFromFields(CORE_FIELDS).map((column) => column.key);
+    const withoutRoof = dealsColumnsFromFields(CORE_FIELDS, defaultLayoutForModule("deals")).map(
+      (column) => column.key,
+    );
     expect(withoutRoof).not.toContain("roof_year");
-    expect(dealsListColumnsFromFields(CORE_FIELDS).find((column) => column.id === "phone")?.label).toBe("Phone");
+    expect(withoutRoof).not.toContain("notes");
+    expect(
+      dealsListColumnsFromFields(CORE_FIELDS, defaultLayoutForModule("deals")).find(
+        (column) => column.id === "phone",
+      )?.label,
+    ).toBe("Phone");
   });
 
   it("reads phone from the deal field store, not a contact or lead join", () => {
@@ -67,7 +94,7 @@ describe("pipeline table deal-field columns", () => {
     const table = source("src/components/deals/deals-table.tsx");
     expect(table).toMatch(/dealRecordPhone/);
     expect(table).not.toMatch(/contact\?\.phone \?\? account\?\.phone/);
-    expect(table).toMatch(/dealsListColumnsFromFields\(fields\)/);
+    expect(table).toMatch(/dealsListColumnsFromFields\(fields, layout\)/);
   });
 
   it("labels table stage from the same board list as Board / Funnel", () => {
@@ -155,9 +182,25 @@ describe("lead → deal field copy", () => {
 });
 
 describe("Notes field type", () => {
-  it("labels the multi-line builder type Notes so it can be a pipeline column", () => {
+  it("labels the multi-line builder type Notes so it can be a pipeline column when on layout", () => {
     expect(CUSTOM_FIELD_TYPE_LABELS.multi_line).toBe("Notes");
     expect(CORE_FIELDS.some((field) => field.key === "notes" && field.type === "multi_line")).toBe(true);
-    expect(dealsListColumnsFromFields(CORE_FIELDS).some((column) => column.id === "notes")).toBe(true);
+    const withNotes: FieldLayout = {
+      columns: [
+        {
+          id: "left",
+          sections: [{ id: "notes", label: "Notes", fieldKeys: ["notes"] }],
+        },
+        { id: "right", sections: [] },
+      ],
+    };
+    expect(dealsListColumnsFromFields(CORE_FIELDS, withNotes).some((column) => column.id === "notes")).toBe(
+      true,
+    );
+    expect(
+      dealsListColumnsFromFields(CORE_FIELDS, defaultLayoutForModule("deals")).some(
+        (column) => column.id === "notes",
+      ),
+    ).toBe(false);
   });
 });

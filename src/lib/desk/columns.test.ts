@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import { LEAD_FORM_COLUMN_KEYS, TABLE_COLUMNS, parseColumns } from "./columns";
 
 describe("table column pickers", () => {
-  it("exposes every New Lead form field as a choosable Leads column", () => {
+  it("exposes every New Lead layout field as a choosable Leads column", () => {
     const keys = new Set((TABLE_COLUMNS.leads ?? []).map((col) => col.key));
     for (const field of LEAD_FORM_COLUMN_KEYS) {
       expect(keys.has(field)).toBe(true);
     }
-    expect(keys.has("stage")).toBe(true);
+    expect(keys.has("status")).toBe(true);
+    expect(keys.has("tags")).toBe(true);
+    expect(keys.has("preferredLanguage")).toBe(false);
+    expect(keys.has("preferred_language")).toBe(false);
   });
 
   it("lets each module picker include create/edit form fields", () => {
@@ -29,10 +32,13 @@ describe("table column pickers", () => {
       expect(contacts.has(key)).toBe(true);
     }
     const deals = new Set((TABLE_COLUMNS.deals ?? []).map((col) => col.key));
-    expect(deals.has("shopLines")).toBe(true);
-    expect(deals.has("subType")).toBe(true);
     expect(deals.has("phone")).toBe(true);
-    expect(deals.has("notes")).toBe(true);
+    expect(deals.has("email")).toBe(true);
+    expect(deals.has("state")).toBe(true);
+    expect(deals.has("assigned")).toBe(false);
+    expect(deals.has("value")).toBe(false);
+    expect(deals.has("premium")).toBe(false);
+    expect(deals.has("preferred_language")).toBe(false);
     expect(deals.has("esign")).toBe(false);
     expect(deals.has("comms")).toBe(false);
     expect(deals.has("contact")).toBe(false);
@@ -60,8 +66,8 @@ describe("table column pickers", () => {
   });
 
   it("drops dead deal columns and keeps phone from the deal field list", () => {
-    expect(parseColumns("deals", "title,stage,line")).toEqual(["title", "stage", "line"]);
-    expect(parseColumns("deals", "title,stage,line,phone")).toEqual(["title", "stage", "line", "phone"]);
+    expect(parseColumns("deals", "title,stage,phone")).toEqual(["title", "stage", "phone"]);
+    expect(parseColumns("deals", "title,stage,phone,assigned")).toEqual(["title", "stage", "phone", "assigned"]);
     expect(parseColumns("deals", "title,stage,esign,comms")).toEqual(["title", "stage"]);
     expect(parseColumns("policies", "number,status")).toContain("esign");
   });

@@ -279,7 +279,7 @@ describe("Deals page sep7h", () => {
     expect(table).not.toMatch(/formatInDeskEsignList/);
     expect(source("src/components/lists/mass-update.tsx")).toMatch(/Mass update/);
     expect(source("src/components/developer-hub/list-selection.tsx")).toMatch(/list-select-matching/);
-    expect(source("src/lib/desk/columns.ts")).toMatch(/key: "value", label: "Value"/);
+    expect(source("src/lib/deals/deal-columns.ts")).toMatch(/key: "value", label: "Coverage value"/);
     expect(source("src/lib/desk/columns.ts")).not.toMatch(/key: "nextAction", label: "Next"/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ListPagination/);
     expect(source("src/lib/deals/transfer.ts")).toMatch(/Transfer this deal to \$\{target\}/);
