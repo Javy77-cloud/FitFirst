@@ -701,7 +701,7 @@ body[data-ff-col-resize] {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) 400px !important;
   column-gap: 1.25rem !important;
-  row-gap: 0.125rem !important;
+  row-gap: 0 !important;
   align-items: start !important;
 }
 [data-ff-deal-quotes-corner] {

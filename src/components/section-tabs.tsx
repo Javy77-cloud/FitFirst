@@ -107,7 +107,7 @@ export function SectionTabs({
         style={{
           gridTemplateColumns: "minmax(0, 1fr) 400px",
           columnGap: "1.25rem",
-          rowGap: "0.125rem",
+          rowGap: "0",
         }}
       >
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-deal-heading="">

@@ -67,7 +67,7 @@ export function RecordDeveloperActions({
   }
 
   return (
-    <div className="mb-1 space-y-2">
+    <div className="mb-0 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         {standardMacros.length ? (
           <>
