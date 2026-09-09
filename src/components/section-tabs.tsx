@@ -57,15 +57,28 @@ export function SectionTabs({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-      <div role="tablist" className="inline-flex flex-wrap gap-1.5">
-        {tabs.map((tab) => {
-          const selected = tab.id === current.id;
-          const className = tabClass(selected);
-          if (tab.href) {
+        <div role="tablist" className="inline-flex flex-wrap gap-1.5">
+          {tabs.map((tab) => {
+            const selected = tab.id === current.id;
+            const className = tabClass(selected);
+            if (tab.href) {
+              return (
+                <Link
+                  key={tab.id}
+                  href={tab.href}
+                  role="tab"
+                  aria-selected={selected}
+                  className={className}
+                >
+                  {tab.label}
+                </Link>
+              );
+            }
             return (
               <Link
                 key={tab.id}
-                href={tab.href}
+                href={hrefFor(tab.id)}
+                scroll={false}
                 role="tab"
                 aria-selected={selected}
                 className={className}
@@ -73,25 +86,14 @@ export function SectionTabs({
                 {tab.label}
               </Link>
             );
-          }
-          return (
-            <Link
-              key={tab.id}
-              href={hrefFor(tab.id)}
-              scroll={false}
-              role="tab"
-              aria-selected={selected}
-              className={className}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
-      {toolbar}
+          })}
+        </div>
+        {toolbar}
       </div>
       {banner}
-      <div role="tabpanel" data-ff-deal-tab-panel="" className={panelClassName ?? "mt-4"}>
+      {/* Real height spacer — margin-top on the panel was collapsing to 0 visually. */}
+      <div aria-hidden data-ff-deal-tab-gap="" className="h-6 w-full shrink-0" />
+      <div role="tabpanel" data-ff-deal-tab-panel="" className={cn("mt-0", panelClassName)}>
         {current?.content}
       </div>
     </div>

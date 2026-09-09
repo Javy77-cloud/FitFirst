@@ -750,18 +750,19 @@ body[data-ff-col-resize] {
 }
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
-/* All deal tabs: first item starts at the same place under the tab row. */
+/* All deal tabs: equal gap under the tab row (real spacer, not margin). */
+[data-ff-deal-tab-gap] {
+  display: block !important;
+  height: 1.5rem !important; /* ~ one line — same on Details/Documents/Markets/Quotes */
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
 [data-ff-deal-tab-panel] {
-  margin-top: 1.25rem !important;
+  margin-top: 0 !important;
   padding-top: 0 !important;
-}
-[data-ff-deal-tab-panel] > *:first-child {
-  margin-top: 0 !important;
-}
-/* Quotes was reading flush — keep first content clear of the tab row like Details/Docs/Markets. */
-[data-ff-deal-quotes],
-[data-ff-deal-quotes-empty] {
-  margin-top: 0 !important;
 }
 
 /* Deal SectionTabs: idle = solid brand blue fill */
