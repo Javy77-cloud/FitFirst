@@ -175,21 +175,37 @@ export default async function DealPage({
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
-        <div className="-mt-5 flex w-full items-start gap-5" data-ff-deal-flush-tabs data-ff-deal-topband>
-          <div className="min-w-0 flex-1 space-y-4 basis-0" data-ff-deal-top-left>
-          <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
-            {deal.title}
-          </h1>
-          <RecordDeveloperActions
-            module="deals"
-            recordId={deal.id}
-            macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
-            buttons={buttons.map((button) => ({
-              id: button.id,
-              label: button.label,
-              actionKind: button.actionKind,
-            }))}
-          />
+        <div className="-mt-5 w-full space-y-4" data-ff-deal-flush-tabs data-ff-deal-topband>
+          <div className="flex w-full items-start justify-between gap-4" data-ff-deal-top-left>
+            <div className="min-w-0 flex-1 space-y-2">
+              <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
+                {deal.title}
+              </h1>
+              <RecordDeveloperActions
+                module="deals"
+                recordId={deal.id}
+                macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
+                buttons={buttons.map((button) => ({
+                  id: button.id,
+                  label: button.label,
+                  actionKind: button.actionKind,
+                }))}
+              />
+            </div>
+            <div
+              className="flex shrink-0 flex-col items-end gap-1"
+              data-ff-deal-quotes-corner=""
+            >
+              {health ? (
+                <SheetHealthToggle
+                  report={health}
+                  href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
+                  dealId={deal.id}
+                />
+              ) : null}
+              <DealMotivation stats={motivation} />
+            </div>
+          </div>
         <SectionTabs
           defaultValue="details"
           active={activeTab}
@@ -203,6 +219,14 @@ export default async function DealPage({
                 bind this shop. Quotes are not coverage.
               </div>
             ) : null
+          }
+          sidePanel={
+            <>
+              <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
+                <QuickCommsBoard items={comms} dealId={deal.id} />
+              </div>
+              <RecordContextRail context={context} />
+            </>
           }
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,
@@ -280,27 +304,6 @@ export default async function DealPage({
             ),
           }))}
         />
-          </div>
-          <aside
-            className="w-[400px] min-w-[400px] max-w-[400px] shrink-0 overflow-x-hidden grow-0 basis-[400px] space-y-3 lg:sticky lg:top-4"
-            data-ff-deal-right-rail
-            data-ff-deal-rail-lock="400"
-          >
-            <div className="flex w-full min-w-0 max-w-full flex-col items-end" data-ff-deal-quotes-corner>
-              {health ? (
-                <SheetHealthToggle
-                  report={health}
-                  href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
-                  dealId={deal.id}
-                />
-              ) : null}
-              <DealMotivation stats={motivation} />
-            </div>
-            <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms>
-              <QuickCommsBoard items={comms} dealId={deal.id} />
-            </div>
-            <RecordContextRail context={context} />
-          </aside>
         </div>
       )}
     </AppShell>

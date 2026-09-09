@@ -22,6 +22,7 @@ export function SectionTabs({
   panelClassName,
   toolbar,
   banner,
+  sidePanel,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
@@ -31,6 +32,8 @@ export function SectionTabs({
   panelClassName?: string;
   toolbar?: ReactNode;
   banner?: ReactNode;
+  /** Renders beside the tab panel at the same top (e.g. Quick Comms). */
+  sidePanel?: ReactNode;
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
 
@@ -91,13 +94,25 @@ export function SectionTabs({
         {toolbar}
       </div>
       {banner}
-      <div
-        role="tabpanel"
-        data-ff-deal-tab-panel=""
-        className={cn(panelClassName)}
-        style={{ paddingTop: 50 /* HARD LOCK equal gap */ }}
-      >
-        {current?.content}
+      <div className="flex w-full items-start gap-5" data-ff-deal-tab-body="">
+        <div
+          role="tabpanel"
+          data-ff-deal-tab-panel=""
+          className={cn("min-w-0 flex-1", panelClassName)}
+          style={{ paddingTop: 50 }}
+        >
+          {current?.content}
+        </div>
+        {sidePanel ? (
+          <aside
+            className="w-[400px] min-w-[400px] max-w-[400px] shrink-0 grow-0 basis-[400px] space-y-3 overflow-x-hidden lg:sticky lg:top-4"
+            data-ff-deal-right-rail=""
+            data-ff-deal-rail-lock="400"
+            style={{ paddingTop: 50 }}
+          >
+            {sidePanel}
+          </aside>
+        ) : null}
       </div>
     </div>
   );

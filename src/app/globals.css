@@ -691,9 +691,8 @@ body[data-ff-col-resize] {
 
 /* HARD LOCK (Javy 2026-09-09): deal right rail 400px so Task/Meeting/Call/Email/SMS fit one row. Left column takes leftover flex. */
 [data-ff-deal-topband] {
-  display: flex;
+  display: block;
   width: 100%;
-  align-items: flex-start;
 }
 [data-ff-deal-title] {
   margin-bottom: 0.75rem;
@@ -711,6 +710,10 @@ body[data-ff-col-resize] {
   flex: 0 0 400px !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
+  padding-top: 50px !important; /* HARD LOCK: align with Quotes/tab panel */
+}
+[data-ff-deal-quotes-corner] {
+  max-width: 14rem;
 }
 [data-ff-deal-right-rail] > * {
   width: 100% !important;
