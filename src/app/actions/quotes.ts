@@ -12,6 +12,7 @@ import {
   appetiteRules,
   carriers,
   deals,
+  pipelines,
   quoteAttemptLogs,
   quoteNotes,
   quotes,
@@ -21,9 +22,11 @@ import { currentDeskSession } from "@/lib/auth/session";
 import {
   isAgentStatus,
   isReasonForNo,
+  pipelineSlugForAgentStatus,
   type AgentStatus,
   type ReasonForNo,
 } from "@/lib/quotes/outcomes";
+import { moveDealToStage } from "@/app/actions/pipeline";
 import { applySavedSheetToDeal } from "@/app/actions/quote-sheet";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
@@ -288,6 +291,23 @@ export async function saveQuoteAgentRatingAction(formData: FormData) {
   flashAction(dealQuotesPath(dealId), agentRating == null ? "Rating cleared" : `Rated ${agentRating}★`);
 }
 
+
+async function syncDealPipelineFromQuoteStatus(dealId: string, agentStatus: AgentStatus) {
+  const stageSlug = pipelineSlugForAgentStatus(agentStatus);
+  if (!stageSlug) return;
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) return;
+  let pipelineSlug = "p-c";
+  if (deal.pipelineId) {
+    const [board] = await db
+      .select()
+      .from(pipelines)
+      .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.id, deal.pipelineId)));
+    if (board?.slug) pipelineSlug = board.slug;
+  }
+  await moveDealToStage({ dealId, pipelineSlug, stageSlug });
+}
+
 export async function saveQuoteAgentStatusAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
   const quoteId = String(formData.get("quoteId") ?? "").trim();
@@ -311,6 +331,8 @@ export async function saveQuoteAgentStatusAction(formData: FormData) {
       reasonForNo: agentStatus === "dead" ? reasonForNo : null,
     })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
+
+  await syncDealPipelineFromQuoteStatus(dealId, agentStatus);
 
   if (agentStatus === "dead" && reasonForNo) {
     await db.insert(quoteAttemptLogs).values({
@@ -346,6 +368,7 @@ export async function saveQuoteReasonForNoAction(formData: FormData) {
     .update(quotes)
     .set({ agentStatus: "dead", reasonForNo: reasonRaw })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
+  await syncDealPipelineFromQuoteStatus(dealId, "dead");
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,

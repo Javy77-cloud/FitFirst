@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AGENT_STATUSES,
   AGENT_STATUS_LABELS,
+  pipelineSlugForAgentStatus,
   bindRequirementChips,
   minCoverageANotMetAmount,
   quoteNeedsBindRecheckAlert,
@@ -200,6 +201,16 @@ describe("quote outcomes", () => {
     expect(normalizeAgentStatus("won")).toBe("won");
   });
 
+
+  it("maps Quotes agent status → Pipeline slug one-way", () => {
+    expect(pipelineSlugForAgentStatus("new")).toBeNull();
+    expect(pipelineSlugForAgentStatus("sent_to_client")).toBe("quote_sent");
+    expect(pipelineSlugForAgentStatus("client_reviewing")).toBe("quote_sent");
+    expect(pipelineSlugForAgentStatus("bound")).toBe("bound");
+    expect(pipelineSlugForAgentStatus("waiting_on_inspection")).toBe("pending_inspection");
+    expect(pipelineSlugForAgentStatus("won")).toBe("closed_won");
+    expect(pipelineSlugForAgentStatus("dead")).toBe("closed_lost");
+  });
   it("short reason label stays scannable", () => {
     expect(
       shortReasonLabel({

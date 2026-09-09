@@ -60,6 +60,26 @@ export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
   dead: "Lost",
 };
 
+/** Quotes → Pipeline only (never reverse). Review stays on Quote Sent — Pipeline Review is earlier. */
+export function pipelineSlugForAgentStatus(status: AgentStatus): string | null {
+  switch (status) {
+    case "sent_to_client":
+    case "client_reviewing":
+      return "quote_sent";
+    case "bound":
+      return "bound";
+    case "waiting_on_inspection":
+      return "pending_inspection";
+    case "won":
+      return "closed_won";
+    case "dead":
+      return "closed_lost";
+    case "new":
+    default:
+      return null;
+  }
+}
+
 export function isAgentStatus(value: string | null | undefined): value is AgentStatus {
   return Boolean(value && (AGENT_STATUSES as readonly string[]).includes(value));
 }
