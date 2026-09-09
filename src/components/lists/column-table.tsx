@@ -347,7 +347,7 @@ export function ColumnTable({
                     data-sort={sheetAttr(rowSortValue(row, column.id))}
                     {...sheetCellProps(moduleId, rowSortValue(row, column.id))}
                   >
-                    {row.cells[column.id]}
+                    <div className="ff-list-cell">{row.cells[column.id]}</div>
                   </td>
                 ))}
               </tr>

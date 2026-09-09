@@ -381,6 +381,16 @@
 [data-ff-density="compact"] .ff-list-table [data-sheet-col="name"] {
   padding-left: 0.15rem;
 }
+/* Tip sep7gm: kill td line-box strut so bottom gap matches top pad (was ~6px heavier under fields). */
+.ff-list-table tbody td {
+  line-height: 0;
+}
+.ff-list-table tbody td > .ff-list-cell {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  line-height: 1.5;
+}
 .ff-list-th {
   position: relative;
 }
