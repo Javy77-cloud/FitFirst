@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CircleHelp, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -27,36 +27,8 @@ const TABS: { id: HelpTab; label: string }[] = [
   { id: "videos", label: "Videos" },
 ];
 
-function useSoftphoneCollision() {
-  const [left, setLeft] = useState(false);
-
-  useEffect(() => {
-    function check() {
-      const phone = document.getElementById("desk-softphone");
-      if (!phone) {
-        setLeft(false);
-        return;
-      }
-      const rect = phone.getBoundingClientRect();
-      const overlapsRight =
-        rect.bottom > window.innerHeight - 96 && rect.right > window.innerWidth - 180;
-      setLeft(overlapsRight);
-    }
-    check();
-    window.addEventListener("resize", check);
-    const timer = window.setInterval(check, 1500);
-    return () => {
-      window.removeEventListener("resize", check);
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  return left;
-}
-
 export function SupportLauncher() {
   const { open, tab, articleId, openSupport, closeSupport, setTab, setArticleId } = useSupport();
-  const flipLeft = useSoftphoneCollision();
   const search = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -85,19 +57,6 @@ export function SupportLauncher() {
   const article = articleId ? articleById(articleId) : null;
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => openSupport()}
-        className={cn(
-          "fixed bottom-5 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-navy px-4 text-sm font-semibold text-white shadow-lg hover:bg-navy-mid",
-          flipLeft ? "left-5" : "right-5",
-        )}
-      >
-        <CircleHelp className="size-5" />
-        Support
-      </button>
-
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
           <SheetHeader className="border-b border-border">
@@ -217,6 +176,5 @@ export function SupportLauncher() {
           </div>
         </SheetContent>
       </Sheet>
-    </>
   );
 }

@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSupport } from "@/components/support/support-context";
 import type { Actor } from "@/lib/auth/rbac";
 
 function initials(name: string) {
@@ -35,6 +36,8 @@ export function ProfileMenu({
   impersonatorName: string | null;
   isImpersonating: boolean;
 }) {
+  const { openSupport } = useSupport();
+
   if (!signedIn || !actor.id) {
     return (
       <Link
@@ -73,6 +76,7 @@ export function ProfileMenu({
           <DropdownMenuItem render={<Link href="/settings/profile" />}>Edit Profile</DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/settings/security" />}>Password</DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/me" />}>Settings</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openSupport()}>Support</DropdownMenuItem>
         </DropdownMenuGroup>
         {canSwitchRole && users.length > 0 ? (
           <>
