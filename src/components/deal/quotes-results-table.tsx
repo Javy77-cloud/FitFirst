@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   addQuoteNoteAction,
   recheckQuotesAction,
@@ -8,6 +8,15 @@ import {
   saveQuoteAgentStatusAction,
 } from "@/app/actions/quotes";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { BIND_GATE_COPY } from "@/lib/deals/bind-gate";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Quote, QuoteNote } from "@/lib/db/schema";
 import {
@@ -28,7 +37,7 @@ import {
 } from "@/lib/quotes/outcomes";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, RefreshCw, Star } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
 
@@ -51,6 +60,12 @@ function formatNoteWhen(iso: string | Date): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function premiumNumber(value: Quote["premium"]): number | null {
+  if (value == null || value === "") return null;
+  const n = typeof value === "number" ? value : Number(String(value).replace(/[$,]/g, ""));
+  return Number.isFinite(n) ? n : null;
 }
 
 function StarRating({
@@ -125,6 +140,85 @@ function RecheckMarkIcon({
   );
 }
 
+function BindRecheckAlertDialog({
+  open,
+  onOpenChange,
+  carrierName,
+  quote,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  carrierName: string;
+  quote: Quote | null;
+}) {
+  const [checks, setChecks] = useState({ premium: false, coverages: false, deductibles: false });
+  const checklistKey = `${quote?.id ?? "none"}:${open ? "open" : "closed"}`;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setChecks({ premium: false, coverages: false, deductibles: false });
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent
+        className="sm:max-w-md"
+        data-ff-quote-bind-alert-dialog={quote?.id ?? ""}
+      >
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-navy">
+            <span className="inline-flex size-7 items-center justify-center rounded-full bg-fit-flag/15 text-fit-flag">
+              <AlertTriangle className="size-4" />
+            </span>
+            {BIND_GATE_COPY.title}
+          </DialogTitle>
+          <DialogDescription>
+            {quote ? (
+              <>
+                {carrierName} · {formatMoney(quote.premium)} · Cov A {formatMoney(quote.coverageA)} ·
+                AOP {quote.aopDeductible ?? "—"} · Hurricane {quote.hurricaneDeductible ?? "—"}
+              </>
+            ) : (
+              "Confirm premium, coverages, and deductibles before bind."
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2" data-ff-quote-bind-alert-checklist="" key={checklistKey}>
+          {(
+            [
+              ["premium", BIND_GATE_COPY.premium],
+              ["coverages", BIND_GATE_COPY.coverages],
+              ["deductibles", BIND_GATE_COPY.deductibles],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="flex items-start gap-2 text-sm text-navy">
+              <input
+                type="checkbox"
+                checked={checks[key]}
+                onChange={(event) =>
+                  setChecks((current) => ({ ...current, [key]: event.target.checked }))
+                }
+                className="mt-0.5 accent-[var(--fit-flag,#d97706)]"
+                data-ff-quote-bind-alert-check={key}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+          <p className="text-xs text-fit-flag" data-ff-quote-bind-alert-blocked="">
+            {BIND_GATE_COPY.blocked}
+          </p>
+        </div>
+        <DialogFooter>
+          <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function QuotesResultsTable({
   dealId,
   rows,
@@ -141,37 +235,98 @@ export function QuotesResultsTable({
   notesByQuote?: Record<string, QuoteNote[]>;
 }) {
   const list = asList(rows);
-  const [marked, setMarked] = useState<string[]>([]);
+  const [recheckMarked, setRecheckMarked] = useState<string[]>([]);
+  const [hideMarked, setHideMarked] = useState<string[]>([]);
+  const [hidesApplied, setHidesApplied] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [declinedOpen, setDeclinedOpen] = useState(false);
   const [pendingDead, setPendingDead] = useState<Record<string, boolean>>({});
+  const [alertQuoteId, setAlertQuoteId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const premiumFloorRef = useRef<Record<string, number>>({});
+
   const sections = useMemo(
     () => groupQuotesBySection(list, (row) => row.quote.riskOutcome),
     [list],
   );
-  const markedCount = marked.length;
-  const anyMarked = markedCount > 0;
+  const recheckCount = recheckMarked.length;
+  const anyRecheck = recheckCount > 0;
+  const hideCount = hideMarked.length;
+  const anyHide = hideCount > 0;
 
-  function toggleMark(id: string) {
-    setMarked((current) =>
+  const alertRow = useMemo(
+    () => list.find((row) => row.quote.id === alertQuoteId) ?? null,
+    [list, alertQuoteId],
+  );
+
+  // Session hide marks drop when premium improves vs the floor captured at mark time.
+  const effectiveHideMarked = useMemo(() => {
+    const kept: string[] = [];
+    for (const id of hideMarked) {
+      const floor = premiumFloorRef.current[id];
+      if (floor != null) {
+        const row = list.find((r) => r.quote.id === id);
+        const current = row ? premiumNumber(row.quote.premium) : null;
+        if (current != null && current < floor) {
+          delete premiumFloorRef.current[id];
+          continue;
+        }
+      }
+      kept.push(id);
+    }
+    return kept;
+  }, [hideMarked, list]);
+
+  const hidesEffectivelyApplied = hidesApplied && effectiveHideMarked.length > 0;
+
+  function toggleRecheckMark(id: string) {
+    setRecheckMarked((current) =>
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
     );
   }
 
-  function toggleDetails(id: string) {
-    setExpanded((current) => ({ ...current, [id]: !current[id] }));
+  function toggleHideMark(id: string) {
+    setHideMarked((current) => {
+      if (current.includes(id)) {
+        delete premiumFloorRef.current[id];
+        return current.filter((x) => x !== id);
+      }
+      const row = list.find((r) => r.quote.id === id);
+      const n = row ? premiumNumber(row.quote.premium) : null;
+      if (n != null) premiumFloorRef.current[id] = n;
+      return [...current, id];
+    });
+  }
+
+  function toggleDetails(id: string, fallbackOpen: boolean) {
+    setExpanded((current) => {
+      const currentlyOpen = id in current ? current[id] : fallbackOpen;
+      return { ...current, [id]: !currentlyOpen };
+    });
   }
 
   function onRecheck() {
-    if (marked.length === 0) return;
+    if (recheckMarked.length === 0) return;
+    const ids = [...recheckMarked];
     const data = new FormData();
     data.set("dealId", dealId);
-    for (const id of marked) data.append("quoteId", id);
+    for (const id of ids) data.append("quoteId", id);
     startTransition(async () => {
       await recheckQuotesAction(data);
-      setMarked([]);
+      setRecheckMarked([]);
+      // Recheck clears hide marks for those quote ids (tip: recheck clears marks → unhide).
+      setHideMarked((current) => current.filter((id) => !ids.includes(id)));
+      for (const id of ids) delete premiumFloorRef.current[id];
     });
+  }
+
+  function onHideMarked() {
+    if (hideMarked.length === 0) return;
+    setHidesApplied(true);
+  }
+
+  function onShowHidden() {
+    setHidesApplied(false);
   }
 
   function outcomeFor(quote: Quote, carrierId: string): RiskOutcome {
@@ -210,55 +365,99 @@ export function QuotesResultsTable({
     });
   }
 
+  const hiddenVisibleCount = hidesApplied
+    ? hideMarked.filter((id) => list.some((row) => row.quote.id === id)).length
+    : 0;
+
   return (
     <div className="space-y-3" data-ff-quotes-recheck-desk="" data-ff-quotes-by-outcome="">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2">
-        <Button
-          type="button"
-          size="sm"
-          variant={anyMarked ? "default" : "outline"}
-          disabled={!anyMarked || pending}
-          onClick={onRecheck}
-          data-ff-quotes-recheck=""
-          data-ff-quotes-recheck-count={markedCount}
-          className={cn(
-            "gap-1.5",
-            anyMarked && "border-primary bg-primary text-primary-foreground shadow-sm",
-          )}
-          title={
-            anyMarked
-              ? `Re-run ${markedCount} marked quote${markedCount === 1 ? "" : "s"}`
-              : "Mark quotes with the refresh icon to recheck"
-          }
-        >
-          <span
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={anyRecheck ? "default" : "outline"}
+            disabled={!anyRecheck || pending}
+            onClick={onRecheck}
+            data-ff-quotes-recheck=""
+            data-ff-quotes-recheck-count={recheckCount}
             className={cn(
-              "inline-flex size-5 items-center justify-center rounded-md",
-              anyMarked ? "bg-primary-foreground/15" : "bg-muted/60",
+              "gap-1.5",
+              anyRecheck && "border-primary bg-primary text-primary-foreground shadow-sm",
             )}
-            data-ff-quotes-recheck-icon={anyMarked ? "lit" : "muted"}
-            aria-hidden
+            title={
+              anyRecheck
+                ? `Re-run ${recheckCount} marked quote${recheckCount === 1 ? "" : "s"}`
+                : "Mark quotes with the refresh icon to recheck"
+            }
           >
-            <RecheckMarkIcon
-              lit={anyMarked}
-              className={anyMarked ? "text-primary-foreground" : undefined}
-            />
-          </span>
-          {pending ? "Queuing…" : anyMarked ? `Recheck (${markedCount})` : "Recheck"}
-        </Button>
-        {anyMarked ? (
+            <span
+              className={cn(
+                "inline-flex size-5 items-center justify-center rounded-md",
+                anyRecheck ? "bg-primary-foreground/15" : "bg-muted/60",
+              )}
+              data-ff-quotes-recheck-icon={anyRecheck ? "lit" : "muted"}
+              aria-hidden
+            >
+              <RecheckMarkIcon
+                lit={anyRecheck}
+                className={anyRecheck ? "text-primary-foreground" : undefined}
+              />
+            </span>
+            {pending ? "Queuing…" : anyRecheck ? `Recheck (${recheckCount})` : "Recheck"}
+          </Button>
+
+          {hidesApplied && hiddenVisibleCount > 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onShowHidden}
+              data-ff-quotes-show-hidden=""
+              data-ff-quotes-hidden-count={hiddenVisibleCount}
+              className="gap-1.5"
+              title="Show hide-marked quotes again"
+            >
+              <EyeOff className="size-3.5 text-muted-foreground" />
+              Show hidden ({hiddenVisibleCount})
+            </Button>
+          ) : anyHide ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onHideMarked}
+              data-ff-quotes-hide-marked=""
+              data-ff-quotes-hide-count={hideCount}
+              className="gap-1.5 border-border text-navy hover:bg-muted/60"
+              title={`Hide ${hideCount} marked quote${hideCount === 1 ? "" : "s"} (session only)`}
+            >
+              <EyeOff className="size-3.5 text-muted-foreground" />
+              Hide marked ({hideCount})
+            </Button>
+          ) : null}
+        </div>
+
+        {anyRecheck ? (
           <p className="text-[11px] text-muted-foreground" data-ff-quotes-recheck-hint="">
             Only marked carriers will be rechecked.
           </p>
         ) : (
           <p className="text-[11px] text-muted-foreground" data-ff-quotes-recheck-hint="">
-            Tap the refresh icon beside a premium to mark it for recheck.
+            Refresh marks recheck · eye marks hide (session).
           </p>
         )}
       </div>
 
       <div className="space-y-4 px-3 pb-3">
         {sections.map((section) => {
+          const visibleRows =
+            hidesApplied
+              ? section.rows.filter(({ quote }) => !hideMarked.includes(quote.id))
+              : section.rows;
+          if (visibleRows.length === 0 && section.rows.length > 0 && hidesApplied) {
+            return null;
+          }
           const collapsed = section.collapseByDefault && !declinedOpen;
           return (
             <section
@@ -286,7 +485,7 @@ export function QuotesResultsTable({
                   </h4>
                   {!collapsed ? (
                     <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
-                      {section.rows.length}
+                      {visibleRows.length}
                     </span>
                   ) : null}
                 </button>
@@ -294,19 +493,21 @@ export function QuotesResultsTable({
                 <div className="flex items-center gap-2 px-1">
                   <h4 className="text-sm font-semibold text-navy">{section.label}</h4>
                   <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
-                    {section.rows.length}
+                    {visibleRows.length}
                   </span>
                 </div>
               )}
 
               {collapsed ? null : (
                 <div className="space-y-2">
-                  {section.rows.map(({ quote, carrier }) => {
+                  {visibleRows.map(({ quote, carrier }) => {
                     const outcome = outcomeFor(quote, carrier.id);
                     const canBind =
                       outcome === "bindable" || quote.nextStep === "can_bind" || quote.bindable;
                     const openHref = carrierOpenHref(quote, carrier);
-                    const detailsOpen = Boolean(expanded[quote.id]);
+                    const conditionalDefaultOpen = outcome === "conditional";
+                    const detailsOpen =
+                      quote.id in expanded ? Boolean(expanded[quote.id]) : conditionalDefaultOpen;
                     const reason = shortReasonLabel({
                       notes: quote.notes,
                       riskOutcome: outcome,
@@ -322,17 +523,21 @@ export function QuotesResultsTable({
                     const agentStatus = normalizeAgentStatus(quote.agentStatus);
                     const thread = notesByQuote[quote.id] ?? [];
                     const needsReason = pendingDead[quote.id] || agentStatus === "dead";
-                    const isMarked = marked.includes(quote.id);
+                    const isRecheckMarked = recheckMarked.includes(quote.id);
+                    const isHideMarked = hideMarked.includes(quote.id);
+                    const showAlert = outcome === "conditional";
 
                     return (
                       <Fragment key={quote.id}>
                         <article
                           data-ff-quote-row={quote.id}
                           data-ff-quote-outcome={outcome}
-                          data-ff-quote-recheck-marked={isMarked ? "1" : "0"}
+                          data-ff-quote-recheck-marked={isRecheckMarked ? "1" : "0"}
+                          data-ff-quote-hide-marked={isHideMarked ? "1" : "0"}
                           className={cn(
                             "rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
-                            isMarked && "ring-1 ring-primary/35",
+                            isRecheckMarked && "ring-1 ring-primary/35",
+                            isHideMarked && !isRecheckMarked && "ring-1 ring-muted-foreground/25",
                           )}
                         >
                           <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap">
@@ -346,54 +551,98 @@ export function QuotesResultsTable({
                               {riskOutcomeLabel(outcome)}
                             </span>
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                <span className="truncate text-sm font-semibold text-navy">
-                                  {carrier.name}
-                                </span>
-                                <span
-                                  className="truncate text-xs text-muted-foreground"
-                                  data-ff-quote-reason={quote.id}
+                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="truncate text-sm font-semibold text-navy">
+                                {carrier.name}
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-navy">
+                                {formatMoney(quote.premium)}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label={
+                                  isRecheckMarked
+                                    ? `Unmark ${carrier.name} for recheck`
+                                    : `Mark ${carrier.name} for recheck`
+                                }
+                                aria-pressed={isRecheckMarked}
+                                data-ff-quote-recheck-mark={quote.id}
+                                data-ff-quote-recheck-mark-state={isRecheckMarked ? "lit" : "muted"}
+                                onClick={() => toggleRecheckMark(quote.id)}
+                                className={cn(
+                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                  isRecheckMarked
+                                    ? "border-primary/45 bg-primary/10 text-primary shadow-sm"
+                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted/50 hover:text-muted-foreground",
+                                )}
+                                title={
+                                  isRecheckMarked
+                                    ? "Marked for recheck — click to unmark"
+                                    : "Mark for recheck"
+                                }
+                              >
+                                <RecheckMarkIcon lit={isRecheckMarked} />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={
+                                  isHideMarked
+                                    ? `Unmark ${carrier.name} to hide`
+                                    : `Mark ${carrier.name} to hide`
+                                }
+                                aria-pressed={isHideMarked}
+                                data-ff-quote-hide-mark={quote.id}
+                                data-ff-quote-hide-mark-state={isHideMarked ? "lit" : "muted"}
+                                onClick={() => toggleHideMark(quote.id)}
+                                className={cn(
+                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                  isHideMarked
+                                    ? "border-muted-foreground/40 bg-muted/70 text-navy shadow-sm"
+                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted/50 hover:text-muted-foreground",
+                                )}
+                                title={
+                                  isHideMarked
+                                    ? "Marked to hide — click to unmark"
+                                    : "Mark to hide (session)"
+                                }
+                              >
+                                <EyeOff
+                                  className={cn(
+                                    "size-3.5",
+                                    isHideMarked ? "text-navy" : "text-muted-foreground/40",
+                                  )}
+                                  strokeWidth={isHideMarked ? 2.5 : 2}
+                                />
+                              </button>
+                              <Button
+                                type="button"
+                                size="xs"
+                                variant="ghost"
+                                data-ff-quote-details={quote.id}
+                                aria-expanded={detailsOpen}
+                                onClick={() => toggleDetails(quote.id, conditionalDefaultOpen)}
+                              >
+                                {detailsOpen ? "Hide details" : "Details"}
+                              </Button>
+                              {showAlert ? (
+                                <button
+                                  type="button"
+                                  aria-label={`Bind recheck checklist for ${carrier.name}`}
+                                  data-ff-quote-bind-alert={quote.id}
+                                  onClick={() => setAlertQuoteId(quote.id)}
+                                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-fit-flag/35 bg-fit-flag/10 text-fit-flag shadow-sm transition-colors hover:bg-fit-flag/20"
+                                  title="Re-check premium, coverages, and deductibles before bind"
                                 >
-                                  {reason}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-navy">
-                                  {formatMoney(quote.premium)}
-                                  <button
-                                    type="button"
-                                    aria-label={
-                                      isMarked
-                                        ? `Unmark ${carrier.name} for recheck`
-                                        : `Mark ${carrier.name} for recheck`
-                                    }
-                                    aria-pressed={isMarked}
-                                    data-ff-quote-recheck-mark={quote.id}
-                                    data-ff-quote-recheck-mark-state={isMarked ? "lit" : "muted"}
-                                    onClick={() => toggleMark(quote.id)}
-                                    className={cn(
-                                      "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
-                                      isMarked
-                                        ? "border-primary/45 bg-primary/10 text-primary shadow-sm"
-                                        : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted/50 hover:text-muted-foreground",
-                                    )}
-                                    title={
-                                      isMarked
-                                        ? "Marked for recheck — click to unmark"
-                                        : "Mark for recheck"
-                                    }
-                                  >
-                                    <RecheckMarkIcon lit={isMarked} />
-                                  </button>
-                                </span>
-                              </div>
+                                  <AlertTriangle className="size-3.5" />
+                                </button>
+                              ) : null}
+                              <StarRating
+                                dealId={dealId}
+                                quoteId={quote.id}
+                                value={quote.agentRating}
+                                disabled={pending}
+                              />
                             </div>
-
-                            <StarRating
-                              dealId={dealId}
-                              quoteId={quote.id}
-                              value={quote.agentRating}
-                              disabled={pending}
-                            />
 
                             <select
                               className="h-7 max-w-[9.5rem] rounded-md border border-border bg-background px-1.5 text-[11px] text-navy"
@@ -449,16 +698,6 @@ export function QuotesResultsTable({
                               <Button
                                 type="button"
                                 size="xs"
-                                variant="ghost"
-                                data-ff-quote-details={quote.id}
-                                aria-expanded={detailsOpen}
-                                onClick={() => toggleDetails(quote.id)}
-                              >
-                                {detailsOpen ? "Hide details" : "Details"}
-                              </Button>
-                              <Button
-                                type="button"
-                                size="xs"
                                 variant="outline"
                                 disabled
                                 title="Available when carrier PDF API is connected"
@@ -474,6 +713,15 @@ export function QuotesResultsTable({
                               data-ff-quote-details-panel={quote.id}
                               className="space-y-3 border-t border-border/70 px-3 py-3 text-xs"
                             >
+                              {reason ? (
+                                <div data-ff-quote-reason={quote.id}>
+                                  <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Why this outcome
+                                  </div>
+                                  <p className="mt-1 text-sm text-navy">{reason}</p>
+                                </div>
+                              ) : null}
+
                               <div>
                                 <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                   Bind requirements
@@ -589,6 +837,15 @@ export function QuotesResultsTable({
           );
         })}
       </div>
+
+      <BindRecheckAlertDialog
+        open={Boolean(alertQuoteId)}
+        onOpenChange={(open) => {
+          if (!open) setAlertQuoteId(null);
+        }}
+        carrierName={alertRow?.carrier.name ?? ""}
+        quote={alertRow?.quote ?? null}
+      />
     </div>
   );
 }
