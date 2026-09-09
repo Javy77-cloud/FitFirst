@@ -25,17 +25,28 @@ export async function ensureSeededPipelines() {
         seeded: seed.seeded,
         sortOrder: index,
       });
-      await db.insert(pipelineStages).values(
-        seed.stages.map((stage, sortOrder) => ({
-          tenantId,
-          pipelineId: id,
-          name: stage.name,
-          slug: stage.slug,
-          sortOrder,
-          color: defaultStageColor(sortOrder, stage.slug),
-          seeded: seed.seeded,
-        })),
-      );
+      for (const [sortOrder, stage] of seed.stages.entries()) {
+        await db
+          .insert(pipelineStages)
+          .values({
+            tenantId,
+            pipelineId: id,
+            name: stage.name,
+            slug: stage.slug,
+            sortOrder,
+            color: defaultStageColor(sortOrder, stage.slug),
+            seeded: seed.seeded,
+          })
+          .onConflictDoUpdate({
+            target: [pipelineStages.tenantId, pipelineStages.pipelineId, pipelineStages.slug],
+            set: {
+              name: stage.name,
+              sortOrder,
+              color: defaultStageColor(sortOrder, stage.slug),
+              seeded: seed.seeded,
+            },
+          });
+      }
       continue;
     }
 
@@ -64,16 +75,28 @@ export async function ensureSeededPipelines() {
     const stagesBySlug = new Map(stages.map((stage) => [stage.slug, stage]));
     for (const [sortOrder, stage] of seed.stages.entries()) {
       const existingStage = stagesBySlug.get(stage.slug);
+      const color = defaultStageColor(sortOrder, stage.slug);
       if (!existingStage) {
-        await db.insert(pipelineStages).values({
-          tenantId,
-          pipelineId: current.id,
-          name: stage.name,
-          slug: stage.slug,
-          sortOrder,
-          color: defaultStageColor(sortOrder, stage.slug),
-          seeded: seed.seeded,
-        });
+        await db
+          .insert(pipelineStages)
+          .values({
+            tenantId,
+            pipelineId: current.id,
+            name: stage.name,
+            slug: stage.slug,
+            sortOrder,
+            color,
+            seeded: seed.seeded,
+          })
+          .onConflictDoUpdate({
+            target: [pipelineStages.tenantId, pipelineStages.pipelineId, pipelineStages.slug],
+            set: {
+              name: stage.name,
+              sortOrder,
+              color,
+              seeded: seed.seeded,
+            },
+          });
         continue;
       }
       // Live desk: re-align name/sortOrder (and color if empty) so new seed stages
@@ -89,7 +112,7 @@ export async function ensureSeededPipelines() {
           .set({
             name: stage.name,
             sortOrder,
-            ...(colorEmpty ? { color: defaultStageColor(sortOrder, stage.slug) } : {}),
+            ...(colorEmpty ? { color } : {}),
           })
           .where(eq(pipelineStages.id, existingStage.id));
       }
