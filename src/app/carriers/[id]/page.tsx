@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { listCarrierSecretAudits } from "@/app/actions/carrier-secrets";
 import { updateCarrierContact } from "@/app/actions/pipeline-admin";
 import { PortalLoginAdmin } from "@/components/carriers/portal-login-admin";
@@ -57,6 +57,7 @@ export default async function CarrierRecordPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (id === "logs") redirect("/settings/developer/appetite-log");
   if (!isUuid(id)) notFound();
   const [row, asks, users, session, tagExtra, carrierLayout] = await Promise.all([
     getCarrier(id),

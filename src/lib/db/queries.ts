@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, exists, inArray, isNull, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gte, inArray, isNull, lte, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
@@ -46,6 +46,10 @@ import {
 } from "@/lib/desk/line-settings";
 import { loadDeskLineSettings } from "./line-settings";
 import { publicCarrierView } from "@/lib/carriers/secrets";
+import {
+  lineOfBusinessValuesForSheet,
+  normalizeAppetiteLine,
+} from "@/lib/appetite/training-datasheet";
 import type { PartyRecord } from "@/lib/crm/party-typeahead";
 import { partyLabel } from "@/lib/deals/lookup";
 import { db, sql as rawSql } from "./index";
@@ -1288,6 +1292,114 @@ export async function listQuoteLogs() {
     .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
     .where(eq(quoteAttemptLogs.tenantId, tenant()))
     .orderBy(desc(quoteAttemptLogs.attemptedAt));
+}
+
+/** Platform-builder appetite training datasheet (quote_attempt_logs + optional quote outcome / risk address). Always line-scoped. */
+export async function listAppetiteTrainingLogs(filters: {
+  line: string;
+  carrierId?: string;
+  county?: string;
+  result?: string;
+  yearBuiltMin?: number;
+  yearBuiltMax?: number;
+}) {
+  const line = normalizeAppetiteLine(filters.line);
+  const lineValues = lineOfBusinessValuesForSheet(line);
+  const clauses: SQL[] = [
+    eq(quoteAttemptLogs.tenantId, tenant()),
+    inArray(quoteAttemptLogs.lineOfBusiness, lineValues),
+  ];
+  if (filters.carrierId) clauses.push(eq(quoteAttemptLogs.carrierId, filters.carrierId));
+  if (filters.county) clauses.push(eq(quoteAttemptLogs.snapCounty, filters.county));
+  if (filters.result) clauses.push(eq(quoteAttemptLogs.result, filters.result));
+  if (filters.yearBuiltMin != null) {
+    clauses.push(gte(quoteAttemptLogs.snapYearBuilt, filters.yearBuiltMin));
+  }
+  if (filters.yearBuiltMax != null) {
+    clauses.push(lte(quoteAttemptLogs.snapYearBuilt, filters.yearBuiltMax));
+  }
+
+  const rows = await db
+    .select({
+      log: quoteAttemptLogs,
+      carrier: carriers,
+      deal: deals,
+      risk: risks,
+      quote: quotes,
+    })
+    .from(quoteAttemptLogs)
+    .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+    .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
+    .leftJoin(risks, eq(quoteAttemptLogs.riskId, risks.id))
+    .leftJoin(quotes, eq(quotes.quoteAttemptLogId, quoteAttemptLogs.id))
+    .where(and(...clauses))
+    .orderBy(desc(quoteAttemptLogs.attemptedAt));
+
+  // One row per attempt log (first linked quote wins when duplicates exist).
+  const seen = new Set<string>();
+  const deduped: typeof rows = [];
+  for (const row of rows) {
+    if (seen.has(row.log.id)) continue;
+    seen.add(row.log.id);
+    deduped.push(row);
+  }
+  return deduped;
+}
+
+/** Distinct filter values for one line sheet (+ counts per line for tabs). */
+export async function listAppetiteTrainingFilterOptions(line: string) {
+  const sheet = normalizeAppetiteLine(line);
+  const lineValues = lineOfBusinessValuesForSheet(sheet);
+
+  const [rows, lineCounts] = await Promise.all([
+    db
+      .select({
+        result: quoteAttemptLogs.result,
+        county: quoteAttemptLogs.snapCounty,
+        carrierId: carriers.id,
+        carrierName: carriers.name,
+      })
+      .from(quoteAttemptLogs)
+      .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+      .where(
+        and(
+          eq(quoteAttemptLogs.tenantId, tenant()),
+          inArray(quoteAttemptLogs.lineOfBusiness, lineValues),
+        ),
+      ),
+    db
+      .select({
+        lineOfBusiness: quoteAttemptLogs.lineOfBusiness,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(quoteAttemptLogs)
+      .where(eq(quoteAttemptLogs.tenantId, tenant()))
+      .groupBy(quoteAttemptLogs.lineOfBusiness),
+  ]);
+
+  const results = new Set<string>();
+  const counties = new Set<string>();
+  const carrierMap = new Map<string, string>();
+  for (const row of rows) {
+    if (row.result) results.add(row.result);
+    if (row.county?.trim()) counties.add(row.county.trim());
+    carrierMap.set(row.carrierId, row.carrierName);
+  }
+
+  const countsByLine: Record<string, number> = {};
+  for (const row of lineCounts) {
+    const key = normalizeAppetiteLine(row.lineOfBusiness);
+    countsByLine[key] = (countsByLine[key] ?? 0) + Number(row.count);
+  }
+
+  return {
+    results: [...results].sort(),
+    counties: [...counties].sort((a, b) => a.localeCompare(b)),
+    carriers: [...carrierMap.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    countsByLine,
+  };
 }
 
 export async function listFillFeedbackLogs() {

@@ -88,8 +88,8 @@ export default async function DeveloperHubOverviewPage() {
               <StatusChip status="working" />
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Platform-builder training data from every quote attempt (quote_attempt_logs). Not visible
-              to agents or admins — site developers only.
+              Line-scoped appetite training datasheet (Home / Auto / RV / Boat / Flood…) from every
+              quote attempt. Site developers only.
             </p>
           </div>
         </Link>
