@@ -102,8 +102,8 @@ export function TitleTipHost() {
       data-ff-title-tip-place={tip.place}
       className={
         tip.place === "below"
-          ? "ff-title-tip pointer-events-none fixed z-[9999] max-w-xs bg-[#eceef1] -translate-x-1/2 px-2 py-1 text-[11px] leading-snug text-gray-600 shadow-sm"
-          : "ff-title-tip pointer-events-none fixed z-[9999] max-w-xs bg-[#eceef1] -translate-x-1/2 -translate-y-full px-2 py-1 text-[11px] leading-snug text-gray-600 shadow-sm"
+          ? "ff-title-tip pointer-events-none fixed z-[9999] max-w-xs bg-[#f3f4f6] -translate-x-1/2 px-2 py-1 text-[10.5px] leading-snug text-gray-500 shadow-sm"
+          : "ff-title-tip pointer-events-none fixed z-[9999] max-w-xs bg-[#f3f4f6] -translate-x-1/2 -translate-y-full px-2 py-1 text-[10.5px] leading-snug text-gray-500 shadow-sm"
       }
       style={{ left: tip.x, top: tip.y }}
     >
