@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bindRequirementChips,
+  quoteNeedsBindRecheckAlert,
   groupQuotesByRiskOutcome,
   groupQuotesBySection,
   inferQuoteOutcomes,
@@ -135,3 +136,11 @@ describe("quote outcomes", () => {
     ).toMatch(/Floor|Coverage|follow-up/i);
   });
 });
+
+  it("bind recheck alert only for bindable quotes", () => {
+    expect(quoteNeedsBindRecheckAlert({ riskOutcome: "conditional" })).toBe(false);
+    expect(quoteNeedsBindRecheckAlert({ riskOutcome: "declined" })).toBe(false);
+    expect(quoteNeedsBindRecheckAlert({ riskOutcome: "bindable" })).toBe(true);
+    expect(quoteNeedsBindRecheckAlert({ bindable: true })).toBe(true);
+    expect(quoteNeedsBindRecheckAlert({ nextStep: "can_bind" })).toBe(true);
+  });

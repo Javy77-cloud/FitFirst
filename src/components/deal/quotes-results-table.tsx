@@ -530,7 +530,8 @@ export function QuotesResultsTable({
                     const needsReason = pendingDead[quote.id] || agentStatus === "dead";
                     const isRecheckMarked = recheckMarked.includes(quote.id);
                     const isHideMarked = effectiveHideMarked.includes(quote.id);
-                    const showAlert = outcome === "conditional";
+                    // Pre-bind recheck alert only when Bind is actually available — not every Conditional.
+                    const showAlert = canBind;
 
                     return (
                       <Fragment key={quote.id}>

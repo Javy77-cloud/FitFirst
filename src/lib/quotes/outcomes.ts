@@ -348,6 +348,20 @@ export function shortRiskChips(notes: string | null | undefined, gaps: string[] 
  * Bind-requirement chips in plain English for agent Details.
  * Never surfaces raw PORTAL WHY / APPETITE NOTES — those stay in Developer Hub.
  */
+/** True when the agent is about to bind — show the recheck-before-bind alert. Not every Conditional. */
+export function quoteNeedsBindRecheckAlert(input: {
+  riskOutcome?: string | null;
+  nextStep?: string | null;
+  bindable?: boolean | null;
+}): boolean {
+  const outcome = normalizeRiskOutcome(input.riskOutcome);
+  return (
+    outcome === "bindable" ||
+    input.bindable === true ||
+    input.nextStep === "can_bind"
+  );
+}
+
 export function bindRequirementChips(input: {
   notes?: string | null;
   gaps?: string[] | null;
