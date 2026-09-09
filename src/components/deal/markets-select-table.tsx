@@ -36,32 +36,34 @@ export function MarketsSelectTable({
   title,
   rows,
   manualIds,
-  selected,
+  selected: selectedProp,
   onSelectedChange,
 }: {
   dealId: string;
   title: string;
   rows: CarrierMatch[];
   manualIds: Set<string>;
-  selected: string[];
-  onSelectedChange: (next: string[]) => void;
+  selected?: string[];
+  onSelectedChange?: (next: string[]) => void;
 }) {
   const list = asList(rows);
+  const selected = Array.isArray(selectedProp) ? selectedProp : [];
   const [pending, startTransition] = useTransition();
   const ids = useMemo(() => list.map((row) => row.carrierId), [list]);
   const rowSelected = useMemo(() => selected.filter((id) => ids.includes(id)), [selected, ids]);
   const allOn = ids.length > 0 && ids.every((id) => selected.includes(id));
 
   function toggle(id: string, on: boolean) {
-    onSelectedChange(on ? [...new Set([...selected, id])] : selected.filter((x) => x !== id));
+    const next = on ? [...new Set([...selected, id])] : selected.filter((x) => x !== id);
+    onSelectedChange?.(next);
   }
 
   function toggleAll(on: boolean) {
     if (on) {
-      onSelectedChange([...new Set([...selected, ...ids])]);
+      onSelectedChange?.([...new Set([...selected, ...ids])]);
     } else {
       const drop = new Set(ids);
-      onSelectedChange(selected.filter((id) => !drop.has(id)));
+      onSelectedChange?.(selected.filter((id) => !drop.has(id)));
     }
   }
 
@@ -78,7 +80,7 @@ export function MarketsSelectTable({
     startTransition(async () => {
       await removeSelectedMarketsAction(data);
       const drop = new Set(rowSelected);
-      onSelectedChange(selected.filter((id) => !drop.has(id)));
+      onSelectedChange?.(selected.filter((id) => !drop.has(id)));
     });
   }
 
