@@ -26,7 +26,7 @@ export function DealTabs({
     <div>
       <nav
         aria-label="Deal sections"
-        className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1"
+        className="inline-flex flex-wrap gap-1.5"
       >
         {AGENT_DEAL_TABS.map((tab) => {
           const selected = tab === active;
@@ -37,10 +37,10 @@ export function DealTabs({
               scroll={false}
               prefetch
               className={cn(
-                "rounded-sm px-2.5 py-1 text-sm font-medium",
+                "rounded-sm px-3 py-1.5 text-sm font-medium border",
                 selected
-                  ? "bg-card text-navy shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-white text-black border-black"
+                  : "bg-[#1d6fb8] text-white border-white hover:bg-[#185c99]",
               )}
             >
               {AGENT_DEAL_TAB_LABELS[tab]}
