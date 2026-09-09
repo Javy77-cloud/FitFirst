@@ -405,8 +405,13 @@ function sheetCell({
   stageSlug?: string;
   stages?: ReturnType<typeof dealStageView>["stages"];
 }) {
-  if (mode === "grid" && isPipelineGridEditable(columnId, field)) {
-    const control = pipelineGridControl(columnId, field);
+  const control = pipelineGridControl(columnId, field);
+  // Notes / multi-line stay editable in List too so they can collapse to one line
+  // and expand on focus (same height as stage/priority when collapsed).
+  const useGridCell =
+    isPipelineGridEditable(columnId, field) &&
+    (mode === "grid" || control === "multiline");
+  if (useGridCell) {
     const options =
       control === "picklist"
         ? field?.options?.length
@@ -441,5 +446,13 @@ function sheetCell({
     carriers,
     users: userRecords,
   });
-  return <PipelineListValue nav={nav}>{display}</PipelineListValue>;
+  const body =
+    control === "multiline" || columnId === "notes" ? (
+      <span className="block truncate" title={display === "—" ? undefined : display}>
+        {display}
+      </span>
+    ) : (
+      display
+    );
+  return <PipelineListValue nav={nav}>{body}</PipelineListValue>;
 }

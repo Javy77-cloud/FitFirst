@@ -123,4 +123,18 @@ describe("pipeline list / grid sheet", () => {
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/PipelineListValue/);
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/toastOnSave/);
   });
+
+  it("keeps Notes one line tall until focus, then expands and saves on blur", () => {
+    const cell = source("src/components/deals/pipeline-grid-cell.tsx");
+    expect(cell).toMatch(/MultilineNotesCell/);
+    expect(cell).toMatch(/data-ff-notes-expanded/);
+    expect(cell).toMatch(/onFocus=\{\(\) => setExpanded\(true\)\}/);
+    expect(cell).toMatch(/rows=\{expanded \? 4 : 1\}/);
+    expect(cell).toMatch(/whitespace-nowrap/);
+    expect(cell).toMatch(/text-ellipsis/);
+    expect(cell).not.toMatch(/rows=\{2\}/);
+    const table = source("src/components/deals/deals-table.tsx");
+    expect(table).toMatch(/control === "multiline"/);
+    expect(table).toMatch(/mode === "grid" \|\| control === "multiline"/);
+  });
 });

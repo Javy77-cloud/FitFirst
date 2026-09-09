@@ -11,6 +11,54 @@ import { cn } from "@/lib/utils";
 const cellClass =
   "h-7 w-full min-w-[6rem] rounded-sm border border-border bg-background px-1.5 text-xs text-navy";
 
+function MultilineNotesCell({
+  ariaLabel,
+  columnId,
+  draft,
+  disabled,
+  onDraftChange,
+  onPersist,
+}: {
+  ariaLabel: string;
+  columnId: string;
+  draft: string;
+  disabled: boolean;
+  onDraftChange: (next: string) => void;
+  onPersist: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <textarea
+      aria-label={ariaLabel}
+      data-ff-pipe-edit={columnId}
+      data-ff-notes-expanded={expanded ? "1" : "0"}
+      className={cn(
+        "w-full min-w-[8rem] rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
+        expanded
+          ? "min-h-[4.5rem] py-1 whitespace-pre-wrap"
+          : "h-7 min-h-7 overflow-hidden whitespace-nowrap text-ellipsis py-1 leading-tight",
+      )}
+      value={draft}
+      disabled={disabled}
+      rows={expanded ? 4 : 1}
+      onChange={(event) => onDraftChange(event.target.value)}
+      onFocus={() => setExpanded(true)}
+      onBlur={() => {
+        setExpanded(false);
+        onPersist();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+      title={expanded ? undefined : draft || undefined}
+    />
+  );
+}
+
 export function PipelineGridCell({
   dealId,
   columnId,
@@ -116,21 +164,13 @@ export function PipelineGridCell({
 
   if (control === "multiline") {
     return (
-      <textarea
-        aria-label={ariaLabel}
-        data-ff-pipe-edit={columnId}
-        className="min-h-7 w-full min-w-[8rem] rounded-sm border border-border bg-background px-1.5 py-1 text-xs text-navy"
-        value={draft}
+      <MultilineNotesCell
+        ariaLabel={ariaLabel}
+        columnId={columnId}
+        draft={draft}
         disabled={pending}
-        rows={2}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={() => persist(draft)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            persist(draft);
-          }
-        }}
+        onDraftChange={setDraft}
+        onPersist={() => persist(draft)}
       />
     );
   }
