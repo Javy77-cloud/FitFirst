@@ -176,8 +176,14 @@ export default async function DealPage({
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
         <div className="w-full" data-ff-deal-flush-tabs data-ff-deal-topband>
-          <div className="mb-2 flex w-full flex-nowrap items-start gap-4" data-ff-deal-top-left="">
-            <div className="min-w-0 flex-1">
+        <SectionTabs
+          defaultValue="details"
+          active={activeTab}
+          extraQuery={{ line: sheetLine, product: selectedProduct }}
+          panelClassName="mt-0"
+          toolbar={<EditLayoutLink module="deals" line={deal.lineOfBusiness} />}
+          heading={
+            <>
               <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
                 {deal.title}
               </h1>
@@ -191,11 +197,10 @@ export default async function DealPage({
                   actionKind: button.actionKind,
                 }))}
               />
-            </div>
-            <div
-              className="ml-auto flex w-[400px] shrink-0 flex-nowrap items-center justify-end gap-2"
-              data-ff-deal-quotes-corner=""
-            >
+            </>
+          }
+          corner={
+            <>
               {health ? (
                 <SheetHealthToggle
                   report={health}
@@ -204,14 +209,8 @@ export default async function DealPage({
                 />
               ) : null}
               <DealMotivation stats={motivation} />
-            </div>
-          </div>
-        <SectionTabs
-          defaultValue="details"
-          active={activeTab}
-          extraQuery={{ line: sheetLine, product: selectedProduct }}
-          panelClassName="mt-0"
-          toolbar={<EditLayoutLink module="deals" line={deal.lineOfBusiness} />}
+            </>
+          }
           banner={
             isAna ? (
               <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">

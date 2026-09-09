@@ -10,8 +10,12 @@ export type SectionTab = {
 };
 
 /**
- * Server-rendered tabs. With sidePanel: tabs stay in the left column;
- * Quick Comms / rail starts at the same height as the tab content (50px under tabs).
+ * Server-rendered tabs.
+ *
+ * Deal layout (heading + corner + sidePanel):
+ *   [ heading     ] [ corner chip ]
+ *   [ tabs        ] [             ]
+ *   [ content     ] [ side panel  ]  ← same top (50px under tabs)
  */
 export function SectionTabs({
   tabs,
@@ -23,6 +27,8 @@ export function SectionTabs({
   toolbar,
   banner,
   sidePanel,
+  heading,
+  corner,
 }: {
   tabs: SectionTab[];
   defaultValue: string;
@@ -33,6 +39,10 @@ export function SectionTabs({
   toolbar?: ReactNode;
   banner?: ReactNode;
   sidePanel?: ReactNode;
+  /** Deal name / actions — always above tabs, left column. */
+  heading?: ReactNode;
+  /** Quotes-pulled chip — always top-right, never under tabs. */
+  corner?: ReactNode;
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
 
@@ -87,43 +97,60 @@ export function SectionTabs({
     </div>
   );
 
-  if (!sidePanel) {
+  // Deal workspace: one grid owns title, chip, tabs, content, rail.
+  if (heading != null || corner != null || sidePanel != null) {
     return (
-      <div data-ff-section-tabs="">
-        {tabList}
-        {banner}
-        <div role="tabpanel" data-ff-deal-tab-panel="" className={cn(panelClassName)} style={{ paddingTop: 50 }}>
+      <div
+        data-ff-section-tabs=""
+        data-ff-deal-workspace=""
+        className="grid w-full items-start"
+        style={{
+          gridTemplateColumns: "minmax(0, 1fr) 400px",
+          columnGap: "1.25rem",
+          rowGap: "0.5rem",
+        }}
+      >
+        <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-deal-heading="">
+          {heading}
+        </div>
+        <div
+          className="flex items-start justify-end gap-2"
+          style={{ gridColumn: 2, gridRow: 1 }}
+          data-ff-deal-quotes-corner=""
+        >
+          {corner}
+        </div>
+        <div className="min-w-0" style={{ gridColumn: 1, gridRow: 2 }} data-ff-deal-tab-row-wrap="">
+          {tabList}
+          {banner}
+        </div>
+        <div
+          role="tabpanel"
+          data-ff-deal-tab-panel=""
+          className={cn("min-w-0", panelClassName)}
+          style={{ gridColumn: 1, gridRow: 3, paddingTop: 50 }}
+        >
           {current?.content}
         </div>
+        <aside
+          className="min-w-0 space-y-3 overflow-x-hidden"
+          data-ff-deal-right-rail=""
+          data-ff-deal-rail-lock="400"
+          style={{ gridColumn: 2, gridRow: 3, paddingTop: 50, width: 400 }}
+        >
+          {sidePanel}
+        </aside>
       </div>
     );
   }
 
   return (
-    <div data-ff-section-tabs="" className="flex w-full items-start gap-5">
-      <div className="min-w-0 flex-1">
-        {tabList}
-        {banner}
-        <div
-          role="tabpanel"
-          data-ff-deal-tab-panel=""
-          className={cn("min-w-0", panelClassName)}
-          style={{ paddingTop: 50 }}
-        >
-          {current?.content}
-        </div>
+    <div data-ff-section-tabs="">
+      {tabList}
+      {banner}
+      <div role="tabpanel" data-ff-deal-tab-panel="" className={cn(panelClassName)} style={{ paddingTop: 50 }}>
+        {current?.content}
       </div>
-      <aside
-        className="w-[400px] shrink-0 space-y-3 overflow-x-hidden"
-        data-ff-deal-right-rail=""
-        data-ff-deal-rail-lock="400"
-      >
-        {/* Match left: tab row (~36px) + locked 50px content gap */}
-        <div aria-hidden className="h-9 w-full shrink-0" data-ff-deal-rail-tab-match="" />
-        <div style={{ paddingTop: 50 }} className="space-y-3">
-          {sidePanel}
-        </div>
-      </aside>
     </div>
   );
 }
