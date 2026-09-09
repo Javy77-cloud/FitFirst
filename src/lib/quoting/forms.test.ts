@@ -3,6 +3,7 @@ import {
   canUnlockQuoting,
   coerceQuotingFormId,
   companionLines,
+  dealCreateFieldsFromPick,
   insuranceSubtypeOptions,
   isAppetiteCaptureResult,
   isMatchPriorResult,
@@ -44,6 +45,27 @@ describe("quoting forms", () => {
     expect(insuranceSubtypeOptions()).toEqual(
       expect.arrayContaining(["HO3", "HO5", "HO6", "DP1", "DP3", "Auto", "Flood"]),
     );
+  });
+
+  it("maps create-deal picks onto quotingForm, subtype label, LOB, and sheet line", () => {
+    expect(dealCreateFieldsFromPick("DP1")).toEqual({
+      quotingForm: "DP1",
+      policySubType: "DP1",
+      lineOfBusiness: "HO",
+      quotingLine: "home",
+    });
+    expect(dealCreateFieldsFromPick("Auto")).toEqual({
+      quotingForm: "PA",
+      policySubType: "Auto",
+      lineOfBusiness: "AUTO",
+      quotingLine: "auto",
+    });
+    expect(dealCreateFieldsFromPick("HO")).toEqual({
+      quotingForm: "HO3",
+      policySubType: "HO3",
+      lineOfBusiness: "HO",
+      quotingLine: "home",
+    });
   });
 
   it("requires both visual review and are-you-sure before unlocking quoting", () => {

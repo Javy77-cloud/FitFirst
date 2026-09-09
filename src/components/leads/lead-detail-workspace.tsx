@@ -6,8 +6,12 @@ import Link from "next/link";
 import { updateLeadRecord } from "@/app/actions/record-edit";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { LeadLineDocuments, type LeadLineDoc } from "@/components/leads/lead-line-documents";
-import { documentLinesFromDocs, leadDocumentCardLines } from "@/lib/leads/line-documents";
-import type { ShopLine } from "@/lib/domain";
+import {
+  documentFormKeysFromDocs,
+  leadDocumentCardKeys,
+  parseSelectedShopLines,
+  shopLineForDocCardKey,
+} from "@/lib/leads/line-documents";
 
 export function LeadDetailWorkspace({
   leadId,
@@ -26,18 +30,26 @@ export function LeadDetailWorkspace({
   docs: LeadLineDoc[];
   children: ReactNode;
 }) {
-  const [extraLines, setExtraLines] = useState<ShopLine[]>([]);
-  const [hiddenLines, setHiddenLines] = useState<ShopLine[]>([]);
-  const documentLines = documentLinesFromDocs(docs);
-  const shopLines = useMemo(
+  const [extraKeys, setExtraKeys] = useState<string[]>([]);
+  const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
+  const documentKeys = documentFormKeysFromDocs(docs);
+  const cardKeys = useMemo(
     () =>
-      leadDocumentCardLines({
+      leadDocumentCardKeys({
         insuranceTypeDesired,
-        documentLines,
-        extraLines,
-      }).filter((line) => !hiddenLines.includes(line)),
-    [insuranceTypeDesired, documentLines, extraLines, hiddenLines],
+        documentKeys,
+        extraKeys,
+      }).filter((key) => !hiddenKeys.includes(key)),
+    [insuranceTypeDesired, documentKeys, extraKeys, hiddenKeys],
   );
+  const shopLines = useMemo(() => {
+    const found = new Set(parseSelectedShopLines(cardKeys.join(",")));
+    for (const key of cardKeys) {
+      const shop = shopLineForDocCardKey(key);
+      if (shop) found.add(shop);
+    }
+    return Array.from(found);
+  }, [cardKeys]);
 
   return (
     <div
@@ -74,10 +86,10 @@ export function LeadDetailWorkspace({
         dealId={dealId}
         insuranceTypeDesired={insuranceTypeDesired}
         docs={docs}
-        extraLines={extraLines}
-        onExtraLines={setExtraLines}
-        hiddenLines={hiddenLines}
-        onHiddenLines={setHiddenLines}
+        extraKeys={extraKeys}
+        onExtraKeys={setExtraKeys}
+        hiddenKeys={hiddenKeys}
+        onHiddenKeys={setHiddenKeys}
       />
     </div>
   );

@@ -67,7 +67,7 @@ export function CreateDealForm({ parties }: { parties: PartyRecord[] }) {
         </div>
       </div>
       <SourceSelect defaultValue="referral" />
-      <LinePicker defaultCode="HO" />
+      <LinePicker defaultCode="HO3" />
       <FormPrimaryActions
         submitLabel="Create deal"
         secondary={<Link href="/deals">Back to deals</Link>}

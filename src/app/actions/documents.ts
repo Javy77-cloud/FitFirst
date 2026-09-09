@@ -10,7 +10,8 @@ import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
 import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
-import { lineTag } from "@/lib/leads/line-documents";
+import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
+import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
 import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
@@ -292,10 +293,19 @@ function filesFromSlots(formData: FormData): File[] {
   return collected;
 }
 
-/** Lead files belong to a shop line. Never attach a file to the lead as a whole. */
+/** Lead files belong to a policy subtype (and shop line). Never attach a file to the lead as a whole. */
 export async function uploadLeadLineDocument(formData: FormData) {
   const leadId = optionalId(formData, "leadId");
-  const lineRaw = String(formData.get("line") ?? "").trim();
+  const formRaw = String(
+    formData.get("quotingForm") ?? formData.get("form") ?? formData.get("line") ?? "",
+  ).trim();
+  const leadForm = leadDocFormById(formRaw);
+  const coerced = coerceQuotingFormId(formRaw);
+  const quoting = quotingFormById(leadForm?.id ?? formRaw) ?? (coerced ? quotingFormById(coerced) : null);
+  const resolvedForm =
+    leadForm ??
+    (quoting ? { id: quoting.id, label: quoting.label, shopLine: quoting.shopLine } : null);
+  const lineRaw = resolvedForm?.shopLine ?? (isShopLine(formRaw) ? formRaw : "");
   if (!leadId || !isShopLine(lineRaw)) {
     throw new Error("Choose a coverage line for this file.");
   }
@@ -322,6 +332,10 @@ export async function uploadLeadLineDocument(formData: FormData) {
     riskId = risk?.id ?? null;
   }
 
+  const tags = resolvedForm
+    ? [formTag(resolvedForm.id), lineTag(lineRaw)]
+    : [lineTag(lineRaw)];
+
   let last = null as Awaited<ReturnType<typeof persistFile>> | null;
   for (const file of files) {
     last = await persistFile({
@@ -333,7 +347,7 @@ export async function uploadLeadLineDocument(formData: FormData) {
       buffer: Buffer.from(await file.arrayBuffer()),
       docType: coerceDealUploadDocType(inferDocType(file.name)),
       slot: "source_doc",
-      tags: [lineTag(lineRaw)],
+      tags,
     });
     if (
       last.riskId &&

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { dealCreateFieldsFromPick } from "@/lib/quoting/forms";
 import { db } from "@/lib/db";
 import { accounts, contacts, deals, pipelineStages, pipelines } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -74,9 +75,17 @@ export async function createPipelineDeal(formData: FormData) {
     .from(pipelines)
     .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.slug, pipelineSlug)));
   const archived = stageSlug === "archive" || pipelineSlug === "archive";
+  const subtypeRaw = str(formData, "quotingForm") || str(formData, "policySubType");
+  const picked =
+    pipelineSlug === "life" || pipelineSlug === "health" || !subtypeRaw
+      ? null
+      : dealCreateFieldsFromPick(subtypeRaw);
   const lineOfBusiness =
+    picked?.lineOfBusiness ||
     str(formData, "lineOfBusiness") ||
     (pipelineSlug === "life" ? "LIFE" : pipelineSlug === "health" ? "HEALTH" : "HO");
+  const policySubType =
+    picked?.policySubType || str(formData, "policySubType") || null;
   const namedTitle = formatDealTitle({
     firstName: pickedContact?.firstName,
     lastName: pickedContact?.lastName,
@@ -89,7 +98,9 @@ export async function createPipelineDeal(formData: FormData) {
     tenantId: DEFAULT_TENANT_ID,
     title: namedTitle,
     lineOfBusiness,
-    policySubType: str(formData, "policySubType") || null,
+    quotingForm: picked?.quotingForm ?? null,
+    quotingLine: picked?.quotingLine ?? null,
+    policySubType,
     pipelineStage: dealStageForPipeline(stageSlug),
     pipelineStageSlug: stageSlug,
     pipelineId: pipeline?.id,

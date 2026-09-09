@@ -2,7 +2,7 @@ import { BackgroundFillRefresh } from "@/components/deal/background-fill-refresh
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetWorkspace } from "@/components/deal/master-sheet-compare";
 import { SourceFileRow } from "@/components/deal/source-file-row";
-import { groupDocsByLine, lineFromTags } from "@/lib/leads/line-documents";
+import { docCardKeyFromTags, groupDocsByLine } from "@/lib/leads/line-documents";
 import type { CompletenessReport } from "@/lib/completeness/report";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
@@ -40,8 +40,8 @@ export function DocumentsPanel({
   pendingFill?: boolean;
 }) {
   const sourceDocs = asList(docs).filter((d) => isDocumentsSourceDoc(d));
-  const lineDocs = sourceDocs.filter((d) => lineFromTags(d.tags));
-  const otherSourceDocs = sourceDocs.filter((d) => !lineFromTags(d.tags));
+  const lineDocs = sourceDocs.filter((d) => docCardKeyFromTags(d.tags));
+  const otherSourceDocs = sourceDocs.filter((d) => !docCardKeyFromTags(d.tags));
   const lineGroups = asList(groupDocsByLine(lineDocs));
 
   return (

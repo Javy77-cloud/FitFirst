@@ -63,6 +63,7 @@ import {
   parseSelectedShopLines,
   shopLinesForConvertWithDocs,
 } from "@/lib/leads/line-documents";
+import { dealCreateFieldsFromPick, sheetsToPrepare } from "@/lib/quoting/forms";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { isKnownStageToken, nextMorning, resolveStageMove } from "@/lib/wire/pipeline";
@@ -375,16 +376,22 @@ export async function createDeal(formData: FormData) {
     redirect("/deals?saved=1");
   }
 
-  const line = LINES.includes(str(formData, "line") as (typeof LINES)[number])
-    ? str(formData, "line")
-    : "HO";
-  const shopLines = shopLinesFromForm(formData, line);
+  const formRaw =
+    str(formData, "quotingForm") ||
+    str(formData, "policySubType") ||
+    str(formData, "line") ||
+    "HO3";
+  const picked = dealCreateFieldsFromPick(formRaw);
+  const line = picked.lineOfBusiness;
   const policySubType =
     line === "LIFE"
-      ? str(formData, "lifeSubType") || str(formData, "policySubType") || null
+      ? str(formData, "lifeSubType") || str(formData, "policySubType") || picked.policySubType
       : line === "HEALTH"
-        ? str(formData, "healthSubType") || str(formData, "policySubType") || null
-        : str(formData, "policySubType") || null;
+        ? str(formData, "healthSubType") || str(formData, "policySubType") || picked.policySubType
+        : picked.policySubType;
+  const shopLines = Array.from(
+    new Set([...sheetsToPrepare(picked.quotingForm), ...shopLinesFromForm(formData, line)]),
+  );
   const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const [deal] = await db
@@ -404,6 +411,8 @@ export async function createDeal(formData: FormData) {
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
+      quotingForm: picked.quotingForm,
+      quotingLine: picked.quotingLine,
       source: lead.source ?? (str(formData, "source") || "manual"),
       policySubType,
       state: str(formData, "state") || pickedContact?.state || pickedAccount?.state || "FL",
@@ -439,7 +448,7 @@ export async function createDeal(formData: FormData) {
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    line: deal.lineOfBusiness === "AUTO" ? "auto" : "home",
+    line: picked.quotingLine,
     values: fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values,
   });
   await insertSheetsForDeal(deal.id, shopLines);

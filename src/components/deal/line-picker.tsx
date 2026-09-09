@@ -6,8 +6,8 @@ import { filterLines, lineBook, type LineBook } from "@/lib/lines/catalog";
 import { cn } from "@/lib/utils";
 
 export function LinePicker({
-  name = "line",
-  defaultCode = "HO",
+  name = "quotingForm",
+  defaultCode = "HO3",
   compact = false,
 }: {
   name?: string;
@@ -49,19 +49,19 @@ export function LinePicker({
       </div>
       <div>
         <Label htmlFor={`${name}-typeahead`} className="text-xs">
-          Line
+          Policy subtype
         </Label>
         <input
           id={`${name}-typeahead`}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={book === "personal" ? "Homeowners, auto, flood…" : "GL, BOP, workers comp…"}
+          placeholder={book === "personal" ? "HO3, DP1, Auto, Flood…" : "GL, WC, BOP…"}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         />
         <ul className="mt-1 max-h-40 overflow-auto rounded-md border border-border bg-card">
           {options.length === 0 ? (
-            <li className="px-2 py-1.5 text-base text-muted-foreground">No matching line.</li>
+            <li className="px-2 py-1.5 text-base text-muted-foreground">No matching subtype.</li>
           ) : (
             options.map((line) => (
               <li key={line.code}>

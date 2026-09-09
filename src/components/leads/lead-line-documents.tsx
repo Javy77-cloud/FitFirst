@@ -8,13 +8,18 @@ import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { fileViewHref } from "@/lib/files/urls";
 import {
-  desiredShopLine,
-  documentLinesFromDocs,
+  FORM_TAG_PREFIX,
+  desiredDocFormId,
+  docCardKeyFromTags,
+  documentFormKeysFromDocs,
+  formTag,
   isImageDoc,
-  leadDocumentCardLines,
-  remainingShopLines,
+  labelForDocCardKey,
+  leadDocFormById,
+  leadDocumentCardKeys,
+  remainingLeadDocFormKeys,
+  shopLineForDocCardKey,
 } from "@/lib/leads/line-documents";
-import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 
 export type LeadLineDoc = {
   id: string;
@@ -30,29 +35,30 @@ export function LeadLineDocuments({
   dealId,
   insuranceTypeDesired,
   docs,
-  extraLines,
-  onExtraLines,
-  hiddenLines,
-  onHiddenLines,
+  extraKeys,
+  onExtraKeys,
+  hiddenKeys,
+  onHiddenKeys,
 }: {
   leadId: string;
   dealId?: string | null;
   insuranceTypeDesired?: string | null;
   docs: LeadLineDoc[];
-  extraLines: ShopLine[];
-  onExtraLines: (lines: ShopLine[]) => void;
-  hiddenLines: ShopLine[];
-  onHiddenLines: (lines: ShopLine[]) => void;
+  extraKeys: string[];
+  onExtraKeys: (keys: string[]) => void;
+  hiddenKeys: string[];
+  onHiddenKeys: (keys: string[]) => void;
 }) {
-  const documentLines = documentLinesFromDocs(docs);
-  const hidden = new Set(hiddenLines);
-  const lines = leadDocumentCardLines({
+  const documentKeys = documentFormKeysFromDocs(docs);
+  const hidden = new Set(hiddenKeys);
+  const keys = leadDocumentCardKeys({
     insuranceTypeDesired,
-    documentLines,
-    extraLines,
-  }).filter((line) => !hidden.has(line));
-  const leftover = remainingShopLines(lines);
-  const openLine = desiredShopLine(insuranceTypeDesired);
+    documentKeys,
+    extraKeys,
+  }).filter((key) => !hidden.has(key));
+  const leftover = remainingLeadDocFormKeys(keys);
+  const openFormId = desiredDocFormId(insuranceTypeDesired);
+  const openKey = openFormId ? formTag(openFormId) : null;
 
   return (
     <aside className="ff-card min-w-0 p-4" data-ff-lead-line-docs>
@@ -60,7 +66,8 @@ export function LeadLineDocuments({
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-navy">Documents by line</h2>
           <p className="text-xs text-muted-foreground">
-            Each line has its own files. Convert carries them onto the deal in the same groups.
+            Each policy subtype has its own files. Convert carries them onto the deal in the same
+            groups.
           </p>
         </div>
         {leftover.length > 0 ? (
@@ -72,17 +79,17 @@ export function LeadLineDocuments({
               aria-label="Add line"
               data-ff-add-line=""
               onChange={(event) => {
-                const next = event.target.value as ShopLine;
+                const next = event.target.value;
                 if (!next) return;
-                onExtraLines(extraLines.includes(next) ? extraLines : [...extraLines, next]);
-                onHiddenLines(hiddenLines.filter((line) => line !== next));
+                onExtraKeys(extraKeys.includes(next) ? extraKeys : [...extraKeys, next]);
+                onHiddenKeys(hiddenKeys.filter((key) => key !== next));
                 event.target.value = "";
               }}
             >
               <option value="">Choose a line</option>
-              {leftover.map((line) => (
-                <option key={line} value={line}>
-                  {SHOP_LINE_LABELS[line]}
+              {leftover.map((key) => (
+                <option key={key} value={key}>
+                  {labelForDocCardKey(key)}
                 </option>
               ))}
             </select>
@@ -90,22 +97,22 @@ export function LeadLineDocuments({
         ) : null}
       </div>
       <div className="space-y-2">
-        {lines.length === 0 ? (
+        {keys.length === 0 ? (
           <p className="rounded-md border border-dashed border-border px-3 py-6 text-sm text-muted-foreground" data-ff-add-line-empty="">
             Add a line of interest.
           </p>
         ) : (
-          lines.map((line) => (
+          keys.map((key) => (
             <LineCard
-              key={line}
-              line={line}
+              key={key}
+              cardKey={key}
               leadId={leadId}
               dealId={dealId}
-              docs={docs.filter((doc) => (doc.tags ?? []).includes(`line:${line}`))}
-              defaultOpen={line === openLine}
+              docs={docs.filter((doc) => docCardKeyFromTags(doc.tags) === key)}
+              defaultOpen={key === openKey}
               onRemove={() => {
-                onExtraLines(extraLines.filter((item) => item !== line));
-                onHiddenLines(hidden.includes(line) ? hiddenLines : [...hiddenLines, line]);
+                onExtraKeys(extraKeys.filter((item) => item !== key));
+                onHiddenKeys(hidden.has(key) ? hiddenKeys : [...hiddenKeys, key]);
               }}
             />
           ))
@@ -116,14 +123,14 @@ export function LeadLineDocuments({
 }
 
 function LineCard({
-  line,
+  cardKey,
   leadId,
   dealId,
   docs,
   defaultOpen,
   onRemove,
 }: {
-  line: ShopLine;
+  cardKey: string;
   leadId: string;
   dealId?: string | null;
   docs: LeadLineDoc[];
@@ -134,7 +141,12 @@ function LineCard({
   const [slots, setSlots] = useState([0]);
   const [nextSlot, setNextSlot] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
-  const label = SHOP_LINE_LABELS[line];
+  const label = labelForDocCardKey(cardKey);
+  const formId = cardKey.startsWith(FORM_TAG_PREFIX)
+    ? cardKey.slice(FORM_TAG_PREFIX.length)
+    : leadDocFormById(cardKey)?.id ?? null;
+  const shopLine = shopLineForDocCardKey(cardKey);
+  const cardAttr = formId ?? shopLine ?? cardKey;
 
   const countLabel = useMemo(() => {
     if (docs.length === 1) return "1 file";
@@ -146,7 +158,7 @@ function LineCard({
   }
 
   return (
-    <article className="min-w-0 rounded-md border border-border" data-ff-line-card={line}>
+    <article className="min-w-0 rounded-md border border-border" data-ff-line-card={cardAttr}>
       <div className="flex items-center gap-1 pr-1">
         <button
           type="button"
@@ -159,7 +171,7 @@ function LineCard({
             {countLabel} · {open ? "Collapse" : "Expand"}
           </span>
         </button>
-        <span className="shrink-0" data-ff-line-card-delete={line}>
+        <span className="shrink-0" data-ff-line-card-delete={cardAttr}>
           <FileDeleteIcon type="button" label={`Remove ${label}`} onClick={onRemove} />
         </span>
       </div>
@@ -168,10 +180,11 @@ function LineCard({
           <form ref={formRef} action={uploadLeadLineDocument} className="space-y-2">
             <input type="hidden" name="leadId" value={leadId} />
             {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
-            <input type="hidden" name="line" value={line} />
+            {formId ? <input type="hidden" name="quotingForm" value={formId} /> : null}
+            {shopLine ? <input type="hidden" name="line" value={shopLine} /> : null}
             <input type="hidden" name="rowCount" value={slots.length} />
             <div
-              data-ff-line-dropzone={line}
+              data-ff-line-dropzone={cardAttr}
               className="rounded-md border border-dashed border-border bg-secondary/30 px-3 py-3"
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
@@ -188,7 +201,7 @@ function LineCard({
               }}
             >
               <p className="mb-2 text-xs text-muted-foreground">
-                Drop a {label.toLowerCase()} file here, or choose one below.
+                Drop a {label} file here, or choose one below.
               </p>
               <div className="space-y-2">
                 {slots.map((id, index) => (

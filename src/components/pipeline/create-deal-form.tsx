@@ -6,6 +6,7 @@ import { PartyTypeahead } from "@/components/crm/party-typeahead";
 import { Button } from "@/components/ui/button";
 import type { PartyRecord } from "@/lib/crm/party-typeahead";
 import type { DealLookupRow } from "@/lib/deals/lookup";
+import { QUOTING_FORMS } from "@/lib/domain";
 import { uploadDealCta, uploadDealCtaLabel } from "@/lib/deals/pipeline-desk";
 
 export function PipelineCreateDealForm({
@@ -31,6 +32,13 @@ export function PipelineCreateDealForm({
     () => uploadDealCta(deals, query, pickedDealId || null),
     [deals, query, pickedDealId],
   );
+  const subtypeOptions = useMemo(() => {
+    const lob = lineOfBusiness.trim().toUpperCase();
+    const filtered = QUOTING_FORMS.filter((form) => form.lob === lob);
+    if (filtered.length > 0) return filtered;
+    if (pipelineSlug === "flood") return QUOTING_FORMS.filter((form) => form.id === "FLOOD");
+    return QUOTING_FORMS;
+  }, [lineOfBusiness, pipelineSlug]);
 
   return (
     <form
@@ -75,6 +83,20 @@ export function PipelineCreateDealForm({
           {healthOptions.map((option) => (
             <option key={option.slug} value={option.label}>
               {option.label}
+            </option>
+          ))}
+        </select>
+      ) : null}
+      {pipelineSlug !== "life" && pipelineSlug !== "health" ? (
+        <select
+          name="quotingForm"
+          defaultValue={subtypeOptions[0]?.id ?? "HO3"}
+          className="h-8 rounded-md border border-input bg-card px-2 text-sm"
+          aria-label="Policy subtype"
+        >
+          {subtypeOptions.map((form) => (
+            <option key={form.id} value={form.id}>
+              {form.label}
             </option>
           ))}
         </select>

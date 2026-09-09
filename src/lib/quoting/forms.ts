@@ -90,3 +90,20 @@ export function quotingFormLabel(id: string | null | undefined): string {
 export function insuranceSubtypeOptions(): string[] {
   return QUOTING_FORMS.map((form) => form.label);
 }
+
+/** Map a LinePicker / subtype pick onto deal create fields. */
+export function dealCreateFieldsFromPick(raw: string | null | undefined): {
+  quotingForm: QuotingFormId;
+  policySubType: string;
+  lineOfBusiness: string;
+  quotingLine: ShopLine;
+} {
+  const formId = coerceQuotingFormId(raw) ?? "HO3";
+  const form = quotingFormById(formId) ?? quotingFormById("HO3")!;
+  return {
+    quotingForm: form.id,
+    policySubType: form.label,
+    lineOfBusiness: form.lob,
+    quotingLine: form.shopLine,
+  };
+}
