@@ -49,8 +49,8 @@ export function SectionTabs({
     return cn(
       "rounded-sm px-3 py-1.5 text-sm font-medium border",
       selected
-        ? "bg-white text-black border-black"
-        : "bg-primary text-primary-foreground border-white hover:bg-primary-hover",
+        ? "bg-primary text-primary-foreground border-primary"
+        : "bg-white text-black border-black hover:bg-gray-50",
     );
   }
 

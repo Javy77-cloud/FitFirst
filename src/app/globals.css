@@ -748,12 +748,12 @@ body[data-ff-col-resize] {
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
 /* Deal SectionTabs: idle = solid brand blue fill */
-[role="tablist"] a[role="tab"]:not([aria-selected="true"]) {
+[role="tablist"] a[role="tab"][aria-selected="true"] {
   background: var(--ff-accent) !important;
   color: #ffffff !important;
-  border-color: #ffffff;
+  border-color: var(--ff-accent);
 }
-[role="tablist"] a[role="tab"][aria-selected="true"] {
+[role="tablist"] a[role="tab"]:not([aria-selected="true"]) {
   background: #ffffff !important;
   color: #000000 !important;
   border-color: #000000;
