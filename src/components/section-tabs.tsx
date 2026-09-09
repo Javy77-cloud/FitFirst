@@ -50,7 +50,7 @@ export function SectionTabs({
       "rounded-sm px-3 py-1.5 text-sm font-medium border",
       selected
         ? "bg-white text-black border-black"
-        : "bg-[#1d6fb8] text-white border-white hover:bg-[#185c99]",
+        : "bg-primary text-primary-foreground border-white hover:bg-primary-hover",
     );
   }
 

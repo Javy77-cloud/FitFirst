@@ -747,6 +747,18 @@ body[data-ff-col-resize] {
 }
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
+/* Deal SectionTabs: idle = solid brand blue fill */
+[role="tablist"] a[role="tab"]:not([aria-selected="true"]) {
+  background: var(--ff-accent) !important;
+  color: #ffffff !important;
+  border-color: #ffffff;
+}
+[role="tablist"] a[role="tab"][aria-selected="true"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000;
+}
+
 .ff-title-tip {
   border-radius: 0.375rem;
   background: #eceef1 !important;
