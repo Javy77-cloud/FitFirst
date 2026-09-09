@@ -10,9 +10,8 @@ export type SectionTab = {
 };
 
 /**
- * Server-rendered tabs. Switching is a real navigation (`?tab=`).
- * With sidePanel: tabs left-only on row 1; content + side panel share row 2
- * (same 50px top pad) so Quick Comms lines up with Quotes/etc.
+ * Server-rendered tabs. With sidePanel: tabs stay in the left column;
+ * Quick Comms / rail starts at the same height as the tab content (50px under tabs).
  */
 export function SectionTabs({
   tabs,
@@ -58,7 +57,7 @@ export function SectionTabs({
   }
 
   const tabList = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2" data-ff-deal-tab-row="">
       <div role="tablist" className="inline-flex flex-wrap gap-1.5">
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
@@ -101,31 +100,29 @@ export function SectionTabs({
   }
 
   return (
-    <div
-      data-ff-section-tabs=""
-      data-ff-deal-tab-body=""
-      className="grid w-full items-start gap-x-5"
-      style={{ gridTemplateColumns: "minmax(0, 1fr) 400px" }}
-    >
-      <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }}>
+    <div data-ff-section-tabs="" className="flex w-full items-start gap-5">
+      <div className="min-w-0 flex-1">
         {tabList}
         {banner}
-      </div>
-      <div
-        role="tabpanel"
-        data-ff-deal-tab-panel=""
-        className={cn("min-w-0", panelClassName)}
-        style={{ gridColumn: 1, gridRow: 2, paddingTop: 50 }}
-      >
-        {current?.content}
+        <div
+          role="tabpanel"
+          data-ff-deal-tab-panel=""
+          className={cn("min-w-0", panelClassName)}
+          style={{ paddingTop: 50 }}
+        >
+          {current?.content}
+        </div>
       </div>
       <aside
-        className="min-w-0 space-y-3 overflow-x-hidden"
+        className="w-[400px] shrink-0 space-y-3 overflow-x-hidden"
         data-ff-deal-right-rail=""
         data-ff-deal-rail-lock="400"
-        style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 400 }}
       >
-        {sidePanel}
+        {/* Match left: tab row (~36px) + locked 50px content gap */}
+        <div aria-hidden className="h-9 w-full shrink-0" data-ff-deal-rail-tab-match="" />
+        <div style={{ paddingTop: 50 }} className="space-y-3">
+          {sidePanel}
+        </div>
       </aside>
     </div>
   );
