@@ -749,10 +749,11 @@ body[data-ff-col-resize] {
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
 .ff-title-tip {
   border-radius: 0.5rem;
-  background: #f3f4f6;
-  color: #1f2937;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 14px rgba(15, 39, 68, 0.12);
+  background: #e8eaed !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 6px 18px rgba(15, 39, 68, 0.18);
+  opacity: 1 !important;
 }
 
 /* Clickable affordance: buttons should visibly react on hover. */
