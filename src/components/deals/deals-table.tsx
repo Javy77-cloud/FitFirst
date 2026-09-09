@@ -244,20 +244,21 @@ function dealRowCells({
   const cells: Record<string, ReactNode> = {
     pick: <SelectRowCheckbox id={deal.id} />,
     title: (
-      <div>
-        <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-          {deal.title}
-        </Link>
-        <div className="text-sm text-muted-foreground">{phone || "—"}</div>
-        <DealQuickActions
-          dealId={deal.id}
-          phone={phone || null}
-          email={email || null}
-          contactId={contactId}
-          accountId={accountId}
-          leadId={leadId}
-          homeAddress={address || deal.propertyOneliner}
-        />
+      <div className="min-w-0 py-0.5">
+        <div className="flex items-center gap-1">
+          <Link href={`/deals/${deal.id}`} className="min-w-0 truncate font-medium text-primary hover:underline">
+            {deal.title}
+          </Link>
+          <DealQuickActions
+            dealId={deal.id}
+            phone={phone || null}
+            email={email || null}
+            contactId={contactId}
+            accountId={accountId}
+            leadId={leadId}
+            homeAddress={address || deal.propertyOneliner}
+          />
+        </div>
         {stale ? <DealStaleBadge dealId={deal.id} contactId={contactId} leadId={leadId} /> : null}
       </div>
     ),

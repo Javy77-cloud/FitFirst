@@ -1,7 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import { Activity } from "lucide-react";
 import { logLeadQueueContact } from "@/app/actions/lead-follow-up";
 import { publishLeadClock } from "@/lib/leads/clock-sync";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   CONTACT_ACTION_BUTTONS,
   contactActionButtonClass,
@@ -20,22 +27,36 @@ export function ContactActionButtons({
   phone?: string | null;
   email?: string | null;
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="mt-1 flex flex-nowrap gap-1" data-testid="lead-contact-actions">
-      {CONTACT_ACTION_BUTTONS.map((action) => {
-        const href = contactActionHref(action.kind, { phone, email });
-        return (
-          <ContactActionButton
-            key={action.kind}
-            leadId={leadId}
-            kind={action.kind}
-            method={action.method}
-            label={action.label}
-            href={href}
-          />
-        );
-      })}
-    </div>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        type="button"
+        aria-label="Activity"
+        title="Activity"
+        data-testid="lead-activity-menu"
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <Activity className="size-3.5" strokeWidth={2.25} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[9.5rem] p-1.5" sideOffset={4}>
+        <div className="flex flex-col gap-1" data-testid="lead-contact-actions">
+          {CONTACT_ACTION_BUTTONS.map((action) => {
+            const href = contactActionHref(action.kind, { phone, email });
+            return (
+              <ContactActionButton
+                key={action.kind}
+                leadId={leadId}
+                kind={action.kind}
+                method={action.method}
+                label={action.label}
+                href={href}
+              />
+            );
+          })}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -68,12 +89,12 @@ function ContactActionButton({
           window.location.href = href;
         }
       }}
-      className="inline"
+      className="block w-full"
     >
       <button
         type="submit"
         className={cn(
-          "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
+          "inline-flex h-7 w-full items-center justify-start rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
           contactActionButtonClass(kind),
         )}
         style={contactActionButtonStyle(kind)}

@@ -87,7 +87,7 @@ export function MeetingButton({
   const videoHref = type === "video" && location.startsWith("http") ? location : null;
 
   return (
-    <div className="inline">
+    <div className="block w-full">
       <button
         type="button"
         onClick={() => void openForm()}

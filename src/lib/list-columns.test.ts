@@ -74,14 +74,14 @@ describe("list column visibility", () => {
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "comms")).toBeUndefined();
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
-      expect.arrayContaining(["pick", "title", "stage", "value", "phone"]),
+      expect.arrayContaining(["pick", "title", "stage", "value"]),
     );
     const dealsVisible = defaultVisibleIds(DEALS_LIST_COLUMNS);
     expect(dealsVisible).not.toContain("contact");
     expect(dealsVisible).not.toContain("esign");
     expect(dealsVisible).not.toContain("comms");
     expect(dealsVisible.indexOf("stage")).toBe(dealsVisible.indexOf("title") + 1);
-    expect(dealsVisible).toContain("phone");
+    expect(dealsVisible).not.toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("notes");
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")?.label).toBe("Value");

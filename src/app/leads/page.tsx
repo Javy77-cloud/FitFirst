@@ -221,13 +221,12 @@ export default async function LeadsPage({
                   cells: {
                     pick: <SelectRowCheckbox id={lead.id} />,
                     name: (
-                      <div className="font-medium">
-                        <RecordLink href={`/leads/${lead.id}`}>
-                          {lead.lastName}, {lead.firstName}
-                        </RecordLink>
-                        <div className="text-base text-muted-foreground">
-                          {lead.phone ?? lead.email}
-                        </div>
+                      <div className="flex min-w-0 items-center gap-1">
+                        <span className="min-w-0 truncate">
+                          <RecordLink href={`/leads/${lead.id}`}>
+                            {lead.lastName}, {lead.firstName}
+                          </RecordLink>
+                        </span>
                         <LeadLogContact leadId={lead.id} phone={lead.phone} email={lead.email} />
                       </div>
                     ),

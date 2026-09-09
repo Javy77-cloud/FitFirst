@@ -85,11 +85,10 @@ export function PipelineTableView({
           },
           cells: {
             title: (
-              <div>
-                <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
+              <div className="flex min-w-0 items-center gap-1 py-0.5">
+                <Link href={`/deals/${deal.id}`} className="min-w-0 truncate font-medium text-primary hover:underline">
                   {deal.title}
                 </Link>
-                <div className="text-sm text-muted-foreground">{deal.phone || "—"}</div>
                 <DealQuickActions
                   dealId={deal.id}
                   phone={deal.phone}
@@ -97,6 +96,7 @@ export function PipelineTableView({
                   contactId={deal.contactId}
                   accountId={deal.accountId}
                   leadId={deal.leadId}
+                  homeAddress={deal.address}
                 />
               </div>
             ),

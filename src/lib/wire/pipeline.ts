@@ -33,7 +33,7 @@ export type PipelineFieldDef = {
 export const PIPELINE_FIELDS: PipelineFieldDef[] = [
   { id: "title", label: "Deal title", defaultOn: true, required: true },
   { id: "insured", label: "Insured / contact", defaultOn: true },
-  { id: "phone", label: "Phone", defaultOn: true },
+  { id: "phone", label: "Phone", defaultOn: false },
   { id: "email", label: "Email", defaultOn: true },
   { id: "address", label: "Address", defaultOn: true },
   { id: "line", label: "Line", defaultOn: true },

@@ -181,12 +181,17 @@ describe("Deals page sep7h", () => {
     expect(DEAL_ACTIVITY_TONES.training.chipBgDark).not.toBe("#4db8a4");
   });
 
-  it("puts phone and Call SMS Email Task Meeting under the deal name", () => {
+  it("puts an activity menu by the deal name without phone under the title", () => {
     const table = source("src/components/deals/deals-table.tsx");
     expect(table).toMatch(/DealQuickActions/);
-    expect(table).toMatch(/phone \|\| "—"/);
-    expect(table).not.toMatch(/phone: phone \|\| "—"/);
+    expect(table).not.toMatch(/phone \|\| "—"/);
+    expect(table).toMatch(/flex items-center gap-1/);
+    const pipeline = source("src/components/pipeline/table-view.tsx");
+    expect(pipeline).toMatch(/DealQuickActions/);
+    expect(pipeline).not.toMatch(/deal\.phone \|\| "—"/);
     const quick = source("src/components/deals/deal-quick-actions.tsx");
+    expect(quick).toMatch(/deal-activity-menu/);
+    expect(quick).toMatch(/DropdownMenu/);
     expect(quick).toMatch(/label="Call"/);
     expect(quick).toMatch(/\bSMS\b/);
     expect(quick).toMatch(/\bEmail\b/);
@@ -234,7 +239,7 @@ describe("Deals page sep7h", () => {
     expect(comms).not.toMatch(/label="Text"/);
   });
 
-  it("removes the Contact column and keeps Phone as a deal field", () => {
+  it("removes the Contact column and keeps Phone available but off by default", () => {
     const keys = (TABLE_COLUMNS.deals ?? []).map((column) => column.key);
     expect(keys[0]).toBe("title");
     expect(keys[1]).toBe("stage");
@@ -247,7 +252,7 @@ describe("Deals page sep7h", () => {
     expect(visible[1]).toBe("title");
     expect(visible[2]).toBe("stage");
     expect(visible).not.toContain("contact");
-    expect(visible).toContain("phone");
+    expect(visible).not.toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).not.toContain("contact");
     expect(normalizeDealsVisibleColumns(["pick", "title", "stage", "contact", "phone", "esign"])).toEqual([

@@ -29,7 +29,7 @@ export const DEAL_NATIVE_COLUMNS: ColumnDef[] = [
 const NATIVE_KEYS = new Set(DEAL_NATIVE_COLUMNS.map((column) => column.key));
 
 /** Catalog fields that should start visible — the rest stay in the picker. */
-const DEFAULT_ON_FIELD_KEYS = new Set(["phone", "state"]);
+const DEFAULT_ON_FIELD_KEYS = new Set(["state"]);
 
 export type DealStageOption = {
   slug: string;
