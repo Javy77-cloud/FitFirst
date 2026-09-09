@@ -159,7 +159,7 @@ export function defaultGlobalLists(): GlobalListSeed[] {
   });
 
   return rows;
-
+}
 
 export function listsForFamily<T extends { family: string | null; listKey: string; label: string; active?: boolean }>(
   rows: T[],
