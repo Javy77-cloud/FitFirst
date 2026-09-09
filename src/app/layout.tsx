@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { ActionToastHost } from "@/components/desk/action-toast";
 import { AppNotificationHost } from "@/components/desk/app-notification-host";
 import { SheetBoot } from "@/components/sheet/sheet-boot";
+import { TitleTipHost } from "@/components/desk/title-tip-host";
 import "./globals.css";
 
 const plex = IBM_Plex_Sans({
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Suspense>
         <AppNotificationHost />
         <SheetBoot />
+        <TitleTipHost />
         <Script src="/ff-sheet.js" strategy="afterInteractive" />
       </body>
     </html>

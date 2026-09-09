@@ -745,3 +745,10 @@ body[data-ff-col-resize] {
     display: none !important;
   }
 }
+
+/* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
+.ff-title-tip {
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--navy, #0f2744) 92%, black);
+  border: 1px solid color-mix(in oklab, white 12%, transparent);
+}

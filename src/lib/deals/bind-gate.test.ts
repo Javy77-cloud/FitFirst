@@ -6,5 +6,6 @@ describe("bind gate", () => {
     expect(bindGateReady({ premium: true, coverages: true, deductibles: false })).toBe(false);
     expect(bindGateReady({ premium: true, coverages: true, deductibles: true })).toBe(true);
     expect(BIND_GATE_COPY.blocked).toMatch(/Cannot finalize/);
+    expect(BIND_GATE_COPY.subtitle).toMatch(/provisional|additional/i);
   });
 });

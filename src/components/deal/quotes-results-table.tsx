@@ -164,16 +164,22 @@ function BindRecheckAlertDialog({
       }}
     >
       <DialogContent
-        className="sm:max-w-md"
+        className="sm:max-w-lg"
         data-ff-quote-bind-alert-dialog={quote?.id ?? ""}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-navy">
-            <span className="inline-flex size-7 items-center justify-center rounded-full bg-fit-flag/15 text-fit-flag">
-              <AlertTriangle className="size-4" />
+            <span className="inline-flex size-8 items-center justify-center rounded-full bg-fit-flag/20 text-fit-flag">
+              <AlertTriangle className="size-5" />
             </span>
             {BIND_GATE_COPY.title}
           </DialogTitle>
+          <p
+            className="text-sm leading-snug text-muted-foreground"
+            data-ff-quote-bind-alert-subtitle=""
+          >
+            {BIND_GATE_COPY.subtitle}
+          </p>
           <DialogDescription>
             {quote ? (
               <>
@@ -637,20 +643,20 @@ export function QuotesResultsTable({
                               >
                                 {detailsOpen ? "Hide details" : "Details"}
                               </Button>
-                              {showAlert ? (
-                                <button
-                                  type="button"
-                                  aria-label={`Bind recheck checklist for ${carrier.name}`}
-                                  data-ff-quote-bind-alert={quote.id}
-                                  onClick={() => setAlertQuoteId(quote.id)}
-                                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-fit-flag/35 bg-fit-flag/10 text-fit-flag shadow-sm transition-colors hover:bg-fit-flag/20"
-                                  title="Re-check premium, coverages, and deductibles before bind"
-                                >
-                                  <AlertTriangle className="size-3.5" />
-                                </button>
-                              ) : null}
                             </div>
 
+                            {showAlert ? (
+                              <button
+                                type="button"
+                                aria-label={`Bind recheck checklist for ${carrier.name}`}
+                                data-ff-quote-bind-alert={quote.id}
+                                onClick={() => setAlertQuoteId(quote.id)}
+                                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border-2 border-fit-flag/55 bg-fit-flag/15 text-fit-flag shadow-sm transition-all duration-150 hover:scale-105 hover:border-fit-flag hover:bg-fit-flag hover:text-white hover:shadow-md"
+                                title="Re-check this quote before bind"
+                              >
+                                <AlertTriangle className="size-4" strokeWidth={2.5} />
+                              </button>
+                            ) : null}
                             <StarRating
                               dealId={dealId}
                               quoteId={quote.id}

@@ -52,6 +52,7 @@ export function BindConfirmGate({
     <section className="space-y-3" data-ff-bind-gate>
       <div className="ff-card space-y-2 p-4">
         <h3 className="text-sm font-semibold text-navy">{BIND_GATE_COPY.title}</h3>
+        <p className="text-sm leading-snug text-muted-foreground" data-ff-bind-gate-subtitle="">{BIND_GATE_COPY.subtitle}</p>
         {quote ? (
           <p className="text-helper text-muted-foreground">
             {quote.carrierName} · {formatMoney(quote.premium)} · Cov A {formatMoney(quote.coverageA)} ·
