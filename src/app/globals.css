@@ -750,7 +750,7 @@ body[data-ff-col-resize] {
 }
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
-/* All deal tabs: equal 24px pad under the tab row (inline style + CSS lock). */
+/* HARD LOCK (Javy 2026-09-09): equal 50px under deal tabs — do not shrink or per-tab override. */
 [data-ff-deal-tab-panel] {
   margin-top: 0 !important;
   padding-top: 50px !important;
