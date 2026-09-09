@@ -43,6 +43,11 @@ import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { agencySettings } from "@/lib/db/schema";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +101,16 @@ export default async function DealPage({
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
+  const clientAddress = homeAddressFromRecords({ risk, lead, contact });
+  const [agencyRow] = await db
+    .select()
+    .from(agencySettings)
+    .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
+    .limit(1);
+  const officeAddress = officeMeetingAddress({
+    agencyName: agencyRow?.agencyName,
+    officeAddress: agencyRow?.officeAddress,
+  });
   const activeTab = parseAgentDealTab(tab);
   const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const sheetLine = resolveDealSheetLine({
@@ -228,6 +243,8 @@ export default async function DealPage({
                   contactName={partyName}
                   contactPhone={contact?.phone ?? lead?.phone}
                   contactEmail={contact?.email ?? lead?.email}
+                  officeAddress={officeAddress}
+                  clientAddress={clientAddress}
                   quoteFiles={docs
                     .filter(
                       (doc) =>

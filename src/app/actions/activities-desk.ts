@@ -83,13 +83,22 @@ export async function logDeskActivity(formData: FormData) {
     str(formData, "direction") || (kind === "call" ? "outbound" : kind === "email" || kind === "sms" ? "outbound" : null);
 
   const meetingLocation = str(formData, "meetingLocation") || str(formData, "location") || null;
+  const meetingType = str(formData, "meetingType") || null;
+  const videoProvider = str(formData, "videoProvider") || null;
+  const videoUrl = str(formData, "videoUrl") || null;
   const reminderMinutes = optionalInt(formData, "reminderMinutes");
   const notifyChannel = str(formData, "notifyChannel") || str(formData, "notify") || "popup";
+  const createReminder = str(formData, "createReminder") === "1";
   let notes = str(formData, "notes") || null;
-  if (kind === "task" && reminderMinutes && reminderMinutes > 0) {
+  if ((kind === "task" || kind === "call") && reminderMinutes && reminderMinutes > 0) {
     const reminderLabel =
       reminderMinutes >= 1440 ? `${Math.round(reminderMinutes / 1440)}d` : `${reminderMinutes}m`;
     const line = `Reminder: ${reminderLabel}`;
+    notes = notes ? `${notes}\n${line}` : line;
+  }
+  // Javy standing pref: CRM alerts stay in-app. Email option only stores preference — never emails the agent.
+  if (kind === "task" && notifyChannel === "email") {
+    const line = "Notify preference: email (in-app popup still used; agent not emailed)";
     notes = notes ? `${notes}\n${line}` : line;
   }
 
@@ -109,7 +118,10 @@ export async function logDeskActivity(formData: FormData) {
       durationSeconds,
       phoneNumber,
       direction,
+      meetingType,
       meetingLocation,
+      videoProvider,
+      videoUrl,
       ...related,
     })
     .returning();
@@ -129,18 +141,29 @@ export async function logDeskActivity(formData: FormData) {
     durationSeconds,
   });
 
-  // Task reminder: in-app alert only (popup). Schedule via createdAt; snooze presets apply on popup.
-  if (kind === "task" && reminderMinutes && reminderMinutes > 0 && notifyChannel === "popup") {
-    const due = activity.dueAt ?? activity.startAt ?? new Date();
-    const fireAt = new Date(due.getTime() - reminderMinutes * 60 * 1000);
+  // In-app popup reminder (task / call / email draft). Always popup — never emails the agent by default.
+  const due = activity.dueAt ?? activity.startAt;
+  const wantsOffsetReminder =
+    (kind === "task" || kind === "call") && reminderMinutes != null && reminderMinutes > 0 && due;
+  const wantsDueReminder = createReminder && due && (kind === "email" || kind === "task" || kind === "call");
+  if (wantsOffsetReminder || wantsDueReminder) {
+    const fireAt = wantsOffsetReminder
+      ? new Date(due!.getTime() - reminderMinutes! * 60 * 1000)
+      : due!;
     const createdAt = fireAt.getTime() > Date.now() ? fireAt : new Date();
     const reminderLabel =
-      reminderMinutes >= 1440 ? `${Math.round(reminderMinutes / 1440)}d` : `${reminderMinutes}m`;
+      wantsOffsetReminder
+        ? reminderMinutes! >= 1440
+          ? `${Math.round(reminderMinutes! / 1440)}d before`
+          : `${reminderMinutes!}m before`
+        : "at due time";
+    const bodyKind =
+      kind === "email" ? "email draft" : kind === "call" ? "call" : "task";
     await db.insert(alerts).values({
       tenantId: DEFAULT_TENANT_ID,
       kind: "task_reminder",
       title,
-      body: `In-app task reminder (${reminderLabel} before). Nothing emailed.`,
+      body: `In-app ${bodyKind} reminder (${reminderLabel}). Nothing emailed.`,
       severity: "info",
       entityType: "activity",
       entityId: activity.id,
