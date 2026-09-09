@@ -689,7 +689,7 @@ body[data-ff-col-resize] {
   text-decoration: underline;
 }
 
-/* HARD LOCK: only the deal right rail is 320px. Left column takes leftover flex. */
+/* HARD LOCK (Javy 2026-09-09): deal right rail 400px so Task/Meeting/Call/Email/SMS fit one row. Left column takes leftover flex. */
 [data-ff-deal-topband] {
   display: flex;
   width: 100%;
@@ -705,10 +705,10 @@ body[data-ff-col-resize] {
   width: auto !important;
 }
 [data-ff-deal-right-rail] {
-  width: 320px !important;
-  min-width: 320px !important;
-  max-width: 320px !important;
-  flex: 0 0 320px !important;
+  width: 400px !important;
+  min-width: 400px !important;
+  max-width: 400px !important;
+  flex: 0 0 400px !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
@@ -722,8 +722,7 @@ body[data-ff-col-resize] {
 [data-ff-deal-right-rail] .ff-completeness,
 [data-ff-deal-right-rail] [data-ff-sheet-health-toggle],
 [data-ff-deal-right-rail] [data-ff-deal-quick-comms],
-[data-ff-deal-right-rail] [data-ff-deal-quotes-corner],
-[data-ff-deal-right-rail] [data-ff-record-tags] {
+[data-ff-deal-right-rail] [data-ff-deal-quotes-corner] {
   width: 100%;
   max-width: 100%;
   min-width: 0;

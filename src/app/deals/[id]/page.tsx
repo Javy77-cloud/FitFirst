@@ -36,10 +36,6 @@ import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { excludedCarrierIdsFromLogs, hasShopMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
-import { RecordTags } from "@/components/tags/record-tags";
-import { listModuleTags } from "@/app/actions/record-tags";
-import { suggestedTagsFor } from "@/lib/tags/module-tags";
-import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { listDealFieldDefs, loadLayoutForModule, loadRecordValues } from "@/lib/custom-fields/store";
@@ -76,7 +72,7 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra, dealLayout, dealFields, dealValues] =
+  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealLayout, dealFields, dealValues] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledMacrosFor("deals"),
@@ -86,7 +82,6 @@ export default async function DealPage({
       listCarriers(),
       listQuoteLogs(),
       loadDealMotivationStats(),
-      listModuleTags("deals").catch(() => [] as { name: string; color: string | null }[]),
       loadLayoutForModule("deals").catch(() => null),
       listDealFieldDefs().catch(() => []),
       loadRecordValues(deal.id).catch(() => ({}) as Record<string, string>),
@@ -130,7 +125,6 @@ export default async function DealPage({
   });
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
   const unlocked = quotingUnlockedForDeal(deal);
-  const dealTagColors = colorsFromModuleTags(dealTagExtra);
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
@@ -288,9 +282,9 @@ export default async function DealPage({
         />
           </div>
           <aside
-            className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden grow-0 basis-[320px] space-y-3 lg:sticky lg:top-4"
+            className="w-[400px] min-w-[400px] max-w-[400px] shrink-0 overflow-x-hidden grow-0 basis-[400px] space-y-3 lg:sticky lg:top-4"
             data-ff-deal-right-rail
-            data-ff-deal-rail-lock="320"
+            data-ff-deal-rail-lock="400"
           >
             <div className="flex w-full min-w-0 max-w-full flex-col items-end" data-ff-deal-quotes-corner>
               {health ? (
@@ -301,15 +295,6 @@ export default async function DealPage({
                 />
               ) : null}
               <DealMotivation stats={motivation} />
-            </div>
-            <div className="ff-card min-w-0 w-full max-w-full p-3">
-              <RecordTags
-                module="deals"
-                recordId={deal.id}
-                tags={deal.tags}
-                suggestions={suggestedTagsFor("deals", dealTagExtra.map((row) => row.name))}
-                colors={dealTagColors}
-              />
             </div>
             <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms>
               <QuickCommsBoard items={comms} dealId={deal.id} />

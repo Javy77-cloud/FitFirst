@@ -37,14 +37,14 @@ export function QuickCommsBoard({
         portal and not a live mail trunk.
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-1">
+      <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-hidden">
         {ACTIVITY_KINDS.map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => setKind(value)}
             className={cn(
-              "h-8 rounded-md px-2.5 text-xs font-medium",
+              "h-8 shrink-0 rounded-md px-2.5 text-xs font-medium whitespace-nowrap",
               kind === value ? KIND_TONE[value] : "border border-border bg-card text-muted-foreground",
             )}
           >

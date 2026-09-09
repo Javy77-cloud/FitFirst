@@ -52,7 +52,7 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/flex w-full/);
     expect(page).toMatch(/min-w-0 flex-1 space-y-1/);
     expect(page).not.toMatch(/lg:w-\[72%\]/);
-    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
+    expect(page).toMatch(/w-\[400px\] min-w-\[400px\] max-w-\[400px\] shrink-0 overflow-x-hidden/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/flex w-full min-w-0 max-w-full flex-col items-end/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
@@ -218,7 +218,7 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/flex w-full min-w-0 max-w-full flex-col items-end/);
     expect(page).not.toMatch(/lg:w-\[72%\]/);
-    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
+    expect(page).toMatch(/w-\[400px\] min-w-\[400px\] max-w-\[400px\] shrink-0 overflow-x-hidden/);
     expect(page.indexOf("data-ff-deal-quotes-corner")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
     expect(page.indexOf("data-ff-deal-top-left")).toBeLessThan(page.indexOf("<SectionTabs"));
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("data-ff-deal-right-rail"));
