@@ -361,16 +361,8 @@ export async function addQuoteNoteAction(formData: FormData) {
   flashAction(dealQuotesPath(dealId), "Note added");
 }
 
-/** Queue a recheck for specifically marked quotes (no portal automation yet). */
-export async function recheckQuotesAction(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "").trim();
-  const ids = formData
-    .getAll("quoteId")
-    .map((value) => String(value).trim())
-    .filter(Boolean);
-  if (!dealId) throw new Error("Deal is missing.");
-  if (ids.length === 0) throw new Error("Mark at least one quote to recheck.");
-
+/** Insert recheck-queued notes for matching quote ids. Returns queued row count. */
+async function queueRecheckNotesForQuotes(dealId: string, ids: string[]) {
   const rows = await db
     .select({ quote: quotes, carrier: carriers })
     .from(quotes)
@@ -395,11 +387,62 @@ export async function recheckQuotesAction(formData: FormData) {
       createdBy,
     });
   }
+  return { count: rows.length, createdBy };
+}
+
+/** Queue a recheck for specifically marked quotes (no portal automation yet). */
+export async function recheckQuotesAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const ids = formData
+    .getAll("quoteId")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  if (!dealId) throw new Error("Deal is missing.");
+  if (ids.length === 0) throw new Error("Mark at least one quote to recheck.");
+
+  const { count: n } = await queueRecheckNotesForQuotes(dealId, ids);
 
   revalidatePath(`/deals/${dealId}`);
-  const n = rows.length;
   flashAction(
     dealQuotesPath(dealId),
     n === 1 ? "Recheck queued for 1 carrier" : `Recheck queued for ${n} carriers`,
   );
+}
+
+/**
+ * Accept carrier min Cov A for this quote only, then queue recheck (Re-quote).
+ * Does not change deal.coverageAmount — only quote.coverageA.
+ */
+export async function acceptQuoteFloorAndRecheckAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  const rawFloor = String(formData.get("acceptedCoverageA") ?? "").trim().replaceAll(",", "");
+  const acceptedCoverageA = Number(rawFloor);
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!Number.isFinite(acceptedCoverageA) || acceptedCoverageA <= 0) {
+    throw new Error("Accepted Coverage A floor is invalid.");
+  }
+
+  await requireQuoteForDeal(dealId, quoteId);
+  const floor = Math.round(acceptedCoverageA);
+
+  await db
+    .update(quotes)
+    .set({ coverageA: floor })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
+
+  const session = await currentDeskSession();
+  const createdBy = session.name?.trim() || session.email || "agent";
+  const floorLabel = floor.toLocaleString("en-US");
+  await db.insert(quoteNotes).values({
+    tenantId: DEFAULT_TENANT_ID,
+    quoteId,
+    body: `Agent accepted Cov A floor $${floorLabel} for re-quote`,
+    createdBy,
+  });
+
+  await queueRecheckNotesForQuotes(dealId, [quoteId]);
+
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), "Re-quote queued");
 }

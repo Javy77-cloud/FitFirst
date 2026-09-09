@@ -8,4 +8,10 @@ describe("bind gate", () => {
     expect(BIND_GATE_COPY.blocked).toMatch(/Cannot finalize/);
     expect(BIND_GATE_COPY.subtitle).toMatch(/provisional|additional/i);
   });
+
+  it("includes verify prompt for bind-recheck popup", () => {
+    expect(BIND_GATE_COPY.verifyPrompt).toMatch(/confirm the premium, coverages, and deductibles/i);
+    expect(BIND_GATE_COPY.acceptFloorHeading).toMatch(/Meet carrier minimum/i);
+    expect(BIND_GATE_COPY.reQuote).toBe("Re-quote");
+  });
 });

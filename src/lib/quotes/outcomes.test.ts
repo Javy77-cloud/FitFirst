@@ -3,6 +3,7 @@ import {
   AGENT_STATUSES,
   AGENT_STATUS_LABELS,
   bindRequirementChips,
+  minCoverageANotMetAmount,
   quoteNeedsBindRecheckAlert,
   groupQuotesByRiskOutcome,
   groupQuotesBySection,
@@ -151,6 +152,21 @@ describe("quote outcomes", () => {
     });
     expect(chips).toContain("Minimum Coverage A $317,000 not met");
     expect(chips.some((c) => /Floor-only quote|Indicative quote only/i.test(c))).toBe(false);
+  });
+
+  it("parses min Cov A not-met floor for override UI", () => {
+    expect(
+      minCoverageANotMetAmount({
+        notes: "HO3 · Floor only · Cov A forced $317,000",
+        requestedCoverageA: 250000,
+      }),
+    ).toBe(317000);
+    expect(
+      minCoverageANotMetAmount({
+        notes: "HO3 · Floor only · Cov A forced $250,400",
+        requestedCoverageA: 250380,
+      }),
+    ).toBeNull();
   });
 
   it("mitigation form → Wind mitigation form needed", () => {

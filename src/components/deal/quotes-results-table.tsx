@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState, useTransition } from "react";
 import {
+  acceptQuoteFloorAndRecheckAction,
   addQuoteNoteAction,
   recheckQuotesAction,
   saveQuoteAgentRatingAction,
@@ -16,13 +17,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BIND_GATE_COPY } from "@/lib/deals/bind-gate";
+import { BIND_GATE_COPY, bindGateReady } from "@/lib/deals/bind-gate";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Quote, QuoteNote } from "@/lib/db/schema";
 import {
   AGENT_STATUS_LABELS,
   AGENT_STATUSES,
   bindRequirementChips,
+  minCoverageANotMetAmount,
   quoteNeedsBindRecheckAlert,
   groupQuotesBySection,
   normalizeAgentStatus,
@@ -145,20 +147,63 @@ function BindRecheckAlertDialog({
   onOpenChange,
   carrierName,
   quote,
+  dealId,
+  requestedCoverageA = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   carrierName: string;
   quote: Quote | null;
+  dealId: string;
+  requestedCoverageA?: number | null;
 }) {
   const [checks, setChecks] = useState({ premium: false, coverages: false, deductibles: false });
+  const [acceptFloor, setAcceptFloor] = useState(false);
+  const [reQuotePending, startReQuote] = useTransition();
   const checklistKey = `${quote?.id ?? "none"}:${open ? "open" : "closed"}`;
+
+  const minCovANotMet = useMemo(() => {
+    if (!quote) return null;
+    return minCoverageANotMetAmount({
+      notes: quote.notes,
+      gaps: quote.coverageGaps,
+      bindRequirements: quote.bindRequirements,
+      coverageA: quote.coverageA,
+      hurricaneDeductible: quote.hurricaneDeductible,
+      requestedCoverageA,
+    });
+  }, [quote, requestedCoverageA]);
+
+  function resetLocal() {
+    setChecks({ premium: false, coverages: false, deductibles: false });
+    setAcceptFloor(false);
+  }
+
+  const verifyReady = bindGateReady(checks);
+  const showFloorOverride = minCovANotMet != null;
+  const canReQuote = showFloorOverride && acceptFloor && verifyReady;
+  const floorLabel =
+    minCovANotMet != null ? minCovANotMet.toLocaleString("en-US") : "";
+
+  function onReQuote() {
+    if (!quote || minCovANotMet == null || !canReQuote) return;
+    const data = new FormData();
+    data.set("dealId", dealId);
+    data.set("quoteId", quote.id);
+    data.set("acceptedCoverageA", String(minCovANotMet));
+    startReQuote(async () => {
+      await acceptQuoteFloorAndRecheckAction(data);
+      resetLocal();
+      onOpenChange(false);
+    });
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (next) setChecks({ premium: false, coverages: false, deductibles: false });
+        if (next) resetLocal();
+        else resetLocal();
         onOpenChange(next);
       }}
     >
@@ -178,6 +223,12 @@ function BindRecheckAlertDialog({
             data-ff-quote-bind-alert-subtitle=""
           >
             {BIND_GATE_COPY.subtitle}
+          </p>
+          <p
+            className="text-sm font-medium text-navy"
+            data-ff-quote-bind-alert-verify-prompt=""
+          >
+            {BIND_GATE_COPY.verifyPrompt}
           </p>
           <DialogDescription>
             {quote ? (
@@ -211,14 +262,59 @@ function BindRecheckAlertDialog({
               <span>{label}</span>
             </label>
           ))}
-          <p className="text-xs text-fit-flag" data-ff-quote-bind-alert-blocked="">
-            {BIND_GATE_COPY.blocked}
-          </p>
+          {!verifyReady ? (
+            <p className="text-xs text-fit-flag" data-ff-quote-bind-alert-blocked="">
+              {BIND_GATE_COPY.blocked}
+            </p>
+          ) : null}
         </div>
+        {showFloorOverride ? (
+          <div
+            className="space-y-2 rounded-lg border border-fit-flag/30 bg-fit-flag/5 p-3"
+            data-ff-quote-bind-alert-floor-override=""
+          >
+            <h4 className="text-sm font-semibold text-navy">{BIND_GATE_COPY.acceptFloorHeading}</h4>
+            <label className="flex items-start gap-2 text-sm text-navy">
+              <input
+                type="checkbox"
+                checked={acceptFloor}
+                onChange={(event) => setAcceptFloor(event.target.checked)}
+                className="mt-0.5 accent-[var(--fit-flag,#d97706)]"
+                data-ff-quote-bind-alert-check="accept-floor"
+              />
+              <span>
+                {`Accept Coverage A $${floorLabel} for this quote (meet carrier minimum)`}
+              </span>
+            </label>
+            <p className="text-xs text-muted-foreground" data-ff-quote-bind-alert-floor-help="">
+              {BIND_GATE_COPY.acceptFloorHelp}
+            </p>
+          </div>
+        ) : null}
         <DialogFooter>
-          <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              resetLocal();
+              onOpenChange(false);
+            }}
+          >
             Close
           </Button>
+          {showFloorOverride ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={!canReQuote || reQuotePending}
+              title={BIND_GATE_COPY.reQuoteTitle}
+              onClick={onReQuote}
+              data-ff-quote-bind-alert-requote=""
+            >
+              {BIND_GATE_COPY.reQuote}
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -867,6 +963,8 @@ export function QuotesResultsTable({
         }}
         carrierName={alertRow?.carrier.name ?? ""}
         quote={alertRow?.quote ?? null}
+        dealId={dealId}
+        requestedCoverageA={requestedCoverageA}
       />
     </div>
   );

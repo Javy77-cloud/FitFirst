@@ -491,6 +491,27 @@ export function bindRequirementChips(input: {
   return chips.slice(0, 8);
 }
 
+/** Dollar floor from a "Minimum Coverage A $X not met" chip, else null. */
+export function minCoverageANotMetAmount(
+  input: {
+    notes?: string | null;
+    gaps?: string[] | null;
+    bindRequirements?: string[] | null;
+    coverageA?: number | null;
+    hurricaneDeductible?: string | null;
+    requestedCoverageA?: number | null;
+  },
+): number | null {
+  const chips = bindRequirementChips(input);
+  for (const chip of chips) {
+    const m = chip.match(/Minimum Coverage A \$([\d,]+) not met/i);
+    if (!m?.[1]) continue;
+    const n = Number(m[1].replaceAll(",", ""));
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
 /** One short reason label for the collapsed carrier row (not a notes dump). */
 export function shortReasonLabel(input: {
   notes?: string | null;
