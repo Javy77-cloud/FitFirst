@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-client";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import {
@@ -69,8 +70,9 @@ export function MasterSheetFillButton({
       setDone(true);
       const filled = results.reduce((sum, step) => sum + step.filledCount, 0);
       const skipped = results.reduce((sum, step) => sum + step.skippedCount, 0);
-      flashAction(toastForFillCounts({ filledCount: filled, skippedCount: skipped }));
-      router.refresh();
+      const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped });
+      // Auto-advance to Markets after a successful Fill (toast via ?flash=).
+      router.push(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, toast));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Master sheet fill failed";
       setSummary(message);

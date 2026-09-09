@@ -23,7 +23,12 @@ import {
   listEnabledWidgetsByType,
   listVisibleButtons,
 } from "@/lib/db/developer-hub-queries";
-import { AGENT_DEAL_TAB_LABELS, AGENT_DEAL_TABS, parseAgentDealTab } from "@/lib/deals/tabs";
+import {
+  AGENT_DEAL_TAB_LABELS,
+  AGENT_DEAL_TABS,
+  parseAgentDealTab,
+  resolveDealResumeTab,
+} from "@/lib/deals/tabs";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
@@ -33,7 +38,12 @@ import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
-import { excludedCarrierIdsFromLogs, hasShopMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import {
+  excludedCarrierIdsFromLogs,
+  hasShopMarketAction,
+  manualCarrierIdsFromLogs,
+  sheetHasMarketFacts,
+} from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
@@ -111,7 +121,6 @@ export default async function DealPage({
     agencyName: agencyRow?.agencyName,
     officeAddress: agencyRow?.officeAddress,
   });
-  const activeTab = parseAgentDealTab(tab);
   const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
   const sheetLine = resolveDealSheetLine({
     lineParam,
@@ -140,6 +149,19 @@ export default async function DealPage({
   });
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
   const unlocked = quotingUnlockedForDeal(deal);
+  const tabParam = tab;
+  const activeTab = tabParam
+    ? parseAgentDealTab(tabParam)
+    : resolveDealResumeTab({
+        recordValues: dealValues,
+        quotingUnlocked: unlocked,
+        sheetFilled: sheetHasMarketFacts(activeSheet?.values),
+        quotesRequested: hasShopMarketAction(
+          dealLogs,
+          quotes.map((row) => row.quote),
+        ),
+        hasNonStubQuotes: quotes.some((row) => row.quote.stub === false),
+      });
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,

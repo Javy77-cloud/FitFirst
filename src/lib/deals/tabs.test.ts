@@ -4,7 +4,9 @@ import {
   dealTabShowsAsk,
   dealTabShowsCommsLogs,
   dealTabShowsEmailSend,
+  hasMeaningfulDealFieldValues,
   parseAgentDealTab,
+  resolveDealResumeTab,
 } from "./tabs";
 
 describe("agent deal tabs", () => {
@@ -37,3 +39,62 @@ describe("agent deal tabs", () => {
     expect(dealTabShowsEmailSend("documents")).toBe(true);
   });
 });
+
+describe("resolveDealResumeTab", () => {
+  it("starts on details when record values are empty or blank-only", () => {
+    expect(hasMeaningfulDealFieldValues({})).toBe(false);
+    expect(hasMeaningfulDealFieldValues({ a: "", b: "  " })).toBe(false);
+    expect(resolveDealResumeTab({ recordValues: {} })).toBe("details");
+    expect(resolveDealResumeTab({ recordValues: { named_insured: "  " } })).toBe("details");
+    expect(resolveDealResumeTab({})).toBe("details");
+  });
+
+  it("advances to documents after details are saved but sheet is not ready", () => {
+    expect(hasMeaningfulDealFieldValues({ named_insured: "Elena" })).toBe(true);
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        quotingUnlocked: false,
+        sheetFilled: false,
+      }),
+    ).toBe("documents");
+  });
+
+  it("advances to markets when sheet is filled or unlocked but quotes not requested", () => {
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        sheetFilled: true,
+        quotingUnlocked: false,
+        quotesRequested: false,
+        hasNonStubQuotes: false,
+      }),
+    ).toBe("markets");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        sheetFilled: false,
+        quotingUnlocked: true,
+        quotesRequested: false,
+      }),
+    ).toBe("markets");
+  });
+
+  it("lands on quotes after a shop request or non-stub quotes", () => {
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: true,
+      }),
+    ).toBe("quotes");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        sheetFilled: true,
+        hasNonStubQuotes: true,
+      }),
+    ).toBe("quotes");
+  });
+});
+

@@ -40,8 +40,8 @@ describe("site-wide action confirmation toast", () => {
     expect(values).toMatch(/dealDetailsSavedHref\(dealId/);
     expect(values).toMatch(/"deal-details-saved"/);
     expect(values).toMatch(/flashAction\("\/settings\/field-builder", "layout-saved"\)/);
-    expect(values).toMatch(/line: str\(formData, "line"\)/);
-    expect(values).toMatch(/product: str\(formData, "product"\)/);
+    expect(values).toMatch(/line: form\?\.shopLine \|\| str\(formData, "line"\)/);
+    expect(values).toMatch(/product: product \|\| str\(formData, "product"\)/);
     expect(values).toMatch(/throw new Error\("Deal details could not be saved\."\)/);
     const layoutAt = values.indexOf("await saveLayoutForEveryLine(layout)");
     const flashAt = values.indexOf('flashAction("/settings/field-builder", "layout-saved")');
@@ -171,7 +171,7 @@ describe("site-wide action confirmation toast", () => {
     expect(flash).toMatch(/sessionStorage/);
     expect(flash).toMatch(/export function persistFlash/);
     expect(flash).toMatch(/export function readPersistedFlash/);
-    expect(flash).toMatch(/tab: "details"/);
+    expect(flash).toMatch(/tab: "documents"/);
     expect(flash).toMatch(/Deal details saved/);
   });
 });

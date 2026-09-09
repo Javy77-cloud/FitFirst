@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: () => undefined, replace: () => undefined }),
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/deals/deal-1",
 }));
@@ -42,6 +42,8 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).toMatch(/MASTER_FILL_STEP_DOCS/);
     expect(button).toMatch(/MASTER_FILL_REVIEW_NUDGE/);
     expect(button).toMatch(/fillMasterSheetStep/);
+    expect(button).toMatch(/tab=markets/);
+    expect(button).toMatch(/withFlash/);
 
     const html = renderToString(
       createElement(MasterSheetCompare, {

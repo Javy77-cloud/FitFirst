@@ -148,12 +148,12 @@ export function clearPersistedFlash(): void {
   }
 }
 
-/** Land Save Deal Details on the details tab; keep line/product when the form sent them. */
+/** After Save Deal Details, auto-advance to Documents; keep line/product when the form sent them. */
 export function dealDetailsSavedHref(
   dealId: string,
   extras?: { line?: string | null; product?: string | null },
 ): string {
-  const query = new URLSearchParams({ tab: "details" });
+  const query = new URLSearchParams({ tab: "documents" });
   const line = extras?.line?.trim();
   const product = extras?.product?.trim();
   if (line) query.set("line", line);

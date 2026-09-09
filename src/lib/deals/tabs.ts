@@ -40,3 +40,42 @@ export function dealTabShowsCommsLogs(tab: string | undefined | null): boolean {
 export function dealTabShowsEmailSend(tab: string | undefined | null): boolean {
   return parseAgentDealTab(tab) === "documents";
 }
+
+/** True when Deal Details has at least one non-empty saved field value. */
+export function hasMeaningfulDealFieldValues(
+  values: Record<string, string | null | undefined> | null | undefined,
+): boolean {
+  if (!values) return false;
+  return Object.values(values).some((value) => String(value ?? "").trim().length > 0);
+}
+
+export type DealResumeSignals = {
+  /** Custom field values from loadRecordValues (empty / blank-only → details). */
+  recordValues?: Record<string, string | null | undefined> | null;
+  /** Deal is unlocked for quoting (Approve master sheet). */
+  quotingUnlocked?: boolean | null;
+  /** Master sheet has meaningful fill (sheetHasMarketFacts). */
+  sheetFilled?: boolean | null;
+  /** True when Confirm & request / shop ran (hasShopMarketAction / explicit logs). */
+  quotesRequested?: boolean | null;
+  /** Any non-stub quote row exists. */
+  hasNonStubQuotes?: boolean | null;
+};
+
+/**
+ * Next unfinished Deal tab when the URL has no explicit `?tab=`.
+ * Manual `?tab=` clicks still win via parseAgentDealTab on the page.
+ */
+export function resolveDealResumeTab(ctx: DealResumeSignals): AgentDealTab {
+  const detailsDone = hasMeaningfulDealFieldValues(ctx.recordValues);
+  if (!detailsDone) return "details";
+
+  const sheetReady = Boolean(ctx.quotingUnlocked) || Boolean(ctx.sheetFilled);
+  if (!sheetReady) return "documents";
+
+  const quotesReady = Boolean(ctx.quotesRequested) || Boolean(ctx.hasNonStubQuotes);
+  if (!quotesReady) return "markets";
+
+  return "quotes";
+}
+

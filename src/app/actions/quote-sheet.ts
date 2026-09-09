@@ -766,7 +766,7 @@ export async function fillQuoteSheet(formData: FormData) {
   const counts = await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
   flashAction(
-    `/deals/${dealId}?tab=documents&line=${lineRaw}`,
+    `/deals/${dealId}?tab=markets&line=${lineRaw}`,
     toastForFillCounts({
       filledCount: counts.filledKeys.length,
       skippedCount: counts.skippedKeys.length,
