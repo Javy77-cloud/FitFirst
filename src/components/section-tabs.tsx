@@ -113,7 +113,7 @@ export function SectionTabs({
         {/* Name + tabs share left cell so the tall quotes chip cannot push tabs down. */}
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-deal-heading="">
           {heading}
-          <div className="mt-1" data-ff-deal-tab-row-wrap="">
+          <div className="mt-2.5" data-ff-deal-tab-row-wrap="">
             {tabList}
             {banner}
           </div>
