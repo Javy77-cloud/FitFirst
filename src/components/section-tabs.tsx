@@ -95,7 +95,7 @@ export function SectionTabs({
         role="tabpanel"
         data-ff-deal-tab-panel=""
         className={cn(panelClassName)}
-        style={{ paddingTop: 40 }}
+        style={{ paddingTop: 50 }}
       >
         {current?.content}
       </div>
