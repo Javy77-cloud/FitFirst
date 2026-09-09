@@ -10,6 +10,7 @@ import {
   deals,
   leads,
   policies,
+  risks,
 } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { writeEin } from "@/lib/pii/write";
@@ -64,6 +65,35 @@ function lineToken(value: string): string {
   if (/\bUMBRELLA\b/.test(text)) return "UMBRELLA";
   if (/\bHO\b|HOME/.test(text)) return "HO";
   return text.slice(0, 16) || "HO";
+}
+
+/** Ensure a deals row has a risks stub (deal page gates on risk). Idempotent. */
+export async function ensureDealRisk(input: {
+  tenantId: string;
+  dealId: string;
+  lineOfBusiness?: string | null;
+  state?: string | null;
+  contactId?: string | null;
+}): Promise<{ id: string; created: boolean }> {
+  const [existing] = await db
+    .select({ id: risks.id })
+    .from(risks)
+    .where(and(eq(risks.tenantId, input.tenantId), eq(risks.dealId, input.dealId)));
+  if (existing) return { id: existing.id, created: false };
+
+  const riskType = input.lineOfBusiness === "AUTO" ? "auto" : "property";
+  const state = (input.state?.trim() || "FL");
+  const [created] = await db
+    .insert(risks)
+    .values({
+      tenantId: input.tenantId,
+      dealId: input.dealId,
+      contactId: input.contactId ?? null,
+      riskType,
+      state,
+    })
+    .returning({ id: risks.id });
+  return { id: created.id, created: true };
 }
 
 export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFAULT_TENANT_ID): Promise<ImportReport> {
@@ -430,6 +460,13 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         dealCounts.created += 1;
       }
       dealByZoho.set(zohoId, id);
+      await ensureDealRisk({
+        tenantId,
+        dealId: id,
+        lineOfBusiness: values.lineOfBusiness,
+        state: values.state,
+        contactId: values.contactId,
+      });
     }
   }
   counts.push(dealCounts);

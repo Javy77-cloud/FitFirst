@@ -2,7 +2,7 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { accounts, activities, carriers, contacts, deals, leads, policies, users } from "@/lib/db/schema";
+import { accounts, activities, carriers, contacts, deals, leads, policies, risks, users } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { ADMIN_USER_ID, AGENT_USER_ID, CONTACT_ID } from "@/lib/fixtures/ids";
 import { seed } from "@/lib/db/seed";
@@ -74,6 +74,15 @@ describe("wipe + Zoho JSONL import", () => {
 
     const javyDeal = await db.select().from(deals).where(eq(deals.zohoId, "6742853000004000001"));
     expect(javyDeal[0]?.ownerId).toBe(ADMIN_USER_ID);
+
+    const javyRisk = await db.select().from(risks).where(eq(risks.dealId, javyDeal[0]!.id));
+    expect(javyRisk).toHaveLength(1);
+    expect(javyRisk[0]?.riskType).toBe("property");
+    expect(javyRisk[0]?.state).toBe("FL");
+
+    const glRisk = await db.select().from(risks).where(eq(risks.dealId, deal[0]!.id));
+    expect(glRisk).toHaveLength(1);
+    expect(glRisk[0]?.riskType).toBe("property");
 
     const biz = await db.select().from(accounts).where(eq(accounts.zohoId, "6742853000002000001"));
     expect(biz[0]?.name).toBe("Garcia Family Services");
