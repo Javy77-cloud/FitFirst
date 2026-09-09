@@ -33,7 +33,6 @@ import { reportFromSheet } from "@/lib/completeness/report";
 import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
 import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
-import { SHOP_LINE_LABELS } from "@/lib/domain";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { excludedCarrierIdsFromLogs, hasShopMarketAction, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
@@ -74,10 +73,8 @@ export default async function DealPage({
     logs,
     lead,
     contact,
-    account,
     sheets,
     jobs,
-    boundPolicies,
   } = workspace;
   const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealTagExtra, dealLayout, dealFields, dealValues] =
     await Promise.all([
@@ -139,26 +136,6 @@ export default async function DealPage({
     name: row.carrier.name,
     writtenLines: row.carrier.writtenLines,
   }));
-  const bound =
-    deal.pipelineStage === "bound" ||
-    deal.pipelineStage === "closed_won" ||
-    boundPolicies.length > 0;
-  const party = contact
-    ? {
-        id: contact.id,
-        name: `${contact.firstName} ${contact.lastName}`,
-        href: `/contacts/${contact.id}`,
-        kind: "contact" as const,
-      }
-    : account
-      ? {
-          id: account.id,
-          name: account.name,
-          href: `/accounts/${account.id}`,
-          kind: "account" as const,
-        }
-      : null;
-
   return (
     <AppShell
       title="Deals"
@@ -287,17 +264,6 @@ export default async function DealPage({
                           carrierId: row.log.carrierId,
                           why: row.log.why,
                         }))}
-                        bind={{
-                          defaultTarget: deal.bindTarget === "account" ? "account" : "contact",
-                          lineLabel: SHOP_LINE_LABELS[sheetLine] ?? deal.lineOfBusiness,
-                          isAna,
-                          bound,
-                          party,
-                          policies: boundPolicies.map((policy) => ({
-                            id: policy.id,
-                            policyNumber: policy.policyNumber,
-                          })),
-                        }}
                       />
                     )}
 

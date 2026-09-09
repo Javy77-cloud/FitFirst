@@ -1,7 +1,5 @@
-import { BindConfirmGate } from "@/components/deal/bind-confirm-gate";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
-import type { BindPathTarget } from "@/lib/crm/bind-path";
-import { sortQuotesByRatingThenPremium, sortQuotesCheapestFirst } from "@/lib/deals/quote-sort";
+import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import type { Carrier, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
 
 export function QuotesPanel({
@@ -12,7 +10,6 @@ export function QuotesPanel({
   formId = "HO3",
   confirmLogs = [],
   quoteNotes = [],
-  bind,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -22,14 +19,6 @@ export function QuotesPanel({
   formId?: string;
   confirmLogs?: { carrierId: string; why?: string | null }[];
   quoteNotes?: QuoteNote[];
-  bind?: {
-    defaultTarget: BindPathTarget;
-    lineLabel: string;
-    isAna: boolean;
-    bound: boolean;
-    party: { id: string; name: string; href: string; kind: "contact" | "account" } | null;
-    policies: { id: string; policyNumber: string }[];
-  };
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -39,9 +28,6 @@ export function QuotesPanel({
       agentRating: row.quote.agentRating,
     })),
   );
-  const cheapest =
-    sortQuotesCheapestFirst(liveQuotes.map((row) => ({ ...row, premium: row.quote.premium })))[0] ??
-    null;
   const resultByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.result]));
   const notesByQuote: Record<string, QuoteNote[]> = {};
   for (const note of quoteNotes) {
@@ -64,29 +50,6 @@ export function QuotesPanel({
           notesByQuote={notesByQuote}
         />
       </section>
-
-      {bind ? (
-        <BindConfirmGate
-          dealId={dealId}
-          defaultTarget={bind.defaultTarget}
-          lineLabel={bind.lineLabel}
-          isAna={bind.isAna}
-          bound={bind.bound}
-          party={bind.party}
-          policies={bind.policies}
-          quote={
-            cheapest
-              ? {
-                  carrierName: cheapest.carrier.name,
-                  premium: cheapest.quote.premium,
-                  coverageA: cheapest.quote.coverageA,
-                  aopDeductible: cheapest.quote.aopDeductible,
-                  hurricaneDeductible: cheapest.quote.hurricaneDeductible,
-                }
-              : null
-          }
-        />
-      ) : null}
     </div>
   );
 }
