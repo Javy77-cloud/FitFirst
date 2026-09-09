@@ -646,10 +646,10 @@ export function QuotesResultsTable({
                                 aria-label={`Bind recheck checklist for ${carrier.name}`}
                                 data-ff-quote-bind-alert={quote.id}
                                 onClick={() => setAlertQuoteId(quote.id)}
-                                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border-2 border-fit-flag/55 bg-fit-flag/15 text-fit-flag shadow-sm transition-all duration-150 hover:scale-105 hover:border-fit-flag hover:bg-fit-flag hover:text-white hover:shadow-md"
+                                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-fit-flag/55 bg-fit-flag/15 text-fit-flag shadow-sm transition-all duration-150 hover:scale-105 hover:border-fit-flag hover:bg-fit-flag hover:text-white hover:shadow-md"
                                 title="Re-check this quote before bind"
                               >
-                                <AlertTriangle className="size-4" strokeWidth={2.5} />
+                                <AlertTriangle className="size-3.5" strokeWidth={2.25} />
                               </button>
                             ) : null}
                             <StarRating
