@@ -36,12 +36,12 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/gap-x-6/);
   });
 
-  it("keeps attach-documents on the left band, taller, with Activity centered in leftover space", () => {
+  it("keeps Today Activity band; list Attach documents panel removed (sep7gl)", () => {
     const page = source("src/app/deals/page.tsx");
     expect(page).toMatch(/deal-upload-activity/);
-    expect(page).toMatch(/deal-attach-slot/);
+    expect(page).not.toMatch(/deal-attach-slot/);
     expect(page).toMatch(/deal-today-slot/);
-    expect(page).toMatch(/w-\[min\(819px,44\.8%\)\]/);
+    expect(page).not.toMatch(/w-\[min\(819px,44\.8%\)\]/);
     expect(page).not.toMatch(/w-\[min\(797px,43\.6%\)\]/);
     expect(page).not.toMatch(/justify-between/);
     expect(page).not.toMatch(/w-\[66%\]/);
@@ -58,9 +58,11 @@ describe("Deals page sep7h", () => {
     expect(page).not.toMatch(/PipelineCreateDealForm/);
     expect(page).not.toMatch(/deal-name-typeahead/);
     expect(page).not.toMatch(/Deal name — Contact or Business/);
-    expect(page.indexOf("<DealDocsUpload")).toBeLessThan(page.indexOf("<TodayActivityStrip"));
+    expect(page).not.toMatch(/DealDocsUpload/);
+    expect(page).not.toMatch(/listDealLookup/);
+    expect(page).not.toMatch(/listPartyTypeahead/);
     expect(page).toMatch(/<TodayActivityStrip/);
-    expect(page).toMatch(/<DealDocsUpload/);
+    // Component stays for Actions → Attach document (sep7gk) and lockedDeal flows
     const upload = source("src/components/deal/deal-docs-upload.tsx");
     expect(upload).toMatch(/Attach documents to a deal/);
     expect(upload).not.toMatch(/Upload documents onto a deal/);
@@ -83,6 +85,7 @@ describe("Deals page sep7h", () => {
     expect(upload).toMatch(/uploadDealCtaLabel\("create"\)/);
     expect(upload).toMatch(/deal-select-existing/);
     expect(upload).toMatch(/deal-create-from-search/);
+    expect(upload).toMatch(/lockedDeal/);
     const strip = source("src/components/deals/today-activity-strip.tsx");
     expect(strip).toMatch(/Today/);
     expect(strip).toMatch(/formatTodayActivityDate/);
@@ -114,8 +117,8 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/\.deal-upload-activity/);
     expect(chrome).toMatch(/flex-wrap: nowrap/);
     expect(chrome).toMatch(/align-items: center/);
-    expect(chrome).toMatch(/\.deal-attach-slot/);
-    expect(chrome).toMatch(/width: min\(819px, 44\.8%\)/);
+    expect(chrome).not.toMatch(/\.deal-attach-slot/);
+    expect(chrome).not.toMatch(/width: min\(819px, 44\.8%\)/);
     expect(chrome).not.toMatch(/width: min\(797px, 43\.6%\)/);
     expect(chrome).toMatch(/\.deal-today-slot \{[\s\S]*flex: 1;/);
     expect(chrome).toMatch(/justify-content: center/);

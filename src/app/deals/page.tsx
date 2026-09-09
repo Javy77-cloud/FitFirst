@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { buttonVariants } from "@/components/ui/button";
-import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { DealsTable } from "@/components/deals/deals-table";
@@ -13,9 +12,7 @@ import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import {
   getPipelineBoard,
   listBoundPendingDeals,
-  listDealLookup,
   listDeals,
-  listPartyTypeahead,
   listUsers,
   type DealListFilter,
 } from "@/lib/db/queries";
@@ -62,7 +59,7 @@ export default async function DealsPage({
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || (isPipelineSheetView(view) ? undefined : "p-c");
-  const [boardData, listRows, userRows, lineSettings, lookup, parties, desk, tagCatalog] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
@@ -76,8 +73,6 @@ export default async function DealsPage({
         : Promise.resolve(null),
     listUsers(),
     loadDeskLineSettings(),
-    listDealLookup(),
-    listPartyTypeahead(),
     loadDealPipelineDesk(queue),
     listModuleTags("deals").catch(() => []),
   ]);
@@ -174,19 +169,6 @@ export default async function DealsPage({
           gap: 4,
         }}
       >
-        <div
-          className="deal-attach-slot min-w-0 w-[min(819px,44.8%)] shrink-0"
-          style={{
-            width: "min(819px, 44.8%)",
-            maxWidth: "min(819px, 44.8%)",
-            flex: "0 0 min(819px, 44.8%)",
-            minHeight: 168,
-            height: "auto",
-            overflow: "visible",
-          }}
-        >
-          <DealDocsUpload deals={lookup} parties={parties} />
-        </div>
         <div
           className="deal-today-slot"
           style={{

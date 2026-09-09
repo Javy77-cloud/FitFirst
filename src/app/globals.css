@@ -183,7 +183,7 @@
   box-shadow: var(--ff-shadow);
 }
 
-/* Attach keeps sep7ac width. Leftover space centers Today's Activity. */
+/* Tip sep7gl: list Attach panel removed; band keeps Today's Activity centered. */
 .deal-upload-activity {
   display: flex;
   flex-direction: row;
@@ -191,12 +191,6 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
-}
-.deal-attach-slot {
-  width: min(819px, 44.8%);
-  max-width: min(819px, 44.8%);
-  min-width: 0;
-  flex: 0 0 min(819px, 44.8%);
 }
 .deal-today-slot {
   flex: 1;
