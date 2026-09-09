@@ -348,17 +348,48 @@ export function shortRiskChips(notes: string | null | undefined, gaps: string[] 
  * Bind-requirement chips in plain English for agent Details.
  * Never surfaces raw PORTAL WHY / APPETITE NOTES — those stay in Developer Hub.
  */
-/** True when the agent is about to bind — show the recheck-before-bind alert. Not every Conditional. */
+/**
+ * Show the "Re-check this quote before bind" alert when:
+ * - the quote is Bindable / can_bind, OR
+ * - portal notes call out a concrete agent recheck/follow-up (4pt+photos, provisional,
+ *   quoted-not-bindable, unable online / pre-final) — not every Conditional / floor-only.
+ */
 export function quoteNeedsBindRecheckAlert(input: {
   riskOutcome?: string | null;
   nextStep?: string | null;
   bindable?: boolean | null;
+  notes?: string | null;
+  bindRequirements?: string[] | null;
 }): boolean {
   const outcome = normalizeRiskOutcome(input.riskOutcome);
-  return (
+  if (
     outcome === "bindable" ||
     input.bindable === true ||
     input.nextStep === "can_bind"
+  ) {
+    return true;
+  }
+
+  const reqs = (input.bindRequirements ?? []).map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (reqs.some((r) => /recheck|4[- ]?pt|four[- ]?point|photo|provisional|pre-?final|not bindable/.test(r))) {
+    return true;
+  }
+
+  const notes = (input.notes ?? "").toLowerCase();
+  if (!notes.trim()) return false;
+
+  // Concrete follow-ups that need agent eyes — American Integrity (4pt+photos), etc.
+  return (
+    /4\s*pt\+?\s*photos?/.test(notes) ||
+    /need(?:s)?\s+4\s*pt/.test(notes) ||
+    /4[- ]?point/.test(notes) ||
+    /four[- ]?point/.test(notes) ||
+    /photos?\s+in\s+\d+\s*days/.test(notes) ||
+    /quoted[^\n.]{0,40}not\s*bindable/.test(notes) ||
+    /\bprovisional\b/.test(notes) ||
+    /unable\s*online/.test(notes) ||
+    /pre-?final/.test(notes) ||
+    /\brecheck\b/.test(notes)
   );
 }
 
@@ -380,7 +411,7 @@ export function bindRequirementChips(input: {
 
   const blob = input.notes ?? "";
   const patterns: Array<[RegExp, string]> = [
-    [/4[- ]?point|four[- ]?point/i, "Four-point inspection required"],
+    [/4\s*pt|4[- ]?point|four[- ]?point/i, "Four-point inspection required"],
     [/mitigation(\s+form)?/i, "Mitigation form needed"],
     [/roof\s*(cert|certificate|inspection)/i, "Roof certificate required"],
     [/inspect(ion)?\s*(required|needed)/i, "Inspection required"],

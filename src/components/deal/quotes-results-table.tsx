@@ -23,6 +23,7 @@ import {
   AGENT_STATUS_LABELS,
   AGENT_STATUSES,
   bindRequirementChips,
+  quoteNeedsBindRecheckAlert,
   groupQuotesBySection,
   normalizeAgentStatus,
   normalizeRiskOutcome,
@@ -530,8 +531,14 @@ export function QuotesResultsTable({
                     const needsReason = pendingDead[quote.id] || agentStatus === "dead";
                     const isRecheckMarked = recheckMarked.includes(quote.id);
                     const isHideMarked = effectiveHideMarked.includes(quote.id);
-                    // Pre-bind recheck alert only when Bind is actually available — not every Conditional.
-                    const showAlert = canBind;
+                    // Recheck alert: Bindable, or notes with concrete follow-up (e.g. AI 4pt+photos) — not every Conditional.
+                    const showAlert = quoteNeedsBindRecheckAlert({
+                      riskOutcome: outcome,
+                      nextStep: quote.nextStep,
+                      bindable: quote.bindable,
+                      notes: quote.notes,
+                      bindRequirements: quote.bindRequirements,
+                    });
 
                     return (
                       <Fragment key={quote.id}>

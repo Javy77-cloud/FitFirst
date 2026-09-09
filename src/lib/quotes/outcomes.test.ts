@@ -137,10 +137,26 @@ describe("quote outcomes", () => {
   });
 });
 
-  it("bind recheck alert only for bindable quotes", () => {
+  it("bind recheck alert for bindable or concrete follow-up notes", () => {
     expect(quoteNeedsBindRecheckAlert({ riskOutcome: "conditional" })).toBe(false);
     expect(quoteNeedsBindRecheckAlert({ riskOutcome: "declined" })).toBe(false);
+    expect(quoteNeedsBindRecheckAlert({ riskOutcome: "conditional", notes: "HO3 · Floor only" })).toBe(
+      false,
+    );
     expect(quoteNeedsBindRecheckAlert({ riskOutcome: "bindable" })).toBe(true);
     expect(quoteNeedsBindRecheckAlert({ bindable: true })).toBe(true);
     expect(quoteNeedsBindRecheckAlert({ nextStep: "can_bind" })).toBe(true);
+    expect(
+      quoteNeedsBindRecheckAlert({
+        riskOutcome: "declined",
+        notes:
+          "HO3 · UW age/county · homes 10yr+ / 40yr need 4pt+photos in 15 days · water backup max $5k · $0",
+      }),
+    ).toBe(true);
+    expect(
+      quoteNeedsBindRecheckAlert({
+        riskOutcome: "conditional",
+        notes: "HO3 · Quoted UW not bindable · Cov A forced $250,000",
+      }),
+    ).toBe(true);
   });
