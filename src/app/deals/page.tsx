@@ -99,7 +99,7 @@ export default async function DealsPage({
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
       : pipeline === "won-lost"
-        ? "Closed Won and Closed Lost from every shopping board. Archive is its own tab — parking here does not cancel emails hung on won date."
+        ? "Closed Won and Closed Lost from every shopping board. Archived is its own tab — parking here does not cancel emails hung on won date."
         : pipeline === "archive"
           ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
           : pipeline === "flood"
@@ -112,7 +112,7 @@ export default async function DealsPage({
                   ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
                   : view === "grid"
                     ? "Grid edits deal fields in place. Type or pick a value, then blur or Enter. List is click-through. Board and Funnel stay on the same filters."
-                    : "Deals and the pipeline are the same book. List opens the related record. Grid edits cells in place. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archive. Quotes are not coverage.";
+                    : "Deals and the pipeline are the same book. List opens the related record. Grid edits cells in place. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archived. Quotes are not coverage.";
 
   return (
     <AppShell

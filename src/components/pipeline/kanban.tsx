@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState, useTransition, type DragEvent } from "rea
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { moveDealToStage } from "@/app/actions/pipeline";
+import { ClosedDealArchivePopup } from "@/components/deals/closed-deal-archive-popup";
 import { PipelineDealCard } from "@/components/pipeline/deal-card";
 import { StagePill } from "@/components/fit-badge";
 import { cn } from "@/lib/utils";
+import { isClosedOutcomeStage } from "@/lib/deals/archive-reminder";
 import { collapsedStorageKey, dealMatchesStage, parseCollapsedStages } from "@/lib/wire/pipeline";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
@@ -27,6 +29,7 @@ export function PipelineKanban({
   const [, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [overSlug, setOverSlug] = useState<string | null>(null);
+  const [archivePrompt, setArchivePrompt] = useState<{ dealId: string; title?: string } | null>(null);
 
   useEffect(() => {
     setCollapsed(parseCollapsedStages(window.localStorage.getItem(collapsedStorageKey(board.slug))));
@@ -57,13 +60,18 @@ export function PipelineKanban({
     setOverSlug(null);
     const dealId = event.dataTransfer.getData("text/fitfirst-deal");
     if (!dealId || stageSlug === "_unstaged") return;
+    const card = cards.find((row) => row.id === dealId);
     startTransition(async () => {
       await moveDealToStage({ dealId, pipelineSlug: board.slug, stageSlug });
       router.refresh();
+      if (isClosedOutcomeStage(stageSlug)) {
+        setArchivePrompt({ dealId, title: card?.title });
+      }
     });
   }
 
   return (
+    <>
     <div className="flex items-start gap-3 overflow-x-auto pb-3">
       {columns.map((stage) => {
         const column =
@@ -133,5 +141,14 @@ export function PipelineKanban({
         );
       })}
     </div>
+    <ClosedDealArchivePopup
+      dealId={archivePrompt?.dealId ?? ""}
+      dealTitle={archivePrompt?.title}
+      open={Boolean(archivePrompt)}
+      onOpenChange={(next) => {
+        if (!next) setArchivePrompt(null);
+      }}
+    />
+    </>
   );
 }

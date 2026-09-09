@@ -34,6 +34,7 @@ import {
   accounts,
   activities,
   activityLogs,
+  alerts,
   clientHistory,
   commissions,
   contactAccounts,
@@ -66,7 +67,12 @@ import {
 import { dealCreateFieldsFromPick, sheetsToPrepare } from "@/lib/quoting/forms";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import { writeDeskComms } from "@/lib/desk/write-comms";
-import { isKnownStageToken, nextMorning, resolveStageMove } from "@/lib/wire/pipeline";
+import { isKnownStageToken, resolveStageMove } from "@/lib/wire/pipeline";
+import {
+  DEAL_ARCHIVE_REMINDER_KIND,
+  dealArchiveReminderBody,
+  dealArchiveReminderTitle,
+} from "@/lib/deals/archive-reminder";
 import {
   accountFieldsFromSheet,
   contactFieldsFromSheet,
@@ -1018,11 +1024,22 @@ export async function bindDeal(formData: FormData) {
       pipelineStageSlug: "closed_won",
       boundAt: wonAt,
       wonAt,
-      archiveScheduledAt: nextMorning(wonAt),
       updatedAt: new Date(),
       ownerId: deal.ownerId ?? actor.id,
     })
     .where(eq(deals.id, dealId));
+
+  // sep7fx: explicit archive choice via due-now in-app reminder (no silent auto-schedule)
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: DEAL_ARCHIVE_REMINDER_KIND,
+    title: dealArchiveReminderTitle(deal.title || "Deal"),
+    body: dealArchiveReminderBody(deal.title || "Deal"),
+    severity: "info",
+    entityType: "deal",
+    entityId: dealId,
+    createdAt: wonAt,
+  });
 
   if (risk && contactId) {
     await db.update(risks).set({ contactId, updatedAt: new Date() }).where(eq(risks.id, risk.id));

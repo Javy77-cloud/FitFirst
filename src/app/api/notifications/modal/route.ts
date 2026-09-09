@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { isPlaybookAlertKind } from "@/lib/automations/engine";
 import { recordHref } from "@/lib/desk/record-href";
 import { isFollowUpPopupKind } from "@/lib/desk/notifications";
+import { isDealArchiveReminderKind } from "@/lib/deals/archive-reminder";
 import { listAlerts } from "@/lib/db/queries";
 import {
   FOLLOW_UP_HIDE_COOKIE,
@@ -31,7 +32,18 @@ export async function GET(request: Request) {
       ),
   );
   const now = Date.now();
-  const playbookRow = followUpRow
+  const archiveRow =
+    followUpRow
+      ? null
+      : alertRows.find(
+          (row) =>
+            !row.readAt &&
+            isDealArchiveReminderKind(row.kind) &&
+            row.entityType === "deal" &&
+            Boolean(row.entityId) &&
+            new Date(row.createdAt).getTime() <= now,
+        );
+  const playbookRow = followUpRow || archiveRow
     ? null
     : alertRows.find(
         (row) =>
@@ -54,6 +66,15 @@ export async function GET(request: Request) {
           title: playbookRow.title,
           body: playbookRow.body,
           href: recordHref(playbookRow.entityType, playbookRow.entityId),
+        }
+      : null,
+    archiveReminder: archiveRow
+      ? {
+          id: archiveRow.id,
+          title: archiveRow.title,
+          body: archiveRow.body,
+          dealId: archiveRow.entityId as string,
+          dealTitle: archiveRow.title.replace(/^Archive reminder ·\s*/, "") || null,
         }
       : null,
   });

@@ -24,7 +24,7 @@ describe("pipeline switcher", () => {
     expect(pipelinePageTitle(pc!)).toBe("P&C pipeline");
   });
 
-  it("keeps Won-Lost and Archive as two tabs", () => {
+  it("keeps Won-Lost and Archived as two tabs", () => {
     const slugs = SEEDED_PIPELINES.map((board) => board.slug);
     expect(slugs).toContain("won-lost");
     expect(slugs).toContain("archive");
@@ -35,6 +35,9 @@ describe("pipeline switcher", () => {
     expect(SEEDED_PIPELINES.find((board) => board.slug === "archive")?.stages.map((s) => s.slug)).toEqual([
       "archive",
     ]);
+    expect(SEEDED_PIPELINES.find((board) => board.slug === "archive")?.name).toBe("Archived");
+    expect(SEEDED_PIPELINES.find((board) => board.slug === "archive")?.stages[0]?.name).toBe("Archived");
+    expect(pipelineTabLabel(SEEDED_PIPELINES.find((board) => board.slug === "archive")!)).toBe("Archived");
     expect(SEEDED_PIPELINES.some((board) => /won-lost\s*\/\s*archive/i.test(board.name))).toBe(false);
   });
 
@@ -68,7 +71,7 @@ describe("pipeline switcher", () => {
     expect(isAdminPipelineBadge(flood!)).toBe(false);
   });
 
-  it("orders shopping boards before Won-Lost and Archive", () => {
+  it("orders shopping boards before Won-Lost and Archived", () => {
     const ordered = switcherBoards(SEEDED_PIPELINES).map((board) => board.slug);
     expect(ordered).toEqual(["p-c", "health", "life", "flood", "won-lost", "archive"]);
   });

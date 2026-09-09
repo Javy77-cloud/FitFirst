@@ -30,7 +30,7 @@ export function PipelineWorkspace({
 }) {
   const hint =
     board.slug === "won-lost"
-      ? "Closed Won and Closed Lost from every shopping board. Archive is its own tab — parking here does not cancel emails hung on won date."
+      ? "Closed Won and Closed Lost from every shopping board. Archived is its own tab — parking here does not cancel emails hung on won date."
       : board.slug === "archive"
         ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
         : board.slug === "flood"

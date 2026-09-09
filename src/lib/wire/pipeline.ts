@@ -49,7 +49,7 @@ export const PIPELINE_FIELDS: PipelineFieldDef[] = [
 
 /**
  * Real switcher boards. Flood is a normal shopping board (not admin-added).
- * Won-Lost and Archive are separate parking tabs.
+ * Won-Lost and Archived are separate parking tabs.
  */
 export const SEEDED_PIPELINES: SeededPipeline[] = [
   {
@@ -124,10 +124,10 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
   },
   {
     slug: "archive",
-    name: "Archive",
+    name: "Archived",
     kind: "parking",
     seeded: true,
-    stages: [{ slug: "archive", name: "ARCHIVE" }],
+    stages: [{ slug: "archive", name: "Archived" }],
   },
 ];
 

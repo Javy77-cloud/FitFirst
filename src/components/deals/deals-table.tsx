@@ -265,6 +265,7 @@ function dealRowCells({
       mode === "grid" ? (
         <DealStageSelect
           dealId={deal.id}
+          dealTitle={deal.title}
           pipelineSlug={stage.pipelineSlug}
           stageSlug={stage.slug}
           stages={stage.stages}

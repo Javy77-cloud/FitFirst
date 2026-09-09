@@ -103,7 +103,7 @@ export function PipelineDealCard({
         <form action={archiveWonDeal} className="mt-2">
           <input type="hidden" name="dealId" value={deal.id} />
           <button type="submit" className="text-[11px] text-primary hover:underline">
-            Move to Archive
+            Archive deal
           </button>
         </form>
       ) : null}

@@ -84,6 +84,7 @@ export const FLASH_COPY = {
   "image-uploaded": "Image uploaded",
   "market-added": "Market added",
   "deal-updated": "Deal updated",
+  "deal-archived": "Deal archived",
   "quotes-requested": "Quotes requested",
   "meeting-saved": "Meeting saved",
   "outcome-saved": "Outcome saved",

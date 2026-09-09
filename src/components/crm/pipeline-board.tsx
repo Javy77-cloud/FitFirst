@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { updateDealStage } from "@/app/actions/crm";
+import { DealBoardStageMove } from "@/components/deals/deal-board-stage-move";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { LinkedValue } from "@/components/crm/linked-value";
 import { StagePill } from "@/components/fit-badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { insuredContactName, insuredHref, matchesDealFilters, type DealListFilter } from "@/lib/crm/lists";
 import { homeAddressFromRecords } from "@/lib/meetings/types";
@@ -144,27 +144,16 @@ export function PipelineBoard({
                           />
                         </div>
                         {deal.pipelineStage !== "bound" && movable.length > 0 ? (
-                          <form action={updateDealStage} className="mt-2 flex items-center gap-1">
-                            <input type="hidden" name="dealId" value={deal.id} />
-                            <select
-                              name="stage"
-                              defaultValue={
-                                movable.some((option) => option.slug === deal.pipelineStage)
-                                  ? deal.pipelineStage
-                                  : movable[0]?.slug
-                              }
-                              className="h-7 flex-1 rounded-md border border-input bg-card px-1.5 text-[11px]"
-                            >
-                              {movable.map((option) => (
-                                <option key={option.id} value={option.slug}>
-                                  {option.name}
-                                </option>
-                              ))}
-                            </select>
-                            <Button type="submit" size="xs" variant="ghost">
-                              Move
-                            </Button>
-                          </form>
+                          <DealBoardStageMove
+                            dealId={deal.id}
+                            dealTitle={deal.title}
+                            currentStage={deal.pipelineStage}
+                            options={movable.map((option) => ({
+                              id: option.id,
+                              slug: option.slug,
+                              name: option.name,
+                            }))}
+                          />
                         ) : deal.pipelineStage === "bound" ? (
                           <p className="mt-2 text-[11px] text-muted-foreground">
                             Bound — policy already written
