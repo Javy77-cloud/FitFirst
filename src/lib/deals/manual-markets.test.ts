@@ -63,10 +63,11 @@ describe("manual markets", () => {
     expect(panel).toMatch(/Approve & request quotes/);
     const emptyBranch = panel.slice(
       panel.indexOf("if (!hasData)"),
-      panel.indexOf("className=\"space-y-3\""),
+      panel.indexOf("const approveLabel"),
     );
     expect(emptyBranch).toMatch(/data-ff-markets-empty/);
-    expect(emptyBranch).not.toMatch(/ManualCarrierAdd/);
+    expect(emptyBranch).toMatch(/ManualCarrierAdd/);
+    expect(emptyBranch).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
     expect(emptyBranch).not.toMatch(/In appetite/);
     expect(emptyBranch).not.toMatch(/MarketTable/);
   });
@@ -86,7 +87,7 @@ describe("manual markets", () => {
     expect(hasMarketLookupInput({ coverageA: 321000 }, { coverage_a: { value: "321000" } })).toBe(true);
   });
 
-  it("renders a blank Markets tab when there are no matches and no manual carriers", () => {
+  it("renders empty Markets with zero counters + load/add when no matches", () => {
     const html = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-empty",
@@ -96,12 +97,10 @@ describe("manual markets", () => {
       }),
     );
     expect(html).toMatch(/data-ff-markets-empty/);
+    expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
+    expect(html).toMatch(/Add carrier manually/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Stretch/);
-    expect(html).not.toMatch(/Skip/);
     expect(html).not.toMatch(/Approve & request quotes/);
-    expect(html).not.toMatch(/Add carrier manually/);
-    expect(html).not.toMatch(/in appetite/i);
   });
 
   it("stays blank when evaluateDeal auto-returns matches and the agent has not acted", () => {
@@ -124,8 +123,8 @@ describe("manual markets", () => {
       }),
     );
     expect(html).toMatch(/data-ff-markets-empty/);
+    expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Home Co/);
-    expect(html).not.toMatch(/in appetite/i);
+    expect(html).not.toMatch(/>Home Co</);
   });
 });

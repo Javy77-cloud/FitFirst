@@ -74,10 +74,12 @@ export function MarketsPanel({
       <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">Markets</h3>
+          <p className="text-sm text-muted-foreground" data-ff-deal-markets-stats="">
+            0 in appetite · 0 stretch · 0 skip · 0 appointed
+          </p>
           <p className="text-sm text-muted-foreground">
-            No carriers on this deal yet. Add who you want to shop from the list below
-            (carriers that write this line), or confirm the sheet and request quotes to
-            build a fresh list — then remove any you do not want.
+            No carriers on this deal yet. Load a home shop list or add carriers below,
+            then approve & request quotes — or confirm the sheet to unlock shopping.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <LoadHomeShopListButton dealId={dealId} />

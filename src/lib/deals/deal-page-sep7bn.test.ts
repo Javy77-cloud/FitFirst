@@ -28,15 +28,15 @@ const leftoverMatch = {
 describe("sep7bn Markets start from scratch on every deal", () => {
   it("BN1 — page load never auto-evaluates leftover sheet / logs / quotes", () => {
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/hasExplicitMarketAction/);
+    expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
     expect(page).toMatch(
-      /agentMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/,
+      /shopMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/,
     );
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
-    expect(page).toMatch(/explicitLookup=\{agentMarketsAction\}/);
-    expect(page).toMatch(/matches=\{agentMarketsAction \? matches : \[\]\}/);
+    expect(page).toMatch(/explicitLookup=\{shopMarketsAction\}/);
+    expect(page).toMatch(/matches=\{shopMarketsAction \? matches : \[\]\}/);
     expect(page).not.toMatch(/localStorage/);
     expect(page).not.toMatch(/sessionStorage/);
     expect(hasExplicitMarketAction([{ why: "roof age" }], [{ notes: "Stub quote." }])).toBe(false);
@@ -46,7 +46,7 @@ describe("sep7bn Markets start from scratch on every deal", () => {
     );
   });
 
-  it("BN2 — leftover evaluateDeal matches + filled sheet stay blank (every deal)", () => {
+  it("BN2 — leftover evaluateDeal matches + filled sheet stay empty (zeros + add, no rows)", () => {
     const html = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-ana-or-any",
@@ -58,13 +58,12 @@ describe("sep7bn Markets start from scratch on every deal", () => {
       }),
     );
     expect(html).toMatch(/data-ff-markets-empty/);
+    expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
+    expect(html).toMatch(/Add carrier manually/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/in appetite/i);
-    expect(html).not.toMatch(/Home Co/);
-    expect(html).not.toMatch(/Stretch/);
-    expect(html).not.toMatch(/Skip/);
     expect(html).not.toMatch(/Approve & request quotes/);
-    expect(html).not.toMatch(/Add carrier manually/);
+    // Home Co may appear in the manual-add select; it must not paint as a shopped row.
+    expect(html).not.toMatch(/data-ff-markets-select|MarketsSelectTable/);
   });
 
   it("BN3 — leftover quote logs are not a shop; explicit shop/add paints that deal only", () => {
@@ -99,14 +98,14 @@ describe("sep7bn Markets start from scratch on every deal", () => {
     expect(added).toMatch(/manual/);
     const quotes = source("src/app/actions/quotes.ts");
     expect(quotes).toMatch(/EXPLICIT_MARKET_ACTION_MARKER/);
-    expect(quotes).toMatch(/Agent requested \$\{pass\} quotes/);
+    expect(quotes).toMatch(/\$\{pass\} shop/);
     const add = source("src/app/actions/deal-desk.ts");
     expect(add).toMatch(/EXPLICIT_MARKET_ACTION_MARKER/);
     expect(add).toMatch(/MANUAL_MARKET_MARKER/);
     expect(hasExplicitMarketAction([{ why: `${EXPLICIT_MARKET_ACTION_MARKER} shop` }])).toBe(true);
   });
 
-  it("BN4 — Quotes empty stays a blank panel (no sep7bi regression)", () => {
+  it("BN4 — Quotes empty shows Markets handoff card (never a dead blank)", () => {
     const html = renderToString(
       createElement(QuotesPanel, {
         dealId: "deal-empty",
@@ -116,23 +115,27 @@ describe("sep7bn Markets start from scratch on every deal", () => {
     );
     expect(html).toMatch(/data-ff-quotes-empty/);
     expect(html).toMatch(/data-ff-deal-quotes-empty/);
+    expect(html).toMatch(/Go to Markets/);
+    expect(html).toMatch(/0 quote rows/);
+    expect(html).toMatch(/Add carrier manually/);
     expect(html).not.toMatch(/Quotes land here/);
-    expect(html).not.toMatch(/No quotes/);
     expect(html).not.toMatch(/border-dashed/);
     const quotes = source("src/components/deal/quotes-panel.tsx");
     expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);
     expect(quotes).not.toMatch(/border-dashed/);
   });
 
-  it("BN5 — empty Markets markup has no In appetite strings", () => {
+  it("BN5 — empty Markets markup shows zeros + load/add, not In appetite buckets", () => {
     const panel = source("src/components/deal/markets-panel.tsx");
-    const emptyBranch = panel.slice(
-      panel.indexOf("if (!hasData)"),
-      panel.indexOf("className=\"space-y-3\""),
-    );
+    const emptyStart = panel.indexOf("if (!hasData)");
+    const emptyEnd = panel.indexOf("const approveLabel");
+    const emptyBranch = panel.slice(emptyStart, emptyEnd);
     expect(emptyBranch).toMatch(/data-ff-markets-empty/);
+    expect(emptyBranch).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
+    expect(emptyBranch).toMatch(/LoadHomeShopListButton/);
+    expect(emptyBranch).toMatch(/ManualCarrierAdd/);
     expect(emptyBranch).not.toMatch(/In appetite/);
-    expect(emptyBranch).not.toMatch(/ManualCarrierAdd/);
     expect(emptyBranch).not.toMatch(/MarketTable/);
+    expect(emptyBranch).not.toMatch(/MarketsSelectTable/);
   });
 });

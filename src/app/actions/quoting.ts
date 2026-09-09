@@ -153,7 +153,7 @@ export async function approveMasterSheet(formData: FormData) {
   if (str(formData, "requestQuotes") === "yes") {
     await shopDealQuotes(dealId, "appetite");
     revalidatePath(`/deals/${dealId}`);
-    redirect(withFlash(`/deals/${dealId}?tab=quotes&line=${line}`, "quotes-requested"));
+    redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "quotes-requested"));
   }
 
   revalidatePath(`/deals/${dealId}`);

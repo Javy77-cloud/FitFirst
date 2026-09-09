@@ -12,7 +12,7 @@ function source(file: string) {
 }
 
 describe("sep7bg deal page four fixes", () => {
-  it("BG1 — Markets with no carriers or lookup is completely empty", () => {
+  it("BG1 — Markets empty shows zero counters + load/add, not leftover rows", () => {
     const html = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-empty",
@@ -22,11 +22,11 @@ describe("sep7bg deal page four fixes", () => {
       }),
     );
     expect(html).toMatch(/data-ff-markets-empty/);
+    expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
+    expect(html).toMatch(/Add carrier manually/);
+    expect(html).toMatch(/data-ff-load-home-shop-list/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/in appetite/i);
-    expect(html).not.toMatch(/Stretch/);
-    expect(html).not.toMatch(/No in-appetite/);
-    expect(html).not.toMatch(/Add carrier manually/);
+    expect(html).not.toMatch(/Approve & request quotes/);
 
     const evaluate = source("src/lib/appetite/evaluate-deal.ts");
     expect(evaluate).toMatch(/hasMarketLookupInput/);
@@ -80,12 +80,14 @@ describe("sep7bg deal page four fixes", () => {
     expect(html).toMatch(/grid-cols-2/);
   });
 
-  it("BG6 — Quotes empty is a blank panel with no placeholder copy", () => {
+  it("BG6 — Quotes empty is a useful card (not a dead blank)", () => {
     const quotes = source("src/components/deal/quotes-panel.tsx");
     expect(quotes).toMatch(/data-ff-deal-quotes-empty/);
     expect(quotes).toMatch(/data-ff-quotes-empty/);
+    expect(quotes).toMatch(/Go to Markets/);
+    expect(quotes).toMatch(/LoadHomeShopListButton/);
+    expect(quotes).toMatch(/ManualCarrierAdd/);
     expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);
     expect(quotes).not.toMatch(/border-dashed/);
-    expect(quotes).not.toMatch(/No quotes/);
   });
 });

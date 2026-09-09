@@ -351,6 +351,8 @@ export default async function DealPage({
                         requestedCoverageA={deal.coverageAmount ?? null}
                         docs={docs}
                         fileVersions={fileVersions}
+                        carriers={carrierOptions}
+                        dealLine={deal.lineOfBusiness}
                       />
                     )}
 

@@ -53,7 +53,7 @@ export async function requestAppetiteQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
   await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined);
-  flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
+  flashAction(`/deals/${dealId}?tab=markets`, "quotes-requested");
 }
 
 export async function requestStretchQuotesAction(formData: FormData) {

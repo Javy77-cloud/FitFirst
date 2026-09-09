@@ -177,8 +177,8 @@ describe("deal detail final rebuild", () => {
     expect(body).toMatch(/dealLine/);
     expect(body).toMatch(/data-ff-markets-empty/);
     expect(body.indexOf("data-ff-markets-empty")).toBeLessThan(body.indexOf("Approve & request quotes"));
-    expect(body.indexOf("Approve & request quotes")).toBeLessThan(body.indexOf("<MarketTable"));
-    expect(body.indexOf("<MarketTable")).toBeLessThan(body.lastIndexOf("<ManualCarrierAdd"));
+    expect(body.indexOf("Approve & request quotes")).toBeLessThan(body.indexOf("<MarketsSelectTable"));
+    expect(body.indexOf("<MarketsSelectTable")).toBeLessThan(body.lastIndexOf("<ManualCarrierAdd"));
   });
 
   it("removes in-desk signature from Documents", () => {
@@ -202,9 +202,10 @@ describe("deal detail final rebuild", () => {
     const quotes = source("src/components/deal/quotes-panel.tsx");
     expect(quotes).toMatch(/data-ff-deal-quotes-empty/);
     expect(quotes).toMatch(/data-ff-quotes-empty/);
+    expect(quotes).toMatch(/Go to Markets/);
     expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);
     expect(quotes).not.toMatch(/border-dashed/);
-    expect(quotes.indexOf("sorted.length === 0")).toBeLessThan(quotes.indexOf("Quote results"));
+    expect(quotes.indexOf("sorted.length === 0")).toBeLessThan(quotes.indexOf("<QuotesResultsTable"));
   });
 
   it("pins quick comms and keeps motivation in the corner", () => {

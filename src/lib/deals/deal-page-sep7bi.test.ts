@@ -95,20 +95,21 @@ describe("sep7bi builder rail Markets Quotes", () => {
       }),
     );
     expect(filled).toMatch(/data-ff-markets-empty/);
+    expect(filled).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
     expect(filled).not.toMatch(/In appetite/);
-    expect(filled).not.toMatch(/Home Co/);
+    expect(filled).not.toMatch(/Approve & request quotes/);
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/hasExplicitMarketAction/);
-    expect(page).toMatch(/agentMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
+    expect(page).toMatch(/shopMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).toMatch(/sheetHasValues=\{agentMarketsAction\}/);
-    expect(page).toMatch(/explicitLookup=\{agentMarketsAction\}/);
+    expect(page).toMatch(/explicitLookup=\{shopMarketsAction\}/);
     expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
     expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/sheetHasMarketFacts/);
   });
 
-  it("BI5 — Quotes with no rows is a blank panel", () => {
+  it("BI5 — Quotes with no rows shows Markets handoff card", () => {
     const html = renderToString(
       createElement(QuotesPanel, {
         dealId: "deal-empty",
@@ -118,8 +119,9 @@ describe("sep7bi builder rail Markets Quotes", () => {
     );
     expect(html).toMatch(/data-ff-quotes-empty/);
     expect(html).toMatch(/data-ff-deal-quotes-empty/);
+    expect(html).toMatch(/Go to Markets/);
+    expect(html).toMatch(/0 quote rows/);
     expect(html).not.toMatch(/Quotes land here/);
-    expect(html).not.toMatch(/No quotes/);
     expect(html).not.toMatch(/border-dashed/);
     const quotes = source("src/components/deal/quotes-panel.tsx");
     expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);

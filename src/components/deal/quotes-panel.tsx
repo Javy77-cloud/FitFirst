@@ -1,5 +1,10 @@
+import Link from "next/link";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
+import { LoadHomeShopListButton } from "@/components/deal/load-home-shop-list-button";
+import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
@@ -56,6 +61,8 @@ export function QuotesPanel({
   requestedCoverageA = null,
   docs = [],
   fileVersions = [],
+  carriers = [],
+  dealLine = "HO",
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -68,6 +75,8 @@ export function QuotesPanel({
   requestedCoverageA?: number | null;
   docs?: Document[];
   fileVersions?: DocumentVersion[];
+  carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
+  dealLine?: string;
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -95,7 +104,41 @@ export function QuotesPanel({
   }
 
   if (sorted.length === 0) {
-    return <div className="min-h-0" data-ff-deal-quotes="" data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
+    return (
+      <div
+        className="space-y-3"
+        data-ff-deal-quotes=""
+        data-ff-deal-quotes-empty=""
+        data-ff-quotes-empty=""
+      >
+        <div className="ff-card space-y-3 p-4">
+          <h3 className="text-sm font-semibold text-navy">Quotes</h3>
+          <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
+            0 quote rows · build carriers on Markets first
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Confirm & request quotes lands on Markets so you can load a list and add carriers.
+            Real quote rows show here once portals or Fill return them.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/deals/${dealId}?tab=markets`}
+              className={cn(buttonVariants({ size: "sm", variant: "default" }))}
+              data-ff-quotes-go-markets=""
+            >
+              Go to Markets
+            </Link>
+            <LoadHomeShopListButton dealId={dealId} />
+          </div>
+          <ManualCarrierAdd
+            dealId={dealId}
+            carriers={carriers}
+            alreadyIds={[]}
+            dealLine={dealLine}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
