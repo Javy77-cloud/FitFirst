@@ -36,7 +36,7 @@ export function TodayActivityStrip({
         <div className="flex items-center justify-center gap-2">
           <Link
             href={todayActivityCalendarHref()}
-            className="rounded-md p-1.5 text-navy/70 hover:bg-muted hover:text-navy"
+            className="rounded-md p-1 text-navy/70 hover:bg-muted hover:text-navy"
             title="Open work queue"
             aria-label="Open work queue"
             data-testid="deal-today-calendar"
@@ -45,11 +45,11 @@ export function TodayActivityStrip({
           </Link>
           <p className="text-base font-semibold tracking-wide text-navy">Today&apos;s Activity</p>
         </div>
-        <p className="mt-1 text-[16px] text-muted-foreground" data-testid="deal-today-date">
+        <p className="mt-0 text-[16px] leading-tight text-muted-foreground" data-testid="deal-today-date">
           {dated}
         </p>
       </div>
-      <div className="deal-today-chips mt-1 flex flex-nowrap items-center justify-center gap-2 overflow-visible">
+      <div className="deal-today-chips mt-0.5 flex flex-nowrap items-center justify-center gap-2 overflow-visible">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
