@@ -36,6 +36,9 @@ export function QuotesPanel({
   );
   const cheapest = sorted[0] ?? null;
   const resultByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.result]));
+  const whyByCarrier = Object.fromEntries(
+    logs.map((row) => [row.log.carrierId, row.log.why ?? undefined]),
+  );
 
   if (sorted.length === 0) {
     return <div data-ff-deal-quotes-empty="" data-ff-quotes-empty="" />;
@@ -48,7 +51,7 @@ export function QuotesPanel({
           <div>
             <h3 className="text-base font-semibold text-navy">Quote results</h3>
             <p className="mt-1 text-base text-muted-foreground">
-              Grouped by outcome: Accepted, Maybe, Not accepted, No option. Cheapest within each group.
+              Grouped by outcome: Bindable, Conditional, Declined, No market. Cheapest within each group.
               A quote never becomes a policy. Check rows to delete one or many.
             </p>
           </div>
@@ -70,6 +73,7 @@ export function QuotesPanel({
           formId={formId}
           confirmLogs={confirmLogs}
           resultByCarrier={resultByCarrier}
+          whyByCarrier={whyByCarrier}
         />
       </section>
 

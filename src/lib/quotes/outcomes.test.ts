@@ -2,68 +2,95 @@ import { describe, expect, it } from "vitest";
 import {
   groupQuotesByRiskOutcome,
   inferQuoteOutcomes,
+  normalizeRiskOutcome,
+  parseCovATriedForced,
   RISK_OUTCOME_LABELS,
+  shortRiskChips,
   syncQuoteOutcomes,
 } from "./outcomes";
 
 describe("quote outcomes", () => {
   it("keeps bindable true only for can_bind", () => {
-    expect(syncQuoteOutcomes({ riskOutcome: "accepted" })).toEqual({
-      riskOutcome: "accepted",
+    expect(syncQuoteOutcomes({ riskOutcome: "bindable" })).toEqual({
+      riskOutcome: "bindable",
       nextStep: "can_bind",
       bindable: true,
     });
-    expect(syncQuoteOutcomes({ riskOutcome: "maybe" }).bindable).toBe(false);
-    expect(syncQuoteOutcomes({ riskOutcome: "not_accepted" }).nextStep).toBe("hard_no");
-    expect(syncQuoteOutcomes({ riskOutcome: "no_option" }).bindable).toBe(false);
+    expect(syncQuoteOutcomes({ riskOutcome: "conditional" }).bindable).toBe(false);
+    expect(syncQuoteOutcomes({ riskOutcome: "declined" }).nextStep).toBe("hard_no");
+    expect(syncQuoteOutcomes({ riskOutcome: "no_market" }).bindable).toBe(false);
   });
 
   it("uses exact Quotes-tab labels", () => {
-    expect(RISK_OUTCOME_LABELS.accepted).toBe("Accepted");
-    expect(RISK_OUTCOME_LABELS.maybe).toBe("Maybe");
-    expect(RISK_OUTCOME_LABELS.not_accepted).toBe("Not accepted");
-    expect(RISK_OUTCOME_LABELS.no_option).toBe("No option");
+    expect(RISK_OUTCOME_LABELS.bindable).toBe("Bindable");
+    expect(RISK_OUTCOME_LABELS.conditional).toBe("Conditional");
+    expect(RISK_OUTCOME_LABELS.declined).toBe("Declined");
+    expect(RISK_OUTCOME_LABELS.no_market).toBe("No market");
+  });
+
+  it("normalizes legacy sep7de values", () => {
+    expect(normalizeRiskOutcome("accepted")).toBe("bindable");
+    expect(normalizeRiskOutcome("maybe")).toBe("conditional");
+    expect(normalizeRiskOutcome("not_accepted")).toBe("declined");
+    expect(normalizeRiskOutcome("no_option")).toBe("no_market");
+    expect(normalizeRiskOutcome("bindable")).toBe("bindable");
   });
 
   it("infers Rosa-style portal notes", () => {
     expect(inferQuoteOutcomes({ notes: "HO3 · Floor only · Cov A forced $250,400" }).riskOutcome).toBe(
-      "maybe",
+      "conditional",
     );
     expect(inferQuoteOutcomes({ notes: "Portal closed — Harmony takeout only" }).riskOutcome).toBe(
-      "no_option",
+      "no_market",
     );
     expect(inferQuoteOutcomes({ notes: "Skipped — Javy: Cypress will not work" }).riskOutcome).toBe(
-      "no_option",
+      "no_market",
     );
     expect(inferQuoteOutcomes({ notes: "Incomplete — needs Electrical Circuit Amps" }).riskOutcome).toBe(
-      "maybe",
+      "conditional",
     );
     expect(
       inferQuoteOutcomes({ notes: "HO3 · UW age/county · water backup max $5k · $0" }).riskOutcome,
-    ).toBe("not_accepted");
+    ).toBe("declined");
     expect(
       inferQuoteOutcomes({ notes: "HO3 Harmony Tailrow · Floor only / hard blocked RCE" }).riskOutcome,
-    ).toBe("not_accepted");
-    expect(inferQuoteOutcomes({ bindable: true }).riskOutcome).toBe("accepted");
+    ).toBe("declined");
+    expect(inferQuoteOutcomes({ bindable: true }).riskOutcome).toBe("bindable");
   });
 
-  it("groups Accepted then Maybe then Not accepted then No option", () => {
+  it("groups Bindable then Conditional then Declined then No market", () => {
     const groups = groupQuotesByRiskOutcome(
       [
-        { id: "n", riskOutcome: "no_option" },
-        { id: "a", riskOutcome: "accepted" },
-        { id: "m", riskOutcome: "maybe" },
-        { id: "x", riskOutcome: "not_accepted" },
+        { id: "n", riskOutcome: "no_market" },
+        { id: "a", riskOutcome: "bindable" },
+        { id: "m", riskOutcome: "conditional" },
+        { id: "x", riskOutcome: "declined" },
         { id: "m2", riskOutcome: "maybe" },
       ],
       (row) => row.riskOutcome,
     );
     expect(groups.map((g) => g.label)).toEqual([
-      "Accepted",
-      "Maybe",
-      "Not accepted",
-      "No option",
+      "Bindable",
+      "Conditional",
+      "Declined",
+      "No market",
     ]);
     expect(groups[1]?.rows.map((r) => r.id)).toEqual(["m", "m2"]);
+  });
+
+  it("parses Cov A forced from notes and prefers coverage_a", () => {
+    expect(
+      parseCovATriedForced({
+        coverageA: 250400,
+        notes: "HO3 · Floor only · Cov A forced $250,400",
+      }),
+    ).toEqual({ tried: null, forced: 250400, forcedNoted: true });
+  });
+
+  it("builds short risk chips without dumping notes", () => {
+    expect(shortRiskChips("HO3 · Floor only · Cov A forced $250,400", ["No flood"])).toEqual([
+      "No flood",
+      "Floor only",
+    ]);
   });
 });

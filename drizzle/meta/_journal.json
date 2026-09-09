@@ -659,6 +659,13 @@
       "when": 1788930000000,
       "tag": "0093_quote_outcomes",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1788940000000,
+      "tag": "0094_quote_outcome_labels",
+      "breakpoints": true
     }
   ]
 }
