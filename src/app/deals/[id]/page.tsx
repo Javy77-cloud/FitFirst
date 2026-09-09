@@ -62,6 +62,7 @@ export default async function DealPage({
     deal,
     risk,
     docs,
+    fileVersions,
     fields,
     quotes,
     quoteNotes,
@@ -269,6 +270,8 @@ export default async function DealPage({
                           why: row.log.why,
                         }))}
                         requestedCoverageA={deal.coverageAmount ?? null}
+                        docs={docs}
+                        fileVersions={fileVersions}
                       />
                     )}
 

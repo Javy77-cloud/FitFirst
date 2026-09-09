@@ -39,6 +39,7 @@ import {
 } from "@/lib/quotes/outcomes";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
+import { QuoteFileActions, type QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
@@ -329,6 +330,7 @@ export function QuotesResultsTable({
   resultByCarrier,
   notesByQuote = {},
   requestedCoverageA = null,
+  quoteFilesByQuoteId = {},
 }: {
   dealId: string;
   rows: Row[];
@@ -337,6 +339,7 @@ export function QuotesResultsTable({
   resultByCarrier: Record<string, string | undefined>;
   notesByQuote?: Record<string, QuoteNote[]>;
   requestedCoverageA?: number | null;
+  quoteFilesByQuoteId?: Record<string, { carrier: QuoteFileRow[]; agency: QuoteFileRow[] }>;
 }) {
   const list = asList(rows);
   const [recheckMarked, setRecheckMarked] = useState<string[]>([]);
@@ -822,16 +825,15 @@ export function QuotesResultsTable({
                                   Open in carrier
                                 </Button>
                               )}
-                              <Button
-                                type="button"
-                                size="xs"
-                                variant="outline"
-                                disabled
-                                title="Available when carrier PDF API is connected"
-                                data-ff-quote-download={quote.id}
-                              >
-                                Download quote file
-                              </Button>
+                              <QuoteFileActions
+                                dealId={dealId}
+                                quoteId={quote.id}
+                                carrierName={carrier.name}
+                                quote={quote}
+                                carrierFiles={quoteFilesByQuoteId[quote.id]?.carrier ?? []}
+                                agencyFiles={quoteFilesByQuoteId[quote.id]?.agency ?? []}
+                                requestedCoverageA={requestedCoverageA}
+                              />
                             </div>
                           </div>
 
