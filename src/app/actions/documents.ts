@@ -250,29 +250,35 @@ export async function uploadDocument(formData: FormData) {
         slot,
         tags: parseTags(formData.get("tags")),
       });
-      // Gemini source docs: Fill (below) extracts once — avoid a second API hit that 503s.
+      // Gemini source docs: Fill master sheet extracts once — avoid a second API hit that 503s.
       if (doc.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
         await runExtraction(doc.id, doc.dealId ?? "");
       }
       last = doc;
     }
   }
-  if (last?.dealId && last.slot === "source_doc") {
-    const dealId = last.dealId;
-    const line = String(formData.get("line") ?? "");
-    after(() => fillDealSheetIfReady(dealId, line));
-  }
   if (last) revalidateDocumentPaths(last);
-  if (last?.dealId && String(formData.get("after") ?? "") === "fill-sheet") {
+  const afterAction = String(formData.get("after") ?? "");
+  // Explicit Upload-and-fill (SheetDrop) only — Documents Save must not auto-Fill.
+  if (last?.dealId && afterAction === "fill-sheet") {
+    const dealId = last.dealId;
     const line = String(formData.get("line") ?? "home") || "home";
     const tab = String(formData.get("returnTab") ?? "documents") || "documents";
+    if (last.slot === "source_doc") {
+      after(() => fillDealSheetIfReady(dealId, line));
+    }
     redirect(withFlash(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`, "sheet-filled"));
   }
   if (formData.get("library")) {
     redirect(withFlash(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }), "document-uploaded"));
   }
   if (last?.dealId) {
-    flashAction(`/deals/${last.dealId}?tab=documents&notice=filled`, "document-uploaded");
+    // Persist only; Fill master sheet button owns runFillDealSheets + Markets advance.
+    const line = String(formData.get("line") ?? "").trim();
+    const href = line
+      ? `/deals/${last.dealId}?tab=documents&line=${line}`
+      : `/deals/${last.dealId}?tab=documents`;
+    flashAction(href, "documents-saved");
   }
 }
 
@@ -357,10 +363,7 @@ export async function uploadLeadLineDocument(formData: FormData) {
       await runExtraction(last.id, last.dealId);
     }
   }
-  if (last?.dealId && last.slot === "source_doc") {
-    const dealId = last.dealId;
-    after(() => fillDealSheetIfReady(dealId, lineRaw));
-  }
+  // Lead upload persists only — do not auto-Fill a linked deal sheet.
   if (last) revalidateDocumentPaths(last);
   redirect(`/leads/${leadId}`);
 }
@@ -431,18 +434,14 @@ export async function uploadDealDocuments(formData: FormData) {
     }
   }
 
-  if (stored > 0) {
-    const dealId = match.id;
-    after(() => fillDealSheetIfReady(dealId, ""));
-  }
-
   if (stored === 0) {
     redirect("/deals?notice=no-files");
   }
   revalidatePath("/deals");
   revalidatePath(`/deals/${match.id}`);
   revalidatePath("/documents");
-  redirect(withFlash(`/deals/${match.id}?tab=documents&notice=filled`, "document-uploaded"));
+  // Persist only — Fill master sheet button owns fill + Markets advance.
+  redirect(withFlash(`/deals/${match.id}?tab=documents`, "documents-saved"));
 }
 
 export async function uploadSampleDocument(formData: FormData) {
@@ -474,10 +473,9 @@ export async function uploadSampleDocument(formData: FormData) {
   if (doc.riskId && !docTypeUsesGemini(doc.docType)) {
     await runExtraction(doc.id, dealId);
   }
-  const lineHint = String(formData.get("line") ?? "");
-  after(() => fillDealSheetIfReady(dealId, lineHint));
   revalidateDocumentPaths(doc);
-  redirect(withFlash(`/deals/${dealId}?tab=documents&notice=filled`, "document-uploaded"));
+  // Sample upload persists (+ non-Gemini extract above) — no auto-Fill.
+  redirect(withFlash(`/deals/${dealId}?tab=documents`, "documents-saved"));
 }
 
 export async function markDocumentType(formData: FormData) {

@@ -24,7 +24,8 @@ function jobDidWork(job: JobLite): boolean {
 }
 
 /**
- * After upload/delete, Fill runs in after(). RSC payload stays stale until refresh.
+ * After delete (refill) or explicit Upload-and-fill (notice=filled), Fill may run in after().
+ * Documents Save does not auto-Fill — only the Fill master sheet button / fill-sheet path does.
  * Poll router.refresh while watching; toast when a done job shows filled/skipped work.
  */
 export function BackgroundFillRefresh({
@@ -40,7 +41,6 @@ export function BackgroundFillRefresh({
   const searchParams = useSearchParams();
   const flash = searchParams.get("flash");
   const watchFromFlash =
-    flash === "document-uploaded" ||
     flash === "document-deleted" ||
     flash === "document-replaced" ||
     searchParams.get("notice") === "filled";

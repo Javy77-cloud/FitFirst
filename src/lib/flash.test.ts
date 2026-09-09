@@ -49,6 +49,8 @@ describe("flash helper", () => {
     expect(resolveFlashMessage("tag-added")).toBe("Tag added");
     expect(resolveFlashMessage("tag-created")).toBe("Tag created");
     expect(resolveFlashMessage("document-deleted")).toBe("Document deleted");
+    expect(resolveFlashMessage("documents-saved")).toBe("Documents saved");
+    expect(FLASH_COPY["documents-saved"]).toBe("Documents saved");
     expect(FLASH_COPY["deal-details-saved"]).toBe("Deal details saved");
     expect(FLASH_COPY["layout-saved"]).toBe("Deal layout saved");
     expect(FLASH_COPY["lead-saved"]).toBe("Lead saved");
