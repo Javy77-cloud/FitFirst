@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useTransition, type ReactNode } from "react";
 import { clearDealMarketsAction, removeSelectedMarketsAction } from "@/app/actions/deal-desk";
 import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export function MarketsSelectTable({
   manualIds,
   selected: selectedProp,
   onSelectedChange,
+  toolbar,
 }: {
   dealId: string;
   title: string;
@@ -45,6 +46,7 @@ export function MarketsSelectTable({
   manualIds: Set<string>;
   selected?: string[];
   onSelectedChange?: (next: string[]) => void;
+  toolbar?: ReactNode;
 }) {
   const list = asList(rows);
   const selected = Array.isArray(selectedProp) ? selectedProp : [];
@@ -86,6 +88,14 @@ export function MarketsSelectTable({
 
   return (
     <section className="ff-card overflow-hidden" data-ff-markets-select="">
+      {toolbar ? (
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2"
+          data-ff-deal-markets-stats=""
+        >
+          {toolbar}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
         <div className="text-base font-semibold text-navy">{title}</div>
         <Button

@@ -104,27 +104,26 @@ export function MarketsPanel({
       ? `Request stretch quotes (${selectedStretchCount})`
       : "Request stretch quotes";
 
+  const appetiteToolbar = (
+    <>
+      <p className="text-sm text-muted-foreground">
+        {appetite.length} in appetite · {stretch.length} stretch · {skip.length} skip · {appointed}{" "}
+        appointed
+      </p>
+      <form action={requestAppetiteQuotesAction}>
+        <input type="hidden" name="dealId" value={dealId} />
+        {shopCarrierIds.map((id) => (
+          <input key={`appetite-${id}`} type="hidden" name="carrierId" value={id} />
+        ))}
+        <Button type="submit" size="sm" disabled={appetite.length === 0 || !unlocked}>
+          {approveLabel}
+        </Button>
+      </form>
+    </>
+  );
+
   return (
-    <div className="relative space-y-3" data-ff-deal-markets="">
-      {/* Stats/actions sit in the 50px pad above so In appetite lines up with Quick Comms. */}
-      <div
-        className="absolute inset-x-0 bottom-full mb-2 flex flex-wrap items-center justify-between gap-2"
-        data-ff-deal-markets-stats=""
-      >
-        <p className="text-sm text-muted-foreground">
-          {appetite.length} in appetite · {stretch.length} stretch · {skip.length} skip · {appointed}{" "}
-          appointed
-        </p>
-        <form action={requestAppetiteQuotesAction}>
-          <input type="hidden" name="dealId" value={dealId} />
-          {shopCarrierIds.map((id) => (
-            <input key={`appetite-${id}`} type="hidden" name="carrierId" value={id} />
-          ))}
-          <Button type="submit" size="sm" disabled={appetite.length === 0 || !unlocked}>
-            {approveLabel}
-          </Button>
-        </form>
-      </div>
+    <div className="space-y-3" data-ff-deal-markets="">
       {appetite.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
@@ -133,8 +132,16 @@ export function MarketsPanel({
           manualIds={manual}
           selected={selected}
           onSelectedChange={setSelected}
+          toolbar={appetiteToolbar}
         />
-      ) : null}
+      ) : (
+        <div
+          className="flex flex-wrap items-center justify-between gap-2"
+          data-ff-deal-markets-stats=""
+        >
+          {appetiteToolbar}
+        </div>
+      )}
       {stretch.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
