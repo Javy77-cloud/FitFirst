@@ -5,7 +5,6 @@ import { AppShell } from "@/components/app-shell";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
-import { SheetHealthToggle } from "@/components/deal/sheet-health-toggle";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
@@ -199,18 +198,7 @@ export default async function DealPage({
               />
             </>
           }
-          corner={
-            <>
-              {health ? (
-                <SheetHealthToggle
-                  report={health}
-                  href={`/deals/${deal.id}?tab=documents&line=${sheetLine}`}
-                  dealId={deal.id}
-                />
-              ) : null}
-              <DealMotivation stats={motivation} />
-            </>
-          }
+          corner={<DealMotivation stats={motivation} />}
           banner={
             isAna ? (
               <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">

@@ -1,4 +1,4 @@
-/** Corner widget math. Prefer real desk counts; otherwise an honest sample. */
+/** Corner widget math from real desk counts only. */
 
 export type MotivationStat = {
   id: string;
@@ -20,28 +20,23 @@ export function buildMotivationStats(input: {
   shoppedThisMonth: number;
   sparkQuotes: number[];
 }): MotivationStat[] {
-  const haveQuotes = input.quotesToday > 0 || input.sparkQuotes.some((n) => n > 0);
-  const haveBinds = input.shoppedThisMonth > 0;
-  const spark =
-    input.sparkQuotes.length > 0 ? input.sparkQuotes : [2, 4, 3, 5, 4, 6, 3];
+  const spark = input.sparkQuotes.length > 0 ? input.sparkQuotes : [0, 0, 0, 0, 0, 0, 0];
 
   return [
     {
       id: "quotes-today",
       label: "Quotes pulled today",
-      valueLabel: haveQuotes ? String(input.quotesToday) : "12",
-      hint: haveQuotes ? "Desk count from quotes on this tenant." : "Sample — no pulls logged today.",
-      sample: !haveQuotes,
+      valueLabel: String(input.quotesToday),
+      hint: "Desk count from quotes on this tenant.",
+      sample: false,
       spark,
     },
     {
       id: "bind-rate",
       label: "Your bind rate this month",
-      valueLabel: haveBinds ? formatBindRate(input.boundThisMonth, input.shoppedThisMonth) : "34%",
-      hint: haveBinds
-        ? `${input.boundThisMonth} bound / ${input.shoppedThisMonth} shopped this month.`
-        : "Sample — not enough shopped deals this month.",
-      sample: !haveBinds,
+      valueLabel: formatBindRate(input.boundThisMonth, input.shoppedThisMonth),
+      hint: `${input.boundThisMonth} bound / ${input.shoppedThisMonth} shopped this month.`,
+      sample: false,
       spark,
     },
   ];

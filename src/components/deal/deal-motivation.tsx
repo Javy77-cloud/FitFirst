@@ -1,46 +1,60 @@
 import type { MotivationStat } from "@/lib/deals/motivation";
 
-function Spark({ values }: { values: number[] }) {
-  const max = Math.max(1, ...values);
-  const w = 48;
-  const h = 14;
-  const step = values.length > 1 ? w / (values.length - 1) : w;
-  const points = values
-    .map((value, i) => `${i * step},${h - (value / max) * (h - 2) - 1}`)
-    .join(" ");
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="text-primary shrink-0">
-      <polyline fill="none" stroke="currentColor" strokeWidth="1.5" points={points} />
-    </svg>
-  );
+function percentValue(label: string): number {
+  const value = Number.parseInt(label.replace("%", ""), 10);
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
 }
 
-/** Compact quotes-pulled chip for the top-right header corner. */
+/** Agent-facing motivation chart for the deal desk's top-right corner. */
 export function DealMotivation({ stats }: { stats: MotivationStat[] }) {
-  const primary = stats[0];
-  const secondary = stats[1];
-  if (!primary) return null;
+  const quotes = stats.find((stat) => stat.id === "quotes-today");
+  const bindRate = stats.find((stat) => stat.id === "bind-rate");
+  if (!quotes || !bindRate) return null;
+
+  const rate = percentValue(bindRate.valueLabel);
+  const radius = 34;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (rate / 100) * circumference;
 
   return (
     <aside
-      className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm"
+      className="w-full rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
       data-ff-deal-motivation=""
-      title={primary.hint}
+      title={bindRate.hint}
     >
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
-          {primary.label}
-        </p>
-        <p className="mt-0.5 text-sm font-semibold leading-none text-navy">
-          {primary.valueLabel}
-          {secondary ? (
-            <span className="ml-1.5 text-[10px] font-medium text-muted-foreground">
-              · {secondary.label} {secondary.valueLabel}
-            </span>
-          ) : null}
-        </p>
+      <div className="flex items-center gap-4">
+        <div className="relative size-[86px] shrink-0" aria-label={`${bindRate.label}: ${bindRate.valueLabel}`}>
+          <svg viewBox="0 0 86 86" className="size-[86px] -rotate-90" aria-hidden>
+            <circle cx="43" cy="43" r={radius} fill="none" stroke="currentColor" strokeWidth="9" className="text-muted/70" />
+            <circle
+              cx="43"
+              cy="43"
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              className="text-primary"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center text-lg font-bold text-navy">
+            {bindRate.valueLabel}
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Monthly momentum
+          </p>
+          <p className="mt-1 text-base font-semibold text-navy">Your bind rate</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {rate > 0 ? "Keep the streak moving." : "Every quote is a new chance to bind."}
+          </p>
+          <div className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+            {quotes.valueLabel} quotes pulled today
+          </div>
+        </div>
       </div>
-      <Spark values={primary.spark} />
     </aside>
   );
 }
