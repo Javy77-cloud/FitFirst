@@ -6,6 +6,8 @@ import {
   PIPELINE_LIST_COLUMNS,
   allColumnIds,
   clampColumnWidth,
+  MIN_PICK_COLUMN_WIDTH,
+  DEFAULT_PICK_COLUMN_WIDTH,
   columnMenuLabel,
   cycleListSort,
   defaultColumnWidth,
@@ -174,8 +176,10 @@ describe("list column visibility", () => {
 
   it("clamps widths and cycles sort inactive → asc → desc → clear", () => {
     expect(clampColumnWidth(10)).toBe(56);
+    expect(clampColumnWidth(10, "pick")).toBe(MIN_PICK_COLUMN_WIDTH);
     expect(clampColumnWidth(900)).toBe(720);
-    expect(defaultColumnWidth({ id: "pick", label: "" })).toBe(44);
+    expect(defaultColumnWidth({ id: "pick", label: "" })).toBe(DEFAULT_PICK_COLUMN_WIDTH);
+    expect(defaultColumnWidth({ id: "pick", label: "", defaultWidth: 48 })).toBe(48);
     expect(defaultColumnWidth({ id: "name", label: "Name" })).toBe(260);
     expect(defaultColumnWidth(LEADS_LIST_COLUMNS.find((column) => column.id === "name")!)).toBe(
       LEADS_DEFAULT_WIDTHS.name,

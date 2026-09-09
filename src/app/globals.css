@@ -365,6 +365,28 @@
   table-layout: fixed;
   /* Width comes from summed col widths so resize grows scroll, not neighbors. */
 }
+/* Tip sep7gh: pull checkbox flush to deal/lead name (pad + right-align). */
+.ff-list-table [data-sheet-col="pick"] {
+  padding-left: 0.2rem;
+  padding-right: 0.1rem;
+  text-align: right;
+  vertical-align: middle;
+}
+.ff-list-table td[data-sheet-col="pick"] {
+  vertical-align: middle;
+}
+.ff-list-table [data-sheet-col="title"],
+.ff-list-table [data-sheet-col="name"] {
+  padding-left: 0.2rem;
+}
+[data-ff-density="compact"] .ff-list-table [data-sheet-col="pick"] {
+  padding-left: 0.15rem;
+  padding-right: 0.05rem;
+}
+[data-ff-density="compact"] .ff-list-table [data-sheet-col="title"],
+[data-ff-density="compact"] .ff-list-table [data-sheet-col="name"] {
+  padding-left: 0.15rem;
+}
 .ff-list-th {
   position: relative;
 }

@@ -33,8 +33,11 @@ export type ListColumnLayout = {
 
 export const COLUMN_STORAGE_PREFIX = "ff-list-columns:v1";
 export const MIN_COLUMN_WIDTH = 56;
+/** Checkbox column can sit narrower than labeled columns. */
+export const MIN_PICK_COLUMN_WIDTH = 32;
 export const MAX_COLUMN_WIDTH = 720;
 export const DEFAULT_COLUMN_WIDTH = 148;
+export const DEFAULT_PICK_COLUMN_WIDTH = 32;
 
 export function columnStorageKey(moduleId: string): string {
   return `${COLUMN_STORAGE_PREFIX}:${moduleId}`;
@@ -69,7 +72,9 @@ export function fromDeskColumns(
     locked: lock.has(def.key),
     defaultOn: def.defaultOn,
   }));
-  return opts?.pick ? [{ id: "pick", label: "", locked: true }, ...cols] : cols;
+  return opts?.pick
+    ? [{ id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH }, ...cols]
+    : cols;
 }
 
 export function mergeVisibleColumns(
@@ -89,17 +94,31 @@ export function mergeVisibleColumns(
   return isDealsListColumns(columns) ? normalizeDealsVisibleColumns(result) : result;
 }
 
-export function clampColumnWidth(px: number): number {
+export function isPickColumn(columnId: string): boolean {
+  return columnId === "pick";
+}
+
+export function clampColumnWidth(px: number, columnId?: string): number {
   if (!Number.isFinite(px)) return DEFAULT_COLUMN_WIDTH;
-  return Math.min(MAX_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, Math.round(px)));
+  const min = isPickColumn(columnId ?? "") ? MIN_PICK_COLUMN_WIDTH : MIN_COLUMN_WIDTH;
+  return Math.min(MAX_COLUMN_WIDTH, Math.max(min, Math.round(px)));
 }
 
 export function defaultColumnWidth(column: ListColumn): number {
-  if (column.defaultWidth != null) return clampColumnWidth(column.defaultWidth);
-  if (column.id === "pick" || !column.label.trim()) return 44;
+  if (isPickColumn(column.id)) {
+    const raw = column.defaultWidth ?? DEFAULT_PICK_COLUMN_WIDTH;
+    return clampColumnWidth(raw, "pick");
+  }
+  // Empty-label utility cols (e.g. actions) stay compact — not the pick min path.
+  if (!column.label.trim()) {
+    return column.defaultWidth != null
+      ? clampColumnWidth(column.defaultWidth, column.id)
+      : 44;
+  }
+  if (column.defaultWidth != null) return clampColumnWidth(column.defaultWidth, column.id);
   if (isLiveSearchColumn(column)) return 260;
   const fromLabel = column.label.trim().length * 9 + 56;
-  return clampColumnWidth(Math.max(112, Math.min(220, fromLabel)));
+  return clampColumnWidth(Math.max(112, Math.min(220, fromLabel)), column.id);
 }
 
 export function listSortForColumn(key: string, dir: ListSortDir | null): ListSort | null {
@@ -141,7 +160,7 @@ export function mergeColumnWidths(
     if (!allowed.has(id)) continue;
     const n = typeof value === "number" ? value : Number(value);
     if (!Number.isFinite(n)) continue;
-    next[id] = clampColumnWidth(n);
+    next[id] = clampColumnWidth(n, id);
   }
   return next;
 }
@@ -273,7 +292,7 @@ export function columnMenuLabel(column: ListColumn): string {
 
 /** Roomy Leads starting layout — name + Call/SMS/E-mail, temp chips, follow-up, clock. */
 export const LEADS_DEFAULT_WIDTHS = {
-  pick: 48,
+  pick: DEFAULT_PICK_COLUMN_WIDTH,
   name: 340,
   status: 170,
   source: 160,
@@ -381,7 +400,7 @@ export function leadsListColumnsFromLayout(
 export const LEADS_LIST_COLUMNS: ListColumn[] = leadsListColumnsFromLayout();
 
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
-  { id: "pick", label: "", locked: true },
+  { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "name", label: "Name", locked: true },
   { id: "status", label: "Status" },
   { id: "source", label: "Source" },
@@ -406,7 +425,7 @@ export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
 );
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
-  { id: "pick", label: "", locked: true },
+  { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "business", label: "Business", locked: true },
   { id: "status", label: "Status" },
   { id: "lifetime", label: "Lifetime" },
@@ -415,7 +434,7 @@ export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
 ];
 
 export const POLICIES_LIST_COLUMNS: ListColumn[] = [
-  { id: "pick", label: "", locked: true },
+  { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "policy", label: "Policy", locked: true },
   { id: "status", label: "Status" },
   { id: "party", label: "Party" },
@@ -427,7 +446,7 @@ export const POLICIES_LIST_COLUMNS: ListColumn[] = [
 ];
 
 export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
-  { id: "pick", label: "", locked: true },
+  { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "carrier", label: "Carrier", locked: true },
   { id: "portal", label: "Portal" },
   { id: "covA", label: "Cov A" },
@@ -437,7 +456,7 @@ export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
 ];
 
 export const TASKS_LIST_COLUMNS: ListColumn[] = [
-  { id: "pick", label: "", locked: true },
+  { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "task", label: "Task", locked: true },
   { id: "due", label: "Due" },
   { id: "status", label: "Status" },
@@ -555,7 +574,12 @@ export const WORK_QUEUE_POLICIES_COLUMNS: ListColumn[] = [
 export function labeledColumns(
   items: Array<[id: string, label: string, locked?: boolean]>,
 ): ListColumn[] {
-  return items.map(([id, label, locked]) => ({ id, label, locked: Boolean(locked) }));
+  return items.map(([id, label, locked]) => ({
+    id,
+    label,
+    locked: Boolean(locked),
+    ...(isPickColumn(id) ? { defaultWidth: DEFAULT_PICK_COLUMN_WIDTH } : {}),
+  }));
 }
 
 export const INSPECTIONS_LIST_COLUMNS = labeledColumns([

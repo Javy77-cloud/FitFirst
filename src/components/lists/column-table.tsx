@@ -246,7 +246,7 @@ export function ColumnTable({
   }
 
   function onWidth(id: string, px: number, commit: boolean) {
-    const next = { ...widths, [id]: clampColumnWidth(px) };
+    const next = { ...widths, [id]: clampColumnWidth(px, id) };
     if (commit) {
       setDraftWidths(null);
       persistPartial({ widths: next });
