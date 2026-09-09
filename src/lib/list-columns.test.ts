@@ -16,6 +16,7 @@ import {
   LEADS_DEFAULT_WIDTHS,
   listSortForColumn,
   mergeColumnWidths,
+  preferColumnWidths,
   parseListSort,
   parseStoredColumnLayout,
   columnStorageKey,
@@ -185,6 +186,14 @@ describe("list column visibility", () => {
     expect(mergeColumnWidths(COLUMNS, { status: 200, gone: 180, name: "120" })).toEqual({
       status: 200,
       name: 120,
+    });
+    expect(preferColumnWidths(COLUMNS, { name: 320, status: 180 }, {})).toEqual({
+      name: 320,
+      status: 180,
+    });
+    expect(preferColumnWidths(COLUMNS, { name: 320 }, { name: 100, status: 200, gone: 90 })).toEqual({
+      name: 320,
+      status: 200,
     });
     expect(parseListSort({ key: "status", dir: "desc" })).toEqual({ key: "status", dir: "desc" });
     expect(parseListSort({ key: "status", dir: "sideways" })).toBeNull();

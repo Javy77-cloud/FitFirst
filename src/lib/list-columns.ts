@@ -146,6 +146,18 @@ export function mergeColumnWidths(
   return next;
 }
 
+/** Agent-local drag widths win; fill gaps from server/desk prefs. */
+export function preferColumnWidths(
+  columns: ListColumn[],
+  preferred: unknown,
+  fallback: unknown = {},
+): Record<string, number> {
+  return {
+    ...mergeColumnWidths(columns, fallback),
+    ...mergeColumnWidths(columns, preferred),
+  };
+}
+
 export function parseListSort(raw: unknown): ListSort | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const key = "key" in raw && typeof raw.key === "string" ? raw.key.trim() : "";

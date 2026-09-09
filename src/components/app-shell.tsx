@@ -102,7 +102,7 @@ export async function AppShell({
             hideHeaderTitle={hideHeaderTitle}
             recordContext={recordContext}
           />
-          <main className="flex-1 p-5">{children}</main>
+          <main className="flex-1 px-2 py-5">{children}</main>
         </div>
         <Suspense fallback={null}>
           <SupportLauncher />

@@ -32,6 +32,7 @@ import {
   mergeColumnWidths,
   mergeVisibleColumns,
   parseListSort,
+  preferColumnWidths,
   reorderVisibleColumns,
   saveColumnLayout,
   shownColumns,
@@ -125,26 +126,28 @@ export function ColumnTable({
   const initialKey = `${initialVisible?.join(",") ?? ""}|${JSON.stringify(initialWidths ?? {})}|${initialSort?.key ?? ""}:${initialSort?.dir ?? ""}`;
 
   useEffect(() => {
+    const local = loadColumnLayout(moduleId, columns);
     if (initialVisible) {
       const merged = mergeVisibleColumns(columns, initialVisible);
-      const nextWidths = mergeColumnWidths(columns, initialWidths ?? {});
-      const nextSort = parseListSort(initialSort);
+      // Local drag widths stick; fill gaps from desk prefs (empty server must not wipe).
+      const nextWidths = preferColumnWidths(columns, local.widths, initialWidths ?? {});
+      const nextSort = parseListSort(initialSort) ?? local.sort;
       setVisible(merged);
       setWidths(nextWidths);
       setSort(nextSort);
       saveColumnLayout(moduleId, { columns: merged, widths: nextWidths, sort: nextSort });
       return;
     }
-    const local = loadColumnLayout(moduleId, columns);
     setVisible(local.columns);
     setWidths(local.widths);
     setSort(local.sort);
     let cancelled = false;
     void fetchListColumnLayout(moduleId).then((stored) => {
       if (cancelled || !stored) return;
-      const merged = mergeVisibleColumns(columns, stored.columns);
-      const nextWidths = mergeColumnWidths(columns, stored.widths);
-      const nextSort = parseListSort(stored.sort);
+      const latestLocal = loadColumnLayout(moduleId, columns);
+      const merged = mergeVisibleColumns(columns, stored.columns ?? latestLocal.columns);
+      const nextWidths = preferColumnWidths(columns, latestLocal.widths, stored.widths);
+      const nextSort = parseListSort(stored.sort) ?? latestLocal.sort;
       setVisible(merged);
       setWidths(nextWidths);
       setSort(nextSort);
@@ -278,16 +281,22 @@ export function ColumnTable({
     </>
   );
 
+  const columnPixelWidths = shown.map((column) => ({
+    id: column.id,
+    width: appliedWidths[column.id] ?? defaultColumnWidth(column),
+  }));
+  const tableWidth = columnPixelWidths.reduce((sum, column) => sum + column.width, 0);
+
   return (
     <div className="overflow-x-auto">
       <ListScopeReporter visibleIds={visibleIds} matchingIds={matchingIds} />
       <ListColumnsChrome>{chrome}</ListColumnsChrome>
-      <table className="ff-table ff-list-table">
+      <table className="ff-table ff-list-table" style={{ width: tableWidth, minWidth: tableWidth }}>
         <colgroup>
-          {shown.map((column) => (
+          {columnPixelWidths.map((column) => (
             <col
               key={column.id}
-              style={{ width: appliedWidths[column.id] ?? defaultColumnWidth(column) }}
+              style={{ width: column.width, minWidth: column.width }}
             />
           ))}
         </colgroup>

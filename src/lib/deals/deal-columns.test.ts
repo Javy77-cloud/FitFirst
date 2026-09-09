@@ -122,7 +122,7 @@ describe("pipeline table deal-field columns", () => {
     expect(select).toMatch(/stageColorFromNameOrSlug/);
     expect(select).toMatch(/statusColorClass/);
     expect(select).toMatch(/data-stage-color/);
-    expect(select).toMatch(/text-\[11px\]/);
+    expect(select).toMatch(/text-\[10px\]/);
     expect(select).toMatch(/font-semibold/);
     expect(select).toMatch(/h-7/);
     expect(select).not.toMatch(/text-sm/);

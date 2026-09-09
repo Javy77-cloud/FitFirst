@@ -363,7 +363,7 @@
 }
 .ff-list-table {
   table-layout: fixed;
-  min-width: 100%;
+  /* Width comes from summed col widths so resize grows scroll, not neighbors. */
 }
 .ff-list-th {
   position: relative;
