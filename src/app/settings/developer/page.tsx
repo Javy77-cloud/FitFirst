@@ -66,7 +66,7 @@ const TOOLS: {
 ];
 
 export default async function DeveloperHubOverviewPage() {
-  await requireAdminPage();
+  const session = await requireAdminPage();
   const counts = await developerToolCounts();
 
   return (
@@ -76,6 +76,24 @@ export default async function DeveloperHubOverviewPage() {
         (<code>developer_*</code> + <code>desk_macros</code>). Working UIs stop at the API / OAuth
         wall. FitFirst does not call paid vendors and does not write to live Zoho.
       </p>
+      {session.isSiteDeveloper ? (
+        <Link
+          href="/settings/developer/appetite-log"
+          className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
+          data-ff-dev-appetite-log=""
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-navy">Appetite Log</div>
+              <StatusChip status="working" />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Platform-builder training data from every quote attempt (quote_attempt_logs). Not visible
+              to agents or admins — site developers only.
+            </p>
+          </div>
+        </Link>
+      ) : null}
       <p className="mb-4 text-sm">
         <Link href="/automations" className="font-semibold text-primary hover:underline">
           Open Automations hub

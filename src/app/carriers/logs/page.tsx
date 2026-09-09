@@ -6,11 +6,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { formatMoney } from "@/lib/domain";
 import { listQuoteLogs } from "@/lib/db/queries";
 import { LogsTabs } from "@/components/logs/logs-tabs";
+import { requireSiteDeveloperPage } from "@/lib/auth/guards";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function CarrierLogsPage() {
+  await requireSiteDeveloperPage();
   const rows = await listQuoteLogs();
   return (
     <AppShell

@@ -64,6 +64,13 @@ export async function requireAdminPage(): Promise<DeskSession> {
   return session;
 }
 
+/** Platform builders only (users.is_site_developer or FF_SITE_DEVELOPER_EMAILS). Not agents/admins. */
+export async function requireSiteDeveloperPage(): Promise<DeskSession> {
+  const session = await requireSignedIn();
+  if (!session.isSiteDeveloper) redirect("/settings/developer");
+  return session;
+}
+
 export async function requireAdminAction(message = "Admin only."): Promise<DeskSession> {
   const session = await currentDeskSession();
   if (!session.signedIn || !session.isAdmin) throw new AdminOnlyError(message);

@@ -77,51 +77,6 @@ export function QuotesPanel({
           }
         />
       ) : null}
-
-      <section className="ff-card overflow-hidden" data-ff-appetite-log="">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-          <div className="text-base font-semibold text-navy">Appetite Log</div>
-          <a
-            href="/carriers/logs"
-            className="text-sm text-primary underline-offset-2 hover:underline"
-            data-ff-appetite-log-link=""
-          >
-            Full appetite / decline log
-          </a>
-        </div>
-        <p className="border-b border-border px-4 py-2 text-sm text-muted-foreground">
-          Training feed from every quote attempt on this deal (quote_attempt_logs). Source of
-          truth for appetite — not a redesign.
-        </p>
-        {logs.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">No appetite attempts recorded.</p>
-        ) : (
-          <table className="ff-table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Carrier</th>
-                <th>Result</th>
-                <th>Bindable</th>
-                <th>Why</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map(({ log, carrier }) => (
-                <tr key={log.id} data-ff-appetite-log-row={log.id}>
-                  <td className="whitespace-nowrap text-xs">
-                    {log.attemptedAt.toISOString().slice(0, 10)}
-                  </td>
-                  <td>{carrier.name}</td>
-                  <td className="uppercase">{log.result.replaceAll("_", " ")}</td>
-                  <td>{log.bindable ? "Y" : "N"}</td>
-                  <td className="text-xs">{log.why}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { requireSiteDeveloperPage } from "@/lib/auth/guards";
 import { AppShell } from "@/components/app-shell";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { StatusBadge } from "@/components/status-badge";
@@ -8,6 +9,7 @@ import { LOGS_LIST_COLUMNS } from "@/lib/list-columns";
 export const dynamic = "force-dynamic";
 
 export default async function LogsPage() {
+  await requireSiteDeveloperPage();
   const rows = await listQuoteLogs();
   return (
     <AppShell title="Appetite Log">
