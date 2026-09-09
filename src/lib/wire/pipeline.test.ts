@@ -37,6 +37,30 @@ describe("pipeline switcher", () => {
     expect(SEEDED_PIPELINES.some((board) => /won-lost\s*\/\s*archive/i.test(board.name))).toBe(false);
   });
 
+  it("inserts Bound and Pending Inspection between Quote Sent and Closed Won", () => {
+    expect(SEEDED_PIPELINES.find((board) => board.slug === "p-c")?.stages.map((s) => s.slug)).toEqual([
+      "gather",
+      "quotes",
+      "review",
+      "quote_sent",
+      "bound",
+      "pending_inspection",
+      "closed_won",
+      "closed_lost",
+    ]);
+    for (const slug of ["health", "life", "flood"] as const) {
+      const stages = SEEDED_PIPELINES.find((board) => board.slug === slug)?.stages.map((s) => s.slug) ?? [];
+      const qs = stages.indexOf("quote_sent");
+      const bound = stages.indexOf("bound");
+      const pending = stages.indexOf("pending_inspection");
+      const won = stages.indexOf("closed_won");
+      expect(qs).toBeGreaterThanOrEqual(0);
+      expect(bound).toBe(qs + 1);
+      expect(pending).toBe(bound + 1);
+      expect(won).toBe(pending + 1);
+    }
+  });
+
   it("does not mark Flood as an admin board", () => {
     const flood = SEEDED_PIPELINES.find((board) => board.slug === "flood");
     expect(flood?.seeded).toBe(true);
@@ -81,7 +105,27 @@ describe("deal placement", () => {
     expect(dealMatchesBoard(elena, wonLost)).toBe(true);
     expect(dealMatchesBoard(elena, archive)).toBe(false);
     expect(dealMatchesStage(elena, "closed_won")).toBe(true);
+    expect(dealMatchesStage(elena, "bound")).toBe(false);
     expect(dealMatchesStage(elena, "closed_lost")).toBe(false);
+  });
+
+  it("matches Bound and Pending Inspection by board slug", () => {
+    const boundDeal = {
+      pipelineId: "pc",
+      pipelineStage: "bound",
+      pipelineStageSlug: "bound",
+      archivedAt: null,
+    };
+    const pendingDeal = {
+      pipelineId: "pc",
+      pipelineStage: "pending_inspection",
+      pipelineStageSlug: "pending_inspection",
+      archivedAt: null,
+    };
+    expect(dealMatchesStage(boundDeal, "bound")).toBe(true);
+    expect(dealMatchesStage(boundDeal, "closed_won")).toBe(false);
+    expect(dealMatchesStage(pendingDeal, "pending_inspection")).toBe(true);
+    expect(dealMatchesStage(pendingDeal, "bound")).toBe(false);
   });
 
   it("parks archived deals only on Archive", () => {
@@ -103,6 +147,12 @@ describe("stage move sync", () => {
     expect(resolveStageMove("shopping")).toEqual({ pipelineStage: "shopping", pipelineStageSlug: "gather" });
     expect(resolveStageMove("quotes")).toEqual({ pipelineStage: "quoting", pipelineStageSlug: "quotes" });
     expect(resolveStageMove("quote_sent")).toEqual({ pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent" });
+    expect(resolveStageMove("bound")).toEqual({ pipelineStage: "bound", pipelineStageSlug: "bound" });
+    expect(resolveStageMove("pending_inspection")).toEqual({
+      pipelineStage: "pending_inspection",
+      pipelineStageSlug: "pending_inspection",
+    });
+    expect(resolveStageMove("closed_won")).toEqual({ pipelineStage: "closed_won", pipelineStageSlug: "closed_won" });
     expect(resolveStageMove("closed_lost")).toEqual({ pipelineStage: "lost", pipelineStageSlug: "closed_lost" });
   });
 });

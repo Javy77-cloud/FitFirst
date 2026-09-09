@@ -177,9 +177,13 @@ describe("quote outcomes", () => {
     expect(chips.filter((c) => /mitigation/i.test(c))).toHaveLength(1);
   });
 
-  it("agent status labels: Quoted / Bound / Lost; aliases normalize", () => {
+  it("agent status labels: Quoted / Send / Review / Bound / Pending inspection / Won / Lost", () => {
     expect(AGENT_STATUS_LABELS.new).toBe("Quoted");
+    expect(AGENT_STATUS_LABELS.sent_to_client).toBe("Send");
+    expect(AGENT_STATUS_LABELS.client_reviewing).toBe("Review");
     expect(AGENT_STATUS_LABELS.bound).toBe("Bound");
+    expect(AGENT_STATUS_LABELS.waiting_on_inspection).toBe("Pending inspection");
+    expect(AGENT_STATUS_LABELS.won).toBe("Won");
     expect(AGENT_STATUS_LABELS.dead).toBe("Lost");
     expect(AGENT_STATUSES).toEqual([
       "new",
@@ -187,11 +191,13 @@ describe("quote outcomes", () => {
       "client_reviewing",
       "bound",
       "waiting_on_inspection",
+      "won",
       "dead",
     ]);
     expect(normalizeAgentStatus("quoted")).toBe("new");
     expect(normalizeAgentStatus("lost")).toBe("dead");
     expect(normalizeAgentStatus("bound")).toBe("bound");
+    expect(normalizeAgentStatus("won")).toBe("won");
   });
 
   it("short reason label stays scannable", () => {

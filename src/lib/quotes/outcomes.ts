@@ -45,16 +45,18 @@ export const AGENT_STATUSES = [
   "client_reviewing",
   "bound",
   "waiting_on_inspection",
+  "won",
   "dead",
 ] as const;
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
 export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
   new: "Quoted",
-  sent_to_client: "Sent to client",
-  client_reviewing: "Client reviewing",
+  sent_to_client: "Send",
+  client_reviewing: "Review",
   bound: "Bound",
-  waiting_on_inspection: "Waiting on inspection",
+  waiting_on_inspection: "Pending inspection",
+  won: "Won",
   dead: "Lost",
 };
 
@@ -68,6 +70,7 @@ export function normalizeAgentStatus(value: string | null | undefined): AgentSta
   const raw = value.trim().toLowerCase();
   if (raw === "quoted") return "new";
   if (raw === "lost") return "dead";
+  if (raw === "won") return "won";
   return isAgentStatus(raw) ? raw : "new";
 }
 

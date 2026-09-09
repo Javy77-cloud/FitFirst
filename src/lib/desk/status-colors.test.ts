@@ -14,8 +14,10 @@ describe("stage colors", () => {
     expect(defaultStageColor(1, "quotes")).toBe("teal");
     expect(defaultStageColor(2, "review")).toBe("amber");
     expect(defaultStageColor(3, "quote_sent")).toBe("violet");
-    expect(defaultStageColor(4, "closed_won")).toBe("green");
-    expect(defaultStageColor(5, "closed_lost")).toBe("rose");
+    expect(defaultStageColor(4, "bound")).toBe("orange");
+    expect(defaultStageColor(5, "pending_inspection")).toBe("amber");
+    expect(defaultStageColor(6, "closed_won")).toBe("green");
+    expect(defaultStageColor(7, "closed_lost")).toBe("rose");
     expect(defaultStageColor(0, "archive")).toBe("slate");
     expect(defaultStageColor(7, "custom_uw")).toBe("teal");
   });

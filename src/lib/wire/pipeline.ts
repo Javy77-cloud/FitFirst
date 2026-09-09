@@ -62,6 +62,8 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
       { slug: "quotes", name: "Meet / Quotes" },
       { slug: "review", name: "Review" },
       { slug: "quote_sent", name: "Quote Sent" },
+      { slug: "bound", name: "Bound" },
+      { slug: "pending_inspection", name: "Pending Inspection" },
       { slug: "closed_won", name: "Closed Won" },
       { slug: "closed_lost", name: "Closed Lost" },
     ],
@@ -75,6 +77,8 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
       { slug: "gather", name: "Gather Info" },
       { slug: "review", name: "Review" },
       { slug: "quote_sent", name: "Quote Sent" },
+      { slug: "bound", name: "Bound" },
+      { slug: "pending_inspection", name: "Pending Inspection" },
       { slug: "closed_won", name: "Closed Won" },
       { slug: "closed_lost", name: "Closed Lost" },
     ],
@@ -88,6 +92,8 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
       { slug: "gather", name: "Gather Info" },
       { slug: "review", name: "Review" },
       { slug: "quote_sent", name: "Quote Sent" },
+      { slug: "bound", name: "Bound" },
+      { slug: "pending_inspection", name: "Pending Inspection" },
       { slug: "closed_won", name: "Closed Won" },
       { slug: "closed_lost", name: "Closed Lost" },
     ],
@@ -100,6 +106,8 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
     stages: [
       { slug: "gather", name: "Gather Info" },
       { slug: "quote_sent", name: "Quote Sent" },
+      { slug: "bound", name: "Bound" },
+      { slug: "pending_inspection", name: "Pending Inspection" },
       { slug: "closed_won", name: "Closed Won" },
       { slug: "closed_lost", name: "Closed Lost" },
     ],
@@ -178,7 +186,8 @@ export function isAdminPipelineBadge(_board: { slug: string; seeded: boolean }) 
 }
 
 export function isClosedWonStage(slug: string | null | undefined) {
-  return slug === "closed_won" || slug === "bound";
+  // Bound is its own board stage; Closed Won matches closed_won / legacy won only.
+  return slug === "closed_won" || slug === "won";
 }
 
 export function isClosedLostStage(slug: string | null | undefined) {
@@ -217,7 +226,9 @@ export function nextMorning(from: Date) {
 }
 
 export function dealStageForPipeline(slug: string) {
-  if (slug === "closed_won") return "bound";
+  if (slug === "closed_won") return "closed_won";
+  if (slug === "bound") return "bound";
+  if (slug === "pending_inspection") return "pending_inspection";
   if (slug === "closed_lost") return "lost";
   if (slug === "archive") return "archive";
   if (slug === "quote_sent") return "quote_sent";
@@ -230,7 +241,9 @@ export function dealStageForPipeline(slug: string) {
 export function pipelineSlugForDealStage(stage: string) {
   if (stage === "shopping") return "gather";
   if (stage === "quoting") return "quotes";
-  if (stage === "bound") return "closed_won";
+  // Bound is its own board stage — do not collapse to closed_won.
+  if (stage === "bound") return "bound";
+  if (stage === "pending_inspection") return "pending_inspection";
   if (stage === "lost") return "closed_lost";
   return stage;
 }
@@ -253,6 +266,7 @@ export function isKnownStageToken(value: string) {
     "quoting",
     "quote_sent",
     "bound",
+    "pending_inspection",
     "lost",
     "archive",
     "gather",
@@ -275,9 +289,23 @@ export function dealMatchesStage(
   if (stageSlug === "archive") return isArchivedDeal(deal);
   if (isArchivedDeal(deal)) return false;
   const key = dealStageKey(deal);
-  if (stageSlug === "closed_won") return isClosedWonStage(key) || isClosedWonStage(deal.pipelineStage);
+  if (stageSlug === "closed_won") {
+    // Prefer board slug when set so Elena (slug closed_won, legacy stage bound) stays on Closed Won.
+    if (deal.pipelineStageSlug) {
+      return deal.pipelineStageSlug === "closed_won" || deal.pipelineStageSlug === "won";
+    }
+    return deal.pipelineStage === "closed_won" || deal.pipelineStage === "won";
+  }
   if (stageSlug === "closed_lost") return isClosedLostStage(key) || isClosedLostStage(deal.pipelineStage);
   if (stageSlug === "quote_sent") return key === "quote_sent" || deal.pipelineStage === "quote_sent";
+  if (stageSlug === "bound") {
+    if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "bound";
+    return deal.pipelineStage === "bound";
+  }
+  if (stageSlug === "pending_inspection") {
+    if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "pending_inspection";
+    return key === "pending_inspection" || deal.pipelineStage === "pending_inspection";
+  }
   if (stageSlug === "gather") {
     return key === "gather" || key === "shopping" || deal.pipelineStage === "shopping";
   }

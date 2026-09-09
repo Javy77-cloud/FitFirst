@@ -61,25 +61,38 @@ export async function ensureSeededPipelines() {
       .select()
       .from(pipelineStages)
       .where(and(eq(pipelineStages.tenantId, tenantId), eq(pipelineStages.pipelineId, current.id)));
-    const have = new Set(stages.map((stage) => stage.slug));
+    const stagesBySlug = new Map(stages.map((stage) => [stage.slug, stage]));
     for (const [sortOrder, stage] of seed.stages.entries()) {
-      if (have.has(stage.slug)) continue;
-      await db.insert(pipelineStages).values({
-        tenantId,
-        pipelineId: current.id,
-        name: stage.name,
-        slug: stage.slug,
-        sortOrder,
-        color: defaultStageColor(sortOrder, stage.slug),
-        seeded: seed.seeded,
-      });
-    }
-    for (const stage of stages) {
-      if (stage.color) continue;
-      await db
-        .update(pipelineStages)
-        .set({ color: defaultStageColor(stage.sortOrder, stage.slug) })
-        .where(eq(pipelineStages.id, stage.id));
+      const existingStage = stagesBySlug.get(stage.slug);
+      if (!existingStage) {
+        await db.insert(pipelineStages).values({
+          tenantId,
+          pipelineId: current.id,
+          name: stage.name,
+          slug: stage.slug,
+          sortOrder,
+          color: defaultStageColor(sortOrder, stage.slug),
+          seeded: seed.seeded,
+        });
+        continue;
+      }
+      // Live desk: re-align name/sortOrder (and color if empty) so new seed stages
+      // land in order and Closed Won shifts right without a wipe.
+      const colorEmpty = !existingStage.color;
+      if (
+        existingStage.name !== stage.name ||
+        existingStage.sortOrder !== sortOrder ||
+        colorEmpty
+      ) {
+        await db
+          .update(pipelineStages)
+          .set({
+            name: stage.name,
+            sortOrder,
+            ...(colorEmpty ? { color: defaultStageColor(sortOrder, stage.slug) } : {}),
+          })
+          .where(eq(pipelineStages.id, existingStage.id));
+      }
     }
   }
 

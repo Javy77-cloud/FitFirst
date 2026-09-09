@@ -158,10 +158,14 @@ describe("BH6 — stages, filters, and other columns stay", () => {
       "quotes",
       "review",
       "quote_sent",
+      "bound",
+      "pending_inspection",
       "closed_won",
       "closed_lost",
     ]);
-    expect(DEAL_STAGES).toEqual(expect.arrayContaining(["shopping", "quoting", "bound"]));
+    expect(DEAL_STAGES).toEqual(
+      expect.arrayContaining(["shopping", "quoting", "bound", "pending_inspection", "closed_won"]),
+    );
     const keys = (TABLE_COLUMNS.deals ?? []).map((column) => column.key);
     expect(keys).toEqual(
       expect.arrayContaining(["title", "stage", "line", "source", "tags", "assigned", "value", "phone"]),

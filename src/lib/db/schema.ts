@@ -1248,7 +1248,7 @@ export const quotes = pgTable(
     lostReason: text("lost_reason"),
     /** Agent 1–5 favorite; null = unrated. Quotes list sorts rating desc then premium. */
     agentRating: integer("agent_rating"),
-    /** new | sent_to_client | client_reviewing | waiting_on_inspection | dead */
+    /** new | sent_to_client | client_reviewing | bound | waiting_on_inspection | won | dead */
     agentStatus: text("agent_status").notNull().default("new"),
     /** too_expensive | client_dislikes_carrier | coverage_gap | inspection_failed | other — when dead */
     reasonForNo: text("reason_for_no"),
