@@ -199,7 +199,15 @@ export default async function DealPage({
               />
             </>
           }
-          corner={<DealMotivation stats={motivation} />}
+          corner={
+            <div
+              className="w-full"
+              style={{ marginBottom: "calc(-50px + 0.75rem)" }}
+              data-ff-deal-motivation-gap=""
+            >
+              <DealMotivation stats={motivation} />
+            </div>
+          }
           banner={
             isAna ? (
               <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
