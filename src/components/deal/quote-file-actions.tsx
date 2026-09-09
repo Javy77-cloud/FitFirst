@@ -89,7 +89,7 @@ function IconBadgeButton({
       {children}
       {count > 0 ? (
         <span
-          className="absolute -top-1.5 -right-1.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground"
+          className="absolute -top-1.5 -right-1.5 inline-flex size-4 items-center justify-center rounded-full bg-fit-flag text-[9px] font-semibold leading-none text-white shadow-sm"
           data-ff-quote-file-badge=""
         >
           {count > 99 ? "99+" : count}
