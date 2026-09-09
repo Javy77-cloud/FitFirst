@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { markAlertRead } from "@/app/actions/alerts";
+import { markAlertRead, snoozeDeskAlert } from "@/app/actions/alerts";
 import {
   hideFollowUpModalForLead,
   markFollowUpReadAndAdvance,
@@ -58,9 +58,10 @@ export function FollowUpReminderPopup({
     const form = new FormData();
     form.set("alertId", shown.id);
     const result = await markFollowUpReadAndAdvance(form);
-    if (result.leadId) {
+    const leadId = "leadId" in result ? result.leadId : null;
+    if (leadId) {
       publishLeadClock({
-        leadId: result.leadId,
+        leadId,
         dueAt: result.dueAt ?? null,
         followUpName: result.followUpName ?? "",
         done: !result.dueAt,
@@ -107,6 +108,18 @@ export function FollowUpReminderPopup({
     setOpen(false);
   }
 
+  async function snoozePlaybook(amount: number, unit: SnoozeDelayUnit) {
+    if (shown?.kind !== "playbook") return;
+    setPending(true);
+    const form = new FormData();
+    form.set("alertId", shown.id);
+    form.set("amount", String(amount));
+    form.set("unit", unit);
+    await snoozeDeskAlert(form);
+    setPending(false);
+    setOpen(false);
+  }
+
   const copy = shown.kind === "follow-up" ? parseFollowUpNotification(shown) : null;
 
   return (
@@ -141,7 +154,8 @@ export function FollowUpReminderPopup({
               <DialogTitle>{shown.title}</DialogTitle>
               <DialogDescription>{shown.body}</DialogDescription>
             </DialogHeader>
-            <p className="text-xs text-muted-foreground">In-desk playbook ping. Nothing emailed Javy.</p>
+            <p className="text-xs text-muted-foreground">In-app reminder. Nothing emailed Javy.</p>
+            <FollowUpSnoozePresets pending={pending} onSnooze={snoozePlaybook} testId="playbook-snooze" />
             <DialogFooter>
               <Button type="button" size="sm" variant="outline" onClick={() => void dismissPlaybook()}>
                 Dismiss

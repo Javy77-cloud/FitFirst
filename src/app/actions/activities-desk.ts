@@ -69,12 +69,29 @@ export async function logDeskActivity(formData: FormData) {
   const requireRelated = str(formData, "allowOrphan") !== "1";
   const related = relatedFromForm(formData, requireRelated);
   const eventType = kind === "call" || kind === "email" || kind === "sms" ? "logged" : "created";
-  const status = kind === "call" ? "completed" : str(formData, "status") || "open";
+  const duePreview = when(formData, "dueAt") ?? when(formData, "startAt");
+  const status =
+    kind === "call"
+      ? duePreview && duePreview.getTime() > Date.now()
+        ? "open"
+        : str(formData, "status") || "completed"
+      : str(formData, "status") || "open";
   const outcome = str(formData, "outcome") || null;
   const durationSeconds = optionalInt(formData, "durationSeconds");
   const phoneNumber = str(formData, "phone") || str(formData, "phoneNumber") || null;
   const direction =
     str(formData, "direction") || (kind === "call" ? "outbound" : kind === "email" || kind === "sms" ? "outbound" : null);
+
+  const meetingLocation = str(formData, "meetingLocation") || str(formData, "location") || null;
+  const reminderMinutes = optionalInt(formData, "reminderMinutes");
+  const notifyChannel = str(formData, "notifyChannel") || str(formData, "notify") || "popup";
+  let notes = str(formData, "notes") || null;
+  if (kind === "task" && reminderMinutes && reminderMinutes > 0) {
+    const reminderLabel =
+      reminderMinutes >= 1440 ? `${Math.round(reminderMinutes / 1440)}d` : `${reminderMinutes}m`;
+    const line = `Reminder: ${reminderLabel}`;
+    notes = notes ? `${notes}\n${line}` : line;
+  }
 
   const [activity] = await db
     .insert(activities)
@@ -82,7 +99,7 @@ export async function logDeskActivity(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       kind,
       title,
-      notes: str(formData, "notes") || null,
+      notes,
       status,
       dueAt: when(formData, "dueAt"),
       startAt: when(formData, "startAt") ?? when(formData, "dueAt"),
@@ -92,6 +109,7 @@ export async function logDeskActivity(formData: FormData) {
       durationSeconds,
       phoneNumber,
       direction,
+      meetingLocation,
       ...related,
     })
     .returning();
@@ -111,8 +129,29 @@ export async function logDeskActivity(formData: FormData) {
     durationSeconds,
   });
 
+  // Task reminder: in-app alert only (popup). Schedule via createdAt; snooze presets apply on popup.
+  if (kind === "task" && reminderMinutes && reminderMinutes > 0 && notifyChannel === "popup") {
+    const due = activity.dueAt ?? activity.startAt ?? new Date();
+    const fireAt = new Date(due.getTime() - reminderMinutes * 60 * 1000);
+    const createdAt = fireAt.getTime() > Date.now() ? fireAt : new Date();
+    const reminderLabel =
+      reminderMinutes >= 1440 ? `${Math.round(reminderMinutes / 1440)}d` : `${reminderMinutes}m`;
+    await db.insert(alerts).values({
+      tenantId: DEFAULT_TENANT_ID,
+      kind: "task_reminder",
+      title,
+      body: `In-app task reminder (${reminderLabel} before). Nothing emailed.`,
+      severity: "info",
+      entityType: "activity",
+      entityId: activity.id,
+      createdAt,
+    });
+  }
+
   revalidateRelated(related);
   if (kind === "call") revalidatePath("/phone");
+  revalidatePath("/notifications");
+  revalidatePath("/alerts");
 }
 
 export async function completeDeskActivity(formData: FormData) {
@@ -270,6 +309,44 @@ export async function deleteDeskActivity(formData: FormData) {
   await db.delete(activities).where(eq(activities.id, id));
   revalidateRelated(activity);
   return { ok: true };
+}
+
+/** Push dueAt/startAt forward by snooze amount. Used by DueCallPopups + activity reminders. */
+export async function snoozeDeskActivity(formData: FormData) {
+  const id = str(formData, "activityId");
+  const amount = Number(str(formData, "amount"));
+  const unit = str(formData, "unit");
+  if (!id || !Number.isFinite(amount) || amount < 1) return { ok: false as const };
+  const ms =
+    unit === "days"
+      ? Math.min(30, Math.max(1, Math.round(amount))) * 24 * 60 * 60 * 1000
+      : unit === "hours"
+        ? Math.min(24 * 30, Math.max(1, Math.round(amount))) * 60 * 60 * 1000
+        : Math.min(24 * 60 * 30, Math.max(1, Math.round(amount))) * 60 * 1000;
+  const [activity] = await db
+    .select()
+    .from(activities)
+    .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
+  if (!activity) return { ok: false as const };
+  const base = activity.dueAt ?? activity.startAt ?? new Date();
+  const next = new Date(base.getTime() + ms);
+  const endAt =
+    activity.endAt && activity.startAt
+      ? new Date(activity.endAt.getTime() + (next.getTime() - (activity.startAt ?? base).getTime()))
+      : activity.endAt;
+  await db
+    .update(activities)
+    .set({
+      dueAt: next,
+      startAt: activity.startAt ? next : activity.startAt,
+      endAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(activities.id, id));
+  revalidateRelated(activity);
+  revalidatePath("/phone");
+  revalidatePath("/calendar");
+  return { ok: true as const, dueAt: next.toISOString() };
 }
 
 /** Desk call close — used by the phone stub finish-call route. Not a softphone. */

@@ -11,6 +11,7 @@ import { isDeskUuid } from "@/lib/desk-id";
 import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
 import { flashAction } from "@/lib/flash-action";
+import { isSnoozeDelayUnit, snoozeDueAt } from "@/lib/leads/follow-up-templates";
 
 function revalidateNotificationSurfaces() {
   revalidatePath("/");
@@ -189,3 +190,37 @@ export async function updateReviewTask(formData: FormData) {
   revalidatePath(`/tasks/${id}`);
   flashAction(`/tasks/${id}`, "changes-saved");
 }
+
+/** Snooze any in-app popup alert (playbook / task reminder). Re-fires later via createdAt. */
+export async function snoozeDeskAlert(formData: FormData) {
+  const alertId = alertStr(formData, "alertId");
+  const amount = Number(alertStr(formData, "amount"));
+  const unitRaw = alertStr(formData, "unit");
+  if (!alertId || !Number.isFinite(amount) || amount < 1 || !isSnoozeDelayUnit(unitRaw)) {
+    return { ok: false as const };
+  }
+  const now = new Date();
+  const dueAt = snoozeDueAt(now, amount, unitRaw);
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(and(eq(alerts.tenantId, DEFAULT_TENANT_ID), eq(alerts.id, alertId)));
+  if (!alert) return { ok: false as const };
+
+  await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, alertId));
+  await db.insert(alerts).values({
+    tenantId: alert.tenantId,
+    kind: alert.kind,
+    title: alert.title,
+    body: alert.body,
+    severity: alert.severity,
+    entityType: alert.entityType,
+    entityId: alert.entityId,
+    userId: alert.userId,
+    recipientUserId: alert.recipientUserId,
+    createdAt: dueAt,
+  });
+  revalidateNotificationSurfaces();
+  return { ok: true as const, dueAt: dueAt.toISOString() };
+}
+

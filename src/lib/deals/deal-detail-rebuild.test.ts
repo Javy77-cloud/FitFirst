@@ -52,7 +52,9 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/flex w-full/);
     expect(page).toMatch(/min-w-0 flex-1/);
     expect(page).not.toMatch(/lg:w-\[72%\]/);
-    expect(source("src/components/section-tabs.tsx")).toMatch(/w-\[400px\] min-w-\[400px\] max-w-\[400px\]/);
+    expect(source("src/components/section-tabs.tsx")).toMatch(/data-ff-deal-rail-lock="420"/);
+    expect(source("src/components/section-tabs.tsx")).toMatch(/minmax\(0, 1fr\) 420px/);
+    expect(source("src/app/globals.css")).toMatch(/width: 420px !important;/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/data-ff-deal-flush-tabs/);
@@ -215,7 +217,9 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).toMatch(/data-ff-deal-quotes-corner/);
     expect(page).not.toMatch(/lg:w-\[72%\]/);
-    expect(source("src/components/section-tabs.tsx")).toMatch(/w-\[400px\] min-w-\[400px\] max-w-\[400px\]/);
+    expect(source("src/components/section-tabs.tsx")).toMatch(/data-ff-deal-rail-lock="420"/);
+    expect(source("src/components/section-tabs.tsx")).toMatch(/minmax\(0, 1fr\) 420px/);
+    expect(source("src/app/globals.css")).toMatch(/width: 420px !important;/);
     expect(page.indexOf("data-ff-deal-quotes-corner")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
     expect(page.indexOf("data-ff-deal-top-left")).toBeLessThan(page.indexOf("<SectionTabs"));
     expect(page.indexOf("<DealMotivation")).toBeLessThan(page.indexOf("<SectionTabs"));

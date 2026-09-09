@@ -105,7 +105,7 @@ export function SectionTabs({
         data-ff-deal-workspace=""
         className="grid w-full items-start"
         style={{
-          gridTemplateColumns: "minmax(0, 1fr) 400px",
+          gridTemplateColumns: "minmax(0, 1fr) 420px",
           columnGap: "1.25rem",
           rowGap: "0",
         }}
@@ -136,8 +136,8 @@ export function SectionTabs({
         <aside
           className="min-w-0 space-y-3 overflow-x-hidden"
           data-ff-deal-right-rail=""
-          data-ff-deal-rail-lock="400"
-          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 400 }}
+          data-ff-deal-rail-lock="420"
+          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 420 }}
         >
           {sidePanel}
         </aside>

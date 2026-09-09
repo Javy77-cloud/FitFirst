@@ -55,6 +55,9 @@ export async function sendDeskEmail(formData: FormData) {
   }
   const toAddress = str(formData, "toAddress") || str(formData, "email");
   const optOuts = await loadContactOptOuts(ids.contactId);
+  const dueAtRaw = str(formData, "dueAt");
+  const dueAt = dueAtRaw ? new Date(dueAtRaw) : null;
+  const dueAtSafe = dueAt && !Number.isNaN(dueAt.getTime()) ? dueAt : null;
   const written = await writeDeskComms({
     kind: "email",
     title: subject || "Email queued",
@@ -65,6 +68,8 @@ export async function sendDeskEmail(formData: FormData) {
     status: "open",
     toAddress,
     fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+    dueAt: dueAtSafe,
+    startAt: dueAtSafe,
     logEmailJob: false,
     ...ids,
   });
@@ -132,15 +137,22 @@ export async function sendDeskSms(formData: FormData) {
     return;
   }
   const optOuts = await loadContactOptOuts(ids.contactId);
+  const smsTitle = str(formData, "title") || "SMS queued";
+  const dueAtRawSms = str(formData, "dueAt");
+  const dueAtSms = dueAtRawSms ? new Date(dueAtRawSms) : null;
+  const dueAtSafeSms = dueAtSms && !Number.isNaN(dueAtSms.getTime()) ? dueAtSms : null;
   const written = await writeDeskComms({
     kind: "sms",
-    title: "SMS queued",
+    title: smsTitle,
     body,
     direction: "outbound",
     eventType: "queued",
     status: "open",
     toAddress,
     fromAddress: str(formData, "fromAddress") || null,
+    dueAt: dueAtSafeSms,
+    startAt: dueAtSafeSms,
+    phoneNumber: toAddress || null,
     logEmailJob: false,
     ...ids,
   });

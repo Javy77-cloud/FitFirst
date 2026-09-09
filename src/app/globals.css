@@ -689,7 +689,7 @@ body[data-ff-col-resize] {
   text-decoration: underline;
 }
 
-/* HARD LOCK (Javy 2026-09-09): deal right rail 400px so Task/Meeting/Call/Email/SMS fit one row. Left column takes leftover flex. */
+/* HARD LOCK (Javy 2026-09-09): deal right rail 420px so per-type Quick Comms forms breathe. Left column takes leftover flex. */
 [data-ff-deal-topband] {
   display: block;
   width: 100%;
@@ -699,19 +699,19 @@ body[data-ff-col-resize] {
 }
 [data-ff-deal-workspace] {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 400px !important;
+  grid-template-columns: minmax(0, 1fr) 420px !important;
   column-gap: 1.25rem !important;
   row-gap: 0 !important;
   align-items: start !important;
 }
 [data-ff-deal-quotes-corner] {
   justify-self: end !important;
-  width: 400px !important;
-  max-width: 400px !important;
+  width: 420px !important;
+  max-width: 420px !important;
 }
 [data-ff-deal-right-rail] {
-  width: 400px !important;
-  max-width: 400px !important;
+  width: 420px !important;
+  max-width: 420px !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }

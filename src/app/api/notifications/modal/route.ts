@@ -30,9 +30,15 @@ export async function GET(request: Request) {
         pathname,
       ),
   );
+  const now = Date.now();
   const playbookRow = followUpRow
     ? null
-    : alertRows.find((row) => !row.readAt && isPlaybookAlertKind(row.kind));
+    : alertRows.find(
+        (row) =>
+          !row.readAt &&
+          (isPlaybookAlertKind(row.kind) || row.kind === "task_reminder") &&
+          new Date(row.createdAt).getTime() <= now,
+      );
   return NextResponse.json({
     followUp: followUpRow
       ? {

@@ -219,7 +219,39 @@ export default async function DealPage({
           sidePanel={
             <>
               <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
-                <QuickCommsBoard items={comms} dealId={deal.id} />
+                <QuickCommsBoard
+                  items={comms}
+                  dealId={deal.id}
+                  leadId={deal.leadId}
+                  contactId={deal.contactId}
+                  accountId={deal.accountId}
+                  contactName={partyName}
+                  contactPhone={contact?.phone ?? lead?.phone}
+                  contactEmail={contact?.email ?? lead?.email}
+                  quoteFiles={docs
+                    .filter(
+                      (doc) =>
+                        doc.slot === "quote_file" ||
+                        doc.docType === "agency_quote" ||
+                        (Array.isArray(doc.tags) &&
+                          doc.tags.some(
+                            (tag) =>
+                              tag.startsWith("quote:") ||
+                              tag === "source:agency" ||
+                              tag === "source:carrier",
+                          )),
+                    )
+                    .map((doc) => {
+                      const quoteTag = Array.isArray(doc.tags)
+                        ? doc.tags.find((tag) => tag.startsWith("quote:"))
+                        : null;
+                      return {
+                        id: doc.id,
+                        name: doc.filename,
+                        quoteId: quoteTag ? quoteTag.slice("quote:".length) : null,
+                      };
+                    })}
+                />
               </div>
               <RecordContextRail context={context} />
             </>
