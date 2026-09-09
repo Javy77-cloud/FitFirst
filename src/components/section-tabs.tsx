@@ -110,8 +110,13 @@ export function SectionTabs({
           rowGap: "0",
         }}
       >
+        {/* Name + tabs share left cell so the tall quotes chip cannot push tabs down. */}
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-deal-heading="">
           {heading}
+          <div className="mt-1" data-ff-deal-tab-row-wrap="">
+            {tabList}
+            {banner}
+          </div>
         </div>
         <div
           className="flex items-start justify-end gap-2"
@@ -120,15 +125,11 @@ export function SectionTabs({
         >
           {corner}
         </div>
-        <div className="min-w-0" style={{ gridColumn: 1, gridRow: 2 }} data-ff-deal-tab-row-wrap="">
-          {tabList}
-          {banner}
-        </div>
         <div
           role="tabpanel"
           data-ff-deal-tab-panel=""
           className={cn("min-w-0", panelClassName)}
-          style={{ gridColumn: 1, gridRow: 3, paddingTop: 50 }}
+          style={{ gridColumn: 1, gridRow: 2, paddingTop: 50 }}
         >
           {current?.content}
         </div>
@@ -136,7 +137,7 @@ export function SectionTabs({
           className="min-w-0 space-y-3 overflow-x-hidden"
           data-ff-deal-right-rail=""
           data-ff-deal-rail-lock="400"
-          style={{ gridColumn: 2, gridRow: 3, paddingTop: 50, width: 400 }}
+          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 400 }}
         >
           {sidePanel}
         </aside>
