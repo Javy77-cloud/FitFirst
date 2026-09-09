@@ -179,7 +179,7 @@ describe("quote outcomes", () => {
 
   it("agent status labels: Quoted / Send / Review / Bound / Pending inspection / Won / Lost", () => {
     expect(AGENT_STATUS_LABELS.new).toBe("Quoted");
-    expect(AGENT_STATUS_LABELS.sent_to_client).toBe("Send");
+    expect(AGENT_STATUS_LABELS.sent_to_client).toBe("Sent");
     expect(AGENT_STATUS_LABELS.client_reviewing).toBe("Review");
     expect(AGENT_STATUS_LABELS.bound).toBe("Bound");
     expect(AGENT_STATUS_LABELS.waiting_on_inspection).toBe("Pending inspection");

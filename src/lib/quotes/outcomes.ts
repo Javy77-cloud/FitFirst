@@ -52,7 +52,7 @@ export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
 export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
   new: "Quoted",
-  sent_to_client: "Send",
+  sent_to_client: "Sent",
   client_reviewing: "Review",
   bound: "Bound",
   waiting_on_inspection: "Pending inspection",
