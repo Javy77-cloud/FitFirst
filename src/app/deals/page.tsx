@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { isPipelineSheetView, parsePipelineView } from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 import { listModuleTags } from "@/app/actions/record-tags";
+import { readDefaultPipelineView } from "@/app/actions/pipeline-view-prefs";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,9 @@ export default async function DealsPage({
   const session = await requireSignedIn();
   const params = await searchParams;
   const pipeline = first(params.pipeline);
-  const view = parsePipelineView(first(params.view));
+  const viewParam = first(params.view);
+  const savedDefaultView = await readDefaultPipelineView();
+  const view = parsePipelineView(viewParam ?? savedDefaultView ?? undefined);
   const stage = first(params.stage);
   const q = first(params.q) ?? "";
   const queue = first(params.queue);
@@ -148,6 +151,7 @@ export default async function DealsPage({
         boards={boards.map((item) => ({ slug: item.slug, name: item.name }))}
         pipeline={selectedPipeline}
         view={view}
+        defaultView={savedDefaultView}
         stage={stage}
         family={filter.family}
         pcSub={filter.pcSub}

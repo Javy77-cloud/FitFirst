@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { dealsHref, parsePipelineView } from "@/lib/wire/pipeline";
+import { dealsHref } from "@/lib/wire/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +14,11 @@ export default async function PipelineRedirectPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  // Pass view only when present so cookie default still applies on bare /pipeline.
   redirect(
     dealsHref({
       pipeline: first(params.pipeline),
-      view: parsePipelineView(first(params.view)),
+      view: first(params.view),
       stage: first(params.stage),
       lifeSub: first(params.lifeSub),
       healthSub: first(params.healthSub),

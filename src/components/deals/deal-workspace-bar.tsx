@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
+import { PipelineViewDefaultStar } from "@/components/deals/pipeline-view-default-star";
 import {
   dealsHref,
   isPipelineSheetView,
@@ -37,6 +38,7 @@ export function DealWorkspaceBar({
   boards,
   pipeline,
   view,
+  defaultView = null,
   stage,
   family,
   pcSub,
@@ -48,6 +50,8 @@ export function DealWorkspaceBar({
   boards: BoardTab[];
   pipeline?: string | null;
   view?: string | null;
+  /** Saved per-agent cookie default (null = system list fallback). */
+  defaultView?: PipelineViewId | null;
   stage?: string | null;
   family?: string | null;
   pcSub?: string | null;
@@ -58,7 +62,7 @@ export function DealWorkspaceBar({
 }) {
   const parsedView = parsePipelineView(view);
   const extras = {
-    view: parsedView === "list" ? null : parsedView,
+    view: parsedView,
     stage,
     family: pipeline ? null : family,
     pcSub,
@@ -136,6 +140,7 @@ export function DealWorkspaceBar({
               {label}
             </Link>
           ))}
+          <PipelineViewDefaultStar currentView={parsedView} defaultView={defaultView ?? null} />
         </span>
       </div>
       {subtypeChips.length > 0 ? (

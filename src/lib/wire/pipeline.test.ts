@@ -8,6 +8,7 @@ import {
   parsePipelineFields,
   parsePipelineView,
   pipelineFunnelRows,
+  dealsHref,
   pipelineHref,
   pipelinePageTitle,
   pipelineTabLabel,
@@ -177,14 +178,16 @@ describe("pipeline views", () => {
     expect(parsePipelineView("board")).toBe("board");
     expect(parsePipelineView("kanban")).toBe("list");
     expect(pipelineHref("p-c")).toBe("/deals?pipeline=p-c");
-    expect(pipelineHref("p-c", "table")).toBe("/deals?pipeline=p-c");
-    expect(pipelineHref("p-c", "list")).toBe("/deals?pipeline=p-c");
+    expect(pipelineHref("p-c", "table")).toBe("/deals?pipeline=p-c&view=list");
+    expect(pipelineHref("p-c", "list")).toBe("/deals?pipeline=p-c&view=list");
     expect(pipelineHref("p-c", "grid")).toBe("/deals?pipeline=p-c&view=grid");
     expect(pipelineHref("p-c", "funnel")).toBe("/deals?pipeline=p-c&view=funnel");
     expect(pipelineHref("p-c", "board")).toBe("/deals?pipeline=p-c&view=board");
     expect(pipelineHref("p-c", "list", "quote_sent")).toBe(
-      "/deals?pipeline=p-c&stage=quote_sent",
+      "/deals?pipeline=p-c&view=list&stage=quote_sent",
     );
+    expect(dealsHref({ view: "list" })).toBe("/deals?view=list");
+    expect(dealsHref({})).toBe("/deals");
   });
 
   it("summarizes stage counts for the funnel and click-through", () => {

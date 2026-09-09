@@ -156,8 +156,10 @@ export function dealsHref(opts: {
 } = {}) {
   const params = new URLSearchParams();
   if (opts.pipeline && opts.pipeline !== "all") params.set("pipeline", opts.pipeline);
-  const parsed = parsePipelineView(opts.view);
-  if (parsed !== "list") params.set("view", parsed);
+  // When view is provided (including list), always write it so URL wins over cookie default.
+  if (opts.view != null && String(opts.view).length > 0) {
+    params.set("view", parsePipelineView(opts.view));
+  }
   if (opts.stage) params.set("stage", opts.stage);
   if (opts.lifeSub) params.set("lifeSub", opts.lifeSub);
   if (opts.healthSub) params.set("healthSub", opts.healthSub);
