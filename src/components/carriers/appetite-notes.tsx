@@ -19,12 +19,14 @@ export function AppetiteNotesPanel({
   rule,
   appointments,
   closeHref,
+  showSellingAgency = true,
 }: {
   carrierName: string;
   dontWriteNotes: string | null;
   rule: AppetiteNotesRule | null;
   appointments: AppointmentRowInput[];
   closeHref: string;
+  showSellingAgency?: boolean;
 }) {
   return (
     <section className="ff-card mb-3 p-4">
@@ -57,7 +59,7 @@ export function AppetiteNotesPanel({
       </dl>
       <div className="mt-4">
         <h3 className="mb-2 text-sm font-semibold text-navy">Appointments</h3>
-        <AppointmentRows appointments={appointments} showSellingAgency={false} />
+        <AppointmentRows appointments={appointments} showSellingAgency={showSellingAgency} />
       </div>
     </section>
   );

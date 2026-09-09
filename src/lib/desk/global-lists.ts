@@ -12,6 +12,7 @@ import {
   type InsuranceFamily,
 } from "@/lib/desk/policy-family";
 import { policyStatusColor } from "@/lib/desk/status-colors";
+import { SELLING_AGENCIES } from "@/lib/domain-ams";
 
 export const GLOBAL_LIST_KEYS = [
   "policy_type",
@@ -20,6 +21,7 @@ export const GLOBAL_LIST_KEYS = [
   "policy_status",
   "document_category",
   "payment_status",
+  "selling_agency",
 ] as const;
 
 export type GlobalListKey = (typeof GLOBAL_LIST_KEYS)[number];
@@ -31,6 +33,7 @@ export const GLOBAL_LIST_LABEL: Record<GlobalListKey, string> = {
   policy_status: "Policy statuses",
   document_category: "File categories",
   payment_status: "Payment statuses",
+  selling_agency: "Selling agencies",
 };
 
 export type GlobalListSeed = {
@@ -142,8 +145,21 @@ export function defaultGlobalLists(): GlobalListSeed[] {
     });
   });
 
+
+  SELLING_AGENCIES.forEach((label, index) => {
+    rows.push({
+      listKey: "selling_agency",
+      family: null,
+      parentSlug: null,
+      slug: slugify(label),
+      label,
+      sortOrder: index,
+      color: null,
+    });
+  });
+
   return rows;
-}
+
 
 export function listsForFamily<T extends { family: string | null; listKey: string; label: string; active?: boolean }>(
   rows: T[],

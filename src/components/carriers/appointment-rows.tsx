@@ -10,7 +10,7 @@ export type AppointmentRowInput = {
 
 export function AppointmentRows({
   appointments,
-  showSellingAgency = false,
+  showSellingAgency = true,
 }: {
   appointments: AppointmentRowInput[];
   showSellingAgency?: boolean;

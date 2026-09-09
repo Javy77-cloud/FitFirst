@@ -74,7 +74,7 @@ export default async function GlobalListsPage() {
           Writing companies already on the book. Open a carrier to edit NAIC, AM Best, and appetite.
         </p>
         <ul className="mt-3 columns-1 gap-x-6 text-sm sm:columns-2">
-          {carriers.map(({ carrier }) => (
+          {[...carriers].sort((a, b) => a.carrier.name.localeCompare(b.carrier.name)).map(({ carrier }) => (
             <li key={carrier.id} className="break-inside-avoid py-0.5">
               <Link href={`/carriers/${carrier.id}`} className="text-primary hover:underline">
                 {carrier.name}

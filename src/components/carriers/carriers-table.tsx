@@ -37,10 +37,12 @@ export function CarriersTable({
   rows,
   visible,
   notesId,
+  showSellingAgency = true,
 }: {
   rows: CarrierTableRow[];
   visible: Record<CarrierTableColumnId, boolean>;
   notesId?: string;
+  showSellingAgency?: boolean;
 }) {
   const show = (id: CarrierTableColumnId) => visible[id];
   const qs = colsQuery(visible);
@@ -123,7 +125,7 @@ export function CarriersTable({
                     ) : null}
                     {show("appointments") ? (
                       <td>
-                        <AppointmentRows appointments={row.appointments} />
+                        <AppointmentRows appointments={row.appointments} showSellingAgency={showSellingAgency} />
                       </td>
                     ) : null}
                     <td>
