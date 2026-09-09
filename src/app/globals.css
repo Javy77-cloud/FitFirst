@@ -205,7 +205,7 @@
   width: max-content;
   max-width: 100%;
   overflow: visible;
-  padding: 4px 0;
+  padding: 0;
   background: none;
   background-color: transparent;
   background-image: none;
@@ -229,17 +229,18 @@
 
 /* Soft rounded cards — icon + count + word inside. 3D fill + hover lift stay. */
 .deal-today-chip {
-  min-width: 100px;
-  min-height: 100px;
-  padding: 14px 12px 12px;
+  /* Tip sep7gn: a bit smaller; stay in the same spot, just higher on the page. */
+  min-width: 84px;
+  min-height: 84px;
+  padding: 10px 8px 8px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 10px;
   background-color: var(--chip-mid);
   background-image: linear-gradient(
     to bottom,
@@ -262,14 +263,14 @@
     box-shadow 170ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .deal-today-chip-count {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--chip-fg, currentColor) 78%, #ffffff);
 }
 .deal-today-chip-word {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.15;
   font-weight: 650;
   letter-spacing: 0.01em;

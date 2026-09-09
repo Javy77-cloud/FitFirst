@@ -49,7 +49,7 @@ export function TodayActivityStrip({
           {dated}
         </p>
       </div>
-      <div className="deal-today-chips mt-2 flex flex-nowrap items-center justify-center gap-2 overflow-visible">
+      <div className="deal-today-chips mt-1 flex flex-nowrap items-center justify-center gap-2 overflow-visible">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -77,13 +77,13 @@ export function TodayActivityStrip({
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  minWidth: 100,
-                  minHeight: 100,
-                  borderRadius: 12,
+                  minWidth: 84,
+                  minHeight: 84,
+                  borderRadius: 10,
                   boxSizing: "border-box",
                 }}
               >
-                <Icon className="size-5 shrink-0" aria-hidden />
+                <Icon className="size-4 shrink-0" aria-hidden />
                 <span className="deal-today-chip-count">{counts[chip.id]}</span>
                 <span className="deal-today-chip-word">{chip.label}</span>
               </span>

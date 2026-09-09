@@ -90,6 +90,7 @@ export default async function DealsPage({
   const board = boardData?.board ?? null;
   const notice = first(params.notice);
   const saved = first(params.saved) === "1";
+  // Tip sep7gn: no list/grid/board/funnel instructional blurbs under the title.
   const hint =
     filter.attention === "bound_pending"
       ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
@@ -99,15 +100,9 @@ export default async function DealsPage({
           ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
           : pipeline === "flood"
             ? "Flood shopping. Same stages as the other boards — add, remove, or reorder as Admin."
-            : view === "funnel"
-              ? "Counts by stage. Click a bar to open the table for that stage."
-              : view === "board"
-                ? "Drag deals between columns. Use the up/down arrow on a stage header to fold it. Call or schedule a meeting from the card."
-                : filter.stage
-                  ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
-                  : view === "grid"
-                    ? "Grid edits deal fields in place. Type or pick a value, then blur or Enter. List is click-through. Board and Funnel stay on the same filters."
-                    : "Deals and the pipeline are the same book. List opens the related record. Grid edits cells in place. Board and Funnel sit on the same filters — P&C, Health, Life, Flood, Won-Lost, Archived. Quotes are not coverage.";
+            : filter.stage
+              ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
+              : "";
 
   return (
     <AppShell
@@ -120,7 +115,7 @@ export default async function DealsPage({
       }
     >
       <SavedToast show={saved} message="Deal saved." listHref="/deals" />
-      <p className="mb-3 text-sm text-muted-foreground">{hint}</p>
+      {hint ? <p className="mb-3 text-sm text-muted-foreground">{hint}</p> : null}
       {notice === "need-deal" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Choose an existing Deal (person or business name) before files are stored.
@@ -159,7 +154,7 @@ export default async function DealsPage({
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
       <div
-        className="deal-upload-activity mb-6"
+        className="deal-upload-activity mb-3"
         data-testid="deal-upload-activity"
         style={{
           display: "flex",
