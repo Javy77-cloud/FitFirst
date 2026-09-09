@@ -189,7 +189,7 @@ export default async function DealPage({
           defaultValue="details"
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
-          panelClassName="mt-3"
+          panelClassName="mt-4"
           banner={
             <>
               <RecordDeveloperActions

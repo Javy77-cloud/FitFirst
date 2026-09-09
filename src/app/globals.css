@@ -750,15 +750,22 @@ body[data-ff-col-resize] {
 }
 
 /* Site-wide hover tips — rounded (native title tooltips cannot be styled). */
+/* All deal tabs: first item starts at the same place under the tab row. */
 [data-ff-deal-tab-panel] {
-  margin-top: 0.75rem !important; /* same as Details mt-3 */
+  margin-top: 1rem !important;
+  padding-top: 0 !important;
 }
-/* Match original Details: Edit Layout row + mb-3 before first section */
+[data-ff-deal-tab-panel] > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
 [data-ff-deal-docs],
 [data-ff-deal-markets],
 [data-ff-deal-quotes],
-[data-ff-deal-quotes-empty] {
-  padding-top: 2.75rem; /* ≈ Edit Layout control row + mb-3 */
+[data-ff-deal-quotes-empty],
+[data-ff-deal-details] {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 /* Deal SectionTabs: idle = solid brand blue fill */
