@@ -522,6 +522,7 @@ export function DeskSidebar({
 
   return (
     <aside
+      data-ff-no-title-tip=""
       className={cn(
         "ff-no-print sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground md:flex",
         narrow ? "w-14" : "w-60",
