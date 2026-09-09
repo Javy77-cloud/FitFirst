@@ -75,9 +75,10 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
       expect(nav).toMatch(`FIELD_LAYOUT_MODULE_LABEL[module]`);
     }
 
+    // Tip sep7gi: Edit Layout belongs on detail pages / Settings field builder — not list mass-bar chrome.
     const mass = source("src/components/developer-hub/list-selection.tsx");
-    expect(mass).toMatch(/isFieldLayoutModule\(module\)/);
-    expect(mass).toMatch(/<EditLayoutLink module=\{module\} \/>/);
+    expect(mass).not.toMatch(/EditLayoutLink/);
+    expect(mass).not.toMatch(/isFieldLayoutModule/);
     expect(mass).not.toMatch(/moduleId === "pipeline"/);
 
     expect(source("src/app/leads/[id]/page.tsx")).toMatch(/<EditLayoutLink module="leads" \/>/);
@@ -85,8 +86,8 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
     expect(source("src/app/policies/[id]/page.tsx")).toMatch(/<EditLayoutLink module="policies" \/>/);
     expect(source("src/app/accounts/[id]/page.tsx")).toMatch(/<EditLayoutLink module="businesses" \/>/);
     expect(source("src/app/carriers/[id]/page.tsx")).toMatch(/<EditLayoutLink module="carriers" \/>/);
-    expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(
-      /<EditLayoutLink module="deals" line=\{line\} \/>/,
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(
+      /toolbar=\{activeTab === "details" \? <EditLayoutLink module="deals" line=\{deal\.lineOfBusiness\} \/> : null\}/,
     );
 
     const settings = source("src/lib/settings/nav.ts");

@@ -1,11 +1,9 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { SelectionActionsMenu } from "@/components/lists/selection-actions-menu";
 import { MassUpdateMenu, type MassUpdateOwner, type MassUpdateTemplate } from "@/components/lists/mass-update";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
-import { isFieldLayoutModule } from "@/lib/custom-fields/modules";
 import { selectAllMode } from "@/lib/lists/mass-update";
 import type { CrmListModule, SelectionRecord } from "@/lib/lists/selection-actions";
 
@@ -171,7 +169,6 @@ export function ListMassBar({
           onMessage={setMessage}
           onClear={clear}
         />
-        {isFieldLayoutModule(module) ? <EditLayoutLink module={module} /> : null}
         {selected.length ? (
           <button
             type="button"

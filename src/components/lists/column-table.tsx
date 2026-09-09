@@ -368,7 +368,7 @@ export function ColumnTable({
   );
 }
 
-/** Prefer the list mass-bar chrome slot (same band as Edit Layout); else a row above the table. */
+/** Prefer the list mass-bar chrome slot (Columns / ⋯); else a row above the table. */
 function ListColumnsChrome({ children }: { children: ReactNode }) {
   const mounted = useClientMounted();
   const inListBar = useOptionalSelection() != null;
