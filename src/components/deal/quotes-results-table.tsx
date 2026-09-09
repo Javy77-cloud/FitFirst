@@ -37,7 +37,7 @@ import {
 } from "@/lib/quotes/outcomes";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, EyeOff, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
 
@@ -245,7 +245,7 @@ export function QuotesResultsTable({
   const [hideMarked, setHideMarked] = useState<string[]>([]);
   const [hidesApplied, setHidesApplied] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [declinedOpen, setDeclinedOpen] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState<Record<string, boolean>>({});
   const [pendingDead, setPendingDead] = useState<Record<string, boolean>>({});
   const [alertQuoteId, setAlertQuoteId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -312,6 +312,34 @@ export function QuotesResultsTable({
     setExpanded((current) => {
       const currentlyOpen = id in current ? current[id] : fallbackOpen;
       return { ...current, [id]: !currentlyOpen };
+    });
+  }
+
+  function isSectionOpen(key: string): boolean {
+    return sectionOpen[key] === true;
+  }
+
+  function toggleSection(key: string) {
+    setSectionOpen((current) => ({
+      ...current,
+      [key]: !(current[key] === true),
+    }));
+  }
+
+  function collapseAllSections() {
+    setSectionOpen({
+      bindable: false,
+      conditional: false,
+      declined_no_market: false,
+    });
+    setExpanded({});
+  }
+
+  function expandAllSections() {
+    setSectionOpen({
+      bindable: true,
+      conditional: true,
+      declined_no_market: true,
     });
   }
 
@@ -418,6 +446,27 @@ export function QuotesResultsTable({
             {pending ? "Queuing…" : anyRecheck ? `Recheck (${recheckCount})` : "Recheck"}
           </Button>
 
+          <button
+            type="button"
+            onClick={collapseAllSections}
+            title="Collapse all"
+            data-ff-quotes-collapse-all=""
+            aria-label="Collapse all"
+            className="inline-flex size-8 items-center justify-center rounded-md border border-primary/35 bg-primary/10 text-primary shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+          >
+            <ChevronsDownUp className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={expandAllSections}
+            title="Expand all"
+            data-ff-quotes-expand-all=""
+            aria-label="Expand all"
+            className="inline-flex size-8 items-center justify-center rounded-md border border-primary/35 bg-primary/10 text-primary shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+          >
+            <ChevronsUpDown className="size-4" />
+          </button>
+
           {hidesEffectivelyApplied ? (
             <Button
               type="button"
@@ -469,45 +518,35 @@ export function QuotesResultsTable({
           if (visibleRows.length === 0 && section.rows.length > 0 && hidesEffectivelyApplied) {
             return null;
           }
-          const collapsed = section.collapseByDefault && !declinedOpen;
+          const collapsed = !isSectionOpen(section.key);
           return (
             <section
               key={section.key}
               data-ff-quote-outcome-group={section.key}
               className="space-y-2"
             >
-              {section.collapseByDefault ? (
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-muted/40"
-                  data-ff-quotes-declined-toggle=""
-                  aria-expanded={!collapsed}
-                  onClick={() => setDeclinedOpen((v) => !v)}
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-muted/40"
+                data-ff-quotes-section-toggle={section.key}
+                aria-expanded={!collapsed}
+                onClick={() => toggleSection(section.key)}
+              >
+                <span
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-primary/35 bg-primary/10 text-primary"
+                  aria-hidden
                 >
                   {collapsed ? (
-                    <ChevronRight className="size-4 text-muted-foreground" />
+                    <ChevronRight className="size-3.5" />
                   ) : (
-                    <ChevronDown className="size-4 text-muted-foreground" />
+                    <ChevronDown className="size-3.5" />
                   )}
-                  <h4 className="text-sm font-semibold text-navy">
-                    {collapsed
-                      ? `Show declined / no market (${section.rows.length})`
-                      : section.label}
-                  </h4>
-                  {!collapsed ? (
-                    <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
-                      {visibleRows.length}
-                    </span>
-                  ) : null}
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 px-1">
-                  <h4 className="text-sm font-semibold text-navy">{section.label}</h4>
-                  <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
-                    {visibleRows.length}
-                  </span>
-                </div>
-              )}
+                </span>
+                <h4 className="text-sm font-semibold text-navy">{section.label}</h4>
+                <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
+                  {visibleRows.length}
+                </span>
+              </button>
 
               {collapsed ? null : (
                 <div className="space-y-2">
@@ -516,9 +555,9 @@ export function QuotesResultsTable({
                     const canBind =
                       outcome === "bindable" || quote.nextStep === "can_bind" || quote.bindable;
                     const openHref = carrierOpenHref(quote, carrier);
-                    const conditionalDefaultOpen = outcome === "conditional";
+                    const detailsDefaultOpen = false;
                     const detailsOpen =
-                      quote.id in expanded ? Boolean(expanded[quote.id]) : conditionalDefaultOpen;
+                      quote.id in expanded ? Boolean(expanded[quote.id]) : detailsDefaultOpen;
                     const reqChips = bindRequirementChips({
                       notes: quote.notes,
                       gaps: quote.coverageGaps,
@@ -633,7 +672,7 @@ export function QuotesResultsTable({
                                 variant="ghost"
                                 data-ff-quote-details={quote.id}
                                 aria-expanded={detailsOpen}
-                                onClick={() => toggleDetails(quote.id, conditionalDefaultOpen)}
+                                onClick={() => toggleDetails(quote.id, detailsDefaultOpen)}
                                 className="hover:bg-muted hover:text-navy hover:shadow-sm"
                               >
                                 {detailsOpen ? "Hide details" : "Details"}
