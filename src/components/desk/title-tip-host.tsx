@@ -6,6 +6,8 @@ type TipState = {
   text: string;
   x: number;
   y: number;
+  /** Prefer below the control so the tip never covers the click target. */
+  place: "below" | "above";
 };
 
 /**
@@ -55,11 +57,12 @@ export function TitleTipHost() {
 
       const rect = el.getBoundingClientRect();
       showTimer = window.setTimeout(() => {
-        setTip({
-          text,
-          x: rect.left + rect.width / 2,
-          y: rect.top,
-        });
+        const gap = 10;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const place: "below" | "above" = spaceBelow < 56 ? "above" : "below";
+        const x = Math.min(Math.max(rect.left + rect.width / 2, 72), window.innerWidth - 72);
+        const y = place === "below" ? rect.bottom + gap : rect.top - gap;
+        setTip({ text, x, y, place });
       }, 280);
     }
 
@@ -95,7 +98,12 @@ export function TitleTipHost() {
     <div
       role="tooltip"
       data-ff-title-tip=""
-      className="ff-title-tip pointer-events-none fixed z-[9999] max-w-xs -translate-x-1/2 -translate-y-[calc(100%+8px)] px-2.5 py-1.5 text-[12px] leading-snug text-navy shadow-md"
+      data-ff-title-tip-place={tip.place}
+      className={
+        tip.place === "below"
+          ? "ff-title-tip pointer-events-none fixed z-[9999] max-w-xs -translate-x-1/2 px-2.5 py-1.5 text-[12px] leading-snug text-navy shadow-md"
+          : "ff-title-tip pointer-events-none fixed z-[9999] max-w-xs -translate-x-1/2 -translate-y-full px-2.5 py-1.5 text-[12px] leading-snug text-navy shadow-md"
+      }
       style={{ left: tip.x, top: tip.y }}
     >
       {tip.text}
