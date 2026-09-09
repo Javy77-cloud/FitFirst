@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
 import { SheetSettingsMenu } from "@/components/lists/sheet-settings-menu";
 import { ColumnSortFilter } from "@/components/lists/funnel-sort";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
+import { useClientMounted } from "@/hooks/use-client-mounted";
 import { ListPagination } from "@/components/lists/list-pagination";
 import { compareSheetValues } from "@/lib/desk/sheet-layout";
 import {
@@ -263,9 +265,23 @@ export function ColumnTable({
     }
   }
 
+  const chrome = (
+    <>
+      <SheetSettingsMenu moduleId={queryModule} />
+      <ColumnsMenu
+        columns={columns}
+        visible={visible}
+        onToggle={toggle}
+        onReorder={reorder}
+        onReset={reset}
+      />
+    </>
+  );
+
   return (
     <div className="overflow-x-auto">
       <ListScopeReporter visibleIds={visibleIds} matchingIds={matchingIds} />
+      <ListColumnsChrome>{chrome}</ListColumnsChrome>
       <table className="ff-table ff-list-table">
         <colgroup>
           {shown.map((column) => (
@@ -274,7 +290,6 @@ export function ColumnTable({
               style={{ width: appliedWidths[column.id] ?? defaultColumnWidth(column) }}
             />
           ))}
-          <col className="ff-col-manage" />
         </colgroup>
         <thead>
           <tr>
@@ -301,24 +316,12 @@ export function ColumnTable({
                 onWidth={onWidth}
               />
             ))}
-            <th className="ff-col-manage">
-              <div className="flex items-center justify-end gap-1">
-                <ColumnsMenu
-                  columns={columns}
-                  visible={visible}
-                  onToggle={toggle}
-                  onReorder={reorder}
-                  onReset={reset}
-                />
-                <SheetSettingsMenu moduleId={queryModule} />
-              </div>
-            </th>
           </tr>
         </thead>
         <tbody>
           {sortedRows.length === 0 ? (
             <tr>
-              <td colSpan={shown.length + 1} className="text-muted-foreground">
+              <td colSpan={Math.max(shown.length, 1)} className="text-muted-foreground">
                 {liveQuery.trim()
                   ? `No records containing “${liveQuery.trim()}”.`
                   : (empty ?? "No records.")}
@@ -337,7 +340,6 @@ export function ColumnTable({
                     {row.cells[column.id]}
                   </td>
                 ))}
-                <td className="ff-col-manage" aria-hidden />
               </tr>
             ))
           )}
@@ -353,6 +355,32 @@ export function ColumnTable({
         onPage={setPage}
         onPageSize={onPageSize}
       />
+    </div>
+  );
+}
+
+/** Prefer the list mass-bar chrome slot (same band as Edit Layout); else a row above the table. */
+function ListColumnsChrome({ children }: { children: ReactNode }) {
+  const mounted = useClientMounted();
+  const inListBar = useOptionalSelection() != null;
+  const [host, setHost] = useState<Element | null>(null);
+
+  useEffect(() => {
+    setHost(document.querySelector("[data-ff-list-chrome]"));
+  }, []);
+
+  if (host) {
+    return createPortal(children, host);
+  }
+
+  // Mass-bar host will appear — avoid flashing a second Columns row above the table.
+  if (inListBar || !mounted) {
+    return null;
+  }
+
+  return (
+    <div className="mb-2 flex justify-end gap-1 print:hidden" data-ff-list-chrome-fallback="">
+      {children}
     </div>
   );
 }

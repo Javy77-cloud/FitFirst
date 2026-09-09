@@ -129,10 +129,11 @@ describe("pipeline list / grid sheet", () => {
     expect(cell).toMatch(/MultilineNotesCell/);
     expect(cell).toMatch(/data-ff-notes-expanded/);
     expect(cell).toMatch(/onFocus=\{\(\) => setExpanded\(true\)\}/);
-    expect(cell).toMatch(/rows=\{expanded \? 4 : 1\}/);
+    expect(cell).toMatch(/rows=\{expanded \? 2 : 1\}/);
+    expect(cell).toMatch(/min-h-\[2\.75rem\]/);
     expect(cell).toMatch(/whitespace-nowrap/);
     expect(cell).toMatch(/text-ellipsis/);
-    expect(cell).not.toMatch(/rows=\{2\}/);
+    expect(cell).not.toMatch(/rows=\{expanded \? 4 : 1\}/);
     const table = source("src/components/deals/deals-table.tsx");
     expect(table).toMatch(/control === "multiline"/);
     expect(table).toMatch(/mode === "grid" \|\| control === "multiline"/);

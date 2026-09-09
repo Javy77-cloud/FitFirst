@@ -36,12 +36,12 @@ function MultilineNotesCell({
       className={cn(
         "w-full min-w-[8rem] rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
         expanded
-          ? "min-h-[4.5rem] py-1 whitespace-pre-wrap"
+          ? "min-h-[2.75rem] py-1 whitespace-pre-wrap"
           : "h-7 min-h-7 overflow-hidden whitespace-nowrap text-ellipsis py-1 leading-tight",
       )}
       value={draft}
       disabled={disabled}
-      rows={expanded ? 4 : 1}
+      rows={expanded ? 2 : 1}
       onChange={(event) => onDraftChange(event.target.value)}
       onFocus={() => setExpanded(true)}
       onBlur={() => {

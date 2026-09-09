@@ -27,6 +27,7 @@ const SelectionContext = createContext<{
   clear: () => void;
 } | null>(null);
 
+
 function sameIds(left: string[], right: string[]) {
   return left.length === right.length && left.every((id, index) => id === right[index]);
 }
@@ -183,11 +184,16 @@ export function ListMassBar({
         {showMacrosLink ? (
           <a
             href="/settings/developer-hub/macros"
-            className="ml-auto text-xs text-muted-foreground hover:text-primary hover:underline"
+            className="text-xs text-muted-foreground hover:text-primary hover:underline"
           >
             Settings · Macros
           </a>
         ) : null}
+        <span
+          data-ff-list-chrome=""
+          className="ml-auto inline-flex items-center gap-1"
+          aria-label="List columns and settings"
+        />
       </div>
       {message ? <p className="text-sm text-navy">{message}</p> : null}
       {widget ? <WidgetHost name={widget.name} url={widget.url} onClose={() => setWidget(null)} /> : null}

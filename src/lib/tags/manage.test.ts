@@ -34,6 +34,9 @@ describe("module tag manage + assign popup", () => {
     expect(menu).toMatch(/Manage tags/);
     expect(menu).toMatch(/ManageTagsDialog/);
     expect(table).toMatch(/SheetSettingsMenu/);
+    expect(table).toMatch(/data-ff-list-chrome/);
+    expect(table).toMatch(/ListColumnsChrome/);
+    expect(source("src/components/developer-hub/list-selection.tsx")).toMatch(/data-ff-list-chrome/);
     expect(header).toMatch(/data-ff-manage-tags/);
     expect(source("src/components/pipeline/workspace.tsx")).toMatch(/SheetSettingsMenu/);
   });
