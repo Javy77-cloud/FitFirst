@@ -652,6 +652,13 @@
       "when": 1788920000000,
       "tag": "0092_extraction_audit_doc_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1788930000000,
+      "tag": "0093_quote_outcomes",
+      "breakpoints": true
     }
   ]
 }

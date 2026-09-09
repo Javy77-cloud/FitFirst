@@ -1237,6 +1237,10 @@ export const quotes = pgTable(
     aopDeductible: text("aop_deductible"),
     coverageA: integer("coverage_a"),
     bindable: boolean("bindable").notNull().default(false),
+    /** accepted | maybe | not_accepted | no_option — Quotes-tab group. */
+    riskOutcome: text("risk_outcome"),
+    /** can_bind | fixable | hard_no — keep bindable in sync (can_bind => true). */
+    nextStep: text("next_step"),
     coverageGaps: jsonb("coverage_gaps").$type<string[]>().notNull().default([]),
     notes: text("notes"),
     lostReason: text("lost_reason"),

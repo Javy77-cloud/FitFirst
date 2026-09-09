@@ -48,7 +48,7 @@ export function QuotesPanel({
           <div>
             <h3 className="text-base font-semibold text-navy">Quote results</h3>
             <p className="mt-1 text-base text-muted-foreground">
-              Cheapest on top. Premium, coverages, deductibles, and carrier status per market.
+              Grouped by outcome: Accepted, Maybe, Not accepted, No option. Cheapest within each group.
               A quote never becomes a policy. Check rows to delete one or many.
             </p>
           </div>
@@ -96,12 +96,23 @@ export function QuotesPanel({
         />
       ) : null}
 
-      <section className="ff-card overflow-hidden">
-        <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
-          Attempt log on this deal
+      <section className="ff-card overflow-hidden" data-ff-appetite-log="">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+          <div className="text-base font-semibold text-navy">Appetite Log</div>
+          <a
+            href="/carriers/logs"
+            className="text-sm text-primary underline-offset-2 hover:underline"
+            data-ff-appetite-log-link=""
+          >
+            Full appetite / decline log
+          </a>
         </div>
+        <p className="border-b border-border px-4 py-2 text-sm text-muted-foreground">
+          Training feed from every quote attempt on this deal (quote_attempt_logs). Source of
+          truth for appetite — not a redesign.
+        </p>
         {logs.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">No attempts recorded.</p>
+          <p className="px-4 py-6 text-base text-muted-foreground">No appetite attempts recorded.</p>
         ) : (
           <table className="ff-table">
             <thead>
@@ -115,7 +126,7 @@ export function QuotesPanel({
             </thead>
             <tbody>
               {logs.map(({ log, carrier }) => (
-                <tr key={log.id}>
+                <tr key={log.id} data-ff-appetite-log-row={log.id}>
                   <td className="whitespace-nowrap text-xs">
                     {log.attemptedAt.toISOString().slice(0, 10)}
                   </td>

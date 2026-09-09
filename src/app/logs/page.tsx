@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function LogsPage() {
   const rows = await listQuoteLogs();
   return (
-    <AppShell title="Appetite / decline log">
+    <AppShell title="Appetite Log">
       <p className="mb-3 text-base text-muted-foreground">
         Separate from quotes. Each row stores the result and a house snapshot so the next shop
         can skip a lookalike decline.
