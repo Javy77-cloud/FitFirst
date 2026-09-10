@@ -17,6 +17,7 @@ import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
+import { sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
 
@@ -201,7 +202,7 @@ function SheetGroup({
 }) {
   return (
     <div className="border-b border-border/70 last:border-b-0" data-ff-sheet-group={title}>
-      <div className="sticky top-0 z-10 bg-muted/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-navy">
+      <div className={sheetGroupHeaderClass(title)} data-ff-sheet-group-header={title}>
         {title}
       </div>
       <div className="grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2">

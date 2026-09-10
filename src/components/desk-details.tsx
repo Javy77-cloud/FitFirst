@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isEmphasizedSheetGroup } from "@/lib/quote-sheet/sheet-group-style";
 import { cn } from "@/lib/utils";
 
 /** Module sections that fold when the broker does not need them open. */
@@ -23,10 +24,18 @@ export function DeskDetails({
         className={cn(
           "flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-3 text-left hover:bg-secondary/60",
           "[&::-webkit-details-marker]:hidden",
+          typeof title === "string" && isEmphasizedSheetGroup(title) && "ff-sheet-group-header--emphasis hover:opacity-95",
         )}
       >
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-navy">{title}</h2>
+          <h2
+            className={cn(
+              "text-sm font-semibold",
+              typeof title === "string" && isEmphasizedSheetGroup(title) ? "text-white" : "text-navy",
+            )}
+          >
+            {title}
+          </h2>
           {summary ? <div className="mt-1 text-xs text-muted-foreground">{summary}</div> : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">

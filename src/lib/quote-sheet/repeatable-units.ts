@@ -1,7 +1,9 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 
-export const PERSONAL_VEHICLE_CAP = 5;
+export const PERSONAL_VEHICLE_CAP = 4;
+/** Personal Auto drivers share the same 4-unit cap as vehicles. */
+export const PERSONAL_DRIVER_CAP = PERSONAL_VEHICLE_CAP;
 export const COMMERCIAL_VEHICLE_SOFT_CAP = 40;
 
 export type RepeatableKind = "vehicle" | "driver";

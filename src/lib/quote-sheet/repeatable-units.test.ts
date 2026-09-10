@@ -28,8 +28,9 @@ describe("repeatable vehicle and driver blocks", () => {
   });
 
   it("caps personal lines at five and leaves commercial uncapped in the UI", () => {
-    expect(PERSONAL_VEHICLE_CAP).toBe(5);
-    expect(canAddAnother(5, "auto")).toBe(false);
+    expect(PERSONAL_VEHICLE_CAP).toBe(4);
+    expect(canAddAnother(4, "auto")).toBe(false);
+    expect(canAddAnother(3, "auto")).toBe(true);
     expect(canAddAnother(5, "commercial_auto")).toBe(true);
     expect(canAddAnother(12, "commercial_auto")).toBe(true);
     expect(isRepeatableSheetKey("vin")).toBe(true);

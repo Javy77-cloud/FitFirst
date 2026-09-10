@@ -830,3 +830,21 @@ button:enabled:not([data-ff-no-hover]):hover {
 button:enabled:not([data-ff-no-hover]):active {
   filter: brightness(0.94);
 }
+
+/* Master sheet section bars */
+.ff-sheet-group-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 0.25rem 0.75rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in oklab, var(--ff-wash) 90%, transparent);
+  color: var(--ff-navy);
+}
+.ff-sheet-group-header--emphasis {
+  background: var(--ff-navy);
+  color: #ffffff;
+}
