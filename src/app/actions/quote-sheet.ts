@@ -89,13 +89,19 @@ import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
 import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
 import { toastForPropertyFill } from "@/lib/property-fill/merge";
+import {
+  NHTSA_VPIC_LABEL,
+  orchestrateVinDecodeFill,
+} from "@/lib/vin-decode";
 import { fillSheetFromDealDetails } from "@/lib/quote-sheet/fill-from-deal";
 import { loadRecordValues } from "@/lib/custom-fields/store";
 import {
+  MASTER_FILL_SKIP_AUTO_PROPERTY,
   MASTER_FILL_SKIP_NEEDS_KEY,
   MASTER_FILL_SKIP_NO_ADDRESS,
   MASTER_FILL_SKIP_NO_DEAL,
   MASTER_FILL_SKIP_NO_DOCS,
+  MASTER_FILL_SKIP_NO_VIN,
   MASTER_FILL_SKIP_NOT_FOUND,
   type MasterFillStepId,
   type MasterFillStepResult,
@@ -566,6 +572,101 @@ export async function runComputeMilesToCoast(input: {
   return { ok: true, miles: cell.value };
 }
 
+
+/** Empty-only NHTSA vPIC VIN decode for Auto master sheet (no vault key). */
+export async function runFillFromVinDecode(
+  dealId: string,
+  lineRaw: ShopLine,
+): Promise<{
+  filledKeys: string[];
+  skippedKeys: string[];
+  vinsDecoded: string[];
+  toast: string;
+  note?: string;
+  status: "ok" | "no_vin" | "error" | "skipped_line";
+  message?: string;
+}> {
+  if (lineRaw !== "auto") {
+    return {
+      filledKeys: [],
+      skippedKeys: [],
+      vinsDecoded: [],
+      toast: "",
+      status: "skipped_line",
+    };
+  }
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  const product = (fresh.sheet_product?.value ?? "").trim() || null;
+  const bundle = await orchestrateVinDecodeFill({ values: fresh, product });
+  if (bundle.status === "no_vin") {
+    return {
+      filledKeys: [],
+      skippedKeys: [],
+      vinsDecoded: [],
+      toast: bundle.toast,
+      status: "no_vin",
+      message: bundle.message,
+    };
+  }
+  if (bundle.status !== "ok") {
+    return {
+      filledKeys: [],
+      skippedKeys: [],
+      vinsDecoded: [],
+      toast: bundle.toast,
+      status: "error",
+      message: bundle.message,
+    };
+  }
+  if (bundle.filledKeys.length) {
+    await persistSheetValues(sheet.id, bundle.values);
+  }
+  await logExtractionJob({
+    dealId,
+    quoteSheetId: sheet.id,
+    engine: "nhtsa_vpic",
+    status: bundle.filledKeys.length ? "filled" : "skipped",
+    filledKeys: bundle.filledKeys,
+    skippedKeys: bundle.skippedKeys,
+    message: bundle.message,
+  });
+  return {
+    filledKeys: bundle.filledKeys,
+    skippedKeys: bundle.skippedKeys,
+    vinsDecoded: bundle.vinsDecoded,
+    toast: bundle.toast,
+    note: bundle.filledKeys.length || bundle.vinsDecoded.length ? NHTSA_VPIC_LABEL : undefined,
+    status: "ok",
+    message: bundle.message,
+  };
+}
+
+/** Button entry: Decode VIN via free NHTSA vPIC → empty-only year/make/model. */
+export async function runDecodeVin(input: {
+  dealId: string;
+  line: string;
+}): Promise<{ ok: true; toast: string; filledCount: number } | { ok: false; error: string }> {
+  const dealId = String(input.dealId ?? "").trim();
+  const lineRaw = String(input.line ?? "auto").trim() || "auto";
+  if (!dealId) return { ok: false, error: "Missing deal" };
+  if (!isShopLine(lineRaw)) return { ok: false, error: "Unknown line" };
+  if (lineRaw !== "auto") return { ok: false, error: "VIN decode is Auto-only." };
+  const result = await runFillFromVinDecode(dealId, lineRaw);
+  revalidatePath(`/deals/${dealId}`);
+  if (result.status === "error") {
+    return { ok: false, error: result.message || "NHTSA vPIC decode failed" };
+  }
+  if (result.status === "no_vin") {
+    return { ok: false, error: "Add a 17-character VIN on the Auto sheet first." };
+  }
+  return {
+    ok: true,
+    toast: result.toast,
+    filledCount: result.filledKeys.length,
+  };
+}
+
 export async function fillFromPropertyRecords(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
@@ -694,7 +795,8 @@ async function persistMasterSheetDefaults(dealId: string, lineRaw: ShopLine): Pr
 
 /**
  * One master-sheet Fill step for the progress modal.
- * Deal → Property → Docs. Returns counts; does not redirect/toast.
+ * Home: Deal → Property → Docs.
+ * Auto: Deal → Docs → VIN (NHTSA vPIC). Never property/FEMA on Auto.
  */
 export async function fillMasterSheetStep(input: {
   dealId: string;
@@ -720,6 +822,15 @@ export async function fillMasterSheetStep(input: {
   }
 
   if (step === "property") {
+    // Auto Fill-by-LOB: never Home property / county PA / FEMA on Auto.
+    if (lineRaw === "auto") {
+      return {
+        step,
+        filledCount: 0,
+        skippedCount: 0,
+        note: MASTER_FILL_SKIP_AUTO_PROPERTY,
+      };
+    }
     const result = await runFillFromPropertyRecords(dealId, lineRaw);
     revalidatePath(`/deals/${dealId}`);
     if (result.status === "no_address") {
@@ -743,6 +854,31 @@ export async function fillMasterSheetStep(input: {
       step,
       filledCount: result.filledKeys.length,
       skippedCount: result.skippedKeys.length,
+    };
+  }
+
+  if (step === "vin") {
+    if (lineRaw !== "auto") {
+      return { step, filledCount: 0, skippedCount: 0, note: "VIN decode is Auto-only — skipped" };
+    }
+    const vin = await runFillFromVinDecode(dealId, lineRaw);
+    revalidatePath(`/deals/${dealId}`);
+    if (vin.status === "no_vin") {
+      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_VIN };
+    }
+    if (vin.status === "error") {
+      return {
+        step,
+        filledCount: 0,
+        skippedCount: 0,
+        error: vin.message || "NHTSA vPIC decode failed",
+      };
+    }
+    return {
+      step,
+      filledCount: vin.filledKeys.length,
+      skippedCount: vin.skippedKeys.length,
+      note: vin.note,
     };
   }
 

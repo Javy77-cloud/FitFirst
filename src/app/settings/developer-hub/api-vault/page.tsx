@@ -2,6 +2,7 @@ import { ApiVaultPanel } from "@/components/developer-hub/api-vault-panel";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { loadFedExPublicStatus, loadGetParcelDataPublicStatus } from "@/lib/developer/vault";
+import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,9 @@ export default async function DeveloperApiVaultPage() {
         rest with the same AES-256-GCM pattern as carrier portal / PII secrets.
       </p>
       <ApiVaultPanel canEdit={session.isSiteDeveloper} fedex={fedex} getParcelData={getParcelData} />
+      <p className="mt-4 max-w-3xl text-sm text-muted-foreground" data-ff-nhtsa-vpic-note="">
+        {NHTSA_VPIC_SETTINGS_NOTE}
+      </p>
     </SettingsShell>
   );
 }

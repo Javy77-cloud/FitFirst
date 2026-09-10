@@ -38,8 +38,7 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).toMatch(/data-ff-fill-master-sheet/);
     expect(button.match(/data-ff-fill-master-sheet/g)?.length).toBe(1);
     expect(button).toMatch(/MASTER_FILL_STEP_DEAL/);
-    expect(button).toMatch(/MASTER_FILL_STEP_PROPERTY/);
-    expect(button).toMatch(/MASTER_FILL_STEP_DOCS/);
+    expect(button).toMatch(/masterFillStepsForLine/);
     expect(button).toMatch(/MASTER_FILL_REVIEW_NUDGE/);
     expect(button).toMatch(/fillMasterSheetStep/);
     expect(button).not.toMatch(/tab=markets/);
@@ -84,14 +83,10 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(docsIdx).toBeGreaterThan(propIdx);
 
     const button = source("src/components/deal/master-sheet-fill-button.tsx");
-    const stepsBlock = button.indexOf("const STEPS = [");
-    expect(stepsBlock).toBeGreaterThan(-1);
-    const dealStep = button.indexOf('id: "deal"', stepsBlock);
-    const propStep = button.indexOf('id: "property"', stepsBlock);
-    const docsStep = button.indexOf('id: "docs"', stepsBlock);
-    expect(dealStep).toBeGreaterThan(stepsBlock);
-    expect(propStep).toBeGreaterThan(dealStep);
-    expect(docsStep).toBeGreaterThan(propStep);
+    expect(button).toMatch(/masterFillStepsForLine/);
+    const master = source("src/lib/quote-sheet/master-fill.ts");
+    expect(master).toMatch(/masterFillStepsForLine/);
+    expect(master).toMatch(/Deal → Docs → VIN/);
 
     expect(MASTER_FILL_STEP_DEAL).toBe("Loading deal details…");
     expect(MASTER_FILL_STEP_PROPERTY).toBe("Loading property details…");

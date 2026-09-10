@@ -18,18 +18,11 @@ import {
   MASTER_FILL_BUSY_COPY,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_STEP_DEAL,
-  MASTER_FILL_STEP_DOCS,
-  MASTER_FILL_STEP_PROPERTY,
   masterFillDoneSummary,
+  masterFillStepsForLine,
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
 import type { ShopLine } from "@/lib/domain";
-
-const STEPS = [
-  { id: "deal" as const, label: MASTER_FILL_STEP_DEAL },
-  { id: "property" as const, label: MASTER_FILL_STEP_PROPERTY },
-  { id: "docs" as const, label: MASTER_FILL_STEP_DOCS },
-];
 
 export function MasterSheetFillButton({
   dealId,
@@ -41,6 +34,7 @@ export function MasterSheetFillButton({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const steps = masterFillStepsForLine(line);
   const [status, setStatus] = useState(MASTER_FILL_STEP_DEAL);
   const [done, setDone] = useState(false);
   const [summary, setSummary] = useState("");
@@ -52,7 +46,7 @@ export function MasterSheetFillButton({
     setSummary("");
     const results: MasterFillStepResult[] = [];
     try {
-      for (const step of STEPS) {
+      for (const step of steps) {
         setStatus(step.label);
         const result = await fillMasterSheetStep({ dealId, line, step: step.id });
         results.push(result);
@@ -70,7 +64,15 @@ export function MasterSheetFillButton({
       setDone(true);
       const filled = results.reduce((sum, step) => sum + step.filledCount, 0);
       const skipped = results.reduce((sum, step) => sum + step.skippedCount, 0);
-      const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped });
+      const sources = [
+        ...new Set(
+          results
+            .flatMap((step) => (step.note ?? "").split("·"))
+            .map((part) => part.trim())
+            .filter((part) => part === "NHTSA vPIC"),
+        ),
+      ];
+      const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped, sources });
       // Stay on Documents after Fill — Markets only after Confirm & request quotes.
       flashAction(toast);
       router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
@@ -112,7 +114,7 @@ export function MasterSheetFillButton({
             </p>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">Deal → Property → Docs. Empty cells only.</p>
+              <p className="text-xs text-muted-foreground">{line === "auto" ? "Deal → Docs → VIN (NHTSA). Empty cells only." : "Deal → Property → Docs. Empty cells only."}</p>
               {busy ? (
                 <div
                   className="flex items-center gap-2.5"

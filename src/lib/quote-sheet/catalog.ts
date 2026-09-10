@@ -261,6 +261,9 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "vehicle_year", label: "Year", group: "Vehicle", input: "number" },
   { key: "vehicle_make", label: "Make", group: "Vehicle" },
   { key: "vehicle_model", label: "Model", group: "Vehicle" },
+  { key: "vehicle_body_class", label: "Body class", group: "Vehicle" },
+  { key: "vehicle_fuel_type", label: "Fuel type", group: "Vehicle" },
+  { key: "vehicle_engine", label: "Engine", group: "Vehicle" },
   { key: "vehicle_usage", label: "Usage", group: "Vehicle", input: "select", options: [...AUTO_VEHICLE_USAGE_OPTIONS] },
   {
     key: "vehicle_ownership",
@@ -347,6 +350,9 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "vehicle_2_year", label: "Vehicle 2 year", group: "Vehicle", input: "number" },
   { key: "vehicle_2_make", label: "Vehicle 2 make", group: "Vehicle" },
   { key: "vehicle_2_model", label: "Vehicle 2 model", group: "Vehicle" },
+  { key: "vehicle_2_body_class", label: "Vehicle 2 body class", group: "Vehicle" },
+  { key: "vehicle_2_fuel_type", label: "Vehicle 2 fuel type", group: "Vehicle" },
+  { key: "vehicle_2_engine", label: "Vehicle 2 engine", group: "Vehicle" },
   { key: "driver_1_name", label: "Driver 1 name", group: "Drivers" },
   { key: "driver_1_dob", label: "Driver 1 DOB", group: "Drivers" },
   {

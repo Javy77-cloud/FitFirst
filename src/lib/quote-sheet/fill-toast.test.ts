@@ -24,4 +24,14 @@ describe("toastForFillCounts", () => {
     const msg = toastForFillCounts({ filledCount: 99, skippedCount: 120 });
     expect(msg.length).toBeLessThanOrEqual(80);
   });
+
+  it("includes NHTSA vPIC source label when Auto VIN decode contributed", () => {
+    expect(
+      toastForFillCounts({
+        filledCount: 3,
+        skippedCount: 1,
+        sources: ["NHTSA vPIC"],
+      }),
+    ).toBe("Filled 3, skipped 1 already on sheet · NHTSA vPIC");
+  });
 });

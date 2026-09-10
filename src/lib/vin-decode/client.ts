@@ -1,0 +1,72 @@
+import { normalizeVin, isDecodableVin } from "./normalize";
+import { parseDecodeVinValuesRow, decodeLooksSuccessful } from "./map";
+import type { VinDecodeValues } from "./types";
+import { NHTSA_VPIC_DECODE_VALUES_URL } from "./types";
+
+type FetchLike = typeof fetch;
+
+const cache = new Map<string, VinDecodeValues>();
+
+export function clearVinDecodeCache(): void {
+  cache.clear();
+}
+
+export function peekVinDecodeCache(vin: string): VinDecodeValues | undefined {
+  return cache.get(normalizeVin(vin));
+}
+
+export type DecodeVinResult =
+  | { ok: true; vin: string; values: VinDecodeValues; cached: boolean }
+  | { ok: false; vin: string; message: string };
+
+/**
+ * Free NHTSA vPIC DecodeVinValues — no key. Cached per normalized VIN in-process.
+ */
+export async function decodeVinValues(
+  rawVin: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<DecodeVinResult> {
+  const vin = normalizeVin(rawVin);
+  if (!isDecodableVin(vin)) {
+    return { ok: false, vin, message: "VIN must be 17 characters." };
+  }
+
+  const hit = cache.get(vin);
+  if (hit) return { ok: true, vin, values: hit, cached: true };
+
+  const url = `${NHTSA_VPIC_DECODE_VALUES_URL}/${encodeURIComponent(vin)}?format=json`;
+  let response: Response;
+  try {
+    response = await fetchImpl(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "NHTSA vPIC request failed";
+    return { ok: false, vin, message };
+  }
+
+  if (!response.ok) {
+    return { ok: false, vin, message: `NHTSA vPIC HTTP ${response.status}` };
+  }
+
+  let body: { Results?: Array<Record<string, unknown>> };
+  try {
+    body = (await response.json()) as { Results?: Array<Record<string, unknown>> };
+  } catch {
+    return { ok: false, vin, message: "NHTSA vPIC returned non-JSON." };
+  }
+
+  const row = body.Results?.[0];
+  const values = parseDecodeVinValuesRow(row);
+  if (!decodeLooksSuccessful(values)) {
+    return {
+      ok: false,
+      vin,
+      message: values.errorText || "NHTSA vPIC could not decode that VIN.",
+    };
+  }
+
+  cache.set(vin, values);
+  return { ok: true, vin, values, cached: false };
+}

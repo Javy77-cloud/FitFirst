@@ -157,6 +157,8 @@ export function MasterSheetCompare({
                 product={product}
                 values={values}
                 extractedByKey={extractedByKey}
+                dealId={dealId}
+                line={line}
               />
             ) : group.group === "Drivers" ? (
               <RepeatableUnitBlocks

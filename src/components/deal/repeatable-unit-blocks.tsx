@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { confirmQuoteSheetField } from "@/app/actions/quote-sheet";
+import { DecodeVinButton } from "@/components/deal/decode-vin-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -12,6 +13,7 @@ import {
   type RepeatableKind,
 } from "@/lib/quote-sheet/repeatable-units";
 import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import type { ShopLine } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
 export function RepeatableUnitBlocks({
@@ -19,11 +21,15 @@ export function RepeatableUnitBlocks({
   product,
   values,
   extractedByKey,
+  dealId,
+  line,
 }: {
   kind: RepeatableKind;
   product?: string | null;
   values: Record<string, QuoteSheetFieldValue>;
   extractedByKey: Map<string, ExtractedFieldRow>;
+  dealId?: string;
+  line?: ShopLine;
 }) {
   const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
   const groupTitle =
@@ -73,9 +79,13 @@ export function RepeatableUnitBlocks({
                       <td className="align-top">
                         <BlockCell
                           fieldKey={field.key}
+                          fieldSuffix={field.suffix}
                           input={field.input}
                           options={field.options}
                           cell={cell}
+                          dealId={dealId}
+                          line={line}
+                          kind={kind}
                         />
                       </td>
                     </tr>
@@ -108,14 +118,22 @@ export function RepeatableUnitBlocks({
 
 function BlockCell({
   fieldKey,
+  fieldSuffix,
   input = "text",
   options,
   cell,
+  dealId,
+  line,
+  kind,
 }: {
   fieldKey: string;
+  fieldSuffix?: string;
   input?: "text" | "number" | "select";
   options?: readonly string[];
   cell?: QuoteSheetFieldValue;
+  dealId?: string;
+  line?: ShopLine;
+  kind?: RepeatableKind;
 }) {
   const className = cn(
     "h-8 text-sm",
@@ -153,6 +171,9 @@ function BlockCell({
         >
           Confirm extracted
         </Button>
+      ) : null}
+      {kind === "vehicle" && fieldSuffix === "vin" && dealId && line === "auto" ? (
+        <DecodeVinButton dealId={dealId} line={line} />
       ) : null}
     </div>
   );

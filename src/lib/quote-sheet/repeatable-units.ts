@@ -37,6 +37,9 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
   { suffix: "year", label: "Year", input: "number" },
   { suffix: "make", label: "Make" },
   { suffix: "model", label: "Model" },
+  { suffix: "body_class", label: "Body class" },
+  { suffix: "fuel_type", label: "Fuel type" },
+  { suffix: "engine", label: "Engine" },
   { suffix: "usage", label: "Usage", input: "select", options: AUTO_VEHICLE_USAGE_OPTIONS },
   {
     suffix: "ownership",
@@ -164,6 +167,9 @@ const VEHICLE_1_KEYS: Record<string, string> = {
   year: "vehicle_year",
   make: "vehicle_make",
   model: "vehicle_model",
+  body_class: "vehicle_body_class",
+  fuel_type: "vehicle_fuel_type",
+  engine: "vehicle_engine",
   usage: "vehicle_usage",
   ownership: "vehicle_ownership",
   ownership_length: "vehicle_ownership_length",
@@ -220,7 +226,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }
