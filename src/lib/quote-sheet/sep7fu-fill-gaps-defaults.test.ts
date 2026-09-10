@@ -10,7 +10,11 @@ import {
   applyMasterSheetDefaults,
   MASTER_SHEET_EMPTY_DEFAULTS,
   MONTHS_OCCUPIED_OPTIONS,
+  DISTANCE_TO_HYDRANT_OPTIONS,
+  DISTANCE_TO_STATION_OPTIONS,
   USAGE_OPTIONS,
+  normalizeDistanceToHydrant,
+  normalizeDistanceToStation,
   normalizeMonthsOccupied,
   normalizeUsage,
 } from "@/lib/quote-sheet/sheet-defaults";
@@ -126,6 +130,16 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
       "Rental",
       "Vacant",
     ]);
+    expect(home.find((f) => f.key === "hydrant")?.label).toBe("Distance to hydrant");
+    expect(home.find((f) => f.key === "hydrant")?.options).toEqual([...DISTANCE_TO_HYDRANT_OPTIONS]);
+    expect(home.find((f) => f.key === "miles_to_fire_station")?.label).toBe("Distance to station");
+    expect(home.find((f) => f.key === "miles_to_fire_station")?.options).toEqual([
+      ...DISTANCE_TO_STATION_OPTIONS,
+    ]);
+    expect(normalizeDistanceToHydrant("yes")).toBe("Within 1,000 feet");
+    expect(normalizeDistanceToHydrant("1200")).toBe("More than 1,000 feet");
+    expect(normalizeDistanceToStation("3")).toBe("Within 5 miles");
+    expect(normalizeDistanceToStation("8")).toBe("More than 5 miles");
     expect(home.find((f) => f.key === "exterior")?.options).toEqual([
       "Masonry",
       "Frame",

@@ -27,6 +27,18 @@ export const USAGE_OPTIONS = [
   "Vacant",
 ] as const;
 
+/** Distance to hydrant (Javy 2026-09-09). */
+export const DISTANCE_TO_HYDRANT_OPTIONS = [
+  "Within 1,000 feet",
+  "More than 1,000 feet",
+] as const;
+
+/** Distance to fire station (Javy 2026-09-09). */
+export const DISTANCE_TO_STATION_OPTIONS = [
+  "Within 5 miles",
+  "More than 5 miles",
+] as const;
+
 /** Exterior = wall type (Javy 2026-09-09 night lock). */
 export const EXTERIOR_OPTIONS = [
   "Masonry",
@@ -150,6 +162,63 @@ export function normalizeUsage(raw: string | null | undefined): string {
     vacant: "Vacant",
   };
   return map[lower] ?? text;
+}
+
+export function normalizeDistanceToHydrant(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const compact = lower.replace(/[,\s]/g, "");
+  if (
+    lower === "yes" ||
+    lower === "within 1,000 feet" ||
+    lower === "within 1000 feet" ||
+    compact === "within1000feet" ||
+    compact === "within1000ft" ||
+    compact.includes("within1000")
+  ) {
+    return "Within 1,000 feet";
+  }
+  if (
+    lower === "no" ||
+    lower === "more than 1,000 feet" ||
+    lower === "more than 1000 feet" ||
+    compact.includes("morethan1000") ||
+    compact.includes(">1000")
+  ) {
+    return "More than 1,000 feet";
+  }
+  const n = Number(text.replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(n)) {
+    return n <= 1000 ? "Within 1,000 feet" : "More than 1,000 feet";
+  }
+  return text;
+}
+
+export function normalizeDistanceToStation(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const compact = lower.replace(/[,\s]/g, "");
+  if (
+    lower === "within 5 miles" ||
+    compact === "within5miles" ||
+    compact.includes("within5")
+  ) {
+    return "Within 5 miles";
+  }
+  if (
+    lower === "more than 5 miles" ||
+    compact.includes("morethan5") ||
+    compact.includes(">5")
+  ) {
+    return "More than 5 miles";
+  }
+  const n = Number(text.replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(n)) {
+    return n <= 5 ? "Within 5 miles" : "More than 5 miles";
+  }
+  return text;
 }
 
 export type ApplyDefaultsResult = {
