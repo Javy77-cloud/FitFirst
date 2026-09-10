@@ -58,12 +58,16 @@ export async function updateGlobalListItemColor(formData: FormData) {
   if (!session.isAdmin) return;
   const id = str(formData, "id");
   if (!id) return;
-  await db
+  const [row] = await db
     .update(globalLists)
     .set({ color: colorFrom(formData), updatedAt: new Date() })
-    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
+    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)))
+    .returning({ listKey: globalLists.listKey });
+  if (row?.listKey === "selling_agency") await syncDealSellingAgencyFromGlobalLists();
   revalidatePath("/settings/lists");
   revalidatePath("/policies");
+  revalidatePath("/deals");
+  revalidatePath("/settings/field-builder");
 }
 
 export async function deleteGlobalListItem(formData: FormData) {

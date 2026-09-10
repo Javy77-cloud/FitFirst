@@ -67,12 +67,36 @@ export function resizePicklistOptions(options: string[], count: number): string[
   return next;
 }
 
-export function resolveFieldOptions(field: CustomFieldDef, lists: FieldPicklist[] = []): string[] {
+export function resolveRichFieldOptions(
+  field: CustomFieldDef,
+  lists: FieldPicklist[] = [],
+): PicklistOption[] {
   if (field.picklistId) {
     const list = lists.find((item) => item.id === field.picklistId);
-    if (list) return sanitizePicklistOptions(list.options);
+    if (list) return sanitizeRichPicklistOptions(list.options);
   }
-  return sanitizePicklistOptions(field.options ?? []);
+  // Inline options may already be rich { value, color } from the field row.
+  if (field.optionColors && Object.keys(field.optionColors).length > 0) {
+    return sanitizeRichPicklistOptions(
+      (field.options ?? []).map((value) => ({
+        value,
+        color: field.optionColors?.[value] ?? null,
+      })),
+    );
+  }
+  return sanitizeRichPicklistOptions(field.options ?? []);
+}
+
+export function resolveFieldOptions(field: CustomFieldDef, lists: FieldPicklist[] = []): string[] {
+  return resolveRichFieldOptions(field, lists).map((option) => option.value);
+}
+
+export function optionColorMap(options: PicklistOption[]): Record<string, string | null> {
+  const map: Record<string, string | null> = {};
+  for (const option of options) {
+    map[option.value] = option.color ?? null;
+  }
+  return map;
 }
 
 export function resolvePicklistDefault(

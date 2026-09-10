@@ -41,6 +41,7 @@ function optionsFrom(form: FormData): PicklistOption[] {
 function revalidatePicklists() {
   revalidatePath("/settings/picklists");
   revalidatePath("/settings/field-builder");
+  revalidatePath("/deals");
 }
 
 export async function saveFieldPicklist(formData: FormData) {

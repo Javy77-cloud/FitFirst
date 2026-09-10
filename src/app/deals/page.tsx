@@ -154,7 +154,7 @@ export default async function DealsPage({
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
       <div
-        className="deal-upload-activity -mt-2 mb-12"
+        className="deal-upload-activity mb-12"
         data-testid="deal-upload-activity"
         style={{
           display: "flex",

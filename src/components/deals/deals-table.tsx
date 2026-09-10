@@ -7,6 +7,7 @@ import { PipelineListValue } from "@/components/deals/pipeline-list-value";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { StagePill } from "@/components/fit-badge";
+import { StatusBadge } from "@/components/status-badge";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { listDealFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { sourceLabel } from "@/lib/crm/sources";
@@ -447,11 +448,22 @@ function sheetCell({
     carriers,
     users: userRecords,
   });
+  const pickColor =
+    field &&
+    (field.type === "picklist" || field.type === "multi_select") &&
+    raw &&
+    field.optionColors
+      ? field.optionColors[raw]
+      : undefined;
   const body =
     control === "multiline" || columnId === "notes" ? (
       <span className="block truncate" title={display === "—" ? undefined : display}>
         {display}
       </span>
+    ) : pickColor || (field?.type === "picklist" && raw) ? (
+      <StatusBadge color={pickColor ?? null} uppercase={false}>
+        {display}
+      </StatusBadge>
     ) : (
       display
     );

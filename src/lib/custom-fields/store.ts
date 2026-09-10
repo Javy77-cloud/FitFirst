@@ -26,14 +26,24 @@ import {
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
-import { resolveFieldOptions, sanitizePicklistOptions } from "./picklists";
+import {
+  optionColorMap,
+  resolveFieldOptions,
+  resolveRichFieldOptions,
+  sanitizePicklistOptions,
+  sanitizeRichPicklistOptions,
+} from "./picklists";
 
 export function toFieldDef(row: DeskCustomField): CustomFieldDef {
+  const rich = sanitizeRichPicklistOptions(row.options ?? []);
+  const isPick =
+    row.type === "picklist" || row.type === "multi_select" || Boolean(row.picklistId);
   return {
     key: row.key,
     label: row.label,
     type: row.type as CustomFieldDef["type"],
-    options: row.options ?? [],
+    options: isPick ? rich.map((option) => option.value) : ((row.options as string[] | null) ?? []),
+    optionColors: isPick ? optionColorMap(rich) : undefined,
     formula: row.formula,
     lookupModule: row.lookupModule,
     systemKey: row.systemKey,
@@ -122,11 +132,17 @@ function persistFieldOptions(field: CustomFieldDef): string[] {
 
 async function applyPicklists(fields: CustomFieldDef[]): Promise<CustomFieldDef[]> {
   const lists = await listFieldPicklists().catch(() => []);
-  return fields.map((field) =>
-    field.type === "picklist" || field.type === "multi_select" || field.picklistId
-      ? { ...field, options: resolveFieldOptions(field, lists) }
-      : field,
-  );
+  return fields.map((field) => {
+    if (!(field.type === "picklist" || field.type === "multi_select" || field.picklistId)) {
+      return field;
+    }
+    const rich = resolveRichFieldOptions(field, lists);
+    return {
+      ...field,
+      options: rich.map((option) => option.value),
+      optionColors: optionColorMap(rich),
+    };
+  });
 }
 
 export async function listDealFieldDefs(): Promise<CustomFieldDef[]> {

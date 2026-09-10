@@ -82,6 +82,8 @@ export type CustomFieldDef = {
   label: string;
   type: CustomFieldType;
   options?: string[];
+  /** value → color key for picklist/multi-select pills on lists. */
+  optionColors?: Record<string, string | null>;
   formula?: string | null;
   lookupModule?: string | null;
   systemKey?: string | null;
