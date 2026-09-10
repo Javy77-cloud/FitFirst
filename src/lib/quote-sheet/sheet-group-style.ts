@@ -1,4 +1,4 @@
-/** Master-sheet section headers: black letters on white (all groups, all LOBs). */
+/** Master-sheet section headers: Old Glory blue + white text. */
 
 export function isEmphasizedSheetGroup(title: string | null | undefined): boolean {
   const key = String(title ?? "")
@@ -15,12 +15,12 @@ export function isEmphasizedSheetGroup(title: string | null | undefined): boolea
   );
 }
 
+/** US flag blue (#002868) — matches platform theme tokens. */
 export const SHEET_GROUP_HEADER_STYLE = {
-  backgroundColor: "#ffffff",
-  color: "#000000",
+  backgroundColor: "#002868",
+  color: "#ffffff",
 } as const;
 
-/** Every master-sheet section bar is black on white — Home, Auto, Flood, … */
 export function sheetGroupHeaderClass(_title?: string | null): string {
   return "ff-sheet-group-header";
 }

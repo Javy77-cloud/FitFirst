@@ -1,44 +1,65 @@
 import { describe, expect, it } from "vitest";
 import {
+  APPLICANT_CORE_FIELDS,
   CO_APPLICANT_FIELDS,
-  CO_APPLICANT_RELATIONSHIP_OPTIONS,
-  coApplicantHasValue,
+  MARITAL_STATUS_OPTIONS,
+  OCCUPATION_OPTIONS,
+  RELATIONSHIP_TO_INSURED_OPTIONS,
+  coApplicantRequired,
+  isMarriedStatus,
 } from "./applicant-core";
 import { fieldsForLine, groupFields } from "./catalog";
 
-describe("co-applicant on every master sheet", () => {
-  it("ships relationship picklist + required contact fields", () => {
-    expect(CO_APPLICANT_RELATIONSHIP_OPTIONS).toContain("Spouse");
-    expect(CO_APPLICANT_RELATIONSHIP_OPTIONS).toContain("Cousin");
+describe("applicant / co-applicant household", () => {
+  it("applicant has marital status + occupation", () => {
+    const keys = APPLICANT_CORE_FIELDS.map((f) => f.key);
+    expect(keys).toContain("applicant_marital_status");
+    expect(keys).toContain("applicant_occupation");
+    expect([...MARITAL_STATUS_OPTIONS]).toEqual([
+      "Single",
+      "Married",
+      "Widow",
+      "Divorced",
+      "Separated",
+    ]);
+    expect(OCCUPATION_OPTIONS.at(-1)).toBe("Other");
+    expect(OCCUPATION_OPTIONS.length).toBeGreaterThan(40);
+  });
+
+  it("co-applicant fields — no address / dual relationship", () => {
     const keys = CO_APPLICANT_FIELDS.map((f) => f.key);
     expect(keys).toEqual(
       expect.arrayContaining([
-        "applicant_relationship_to_co_applicant",
         "co_applicant_name",
-        "co_applicant_relationship",
+        "co_applicant_relationship_to_insured",
+        "co_applicant_marital_status",
+        "co_applicant_occupation",
         "co_applicant_dob",
         "co_applicant_email",
         "co_applicant_phone",
-        "co_applicant_share_address",
-        "co_applicant_address",
       ]),
     );
+    expect(keys).not.toContain("applicant_relationship_to_co_applicant");
+    expect(keys).not.toContain("co_applicant_relationship");
+    expect(keys).not.toContain("co_applicant_share_address");
+    expect(keys).not.toContain("co_applicant_address");
+    expect(RELATIONSHIP_TO_INSURED_OPTIONS).toContain("Spouse");
+    expect(RELATIONSHIP_TO_INSURED_OPTIONS).toContain("Roommate");
   });
 
-  it("is on Home and Auto catalogs", () => {
-    for (const line of ["home", "auto", "flood"] as const) {
-      const groups = groupFields(line);
-      expect(groups.some((g) => g.group === "Co-applicant")).toBe(true);
-      expect(fieldsForLine(line).some((f) => f.key === "co_applicant_name")).toBe(true);
-    }
-  });
-
-  it("detects when a co-applicant was filled", () => {
-    expect(coApplicantHasValue({})).toBe(false);
+  it("Married requires co-applicant", () => {
+    expect(isMarriedStatus("Married")).toBe(true);
     expect(
-      coApplicantHasValue({
-        co_applicant_name: { value: "Jane Doe", status: "confirmed" },
+      coApplicantRequired({
+        applicant_marital_status: { value: "Married", status: "confirmed" },
       }),
     ).toBe(true);
+  });
+
+  it("is on Home and Auto", () => {
+    for (const line of ["home", "auto"] as const) {
+      expect(groupFields(line).some((g) => g.group === "Co-applicant")).toBe(true);
+      expect(fieldsForLine(line).some((f) => f.key === "applicant_marital_status")).toBe(true);
+    }
   });
 });

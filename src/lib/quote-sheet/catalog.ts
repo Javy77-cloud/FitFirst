@@ -21,7 +21,14 @@ import {
 } from "./sheet-defaults";
 
 export type { QuoteFieldDef } from "./applicant-core";
-export { APPLICANT_CORE_FIELDS, CO_APPLICANT_FIELDS, CO_APPLICANT_RELATIONSHIP_OPTIONS } from "./applicant-core";
+export {
+  APPLICANT_CORE_FIELDS,
+  CO_APPLICANT_FIELDS,
+  CO_APPLICANT_RELATIONSHIP_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
+  OCCUPATION_OPTIONS,
+  RELATIONSHIP_TO_INSURED_OPTIONS,
+} from "./applicant-core";
 
 const HO_LL = ["homeowners", "landlord"] as const;
 const RENT = ["renters"] as const;

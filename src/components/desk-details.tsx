@@ -30,7 +30,7 @@ export function DeskDetails({
         style={ribbon ? SHEET_GROUP_HEADER_STYLE : undefined}
       >
         <div className="min-w-0">
-          <h2 className={cn("text-sm font-semibold", ribbon ? "text-black" : "text-navy")}>{title}</h2>
+          <h2 className={cn("text-sm font-semibold", ribbon ? "text-white" : "text-navy")}>{title}</h2>
           {summary ? <div className="mt-1 text-xs text-muted-foreground">{summary}</div> : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">

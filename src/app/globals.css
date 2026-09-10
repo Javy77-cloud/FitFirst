@@ -14,17 +14,17 @@
 */
 :root {
   --ff-bg: #f7f3ec;
-  --ff-navy: #0c2340;
-  --ff-navy-mid: #163456;
-  --ff-navy-deep: #08182d;
+  --ff-navy: #002868;
+  --ff-navy-mid: #0A3161;
+  --ff-navy-deep: #001a44;
   /* Darker brand-blue rail (Javy feel-pass). Not pale #d6e8f8 / #c5ddf4. */
-  --ff-sidebar: #1d4e89;
-  --ff-sidebar-wash: #163a68;
-  --ff-sidebar-line: #2a5a96;
+  --ff-sidebar: #002868;
+  --ff-sidebar-wash: #0A3161;
+  --ff-sidebar-line: #1a3d7a;
   --ff-sidebar-text: #e8f1fb;
   --ff-sidebar-muted: #93a7be;
-  --ff-accent: #1d6fb8;
-  --ff-accent-hover: #185c99;
+  --ff-accent: #1B4F8A;
+  --ff-accent-hover: #0A3161;
   --ff-paper: #f7f3ec;
   --ff-terracotta: #b4532a;
   --ff-wash: #f3eee6;
@@ -42,15 +42,15 @@
   --ff-green-bg: #e4f5ec;
   --ff-yellow: #8a6500;
   --ff-yellow-bg: #fff4d1;
-  --ff-red: #b42318;
-  --ff-red-bg: #fde8e6;
-  --ff-flag: #c2410c;
+  --ff-red: #BF0A30;
+  --ff-red-bg: #FCE8EC;
+  --ff-flag: #BF0A30;
   --ff-flag-bg: #ffedd5;
   /* Call / SMS / E-mail action fills — lock with CONTACT_ACTION_COLORS. */
   --ff-action-call: #7A5C18;
   --ff-action-sms: #AC401C;
   --ff-action-email: #101C34;
-  --ff-check: #1d4e89;
+  --ff-check: #002868;
   --ff-check-bg: #dbeafe;
   --ff-shadow: 0 1px 2px rgb(12 35 64 / 8%);
   --ff-density: 1rem;
@@ -79,7 +79,7 @@
   --chart-4: var(--ff-red);
   --chart-5: var(--ff-navy);
   --radius: 0.4rem;
-  --ff-sidebar-blue: #1d4e89;
+  --ff-sidebar-blue: #002868;
   --sidebar: var(--ff-sidebar-blue);
   --sidebar-foreground: #e8f1fb;
   --sidebar-primary: var(--ff-accent);
@@ -845,8 +845,7 @@ button:enabled:not([data-ff-no-hover]):active {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: #ffffff !important;
-  color: #000000 !important;
-  border-bottom: 1px solid #d1d5db;
-  box-shadow: 0 1px 0 rgb(0 0 0 / 6%);
+  background: var(--ff-sidebar, #002868) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid var(--ff-sidebar-line, #1a3d7a);
 }
