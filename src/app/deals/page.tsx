@@ -154,7 +154,7 @@ export default async function DealsPage({
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
       <div
-        className="deal-upload-activity mb-12"
+        className="deal-upload-activity"
         data-testid="deal-upload-activity"
         style={{
           display: "flex",
@@ -177,6 +177,7 @@ export default async function DealsPage({
         </div>
       </div>
 
+      <div className="deal-list-below-activity" data-ff-deal-list-below-activity="">
       {isPipelineSheetView(view) ? (
         <>
           {pipeline ||
@@ -230,6 +231,7 @@ export default async function DealsPage({
           No pipeline boards yet. Table still lists every deal on this book.
         </p>
       )}
+      </div>
     </AppShell>
   );
 }

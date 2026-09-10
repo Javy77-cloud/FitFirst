@@ -191,10 +191,12 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
-  /* Tip sep7hm: ~3rem between activity chips and the deal list (Javy feel-pass). */
-  margin-bottom: 3rem;
-  /* Tip sep7ht: lift chips ~2 lines; transform so the table does not shift up. */
-  transform: translateY(-2.5rem);
+  /* Tip sep7hu: keep counters put; push list ~2 lines down (no translate). */
+  margin-bottom: 0;
+}
+.deal-list-below-activity {
+  /* ~2 lines of list air under Today's Activity — table moves, chips do not. */
+  margin-top: 2.75rem;
 }
 .deal-today-slot {
   flex: 1;
