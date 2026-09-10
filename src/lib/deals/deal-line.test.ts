@@ -41,7 +41,7 @@ describe("deal line of business", () => {
         "Motorcycle",
         "Flood",
         "GL",
-        "Workers' Comp",
+        "Workers Comp",
         "Commercial Auto",
       ]),
     );

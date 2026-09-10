@@ -21,7 +21,7 @@ export const DEAL_LINE_OPTIONS: { value: SheetProduct; label: string }[] = [
   { value: "motorcycle", label: "Motorcycle" },
   { value: "flood", label: "Flood" },
   { value: "gl", label: "GL" },
-  { value: "workers_comp", label: "Workers' Comp" },
+  { value: "workers_comp", label: "Workers Comp" },
   { value: "commercial_auto", label: "Commercial Auto" },
   { value: "umbrella", label: "Umbrella" },
   { value: "life", label: "Life" },

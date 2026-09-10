@@ -1,9 +1,9 @@
 import { LOB_TO_SHOP_LINE, SHOP_LINE_LABELS } from "@/lib/domain";
 import { matchesContains } from "@/lib/search/live-query";
 
-/** Short LOB words for deal titles — Home, Auto, Flood — never HO / HO3 shop codes. */
+/** Short LOB words for deal titles — Homeowners, Auto, Flood — never HO / HO3 shop codes. */
 export const DEAL_TITLE_LOB_WORDS: Record<string, string> = {
-  HO: "Home",
+  HO: "Homeowners",
   AUTO: "Auto",
   FLOOD: "Flood",
   UMBRELLA: "Umbrella",
@@ -26,15 +26,24 @@ export function dealTitleLobWord(line: string | null | undefined): string {
   const shop = LOB_TO_SHOP_LINE[code];
   if (shop && SHOP_LINE_LABELS[shop]) return SHOP_LINE_LABELS[shop];
   const cleaned = (line ?? "").trim();
-  return cleaned || "Home";
+  return cleaned || "Homeowners";
 }
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Include retired title words so strip/parse still works on older deals. */
+const LEGACY_TITLE_LOB_WORDS = ["Home", "Workers' Comp"] as const;
+
 function allDealTitleLobWords() {
-  return [...new Set([...Object.values(DEAL_TITLE_LOB_WORDS), ...Object.values(SHOP_LINE_LABELS)])];
+  return [
+    ...new Set([
+      ...Object.values(DEAL_TITLE_LOB_WORDS),
+      ...Object.values(SHOP_LINE_LABELS),
+      ...LEGACY_TITLE_LOB_WORDS,
+    ]),
+  ];
 }
 
 /** Drop shop leftovers and a trailing Home / Auto / Flood word so we can rebuild with slashes. */
@@ -147,7 +156,7 @@ export function formatDealPersonName(
     .join(" ");
 }
 
-/** First Last / Lob — e.g. Javier Canales / Home. One slash only. Falls back to account name for commercial. */
+/** First Last / Lob — e.g. Javier Canales / Homeowners. One slash only. Falls back to account name for commercial. */
 export function formatDealTitle(input: DealTitleInput): string {
   const person = resolveDealPerson(input);
   const name = formatDealPersonName(person.firstName, person.lastName) || person.accountName;

@@ -342,7 +342,7 @@ export type QuoteSheetFieldValue = {
 export const SUPER_COPY_KIND = "fitfirst.sheet" as const;
 
 export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
-  home: "Home",
+  home: "Homeowners",
   auto: "Auto",
   rec_rv: "Rec / RV",
   flood: "Flood",

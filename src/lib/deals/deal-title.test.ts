@@ -24,17 +24,17 @@ function source(file: string) {
 }
 
 describe("BH1 — deal titles are First Last / Lob", () => {
-  it("names converts and new deals First Last / Home with one slash", () => {
-    expect(dealTitleFromPerson("Javier", "Canales", "HO")).toBe("Javier Canales / Home");
+  it("names converts and new deals First Last / Homeowners with one slash", () => {
+    expect(dealTitleFromPerson("Javier", "Canales", "HO")).toBe("Javier Canales / Homeowners");
     expect(dealTitleFromPerson("Javier", "Canales", "AUTO")).toBe("Javier Canales / Auto");
-    expect(formatDealTitle({ firstName: "Elena", lastName: "Ruiz", line: "HO" })).toBe("Elena Ruiz / Home");
+    expect(formatDealTitle({ firstName: "Elena", lastName: "Ruiz", line: "HO" })).toBe("Elena Ruiz / Homeowners");
     expect(formatDealTitle({ accountName: "Harbor Key Marine LLC", line: "GL" })).toBe(
       "Harbor Key Marine LLC / GL",
     );
-    expect(joinDealTitleParts("Javier Canales", "Home")).toBe("Javier Canales / Home");
+    expect(joinDealTitleParts("Javier Canales", "Homeowners")).toBe("Javier Canales / Homeowners");
     expect((dealTitleFromPerson("Javier", "Canales", "HO").match(/\//g) ?? []).length).toBe(1);
     expect(dealTitleFromPerson("Javier", "Canales", "HO")).not.toContain("Javier / Canales");
-    expect(dealTitleLobWord("HO")).toBe("Home");
+    expect(dealTitleLobWord("HO")).toBe("Homeowners");
     expect(dealTitleLobWord("FLOOD")).toBe("Flood");
     expect(dealTitleLobWord("AUTO")).toBe("Auto");
     expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson/);
@@ -75,7 +75,7 @@ describe("BH3 — existing shop titles are rewritten", () => {
         existingTitle: "Canales - HO shop",
         line: "HO",
       }),
-    ).toBe("Javier Canales / Home");
+    ).toBe("Javier Canales / Homeowners");
     expect(
       dealTitleForRecords({
         lineOfBusiness: "HO",
@@ -83,13 +83,13 @@ describe("BH3 — existing shop titles are rewritten", () => {
         contact: { firstName: "Ana", lastName: "Dib" },
         primaryNamedInsured: "Ana Dib",
       }),
-    ).toBe("Ana Dib / Home");
+    ).toBe("Ana Dib / Homeowners");
     expect(
       formatDealTitle({
         existingTitle: "Javier Canales Home",
         line: "HO",
       }),
-    ).toBe("Javier Canales / Home");
+    ).toBe("Javier Canales / Homeowners");
     expect(
       formatDealTitle({
         firstName: "Javier",
@@ -97,7 +97,7 @@ describe("BH3 — existing shop titles are rewritten", () => {
         existingTitle: "Javier / Canales / Home",
         line: "HO",
       }),
-    ).toBe("Javier Canales / Home");
+    ).toBe("Javier Canales / Homeowners");
   });
 });
 
