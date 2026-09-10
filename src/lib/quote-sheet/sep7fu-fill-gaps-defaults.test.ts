@@ -99,8 +99,33 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(home.find((f) => f.key === "claims_3yr")).toBeUndefined();
     expect(home.find((f) => f.key === "claims_5yr")).toBeTruthy();
     expect(home.find((f) => f.key === "months_occupied")?.options).toEqual(["0-9", "9-12"]);
-    expect(home.find((f) => f.key === "exterior")?.options).toContain("stucco");
-    expect(home.find((f) => f.key === "foundation")?.options).toContain("slab");
+    expect(home.find((f) => f.key === "exterior")?.options).toEqual([
+      "Masonry",
+      "Frame",
+      "Mixed Masonry-Frame",
+    ]);
+    expect(home.find((f) => f.key === "foundation")?.options).toEqual([
+      "Slab",
+      "Open foundation",
+      "Crawl space 25%",
+      "Crawl space 50%",
+      "Crawl space 100%",
+      "Piers (elevated)",
+      "Basement",
+    ]);
+    expect(home.find((f) => f.key === "construction")?.options).toEqual([
+      "Frame",
+      "Frame-Stucco",
+      "Aluminum siding",
+      "Vinyl siding",
+      "Wood siding",
+      "Hardy plank siding",
+      "Masonry veneer",
+      "Brick veneer",
+      "Stone veneer",
+      "Logs",
+      "Asbestos",
+    ]);
     expect(home.find((f) => f.key === "basement")?.options).toEqual(["yes", "no"]);
     expect(home.find((f) => f.key === "wind_hail_deductible")?.options).toEqual([
       "1000",

@@ -14,31 +14,37 @@ export const YES_NO_OPTIONS = ["yes", "no"] as const;
 /** Months occupied — only two desk buckets (not free 12). */
 export const MONTHS_OCCUPIED_OPTIONS = ["0-9", "9-12"] as const;
 
+/** Exterior = wall type (Javy 2026-09-09 night lock). */
 export const EXTERIOR_OPTIONS = [
-  "stucco",
-  "vinyl",
-  "brick",
-  "concrete block",
-  "wood",
-  "aluminum",
-  "other",
+  "Masonry",
+  "Frame",
+  "Mixed Masonry-Frame",
 ] as const;
 
+/** Foundation (7) — Javy 2026-09-09 night lock. */
 export const FOUNDATION_OPTIONS = [
-  "slab",
-  "crawl space",
-  "basement",
-  "pier",
-  "other",
+  "Slab",
+  "Open foundation",
+  "Crawl space 25%",
+  "Crawl space 50%",
+  "Crawl space 100%",
+  "Piers (elevated)",
+  "Basement",
 ] as const;
 
+/** Construction = wall construction (11) — Javy 2026-09-09 night lock. */
 export const CONSTRUCTION_OPTIONS = [
-  "frame",
-  "masonry",
-  "masonry veneer",
-  "concrete block",
-  "superior",
-  "other",
+  "Frame",
+  "Frame-Stucco",
+  "Aluminum siding",
+  "Vinyl siding",
+  "Wood siding",
+  "Hardy plank siding",
+  "Masonry veneer",
+  "Brick veneer",
+  "Stone veneer",
+  "Logs",
+  "Asbestos",
 ] as const;
 
 export const WIND_HAIL_DEDUCTIBLE_OPTIONS = ["1000", "2000", "2500"] as const;
