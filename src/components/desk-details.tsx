@@ -31,7 +31,7 @@ export function DeskDetails({
           <h2
             className={cn(
               "text-sm font-semibold",
-              typeof title === "string" && isEmphasizedSheetGroup(title) ? "text-white" : "text-navy",
+              typeof title === "string" && isEmphasizedSheetGroup(title) ? "text-black" : "text-navy",
             )}
           >
             {title}

@@ -1,4 +1,4 @@
-/** Master-sheet section header emphasis (Roof / Wind / 4-point / Dwelling). */
+/** Master-sheet section header emphasis (Roof / Wind / 4-point / Dwelling) — black on white. */
 
 export function isEmphasizedSheetGroup(title: string | null | undefined): boolean {
   const key = String(title ?? "")
