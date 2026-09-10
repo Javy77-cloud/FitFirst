@@ -1,4 +1,4 @@
-/** Master-sheet section headers: soft navy + white text (quieter than flag #002868). */
+/** Master-sheet section headers: Old Glory blue + white text. */
 
 export function isEmphasizedSheetGroup(title: string | null | undefined): boolean {
   const key = String(title ?? "")
@@ -15,9 +15,9 @@ export function isEmphasizedSheetGroup(title: string | null | undefined): boolea
   );
 }
 
-/** Soft navy (#2a5688) — a couple shades off flag blue so headers aren’t eye-catchy. */
+/** US flag blue (#002868) — Old Glory. */
 export const SHEET_GROUP_HEADER_STYLE = {
-  backgroundColor: "#2a5688",
+  backgroundColor: "#002868",
   color: "#ffffff",
 } as const;
 

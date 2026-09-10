@@ -845,7 +845,7 @@ button:enabled:not([data-ff-no-hover]):active {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: #2a5688 !important;
+  background: #002868 !important;
   color: #ffffff !important;
   border-bottom: 1px solid var(--ff-sidebar-line, #1a3d7a);
 }
