@@ -54,6 +54,8 @@ const PRODUCT_TO_FORM: Partial<Record<SheetProduct, string>> = {
   flood: "FLOOD",
   gl: "GL",
   workers_comp: "WC",
+  rv: "RV",
+  umbrella: "UMBRELLA",
 };
 
 /** Master-sheet product catalog driven by quoting form / insurance subtype. */
@@ -64,6 +66,8 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   DP1: "landlord",
   DP3: "landlord",
   PA: "auto",
+  RV: "rv",
+  UMBRELLA: "umbrella",
   FLOOD: "flood",
   GL: "gl",
   WC: "workers_comp",

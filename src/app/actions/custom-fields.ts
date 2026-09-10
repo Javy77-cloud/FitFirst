@@ -261,6 +261,8 @@ export async function saveDealFieldValues(formData: FormData) {
     if (field.systemKey) system[field.systemKey] = value;
     custom[field.key] = value;
   }
+  const pipelineFamily = str(formData, "pipelineFamily");
+  if (pipelineFamily) system.pipelineFamily = pipelineFamily;
   await writeRecordValues(dealId, custom);
   await applySystemDealValues(dealId, system);
   revalidatePath(`/deals/${dealId}`);
@@ -280,9 +282,11 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
   const named = system.primaryNamedInsured?.trim();
   const notes = system.notes;
   const state = system.state?.trim();
-  const formId = coerceQuotingFormId(system.quotingForm);
+  const rawSubtype = system.quotingForm?.trim() ?? "";
+  const formId = coerceQuotingFormId(rawSubtype);
   const form = formId ? quotingFormById(formId) : null;
   const product = formId ? sheetProductForQuotingForm(formId) : null;
+  const family = String(system.pipelineFamily ?? "").trim().toLowerCase();
   await db
     .update(deals)
     .set({
@@ -294,9 +298,19 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
             quotingForm: form.id,
             quotingLine: form.shopLine,
             lineOfBusiness: form.lob,
-            policySubType: product ?? undefined,
+            // Tip sep7gv: store human subtype label (HO3), not sheet product id.
+            policySubType: form.label,
           }
-        : {}),
+        : rawSubtype
+          ? {
+              policySubType: rawSubtype,
+              ...(family === "life"
+                ? { lineOfBusiness: "LIFE", quotingLine: "life" }
+                : family === "health"
+                  ? { lineOfBusiness: "HEALTH", quotingLine: "health" }
+                  : {}),
+            }
+          : {}),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));

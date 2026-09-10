@@ -51,6 +51,8 @@ import { listDealFieldDefs, loadLayoutForModule, loadRecordValues } from "@/lib/
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
+import { pipelineFamilyFromDeal } from "@/lib/deals/insurance-cascade";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
 import { eq } from "drizzle-orm";
@@ -87,7 +89,7 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealLayout, dealFields, dealValues] =
+  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealLayout, dealFields, dealValues, deskLineSettings] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledMacrosFor("deals"),
@@ -100,6 +102,7 @@ export default async function DealPage({
       loadLayoutForModule("deals").catch(() => null),
       listDealFieldDefs().catch(() => []),
       loadRecordValues(deal.id).catch(() => ({}) as Record<string, string>),
+      loadDeskLineSettings().catch(() => null),
     ]);
   const context = await loadRecordContext({
     dealId: deal.id,
@@ -307,6 +310,18 @@ export default async function DealPage({
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
                         fields={resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
                         values={mergeDealSystemValues(deal, lead, dealValues, dealFields)}
+                        pipelineFamily={pipelineFamilyFromDeal({
+                          lineOfBusiness: deal.lineOfBusiness,
+                        })}
+                        quotingForm={deal.quotingForm}
+                        policySubType={deal.policySubType}
+                        lifeHealthOptions={
+                          pipelineFamilyFromDeal({ lineOfBusiness: deal.lineOfBusiness }) === "life"
+                            ? (deskLineSettings?.lifeOptions ?? [])
+                            : pipelineFamilyFromDeal({ lineOfBusiness: deal.lineOfBusiness }) === "health"
+                              ? (deskLineSettings?.healthOptions ?? [])
+                              : []
+                        }
                       />
                     ) : id === "documents" ? (
                       <DocumentsPanel

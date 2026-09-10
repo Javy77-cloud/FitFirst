@@ -3,6 +3,7 @@
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
+import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import { asList } from "@/lib/safe-list";
@@ -13,22 +14,31 @@ export function DealDetailsPanel({
   layout,
   fields,
   values,
+  pipelineFamily = "pc",
+  quotingForm,
+  policySubType,
+  lifeHealthOptions = [],
 }: {
   dealId: string;
   line: string;
   layout: FieldLayout;
   fields: CustomFieldDef[];
   values: Record<string, string>;
+  pipelineFamily?: PipelineFamily;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  lifeHealthOptions?: Array<{ slug?: string; label: string }>;
 }) {
   const safeLayout = parseLayout(layout);
   const fieldList = resolveLayoutFields(safeLayout, asList(fields));
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
 
   return (
-    <div data-ff-deal-details>
+    <div data-ff-deal-details data-ff-pipeline-family={pipelineFamily}>
       <form action={saveDealFieldValues} id="deal-details-save">
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
+        <input type="hidden" name="pipelineFamily" value={pipelineFamily} />
       </form>
       <div
         className="grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
@@ -44,7 +54,9 @@ export function DealDetailsPanel({
                   return (
                     <div key={key} className="space-y-1" data-ff-deal-field={key}>
                       <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
-                        {field.label}
+                        {field.label === "Insurance subtype" || field.systemKey === "quotingForm"
+                          ? "Insurance type / Policy subtype"
+                          : field.label}
                       </label>
                       <FieldControl
                         field={field}
@@ -52,6 +64,10 @@ export function DealDetailsPanel({
                         values={values}
                         name={`field_${key}`}
                         form="deal-details-save"
+                        pipelineFamily={pipelineFamily}
+                        quotingForm={quotingForm}
+                        policySubType={policySubType}
+                        lifeHealthOptions={lifeHealthOptions}
                       />
                       {field.type === "image" ? (
                         <form action={uploadDealFieldImage} className="flex items-center gap-2">

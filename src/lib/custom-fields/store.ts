@@ -9,7 +9,7 @@ import {
 } from "@/lib/db/schema";
 import type { ConvertLead } from "@/lib/crm/convert";
 import { catalogForLines, CORE_FIELDS, defaultFieldsForLine, DEAL_LAYOUT_LINES } from "./defaults";
-import { insuranceSubtypeOptions } from "@/lib/quoting/forms";
+import { allPcSubtypeLabels } from "@/lib/deals/insurance-cascade";
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import {
   defaultFieldsForModule,
@@ -75,7 +75,7 @@ async function ensureInsuranceSubtypeField() {
     .select()
     .from(deskCustomFields)
     .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
-  const options = insuranceSubtypeOptions();
+  const options = allPcSubtypeLabels();
   const target =
     existing.find((row) => row.systemKey === "quotingForm") ??
     existing.find((row) => /^insurance subtype$/i.test(row.label)) ??

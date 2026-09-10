@@ -5,6 +5,11 @@ import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula";
 import { formatCurrencyDisplay, parseNumericInput } from "@/lib/custom-fields/format";
 import { resolvedFieldValue, sanitizePicklistOptions } from "@/lib/custom-fields/picklists";
+import {
+  InsuranceCascadeControl,
+  isInsuranceSubtypeField,
+} from "@/components/custom-fields/insurance-cascade-control";
+import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
@@ -18,6 +23,10 @@ export function FieldControl({
   name,
   disabled,
   form,
+  pipelineFamily = "pc",
+  quotingForm,
+  policySubType,
+  lifeHealthOptions = [],
 }: {
   field: CustomFieldDef;
   value: string;
@@ -25,6 +34,10 @@ export function FieldControl({
   name: string;
   disabled?: boolean;
   form?: string;
+  pipelineFamily?: PipelineFamily;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  lifeHealthOptions?: Array<{ slug?: string; label: string }>;
 }) {
   const resolved = resolvedFieldValue(field, value);
   const required = Boolean(field.required);
@@ -41,6 +54,10 @@ export function FieldControl({
         form={form}
         required={required}
         options={options}
+        pipelineFamily={pipelineFamily}
+        quotingForm={quotingForm}
+        policySubType={policySubType}
+        lifeHealthOptions={lifeHealthOptions}
       />
     </div>
   );
@@ -55,6 +72,10 @@ function TypedControl({
   form,
   required,
   options,
+  pipelineFamily = "pc",
+  quotingForm,
+  policySubType,
+  lifeHealthOptions = [],
 }: {
   field: CustomFieldDef;
   value: string;
@@ -64,7 +85,26 @@ function TypedControl({
   form?: string;
   required: boolean;
   options: string[];
+  pipelineFamily?: PipelineFamily;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  lifeHealthOptions?: Array<{ slug?: string; label: string }>;
 }) {
+  if (isInsuranceSubtypeField(field)) {
+    return (
+      <InsuranceCascadeControl
+        name={name}
+        form={form}
+        family={pipelineFamily}
+        value={value}
+        quotingForm={quotingForm ?? value}
+        policySubType={policySubType}
+        lifeHealthOptions={lifeHealthOptions}
+        required={required}
+        disabled={disabled}
+      />
+    );
+  }
   if (field.type === "formula") {
     const result = evaluateFormula(field.formula ?? "", values);
     return (
