@@ -21,6 +21,7 @@ import {
   OCCUPANCY_OPTIONS,
   OWN_RENT_OPTIONS,
   VEHICLE_OWNERSHIP_OPTIONS,
+  VEHICLE_LIENHOLDER_OPTIONS,
   PRIMARY_HEAT_OPTIONS,
   PRIMARY_PLUMBING_OPTIONS,
   USAGE_OPTIONS,
@@ -247,6 +248,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     group: "Vehicle",
     input: "select",
     options: [...VEHICLE_OWNERSHIP_OPTIONS],
+  },
+  {
+    key: "vehicle_lienholder",
+    label: "Lienholder",
+    group: "Vehicle",
+    input: "select",
+    options: [...VEHICLE_LIENHOLDER_OPTIONS],
   },
   {
     key: "annual_miles",

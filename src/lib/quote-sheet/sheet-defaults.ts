@@ -135,6 +135,34 @@ export const OWN_RENT_OPTIONS = ["Own", "Rent"] as const;
 /** Auto vehicle ownership (Javy 2026-09-10). */
 export const VEHICLE_OWNERSHIP_OPTIONS = ["Owned", "Financed", "Leased"] as const;
 
+/** Common FL Auto lienholders / lenders (Javy 2026-09-10). */
+export const VEHICLE_LIENHOLDER_OPTIONS = [
+  "Acura Financial Services",
+  "Honda Financial Services",
+  "Toyota Financial Services",
+  "Lexus Financial Services",
+  "BMW Financial Services",
+  "Mercedes-Benz Financial Services",
+  "Nissan Motor Acceptance",
+  "Hyundai Motor Finance",
+  "Kia Finance",
+  "GM Financial",
+  "Ford Credit",
+  "Ally Financial",
+  "Capital One Auto Finance",
+  "Chase Auto",
+  "Bank of America",
+  "Wells Fargo Auto",
+  "Santander Consumer USA",
+  "TD Auto Finance",
+  "USAA",
+  "Navy Federal Credit Union",
+  "Suncoast Credit Union",
+  "Regions Bank",
+  "Truist",
+  "Other",
+] as const;
+
 /** Distance to hydrant (Javy 2026-09-09). */
 export const DISTANCE_TO_HYDRANT_OPTIONS = [
   "Within 1,000 feet",
@@ -229,7 +257,9 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // leave blank — agent answers (no Heather defaults).
   // own_rent: leave blank — set per deal (Heather Own on deal sheet).
   // vehicle_ownership / vehicle_N_ownership: leave blank — wait for Javy (no Heather defaults).
+  // vehicle_lienholder / vehicle_N_lienholder: leave blank — set per deal (Heather Acura Financial Services).
 };
+
 
 const MONTHS_0_3 = "0 to 3 months";
 const MONTHS_4_8 = "4 to 8 months";
