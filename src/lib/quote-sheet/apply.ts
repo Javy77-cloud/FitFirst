@@ -10,7 +10,7 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
-import { normalizeDistanceToHydrant, normalizeDistanceToStation, normalizeMonthsOccupied, normalizeUsage } from "./sheet-defaults";
+import { normalizeDistanceToHydrant, normalizeDistanceToStation, normalizeMonthsOccupied, normalizeOccupancy, normalizeUsage } from "./sheet-defaults";
 
 export type ExtractedInput = {
   fieldKey: string;
@@ -140,6 +140,7 @@ export function applyExtractedToSheet(
     let nextValue = String(item.normalizedValue ?? "").trim();
     if (key === "months_occupied") nextValue = normalizeMonthsOccupied(nextValue);
     if (key === "usage") nextValue = normalizeUsage(nextValue);
+    if (key === "occupancy") nextValue = normalizeOccupancy(nextValue);
     if (key === "hydrant") nextValue = normalizeDistanceToHydrant(nextValue);
     if (key === "miles_to_fire_station") nextValue = normalizeDistanceToStation(nextValue);
     const sourceLabel = cellSourceDocument(item, source);

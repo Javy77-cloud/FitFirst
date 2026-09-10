@@ -27,6 +27,9 @@ export const USAGE_OPTIONS = [
   "Vacant",
 ] as const;
 
+/** Occupancy — owner vs tenant (Javy 2026-09-09). */
+export const OCCUPANCY_OPTIONS = ["Owner", "Tenant"] as const;
+
 /** Distance to hydrant (Javy 2026-09-09). */
 export const DISTANCE_TO_HYDRANT_OPTIONS = [
   "Within 1,000 feet",
@@ -162,6 +165,32 @@ export function normalizeUsage(raw: string | null | undefined): string {
     vacant: "Vacant",
   };
   return map[lower] ?? text;
+}
+
+export function normalizeOccupancy(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (
+    lower === "owner" ||
+    lower === "owner occupied" ||
+    lower === "owner-occupied" ||
+    lower === "primary" ||
+    lower.startsWith("owner")
+  ) {
+    return "Owner";
+  }
+  if (
+    lower === "tenant" ||
+    lower === "tenant occupied" ||
+    lower === "tenant-occupied" ||
+    lower === "renter" ||
+    lower === "rental" ||
+    lower.includes("tenant")
+  ) {
+    return "Tenant";
+  }
+  return text;
 }
 
 export function normalizeDistanceToHydrant(raw: string | null | undefined): string {

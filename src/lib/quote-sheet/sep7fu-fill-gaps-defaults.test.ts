@@ -12,10 +12,12 @@ import {
   MONTHS_OCCUPIED_OPTIONS,
   DISTANCE_TO_HYDRANT_OPTIONS,
   DISTANCE_TO_STATION_OPTIONS,
+  OCCUPANCY_OPTIONS,
   USAGE_OPTIONS,
   normalizeDistanceToHydrant,
   normalizeDistanceToStation,
   normalizeMonthsOccupied,
+  normalizeOccupancy,
   normalizeUsage,
 } from "@/lib/quote-sheet/sheet-defaults";
 import { MASTER_FILL_BUSY_COPY } from "@/lib/quote-sheet/master-fill";
@@ -123,6 +125,9 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
       "4 to 8 months",
       "9 months or more",
     ]);
+    expect(home.find((f) => f.key === "occupancy")?.options).toEqual(["Owner", "Tenant"]);
+    expect(normalizeOccupancy("Tenant Occupied")).toBe("Tenant");
+    expect(normalizeOccupancy("owner occupied")).toBe("Owner");
     expect(home.find((f) => f.key === "usage")?.options).toEqual([
       "Primary",
       "Secondary",
