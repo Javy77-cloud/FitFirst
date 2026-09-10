@@ -566,7 +566,7 @@ async function runExtraction(documentId: string, dealId: string) {
   let result;
   let engine: "pdf_text" | "ocr" | "gemini" = "gemini";
   if (docTypeUsesGemini(doc.docType)) {
-    const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey });
+    const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename });
     engine = "gemini";
     if (!gemini.ok) {
       await db

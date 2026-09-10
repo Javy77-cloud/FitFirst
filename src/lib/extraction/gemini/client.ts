@@ -158,6 +158,28 @@ function retryDelayMs(attempt: number, response: Response | null, errText = ""):
  * Daily free-tier exhaustion on primary immediately tries GEMINI_CAPACITY_FALLBACKS
  * (sibling flash ids with separate per-model daily caps — NOT remapped to 3.6).
  */
+
+/** Gemini inlineData MIME for PDFs and phone photos (jpeg/png/webp/heic). */
+export function resolveGeminiInlineMime(
+  mimeType?: string | null,
+  filename?: string | null,
+): string {
+  const mime = (mimeType ?? "").trim().toLowerCase();
+  const name = (filename ?? "").trim().toLowerCase();
+  if (mime === "application/pdf" || name.endsWith(".pdf")) return "application/pdf";
+  if (mime === "image/jpeg" || mime === "image/jpg" || name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+  if (mime === "image/png" || name.endsWith(".png")) return "image/png";
+  if (mime === "image/webp" || name.endsWith(".webp")) return "image/webp";
+  if (mime === "image/heic" || name.endsWith(".heic")) return "image/heic";
+  if (mime === "image/heif" || name.endsWith(".heif")) return "image/heif";
+  if (mime === "image/gif" || name.endsWith(".gif")) return "image/gif";
+  if (mime.startsWith("image/")) return mime;
+  // Default PDF for legacy callers that only pass buffers of known PDFs.
+  return "application/pdf";
+}
+
 export async function extractWithGeminiPdf(
   pdfBytes: Buffer | Uint8Array,
   docType?: string | null,
@@ -165,6 +187,9 @@ export async function extractWithGeminiPdf(
     apiKey?: string;
     model?: string;
     fetchImpl?: typeof fetch;
+    /** Real file MIME (image/jpeg, application/pdf, …). Defaults from filename when set. */
+    mimeType?: string | null;
+    filename?: string | null;
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
@@ -178,6 +203,7 @@ export async function extractWithGeminiPdf(
   }
 
   const b64 = Buffer.from(pdfBytes).toString("base64");
+  const inlineMime = resolveGeminiInlineMime(options?.mimeType, options?.filename);
   const body = {
     systemInstruction: {
       parts: [{ text: buildGeminiSystemPrompt(docType) }],
@@ -189,7 +215,7 @@ export async function extractWithGeminiPdf(
           { text: buildGeminiUserPrompt(docType) },
           {
             inlineData: {
-              mimeType: "application/pdf",
+              mimeType: inlineMime,
               data: b64,
             },
           },

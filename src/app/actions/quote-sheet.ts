@@ -1191,7 +1191,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         continue;
       }
 
-      const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey });
+      const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename });
       const engine = "gemini" as const;
       if (!gemini.ok) {
         await db.insert(extractionJobs).values({

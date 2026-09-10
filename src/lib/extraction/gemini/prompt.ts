@@ -131,6 +131,9 @@ export function buildGeminiUserPrompt(docType?: string | null): string {
   } else if (kind === "dec" || kind.includes("dec") || kind.includes("declar") || kind === "policy") {
     focus =
       "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, property_address, coverage_a, coverage_b, coverage_c, coverage_d, coverage_e, coverage_f, hurricane_deductible, aop_deductible, wind_hail_deductible, ordinance_law, water_backup, scheduled_personal_property, jewelry_limit, identity_theft, loss_assessment, sinkhole_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, mortgagee, mortgagee_address, loan_number. Cov A alone is OK when B–F are missing.";
+  } else if (kind === "photo" || kind.includes("photo") || kind === "inspection" || kind.includes("inspect")) {
+    focus =
+      "This may be a phone photo (JPEG/PNG/HEIC) of a dec, wind mit, 4-point, or inspection — not a PDF. Read the visible text from the image and fill every labeled field you can see. Prefer the same keys as dec / wind mit / four-point when the form type is clear from the page.";
   }
   return `Extract the JSON field object from this ${docType || "insurance"} PDF. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }
