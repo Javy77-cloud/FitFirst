@@ -18,7 +18,7 @@ import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
-import { sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
 
@@ -150,7 +150,7 @@ export function MasterSheetCompare({
           {groups.map((group) =>
             group.group === "Co-applicant" ? (
               <CoApplicantBlock key={group.group} values={values} />
-            ) : group.group === "Vehicle" && line === "auto" ? (
+            ) : group.group === "Vehicle" || group.group === "Vehicles" ? (
               <RepeatableUnitBlocks
                 key={group.group}
                 kind="vehicle"
@@ -158,7 +158,7 @@ export function MasterSheetCompare({
                 values={values}
                 extractedByKey={extractedByKey}
               />
-            ) : group.group === "Drivers" && line === "auto" ? (
+            ) : group.group === "Drivers" ? (
               <RepeatableUnitBlocks
                 key={group.group}
                 kind="driver"
@@ -205,7 +205,7 @@ function SheetGroup({
 }) {
   return (
     <div className="border-b border-border/70 last:border-b-0" data-ff-sheet-group={title}>
-      <div className={sheetGroupHeaderClass(title)} data-ff-sheet-group-header={title}>
+      <div className={sheetGroupHeaderClass(title)} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header={title}>
         {title}
       </div>
       <div className="grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2">

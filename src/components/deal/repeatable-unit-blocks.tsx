@@ -11,7 +11,7 @@ import {
   visibleUnitCount,
   type RepeatableKind,
 } from "@/lib/quote-sheet/repeatable-units";
-import { sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { cn } from "@/lib/utils";
 
 export function RepeatableUnitBlocks({
@@ -33,6 +33,7 @@ export function RepeatableUnitBlocks({
     <div className="border-b border-border/70 last:border-b-0" data-ff-repeatable-units={kind}>
       <div
         className={sheetGroupHeaderClass(kind === "vehicle" ? "Vehicles" : "Drivers")}
+        style={SHEET_GROUP_HEADER_STYLE}
         data-ff-sheet-group-header={kind === "vehicle" ? "Vehicles" : "Drivers"}
       >
         {kind === "vehicle" ? "Vehicles" : "Drivers"}

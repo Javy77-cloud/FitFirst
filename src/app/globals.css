@@ -837,12 +837,16 @@ button:enabled:not([data-ff-no-hover]):active {
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 0.25rem 0.75rem;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.75rem;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: #ffffff;
-  color: #000000;
-  border-bottom: 1px solid var(--ff-border);
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-bottom: 1px solid #d1d5db;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 6%);
 }

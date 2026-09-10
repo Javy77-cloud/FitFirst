@@ -7,7 +7,7 @@ import {
   CO_APPLICANT_FIELDS,
   coApplicantHasValue,
 } from "@/lib/quote-sheet/applicant-core";
-import { sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { cn } from "@/lib/utils";
 
 /** Additive co-applicant on any LOB master sheet — Add when needed (max one). */
@@ -21,7 +21,7 @@ export function CoApplicantBlock({
 
   return (
     <div className="border-b border-border/70 last:border-b-0" data-ff-co-applicant="">
-      <div className={sheetGroupHeaderClass("Co-applicant")} data-ff-sheet-group-header="Co-applicant">
+      <div className={sheetGroupHeaderClass("Co-applicant")} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header="Co-applicant">
         Co-applicant
       </div>
       {open ? (
