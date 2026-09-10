@@ -97,7 +97,11 @@ export function mergeRecordSystemValues(
       if (!field.systemKey) continue;
       const value = record[field.systemKey];
       if (value == null || value === "") continue;
-      fromSystem[field.key] = value instanceof Date ? value.toISOString().slice(0, 10) : String(value);
+      fromSystem[field.key] = value instanceof Date
+        ? value.toISOString().slice(0, 10)
+        : Array.isArray(value)
+          ? value.map(String).filter(Boolean).join(", ")
+          : String(value);
     }
   }
   return { ...fromSystem, ...stored };
@@ -127,4 +131,31 @@ export function customValuesFromForm(
     }
   }
   return custom;
+}
+
+/** Append any catalog fields missing from the saved layout into a trailing "More fields" section. */
+export function ensureLayoutIncludesCatalogFields(
+  layout: FieldLayout,
+  fields: readonly CustomFieldDef[],
+): FieldLayout {
+  const present = new Set(allLayoutFieldKeys(layout));
+  const missing = fields.map((field) => field.key).filter((key) => key && !present.has(key));
+  if (missing.length === 0) return layout;
+  const columns = layout.columns.map((column) => ({
+    ...column,
+    sections: column.sections.map((section) => ({ ...section, fieldKeys: [...section.fieldKeys] })),
+  }));
+  const right = columns[1] ?? columns[0];
+  if (!right) return layout;
+  const more = right.sections.find((section) => section.id === "more_fields" || section.label === "More fields");
+  if (more) {
+    more.fieldKeys = [...more.fieldKeys, ...missing];
+  } else {
+    right.sections.push({
+      id: "more_fields",
+      label: "More fields",
+      fieldKeys: missing,
+    });
+  }
+  return { columns: columns as FieldLayout["columns"] };
 }

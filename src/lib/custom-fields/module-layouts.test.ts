@@ -10,7 +10,8 @@ import {
   isFieldLayoutModule,
   parseLayoutModule,
 } from "./modules";
-import { longestPaletteLabel, PALETTE_ITEMS, PALETTE_LABELS } from "./types";
+import { ensureLayoutIncludesCatalogFields } from "./resolve-layout";
+import { allLayoutFieldKeys, longestPaletteLabel, PALETTE_ITEMS, PALETTE_LABELS } from "./types";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -102,8 +103,10 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
 
   it("persists a distinct starter layout per module", () => {
     expect(defaultLayoutForModule("deals").columns[0].sections[0].id).toBe("contact");
-    expect(defaultLayoutForModule("leads").columns[1].sections[0].fieldKeys).toEqual(["source", "notes"]);
-    expect(defaultLayoutForModule("contacts").columns[1].sections[0].id).toBe("address");
+    expect(defaultLayoutForModule("leads").columns[1].sections[0].fieldKeys).toEqual(
+      expect.arrayContaining(["source", "notes", "status"]),
+    );
+    expect(defaultLayoutForModule("contacts").columns[1].sections[0].id).toBe("details");
     expect(defaultLayoutForModule("policies").columns[0].sections[0].id).toBe("policy");
     expect(defaultLayoutForModule("businesses").columns[0].sections[0].id).toBe("business");
     expect(defaultLayoutForModule("carriers").columns[0].sections[0].id).toBe("identity");
@@ -117,5 +120,32 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
     expect(store).toMatch(/eq\(deskFieldLayouts\.module, module\)/);
     expect(store).toMatch(/eq\(deskCustomFields\.module, module\)/);
     expect(store).not.toMatch(/db:seed/);
+  });
+});
+
+
+describe("sep7hk module Edit Layout includes full catalogs", () => {
+  it("seeds carriers with the full desk field set, not five stubs", () => {
+    const fields = defaultFieldsForModule("carriers");
+    expect(fields.length).toBeGreaterThanOrEqual(20);
+    expect(fields.some((field) => field.key === "underwriter_name")).toBe(true);
+    expect(fields.some((field) => field.key === "portal_url")).toBe(true);
+    const layout = defaultLayoutForModule("carriers");
+    const keys = allLayoutFieldKeys(layout);
+    expect(keys).toEqual(expect.arrayContaining(["name", "naic", "underwriter_email", "portal_url"]));
+    const sparse = {
+      columns: [
+        { id: "left", sections: [{ id: "identity", label: "Identity", fieldKeys: ["name"] }] },
+        { id: "right", sections: [{ id: "contact", label: "Contact", fieldKeys: ["phone"] }] },
+      ],
+    } as ReturnType<typeof defaultLayoutForModule>;
+    const filled = ensureLayoutIncludesCatalogFields(sparse, fields);
+    expect(allLayoutFieldKeys(filled).length).toBeGreaterThanOrEqual(fields.length);
+  });
+
+  it("always re-seeds missing module catalog fields in the store", () => {
+    const store = source("src/lib/custom-fields/store.ts");
+    expect(store).toMatch(/Always seed any new module defaults/);
+    expect(store).toMatch(/ensureLayoutIncludesCatalogFields/);
   });
 });

@@ -5,10 +5,13 @@ import { accounts, carriers, contacts, deals, leads, policies } from "@/lib/db/s
 import type { FieldLayoutModule } from "./modules";
 import type { CustomFieldDef } from "./types";
 
-function str(values: Record<string, string>, key: string, systemKey?: string | null) {
-  const fromKey = (values[key] ?? "").trim();
-  if (fromKey) return fromKey;
-  return systemKey ? (values[systemKey] ?? "").trim() : "";
+function str(values: Record<string, string>, ...keys: Array<string | null | undefined>) {
+  for (const key of keys) {
+    if (!key) continue;
+    const fromKey = (values[key] ?? "").trim();
+    if (fromKey) return fromKey;
+  }
+  return "";
 }
 
 function keep<T>(next: string, existing: T): T | string {
@@ -137,14 +140,48 @@ export async function applyModuleSystemValues(
       .from(carriers)
       .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, recordId)));
     if (!existing) return;
+    const writtenRaw = str(values, "written_lines", "writtenLines");
+    const writtenLines =
+      writtenRaw === ""
+        ? existing.writtenLines
+        : writtenRaw.split(/[,\n]/).map((part) => part.trim()).filter(Boolean);
     await db
       .update(carriers)
       .set({
         name: keep(str(values, "name"), existing.name) as string,
         naic: keep(str(values, "naic"), existing.naic) as typeof existing.naic,
         territory: keep(str(values, "territory"), existing.territory) as typeof existing.territory,
-        customerServicePhone: keep(str(values, "phone"), existing.customerServicePhone) as typeof existing.customerServicePhone,
-        underwriterEmail: keep(str(values, "email"), existing.underwriterEmail) as typeof existing.underwriterEmail,
+        amBestRating: keep(str(values, "am_best_rating", "amBestRating"), existing.amBestRating) as typeof existing.amBestRating,
+        writtenLines,
+        preferredSubmission: keep(str(values, "preferred_submission", "preferredSubmission"), existing.preferredSubmission) as typeof existing.preferredSubmission,
+        bindingAuthority: keep(str(values, "binding_authority", "bindingAuthority"), existing.bindingAuthority) as typeof existing.bindingAuthority,
+        appetiteNotes: keep(str(values, "appetite_notes", "appetiteNotes"), existing.appetiteNotes) as typeof existing.appetiteNotes,
+        dontWriteNotes: keep(str(values, "dont_write_notes", "dontWriteNotes"), existing.dontWriteNotes) as typeof existing.dontWriteNotes,
+        newBusinessCommPct: keep(str(values, "new_business_comm_pct", "newBusinessCommPct"), existing.newBusinessCommPct) as typeof existing.newBusinessCommPct,
+        renewalCommPct: keep(str(values, "renewal_comm_pct", "renewalCommPct"), existing.renewalCommPct) as typeof existing.renewalCommPct,
+        underwriterName: keep(str(values, "underwriter_name", "underwriterName"), existing.underwriterName) as typeof existing.underwriterName,
+        underwriterEmail: keep(
+          str(values, "underwriter_email", "underwriterEmail", "email"),
+          existing.underwriterEmail,
+        ) as typeof existing.underwriterEmail,
+        underwriterPhone: keep(str(values, "underwriter_phone", "underwriterPhone"), existing.underwriterPhone) as typeof existing.underwriterPhone,
+        accountManagerName: keep(str(values, "account_manager_name", "accountManagerName"), existing.accountManagerName) as typeof existing.accountManagerName,
+        accountManagerEmail: keep(str(values, "account_manager_email", "accountManagerEmail"), existing.accountManagerEmail) as typeof existing.accountManagerEmail,
+        accountManagerPhone: keep(str(values, "account_manager_phone", "accountManagerPhone"), existing.accountManagerPhone) as typeof existing.accountManagerPhone,
+        customerServicePhone: keep(
+          str(values, "customer_service_phone", "customerServicePhone", "phone"),
+          existing.customerServicePhone,
+        ) as typeof existing.customerServicePhone,
+        agentPhone: keep(str(values, "agent_phone", "agentPhone"), existing.agentPhone) as typeof existing.agentPhone,
+        claimsPhone: keep(str(values, "claims_phone", "claimsPhone"), existing.claimsPhone) as typeof existing.claimsPhone,
+        billingPhone: keep(str(values, "billing_phone", "billingPhone"), existing.billingPhone) as typeof existing.billingPhone,
+        portalUrl: keep(str(values, "portal_url", "portalUrl"), existing.portalUrl) as typeof existing.portalUrl,
+        agencyCode: keep(str(values, "agency_code", "agencyCode"), existing.agencyCode) as typeof existing.agencyCode,
+        portalLogin: keep(str(values, "portal_login", "portalLogin"), existing.portalLogin) as typeof existing.portalLogin,
+        website: keep(str(values, "website"), existing.website) as typeof existing.website,
+        agentPortalUrl: keep(str(values, "agent_portal_url", "agentPortalUrl"), existing.agentPortalUrl) as typeof existing.agentPortalUrl,
+        carrierInfo: keep(str(values, "carrier_info", "carrierInfo"), existing.carrierInfo) as typeof existing.carrierInfo,
+        portalStatus: keep(str(values, "portal_status", "portalStatus"), existing.portalStatus) as typeof existing.portalStatus,
         updatedAt: new Date(),
       })
       .where(eq(carriers.id, recordId));

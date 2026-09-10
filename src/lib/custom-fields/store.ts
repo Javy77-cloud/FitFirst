@@ -18,7 +18,11 @@ import {
   type FieldLayoutModule,
 } from "./modules";
 import { dealValuesFromLead } from "./transfer";
-import { pickSavedModuleLayout, resolveLayoutFields } from "./resolve-layout";
+import {
+  ensureLayoutIncludesCatalogFields,
+  pickSavedModuleLayout,
+  resolveLayoutFields,
+} from "./resolve-layout";
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
@@ -131,13 +135,8 @@ export async function listDealFieldDefs(): Promise<CustomFieldDef[]> {
 
 export async function ensureModuleFieldCatalog(module: FieldLayoutModule) {
   if (module === "deals") return ensureDealFieldCatalog();
-  const existing = await db
-    .select()
-    .from(deskCustomFields)
-    .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, module)));
-  if (existing.length === 0) {
-    await insertMissingFields(module, defaultFieldsForModule(module));
-  }
+  // Always seed any new module defaults — sparse catalogs from early tips stay incomplete otherwise.
+  await insertMissingFields(module, defaultFieldsForModule(module));
   const rows = await db
     .select()
     .from(deskCustomFields)
@@ -262,7 +261,10 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
     const rows = await loadSavedLayoutRows(module);
     const picked = pickSavedModuleLayout(rows, module, preferred);
     if (picked) {
-      return module === "deals" ? migratePackedDealLayouts(rows, picked) : picked;
+      if (module === "deals") return migratePackedDealLayouts(rows, picked);
+      // Tip sep7hk: Edit Layout shows every catalog field for the module, not only the sparse seed.
+      const catalog = await listFieldDefs(module);
+      return ensureLayoutIncludesCatalogFields(picked, catalog);
     }
     const layout = defaultLayoutForModule(module);
     if (rows.length === 0) {
