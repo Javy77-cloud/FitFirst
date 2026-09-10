@@ -1,6 +1,13 @@
 import type { ShopLine } from "@/lib/domain";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
-import { APPLICANT_CORE_FIELDS, CO_APPLICANT_FIELDS, ENTITY_TYPE_OPTIONS, type QuoteFieldDef } from "./applicant-core";
+import {
+  APPLICANT_CORE_FIELDS,
+  CO_APPLICANT_FIELDS,
+  ENTITY_TYPE_OPTIONS,
+  GENDER_OPTIONS,
+  OCCUPATION_OPTIONS,
+  type QuoteFieldDef,
+} from "./applicant-core";
 import type { SheetProduct } from "./products";
 import {
   AOP_DEDUCTIBLE_OPTIONS,
@@ -40,6 +47,7 @@ export {
   CO_APPLICANT_FIELDS,
   CO_APPLICANT_RELATIONSHIP_OPTIONS,
   ENTITY_TYPE_OPTIONS,
+  GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
   RELATIONSHIP_TO_INSURED_OPTIONS,
@@ -253,6 +261,20 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "vehicle_2_model", label: "Vehicle 2 model", group: "Vehicle" },
   { key: "driver_1_name", label: "Driver 1 name", group: "Drivers" },
   { key: "driver_1_dob", label: "Driver 1 DOB", group: "Drivers" },
+  {
+    key: "driver_1_gender",
+    label: "Driver 1 gender",
+    group: "Drivers",
+    input: "select",
+    options: [...GENDER_OPTIONS],
+  },
+  {
+    key: "driver_1_occupation",
+    label: "Driver 1 occupation",
+    group: "Drivers",
+    input: "select",
+    options: [...OCCUPATION_OPTIONS],
+  },
   { key: "driver_1_license", label: "Driver 1 license", group: "Drivers" },
   { key: "driver_1_status", label: "Driver 1 status", group: "Drivers" },
   { key: "driver_1_years_licensed", label: "Driver 1 years licensed", group: "Drivers", input: "number" },

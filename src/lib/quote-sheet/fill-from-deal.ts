@@ -123,6 +123,13 @@ export function fillSheetFromDealDetails(
   // Auto Drivers block — same named insured DOB from Deal Details.
   put("driver_1_dob", primaryDob);
   put("driver_1_name", named);
+  // Gender / occupation — pass through only when already on the deal; leave blank otherwise (Heather).
+  const gender = firstFilled(stored.applicant_gender, stored.gender, stored.sex);
+  put("applicant_gender", gender);
+  put("driver_1_gender", gender);
+  const occupation = firstFilled(stored.applicant_occupation, stored.occupation);
+  put("applicant_occupation", occupation);
+  put("driver_1_occupation", occupation);
 
   const coDob = formatDobForSheet(
     firstFilled(

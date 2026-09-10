@@ -11,6 +11,20 @@ export const SHEET_DEFAULT_SOURCE_LABEL = "default";
 /** Yes/no picklist options shared by protection / hazard / dwelling flags. */
 export const YES_NO_OPTIONS = ["yes", "no"] as const;
 
+/** Allstate FL Auto accepts Male/Female only (M/F) — Javy 2026-09-10. */
+export { GENDER_OPTIONS, OCCUPATION_OPTIONS } from "./applicant-core";
+
+/** Normalize M/F / male/female into Male | Female picklist values. */
+export function normalizeGender(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[^a-z]/g, "");
+  if (lower === "m" || lower === "male" || lower === "man" || lower === "boy") return "Male";
+  if (lower === "f" || lower === "female" || lower === "woman" || lower === "girl") return "Female";
+  if (text === "Male" || text === "Female") return text;
+  return "";
+}
+
 /** Months occupied — three desk buckets (Javy 2026-09-09). */
 export const MONTHS_OCCUPIED_OPTIONS = [
   "0 to 3 months",
@@ -205,6 +219,8 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // Auto standing (Javy): always pull MVR / credit — permission defaults Yes.
   permission_pull_driving_history: "yes",
   permission_pull_credit_history: "yes",
+  // applicant_gender / driver_1_gender / applicant_occupation / driver_1_occupation:
+  // leave blank — agent answers (no Heather defaults).
 };
 
 const MONTHS_0_3 = "0 to 3 months";

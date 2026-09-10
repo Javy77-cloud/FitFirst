@@ -5,6 +5,8 @@ import {
   AUTO_HOUSEHOLD_SEPARATE_POLICY_STATUS_OPTIONS,
   AUTO_HOUSEHOLD_STATUS_OPTIONS,
   AUTO_VEHICLE_USAGE_OPTIONS,
+  GENDER_OPTIONS,
+  OCCUPATION_OPTIONS,
   YES_NO_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -57,6 +59,8 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
 export const DRIVER_BLOCK_FIELDS: RepeatableField[] = [
   { suffix: "name", label: "Name" },
   { suffix: "dob", label: "DOB" },
+  { suffix: "gender", label: "Gender", input: "select", options: GENDER_OPTIONS },
+  { suffix: "occupation", label: "Occupation", input: "select", options: OCCUPATION_OPTIONS },
   { suffix: "license", label: "License" },
   { suffix: "status", label: "Status" },
   { suffix: "years_licensed", label: "Years licensed", input: "number" },
@@ -160,7 +164,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|annual_miles|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|annual_miles|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }

@@ -89,6 +89,9 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "vehicle_make",
   "vehicle_model",
   "vehicle_usage",
+  "annual_miles",
+  "rideshare",
+  "aftermarket_parts",
   "garaging_zip",
   "garaging_address",
   "vehicle_2_vin",
@@ -105,9 +108,13 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "vehicle_4_model",
   "driver_1_name",
   "driver_1_dob",
+  "driver_1_gender",
+  "driver_1_occupation",
   "driver_1_license",
   "driver_1_status",
   "driver_1_years_licensed",
+  "applicant_gender",
+  "applicant_occupation",
   "driver_2_name",
   "driver_2_dob",
   "driver_2_license",
@@ -132,6 +139,8 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "current_carrier",
   "effective_date",
   "expiration_date",
+  "years_with_carrier",
+  "currently_insured",
 ] as const;
 
 export type GeminiExtractKey =
@@ -230,7 +239,7 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   const line = (shopLine ?? "").trim().toLowerCase();
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     focus =
-      "This is a personal Auto declaration / ID card / photo of an auto dec. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, phone, email, mailing_address, city, state, zip, vin, vehicle_year, vehicle_make, vehicle_model, vehicle_usage, garaging_zip, garaging_address, vehicle_2_* / vehicle_3_* / vehicle_4_* for additional vehicles, driver_1_* / driver_2_* (and 3/4 when listed), accidents_3yr, violations_3yr, liability_bi, liability_pd, um_uim, pip, comp_deductible, collision_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date. Read every vehicle and driver block you can see. Do not treat this as homeowners / Coverage A.";
+      "This is a personal Auto declaration / ID card / photo of an auto dec. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, phone, email, mailing_address, city, state, zip, vin, vehicle_year, vehicle_make, vehicle_model, vehicle_usage, annual_miles, rideshare, aftermarket_parts, garaging_zip, garaging_address, vehicle_2_* / vehicle_3_* / vehicle_4_* for additional vehicles, driver_1_* / driver_2_* (and 3/4 when listed; gender Male/Female only; occupation from Employed/Self-employed/Homemaker/Retired/Student/Unemployed/Administrative/Professional/Sales/Trades/Management/Military/…), applicant_gender, applicant_occupation, accidents_3yr, violations_3yr, liability_bi, liability_pd, um_uim, pip, comp_deductible, collision_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, years_with_carrier, currently_insured. For vehicle_usage use Personal / Commute / Business / Farm when stated. For annual_miles map stated yearly miles into the closest bracket (0 – 2,999 … 11,000 – 11,999, then 12,000 – 14,999 / 15,000 – 19,999 / 20,000 – 24,999 / 25,000+). For rideshare answer yes/no if the dec or notes mention Uber/Lyft/TNC. For aftermarket_parts answer yes/no for non-factory/custom/aftermarket equipment. For currently_insured map continuous coverage or lapse wording into one of: Currently insured 6 months or more; Lapse within last 30 days — 7 days or less; Lapse within last 30 days — 8 to 14 days; Lapse within last 30 days — 15 to 30 days; More than 30 days lapse in the last 6 months / no prior insurance; Other. Read every vehicle and driver block you can see. Do not treat this as homeowners / Coverage A.";
   }
   return `Extract the JSON field object from this ${docType || "insurance"} document. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

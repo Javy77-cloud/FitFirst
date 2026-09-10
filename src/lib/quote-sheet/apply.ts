@@ -10,7 +10,7 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
-import { normalizeDistanceToHydrant, normalizeDistanceToStation, normalizeMonthsOccupied, normalizeOccupancy, normalizeUsage } from "./sheet-defaults";
+import { normalizeDistanceToHydrant, normalizeDistanceToStation, normalizeGender, normalizeMonthsOccupied, normalizeOccupancy, normalizeUsage } from "./sheet-defaults";
 
 export type ExtractedInput = {
   fieldKey: string;
@@ -139,6 +139,10 @@ export function applyExtractedToSheet(
     }
     let nextValue = String(item.normalizedValue ?? "").trim();
     if (key === "months_occupied") nextValue = normalizeMonthsOccupied(nextValue);
+    if (key === "applicant_gender" || key === "driver_1_gender" || /^driver_\d+_gender$/.test(key)) {
+      const g = normalizeGender(nextValue);
+      if (g) nextValue = g;
+    }
     if (key === "usage") nextValue = normalizeUsage(nextValue);
     if (key === "occupancy") nextValue = normalizeOccupancy(nextValue);
     if (key === "hydrant") nextValue = normalizeDistanceToHydrant(nextValue);
@@ -216,6 +220,15 @@ export function applyExtractedToSheet(
   if (fieldIsBlank(values.mortgagee_name) && values.mortgagee?.value?.trim()) {
     values.mortgagee_name = { ...values.mortgagee };
     filledKeys.push("mortgagee_name");
+  }
+  if (fieldIsBlank(values.driver_1_gender) && values.applicant_gender?.value?.trim()) {
+    const g = normalizeGender(values.applicant_gender.value) || values.applicant_gender.value;
+    values.driver_1_gender = { ...values.applicant_gender, value: g };
+    filledKeys.push("driver_1_gender");
+  }
+  if (fieldIsBlank(values.driver_1_occupation) && values.applicant_occupation?.value?.trim()) {
+    values.driver_1_occupation = { ...values.applicant_occupation };
+    filledKeys.push("driver_1_occupation");
   }
 
   return { values, filledKeys, skippedKeys };

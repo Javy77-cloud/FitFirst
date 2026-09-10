@@ -3,6 +3,7 @@ import {
   APPLICANT_CORE_FIELDS,
   CO_APPLICANT_FIELDS,
   ENTITY_TYPE_OPTIONS,
+  GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
   RELATIONSHIP_TO_INSURED_OPTIONS,
@@ -14,9 +15,12 @@ import { fieldsForLine, groupFields } from "./catalog";
 describe("applicant / co-applicant household", () => {
   it("applicant has marital status + occupation", () => {
     const keys = APPLICANT_CORE_FIELDS.map((f) => f.key);
+    expect(keys).toContain("applicant_gender");
     expect(keys).toContain("applicant_marital_status");
     expect(keys).toContain("applicant_occupation");
     expect(keys).toContain("entity_type");
+    expect([...GENDER_OPTIONS]).toEqual(["Male", "Female"]);
+    expect(APPLICANT_CORE_FIELDS.find((f) => f.key === "applicant_gender")?.input).toBe("select");
     expect([...ENTITY_TYPE_OPTIONS]).toEqual([
       "Individual",
       "Joint",
@@ -37,7 +41,25 @@ describe("applicant / co-applicant household", () => {
       "Separated",
     ]);
     expect(OCCUPATION_OPTIONS.at(-1)).toBe("Other");
-    expect(OCCUPATION_OPTIONS.length).toBeGreaterThan(40);
+    expect(OCCUPATION_OPTIONS).toEqual(
+      expect.arrayContaining([
+        "Employed",
+        "Self-employed",
+        "Homemaker",
+        "Retired",
+        "Student",
+        "Unemployed",
+        "Administrative",
+        "Professional",
+        "Sales",
+        "Trades",
+        "Management",
+        "Military",
+      ]),
+    );
+    expect(OCCUPATION_OPTIONS.length).toBeGreaterThan(20);
+    // Not a lone-Other list — real portal categories first.
+    expect(OCCUPATION_OPTIONS.filter((o) => o !== "Other").length).toBeGreaterThan(15);
   });
 
   it("co-applicant fields — no address / dual relationship", () => {
