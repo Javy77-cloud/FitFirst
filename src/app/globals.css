@@ -61,7 +61,7 @@
   --card-foreground: var(--ff-ink);
   --popover: var(--ff-card);
   --popover-foreground: var(--ff-ink);
-  --primary: var(--ff-accent);
+  --primary: var(--ff-navy); /* Old Glory — default main buttons */
   --primary-foreground: #ffffff;
   --secondary: var(--ff-wash);
   --secondary-foreground: var(--ff-navy);
@@ -72,7 +72,7 @@
   --destructive: var(--ff-red);
   --border: var(--ff-border);
   --input: var(--ff-border);
-  --ring: var(--ff-accent);
+  --ring: var(--ff-navy);
   --chart-1: var(--ff-accent);
   --chart-2: var(--ff-green);
   --chart-3: var(--ff-yellow);
