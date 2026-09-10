@@ -289,6 +289,11 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     group: "Vehicle",
   },
   {
+    key: "vehicle_purchase_date",
+    label: "Purchase date",
+    group: "Vehicle",
+  },
+  {
     key: "annual_miles",
     label: "Annual miles",
     group: "Vehicle",
