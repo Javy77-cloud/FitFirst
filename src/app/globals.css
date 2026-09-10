@@ -832,7 +832,8 @@ button:enabled:not([data-ff-no-hover]):active {
 }
 
 /* Master sheet section bars */
-.ff-sheet-group-header {
+.ff-sheet-group-header,
+.ff-sheet-group-header--emphasis {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -841,10 +842,6 @@ button:enabled:not([data-ff-no-hover]):active {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: color-mix(in oklab, var(--ff-wash) 90%, transparent);
-  color: var(--ff-navy);
-}
-.ff-sheet-group-header--emphasis {
   background: #ffffff;
   color: #000000;
   border-bottom: 1px solid var(--ff-border);

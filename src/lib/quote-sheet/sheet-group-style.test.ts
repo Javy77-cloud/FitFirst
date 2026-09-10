@@ -10,8 +10,8 @@ describe("sheet group header emphasis", () => {
     expect(isEmphasizedSheetGroup("Hazards")).toBe(false);
   });
 
-  it("adds the emphasis class", () => {
-    expect(sheetGroupHeaderClass("Roof / wind")).toContain("ff-sheet-group-header--emphasis");
-    expect(sheetGroupHeaderClass("Protection")).not.toContain("emphasis");
+  it("paints every section header black on white", () => {
+    expect(sheetGroupHeaderClass("Roof / wind")).toBe("ff-sheet-group-header");
+    expect(sheetGroupHeaderClass("Protection")).toBe("ff-sheet-group-header");
   });
 });

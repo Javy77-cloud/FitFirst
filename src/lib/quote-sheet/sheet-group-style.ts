@@ -1,4 +1,4 @@
-/** Master-sheet section header emphasis (Roof / Wind / 4-point / Dwelling) — black on white. */
+/** Master-sheet section headers: black letters on white (all groups). */
 
 export function isEmphasizedSheetGroup(title: string | null | undefined): boolean {
   const key = String(title ?? "")
@@ -15,8 +15,7 @@ export function isEmphasizedSheetGroup(title: string | null | undefined): boolea
   );
 }
 
-export function sheetGroupHeaderClass(title: string | null | undefined): string {
-  return isEmphasizedSheetGroup(title)
-    ? "ff-sheet-group-header ff-sheet-group-header--emphasis"
-    : "ff-sheet-group-header";
+/** Every master-sheet section bar is black on white. */
+export function sheetGroupHeaderClass(_title?: string | null): string {
+  return "ff-sheet-group-header";
 }

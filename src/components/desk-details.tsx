@@ -18,20 +18,22 @@ export function DeskDetails({
   meta?: ReactNode;
   children: ReactNode;
 }) {
+  const emphasize =
+    typeof title === "string" && isEmphasizedSheetGroup(title);
   return (
     <details className="group ff-card overflow-hidden" open={open}>
       <summary
         className={cn(
           "flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-3 text-left hover:bg-secondary/60",
           "[&::-webkit-details-marker]:hidden",
-          typeof title === "string" && isEmphasizedSheetGroup(title) && "ff-sheet-group-header--emphasis hover:opacity-95",
+          emphasize && "bg-white text-black hover:bg-white",
         )}
       >
         <div className="min-w-0">
           <h2
             className={cn(
               "text-sm font-semibold",
-              typeof title === "string" && isEmphasizedSheetGroup(title) ? "text-black" : "text-navy",
+              emphasize ? "text-black" : "text-navy",
             )}
           >
             {title}

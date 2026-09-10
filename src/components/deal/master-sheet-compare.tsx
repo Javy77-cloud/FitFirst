@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
+import { CoApplicantBlock } from "@/components/deal/co-applicant-block";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
@@ -147,7 +148,9 @@ export function MasterSheetCompare({
         <input type="hidden" name="returnTo" value={`/deals/${dealId}?tab=documents&line=${line}`} />
         <div data-ff-master-sheet-scroll="" className="overflow-visible">
           {groups.map((group) =>
-            group.group === "Vehicle" && line === "auto" ? (
+            group.group === "Co-applicant" ? (
+              <CoApplicantBlock key={group.group} values={values} />
+            ) : group.group === "Vehicle" && line === "auto" ? (
               <RepeatableUnitBlocks
                 key={group.group}
                 kind="vehicle"

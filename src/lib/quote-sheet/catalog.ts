@@ -1,6 +1,6 @@
 import type { ShopLine } from "@/lib/domain";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
-import { APPLICANT_CORE_FIELDS, type QuoteFieldDef } from "./applicant-core";
+import { APPLICANT_CORE_FIELDS, CO_APPLICANT_FIELDS, type QuoteFieldDef } from "./applicant-core";
 import type { SheetProduct } from "./products";
 import {
   AOP_DEDUCTIBLE_OPTIONS,
@@ -21,7 +21,7 @@ import {
 } from "./sheet-defaults";
 
 export type { QuoteFieldDef } from "./applicant-core";
-export { APPLICANT_CORE_FIELDS } from "./applicant-core";
+export { APPLICANT_CORE_FIELDS, CO_APPLICANT_FIELDS, CO_APPLICANT_RELATIONSHIP_OPTIONS } from "./applicant-core";
 
 const HO_LL = ["homeowners", "landlord"] as const;
 const RENT = ["renters"] as const;
@@ -342,7 +342,7 @@ function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
 }
 
 export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
-  const raw = dedupeFields([...APPLICANT_CORE_FIELDS, ...(CATALOG[line] ?? [])]);
+  const raw = dedupeFields([...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS, ...(CATALOG[line] ?? [])]);
   if (!product) return raw;
   return raw.filter((field) => !field.products || field.products.includes(product));
 }
