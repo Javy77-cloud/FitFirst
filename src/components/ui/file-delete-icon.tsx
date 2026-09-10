@@ -15,7 +15,7 @@ export function FileDeleteIcon({
       aria-label={label}
       title={label}
       data-ff-delete-file
-      className={cn("ff-file-delete", className)}
+      className={cn("ff-file-delete text-destructive", className)}
       {...props}
     >
       <Trash2 className="size-4" aria-hidden />

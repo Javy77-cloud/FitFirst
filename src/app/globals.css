@@ -681,7 +681,7 @@ body[data-ff-col-resize] {
   border-radius: var(--radius);
   border: 0;
   background: transparent;
-  color: var(--ff-muted);
+  color: var(--ff-red);
 }
 .ff-file-delete:hover {
   background: var(--ff-red-bg);
