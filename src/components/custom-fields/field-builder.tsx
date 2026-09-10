@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, MoreHorizontal } from "lucide-react";
+import { GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
 import { deleteDealLayoutField, saveDealFieldLayout } from "@/app/actions/custom-fields";
 import {
   fieldLayoutModuleLabel,
