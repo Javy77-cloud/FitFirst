@@ -19,6 +19,7 @@ import {
   DISTANCE_TO_STATION_OPTIONS,
   MONTHS_OCCUPIED_OPTIONS,
   OCCUPANCY_OPTIONS,
+  OWN_RENT_OPTIONS,
   PRIMARY_HEAT_OPTIONS,
   PRIMARY_PLUMBING_OPTIONS,
   USAGE_OPTIONS,
@@ -227,6 +228,13 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
 ];
 
 export const AUTO_FIELDS: QuoteFieldDef[] = [
+  {
+    key: "own_rent",
+    label: "Own / Rent",
+    group: "Residence",
+    input: "select",
+    options: [...OWN_RENT_OPTIONS],
+  },
   { key: "vin", label: "VIN", group: "Vehicle" },
   { key: "vehicle_year", label: "Year", group: "Vehicle", input: "number" },
   { key: "vehicle_make", label: "Make", group: "Vehicle" },
