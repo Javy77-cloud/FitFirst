@@ -2,14 +2,15 @@ import Link from "next/link";
 import {
   createEmptyFieldPicklist,
   deleteFieldPicklistAction,
+  removeFieldPicklistOption,
   saveFieldPicklist,
 } from "@/app/actions/field-picklists";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
-import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Input } from "@/components/ui/input";
 import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
 
@@ -52,6 +53,7 @@ export default async function FieldPicklistsPage() {
         <div className="space-y-4" data-ff-picklists>
           {lists.map((list) => {
             const defaultIndex = list.options.findIndex((option) => option.isDefault);
+            const saveFormId = `ff-picklist-save-${list.id}`;
             const rows = [
               ...list.options,
               { value: "", color: null as null, isDefault: false },
@@ -63,37 +65,53 @@ export default async function FieldPicklistsPage() {
                 data-ff-picklist-list={list.id}
                 data-ff-picklist-name={list.name}
               >
-                <div className="flex items-center gap-2">
-                  <FieldTypeIcon type="picklist" />
-                  <h2 className="text-sm font-semibold text-navy">{list.name}</h2>
-                  <span className="text-xs text-muted-foreground">
-                    {list.options.length} values · A–Z · colors · default
-                  </span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FieldTypeIcon type="picklist" />
+                    <h2 className="text-sm font-semibold text-navy">{list.name}</h2>
+                    <span className="text-xs text-muted-foreground">
+                      {list.options.length} values · A–Z · colors · default
+                    </span>
+                  </div>
+                  <HardDeleteForm action={deleteFieldPicklistAction} subject={`picklist ${list.name}`}>
+                    <input type="hidden" name="id" value={list.id} />
+                    <FileDeleteIcon label={`Delete list ${list.name}`} />
+                  </HardDeleteForm>
                 </div>
-                <form action={saveFieldPicklist} className="space-y-2">
+
+                {/* Save form owns id/name/submit; option inputs associate via form= to avoid nested forms. */}
+                <form id={saveFormId} action={saveFieldPicklist} className="space-y-2">
                   <input type="hidden" name="id" value={list.id} />
                   <Input name="name" defaultValue={list.name} className="h-8 max-w-sm" aria-label="List name" />
-                  <div className="space-y-1">
-                    {rows.map((option, index) => (
+                </form>
+
+                <div className="space-y-1">
+                  {rows.map((option, index) => {
+                    const isBlank = index >= list.options.length;
+                    return (
                       <div
                         key={`${list.id}-${index}-${option.value}`}
                         className="flex flex-wrap items-center gap-2"
+                        data-ff-picklist-option={isBlank ? "new" : option.value}
                       >
                         <StatusColorSwatch color={option.color} />
                         <Input
+                          form={saveFormId}
                           name="options"
                           defaultValue={option.value}
-                          placeholder={index >= list.options.length ? "Add another value" : undefined}
+                          placeholder={isBlank ? "Add another value" : undefined}
                           className="h-8 min-w-40 max-w-sm flex-1"
                           aria-label={`Option ${index + 1}`}
                         />
                         <StatusColorSelect
+                          form={saveFormId}
                           name="optionColors"
                           defaultValue={option.color ?? "slate"}
                           aria-label={`Color for option ${index + 1}`}
                         />
                         <label className="flex items-center gap-1 text-xs text-muted-foreground">
                           <input
+                            form={saveFormId}
                             type="radio"
                             name="defaultIndex"
                             value={String(index)}
@@ -101,19 +119,26 @@ export default async function FieldPicklistsPage() {
                           />
                           Default
                         </label>
+                        {!isBlank ? (
+                          <HardDeleteForm
+                            action={removeFieldPicklistOption}
+                            subject={`value ${option.value}`}
+                          >
+                            <input type="hidden" name="id" value={list.id} />
+                            <input type="hidden" name="value" value={option.value} />
+                            <FileDeleteIcon label={`Delete ${option.value}`} />
+                          </HardDeleteForm>
+                        ) : null}
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="submit" size="xs">
-                      Save list
-                    </Button>
-                  </div>
-                </form>
-                <HardDeleteForm action={deleteFieldPicklistAction} subject={`picklist ${list.name}`}>
-                  <input type="hidden" name="id" value={list.id} />
-                  <FileDeleteIcon label={`Delete list ${list.name}`} className="text-destructive" />
-                </HardDeleteForm>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit" size="xs" form={saveFormId}>
+                    Save list
+                  </Button>
+                </div>
               </section>
             );
           })}

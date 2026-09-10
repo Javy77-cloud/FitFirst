@@ -84,6 +84,18 @@ export async function listFieldPicklists(): Promise<FieldPicklist[]> {
   }
 }
 
+export async function getFieldPicklist(id: string): Promise<FieldPicklist | null> {
+  try {
+    const [row] = await db
+      .select()
+      .from(deskFieldPicklists)
+      .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)));
+    return row ? toPicklist(row) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function createFieldPicklist(name: string, options: Array<string | PicklistOption> = []): Promise<FieldPicklist> {
   const uniqueName = await allocateUniquePicklistName(name.trim() || "Untitled list");
   try {

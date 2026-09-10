@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   createFieldPicklist,
   deleteFieldPicklist,
+  getFieldPicklist,
   updateFieldPicklist,
 } from "@/lib/custom-fields/picklist-store";
 import { sanitizeRichPicklistOptions, type PicklistOption } from "@/lib/custom-fields/picklists";
@@ -79,6 +80,27 @@ export async function deleteFieldPicklistAction(formData: FormData) {
   } catch (error) {
     if (isRedirectError(error)) throw error;
     const message = error instanceof Error ? error.message : "Could not delete picklist.";
+    flashAction("/settings/picklists", message, "error");
+  }
+}
+
+export async function removeFieldPicklistOption(formData: FormData) {
+  const id = str(formData, "id");
+  const value = str(formData, "value");
+  if (!id || !value) return;
+  try {
+    const existing = await getFieldPicklist(id);
+    if (!existing) {
+      flashAction("/settings/picklists", "Picklist not found.", "error");
+      return;
+    }
+    const next = existing.options.filter((option) => option.value !== value);
+    await updateFieldPicklist(id, { options: next });
+    revalidatePicklists();
+    flashAction("/settings/picklists", "list-item-deleted");
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    const message = error instanceof Error ? error.message : "Could not delete value.";
     flashAction("/settings/picklists", message, "error");
   }
 }

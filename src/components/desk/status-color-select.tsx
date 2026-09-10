@@ -5,12 +5,14 @@ export function StatusColorSelect({
   name = "color",
   defaultValue = "slate",
   id,
+  form,
   className,
   "aria-label": ariaLabel = "Color",
 }: {
   name?: string;
   defaultValue?: string | null;
   id?: string;
+  form?: string;
   className?: string;
   "aria-label"?: string;
 }) {
@@ -20,6 +22,7 @@ export function StatusColorSelect({
   return (
     <select
       id={id}
+      form={form}
       name={name}
       defaultValue={selected}
       aria-label={ariaLabel}
