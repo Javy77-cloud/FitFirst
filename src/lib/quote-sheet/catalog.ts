@@ -608,7 +608,7 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "contents_deductible", label: "Contents deductible", group: "Coverages" },
   { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
   { key: "prior_flood_losses", label: "Any prior flood losses?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "effective_date", label: "Effective date", group: "Current policy" },
+  { key: "effective_date", label: "Effective date (≈ app + 30 days unless new house)", group: "Current policy" },
   {
     key: "effective_date_type",
     label: "Effective date type",

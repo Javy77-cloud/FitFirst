@@ -304,6 +304,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
  * current_carrier / nfip_policy stay blank until Gemini extracts a flood dec;
  * has_nfip defaults to no (Currently have flood/NFIP?).
  * prior_flood_losses / flood_quote_reason: leave blank — never assume from HO claims; agent answers.
+ * effective_date: computed in emptyDefaultsForLine as application+30 unless under_construction/new house.
  */
 export const FLOOD_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   under_construction: "no",
@@ -509,10 +510,45 @@ export function applyMasterSheetDefaults(
   return { values, filledKeys };
 }
 
+
+/** Format a Date as M/D/YYYY for flood portal sheets (US). */
+export function formatFloodSheetDate(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${mm}/${dd}/${yyyy}`;
+}
+
+/**
+ * Flood waiting period (Javy 2026-09-10): unless new house, effective ≈ application + 30 days.
+ * New house / under construction → leave blank (agent picks sooner).
+ */
+export function floodEffectiveDateDefault(opts?: {
+  applicationDay?: Date;
+  underConstruction?: string | null;
+  isNewHouse?: boolean;
+}): { effective_date?: string; effective_date_type?: string } {
+  const under = String(opts?.underConstruction ?? "").trim().toLowerCase();
+  if (opts?.isNewHouse || under === "yes" || under === "true") {
+    return {};
+  }
+  const base = opts?.applicationDay ? new Date(opts.applicationDay) : new Date();
+  const eff = new Date(base);
+  eff.setDate(eff.getDate() + 30);
+  return {
+    effective_date: formatFloodSheetDate(eff),
+    effective_date_type: "New business",
+  };
+}
+
 /** Line-scoped empty defaults (Flood coverage / construction starters). */
 export function emptyDefaultsForLine(line: string | null | undefined): Record<string, string> {
   if (String(line ?? "").trim().toLowerCase() === "flood") {
-    return FLOOD_SHEET_EMPTY_DEFAULTS;
+    const under = FLOOD_SHEET_EMPTY_DEFAULTS.under_construction;
+    return {
+      ...FLOOD_SHEET_EMPTY_DEFAULTS,
+      ...floodEffectiveDateDefault({ underConstruction: under }),
+    };
   }
   return {};
 }
