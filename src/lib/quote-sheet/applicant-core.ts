@@ -50,6 +50,22 @@ export const GENDER_OPTIONS = ["Male", "Female"] as const;
  * FL Auto / Allstate-style occupation & employment categories (portal-mapped).
  * Employment statuses + common job categories portals accept — not a lone Other.
  */
+
+/**
+ * FL Auto / Geico-style highest education level (rated driver / applicant).
+ * Portal-mapped common set — blank/None OK (no forced default).
+ */
+export const EDUCATION_LEVEL_OPTIONS = [
+  "Less than high school",
+  "High school",
+  "Some college",
+  "Associate",
+  "Bachelor",
+  "Master",
+  "Doctorate",
+  "Trade/vocational",
+] as const;
+
 export const OCCUPATION_OPTIONS = [
   "Employed",
   "Self-employed",
@@ -118,6 +134,14 @@ export const APPLICANT_CORE_FIELDS: QuoteFieldDef[] = [
     input: "select",
     options: [...OCCUPATION_OPTIONS],
     extractKey: "applicant_occupation",
+  },
+  {
+    key: "applicant_education_level",
+    label: "Education level",
+    group: "Applicant",
+    input: "select",
+    options: [...EDUCATION_LEVEL_OPTIONS],
+    extractKey: "applicant_education_level",
   },
   {
     key: "entity_type",

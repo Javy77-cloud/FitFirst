@@ -6,6 +6,7 @@ import {
   ENTITY_TYPE_OPTIONS,
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
+  EDUCATION_LEVEL_OPTIONS,
   type QuoteFieldDef,
 } from "./applicant-core";
 import type { SheetProduct } from "./products";
@@ -55,6 +56,7 @@ export {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
+  EDUCATION_LEVEL_OPTIONS,
   RELATIONSHIP_TO_INSURED_OPTIONS,
 } from "./applicant-core";
 
@@ -368,6 +370,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     group: "Drivers",
     input: "select",
     options: [...OCCUPATION_OPTIONS],
+  },
+  {
+    key: "driver_1_education_level",
+    label: "Driver 1 education level",
+    group: "Drivers",
+    input: "select",
+    options: [...EDUCATION_LEVEL_OPTIONS],
   },
   { key: "driver_1_license", label: "Driver 1 license", group: "Drivers" },
   { key: "driver_1_status", label: "Driver 1 status", group: "Drivers" },
