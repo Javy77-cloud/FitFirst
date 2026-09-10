@@ -29,7 +29,7 @@ export function DealWorkQueuePanel({
 
   return (
     <Dialog
-      open
+      open={true}
       onOpenChange={(next) => {
         if (!next) closeQueue();
       }}
@@ -37,7 +37,7 @@ export function DealWorkQueuePanel({
       <DialogContent
         className="sm:max-w-md"
         data-testid="deal-work-queue"
-        showCloseButton
+        showCloseButton={true}
       >
         <DialogHeader>
           <DialogTitle>Work queue · {chip?.label ?? type}</DialogTitle>

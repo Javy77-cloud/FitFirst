@@ -177,60 +177,60 @@ export default async function DealsPage({
         </div>
       </div>
 
-      <div className="deal-list-below-activity" data-ff-deal-list-below-activity="">
-      {isPipelineSheetView(view) ? (
-        <>
-          {pipeline ||
-          filter.stage ||
-          filter.attention ||
-          filter.family ||
-          filter.lifeSub ||
-          filter.healthSub ||
-          filter.pcSub ? (
-            <p className="mb-3 text-sm">
-              <Link href="/deals" className="text-primary hover:underline">
-                Clear filter
-              </Link>
-            </p>
-          ) : null}
-          <DealsTable
-            rows={tableRows}
-            users={users}
+      <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
+        {isPipelineSheetView(view) ? (
+          <>
+            {pipeline ||
+            filter.stage ||
+            filter.attention ||
+            filter.family ||
+            filter.lifeSub ||
+            filter.healthSub ||
+            filter.pcSub ? (
+              <p className="mb-3 text-sm">
+                <Link href="/deals" className="text-primary hover:underline">
+                  Clear filter
+                </Link>
+              </p>
+            ) : null}
+            <DealsTable
+              rows={tableRows}
+              users={users}
+              agents={agents}
+              initialQuery={q}
+              nextByDeal={desk.nextByDeal}
+              mode={view}
+            />
+          </>
+        ) : board ? (
+          <PipelineWorkspace
+            canEditStages={session.isAdmin}
             agents={agents}
-            initialQuery={q}
-            nextByDeal={desk.nextByDeal}
-            mode={view}
+            board={{
+              id: board.id,
+              slug: board.slug,
+              name: board.name,
+              kind: board.kind,
+              seeded: board.seeded,
+              stages: board.stages.map((item) => ({
+                id: item.id,
+                slug: item.slug,
+                name: item.name,
+                sortOrder: item.sortOrder,
+                color: item.color,
+                seeded: item.seeded,
+              })),
+            }}
+            cards={presented}
+            view={view}
+            stageFilter={stage}
+            tagCatalog={tagCatalog}
           />
-        </>
-      ) : board ? (
-        <PipelineWorkspace
-          canEditStages={session.isAdmin}
-          agents={agents}
-          board={{
-            id: board.id,
-            slug: board.slug,
-            name: board.name,
-            kind: board.kind,
-            seeded: board.seeded,
-            stages: board.stages.map((item) => ({
-              id: item.id,
-              slug: item.slug,
-              name: item.name,
-              sortOrder: item.sortOrder,
-              color: item.color,
-              seeded: item.seeded,
-            })),
-          }}
-          cards={presented}
-          view={view}
-          stageFilter={stage}
-          tagCatalog={tagCatalog}
-        />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          No pipeline boards yet. Table still lists every deal on this book.
-        </p>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No pipeline boards yet. Table still lists every deal on this book.
+          </p>
+        )}
       </div>
     </AppShell>
   );
