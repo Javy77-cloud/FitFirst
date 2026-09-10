@@ -303,6 +303,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
  * Applied only on flood sheets — coverage limits/deductibles + construction flags.
  * current_carrier / nfip_policy stay blank until Gemini extracts a flood dec;
  * has_nfip defaults to no (Currently have flood/NFIP?).
+ * prior_flood_losses / flood_quote_reason: leave blank — never assume from HO claims; agent answers.
  */
 export const FLOOD_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   under_construction: "no",
