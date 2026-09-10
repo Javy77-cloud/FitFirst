@@ -37,10 +37,10 @@ export function DealTabs({
               scroll={false}
               prefetch
               className={cn(
-                "rounded-sm px-3 py-1.5 text-sm font-medium border",
+                "rounded-sm px-2.5 py-1 text-xs font-medium border",
                 selected
-                  ? "bg-white text-black border-black"
-                  : "bg-[#1d6fb8] text-white border-white hover:bg-[#185c99]",
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-white text-gray-600 border-gray-400 hover:bg-gray-50",
               )}
             >
               {AGENT_DEAL_TAB_LABELS[tab]}
