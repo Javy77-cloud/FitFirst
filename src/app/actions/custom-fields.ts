@@ -11,6 +11,7 @@ import {
   listDealFieldDefs,
   listFieldDefs,
   loadLayoutForLine,
+  loadLayoutForModule,
   loadRecordValues,
   saveLayoutForEveryLine,
   saveLayoutForLine,
@@ -207,12 +208,21 @@ export async function relabelDealLayoutField(formData: FormData) {
 
 export async function deleteDealLayoutField(formData: FormData) {
   const line = lineFrom(formData);
+  const module = moduleFrom(formData);
   const key = str(formData, "key");
   if (!key) return;
-  const layout = removeFieldFromLayout(await loadLayoutForLine(line), key);
-  await saveLayoutForLine(line, layout);
-  await deleteFieldDef(key);
-  revalidateDealSurfaces(str(formData, "dealId") || undefined, line);
+  // Tip sep7gt: Remove field persists immediately (not draft-only until Save).
+  if (module === "deals") {
+    const layout = removeFieldFromLayout(await loadLayoutForLine(line), key);
+    await saveLayoutForEveryLine(layout);
+    await deleteFieldDef(key, "deals");
+  } else {
+    const layout = removeFieldFromLayout(await loadLayoutForModule(module, line), key);
+    await saveLayoutForModule(module, layout);
+    await deleteFieldDef(key, module);
+  }
+  revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
+  flashAction("/settings/field-builder", "layout-saved");
 }
 
 export async function saveDealFieldValues(formData: FormData) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GripVertical, MoreHorizontal } from "lucide-react";
-import { saveDealFieldLayout } from "@/app/actions/custom-fields";
+import { deleteDealLayoutField, saveDealFieldLayout } from "@/app/actions/custom-fields";
 import {
   fieldLayoutModuleLabel,
   type FieldLayoutModule,
@@ -400,7 +400,14 @@ export function FieldBuilder({
 
   function removeField(key: string) {
     setLayout((current) => removeFieldFromLayout(current, key));
+    setFields((current) => current.filter((field) => field.key !== key));
     if (dialog?.key === key) setDialog(null);
+    // Persist immediately so Remove is not draft-only until Save.
+    const form = new FormData();
+    form.set("key", key);
+    form.set("line", line);
+    form.set("module", module);
+    void deleteDealLayoutField(form);
   }
 
   return (
@@ -764,7 +771,14 @@ function FieldRowMenu({
           <DropdownMenuItem data-ff-field-menu-item="properties" onClick={onProperties}>
             Edit properties
           </DropdownMenuItem>
-          <DropdownMenuItem data-ff-field-menu-item="remove" variant="destructive" onClick={onRemove}>
+          <DropdownMenuItem
+            data-ff-field-menu-item="remove"
+            variant="destructive"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              onRemove();
+            }}
+          >
             Remove field
           </DropdownMenuItem>
         </DropdownMenuGroup>
