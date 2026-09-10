@@ -191,8 +191,8 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
-  /* Tip sep7hm: more air — chips were still sitting on the deal table. */
-  margin-bottom: 8rem;
+  /* Tip sep7hm: ~3rem between activity chips and the deal list (Javy feel-pass). */
+  margin-bottom: 3rem;
 }
 .deal-today-slot {
   flex: 1;

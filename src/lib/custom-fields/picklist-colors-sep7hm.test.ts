@@ -23,6 +23,6 @@ describe("sep7hm picklist colors + A–Z + default", () => {
     expect(readFileSync("src/app/settings/lists/page.tsx", "utf8")).toMatch(/StatusColorSelect/);
     expect(readFileSync("src/app/settings/picklists/page.tsx", "utf8")).toMatch(/optionColors/);
     expect(readFileSync("src/app/settings/picklists/page.tsx", "utf8")).toMatch(/defaultIndex/);
-    expect(readFileSync("src/app/globals.css", "utf8")).toMatch(/margin-bottom: 8rem/);
+    expect(readFileSync("src/app/globals.css", "utf8")).toMatch(/margin-bottom: 3rem/);
   });
 });
