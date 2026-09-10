@@ -55,7 +55,7 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(wiredCountyIds()).toEqual(expect.arrayContaining(["lee", "hillsborough", "orange"]));
   });
 
-  it("merges GetParcel → County PA → FEMA with FEMA winning flood_zone", () => {
+  it("merges GetParcel → County PA → FloodZoneMap → FEMA empty-only (FZM wins flood_zone)", () => {
     const gpd: PropertyRecordsFact[] = [
       { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "X", sourceLabel: "property records", kind: "county" },
       { fieldKey: "acres", sheetKey: "acres", value: "0.3", sourceLabel: "property records", kind: "county" },
@@ -64,18 +64,30 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
       { fieldKey: "beds", sheetKey: "beds", value: "3", sourceLabel: "county PA", kind: "county" },
       { fieldKey: "square_feet", sheetKey: "square_feet", value: "1224", sourceLabel: "county PA", kind: "county" },
     ];
+    const fzm: PropertyRecordsFact[] = [
+      { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "AE", sourceLabel: "FloodZoneMap", kind: "fema" },
+      { fieldKey: "bfe", sheetKey: "bfe", value: "6", sourceLabel: "FloodZoneMap", kind: "fema" },
+    ];
     const fema: PropertyRecordsFact[] = [
-      { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "AE", sourceLabel: "FEMA", kind: "fema" },
+      { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "VE", sourceLabel: "FEMA", kind: "fema" },
       { fieldKey: "firm_panel", sheetKey: "firm_panel", value: "12071C0581F", sourceLabel: "FEMA", kind: "fema" },
     ];
-    const { facts, sourcesUsed } = mergePropertyFillFacts({ getParcel: gpd, countyPa: county, fema });
-    expect(sourcesUsed).toEqual(["property-records", "county-pa", "fema"]);
+    const { facts, sourcesUsed } = mergePropertyFillFacts({
+      getParcel: gpd,
+      countyPa: county,
+      floodZoneMap: fzm,
+      fema,
+    });
+    expect(sourcesUsed).toEqual(["property-records", "county-pa", "floodzonemap", "fema"]);
     expect(facts.find((f) => f.sheetKey === "flood_zone")?.value).toBe("AE");
-    expect(facts.find((f) => f.sheetKey === "flood_zone")?.sourceLabel).toBe("FEMA");
+    expect(facts.find((f) => f.sheetKey === "flood_zone")?.sourceLabel).toBe("FloodZoneMap");
+    expect(facts.find((f) => f.sheetKey === "firm_panel")?.value).toBe("12071C0581F");
+    expect(facts.find((f) => f.sheetKey === "firm_panel")?.sourceLabel).toBe("FEMA");
     expect(facts.find((f) => f.sheetKey === "beds")?.value).toBe("3");
     expect(facts.find((f) => f.sheetKey === "acres")?.value).toBe("0.3");
-    expect(toastForPropertyFill({ filledCount: 4, sourcesUsed })).toMatch(/county PA/);
-    expect(toastForPropertyFill({ filledCount: 4, sourcesUsed })).toMatch(/FEMA/);
+    expect(toastForPropertyFill({ filledCount: 5, sourcesUsed })).toMatch(/county PA/);
+    expect(toastForPropertyFill({ filledCount: 5, sourcesUsed })).toMatch(/FloodZoneMap/);
+    expect(toastForPropertyFill({ filledCount: 5, sourcesUsed })).toMatch(/FEMA/);
   });
 
   it("maps Lee PA Cypress Point house fields from ArcGIS attrs", async () => {

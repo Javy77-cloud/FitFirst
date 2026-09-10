@@ -11,6 +11,7 @@ import { parcelVintage, type PropertyRecordsFact } from "@/lib/getparceldata/map
 import { NO_ADDRESS_MESSAGE } from "@/lib/getparceldata/client";
 import { factsFromCountyPa } from "./counties/registry";
 import { factsFromFemaNfhl } from "./fema";
+import { factsFromFloodZoneMap } from "./floodzonemap";
 import { mergePropertyFillFacts, toastForPropertyFill } from "./merge";
 import type { PropertyFillBundle, PropertyFillSourceId } from "./types";
 
@@ -24,8 +25,8 @@ export type OrchestrateInput = {
 
 /**
  * Single Fill-from-property-records pipeline:
- * GetParcelData (BYO key) → County PA GIS (free) → FEMA NFHL (free).
- * One fact list, empty-only apply upstream.
+ * GetParcelData (BYO key) → County PA GIS (free) → FloodZoneMap (free) → FEMA NFHL empty-only (free).
+ * One fact list, empty-only apply upstream. FloodZoneMap wins over FEMA on conflicts.
  */
 export async function orchestratePropertyFill(
   input: OrchestrateInput,
@@ -50,6 +51,7 @@ export async function orchestratePropertyFill(
 
   const keyReady = getParcelDataKeyReady(input.apiKey);
   const geo = await geocodePropertyAddress(input.address, fetchImpl);
+  const addressLine = formatPropertyAddress(input.address);
 
   const getParcelPromise: Promise<GetParcelDataSearchResult> = keyReady
     ? searchGetParcelDataRecords(
@@ -67,20 +69,29 @@ export async function orchestratePropertyFill(
 
   const countyPromise = factsFromCountyPa(input.address, fetchImpl);
 
+  const floodZoneMapPromise = factsFromFloodZoneMap(
+    geo.ok
+      ? { lat: geo.lat, lng: geo.lng, address: addressLine }
+      : { address: addressLine },
+    fetchImpl,
+  ).catch(() => [] as PropertyRecordsFact[]);
+
   const femaPromise =
     geo.ok
       ? factsFromFemaNfhl(geo.lat, geo.lng, fetchImpl).catch(() => [] as PropertyRecordsFact[])
       : Promise.resolve([] as PropertyRecordsFact[]);
 
-  const [lookup, county, femaFacts] = await Promise.all([
+  const [lookup, county, floodZoneMapFacts, femaFacts] = await Promise.all([
     getParcelPromise,
     countyPromise,
+    floodZoneMapPromise,
     femaPromise,
   ]);
 
   const { facts, sourcesUsed } = mergePropertyFillFacts({
     getParcel: lookup.status === "ok" ? lookup.facts : [],
     countyPa: county.facts,
+    floodZoneMap: floodZoneMapFacts,
     fema: femaFacts,
   });
 
@@ -89,7 +100,7 @@ export async function orchestratePropertyFill(
     "";
 
   if (!facts.length) {
-    if (!keyReady && !county.facts.length && !femaFacts.length) {
+    if (!keyReady && !county.facts.length && !floodZoneMapFacts.length && !femaFacts.length) {
       return {
         status: "needs_key",
         facts: [],
@@ -104,16 +115,19 @@ export async function orchestratePropertyFill(
       status,
       facts: [],
       sourcesUsed,
-      message: lookup.message || "No parcel fields from GetParcel, county PA, or FEMA.",
+      message: lookup.message || "No parcel fields from GetParcel, county PA, FloodZoneMap, or FEMA.",
       toast: status === "error" ? "property-records-error" : "property-records-not-found",
       lookup,
     };
   }
 
   const sourceNote = sourcesUsed
-    .map((id: PropertyFillSourceId) =>
-      id === "property-records" ? "GetParcelData" : id === "county-pa" ? `county PA (${county.adapterId ?? "?"})` : "FEMA",
-    )
+    .map((id: PropertyFillSourceId) => {
+      if (id === "property-records") return "GetParcelData";
+      if (id === "county-pa") return `county PA (${county.adapterId ?? "?"})`;
+      if (id === "floodzonemap") return "FloodZoneMap";
+      return "FEMA";
+    })
     .join(", ");
 
   const message = [

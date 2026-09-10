@@ -28,6 +28,11 @@ export function femaFloodMapUrl(address: string): string {
   return `https://msc.fema.gov/portal/search?AddressQuery=${encodeURIComponent(address)}`;
 }
 
+/** Public FloodZoneMap.org address search (open tab; no API key). */
+export function floodZoneMapUrl(address: string): string {
+  return `https://floodzonemap.org/?q=${encodeURIComponent(address)}`;
+}
+
 /** Free public Google Maps search. Not Maps Platform, no API key, no billing. */
 export function googleMapsSearchUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -35,13 +40,14 @@ export function googleMapsSearchUrl(address: string): string {
 
 export function propertyAddressLinks(
   parts: PropertyAddressInput,
-): { zillow: string; femaFlood: string; maps: string; formatted: string } | null {
+): { zillow: string; femaFlood: string; floodZoneMap: string; maps: string; formatted: string } | null {
   const formatted = formatPropertyAddress(parts);
   if (!formatted) return null;
   return {
     formatted,
     zillow: zillowHomesUrl(formatted),
     femaFlood: femaFloodMapUrl(formatted),
+    floodZoneMap: floodZoneMapUrl(formatted),
     maps: googleMapsSearchUrl(formatted),
   };
 }

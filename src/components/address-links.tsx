@@ -30,6 +30,10 @@ export function PropertyAddressLinks({
         <ExternalLink aria-hidden />
         FEMA flood
       </a>
+      <a href={links.floodZoneMap} target="_blank" rel="noopener">
+        <ExternalLink aria-hidden />
+        FloodZoneMap
+      </a>
     </span>
   );
 }

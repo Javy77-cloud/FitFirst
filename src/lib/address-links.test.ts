@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   femaFloodMapUrl,
+  floodZoneMapUrl,
   formatPropertyAddress,
   googleMapsSearchUrl,
   propertyAddressLinks,
@@ -33,6 +34,12 @@ describe("property address public links", () => {
     );
   });
 
+  it("builds a FloodZoneMap.org search URL from the street address", () => {
+    expect(floodZoneMapUrl(formatted)).toBe(
+      `https://floodzonemap.org/?q=${encodeURIComponent(formatted)}`,
+    );
+  });
+
   it("builds a free Google Maps search URL with no API key", () => {
     expect(googleMapsSearchUrl(formatted)).toBe(
       `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatted)}`,
@@ -45,6 +52,7 @@ describe("property address public links", () => {
     expect(links?.maps).toContain("google.com/maps/search/");
     expect(links?.zillow).toContain("zillow.com/homes/");
     expect(links?.femaFlood).toContain("msc.fema.gov/portal/search?AddressQuery=");
+    expect(links?.floodZoneMap).toContain("floodzonemap.org/?q=");
     expect(propertyAddressLinks({ address1: "  ", city: "Palm Bay", state: "FL" })).toBeNull();
     expect(propertyAddressLinks({})).toBeNull();
   });
