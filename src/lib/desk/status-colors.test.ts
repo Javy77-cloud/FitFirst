@@ -6,9 +6,18 @@ import {
   policyStatusColor,
   stageColorFromNameOrSlug,
   statusColorClass,
+  STATUS_COLOR_KEYS,
 } from "./status-colors";
 
 describe("stage colors", () => {
+  it("offers a full CRM palette (not a 5–8 shortlist)", () => {
+    expect(STATUS_COLOR_KEYS.length).toBeGreaterThanOrEqual(16);
+    expect(STATUS_COLOR_KEYS).toEqual(expect.arrayContaining(["sky", "indigo", "pink", "cyan", "red", "lime"]));
+    for (const key of STATUS_COLOR_KEYS) {
+      expect(statusColorClass(key)).toContain("bg-[");
+    }
+  });
+
   it("assigns a calm default per known slug and otherwise by order", () => {
     expect(defaultStageColor(0, "gather")).toBe("blue");
     expect(defaultStageColor(1, "quotes")).toBe("teal");
@@ -19,7 +28,7 @@ describe("stage colors", () => {
     expect(defaultStageColor(6, "closed_won")).toBe("green");
     expect(defaultStageColor(7, "closed_lost")).toBe("rose");
     expect(defaultStageColor(0, "archive")).toBe("slate");
-    expect(defaultStageColor(7, "custom_uw")).toBe("teal");
+    expect(defaultStageColor(7, "custom_uw")).toBe("sky");
   });
 
   it("keeps a persisted color and still colors Gather Info from the name", () => {

@@ -1,18 +1,50 @@
 /** Calm palette for stages and statuses. Contrast is on light paper, not neon. */
 
+/** Full calm CRM palette — every color picker (stages, statuses, lists) shares this. */
 export const STATUS_COLOR_KEYS = [
+  "blue",
+  "sky",
+  "cyan",
+  "teal",
+  "emerald",
+  "green",
+  "lime",
+  "yellow",
+  "amber",
+  "orange",
+  "red",
+  "rose",
+  "pink",
+  "fuchsia",
+  "purple",
+  "violet",
+  "indigo",
+  "slate",
+  "stone",
+  "gray",
+] as const;
+export type StatusColorKey = (typeof STATUS_COLOR_KEYS)[number];
+
+export const STAGE_COLOR_ROTATION = [
   "blue",
   "teal",
   "amber",
   "violet",
   "green",
   "rose",
-  "slate",
+  "sky",
   "orange",
+  "indigo",
+  "cyan",
+  "pink",
+  "emerald",
+  "yellow",
+  "fuchsia",
+  "lime",
+  "purple",
+  "red",
+  "stone",
 ] as const;
-export type StatusColorKey = (typeof STATUS_COLOR_KEYS)[number];
-
-export const STAGE_COLOR_ROTATION = ["blue", "teal", "amber", "violet", "green", "rose"] as const;
 
 const STAGE_COLOR_BY_SLUG: Record<string, StatusColorKey> = {
   gather: "blue",
@@ -117,24 +149,48 @@ const STATUS_LABEL: Record<string, string> = {
 
 export const STATUS_COLOR_CLASS: Record<StatusColorKey, string> = {
   blue: "border-[#9bb8d6] bg-[#d7e6f6] text-[#163a68]",
+  sky: "border-[#9ec9e8] bg-[#e0f2fe] text-[#075985]",
+  cyan: "border-[#8ecad8] bg-[#cffafe] text-[#155e75]",
   teal: "border-[#8ec4b8] bg-[#d7efe8] text-[#0f5c52]",
-  amber: "border-[#e0c56a] bg-[#fff4d1] text-[#8a6500]",
-  violet: "border-[#c4b5e8] bg-[#e8e0f5] text-[#4c1d95]",
+  emerald: "border-[#8fcbb0] bg-[#d1fae5] text-[#065f46]",
   green: "border-[#9dceb3] bg-[#e4f5ec] text-[#1f7a4d]",
-  rose: "border-[#e8b4af] bg-[#fde8e6] text-[#9f1239]",
-  slate: "border-[#c5d0db] bg-[#e8eef4] text-[#334155]",
+  lime: "border-[#c5d98a] bg-[#ecfccb] text-[#3f6212]",
+  yellow: "border-[#e4d47a] bg-[#fef9c3] text-[#854d0e]",
+  amber: "border-[#e0c56a] bg-[#fff4d1] text-[#8a6500]",
   orange: "border-[#e8c3a4] bg-[#ffedd5] text-[#b4532a]",
+  red: "border-[#e8a8a8] bg-[#fee2e2] text-[#991b1b]",
+  rose: "border-[#e8b4af] bg-[#fde8e6] text-[#9f1239]",
+  pink: "border-[#e9b0c8] bg-[#fce7f3] text-[#9d174d]",
+  fuchsia: "border-[#e0a8d8] bg-[#fae8ff] text-[#86198f]",
+  purple: "border-[#d0b4e8] bg-[#f3e8ff] text-[#6b21a8]",
+  violet: "border-[#c4b5e8] bg-[#e8e0f5] text-[#4c1d95]",
+  indigo: "border-[#b4bce8] bg-[#e0e7ff] text-[#3730a3]",
+  slate: "border-[#c5d0db] bg-[#e8eef4] text-[#334155]",
+  stone: "border-[#d0c8be] bg-[#f5f5f4] text-[#44403c]",
+  gray: "border-[#c8cdd4] bg-[#f3f4f6] text-[#374151]",
 };
 
 export const STATUS_BAR_CLASS: Record<StatusColorKey, string> = {
   blue: "bg-[#1d4e89]",
+  sky: "bg-[#0369a1]",
+  cyan: "bg-[#0e7490]",
   teal: "bg-[#0f766e]",
-  amber: "bg-[#b4532a]",
-  violet: "bg-[#6d28d9]",
+  emerald: "bg-[#047857]",
   green: "bg-[#1f7a4d]",
-  rose: "bg-[#9f1239]",
-  slate: "bg-[#475569]",
+  lime: "bg-[#4d7c0f]",
+  yellow: "bg-[#a16207]",
+  amber: "bg-[#b45309]",
   orange: "bg-[#b4532a]",
+  red: "bg-[#b91c1c]",
+  rose: "bg-[#9f1239]",
+  pink: "bg-[#be185d]",
+  fuchsia: "bg-[#a21caf]",
+  purple: "bg-[#7e22ce]",
+  violet: "bg-[#6d28d9]",
+  indigo: "bg-[#4338ca]",
+  slate: "bg-[#475569]",
+  stone: "bg-[#57534e]",
+  gray: "bg-[#4b5563]",
 };
 
 function normalizeKey(value: string | null | undefined): string {

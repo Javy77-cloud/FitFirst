@@ -1170,12 +1170,8 @@ export const quoteAttemptLogs = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
-    dealId: uuid("deal_id")
-      .notNull()
-      .references(() => deals.id),
-    riskId: uuid("risk_id")
-      .notNull()
-      .references(() => risks.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    riskId: uuid("risk_id").references(() => risks.id),
     carrierId: uuid("carrier_id")
       .notNull()
       .references(() => carriers.id),
