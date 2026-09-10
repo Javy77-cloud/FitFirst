@@ -18,6 +18,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
+import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-capture";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { withFlash } from "@/lib/flash";
 import { shopDealQuotes } from "@/app/actions/quotes";
@@ -180,6 +181,7 @@ export async function logAppetiteResult(formData: FormData) {
   const line = deal.quotingLine || (deal.lineOfBusiness === "AUTO" ? "auto" : "home");
   const lob = SHOP_LINE_TO_LOB[line as ShopLine] ?? deal.lineOfBusiness ?? "HO";
   const autoSnap = await autoSnapshotFieldsForDeal(dealId, lob);
+  const lineSnap = await lineLearningSnapshotFieldsForDeal(dealId, lob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
@@ -207,6 +209,7 @@ export async function logAppetiteResult(formData: FormData) {
     snapCounty: risk.county,
     snapCoverageA: risk.coverageA,
     ...autoSnap,
+    ...lineSnap,
   });
 
   revalidatePath(`/deals/${dealId}`);

@@ -127,6 +127,53 @@ export default async function DeveloperHubOverviewPage() {
           </div>
         </Link>
 
+        <Link
+          href="/settings/developer/flood-learning"
+          className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
+          data-ff-dev-flood-learning=""
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-navy">Flood Learning</div>
+              <StatusChip status="working" />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Stub: zone / elevation / EC / premiums. Site developers only.
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/developer/wc-learning"
+          className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
+          data-ff-dev-wc-learning=""
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-navy">WC Learning</div>
+              <StatusChip status="working" />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Stub: industry class / employees / payroll / location. Site developers only.
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/settings/developer/gl-learning"
+          className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
+          data-ff-dev-gl-learning=""
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-navy">GL Learning</div>
+              <StatusChip status="working" />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Stub: industry/class / revenue / employees / location. Site developers only.
+            </p>
+          </div>
+        </Link>
+
+
         </>
       ) : null}
       <p className="mb-4 text-sm">

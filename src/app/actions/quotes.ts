@@ -19,6 +19,7 @@ import {
   risks,
 } from "@/lib/db/schema";
 import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
+import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-capture";
 import { currentDeskSession } from "@/lib/auth/session";
 import {
   isAgentStatus,
@@ -200,6 +201,7 @@ export async function recordManualAttempt(formData: FormData) {
 
   const manualLob = String(formData.get("line") ?? "HO");
   const manualAutoSnap = await autoSnapshotFieldsForDeal(dealId, manualLob);
+  const manualLineSnap = await lineLearningSnapshotFieldsForDeal(dealId, manualLob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
@@ -230,6 +232,7 @@ export async function recordManualAttempt(formData: FormData) {
     snapCounty: risk.county,
     snapCoverageA: risk.coverageA,
     ...manualAutoSnap,
+    ...manualLineSnap,
   });
 
   revalidatePath(`/deals/${dealId}`);

@@ -1230,6 +1230,10 @@ export const quoteAttemptLogs = pgTable(
     snapCoverageA: integer("snap_coverage_a"),
     /** Auto premium-learning: full application feature snapshot (parallel to Home roof/coast snaps). */
     autoFeatureSnapshot: jsonb("auto_feature_snapshot").$type<AutoFeatureSnapshot | null>(),
+    /** Flood / WC / GL learning stubs — beginnings only; filled as quotes land. */
+    floodFeatureSnapshot: jsonb("flood_feature_snapshot").$type<FloodFeatureSnapshot | null>(),
+    wcFeatureSnapshot: jsonb("wc_feature_snapshot").$type<WcFeatureSnapshot | null>(),
+    glFeatureSnapshot: jsonb("gl_feature_snapshot").$type<GlFeatureSnapshot | null>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

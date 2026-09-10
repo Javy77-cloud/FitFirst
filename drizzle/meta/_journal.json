@@ -694,6 +694,13 @@
       "when": 1788980000000,
       "tag": "0098_auto_premium_learning",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1788990000000,
+      "tag": "0099_line_learning_stubs",
+      "breakpoints": true
     }
   ]
 }
