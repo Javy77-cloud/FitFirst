@@ -177,6 +177,8 @@ export default async function DealsPage({
         </div>
       </div>
 
+      <div className="deal-activity-list-spacer" data-ff-activity-list-spacer="" aria-hidden />
+
       <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
         {isPipelineSheetView(view) ? (
           <>

@@ -7,6 +7,7 @@ export function StatusColorSelect({
   id,
   form,
   className,
+  disabled,
   "aria-label": ariaLabel = "Color",
 }: {
   name?: string;
@@ -14,6 +15,7 @@ export function StatusColorSelect({
   id?: string;
   form?: string;
   className?: string;
+  disabled?: boolean;
   "aria-label"?: string;
 }) {
   const selected = (STATUS_COLOR_KEYS as readonly string[]).includes(String(defaultValue ?? ""))
@@ -26,6 +28,7 @@ export function StatusColorSelect({
       name={name}
       defaultValue={selected}
       aria-label={ariaLabel}
+      disabled={disabled}
       className={cn("h-8 rounded-md border border-input bg-card px-2 text-xs capitalize", className)}
       data-ff-status-color-select=""
     >

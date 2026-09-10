@@ -2,8 +2,8 @@ import Link from "next/link";
 import {
   addGlobalListItem,
   deleteGlobalListItem,
-  updateGlobalListItemColor,
 } from "@/app/actions/global-lists";
+import { GlobalListColorForm } from "@/components/desk/global-list-color-form";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
@@ -138,16 +138,7 @@ function ListCard({
               </span>
               {canEdit ? (
                 <span className="flex flex-wrap items-center gap-2">
-                  <form action={updateGlobalListItemColor} className="flex items-center gap-1">
-                    <input type="hidden" name="id" value={row.id} />
-                    <StatusColorSelect
-                      defaultValue={row.color}
-                      aria-label={`Color for ${row.label}`}
-                    />
-                    <button type="submit" className="text-xs text-primary hover:underline">
-                      Save color
-                    </button>
-                  </form>
+                  <GlobalListColorForm id={row.id} label={row.label} color={row.color} />
                   <HardDeleteForm action={deleteGlobalListItem} subject="this list item">
                     <input type="hidden" name="id" value={row.id} />
                     <FileDeleteIcon label={`Delete ${row.label}`} className="text-destructive" />
