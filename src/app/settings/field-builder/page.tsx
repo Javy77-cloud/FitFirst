@@ -6,7 +6,7 @@ import {
   fieldLayoutModuleLabel,
   parseLayoutModule,
 } from "@/lib/custom-fields/modules";
-import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
+import { layoutContentScore, resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { ensureFieldsForModule, listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
 
 export const dynamic = "force-dynamic";
