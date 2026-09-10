@@ -132,6 +132,9 @@ export const OCCUPANCY_OPTIONS = ["Owner", "Tenant"] as const;
 /** Auto residence Own / Rent (Javy 2026-09-10). */
 export const OWN_RENT_OPTIONS = ["Own", "Rent"] as const;
 
+/** Auto vehicle ownership (Javy 2026-09-10). */
+export const VEHICLE_OWNERSHIP_OPTIONS = ["Owned", "Financed", "Leased"] as const;
+
 /** Distance to hydrant (Javy 2026-09-09). */
 export const DISTANCE_TO_HYDRANT_OPTIONS = [
   "Within 1,000 feet",
@@ -225,6 +228,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // applicant_gender / driver_1_gender / applicant_occupation / driver_1_occupation:
   // leave blank — agent answers (no Heather defaults).
   // own_rent: leave blank — set per deal (Heather Own on deal sheet).
+  // vehicle_ownership / vehicle_N_ownership: leave blank — wait for Javy (no Heather defaults).
 };
 
 const MONTHS_0_3 = "0 to 3 months";

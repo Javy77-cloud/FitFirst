@@ -20,6 +20,7 @@ import {
   MONTHS_OCCUPIED_OPTIONS,
   OCCUPANCY_OPTIONS,
   OWN_RENT_OPTIONS,
+  VEHICLE_OWNERSHIP_OPTIONS,
   PRIMARY_HEAT_OPTIONS,
   PRIMARY_PLUMBING_OPTIONS,
   USAGE_OPTIONS,
@@ -240,6 +241,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "vehicle_make", label: "Make", group: "Vehicle" },
   { key: "vehicle_model", label: "Model", group: "Vehicle" },
   { key: "vehicle_usage", label: "Usage", group: "Vehicle", input: "select", options: [...AUTO_VEHICLE_USAGE_OPTIONS] },
+  {
+    key: "vehicle_ownership",
+    label: "Ownership",
+    group: "Vehicle",
+    input: "select",
+    options: [...VEHICLE_OWNERSHIP_OPTIONS],
+  },
   {
     key: "annual_miles",
     label: "Annual miles",
