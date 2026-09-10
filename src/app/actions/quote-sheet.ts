@@ -72,7 +72,7 @@ import {
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, dealActionFlashHref } from "@/lib/desk/action-flash";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
 import { blankSheetWithDefaults, emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
-import { applyMasterSheetDefaults } from "@/lib/quote-sheet/sheet-defaults";
+import { applyMasterSheetDefaults, emptyDefaultsForLine } from "@/lib/quote-sheet/sheet-defaults";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import {
   ADDRESS_CONFIRM_KEYS,
@@ -790,7 +790,7 @@ export async function runFillFromDealDetails(
 async function persistMasterSheetDefaults(dealId: string, lineRaw: ShopLine): Promise<number> {
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
-  const applied = applyMasterSheetDefaults(fresh);
+  const applied = applyMasterSheetDefaults(fresh, emptyDefaultsForLine(lineRaw));
   if (!applied.filledKeys.length) return 0;
   await db
     .update(quoteSheets)

@@ -298,6 +298,24 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // original_cost_new / vehicle_N_original_cost_new (OCN / cost new): leave blank — wait for Javy (no Heather defaults).
 };
 
+/**
+ * Flood empty-cell defaults (Javy 2026-09-10 tip sep7jn).
+ * Applied only on flood sheets — coverage limits/deductibles + construction flags.
+ * current_carrier / nfip_policy stay blank until Gemini extracts a flood dec;
+ * has_nfip defaults to no (Currently have flood/NFIP?).
+ */
+export const FLOOD_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
+  under_construction: "no",
+  over_water: "no",
+  substantially_improved: "no",
+  enclosure_present: "no",
+  building_limit: "250000",
+  contents_limit: "100000",
+  building_deductible: "1000",
+  contents_deductible: "1000",
+  has_nfip: "no",
+};
+
 
 const MONTHS_0_3 = "0 to 3 months";
 const MONTHS_4_8 = "4 to 8 months";
@@ -457,13 +475,18 @@ export type ApplyDefaultsResult = {
   filledKeys: string[];
 };
 
-/** Fill blank cells with master-sheet defaults (empty-only). */
+/** Merge shared + optional line extras, then fill blank cells (empty-only). */
 export function applyMasterSheetDefaults(
   existing: Record<string, QuoteSheetFieldValue>,
+  extras?: Record<string, string>,
 ): ApplyDefaultsResult {
+  const defaults: Record<string, string> = {
+    ...MASTER_SHEET_EMPTY_DEFAULTS,
+    ...(extras ?? {}),
+  };
   const values: Record<string, QuoteSheetFieldValue> = { ...existing };
   const filledKeys: string[] = [];
-  for (const [key, raw] of Object.entries(MASTER_SHEET_EMPTY_DEFAULTS)) {
+  for (const [key, raw] of Object.entries(defaults)) {
     const current = values[key];
     if (isLockedSheetField(current) || !fieldIsBlank(current)) continue;
     values[key] = {
@@ -483,6 +506,14 @@ export function applyMasterSheetDefaults(
     }
   }
   return { values, filledKeys };
+}
+
+/** Line-scoped empty defaults (Flood coverage / construction starters). */
+export function emptyDefaultsForLine(line: string | null | undefined): Record<string, string> {
+  if (String(line ?? "").trim().toLowerCase() === "flood") {
+    return FLOOD_SHEET_EMPTY_DEFAULTS;
+  }
+  return {};
 }
 
 

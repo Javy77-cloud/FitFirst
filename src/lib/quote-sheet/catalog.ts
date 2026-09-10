@@ -46,6 +46,7 @@ import {
   FLOOD_OCCUPANCY_OPTIONS,
   FLOOD_FOUNDATION_OPTIONS,
   applyMasterSheetDefaults,
+  emptyDefaultsForLine,
 } from "./sheet-defaults";
 
 export type { QuoteFieldDef } from "./applicant-core";
@@ -590,11 +591,13 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "over_water", label: "Building over water", group: "Building", input: "select", options: ["no", "partially", "entirely"] },
   { key: "floodproofed", label: "Properly floodproofed", group: "Building", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "me_mitigation", label: "Machinery & equipment mitigation discount", group: "Building", input: "select", options: [...YES_NO_OPTIONS] },
+  // Coverages: 2-col grid pairs building|contents limits then deductibles (sep7jn).
   { key: "building_limit", label: "Building coverage", group: "Coverages", input: "number" },
-  { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
   { key: "contents_limit", label: "Contents coverage", group: "Coverages", input: "number" },
   { key: "building_deductible", label: "Building deductible", group: "Coverages" },
   { key: "contents_deductible", label: "Contents deductible", group: "Coverages" },
+  { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
+  { key: "has_nfip", label: "Currently have flood/NFIP?", group: "Current policy", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "nfip_policy", label: "Current NFIP / flood policy number", group: "Current policy" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
@@ -818,7 +821,10 @@ export function blankSheetWithDefaults(
   line: ShopLine,
   product?: SheetProduct,
 ): Record<string, QuoteSheetFieldValue> {
-  return applyMasterSheetDefaults(emptySheetValues(line, product)).values;
+  return applyMasterSheetDefaults(
+    emptySheetValues(line, product),
+    emptyDefaultsForLine(line),
+  ).values;
 }
 
 const EXTRACT_ALIASES: Record<string, string> = {
