@@ -25,27 +25,25 @@ export function HardDeleteForm({
       action={action}
       className={className}
       onClickCapture={(event: MouseEvent<HTMLFormElement>) => {
-        if (!confirm) {
-          const node = event.target;
-          if (node instanceof Element) {
-            const submitter = node.closest("button, input[type='submit']");
-            if (submitter && !(submitter instanceof HTMLButtonElement && submitter.type !== "submit")) {
-              onConfirmed?.();
-            }
-          }
-          return;
-        }
         const node = event.target;
         if (!(node instanceof Element)) return;
         const submitter = node.closest("button, input[type='submit']");
         if (!submitter) return;
         if (submitter instanceof HTMLButtonElement && submitter.type !== "submit") return;
-        if (!confirmHardDelete(subject)) {
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
+
+        // Always take over the click: window.confirm() can cancel the pending
+        // submit gesture, so a plain "OK" looked like Delete did nothing.
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (confirm && !confirmHardDelete(subject)) return;
+
         onConfirmed?.();
+        event.currentTarget.requestSubmit(
+          submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement
+            ? submitter
+            : undefined,
+        );
       }}
     >
       {children}

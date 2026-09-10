@@ -4,6 +4,7 @@ import {
   saveWrittenLines,
 } from "@/app/actions/line-settings";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,9 +43,7 @@ function OptionList({
               {canEdit && option.id ? (
                 <HardDeleteForm action={deleteLineSubfilter} subject="this line option">
                   <input type="hidden" name="id" value={option.id} />
-                  <button type="submit" className="text-xs text-destructive hover:underline">
-                    Delete
-                  </button>
+                  <FileDeleteIcon label={`Delete ${option.label}`} className="text-destructive" />
                 </HardDeleteForm>
               ) : null}
             </li>

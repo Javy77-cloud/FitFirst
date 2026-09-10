@@ -7,6 +7,7 @@ import {
   updateModuleTagColor,
 } from "@/app/actions/record-tags";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,9 +130,7 @@ export default async function ManageTagsPage({
               <HardDeleteForm action={deleteModuleTag} subject={`tag ${formatTagLabel(tag.name)}`}>
                 <input type="hidden" name="module" value={module} />
                 <input type="hidden" name="name" value={tag.name} />
-                <Button type="submit" size="xs" variant="ghost">
-                  Delete
-                </Button>
+                <FileDeleteIcon label={`Delete ${formatTagLabel(tag.name)}`} className="text-destructive" />
               </HardDeleteForm>
             </li>
           ))}

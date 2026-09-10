@@ -5,6 +5,8 @@ import {
   saveFieldPicklist,
 } from "@/app/actions/field-picklists";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
@@ -108,12 +110,10 @@ export default async function FieldPicklistsPage() {
                     </Button>
                   </div>
                 </form>
-                <form action={deleteFieldPicklistAction}>
+                <HardDeleteForm action={deleteFieldPicklistAction} subject={`picklist ${list.name}`}>
                   <input type="hidden" name="id" value={list.id} />
-                  <Button type="submit" size="xs" variant="ghost">
-                    Delete list
-                  </Button>
-                </form>
+                  <FileDeleteIcon label={`Delete list ${list.name}`} className="text-destructive" />
+                </HardDeleteForm>
               </section>
             );
           })}

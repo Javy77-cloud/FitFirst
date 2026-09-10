@@ -6,6 +6,7 @@ import {
 } from "@/app/actions/global-lists";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,9 +150,7 @@ function ListCard({
                   </form>
                   <HardDeleteForm action={deleteGlobalListItem} subject="this list item">
                     <input type="hidden" name="id" value={row.id} />
-                    <button type="submit" className="text-xs text-destructive hover:underline">
-                      Delete
-                    </button>
+                    <FileDeleteIcon label={`Delete ${row.label}`} className="text-destructive" />
                   </HardDeleteForm>
                 </span>
               ) : null}

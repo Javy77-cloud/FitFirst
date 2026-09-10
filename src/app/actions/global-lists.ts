@@ -8,6 +8,7 @@ import { globalLists } from "@/lib/db/schema";
 import { GLOBAL_LIST_KEYS, type GlobalListKey } from "@/lib/desk/global-lists";
 import { currentDeskSession } from "@/lib/auth/session";
 import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
+import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -71,6 +72,7 @@ export async function deleteGlobalListItem(formData: FormData) {
     .delete(globalLists)
     .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
   revalidatePath("/settings/lists");
+  flashAction("/settings/lists", "list-item-deleted");
 }
 
 export async function toggleGlobalListItem(formData: FormData) {
