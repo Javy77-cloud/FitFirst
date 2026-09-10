@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
-import { LoadHomeShopListButton } from "@/components/deal/load-home-shop-list-button";
+import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ export function QuotesPanel({
             >
               Go to Markets
             </Link>
-            <LoadHomeShopListButton dealId={dealId} />
+            <LoadShopListButton dealId={dealId} dealLine={dealLine} />
           </div>
           <ManualCarrierAdd
             dealId={dealId}

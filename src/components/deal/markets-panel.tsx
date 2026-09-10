@@ -4,7 +4,7 @@ import { useState } from "react";
 import { requestAppetiteQuotesAction, requestStretchQuotesAction } from "@/app/actions/quotes";
 import { Button } from "@/components/ui/button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
-import { LoadHomeShopListButton } from "@/components/deal/load-home-shop-list-button";
+import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
 import { ClearDealMarketsButton, MarketsSelectTable } from "@/components/deal/markets-select-table";
 import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
@@ -78,11 +78,11 @@ export function MarketsPanel({
             0 in appetite · 0 stretch · 0 skip · 0 appointed
           </p>
           <p className="text-sm text-muted-foreground">
-            No carriers on this deal yet. Load a home shop list or add carriers below,
+            No carriers on this deal yet. Load a shop list or add carriers below,
             then approve & request quotes — or confirm the sheet to unlock shopping.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <LoadHomeShopListButton dealId={dealId} />
+            <LoadShopListButton dealId={dealId} dealLine={dealLine} />
           </div>
           <ManualCarrierAdd
             dealId={dealId}
@@ -166,7 +166,7 @@ export function MarketsPanel({
       ) : null}
       <div className="ff-card space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <LoadHomeShopListButton dealId={dealId} />
+          <LoadShopListButton dealId={dealId} dealLine={dealLine} />
           <ClearDealMarketsButton dealId={dealId} />
         </div>
         <ManualCarrierAdd

@@ -2,8 +2,9 @@ import { appointmentLine } from "@/lib/domain";
 import { CARRIER_IDS } from "@/lib/fixtures/ids";
 
 /**
- * Javy's first-wave Home (12) and Auto first 4.
+ * Javy's first-wave Home (12), Auto (8), and Flood (5) shop templates.
  * Rank among fits only — not a pick list, not a filter.
+ * Auto + Flood templates (2026-09-10) until appetite predicts those markets.
  */
 export const FIRST_WAVE_HOME = [
   "americanIntegrity",
@@ -21,10 +22,23 @@ export const FIRST_WAVE_HOME = [
 ] as const;
 
 export const FIRST_WAVE_AUTO = [
+  "libertyMutual",
+  "bristolWest",
+  "allstate",
+  "geico",
   "progressive",
   "travelers",
-  "nationalGeneral",
-  "foremost",
+  "theGeneral",
+  "nationwide",
+] as const;
+
+/** Locked Flood markets (2026-09-10). Not Hartford. Skip NFIP Direct unless added later. */
+export const FIRST_WAVE_FLOOD = [
+  "beyondFloods",
+  "neptune",
+  "selective",
+  "wright",
+  "nfip",
 ] as const;
 
 const HOME_NAME_ALIASES: Record<(typeof FIRST_WAVE_HOME)[number], string[]> = {
@@ -43,14 +57,37 @@ const HOME_NAME_ALIASES: Record<(typeof FIRST_WAVE_HOME)[number], string[]> = {
 };
 
 const AUTO_NAME_ALIASES: Record<(typeof FIRST_WAVE_AUTO)[number], string[]> = {
+  libertyMutual: ["liberty mutual", "liberty"],
+  bristolWest: ["bristol west", "bristol"],
+  allstate: ["allstate"],
+  geico: ["geico"],
   progressive: ["progressive"],
   travelers: ["travelers"],
-  nationalGeneral: ["national general"],
-  foremost: ["foremost"],
+  theGeneral: ["the general", "general automobile", "permanent general"],
+  nationwide: ["nationwide"],
 };
 
+/** Match carrier display names in DB for Flood first-wave rank / shop load. */
+export const FLOOD_NAME_ALIASES: Record<(typeof FIRST_WAVE_FLOOD)[number], string[]> = {
+  beyondFloods: ["beyond floods", "national general"],
+  neptune: ["neptune"],
+  selective: ["selective"],
+  wright: ["wright"],
+  nfip: ["nfip"],
+};
+
+function aliasesForLine(dealLine: string): Record<string, string[]> {
+  const line = appointmentLine(dealLine);
+  if (line === "AUTO") return AUTO_NAME_ALIASES;
+  if (line === "FLOOD") return FLOOD_NAME_ALIASES;
+  return HOME_NAME_ALIASES;
+}
+
 export function firstWaveKeys(dealLine: string): readonly string[] {
-  return appointmentLine(dealLine) === "AUTO" ? FIRST_WAVE_AUTO : FIRST_WAVE_HOME;
+  const line = appointmentLine(dealLine);
+  if (line === "AUTO") return FIRST_WAVE_AUTO;
+  if (line === "FLOOD") return FIRST_WAVE_FLOOD;
+  return FIRST_WAVE_HOME;
 }
 
 export function firstWaveRank(
@@ -59,7 +96,7 @@ export function firstWaveRank(
   carrierName: string,
 ): number | null {
   const keys = firstWaveKeys(dealLine);
-  const aliases = appointmentLine(dealLine) === "AUTO" ? AUTO_NAME_ALIASES : HOME_NAME_ALIASES;
+  const aliases = aliasesForLine(dealLine);
   const idHit = keys.findIndex((key) => {
     const id = (CARRIER_IDS as Record<string, string>)[key];
     return id === carrierId;
@@ -68,7 +105,9 @@ export function firstWaveRank(
 
   const name = carrierName.toLowerCase();
   const nameHit = keys.findIndex((key) => {
-    const labels = (aliases as Record<string, string[]>)[key] ?? [key.toLowerCase()];
+    // Skip NFIP Direct unless that key is added to FIRST_WAVE_FLOOD later.
+    if (key === "nfip" && name.includes("nfip direct")) return false;
+    const labels = aliases[key] ?? [key.toLowerCase()];
     return labels.some((label) => name.includes(label));
   });
   return nameHit >= 0 ? nameHit : null;
