@@ -15,17 +15,13 @@ describe("insurance cascade", () => {
 
   it("lists P&C insurance types including Rec and Umbrella", () => {
     const ids = insuranceTypesForFamily("pc").map((t) => t.id);
-    expect(ids).toEqual(["home", "auto", "rec", "flood", "umbrella", "commercial"]);
+    expect(ids).toEqual(["home", "landlord", "renters", "auto", "rec", "flood", "umbrella", "commercial"]);
   });
 
-  it("Home subtypes are HO/DP forms", () => {
-    expect(policySubtypesForType("pc", "home").map((s) => s.id)).toEqual([
-      "HO3",
-      "HO5",
-      "HO6",
-      "DP1",
-      "DP3",
-    ]);
+  it("Home subtypes are HO forms; Landlord gets DP; Renters has its own", () => {
+    expect(policySubtypesForType("pc", "home").map((s) => s.id)).toEqual(["HO3", "HO5", "HO6"]);
+    expect(policySubtypesForType("pc", "landlord").map((s) => s.id)).toEqual(["DP1", "DP3"]);
+    expect(policySubtypesForType("pc", "renters").map((s) => s.id)).toEqual(["RENTERS"]);
   });
 
   it("Commercial subtypes are GL/WC/BOP", () => {

@@ -6,6 +6,8 @@ export type PipelineFamily = "pc" | "life" | "health";
 
 export type InsuranceTypeId =
   | "home"
+  | "landlord"
+  | "renters"
   | "auto"
   | "rec"
   | "flood"
@@ -24,6 +26,8 @@ export type PolicySubtypeOption = {
 
 const PC_TYPES: InsuranceTypeOption[] = [
   { id: "home", label: "Home" },
+  { id: "landlord", label: "Landlord" },
+  { id: "renters", label: "Renters" },
   { id: "auto", label: "Auto" },
   { id: "rec", label: "Rec / RV" },
   { id: "flood", label: "Flood" },
@@ -35,8 +39,9 @@ const FORM_TYPE: Record<QuotingFormId, InsuranceTypeId> = {
   HO3: "home",
   HO5: "home",
   HO6: "home",
-  DP1: "home",
-  DP3: "home",
+  DP1: "landlord",
+  DP3: "landlord",
+  RENTERS: "renters",
   PA: "auto",
   RV: "rec",
   UMBRELLA: "umbrella",
@@ -47,7 +52,10 @@ const FORM_TYPE: Record<QuotingFormId, InsuranceTypeId> = {
 };
 
 const TYPE_FORMS: Record<Exclude<InsuranceTypeId, "life" | "health">, QuotingFormId[]> = {
-  home: ["HO3", "HO5", "HO6", "DP1", "DP3"],
+  // Home / Landlord / Renters subtype lists — Javy refining next; interim seeds below.
+  home: ["HO3", "HO5", "HO6"],
+  landlord: ["DP1", "DP3"],
+  renters: ["RENTERS"],
   auto: ["PA"],
   rec: ["RV"],
   flood: ["FLOOD"],

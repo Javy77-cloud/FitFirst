@@ -65,6 +65,7 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   HO6: "homeowners",
   DP1: "landlord",
   DP3: "landlord",
+  RENTERS: "renters",
   PA: "auto",
   RV: "rv",
   UMBRELLA: "umbrella",
