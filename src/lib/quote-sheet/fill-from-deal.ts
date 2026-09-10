@@ -110,18 +110,41 @@ export function fillSheetFromDealDetails(
   put("applicant_name", named);
   put("secondary_named_insured", input.secondaryNamedInsured);
 
-  put(
-    "applicant_dob",
-    formatDobForSheet(
-      firstFilled(
-        stored.date_of_birth,
-        stored.dob,
-        stored.applicant_dob,
-        contact?.dateOfBirth,
-        lead?.dateOfBirth,
-      ),
+  const primaryDob = formatDobForSheet(
+    firstFilled(
+      stored.date_of_birth,
+      stored.dob,
+      stored.applicant_dob,
+      contact?.dateOfBirth,
+      lead?.dateOfBirth,
     ),
   );
+  put("applicant_dob", primaryDob);
+  // Auto Drivers block — same named insured DOB from Deal Details.
+  put("driver_1_dob", primaryDob);
+  put("driver_1_name", named);
+
+  const coDob = formatDobForSheet(
+    firstFilled(
+      stored.co_applicant_dob,
+      stored.co_applicant_date_of_birth,
+      stored.secondary_dob,
+      stored.secondary_date_of_birth,
+      stored.spouse_dob,
+      stored.spouse_date_of_birth,
+    ),
+  );
+  put("co_applicant_dob", coDob);
+  put(
+    "co_applicant_name",
+    firstFilled(
+      input.secondaryNamedInsured,
+      stored.co_applicant_name,
+      stored.secondary_named_insured,
+      personName([stored.co_applicant_first_name, stored.co_applicant_last_name]),
+    ),
+  );
+
   put("applicant_phone", firstFilled(stored.phone, contact?.phone, lead?.phone));
   put("applicant_email", firstFilled(stored.email, contact?.email, lead?.email));
 

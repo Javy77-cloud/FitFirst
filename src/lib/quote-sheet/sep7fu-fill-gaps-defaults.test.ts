@@ -56,6 +56,29 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(result.filledKeys).toContain("applicant_dob");
   });
 
+  it("copies primary DOB onto Auto driver_1_dob and co_applicant_dob when present", () => {
+    const existing = emptySheetValues("auto");
+    const result = fillSheetFromDealDetails(
+      {
+        primaryNamedInsured: "Heather Camirand",
+        secondaryNamedInsured: "Tom Camirand",
+        stored: {
+          date_of_birth: "1975-09-14",
+          co_applicant_dob: "1974-01-02",
+        },
+      },
+      existing,
+    );
+    expect(result.values.applicant_dob.value).toBe("9/14/1975");
+    expect(result.values.driver_1_dob.value).toBe("9/14/1975");
+    expect(result.values.driver_1_name.value).toBe("Heather Camirand");
+    expect(result.values.co_applicant_dob.value).toBe("1/2/1974");
+    expect(result.values.co_applicant_name.value).toBe("Tom Camirand");
+    expect(result.filledKeys).toEqual(
+      expect.arrayContaining(["applicant_dob", "driver_1_dob", "driver_1_name", "co_applicant_dob", "co_applicant_name"]),
+    );
+  });
+
   it("maps date_inspected from Gemini and falls back from four_point_date", () => {
     expect(GEMINI_EXTRACT_JSON_KEYS).toContain("date_inspected");
     expect(sheetKeysForGeminiKey("date_inspected")).toEqual(["date_inspected"]);
