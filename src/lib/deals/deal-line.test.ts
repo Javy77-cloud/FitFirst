@@ -26,6 +26,8 @@ describe("deal line of business", () => {
     expect(shopLineForProduct("rv")).toBe("rec_rv");
     expect(lobForProduct("flood")).toBe("FLOOD");
     expect(lobForProduct("gl")).toBe("GL");
+    expect(shopLineForProduct("bop")).toBe("bop");
+    expect(lobForProduct("bop")).toBe("BOP");
     expect(lobForProduct("workers_comp")).toBe("WC");
   });
 
@@ -61,5 +63,17 @@ describe("deal line of business", () => {
     expect(sheetProductForQuotingForm("PA")).toBe("auto");
     expect(resolveDealProduct({ quotingForm: "HO6", sheetProduct: "renters" })).toBe("homeowners");
     expect(resolveDealProduct({ quotingForm: "DP1" })).toBe("landlord");
+  });
+
+  it("routes Flood / GL / WC / BOP each to their own master product (not home/gl collapse)", () => {
+    expect(sheetProductForQuotingForm("FLOOD")).toBe("flood");
+    expect(sheetProductForQuotingForm("GL")).toBe("gl");
+    expect(sheetProductForQuotingForm("WC")).toBe("workers_comp");
+    expect(sheetProductForQuotingForm("BOP")).toBe("bop");
+    expect(resolveDealProduct({ quotingForm: "BOP" })).toBe("bop");
+    expect(resolveDealProduct({ quotingForm: "FLOOD" })).toBe("flood");
+    expect(resolveDealProduct({ quotingForm: "GL" })).toBe("gl");
+    expect(resolveDealProduct({ quotingForm: "WC" })).toBe("workers_comp");
+    expect(DEAL_LINE_OPTIONS.some((row) => row.value === "bop")).toBe(true);
   });
 });

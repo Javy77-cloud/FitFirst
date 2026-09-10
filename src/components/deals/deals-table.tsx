@@ -42,6 +42,11 @@ import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { dealsListColumnsFromFields } from "@/lib/list-columns";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
+import {
+  loadDealListColorMaps,
+  resolveDealListCellColor,
+  type DealListColorMaps,
+} from "@/lib/deals/list-option-colors";
 import type { ReactNode } from "react";
 
 type DealsSheetRow = Pick<DealListRow, "deal" | "contact" | "account" | "lead"> & {
@@ -80,13 +85,14 @@ export async function DealsTable({
   nextByDeal?: Map<string, string>;
   mode?: PipelineSheetMode;
 }) {
-  const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows] = await Promise.all([
+  const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows, listColorMaps] = await Promise.all([
     listModuleTags("deals").catch(() => []),
     listDealFieldDefs().catch(() => []),
     loadLayoutForModule("deals").catch(() => null),
     loadRecordValuesForIds(rows.map(({ deal }) => deal.id)).catch(() => new Map()),
     listPipelines().catch(() => []),
     listCarriers().catch(() => []),
+    loadDealListColorMaps().catch(() => ({ sellingAgency: {}, pipeline: {} })),
   ]);
   const boards = boardsFromPipelines(pipelines);
   const columns = dealsListColumnsFromFields(fields, layout);
@@ -159,6 +165,7 @@ export async function DealsTable({
               mode,
               carriers,
               userRecords,
+              listColorMaps,
             });
             return {
               key: deal.id,
@@ -210,6 +217,7 @@ function dealRowCells({
   mode,
   carriers,
   userRecords,
+  listColorMaps,
 }: {
   deal: DealsSheetRow["deal"];
   stored: Record<string, string>;
@@ -228,6 +236,7 @@ function dealRowCells({
   mode: PipelineSheetMode;
   carriers: NamedRecord[];
   userRecords: NamedRecord[];
+  listColorMaps: DealListColorMaps;
 }) {
   const sort: Record<string, string> = {
     pick: "",
@@ -366,6 +375,7 @@ function dealRowCells({
       ownerId: deal.ownerId,
       carriers,
       userRecords,
+      listColorMaps,
     });
   }
 
@@ -389,6 +399,7 @@ function sheetCell({
   pipelineSlug,
   stageSlug,
   stages,
+  listColorMaps,
 }: {
   mode: PipelineSheetMode;
   dealId: string;
@@ -406,6 +417,7 @@ function sheetCell({
   pipelineSlug?: string;
   stageSlug?: string;
   stages?: ReturnType<typeof dealStageView>["stages"];
+  listColorMaps?: DealListColorMaps | null;
 }) {
   const control = pipelineGridControl(columnId, field);
   // Notes / multi-line stay editable in List too so they can collapse to one line
@@ -449,12 +461,9 @@ function sheetCell({
     users: userRecords,
   });
   const pickColor =
-    field &&
-    (field.type === "picklist" || field.type === "multi_select") &&
-    raw &&
-    field.optionColors
-      ? field.optionColors[raw]
-      : undefined;
+    field && (field.type === "picklist" || field.type === "multi_select") && raw
+      ? resolveDealListCellColor(raw, field, listColorMaps)
+      : null;
   const body =
     control === "multiline" || columnId === "notes" ? (
       <span className="block truncate" title={display === "—" ? undefined : display}>

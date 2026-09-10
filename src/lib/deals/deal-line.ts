@@ -21,6 +21,7 @@ export const DEAL_LINE_OPTIONS: { value: SheetProduct; label: string }[] = [
   { value: "motorcycle", label: "Motorcycle" },
   { value: "flood", label: "Flood" },
   { value: "gl", label: "GL" },
+  { value: "bop", label: "BOP" },
   { value: "workers_comp", label: "Workers Comp" },
   { value: "commercial_auto", label: "Commercial Auto" },
   { value: "umbrella", label: "Umbrella" },
@@ -38,6 +39,7 @@ const PRODUCT_TO_LINE: Record<SheetProduct, ShopLine> = {
   rv: "rec_rv",
   flood: "flood",
   gl: "general_liability",
+  bop: "bop",
   workers_comp: "workers_comp",
   umbrella: "umbrella",
   life: "life",
@@ -53,6 +55,7 @@ const PRODUCT_TO_FORM: Partial<Record<SheetProduct, string>> = {
   commercial_auto: "PA",
   flood: "FLOOD",
   gl: "GL",
+  bop: "BOP",
   workers_comp: "WC",
   rv: "RV",
   umbrella: "UMBRELLA",
@@ -72,7 +75,7 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   FLOOD: "flood",
   GL: "gl",
   WC: "workers_comp",
-  BOP: "gl",
+  BOP: "bop",
 };
 
 export function sheetProductForQuotingForm(formId: string | null | undefined): SheetProduct | null {
