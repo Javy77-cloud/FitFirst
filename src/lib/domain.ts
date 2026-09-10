@@ -286,6 +286,7 @@ export const SHOP_LINES = [
   "health",
   "workers_comp",
   "general_liability",
+  "bop",
 ] as const;
 export type ShopLine = (typeof SHOP_LINES)[number];
 
@@ -299,7 +300,7 @@ export const LOB_TO_SHOP_LINE: Record<string, ShopLine> = {
   HEALTH: "health",
   WC: "workers_comp",
   GL: "general_liability",
-  BOP: "general_liability",
+  BOP: "bop",
 };
 
 export const SHOP_LINE_TO_LOB: Record<ShopLine, LineOfBusiness> = {
@@ -312,6 +313,7 @@ export const SHOP_LINE_TO_LOB: Record<ShopLine, LineOfBusiness> = {
   health: "HEALTH",
   workers_comp: "WC",
   general_liability: "GL",
+  bop: "BOP",
 };
 
 export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
@@ -351,6 +353,7 @@ export const SHOP_LINE_LABELS: Record<ShopLine, string> = {
   health: "Health",
   workers_comp: "Workers Comp",
   general_liability: "General Liability",
+  bop: "Businessowners (BOP)",
 };
 
 export function isShopLine(value: string | null | undefined): value is ShopLine {
@@ -374,7 +377,7 @@ export const QUOTING_FORMS = [
   { id: "UMBRELLA", label: "Umbrella", shopLine: "umbrella" as ShopLine, lob: "UMBRELLA" },
   { id: "GL", label: "General liability", shopLine: "general_liability" as ShopLine, lob: "GL" },
   { id: "WC", label: "Workers comp", shopLine: "workers_comp" as ShopLine, lob: "WC" },
-  { id: "BOP", label: "BOP", shopLine: "general_liability" as ShopLine, lob: "BOP" },
+  { id: "BOP", label: "BOP", shopLine: "bop" as ShopLine, lob: "BOP" },
   { id: "FLOOD", label: "Flood", shopLine: "flood" as ShopLine, lob: "FLOOD" },
 ] as const;
 export type QuotingFormId = (typeof QUOTING_FORMS)[number]["id"];

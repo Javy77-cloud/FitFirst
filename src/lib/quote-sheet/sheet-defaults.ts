@@ -11,9 +11,6 @@ export const SHEET_DEFAULT_SOURCE_LABEL = "default";
 /** Yes/no picklist options shared by protection / hazard / dwelling flags. */
 export const YES_NO_OPTIONS = ["yes", "no"] as const;
 
-/** Accidents / violations count last 3 years (Auto driving record — Javy 2026-09-10). */
-export const AUTO_INCIDENT_COUNT_OPTIONS = ["None", "1", "2", "3+"] as const;
-
 /** Months occupied — three desk buckets (Javy 2026-09-09). */
 export const MONTHS_OCCUPIED_OPTIONS = [
   "0 to 3 months",
@@ -29,6 +26,51 @@ export const USAGE_OPTIONS = [
   "Rental",
   "Vacant",
 ] as const;
+
+/** Personal Auto vehicle usage (Javy 2026-09-10). Farm is the usual 4th beside Personal/Commute/Business. */
+export const AUTO_VEHICLE_USAGE_OPTIONS = [
+  "Personal",
+  "Commute",
+  "Business",
+  "Farm",
+] as const;
+
+/**
+ * Continuous coverage / prior insurance (Auto current policy — Javy 2026-09-10).
+ * Labels are the full option text agents pick.
+ */
+export const AUTO_CURRENTLY_INSURED_OPTIONS = [
+  "Currently insured 6 months or more",
+  "Lapse within last 30 days — 7 days or less",
+  "Lapse within last 30 days — 8 to 14 days",
+  "Lapse within last 30 days — 15 to 30 days",
+  "More than 30 days lapse in the last 6 months / no prior insurance",
+  "Other",
+] as const;
+
+/**
+ * Annual miles driven — agent rater-style brackets (Javy 2026-09-10).
+ * 1k steps through 11,999, then wider high-mileage buckets.
+ */
+export const AUTO_ANNUAL_MILES_OPTIONS = [
+  "0 – 2,999",
+  "3,000 – 3,999",
+  "4,000 – 4,999",
+  "5,000 – 5,999",
+  "6,000 – 6,999",
+  "7,000 – 7,999",
+  "8,000 – 8,999",
+  "9,000 – 9,999",
+  "10,000 – 10,999",
+  "11,000 – 11,999",
+  "12,000 – 14,999",
+  "15,000 – 19,999",
+  "20,000 – 24,999",
+  "25,000+",
+] as const;
+
+/** Accidents / violations count last 3 years (Auto driving record — Javy 2026-09-10). */
+export const AUTO_INCIDENT_COUNT_OPTIONS = ["None", "1", "2", "3+"] as const;
 
 /** Occupancy — owner vs tenant (Javy 2026-09-09). */
 export const OCCUPANCY_OPTIONS = ["Owner", "Tenant"] as const;
@@ -120,6 +162,9 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   pool_fence: "no",
   animals: "no",
   business_on_premises: "no",
+  // Auto standing (Javy): always pull MVR / credit — permission defaults Yes.
+  permission_pull_driving_history: "yes",
+  permission_pull_credit_history: "yes",
 };
 
 const MONTHS_0_3 = "0 to 3 months";
@@ -307,3 +352,56 @@ export function applyMasterSheetDefaults(
   }
   return { values, filledKeys };
 }
+
+
+/** NFIP flood foundation types (FEMA FF-206 application). */
+export const FLOOD_FOUNDATION_OPTIONS = [
+  "Slab on grade (non-elevated)",
+  "Basement (non-elevated)",
+  "Crawlspace (elevated or sub-grade)",
+  "Elevated without enclosure (posts/piles/piers)",
+  "Elevated with enclosure on posts/piles/piers",
+  "Elevated with enclosure not on posts (solid walls)",
+] as const;
+
+/** NFIP-ish building occupancy buckets for flood quote sheet. */
+export const FLOOD_OCCUPANCY_OPTIONS = [
+  "Single-family",
+  "2–4 family",
+  "Other residential",
+  "Residential condo building",
+  "Residential condo unit",
+  "Mobile / manufactured home",
+  "Non-residential / commercial",
+  "Detached garage / guest house",
+  "Other",
+] as const;
+
+/** Common GL/BOP liability occurrence limits. */
+export const GL_OCCURRENCE_LIMIT_OPTIONS = [
+  "$300,000",
+  "$500,000",
+  "$1,000,000",
+  "$2,000,000",
+] as const;
+
+/** Common GL aggregate limits. */
+export const GL_AGGREGATE_LIMIT_OPTIONS = [
+  "$600,000",
+  "$1,000,000",
+  "$2,000,000",
+  "$4,000,000",
+] as const;
+
+/** GL claims basis. */
+export const GL_CLAIMS_BASIS_OPTIONS = ["Occurrence", "Claims-made"] as const;
+
+/** Construction types shared by BOP / commercial property. */
+export const BOP_CONSTRUCTION_OPTIONS = [
+  "Frame",
+  "Joisted masonry",
+  "Non-combustible",
+  "Masonry non-combustible",
+  "Modified fire resistive",
+  "Fire resistive",
+] as const;

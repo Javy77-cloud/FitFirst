@@ -14,6 +14,9 @@ import {
   DISTANCE_TO_STATION_OPTIONS,
   OCCUPANCY_OPTIONS,
   USAGE_OPTIONS,
+  AUTO_VEHICLE_USAGE_OPTIONS,
+  AUTO_CURRENTLY_INSURED_OPTIONS,
+  AUTO_ANNUAL_MILES_OPTIONS,
   normalizeDistanceToHydrant,
   normalizeDistanceToStation,
   normalizeMonthsOccupied,
@@ -115,6 +118,26 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
       "Rental",
       "Vacant",
     ]);
+    expect([...AUTO_VEHICLE_USAGE_OPTIONS]).toEqual([
+      "Personal",
+      "Commute",
+      "Business",
+      "Farm",
+    ]);
+    expect([...AUTO_CURRENTLY_INSURED_OPTIONS]).toContain(
+      "Currently insured 6 months or more",
+    );
+    expect([...AUTO_CURRENTLY_INSURED_OPTIONS]).toContain(
+      "Lapse within last 30 days — 7 days or less",
+    );
+    expect([...AUTO_CURRENTLY_INSURED_OPTIONS]).toContain(
+      "More than 30 days lapse in the last 6 months / no prior insurance",
+    );
+    expect(AUTO_ANNUAL_MILES_OPTIONS[0]).toBe("0 – 2,999");
+    expect(AUTO_ANNUAL_MILES_OPTIONS).toContain("12,000 – 14,999");
+    expect(AUTO_ANNUAL_MILES_OPTIONS.at(-1)).toBe("25,000+");
+
+
     expect(normalizeMonthsOccupied("12")).toBe("9 months or more");
     expect(normalizeMonthsOccupied("8")).toBe("4 to 8 months");
     expect(normalizeMonthsOccupied("2")).toBe("0 to 3 months");
