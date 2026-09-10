@@ -46,6 +46,9 @@ export function SourceDocsUpload({
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="riskId" value={riskId} />
       <input type="hidden" name="rowCount" value={rows.length} />
+      <p className="text-helper text-muted-foreground" data-ff-source-doc-type-hint="">
+        Set the type to match the page — Date inspected only fills from a <span className="font-medium text-navy">4-point</span> (not Declaration).
+      </p>
       {rows.map((row, index) => (
         <div key={row.id} className="deal-doc-row flex w-full flex-nowrap items-center gap-2">
           <select

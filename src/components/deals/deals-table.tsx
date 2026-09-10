@@ -245,7 +245,7 @@ function dealRowCells({
   const cells: Record<string, ReactNode> = {
     pick: <SelectRowCheckbox id={deal.id} />,
     title: (
-      <div className="min-w-0 py-0.5">
+      <div className="min-w-0">
         <div className="flex items-center gap-1">
           <Link href={`/deals/${deal.id}`} className="min-w-0 truncate font-medium text-primary hover:underline">
             {deal.title}

@@ -191,6 +191,8 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
+  /* Tip sep7hi: keep ~3–4 lines of air between activity chips and the deal list. */
+  margin-bottom: 4rem;
 }
 .deal-today-slot {
   flex: 1;

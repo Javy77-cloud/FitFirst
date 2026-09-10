@@ -45,6 +45,8 @@ describe("gemini map key mapping", () => {
     expect(sheetKeysForGeminiKey("roof_condition")).toEqual(["roof_condition"]);
     expect(sheetKeysForGeminiKey("four_point_date")).toEqual(["four_point_date"]);
     expect(sheetKeysForGeminiKey("date_inspected")).toEqual(["date_inspected"]);
+    expect(sheetKeysForGeminiKey("inspection_date")).toEqual(["date_inspected"]);
+    expect(sheetKeysForGeminiKey("date_of_inspection")).toEqual(["date_inspected"]);
     expect(sheetKeysForGeminiKey("current_carrier")).toEqual(["current_carrier"]);
     expect(sheetKeysForGeminiKey("mortgagee_address")).toEqual(["mortgagee_address"]);
     expect(sheetKeysForGeminiKey("occupancy")).toEqual(["occupancy"]);
