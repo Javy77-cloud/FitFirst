@@ -93,6 +93,25 @@ export const AUTO_HOUSEHOLD_STATUS_OPTIONS = [
   "Listed driver",
 ] as const;
 
+/** FL/LM Non-Rated/Excluded reason (Gaya standing — Liberty Mutual household exclusion). */
+export const AUTO_HOUSEHOLD_EXCLUDE_REASON_OPTIONS = [
+  "Out of household",
+  "Never licensed",
+  "License suspended",
+  "License revoked",
+  "Separately insured",
+  "Military overseas",
+  "Other (Non-Rated/Excluded reason)",
+] as const;
+
+/** Separate auto policy status when household member has own policy. */
+export const AUTO_HOUSEHOLD_SEPARATE_POLICY_STATUS_OPTIONS = [
+  "Active",
+  "Lapsed",
+  "Unknown",
+  "N/A",
+] as const;
+
 /** Occupancy — owner vs tenant (Javy 2026-09-09). */
 export const OCCUPANCY_OPTIONS = ["Owner", "Tenant"] as const;
 

@@ -24,7 +24,17 @@ describe("Auto household / related persons (sep7it)", () => {
 
   it("repeatable household slots use name/dob/relationship/status", () => {
     const slots = fieldsForUnit("household" as RepeatableKind, 1);
-    expect(slots.map((s) => s.suffix)).toEqual(["name", "dob", "relationship", "status"]);
+    expect(slots.map((s) => s.suffix)).toEqual([
+      "name",
+      "dob",
+      "relationship",
+      "status",
+      "exclude_reason",
+      "separate_auto_policy",
+      "separate_policy_status",
+      "age_first_licensed",
+      "suspension_5yr",
+    ]);
     expect(slots.find((s) => s.suffix === "relationship")?.options).toContain("Child");
   });
 
