@@ -28,7 +28,7 @@ describe("stage colors", () => {
     expect(defaultStageColor(6, "closed_won")).toBe("green");
     expect(defaultStageColor(7, "closed_lost")).toBe("rose");
     expect(defaultStageColor(0, "archive")).toBe("slate");
-    expect(defaultStageColor(7, "custom_uw")).toBe("sky");
+    expect(defaultStageColor(7, "custom_uw")).toBe("orange");
   });
 
   it("keeps a persisted color and still colors Gather Info from the name", () => {
