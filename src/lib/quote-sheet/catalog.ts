@@ -294,6 +294,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     group: "Vehicle",
   },
   {
+    key: "purchased_new",
+    label: "Purchased new?",
+    group: "Vehicle",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
     key: "annual_miles",
     label: "Annual miles",
     group: "Vehicle",
