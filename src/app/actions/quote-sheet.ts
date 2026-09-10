@@ -1155,6 +1155,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         docType: doc.docType,
         mimeType: doc.mimeType,
         text: textForLine,
+        filename: doc.filename,
       });
       if (inferred !== line && !hoOntoHome && !trustSheet) {
         await insertExtractionAttempt({

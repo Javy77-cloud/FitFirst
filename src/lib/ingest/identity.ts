@@ -105,17 +105,23 @@ export function trustSheetLineForFill(opts: {
   docType?: string | null;
   mimeType?: string | null;
   text?: string | null;
+  filename?: string | null;
 }): boolean {
   if (opts.inferred === opts.sheetLine) return true;
   if (sourceDocFillsHome(String(opts.docType ?? "")) && opts.sheetLine === "home") return true;
   const mime = String(opts.mimeType ?? "").toLowerCase();
   const doc = String(opts.docType ?? "").toLowerCase();
+  const name = String(opts.filename ?? "").toLowerCase();
   const isPhoto =
     doc === "photo" ||
     mime.startsWith("image/") ||
-    /\.(jpe?g|png|webp|heic|heif|gif|tiff?|bmp)$/i.test(String(opts.docType ?? ""));
-  const weakText = String(opts.text ?? "").trim().length < 40;
-  if (isPhoto && weakText) return true;
+    /\.(jpe?g|png|webp|heic|heif|gif|tiff?|bmp)$/i.test(name);
+  // Phone photos of a dec on the active sheet — always trust the sheet the agent is filling.
+  // Pre-Gemini OCR often defaults inferShopLine to Home and wrongly skips Auto.
+  if (isPhoto) return true;
+  // Only empty pre-OCR text — short HO PDF snippets must still fail the Auto gate.
+  const emptyText = String(opts.text ?? "").trim().length === 0;
+  if (emptyText && opts.sheetLine !== "home") return true;
   return false;
 }
 

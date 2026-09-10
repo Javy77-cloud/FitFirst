@@ -57,6 +57,16 @@ describe("drop ingest identity", () => {
       trustSheetLineForFill({
         sheetLine: "auto",
         inferred: "home",
+        docType: "photo",
+        mimeType: "image/jpeg",
+        text: "HOMEOWNERS Coverage A lots of OCR noise that used to skip Auto fills",
+        filename: "1000010842.jpeg",
+      }),
+    ).toBe(true);
+    expect(
+      trustSheetLineForFill({
+        sheetLine: "auto",
+        inferred: "home",
         docType: "dec",
         mimeType: "application/pdf",
         text: "HOMEOWNERS Coverage A 310000 wind mit",
