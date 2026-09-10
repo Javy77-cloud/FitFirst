@@ -387,10 +387,13 @@
 /* Tip sep7gm: kill td line-box strut so bottom gap matches top pad (was ~6px heavier under fields). */
 .ff-list-table tbody td {
   line-height: 0;
+  /* Tip sep7hi: equal top/bottom cell pad (title no longer adds py-0.5). */
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
 }
 .ff-list-table tbody td > .ff-list-cell {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
   line-height: 1.5;
 }
