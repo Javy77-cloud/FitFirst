@@ -166,6 +166,14 @@ export function MasterSheetCompare({
                 values={values}
                 extractedByKey={extractedByKey}
               />
+            ) : group.group === "Household" || group.group === "Household members" ? (
+              <RepeatableUnitBlocks
+                key={group.group}
+                kind="household"
+                product={product}
+                values={values}
+                extractedByKey={extractedByKey}
+              />
             ) : (
               <SheetGroup
                 key={group.group}

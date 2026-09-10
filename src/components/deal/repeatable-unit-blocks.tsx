@@ -26,17 +26,25 @@ export function RepeatableUnitBlocks({
   extractedByKey: Map<string, ExtractedFieldRow>;
 }) {
   const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
-  const title = kind === "vehicle" ? "Vehicle" : "Driver";
-  const addLabel = kind === "vehicle" ? "+ Add vehicle" : "+ Add driver";
+  const groupTitle =
+    kind === "vehicle" ? "Vehicles" : kind === "household" ? "Household" : "Drivers";
+  const title =
+    kind === "vehicle" ? "Vehicle" : kind === "household" ? "Household member" : "Driver";
+  const addLabel =
+    kind === "vehicle"
+      ? "+ Add vehicle"
+      : kind === "household"
+        ? "+ Add household member"
+        : "+ Add driver";
 
   return (
     <div className="border-b border-border/70 last:border-b-0" data-ff-repeatable-units={kind}>
       <div
-        className={sheetGroupHeaderClass(kind === "vehicle" ? "Vehicles" : "Drivers")}
+        className={sheetGroupHeaderClass(groupTitle)}
         style={SHEET_GROUP_HEADER_STYLE}
-        data-ff-sheet-group-header={kind === "vehicle" ? "Vehicles" : "Drivers"}
+        data-ff-sheet-group-header={groupTitle}
       >
-        {kind === "vehicle" ? "Vehicles" : "Drivers"}
+        {groupTitle}
       </div>
       {Array.from({ length: count }, (_, offset) => {
         const index = offset + 1;
@@ -63,7 +71,12 @@ export function RepeatableUnitBlocks({
                       <td className="align-top font-medium">{field.label}</td>
                       <td className="align-top text-muted-foreground">{sourceText || "—"}</td>
                       <td className="align-top">
-                        <BlockCell fieldKey={field.key} input={field.input} cell={cell} />
+                        <BlockCell
+                          fieldKey={field.key}
+                          input={field.input}
+                          options={field.options}
+                          cell={cell}
+                        />
                       </td>
                     </tr>
                   );
@@ -73,11 +86,17 @@ export function RepeatableUnitBlocks({
           </div>
         );
       })}
-      {canAddAnother(count, product) ? (
+      {canAddAnother(count, product, kind) ? (
         <button
           type="button"
           className="px-3 py-2 text-sm font-medium text-primary hover:underline"
-          data-testid={kind === "vehicle" ? "deal-add-vehicle" : "deal-add-driver"}
+          data-testid={
+            kind === "vehicle"
+              ? "deal-add-vehicle"
+              : kind === "household"
+                ? "deal-add-household"
+                : "deal-add-driver"
+          }
           onClick={() => setCount((current) => current + 1)}
         >
           {addLabel}
@@ -90,10 +109,12 @@ export function RepeatableUnitBlocks({
 function BlockCell({
   fieldKey,
   input = "text",
+  options,
   cell,
 }: {
   fieldKey: string;
-  input?: "text" | "number";
+  input?: "text" | "number" | "select";
+  options?: readonly string[];
   cell?: QuoteSheetFieldValue;
 }) {
   const className = cn(
@@ -103,12 +124,23 @@ function BlockCell({
   );
   return (
     <div className="flex flex-col gap-1">
-      <Input
-        name={fieldKey}
-        type={input}
-        defaultValue={cell?.value ?? ""}
-        className={className}
-      />
+      {input === "select" && options?.length ? (
+        <select name={fieldKey} defaultValue={cell?.value ?? ""} className={cn(className, "w-full rounded-md border border-input bg-background px-2")}>
+          <option value="">—</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <Input
+          name={fieldKey}
+          type={input === "number" ? "number" : "text"}
+          defaultValue={cell?.value ?? ""}
+          className={className}
+        />
+      )}
       {cell?.status === "check" ? (
         <Button
           type="submit"

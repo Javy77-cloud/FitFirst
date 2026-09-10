@@ -72,6 +72,27 @@ export const AUTO_ANNUAL_MILES_OPTIONS = [
 /** Accidents / violations count last 3 years (Auto driving record — Javy 2026-09-10). */
 export const AUTO_INCIDENT_COUNT_OPTIONS = ["None", "1", "2", "3+"] as const;
 
+/** FL Auto portal–style relationships for household / related persons (Gaya standing). */
+export const AUTO_HOUSEHOLD_RELATIONSHIP_OPTIONS = [
+  "Spouse",
+  "Child",
+  "Parent",
+  "Sibling",
+  "Other relative",
+  "Roommate",
+  "Excluded",
+  "Listed non-driver",
+] as const;
+
+/** Household / driver listing status for related persons. */
+export const AUTO_HOUSEHOLD_STATUS_OPTIONS = [
+  "Resident",
+  "Non-resident",
+  "Occasional",
+  "Excluded driver",
+  "Listed driver",
+] as const;
+
 /** Occupancy — owner vs tenant (Javy 2026-09-09). */
 export const OCCUPANCY_OPTIONS = ["Owner", "Tenant"] as const;
 
