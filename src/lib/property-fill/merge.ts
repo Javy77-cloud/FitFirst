@@ -54,8 +54,13 @@ export function toastForPropertyFill(args: {
   filledCount: number;
   sourcesUsed: PropertyFillSourceId[];
   vintage?: string;
+  /** When FloodZoneMap (or FEMA) returns zone X with no BFE. */
+  zoneXNoBfe?: boolean;
 }): string {
   if (!args.filledCount) {
+    if (args.zoneXNoBfe) {
+      return "Zone X — no BFE";
+    }
     return args.sourcesUsed.length
       ? "Property records matched, but no blank fields to fill."
       : "No parcel matched that address.";
@@ -68,10 +73,22 @@ export function toastForPropertyFill(args: {
   });
   const unique = [...new Set(labels)];
   const src = unique.join(" + ");
-  const base = `Wrote ${args.filledCount} from ${src}`;
+  let base = `Wrote ${args.filledCount} from ${src}`;
+  if (args.zoneXNoBfe) {
+    const withNote = `${base} · Zone X — no BFE`;
+    if (withNote.length <= 80) base = withNote;
+  }
   if (args.vintage) {
     const withVintage = `${base}; vintage ${args.vintage}`;
     return withVintage.length <= 80 ? withVintage : base.slice(0, 80);
   }
   return base.length <= 80 ? base : base.slice(0, 80);
+}
+
+/** Zone X often has no BFE — detect from merged flood facts for toast. */
+export function isZoneXNoBfe(facts: PropertyRecordsFact[]): boolean {
+  const zone = facts.find((f) => f.sheetKey === "flood_zone")?.value?.trim().toUpperCase();
+  if (zone !== "X" && zone !== "ZONE X") return false;
+  const bfe = facts.find((f) => f.sheetKey === "bfe")?.value?.trim();
+  return !bfe;
 }

@@ -123,6 +123,21 @@ describe("sep7ji FloodZoneMap first then FEMA empty-only", () => {
     expect(toast).toMatch(/FEMA/);
   });
 
+
+  it("factsFromFloodZoneMap soft-fails on HTTP 522 and returns []", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: false,
+      status: 522,
+      json: async () => ({}),
+    }));
+    const facts = await factsFromFloodZoneMap(
+      { address: "5181 Tallwood Cir, West Melbourne, FL" },
+      fetchImpl as unknown as typeof fetch,
+    );
+    expect(facts).toEqual([]);
+    expect(fetchImpl).toHaveBeenCalled();
+  });
+
   it("orchestrate wires FloodZoneMap before FEMA empty-only", () => {
     const orch = source("src/lib/property-fill/orchestrate.ts");
     expect(orch).toMatch(/factsFromFloodZoneMap/);

@@ -88,7 +88,7 @@ import {
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
 import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
-import { toastForPropertyFill } from "@/lib/property-fill/merge";
+import { isZoneXNoBfe, toastForPropertyFill } from "@/lib/property-fill/merge";
 import {
   NHTSA_VPIC_LABEL,
   orchestrateVinDecodeFill,
@@ -469,7 +469,8 @@ export async function runFillFromPropertyRecords(
   });
   await syncRiskFromSheet(dealId, withCoast.values, "fill");
   await syncHeaderFromSheet(dealId, withCoast.values, "fill");
-  const toast =
+  const zoneXNoBfe = isZoneXNoBfe(bundle.facts ?? []);
+  let toast =
     withCoast.filledKeys.length || withCoast.skippedKeys.length
       ? toastForFillCounts({
           filledCount: withCoast.filledKeys.length,
@@ -478,7 +479,12 @@ export async function runFillFromPropertyRecords(
       : toastForPropertyFill({
           filledCount: 0,
           sourcesUsed: bundle.sourcesUsed,
+          zoneXNoBfe,
         });
+  if (zoneXNoBfe && (withCoast.filledKeys.length || withCoast.skippedKeys.length)) {
+    const withNote = `${toast} · Zone X — no BFE`;
+    if (withNote.length <= 80) toast = withNote;
+  }
   return {
     status: "ok",
     filledKeys: withCoast.filledKeys,

@@ -12,7 +12,7 @@ import { NO_ADDRESS_MESSAGE } from "@/lib/getparceldata/client";
 import { factsFromCountyPa } from "./counties/registry";
 import { factsFromFemaNfhl } from "./fema";
 import { factsFromFloodZoneMap } from "./floodzonemap";
-import { mergePropertyFillFacts, toastForPropertyFill } from "./merge";
+import { isZoneXNoBfe, mergePropertyFillFacts, toastForPropertyFill } from "./merge";
 import type { PropertyFillBundle, PropertyFillSourceId } from "./types";
 
 type FetchLike = typeof fetch;
@@ -143,7 +143,12 @@ export async function orchestratePropertyFill(
     facts,
     sourcesUsed,
     message,
-    toast: toastForPropertyFill({ filledCount: facts.length, sourcesUsed, vintage }),
+    toast: toastForPropertyFill({
+      filledCount: facts.length,
+      sourcesUsed,
+      vintage,
+      zoneXNoBfe: isZoneXNoBfe(facts),
+    }),
     lookup: {
       ...lookup,
       status: "ok",

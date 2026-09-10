@@ -58,9 +58,14 @@ export function addressFromSheet(values: {
   city?: { value?: string };
   state?: { value?: string };
   zip?: { value?: string };
+  /** Flood (and some seeded) sheets use a one-line property_address. */
+  property_address?: { value?: string };
 }): AddressQuery {
+  const street = (values.address1?.value ?? "").trim();
+  const oneLine = (values.property_address?.value ?? "").trim();
   return {
-    address1: values.address1?.value ?? "",
+    // Prefer structured street; fall back to property_address so Flood Fill still geocodes / hits FZM.
+    address1: street || oneLine,
     city: values.city?.value ?? "",
     state: values.state?.value ?? "",
     zip: values.zip?.value ?? "",
