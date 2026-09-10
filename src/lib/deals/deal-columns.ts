@@ -116,7 +116,9 @@ export function dealsColumnsFromFields(
     fromCatalog.push({
       key: field.key,
       label: field.label,
-      defaultOn: DEFAULT_ON_FIELD_KEYS.has(field.key),
+      defaultOn:
+        DEFAULT_ON_FIELD_KEYS.has(field.key) ||
+        /^(pipeline|selling agency)$/i.test(field.label.trim()),
     });
   }
   return [...natives, ...fromCatalog];

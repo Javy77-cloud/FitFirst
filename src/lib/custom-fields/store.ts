@@ -123,9 +123,19 @@ export async function ensureDealFieldCatalog() {
   return applyPicklists(rows.map(toFieldDef));
 }
 
-function persistFieldOptions(field: CustomFieldDef): string[] {
+function persistFieldOptions(field: CustomFieldDef): unknown[] {
   if (field.type === "picklist" || field.type === "multi_select" || field.picklistId) {
-    return sanitizePicklistOptions(field.options ?? []);
+    // Keep rich { value, color, isDefault } so list pills stay colored after layout saves.
+    if (field.optionColors && Object.keys(field.optionColors).length > 0) {
+      return sanitizeRichPicklistOptions(
+        (field.options ?? []).map((value) => ({
+          value,
+          color: field.optionColors?.[value] ?? null,
+          isDefault: field.defaultValue === value,
+        })),
+      );
+    }
+    return sanitizeRichPicklistOptions(field.options ?? []);
   }
   return field.options ?? [];
 }

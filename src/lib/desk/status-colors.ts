@@ -170,6 +170,29 @@ export const STATUS_COLOR_CLASS: Record<StatusColorKey, string> = {
   gray: "border-[#c8cdd4] bg-[#f3f4f6] text-[#374151]",
 };
 
+export const STATUS_COLOR_STYLE: Record<StatusColorKey, { backgroundColor: string; borderColor: string; color: string }> = {
+  blue: { backgroundColor: "#d7e6f6", borderColor: "#9bb8d6", color: "#163a68" },
+  sky: { backgroundColor: "#e0f2fe", borderColor: "#9ec9e8", color: "#075985" },
+  cyan: { backgroundColor: "#cffafe", borderColor: "#8ecad8", color: "#155e75" },
+  teal: { backgroundColor: "#d7efe8", borderColor: "#8ec4b8", color: "#0f5c52" },
+  emerald: { backgroundColor: "#d1fae5", borderColor: "#8fcbb0", color: "#065f46" },
+  green: { backgroundColor: "#e4f5ec", borderColor: "#9dceb3", color: "#1f7a4d" },
+  lime: { backgroundColor: "#ecfccb", borderColor: "#c5d98a", color: "#3f6212" },
+  yellow: { backgroundColor: "#fef9c3", borderColor: "#e4d47a", color: "#854d0e" },
+  amber: { backgroundColor: "#fff4d1", borderColor: "#e0c56a", color: "#8a6500" },
+  orange: { backgroundColor: "#ffedd5", borderColor: "#e8c3a4", color: "#b4532a" },
+  red: { backgroundColor: "#fee2e2", borderColor: "#e8a8a8", color: "#991b1b" },
+  rose: { backgroundColor: "#fde8e6", borderColor: "#e8b4af", color: "#9f1239" },
+  pink: { backgroundColor: "#fce7f3", borderColor: "#e9b0c8", color: "#9d174d" },
+  fuchsia: { backgroundColor: "#fae8ff", borderColor: "#e0a8d8", color: "#86198f" },
+  purple: { backgroundColor: "#f3e8ff", borderColor: "#d0b4e8", color: "#6b21a8" },
+  violet: { backgroundColor: "#e8e0f5", borderColor: "#c4b5e8", color: "#4c1d95" },
+  indigo: { backgroundColor: "#e0e7ff", borderColor: "#b4bce8", color: "#3730a3" },
+  slate: { backgroundColor: "#e8eef4", borderColor: "#c5d0db", color: "#334155" },
+  stone: { backgroundColor: "#f5f5f4", borderColor: "#d0c8be", color: "#44403c" },
+  gray: { backgroundColor: "#f3f4f6", borderColor: "#c8cdd4", color: "#374151" },
+};
+
 export const STATUS_BAR_CLASS: Record<StatusColorKey, string> = {
   blue: "bg-[#1d4e89]",
   sky: "bg-[#0369a1]",

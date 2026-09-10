@@ -107,6 +107,7 @@ export async function saveDealFieldLayout(formData: FormData) {
               label: field.label,
               type: field.type,
               options: field.options ?? [],
+              optionColors: field.optionColors,
               formula: field.formula ?? null,
               lookupModule: field.lookupModule ?? null,
               systemKey: field.systemKey ?? null,

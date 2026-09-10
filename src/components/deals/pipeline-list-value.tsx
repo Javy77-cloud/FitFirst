@@ -9,7 +9,7 @@ export function PipelineListValue({
   children: React.ReactNode;
 }) {
   if (!nav) return <>{children}</>;
-  const className = "text-primary hover:underline";
+  const className = "hover:underline [&_[data-status-color]]:no-underline";
   if (nav.href.startsWith("tel:") || nav.href.startsWith("mailto:")) {
     return (
       <a href={nav.href} className={className} data-ff-pipe-nav={nav.kind}>
