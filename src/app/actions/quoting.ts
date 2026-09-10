@@ -17,6 +17,7 @@ import {
   quoteSheets,
   risks,
 } from "@/lib/db/schema";
+import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { withFlash } from "@/lib/flash";
 import { shopDealQuotes } from "@/app/actions/quotes";
@@ -177,12 +178,14 @@ export async function logAppetiteResult(formData: FormData) {
   if (!risk) throw new Error("Master risk missing.");
 
   const line = deal.quotingLine || (deal.lineOfBusiness === "AUTO" ? "auto" : "home");
+  const lob = SHOP_LINE_TO_LOB[line as ShopLine] ?? deal.lineOfBusiness ?? "HO";
+  const autoSnap = await autoSnapshotFieldsForDeal(dealId, lob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
     riskId: risk.id,
     carrierId,
-    lineOfBusiness: SHOP_LINE_TO_LOB[line as ShopLine] ?? deal.lineOfBusiness ?? "HO",
+    lineOfBusiness: lob,
     result,
     bindable: false,
     quoteNumber: str(formData, "quoteNumber") || null,
@@ -203,6 +206,7 @@ export async function logAppetiteResult(formData: FormData) {
     snapCity: risk.city,
     snapCounty: risk.county,
     snapCoverageA: risk.coverageA,
+    ...autoSnap,
   });
 
   revalidatePath(`/deals/${dealId}`);

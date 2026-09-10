@@ -110,6 +110,23 @@ export default async function DeveloperHubOverviewPage() {
             </p>
           </div>
         </Link>
+        <Link
+          href="/settings/developer/auto-premium-log"
+          className="ff-card mb-4 flex items-start justify-between gap-3 px-4 py-3 hover:border-primary/40"
+          data-ff-dev-auto-premium-log=""
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-navy">Auto Premium Learning</div>
+              <StatusChip status="working" />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Premium ranking datasheet (vehicle / driver / ZIP / record) — parallel to Home Appetite
+              Log decline rules. Shadow stub ranking until sample grows. Site developers only.
+            </p>
+          </div>
+        </Link>
+
         </>
       ) : null}
       <p className="mb-4 text-sm">

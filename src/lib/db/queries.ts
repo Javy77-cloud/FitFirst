@@ -50,6 +50,10 @@ import {
   lineOfBusinessValuesForSheet,
   normalizeAppetiteLine,
 } from "@/lib/appetite/training-datasheet";
+import {
+  AUTO_PREMIUM_LINE_VALUES,
+  type AutoPremiumDatasheetFilters,
+} from "@/lib/appetite/auto-premium-learning";
 import type { PartyRecord } from "@/lib/crm/party-typeahead";
 import { partyLabel } from "@/lib/deals/lookup";
 import { db, sql as rawSql } from "./index";
@@ -1401,6 +1405,90 @@ export async function listAppetiteTrainingFilterOptions(line: string) {
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
     countsByLine,
+  };
+}
+
+
+/** Site-dev Auto premium-learning datasheet (Auto LOB rows with feature snapshots). */
+export async function listAutoPremiumLearningLogs(filters: AutoPremiumDatasheetFilters = {}) {
+  const lineValues = [...AUTO_PREMIUM_LINE_VALUES];
+  const clauses: SQL[] = [
+    eq(quoteAttemptLogs.tenantId, tenant()),
+    inArray(quoteAttemptLogs.lineOfBusiness, lineValues),
+  ];
+  if (filters.carrierId) clauses.push(eq(quoteAttemptLogs.carrierId, filters.carrierId));
+
+  const rows = await db
+    .select({
+      log: quoteAttemptLogs,
+      carrier: carriers,
+      deal: deals,
+      risk: risks,
+      quote: quotes,
+    })
+    .from(quoteAttemptLogs)
+    .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+    .innerJoin(deals, eq(quoteAttemptLogs.dealId, deals.id))
+    .leftJoin(risks, eq(quoteAttemptLogs.riskId, risks.id))
+    .leftJoin(quotes, eq(quotes.quoteAttemptLogId, quoteAttemptLogs.id))
+    .where(and(...clauses))
+    .orderBy(desc(quoteAttemptLogs.attemptedAt));
+
+  const seen = new Set<string>();
+  const deduped: typeof rows = [];
+  for (const row of rows) {
+    if (seen.has(row.log.id)) continue;
+    seen.add(row.log.id);
+    const snap = row.log.autoFeatureSnapshot;
+    if (filters.city) {
+      const city = (snap?.city || row.log.snapCity || row.risk?.city || "").trim().toLowerCase();
+      if (city !== filters.city.trim().toLowerCase()) continue;
+    }
+    if (filters.vehicleYearMin != null) {
+      const y = snap?.vehicleYear ?? row.risk?.vehicleYear ?? null;
+      if (y == null || y < filters.vehicleYearMin) continue;
+    }
+    if (filters.vehicleYearMax != null) {
+      const y = snap?.vehicleYear ?? row.risk?.vehicleYear ?? null;
+      if (y == null || y > filters.vehicleYearMax) continue;
+    }
+    deduped.push(row);
+  }
+  return deduped;
+}
+
+export async function listAutoPremiumLearningFilterOptions() {
+  const lineValues = [...AUTO_PREMIUM_LINE_VALUES];
+  const rows = await db
+    .select({
+      carrierId: carriers.id,
+      carrierName: carriers.name,
+      snap: quoteAttemptLogs.autoFeatureSnapshot,
+      cityCol: quoteAttemptLogs.snapCity,
+      riskCity: risks.city,
+    })
+    .from(quoteAttemptLogs)
+    .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+    .leftJoin(risks, eq(quoteAttemptLogs.riskId, risks.id))
+    .where(
+      and(
+        eq(quoteAttemptLogs.tenantId, tenant()),
+        inArray(quoteAttemptLogs.lineOfBusiness, lineValues),
+      ),
+    );
+
+  const carrierMap = new Map<string, string>();
+  const cities = new Set<string>();
+  for (const row of rows) {
+    carrierMap.set(row.carrierId, row.carrierName);
+    const city = (row.snap?.city || row.cityCol || row.riskCity || "").trim();
+    if (city) cities.add(city);
+  }
+  return {
+    carriers: [...carrierMap.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    cities: [...cities].sort((a, b) => a.localeCompare(b)),
   };
 }
 

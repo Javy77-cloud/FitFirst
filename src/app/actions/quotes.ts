@@ -18,6 +18,7 @@ import {
   quotes,
   risks,
 } from "@/lib/db/schema";
+import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { currentDeskSession } from "@/lib/auth/session";
 import {
   isAgentStatus,
@@ -159,12 +160,14 @@ export async function shopDealQuotes(
       riskId: risk.id,
     });
     const manual = manualIds.has(carrierId);
+    const shopLob = deal.lineOfBusiness || "HO";
+    const shopAutoSnap = await autoSnapshotFieldsForDeal(dealId, shopLob);
     await db.insert(quoteAttemptLogs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       riskId: risk.id,
       carrierId,
-      lineOfBusiness: deal.lineOfBusiness || "HO",
+      lineOfBusiness: shopLob,
       result: "maybe",
       bindable: false,
       why: `${EXPLICIT_MARKET_ACTION_MARKER} ${pass} shop · ${portalResult.message}${manual ? ` ${MANUAL_MARKET_MARKER}` : ""} · no stub premium (Fill/portal for real quote). Fit ${match?.fitScore ?? "—"}.`,
@@ -175,6 +178,7 @@ export async function shopDealQuotes(
       snapCounty: risk.county,
       snapMilesToCoast: risk.milesToCoast,
       snapCoverageA: risk.coverageA,
+      ...shopAutoSnap,
     });
   }
 
@@ -194,12 +198,14 @@ export async function recordManualAttempt(formData: FormData) {
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!risk) throw new Error("Master risk missing");
 
+  const manualLob = String(formData.get("line") ?? "HO");
+  const manualAutoSnap = await autoSnapshotFieldsForDeal(dealId, manualLob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
     riskId: risk.id,
     carrierId: String(formData.get("carrierId") ?? ""),
-    lineOfBusiness: String(formData.get("line") ?? "HO"),
+    lineOfBusiness: manualLob,
     result: String(formData.get("result") ?? "declined"),
     bindable: formData.get("bindable") === "true",
     quoteNumber: String(formData.get("quoteNumber") ?? "") || null,
@@ -223,6 +229,7 @@ export async function recordManualAttempt(formData: FormData) {
     snapCity: risk.city,
     snapCounty: risk.county,
     snapCoverageA: risk.coverageA,
+    ...manualAutoSnap,
   });
 
   revalidatePath(`/deals/${dealId}`);

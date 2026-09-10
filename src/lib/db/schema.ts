@@ -13,6 +13,34 @@ import {
 } from "drizzle-orm/pg-core";
 
 /** Consumed from Quote Sheet ingest — do not invent a second sheet shape. */
+/** Developer Auto premium-learning snapshot stored on quote_attempt_logs. */
+export type AutoFeatureSnapshot = {
+  schemaVersion: 1;
+  capturedAt: string;
+  driverGender?: string | null;
+  driverDob?: string | null;
+  driverAge?: number | null;
+  state?: string | null;
+  city?: string | null;
+  zip?: string | null;
+  county?: string | null;
+  garagingZip?: string | null;
+  vin?: string | null;
+  vehicleYear?: number | null;
+  vehicleMake?: string | null;
+  vehicleModel?: string | null;
+  ownership?: string | null;
+  ownershipLength?: string | null;
+  annualMiles?: string | null;
+  usage?: string | null;
+  rideshare?: string | null;
+  commuteDaysWeek?: string | null;
+  accidents3yr?: string | null;
+  violations3yr?: string | null;
+  cleanRecord?: string | null;
+  ownRent?: string | null;
+};
+
 export type QuoteSheetFieldValue = {
   value: string;
   status: "missing" | "check" | "confirmed";
@@ -1200,6 +1228,8 @@ export const quoteAttemptLogs = pgTable(
     snapCity: text("snap_city"),
     snapCounty: text("snap_county"),
     snapCoverageA: integer("snap_coverage_a"),
+    /** Auto premium-learning: full application feature snapshot (parallel to Home roof/coast snaps). */
+    autoFeatureSnapshot: jsonb("auto_feature_snapshot").$type<AutoFeatureSnapshot | null>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

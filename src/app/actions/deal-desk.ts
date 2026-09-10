@@ -15,9 +15,11 @@ import {
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
+import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { isUuid } from "@/lib/ids";
 import { EXCLUDE_MARKET_MARKER, EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER, isExplicitMarketActionText, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { JAVY_HOME_SHOP_CARRIER_IDS } from "@/lib/appetite/javy-home-shop-list";
+import { JAVY_AUTO_SHOP_CARRIER_IDS } from "@/lib/appetite/javy-auto-shop-list";
 import { confirmWhy, type QuoteConfirmKind } from "@/lib/deals/quote-confirm";
 import { flashAction } from "@/lib/flash-action";
 import { DEAL_ID } from "@/lib/fixtures/ids";
@@ -34,12 +36,14 @@ export async function addManualMarket(formData: FormData) {
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing.");
 
+  const addLob = deal.lineOfBusiness || "HO";
+  const addAutoSnap = await autoSnapshotFieldsForDeal(dealId, addLob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
     riskId: risk.id,
     carrierId,
-    lineOfBusiness: deal.lineOfBusiness || "HO",
+    lineOfBusiness: addLob,
     result: "maybe",
     bindable: false,
     why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Agent added this carrier. Overrides appetite even when the system says skip.`,
@@ -56,6 +60,7 @@ export async function addManualMarket(formData: FormData) {
     snapCity: risk.city,
     snapCounty: risk.county,
     snapCoverageA: risk.coverageA,
+    ...addAutoSnap,
   });
 
   revalidatePath(`/deals/${dealId}`);
@@ -78,12 +83,14 @@ export async function confirmQuotePull(formData: FormData) {
     ? await db.select().from(quotes).where(eq(quotes.id, quoteId))
     : [];
 
+  const confirmLob = deal.lineOfBusiness || "HO";
+  const confirmAutoSnap = await autoSnapshotFieldsForDeal(dealId, confirmLob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
     riskId: risk.id,
     carrierId,
-    lineOfBusiness: deal.lineOfBusiness || "HO",
+    lineOfBusiness: confirmLob,
     result: "quoted",
     bindable: quote?.bindable ?? false,
     quoteNumber: quote?.quoteNumber ?? null,
@@ -95,6 +102,7 @@ export async function confirmQuotePull(formData: FormData) {
     snapRoofCovering: risk.roofCovering,
     snapConstruction: risk.construction,
     snapCoverageA: risk.coverageA,
+    ...confirmAutoSnap,
   });
 
   revalidatePath(`/deals/${dealId}`);
@@ -276,6 +284,54 @@ export async function loadJavyHomeShopListAction(formData: FormData) {
   flashAction(
     `/deals/${dealId}?tab=markets`,
     added === 0 ? "Home list already on this deal" : `Loaded ${added} Home carriers`,
+  );
+}
+
+export async function loadJavyAutoShopListAction(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  if (!dealId) throw new Error("Deal is missing.");
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  if (!deal || !risk) throw new Error("Deal or master risk is missing.");
+  const autoShopLob = deal.lineOfBusiness || "AUTO";
+  const autoShopSnap = await autoSnapshotFieldsForDeal(dealId, autoShopLob);
+
+  const existingLogs = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
+  const already = new Set(manualCarrierIdsFromLogs(existingLogs));
+  let added = 0;
+  for (const carrierId of JAVY_AUTO_SHOP_CARRIER_IDS) {
+    if (already.has(carrierId)) continue;
+    await db.insert(quoteAttemptLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      riskId: risk.id,
+      carrierId,
+      lineOfBusiness: deal.lineOfBusiness || "AUTO",
+      result: "maybe",
+      bindable: false,
+      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Loaded from Javy Auto shop list.`,
+      snapYearBuilt: risk.yearBuilt,
+      snapRoofYear: risk.roofYear,
+      snapRoofCovering: risk.roofCovering,
+      snapConstruction: risk.construction,
+      snapOpeningProtection: risk.openingProtection,
+      snapOccupancy: risk.occupancy,
+      snapStories: risk.stories,
+      snapPool: risk.pool,
+      snapProtectionClass: risk.protectionClass,
+      snapMilesToCoast: risk.milesToCoast,
+      snapCity: risk.city,
+      snapCounty: risk.county,
+      snapCoverageA: risk.coverageA,
+      ...autoShopSnap,
+    });
+    added += 1;
+  }
+
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(
+    `/deals/${dealId}?tab=markets`,
+    added === 0 ? "Auto list already on this deal" : `Loaded ${added} Auto carriers`,
   );
 }
 

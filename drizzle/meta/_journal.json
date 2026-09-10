@@ -680,6 +680,20 @@
       "when": 1788960000000,
       "tag": "0096_appetite_engine",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1788970000000,
+      "tag": "0097_quote_attempt_logs_nullable_deal_risk",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1788980000000,
+      "tag": "0098_auto_premium_learning",
+      "breakpoints": true
     }
   ]
 }
