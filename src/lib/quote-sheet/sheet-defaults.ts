@@ -293,6 +293,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // vehicle_ownership / vehicle_N_ownership: leave blank — wait for Javy (no Heather defaults).
   // vehicle_lienholder / vehicle_N_lienholder: leave blank — set per deal (Heather Acura Financial Services).
   // vehicle_ownership_length / commute_days_week / vehicle_lienholder_other: leave blank until Javy answers.
+  // original_cost_new / vehicle_N_original_cost_new (OCN / cost new): leave blank — wait for Javy (no Heather defaults).
 };
 
 

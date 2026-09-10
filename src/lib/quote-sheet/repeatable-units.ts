@@ -67,6 +67,11 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
     options: YES_NO_OPTIONS,
   },
   {
+    suffix: "original_cost_new",
+    label: "Original cost new (OCN)",
+    input: "number",
+  },
+  {
     suffix: "annual_miles",
     label: "Annual miles",
     input: "select",
@@ -165,6 +170,7 @@ const VEHICLE_1_KEYS: Record<string, string> = {
   lienholder: "vehicle_lienholder",
   lienholder_other: "vehicle_lienholder_other",
   purchased_new: "purchased_new",
+  original_cost_new: "original_cost_new",
   annual_miles: "annual_miles",
   commute_days_week: "commute_days_week",
   commute_miles_daily: "commute_miles_daily",
@@ -214,7 +220,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }

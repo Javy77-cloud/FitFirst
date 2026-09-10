@@ -301,6 +301,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     options: [...YES_NO_OPTIONS],
   },
   {
+    key: "original_cost_new",
+    label: "Original cost new (OCN)",
+    group: "Vehicle",
+    input: "number",
+    // Portals also call this OCN / cost new — leave blank OK (no forced default).
+  },
+  {
     key: "annual_miles",
     label: "Annual miles",
     group: "Vehicle",
@@ -776,6 +783,10 @@ export function blankSheetWithDefaults(
 }
 
 const EXTRACT_ALIASES: Record<string, string> = {
+  // Auto vehicle: Original cost new — portals say OCN / cost new
+  ocn: "original_cost_new",
+  cost_new: "original_cost_new",
+  original_cost: "original_cost_new",
   wind_hail_deductible: "wind_hail_deductible",
   wind_deductible: "wind_hail_deductible",
   address: "address",
