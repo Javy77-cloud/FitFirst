@@ -73,6 +73,11 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
     options: COMMUTE_DAYS_WEEK_OPTIONS,
   },
   {
+    suffix: "commute_miles_daily",
+    label: "Miles driven daily",
+    input: "number",
+  },
+  {
     suffix: "rideshare",
     label: "Used for rideshare (Uber / Lyft)?",
     input: "select",
@@ -155,6 +160,7 @@ const VEHICLE_1_KEYS: Record<string, string> = {
   lienholder_other: "vehicle_lienholder_other",
   annual_miles: "annual_miles",
   commute_days_week: "commute_days_week",
+  commute_miles_daily: "commute_miles_daily",
   rideshare: "rideshare",
   aftermarket_parts: "aftermarket_parts",
   garaging_zip: "garaging_zip",
@@ -201,7 +207,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|ownership|ownership_length|lienholder|lienholder_other|annual_miles|commute_days_week|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|usage|ownership|ownership_length|lienholder|lienholder_other|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }

@@ -308,6 +308,12 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     options: [...COMMUTE_DAYS_WEEK_OPTIONS],
   },
   {
+    key: "commute_miles_daily",
+    label: "Miles driven daily",
+    group: "Vehicle",
+    input: "number",
+  },
+  {
     key: "rideshare",
     label: "Used for rideshare (Uber / Lyft)?",
     group: "Vehicle",
