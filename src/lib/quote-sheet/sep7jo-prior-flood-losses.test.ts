@@ -71,4 +71,11 @@ describe("sep7jo Flood prior_flood_losses + quote reason + effective date", () =
     const blank = blankSheetWithDefaults("flood");
     expect(blank.effective_date.value).toBe(d.effective_date);
   });
+
+  it("fieldsForLine(flood) includes loss_of_use in Coverages", () => {
+    const fields = fieldsForLine("flood");
+    const lou = fields.find((f) => f.key === "loss_of_use");
+    expect(lou?.group).toBe("Coverages");
+    expect(lou?.input).toBe("number");
+  });
 });

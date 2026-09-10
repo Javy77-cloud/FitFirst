@@ -606,6 +606,7 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "contents_limit", label: "Contents coverage", group: "Coverages", input: "number" },
   { key: "building_deductible", label: "Building deductible", group: "Coverages" },
   { key: "contents_deductible", label: "Contents deductible", group: "Coverages" },
+  { key: "loss_of_use", label: "Loss of use / ALE", group: "Coverages", input: "number" },
   { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
   { key: "purchased_within_last_year", label: "Building purchased within last year?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "prior_owner_nfip_at_closing", label: "Prior owner had active NFIP at closing?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
