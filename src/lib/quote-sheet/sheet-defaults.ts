@@ -305,6 +305,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
  * has_nfip defaults to no (Currently have flood/NFIP?).
  * prior_flood_losses / flood_quote_reason: leave blank — never assume from HO claims; agent answers.
  * effective_date: computed in emptyDefaultsForLine as application+30 unless under_construction/new house.
+ * purchased_within_last_year / prior_owner_nfip_at_closing: leave blank — agent confirms (NFIP/Wright).
  */
 export const FLOOD_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   under_construction: "no",

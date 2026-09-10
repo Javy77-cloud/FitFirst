@@ -17,7 +17,17 @@ describe("sep7jo Flood prior_flood_losses + quote reason + effective date", () =
     expect(prior?.group).toBe("Loss history");
     expect(prior?.input).toBe("select");
     expect(prior?.options).toEqual([...YES_NO_OPTIONS]);
+  
+  it("fieldsForLine(flood) includes purchase/prior-owner NFIP Yes/No", () => {
+    const fields = fieldsForLine("flood");
+    const buy = fields.find((f) => f.key === "purchased_within_last_year");
+    const prior = fields.find((f) => f.key === "prior_owner_nfip_at_closing");
+    expect(buy?.group).toBe("Loss history");
+    expect(prior?.group).toBe("Loss history");
+    expect(buy?.options).toEqual([...YES_NO_OPTIONS]);
+    expect(prior?.options).toEqual([...YES_NO_OPTIONS]);
   });
+});
 
   it("fieldsForLine(flood) includes flood_quote_reason picklist", () => {
     const fields = fieldsForLine("flood");
@@ -61,5 +71,15 @@ describe("sep7jo Flood prior_flood_losses + quote reason + effective date", () =
     expect(d.effective_date_type).toBe("New business");
     const blank = blankSheetWithDefaults("flood");
     expect(blank.effective_date.value).toBe(d.effective_date);
+  });
+
+  it("fieldsForLine(flood) includes purchase/prior-owner NFIP Yes/No", () => {
+    const fields = fieldsForLine("flood");
+    const buy = fields.find((f) => f.key === "purchased_within_last_year");
+    const prior = fields.find((f) => f.key === "prior_owner_nfip_at_closing");
+    expect(buy?.group).toBe("Loss history");
+    expect(prior?.group).toBe("Loss history");
+    expect(buy?.options).toEqual([...YES_NO_OPTIONS]);
+    expect(prior?.options).toEqual([...YES_NO_OPTIONS]);
   });
 });

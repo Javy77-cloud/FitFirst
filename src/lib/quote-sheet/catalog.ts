@@ -607,6 +607,8 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "building_deductible", label: "Building deductible", group: "Coverages" },
   { key: "contents_deductible", label: "Contents deductible", group: "Coverages" },
   { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
+  { key: "purchased_within_last_year", label: "Building purchased within last year?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "prior_owner_nfip_at_closing", label: "Prior owner had active NFIP at closing?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "prior_flood_losses", label: "Any prior flood losses?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "effective_date", label: "Effective date (≈ app + 30 days unless new house)", group: "Current policy" },
   {
