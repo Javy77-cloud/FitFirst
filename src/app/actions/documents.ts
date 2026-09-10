@@ -273,7 +273,7 @@ export async function uploadDocument(formData: FormData) {
     redirect(withFlash(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }), "document-uploaded"));
   }
   if (last?.dealId) {
-    // Persist only; Fill master sheet button owns runFillDealSheets + Markets advance.
+    // Persist only; Fill master sheet button owns runFillDealSheets; Markets only after Confirm & request quotes.
     const line = String(formData.get("line") ?? "").trim();
     const href = line
       ? `/deals/${last.dealId}?tab=documents&line=${line}`
@@ -440,7 +440,7 @@ export async function uploadDealDocuments(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath(`/deals/${match.id}`);
   revalidatePath("/documents");
-  // Persist only — Fill master sheet button owns fill + Markets advance.
+  // Persist only — Fill master sheet button owns fill; Markets only after Confirm & request quotes.
   redirect(withFlash(`/deals/${match.id}?tab=documents`, "documents-saved"));
 }
 

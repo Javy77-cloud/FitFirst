@@ -60,7 +60,7 @@ describe("resolveDealResumeTab", () => {
     ).toBe("documents");
   });
 
-  it("advances to markets when sheet is filled or unlocked but quotes not requested", () => {
+  it("stays on documents after Fill until Confirm & request quotes", () => {
     expect(
       resolveDealResumeTab({
         recordValues: { named_insured: "Elena" },
@@ -69,11 +69,14 @@ describe("resolveDealResumeTab", () => {
         quotesRequested: false,
         hasNonStubQuotes: false,
       }),
-    ).toBe("markets");
+    ).toBe("documents");
+  });
+
+  it("advances to markets only after sheet is confirmed (unlocked) and quotes not yet requested", () => {
     expect(
       resolveDealResumeTab({
         recordValues: { named_insured: "Elena" },
-        sheetFilled: false,
+        sheetFilled: true,
         quotingUnlocked: true,
         quotesRequested: false,
       }),

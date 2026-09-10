@@ -73,6 +73,7 @@ export function MasterSheetFillButton({
       const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped });
       // Stay on Documents after Fill — Markets only after Confirm & request quotes.
       flashAction(toast);
+      router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
       router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Master sheet fill failed";

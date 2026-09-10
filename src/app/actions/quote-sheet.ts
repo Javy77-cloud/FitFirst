@@ -783,8 +783,9 @@ export async function fillQuoteSheet(formData: FormData) {
   }
   const counts = await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
+  // Stay on Documents after Fill — Markets only after Confirm & request quotes.
   flashAction(
-    `/deals/${dealId}?tab=markets&line=${lineRaw}`,
+    `/deals/${dealId}?tab=documents&line=${lineRaw}`,
     toastForFillCounts({
       filledCount: counts.filledKeys.length,
       skippedCount: counts.skippedKeys.length,

@@ -65,17 +65,23 @@ export type DealResumeSignals = {
 /**
  * Next unfinished Deal tab when the URL has no explicit `?tab=`.
  * Manual `?tab=` clicks still win via parseAgentDealTab on the page.
+ *
+ * Fill master sheet must NOT jump to Markets — stay on Documents until the
+ * agent checks visual review and hits Confirm & request quotes (quotingUnlocked
+ * / quotesRequested). sheetFilled alone is not enough.
  */
 export function resolveDealResumeTab(ctx: DealResumeSignals): AgentDealTab {
   const detailsDone = hasMeaningfulDealFieldValues(ctx.recordValues);
   if (!detailsDone) return "details";
 
-  const sheetReady = Boolean(ctx.quotingUnlocked) || Boolean(ctx.sheetFilled);
-  if (!sheetReady) return "documents";
-
   const quotesReady = Boolean(ctx.quotesRequested) || Boolean(ctx.hasNonStubQuotes);
-  if (!quotesReady) return "markets";
+  // Shop already ran → Quotes
+  if (quotesReady) return "quotes";
 
-  return "quotes";
+  // Confirm & request quotes unlocks quoting — then Markets is next.
+  // sheetFilled alone (Fill master sheet) must stay on Documents for visual review.
+  if (Boolean(ctx.quotingUnlocked)) return "markets";
+
+  return "documents";
 }
 
