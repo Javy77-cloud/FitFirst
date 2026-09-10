@@ -457,6 +457,7 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
   { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
+  { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
   { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
   { key: "policy_number", label: "Current policy ID", group: "Current policy", extractKey: "policy_number" },
   {
