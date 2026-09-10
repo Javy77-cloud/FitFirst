@@ -13,6 +13,46 @@ import {
 } from "drizzle-orm/pg-core";
 
 /** Consumed from Quote Sheet ingest — do not invent a second sheet shape. */
+/** Flood learning stub snapshot. */
+export type FloodFeatureSnapshot = {
+  schemaVersion: 1;
+  capturedAt: string;
+  state?: string | null;
+  city?: string | null;
+  zip?: string | null;
+  county?: string | null;
+  floodZone?: string | null;
+  elevation?: string | null;
+  elevationCertificate?: string | null;
+  baseFloodElevation?: string | null;
+};
+
+/** Workers Comp learning stub — industry class is critical (carriers write only certain industries). */
+export type WcFeatureSnapshot = {
+  schemaVersion: 1;
+  capturedAt: string;
+  state?: string | null;
+  city?: string | null;
+  zip?: string | null;
+  industryClass?: string | null;
+  naics?: string | null;
+  employees?: number | null;
+  payroll?: number | null;
+};
+
+/** GL learning stub snapshot. */
+export type GlFeatureSnapshot = {
+  schemaVersion: 1;
+  capturedAt: string;
+  state?: string | null;
+  city?: string | null;
+  zip?: string | null;
+  industryClass?: string | null;
+  naics?: string | null;
+  revenue?: number | null;
+  employees?: number | null;
+};
+
 /** Developer Auto premium-learning snapshot stored on quote_attempt_logs. */
 export type AutoFeatureSnapshot = {
   schemaVersion: 1;
