@@ -42,6 +42,28 @@ export const DISTANCE_TO_STATION_OPTIONS = [
   "More than 5 miles",
 ] as const;
 
+/** Primary heat / heating system (carrier portals — Javy 2026-09-09). */
+export const PRIMARY_HEAT_OPTIONS = [
+  "Electric",
+  "Heat pump",
+  "Natural gas",
+  "Propane",
+  "Oil",
+  "None",
+  "Other",
+] as const;
+
+/** Primary plumbing type (carrier portals — Javy 2026-09-09). */
+export const PRIMARY_PLUMBING_OPTIONS = [
+  "Copper",
+  "PEX",
+  "PVC / CPVC",
+  "Galvanized",
+  "Polybutylene",
+  "Mixed",
+  "Other",
+] as const;
+
 /** Exterior = wall type (Javy 2026-09-09 night lock). */
 export const EXTERIOR_OPTIONS = [
   "Masonry",
