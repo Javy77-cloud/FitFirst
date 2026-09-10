@@ -1,6 +1,6 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
-import { GEMINI_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
+import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
 export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
@@ -71,6 +71,50 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   secondary_named_insured: ["secondary_named_insured"],
   mortgagee: ["mortgagee", "mortgagee_name"],
   mortgagee_address: ["mortgagee_address"],
+  // Personal Auto dec
+  vin: ["vin"],
+  vehicle_year: ["vehicle_year"],
+  vehicle_make: ["vehicle_make"],
+  vehicle_model: ["vehicle_model"],
+  vehicle_usage: ["vehicle_usage"],
+  garaging_zip: ["garaging_zip"],
+  garaging_address: ["garaging_address"],
+  vehicle_2_vin: ["vehicle_2_vin"],
+  vehicle_2_year: ["vehicle_2_year"],
+  vehicle_2_make: ["vehicle_2_make"],
+  vehicle_2_model: ["vehicle_2_model"],
+  vehicle_3_vin: ["vehicle_3_vin"],
+  vehicle_3_year: ["vehicle_3_year"],
+  vehicle_3_make: ["vehicle_3_make"],
+  vehicle_3_model: ["vehicle_3_model"],
+  vehicle_4_vin: ["vehicle_4_vin"],
+  vehicle_4_year: ["vehicle_4_year"],
+  vehicle_4_make: ["vehicle_4_make"],
+  vehicle_4_model: ["vehicle_4_model"],
+  driver_1_name: ["driver_1_name"],
+  driver_1_dob: ["driver_1_dob"],
+  driver_1_license: ["driver_1_license"],
+  driver_1_status: ["driver_1_status"],
+  driver_1_years_licensed: ["driver_1_years_licensed"],
+  driver_2_name: ["driver_2_name"],
+  driver_2_dob: ["driver_2_dob"],
+  driver_2_license: ["driver_2_license"],
+  driver_2_status: ["driver_2_status"],
+  driver_2_years_licensed: ["driver_2_years_licensed"],
+  driver_3_name: ["driver_3_name"],
+  driver_3_dob: ["driver_3_dob"],
+  driver_3_license: ["driver_3_license"],
+  driver_4_name: ["driver_4_name"],
+  driver_4_dob: ["driver_4_dob"],
+  driver_4_license: ["driver_4_license"],
+  accidents_3yr: ["accidents_3yr"],
+  violations_3yr: ["violations_3yr"],
+  liability_bi: ["liability_bi"],
+  liability_pd: ["liability_pd"],
+  um_uim: ["um_uim"],
+  pip: ["pip"],
+  comp_deductible: ["comp_deductible"],
+  collision_deductible: ["collision_deductible"],
 };
 
 export type GeminiFieldPayload = {
@@ -233,7 +277,8 @@ export function mapGeminiJsonToFields(
     if (!payload) continue;
     const sheetKeys = sheetKeysForGeminiKey(geminiKey);
     if (sheetKeys.length === 0) {
-      if (!(GEMINI_EXTRACT_JSON_KEYS as readonly string[]).includes(geminiKey)) {
+      const knownKeys = new Set<string>([...GEMINI_EXTRACT_JSON_KEYS, ...GEMINI_AUTO_EXTRACT_JSON_KEYS]);
+      if (!knownKeys.has(geminiKey)) {
         unmappedLabels.push({ sourceLabel: geminiKey, rawValue: payload.value });
       }
       continue;

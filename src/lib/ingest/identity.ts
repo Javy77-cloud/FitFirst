@@ -94,6 +94,31 @@ export function inferShopLine(text: string, filename: string, docType: string): 
   return "home";
 }
 
+/**
+ * Phone photos often have empty OCR before Gemini, so inferShopLine defaults to Home.
+ * When the agent is filling a non-Home sheet with a photo / weak text, trust the sheet
+ * instead of skipping — Gemini will read the image for that line.
+ */
+export function trustSheetLineForFill(opts: {
+  sheetLine: ShopLine | string;
+  inferred: ShopLine | string;
+  docType?: string | null;
+  mimeType?: string | null;
+  text?: string | null;
+}): boolean {
+  if (opts.inferred === opts.sheetLine) return true;
+  if (sourceDocFillsHome(String(opts.docType ?? "")) && opts.sheetLine === "home") return true;
+  const mime = String(opts.mimeType ?? "").toLowerCase();
+  const doc = String(opts.docType ?? "").toLowerCase();
+  const isPhoto =
+    doc === "photo" ||
+    mime.startsWith("image/") ||
+    /\.(jpe?g|png|webp|heic|heif|gif|tiff?|bmp)$/i.test(String(opts.docType ?? ""));
+  const weakText = String(opts.text ?? "").trim().length < 40;
+  if (isPhoto && weakText) return true;
+  return false;
+}
+
 export function inferAccountKind(line: ShopLine): AccountKind {
   if (line === "workers_comp" || line === "general_liability") return "commercial";
   return "personal";

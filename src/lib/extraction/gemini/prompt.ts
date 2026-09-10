@@ -72,10 +72,106 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "mortgagee_address",
 ] as const;
 
-export type GeminiExtractKey = (typeof GEMINI_EXTRACT_JSON_KEYS)[number];
+/** Personal Auto dec / ID card / photo of auto dec. */
+export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
+  "applicant_name",
+  "named_insured",
+  "current_policy_name_insured",
+  "secondary_named_insured",
+  "phone",
+  "email",
+  "mailing_address",
+  "city",
+  "state",
+  "zip",
+  "vin",
+  "vehicle_year",
+  "vehicle_make",
+  "vehicle_model",
+  "vehicle_usage",
+  "garaging_zip",
+  "garaging_address",
+  "vehicle_2_vin",
+  "vehicle_2_year",
+  "vehicle_2_make",
+  "vehicle_2_model",
+  "vehicle_3_vin",
+  "vehicle_3_year",
+  "vehicle_3_make",
+  "vehicle_3_model",
+  "vehicle_4_vin",
+  "vehicle_4_year",
+  "vehicle_4_make",
+  "vehicle_4_model",
+  "driver_1_name",
+  "driver_1_dob",
+  "driver_1_license",
+  "driver_1_status",
+  "driver_1_years_licensed",
+  "driver_2_name",
+  "driver_2_dob",
+  "driver_2_license",
+  "driver_2_status",
+  "driver_2_years_licensed",
+  "driver_3_name",
+  "driver_3_dob",
+  "driver_3_license",
+  "driver_4_name",
+  "driver_4_dob",
+  "driver_4_license",
+  "accidents_3yr",
+  "violations_3yr",
+  "liability_bi",
+  "liability_pd",
+  "um_uim",
+  "pip",
+  "comp_deductible",
+  "collision_deductible",
+  "policy_number",
+  "current_premium",
+  "current_carrier",
+  "effective_date",
+  "expiration_date",
+] as const;
 
-export function buildGeminiSystemPrompt(docType?: string | null): string {
+export type GeminiExtractKey =
+  | (typeof GEMINI_EXTRACT_JSON_KEYS)[number]
+  | (typeof GEMINI_AUTO_EXTRACT_JSON_KEYS)[number];
+
+export function geminiKeysForShopLine(shopLine?: string | null): readonly string[] {
+  const line = (shopLine ?? "").trim().toLowerCase();
+  if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
+    return GEMINI_AUTO_EXTRACT_JSON_KEYS;
+  }
+  return GEMINI_EXTRACT_JSON_KEYS;
+}
+
+export function buildGeminiSystemPrompt(docType?: string | null, shopLine?: string | null): string {
   const kind = (docType ?? "").trim() || "insurance source document";
+  const line = (shopLine ?? "").trim().toLowerCase();
+  const keys = geminiKeysForShopLine(shopLine);
+  if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
+    return `You extract structured fields from Florida personal Auto insurance documents
+(auto declaration page, ID card, declarations photos, related insured).
+
+Document type hint: ${kind}
+Shop line: Auto
+
+Rules:
+- Return ONLY a single JSON object. No markdown fences, no commentary.
+- Keys MUST be exactly from this list (omit unknown keys or set value null):
+  ${keys.join(", ")}
+- Each present key maps to an object: { "value": string|null, "confidence": number }
+  where confidence is 0..1 (1 = clearly printed on the page).
+- Extract ONLY what is written on the page. Never invent.
+- If unknown or not present: value null and low confidence.
+- VIN: full 17 characters when printed. Year/make/model per vehicle.
+- Drivers: name, DOB, license # when printed. Number vehicles/drivers in order (1 = first listed).
+- Money: digits only (no $). Dates: keep as printed.
+- named_insured / current_policy_name_insured: primary named insured on the auto dec.
+- liability_bi / liability_pd / um_uim / pip / comp_deductible / collision_deductible when printed.
+`;
+  }
   return `You extract structured fields from Florida personal-lines insurance documents
 (wind mitigation OIR-B1-1802, four-point inspection, HO3/dec page, related insured).
 
@@ -84,7 +180,7 @@ Document type hint: ${kind}
 Rules:
 - Return ONLY a single JSON object. No markdown fences, no commentary.
 - Keys MUST be exactly from this list (omit unknown keys or set value null):
-  ${GEMINI_EXTRACT_JSON_KEYS.join(", ")}
+  ${keys.join(", ")}
 - Each present key maps to an object: { "value": string|null, "confidence": number }
   where confidence is 0..1 (1 = clearly printed / checked on the form).
 - Extract ONLY what is written or clearly checked on the page. Never invent.
@@ -114,7 +210,7 @@ Field meaning guidance (from desk synonym brief):
 `;
 }
 
-export function buildGeminiUserPrompt(docType?: string | null): string {
+export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string | null): string {
   const kind = (docType ?? "").trim().toLowerCase();
   let focus =
     "Extract every listed key that is clearly printed or checked. Prefer a non-empty value when the form shows one.";
@@ -131,5 +227,10 @@ export function buildGeminiUserPrompt(docType?: string | null): string {
     focus =
       "This may be a phone photo (JPEG/PNG/HEIC) of a dec, wind mit, 4-point, or inspection — not a PDF. Read the visible text from the image and fill every labeled field you can see. Prefer the same keys as dec / wind mit / four-point when the form type is clear from the page.";
   }
-  return `Extract the JSON field object from this ${docType || "insurance"} PDF. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
+  const line = (shopLine ?? "").trim().toLowerCase();
+  if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
+    focus =
+      "This is a personal Auto declaration / ID card / photo of an auto dec. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, phone, email, mailing_address, city, state, zip, vin, vehicle_year, vehicle_make, vehicle_model, vehicle_usage, garaging_zip, garaging_address, vehicle_2_* / vehicle_3_* / vehicle_4_* for additional vehicles, driver_1_* / driver_2_* (and 3/4 when listed), accidents_3yr, violations_3yr, liability_bi, liability_pd, um_uim, pip, comp_deductible, collision_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date. Read every vehicle and driver block you can see. Do not treat this as homeowners / Coverage A.";
+  }
+  return `Extract the JSON field object from this ${docType || "insurance"} document. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

@@ -8,6 +8,7 @@ import {
   inferAccountKind,
   inferDocType,
   inferShopLine,
+  trustSheetLineForFill,
   isQuoteAttachment,
   isSourceDocType,
   parseNamedInsured,
@@ -40,6 +41,27 @@ describe("drop ingest identity", () => {
     expect(inferShopLine(GARCIA_AUTO_DEC_TEXT, "francisco-garcia-auto-sample-dec.txt", "dec")).toBe(
       "auto",
     );
+  });
+
+  it("trusts Auto sheet for photo with weak OCR instead of defaulting Home skip", () => {
+    expect(
+      trustSheetLineForFill({
+        sheetLine: "auto",
+        inferred: "home",
+        docType: "photo",
+        mimeType: "image/jpeg",
+        text: "",
+      }),
+    ).toBe(true);
+    expect(
+      trustSheetLineForFill({
+        sheetLine: "auto",
+        inferred: "home",
+        docType: "dec",
+        mimeType: "application/pdf",
+        text: "HOMEOWNERS Coverage A 310000 wind mit",
+      }),
+    ).toBe(false);
   });
 
   it("classifies source docs vs later quote-PDF attachments", () => {

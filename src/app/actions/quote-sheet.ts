@@ -46,7 +46,7 @@ import {
   MISSING_GEMINI_KEY_MESSAGE,
 } from "@/lib/extraction/gemini";
 import { classifyIngest } from "@/lib/extraction/ocr";
-import { inferShopLine, isQuoteAttachment, sourceDocFillsHome } from "@/lib/ingest/identity";
+import { inferShopLine, isQuoteAttachment, sourceDocFillsHome, trustSheetLineForFill } from "@/lib/ingest/identity";
 import { readUploadText } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
@@ -1149,7 +1149,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       }
       const inferred = inferShopLine(textForLine, doc.filename, doc.docType);
       const hoOntoHome = sourceDocFillsHome(doc.docType) && line === "home";
-      if (inferred !== line && !hoOntoHome) {
+      const trustSheet = trustSheetLineForFill({
+        sheetLine: line,
+        inferred,
+        docType: doc.docType,
+        mimeType: doc.mimeType,
+        text: textForLine,
+      });
+      if (inferred !== line && !hoOntoHome && !trustSheet) {
         await insertExtractionAttempt({
           dealId,
           documentId: doc.id,
@@ -1191,7 +1198,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         continue;
       }
 
-      const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename });
+      const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename, shopLine: line });
       const engine = "gemini" as const;
       if (!gemini.ok) {
         await db.insert(extractionJobs).values({

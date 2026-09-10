@@ -7,6 +7,7 @@ import {
   parseAddressParts,
   sheetKeysForGeminiKey,
 } from "./map";
+import { geminiKeysForShopLine } from "./prompt";
 
 describe("gemini map key mapping", () => {
   it("maps Gemini JSON keys onto sheet field keys", () => {
@@ -168,5 +169,15 @@ describe("normalizeOirLetterCode", () => {
     expect(byKey.wind_mit_form.normalizedValue).toBe("OIR-B1-1802");
     expect(byKey.wind_mit_date.normalizedValue).toBe("03/12/2024");
     expect(byKey.roof_year.normalizedValue).toBe("2016");
+  });
+});
+
+describe("auto gemini keys", () => {
+  it("maps vin / vehicle / driver keys onto the auto sheet", () => {
+    expect(sheetKeysForGeminiKey("vin")).toEqual(["vin"]);
+    expect(sheetKeysForGeminiKey("vehicle_year")).toEqual(["vehicle_year"]);
+    expect(sheetKeysForGeminiKey("driver_1_name")).toEqual(["driver_1_name"]);
+    expect(geminiKeysForShopLine("auto")).toContain("vin");
+    expect(geminiKeysForShopLine("home")).not.toContain("vin");
   });
 });

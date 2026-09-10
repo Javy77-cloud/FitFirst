@@ -12,7 +12,7 @@ export {
   readGeminiModel,
   resolveGeminiModel,
 } from "./key";
-export { buildGeminiSystemPrompt, buildGeminiUserPrompt, GEMINI_EXTRACT_JSON_KEYS } from "./prompt";
+export { buildGeminiSystemPrompt, buildGeminiUserPrompt, geminiKeysForShopLine, GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS } from "./prompt";
 export {
   fillableGeminiFields,
   mapGeminiJsonToFields,

@@ -190,6 +190,8 @@ export async function extractWithGeminiPdf(
     /** Real file MIME (image/jpeg, application/pdf, …). Defaults from filename when set. */
     mimeType?: string | null;
     filename?: string | null;
+    /** Active master-sheet shop line (home / auto / …) so Auto photos extract Auto keys. */
+    shopLine?: string | null;
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
@@ -206,13 +208,13 @@ export async function extractWithGeminiPdf(
   const inlineMime = resolveGeminiInlineMime(options?.mimeType, options?.filename);
   const body = {
     systemInstruction: {
-      parts: [{ text: buildGeminiSystemPrompt(docType) }],
+      parts: [{ text: buildGeminiSystemPrompt(docType, options?.shopLine) }],
     },
     contents: [
       {
         role: "user",
         parts: [
-          { text: buildGeminiUserPrompt(docType) },
+          { text: buildGeminiUserPrompt(docType, options?.shopLine) },
           {
             inlineData: {
               mimeType: inlineMime,
