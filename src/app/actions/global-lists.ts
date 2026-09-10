@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { globalLists } from "@/lib/db/schema";
 import { GLOBAL_LIST_KEYS, type GlobalListKey } from "@/lib/desk/global-lists";
 import { currentDeskSession } from "@/lib/auth/session";
+import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -18,6 +19,12 @@ function slugify(value: string): string {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function colorFrom(form: FormData): string | null {
+  const color = str(form, "color");
+  if (!color) return null;
+  return (STATUS_COLOR_KEYS as readonly string[]).includes(color) ? color : null;
 }
 
 export async function addGlobalListItem(formData: FormData) {
@@ -35,8 +42,22 @@ export async function addGlobalListItem(formData: FormData) {
     slug,
     label,
     sortOrder: Number(str(formData, "sortOrder") || "0") || 0,
+    color: colorFrom(formData),
     active: true,
   });
+  revalidatePath("/settings/lists");
+  revalidatePath("/policies");
+}
+
+export async function updateGlobalListItemColor(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.isAdmin) return;
+  const id = str(formData, "id");
+  if (!id) return;
+  await db
+    .update(globalLists)
+    .set({ color: colorFrom(formData), updatedAt: new Date() })
+    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
   revalidatePath("/settings/lists");
   revalidatePath("/policies");
 }

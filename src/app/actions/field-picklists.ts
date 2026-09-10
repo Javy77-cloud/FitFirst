@@ -6,18 +6,35 @@ import {
   deleteFieldPicklist,
   updateFieldPicklist,
 } from "@/lib/custom-fields/picklist-store";
+import { sanitizeRichPicklistOptions, type PicklistOption } from "@/lib/custom-fields/picklists";
 import { flashAction } from "@/lib/flash-action";
 import { isRedirectError } from "@/lib/lifecycle/shop";
+import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
-function optionsFrom(form: FormData) {
-  return form
-    .getAll("options")
-    .map((item) => String(item).trim())
-    .filter(Boolean);
+function optionsFrom(form: FormData): PicklistOption[] {
+  const values = form.getAll("options").map((item) => String(item));
+  const colors = form.getAll("optionColors").map((item) => String(item));
+  const defaultRaw = str(form, "defaultIndex");
+  const defaultIndex = defaultRaw === "" ? -1 : Number(defaultRaw);
+  const raw: PicklistOption[] = [];
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i]?.trim() ?? "";
+    if (!value) continue;
+    const colorRaw = colors[i]?.trim() ?? "";
+    const color = (STATUS_COLOR_KEYS as readonly string[]).includes(colorRaw)
+      ? (colorRaw as PicklistOption["color"])
+      : null;
+    raw.push({
+      value,
+      color,
+      isDefault: Number.isFinite(defaultIndex) && defaultIndex === i,
+    });
+  }
+  return sanitizeRichPicklistOptions(raw);
 }
 
 function revalidatePicklists() {

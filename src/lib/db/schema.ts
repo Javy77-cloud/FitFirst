@@ -280,7 +280,7 @@ export const deskFieldPicklists = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: tenantCol(),
     name: text("name").notNull(),
-    options: jsonb("options").$type<string[]>().notNull().default([]),
+    options: jsonb("options").$type<unknown>().notNull().default([]),
     ...timestamps,
   },
   (t) => [

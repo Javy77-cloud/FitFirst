@@ -1,26 +1,63 @@
 import type { CustomFieldDef } from "./types";
+import { STATUS_COLOR_KEYS, type StatusColorKey } from "@/lib/desk/status-colors";
+
+export type PicklistOption = {
+  value: string;
+  color?: StatusColorKey | null;
+  isDefault?: boolean;
+};
 
 export type FieldPicklist = {
   id: string;
   name: string;
-  options: string[];
+  options: PicklistOption[];
 };
 
 /** High enough for US states + DC. Custom field lists stay this size. */
 export const MAX_PICKLIST_OPTIONS = 80;
 
-export function sanitizePicklistOptions(options: unknown): string[] {
+function asColor(raw: unknown): StatusColorKey | null {
+  const key = String(raw ?? "").trim().toLowerCase();
+  return (STATUS_COLOR_KEYS as readonly string[]).includes(key) ? (key as StatusColorKey) : null;
+}
+
+/** Accept legacy string[] or rich { value, color?, isDefault? }[]; sort A–Z; at most one default. */
+export function sanitizeRichPicklistOptions(options: unknown): PicklistOption[] {
   if (!Array.isArray(options)) return [];
   const seen = new Set<string>();
-  const next: string[] = [];
+  const next: PicklistOption[] = [];
   for (const item of options) {
-    const value = String(item ?? "").trim();
+    let value = "";
+    let color: StatusColorKey | null = null;
+    let isDefault = false;
+    if (typeof item === "string" || typeof item === "number") {
+      value = String(item).trim();
+    } else if (item && typeof item === "object") {
+      const row = item as Record<string, unknown>;
+      value = String(row.value ?? row.label ?? row.name ?? "").trim();
+      color = asColor(row.color);
+      isDefault = Boolean(row.isDefault ?? row.default ?? row.is_default);
+    }
     if (!value || seen.has(value)) continue;
     seen.add(value);
-    next.push(value);
+    next.push({ value, color, isDefault });
     if (next.length >= MAX_PICKLIST_OPTIONS) break;
   }
+  next.sort((a, b) => a.value.localeCompare(b.value));
+  let sawDefault = false;
+  for (const option of next) {
+    if (option.isDefault && !sawDefault) {
+      sawDefault = true;
+      continue;
+    }
+    option.isDefault = false;
+  }
   return next;
+}
+
+/** Labels only — for selects and field.options consumers. */
+export function sanitizePicklistOptions(options: unknown): string[] {
+  return sanitizeRichPicklistOptions(options).map((option) => option.value);
 }
 
 export function resizePicklistOptions(options: string[], count: number): string[] {
@@ -36,6 +73,19 @@ export function resolveFieldOptions(field: CustomFieldDef, lists: FieldPicklist[
     if (list) return sanitizePicklistOptions(list.options);
   }
   return sanitizePicklistOptions(field.options ?? []);
+}
+
+export function resolvePicklistDefault(
+  field: CustomFieldDef,
+  lists: FieldPicklist[] = [],
+): string {
+  if (field.defaultValue) return field.defaultValue;
+  if (field.picklistId) {
+    const list = lists.find((item) => item.id === field.picklistId);
+    const fallback = list?.options.find((option) => option.isDefault)?.value;
+    if (fallback) return fallback;
+  }
+  return "";
 }
 
 export function resolvedFieldValue(field: CustomFieldDef, value?: string | null): string {
@@ -78,6 +128,6 @@ export function parseFieldPicklist(raw: unknown): FieldPicklist | null {
   return {
     id: row.id,
     name: row.name.trim() || "Untitled list",
-    options: sanitizePicklistOptions(row.options),
+    options: sanitizeRichPicklistOptions(row.options),
   };
 }

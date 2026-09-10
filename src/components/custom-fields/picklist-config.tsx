@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MAX_PICKLIST_OPTIONS, resizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
+import { MAX_PICKLIST_OPTIONS, resizePicklistOptions, sanitizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 
 export function PicklistConfig({
@@ -46,7 +46,7 @@ export function PicklistConfig({
               const list = lists.find((item) => item.id === id);
               onChange({
                 picklistId: id,
-                options: list ? list.options : options,
+                options: list ? sanitizePicklistOptions(list.options) : options,
               });
             }}
           >

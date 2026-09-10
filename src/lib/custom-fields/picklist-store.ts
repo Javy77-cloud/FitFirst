@@ -3,20 +3,21 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deskFieldPicklists } from "@/lib/db/schema";
 import {
-  sanitizePicklistOptions,
+  sanitizeRichPicklistOptions,
   type FieldPicklist,
+  type PicklistOption,
 } from "./picklists";
 import { STARTER_FIELD_PICKLISTS } from "./starter-picklists";
 
 export function toPicklist(row: {
   id: string;
   name: string;
-  options: string[] | null;
+  options: unknown;
 }): FieldPicklist {
   return {
     id: row.id,
     name: row.name,
-    options: sanitizePicklistOptions(row.options ?? []),
+    options: sanitizeRichPicklistOptions(row.options ?? []),
   };
 }
 
@@ -83,7 +84,7 @@ export async function listFieldPicklists(): Promise<FieldPicklist[]> {
   }
 }
 
-export async function createFieldPicklist(name: string, options: string[] = []): Promise<FieldPicklist> {
+export async function createFieldPicklist(name: string, options: Array<string | PicklistOption> = []): Promise<FieldPicklist> {
   const uniqueName = await allocateUniquePicklistName(name.trim() || "Untitled list");
   try {
     const [row] = await db
@@ -91,7 +92,7 @@ export async function createFieldPicklist(name: string, options: string[] = []):
       .values({
         tenantId: DEFAULT_TENANT_ID,
         name: uniqueName,
-        options: sanitizePicklistOptions(options),
+        options: sanitizeRichPicklistOptions(options),
       })
       .returning();
     return toPicklist(row);
@@ -103,7 +104,7 @@ export async function createFieldPicklist(name: string, options: string[] = []):
   }
 }
 
-export async function updateFieldPicklist(id: string, patch: { name?: string; options?: string[] }) {
+export async function updateFieldPicklist(id: string, patch: { name?: string; options?: Array<string | PicklistOption> }) {
   const [existing] = await db
     .select()
     .from(deskFieldPicklists)
@@ -126,7 +127,7 @@ export async function updateFieldPicklist(id: string, patch: { name?: string; op
       .update(deskFieldPicklists)
       .set({
         name: nextName,
-        options: patch.options !== undefined ? sanitizePicklistOptions(patch.options) : existing.options,
+        options: patch.options !== undefined ? sanitizeRichPicklistOptions(patch.options) : existing.options,
         updatedAt: new Date(),
       })
       .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)))

@@ -191,8 +191,8 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
-  /* Tip sep7hi: keep ~3–4 lines of air between activity chips and the deal list. */
-  margin-bottom: 4rem;
+  /* Tip sep7hm: more air — chips were still sitting on the deal table. */
+  margin-bottom: 8rem;
 }
 .deal-today-slot {
   flex: 1;

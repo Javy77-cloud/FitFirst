@@ -2,7 +2,9 @@ import Link from "next/link";
 import {
   addGlobalListItem,
   deleteGlobalListItem,
+  updateGlobalListItemColor,
 } from "@/app/actions/global-lists";
+import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
@@ -113,31 +115,45 @@ function ListCard({
   canEdit: boolean;
   familyPicker: boolean;
 }) {
+  const sorted = [...rows].sort((a, b) => a.label.localeCompare(b.label));
   return (
-    <section className="ff-card space-y-3 p-4">
+    <section className="ff-card space-y-3 p-4" data-ff-global-list={listKey}>
       <div>
         <h2 className="text-sm font-semibold text-navy">{title}</h2>
-        <p className="text-helper text-muted-foreground">{rows.length} values</p>
+        <p className="text-helper text-muted-foreground">{sorted.length} values · A–Z · full color palette</p>
       </div>
-      {rows.length === 0 ? (
+      {sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground">No values yet.</p>
       ) : (
         <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-md border border-border">
-          {rows.map((row) => (
-            <li key={row.id} className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm">
-              <span>
+          {sorted.map((row) => (
+            <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-sm">
+              <span className="flex min-w-0 items-center gap-2">
+                <StatusColorSwatch color={row.color} />
                 <span className="text-navy">{row.label}</span>
                 {row.family ? (
-                  <span className="ml-2 text-helper text-muted-foreground">{row.family}</span>
+                  <span className="text-helper text-muted-foreground">{row.family}</span>
                 ) : null}
               </span>
               {canEdit ? (
-                <HardDeleteForm action={deleteGlobalListItem} subject="this list item">
-                  <input type="hidden" name="id" value={row.id} />
-                  <button type="submit" className="text-xs text-destructive hover:underline">
-                    Delete
-                  </button>
-                </HardDeleteForm>
+                <span className="flex flex-wrap items-center gap-2">
+                  <form action={updateGlobalListItemColor} className="flex items-center gap-1">
+                    <input type="hidden" name="id" value={row.id} />
+                    <StatusColorSelect
+                      defaultValue={row.color}
+                      aria-label={`Color for ${row.label}`}
+                    />
+                    <button type="submit" className="text-xs text-primary hover:underline">
+                      Save color
+                    </button>
+                  </form>
+                  <HardDeleteForm action={deleteGlobalListItem} subject="this list item">
+                    <input type="hidden" name="id" value={row.id} />
+                    <button type="submit" className="text-xs text-destructive hover:underline">
+                      Delete
+                    </button>
+                  </HardDeleteForm>
+                </span>
               ) : null}
             </li>
           ))}
@@ -157,6 +173,10 @@ function ListCard({
             </select>
           ) : null}
           <Input name="label" required placeholder="Add a value" className="h-8 min-w-40 flex-1" />
+          <label className="text-xs text-muted-foreground">
+            Color
+            <StatusColorSelect className="mt-0.5 block" defaultValue="slate" />
+          </label>
           <Button type="submit" size="sm" variant="outline">
             Add
           </Button>
