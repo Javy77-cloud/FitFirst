@@ -27,7 +27,10 @@ describe("sep7jn Flood coverage defaults + paired Coverages layout", () => {
   });
 
   it("emptyDefaultsForLine(flood) returns flood map; other lines empty", () => {
-    expect(emptyDefaultsForLine("flood")).toEqual(FLOOD_SHEET_EMPTY_DEFAULTS);
+    const flood = emptyDefaultsForLine("flood");
+    expect(flood).toMatchObject(FLOOD_SHEET_EMPTY_DEFAULTS);
+    expect(flood.effective_date).toBeTruthy();
+    expect(flood.effective_date_type).toBe("New business");
     expect(emptyDefaultsForLine("home")).toEqual({});
     expect(emptyDefaultsForLine("auto")).toEqual({});
   });
