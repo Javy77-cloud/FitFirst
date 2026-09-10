@@ -32,13 +32,13 @@ export const FIRST_WAVE_AUTO = [
   "nationwide",
 ] as const;
 
-/** Locked Flood markets (2026-09-10). Not Hartford. Skip NFIP Direct unless added later. */
+/** Locked Flood markets (2026-09-10; NFIP→Flow Flood 2026-09-10 eve). Not Hartford. */
 export const FIRST_WAVE_FLOOD = [
   "beyondFloods",
   "neptune",
   "selective",
   "wright",
-  "nfip",
+  "flowFlood",
 ] as const;
 
 const HOME_NAME_ALIASES: Record<(typeof FIRST_WAVE_HOME)[number], string[]> = {
@@ -73,7 +73,7 @@ export const FLOOD_NAME_ALIASES: Record<(typeof FIRST_WAVE_FLOOD)[number], strin
   neptune: ["neptune"],
   selective: ["selective"],
   wright: ["wright"],
-  nfip: ["nfip"],
+  flowFlood: ["flow flood", "flowflood"],
 };
 
 function aliasesForLine(dealLine: string): Record<string, string[]> {
@@ -105,8 +105,6 @@ export function firstWaveRank(
 
   const name = carrierName.toLowerCase();
   const nameHit = keys.findIndex((key) => {
-    // Skip NFIP Direct unless that key is added to FIRST_WAVE_FLOOD later.
-    if (key === "nfip" && name.includes("nfip direct")) return false;
     const labels = aliases[key] ?? [key.toLowerCase()];
     return labels.some((label) => name.includes(label));
   });

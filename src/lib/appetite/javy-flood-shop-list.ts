@@ -10,10 +10,10 @@ export const JAVY_FLOOD_SHOP_NAMES = [
   "Neptune",
   "Selective",
   "Wright",
-  "NFIP",
+  "Flow Flood",
 ] as const;
 
-/** Resolve desk carrier rows to first-wave Flood order (name aliases). Skips missing / NFIP Direct. */
+/** Resolve desk carrier rows to first-wave Flood order (name aliases). Skips missing. */
 export function matchFloodShopCarriers<T extends { id: string; name: string }>(
   rows: T[],
 ): T[] {
@@ -24,7 +24,6 @@ export function matchFloodShopCarriers<T extends { id: string; name: string }>(
     const hit = rows.find((row) => {
       if (used.has(row.id)) return false;
       const name = row.name.toLowerCase();
-      if (key === "nfip" && name.includes("nfip direct")) return false;
       return labels.some((label) => name.includes(label));
     });
     if (hit) {
