@@ -17,6 +17,7 @@ import {
   USAGE_OPTIONS,
   WIND_HAIL_DEDUCTIBLE_OPTIONS,
   YES_NO_OPTIONS,
+  AUTO_INCIDENT_COUNT_OPTIONS,
   applyMasterSheetDefaults,
 } from "./sheet-defaults";
 
@@ -224,8 +225,32 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "driver_2_name", label: "Driver 2 name", group: "Drivers" },
   { key: "driver_2_dob", label: "Driver 2 DOB", group: "Drivers" },
   { key: "driver_2_license", label: "Driver 2 license", group: "Drivers" },
-  { key: "accidents_3yr", label: "Accidents last 3 years", group: "Drivers", input: "number" },
-  { key: "violations_3yr", label: "Violations last 3 years", group: "Drivers", input: "number" },
+  {
+    key: "accidents_3yr",
+    label: "Accidents last 3 years",
+    group: "Driving record",
+    input: "select",
+    options: [...AUTO_INCIDENT_COUNT_OPTIONS],
+  },
+  {
+    key: "violations_3yr",
+    label: "Violations last 3 years",
+    group: "Driving record",
+    input: "select",
+    options: [...AUTO_INCIDENT_COUNT_OPTIONS],
+  },
+  {
+    key: "clean_record",
+    label: "Clean record (no reportable accidents/violations)?",
+    group: "Driving record",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "incident_details",
+    label: "Incident details (if any)",
+    group: "Driving record",
+  },
   { key: "liability_bi", label: "BI limits", group: "Coverages" },
   { key: "liability_pd", label: "PD limit", group: "Coverages" },
   { key: "um_uim", label: "UM / UIM", group: "Coverages" },

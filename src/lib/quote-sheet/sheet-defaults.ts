@@ -11,6 +11,9 @@ export const SHEET_DEFAULT_SOURCE_LABEL = "default";
 /** Yes/no picklist options shared by protection / hazard / dwelling flags. */
 export const YES_NO_OPTIONS = ["yes", "no"] as const;
 
+/** Accidents / violations count last 3 years (Auto driving record — Javy 2026-09-10). */
+export const AUTO_INCIDENT_COUNT_OPTIONS = ["None", "1", "2", "3+"] as const;
+
 /** Months occupied — three desk buckets (Javy 2026-09-09). */
 export const MONTHS_OCCUPIED_OPTIONS = [
   "0 to 3 months",
