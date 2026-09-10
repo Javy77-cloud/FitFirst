@@ -41,7 +41,7 @@ export default async function FieldBuilderPage({
       </p>
       <ModuleLayoutNav current={module} />
       <FieldBuilder
-        key={module}
+        key={`${module}:${line}:${layoutContentScore(layout)}`}
         module={module}
         line={line}
         initialLayout={layout}

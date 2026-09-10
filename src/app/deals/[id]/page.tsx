@@ -47,7 +47,7 @@ import {
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
-import { listDealFieldDefs, loadLayoutForModule, loadRecordValues } from "@/lib/custom-fields/store";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
@@ -89,7 +89,7 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealLayout, dealFields, dealValues, deskLineSettings] =
+  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledMacrosFor("deals"),
@@ -99,11 +99,12 @@ export default async function DealPage({
       listCarriers(),
       listQuoteLogs(),
       loadDealMotivationStats(),
-      loadLayoutForModule("deals").catch(() => null),
-      listDealFieldDefs().catch(() => []),
-      loadRecordValues(deal.id).catch(() => ({}) as Record<string, string>),
+      loadModuleLayoutBundle("deals", deal.id, deal.lineOfBusiness).catch(() => null),
       loadDeskLineSettings().catch(() => null),
     ]);
+  const dealLayout = dealLayoutBundle?.layout ?? null;
+  const dealFields = dealLayoutBundle?.fields ?? [];
+  const dealValues = dealLayoutBundle?.stored ?? {};
   const context = await loadRecordContext({
     dealId: deal.id,
     leadId: deal.leadId,
@@ -308,7 +309,7 @@ export default async function DealPage({
                         dealId={deal.id}
                         line={deal.lineOfBusiness}
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
-                        fields={resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
+                        fields={dealFields.length ? dealFields : resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
                         values={mergeDealSystemValues(deal, lead, dealValues, dealFields)}
                         pipelineFamily={pipelineFamilyFromDeal({
                           lineOfBusiness: deal.lineOfBusiness,

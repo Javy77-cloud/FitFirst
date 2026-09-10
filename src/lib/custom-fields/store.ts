@@ -387,10 +387,15 @@ export async function writeCarriedLeadValues(
   await writeRecordValues(dealId, values);
 }
 
-export async function loadModuleLayoutBundle(module: FieldLayoutModule, recordId?: string) {
-  await ensureFieldsForModule(module).catch(() => null);
+export async function loadModuleLayoutBundle(
+  module: FieldLayoutModule,
+  recordId?: string,
+  line = "HO",
+) {
+  // Tip sep7gy: same ensure + layout pick as Edit Layout (line-aware for deals).
+  await ensureFieldsForModule(module, line).catch(() => null);
   const [layout, fields, stored] = await Promise.all([
-    loadLayoutForModule(module),
+    loadLayoutForModule(module, line),
     listFieldDefs(module),
     recordId ? loadRecordValues(recordId, module) : Promise.resolve({} as Record<string, string>),
   ]);

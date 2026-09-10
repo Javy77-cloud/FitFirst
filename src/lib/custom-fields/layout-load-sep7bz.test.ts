@@ -56,7 +56,7 @@ describe("sep7bz open existing layout + live form matches builder", () => {
     expect(store).toMatch(/loadSavedLayoutRows/);
     expect(store).toMatch(/if \(rows\.length === 0\)/);
     expect(store).not.toMatch(/if \(module === "deals"\) return loadLayoutForLine/);
-    expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/key=\{module\}/);
+    expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/key=\{\`\$\{module\}:\$\{line\}/);
     expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/resolveLayoutFields/);
     expect(source("src/components/custom-fields/field-builder.tsx")).toMatch(/data-ff-existing-layout/);
     expect(source("src/components/custom-fields/field-builder.tsx")).toMatch(/humanizeFieldKey/);
@@ -64,7 +64,7 @@ describe("sep7bz open existing layout + live form matches builder", () => {
   });
 
   it("renders the saved module layout on each CRM record form", () => {
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/loadLayoutForModule\("deals"\)/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/loadModuleLayoutBundle\("deals"/);
     expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/loadLayoutForLine\(deal\.lineOfBusiness\)/);
     expect(source("src/app/leads/[id]/page.tsx")).toMatch(/loadModuleLayoutBundle\("leads"/);
     expect(source("src/app/leads/[id]/page.tsx")).toMatch(/RecordLayoutFields/);
