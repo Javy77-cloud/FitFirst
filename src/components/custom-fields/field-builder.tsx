@@ -402,12 +402,19 @@ export function FieldBuilder({
     setLayout((current) => removeFieldFromLayout(current, key));
     setFields((current) => current.filter((field) => field.key !== key));
     if (dialog?.key === key) setDialog(null);
-    // Persist immediately so Remove is not draft-only until Save.
+  }
+
+  async function persistRemoveField(key: string) {
+    removeField(key);
     const form = new FormData();
     form.set("key", key);
     form.set("line", line);
     form.set("module", module);
-    void deleteDealLayoutField(form);
+    try {
+      await deleteDealLayoutField(form);
+    } catch {
+      // redirect() from flashAction throws; treat as success
+    }
   }
 
   return (
@@ -588,7 +595,7 @@ export function FieldBuilder({
                           onRequired={() => patchField(key, { required: !field.required })}
                           onPermissions={() => setDialog({ kind: "permissions", key })}
                           onProperties={() => setDialog({ kind: "properties", key })}
-                          onRemove={() => removeField(key)}
+                          onRemove={() => void persistRemoveField(key)}
                         />
                       </div>
                     );
@@ -740,50 +747,68 @@ function FieldRowMenu({
   onRemove: () => void;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-navy"
-            aria-label={`Field actions for ${field.label}`}
-            data-ff-field-menu={field.key}
-            onPointerDown={(event) => event.stopPropagation()}
-            onMouseDown={(event) => event.stopPropagation()}
-          />
-        }
+    <div className="flex shrink-0 items-center gap-0.5" data-ff-field-actions={field.key}>
+      <button
+        type="button"
+        className="inline-flex size-7 items-center justify-center rounded-md text-destructive hover:bg-destructive/10"
+        aria-label={`Remove ${field.label}`}
+        data-ff-field-remove={field.key}
+        title="Remove field"
+        onPointerDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onRemove();
+        }}
       >
-        <MoreHorizontal className="size-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44" data-ff-field-menu-items={field.key}>
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            data-ff-field-menu-item="required"
-            data-ff-field-required={field.key}
-            onClick={onRequired}
-          >
-            Mark as required
-            {field.required ? <span className="ml-auto text-[11px] text-muted-foreground">On</span> : null}
-          </DropdownMenuItem>
-          <DropdownMenuItem data-ff-field-menu-item="permissions" onClick={onPermissions}>
-            Set permissions
-          </DropdownMenuItem>
-          <DropdownMenuItem data-ff-field-menu-item="properties" onClick={onProperties}>
-            Edit properties
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            data-ff-field-menu-item="remove"
-            variant="destructive"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              onRemove();
-            }}
-          >
-            Remove field
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <Trash2 className="size-3.5" />
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-navy"
+              aria-label={`Field actions for ${field.label}`}
+              data-ff-field-menu={field.key}
+              onPointerDown={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+            />
+          }
+        >
+          <MoreHorizontal className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44" data-ff-field-menu-items={field.key}>
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              data-ff-field-menu-item="required"
+              data-ff-field-required={field.key}
+              onClick={onRequired}
+            >
+              Mark as required
+              {field.required ? <span className="ml-auto text-[11px] text-muted-foreground">On</span> : null}
+            </DropdownMenuItem>
+            <DropdownMenuItem data-ff-field-menu-item="permissions" onClick={onPermissions}>
+              Set permissions
+            </DropdownMenuItem>
+            <DropdownMenuItem data-ff-field-menu-item="properties" onClick={onProperties}>
+              Edit properties
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              data-ff-field-menu-item="remove"
+              variant="destructive"
+              onClick={(event) => {
+                event.preventDefault();
+                onRemove();
+              }}
+            >
+              Remove field
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 

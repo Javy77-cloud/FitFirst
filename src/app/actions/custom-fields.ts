@@ -20,6 +20,7 @@ import {
   writeRecordValues,
 } from "@/lib/custom-fields/store";
 import {
+  fieldBuilderHref,
   fieldLayoutListHref,
   parseLayoutModule,
   type FieldLayoutModule,
@@ -129,9 +130,9 @@ export async function saveDealFieldLayout(formData: FormData) {
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
   if (module === "deals") {
-    flashAction("/settings/field-builder", "layout-saved");
+    flashAction(fieldBuilderHref(module, line), "layout-saved");
   } else {
-    flashAction(fieldLayoutListHref(module), "home-layout-saved");
+    flashAction(fieldBuilderHref(module, line), "layout-saved");
   }
 }
 
@@ -211,18 +212,27 @@ export async function deleteDealLayoutField(formData: FormData) {
   const module = moduleFrom(formData);
   const key = str(formData, "key");
   if (!key) return;
-  // Tip sep7gt: Remove field persists immediately (not draft-only until Save).
+  // Tip sep7gu: Remove = layout-only first. Catalog delete is best-effort
+  // (system/CORE keys get re-ensured; FK errors must not undo layout remove).
   if (module === "deals") {
     const layout = removeFieldFromLayout(await loadLayoutForLine(line), key);
     await saveLayoutForEveryLine(layout);
-    await deleteFieldDef(key, "deals");
+    try {
+      await deleteFieldDef(key, "deals");
+    } catch {
+      /* layout already saved */
+    }
   } else {
     const layout = removeFieldFromLayout(await loadLayoutForModule(module, line), key);
     await saveLayoutForModule(module, layout);
-    await deleteFieldDef(key, module);
+    try {
+      await deleteFieldDef(key, module);
+    } catch {
+      /* layout already saved */
+    }
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
-  flashAction("/settings/field-builder", "layout-saved");
+  flashAction(fieldBuilderHref(module, line), "layout-saved");
 }
 
 export async function saveDealFieldValues(formData: FormData) {
