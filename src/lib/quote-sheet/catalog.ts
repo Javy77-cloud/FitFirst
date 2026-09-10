@@ -21,6 +21,8 @@ import {
   OCCUPANCY_OPTIONS,
   OWN_RENT_OPTIONS,
   VEHICLE_OWNERSHIP_OPTIONS,
+  VEHICLE_OWNERSHIP_LENGTH_OPTIONS,
+  COMMUTE_DAYS_WEEK_OPTIONS,
   VEHICLE_LIENHOLDER_OPTIONS,
   PRIMARY_HEAT_OPTIONS,
   PRIMARY_PLUMBING_OPTIONS,
@@ -250,6 +252,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     options: [...VEHICLE_OWNERSHIP_OPTIONS],
   },
   {
+    key: "vehicle_ownership_length",
+    label: "Length of ownership",
+    group: "Vehicle",
+    input: "select",
+    options: [...VEHICLE_OWNERSHIP_LENGTH_OPTIONS],
+  },
+  {
     key: "vehicle_lienholder",
     label: "Lienholder",
     group: "Vehicle",
@@ -257,11 +266,23 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     options: [...VEHICLE_LIENHOLDER_OPTIONS],
   },
   {
+    key: "vehicle_lienholder_other",
+    label: "Lienholder (other / custom)",
+    group: "Vehicle",
+  },
+  {
     key: "annual_miles",
     label: "Annual miles",
     group: "Vehicle",
     input: "select",
     options: [...AUTO_ANNUAL_MILES_OPTIONS],
+  },
+  {
+    key: "commute_days_week",
+    label: "Commute days / week",
+    group: "Vehicle",
+    input: "select",
+    options: [...COMMUTE_DAYS_WEEK_OPTIONS],
   },
   {
     key: "rideshare",

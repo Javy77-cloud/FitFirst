@@ -135,6 +135,30 @@ export const OWN_RENT_OPTIONS = ["Own", "Rent"] as const;
 /** Auto vehicle ownership (Javy 2026-09-10). */
 export const VEHICLE_OWNERSHIP_OPTIONS = ["Owned", "Financed", "Leased"] as const;
 
+/** How long owned / financed — Geico-style brackets (Javy 2026-09-10). */
+export const VEHICLE_OWNERSHIP_LENGTH_OPTIONS = [
+  "Less than 1 month",
+  "1–5 months",
+  "6–11 months",
+  "1 year",
+  "2 years",
+  "3 years",
+  "4 years",
+  "5+ years",
+] as const;
+
+/** Commute days per week (0–7) — Auto usage follow-up (Javy 2026-09-10). */
+export const COMMUTE_DAYS_WEEK_OPTIONS = [
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+] as const;
+
 /** Common FL Auto lienholders / lenders (Javy 2026-09-10). */
 export const VEHICLE_LIENHOLDER_OPTIONS = [
   "Acura Financial Services",
@@ -258,6 +282,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // own_rent: leave blank — set per deal (Heather Own on deal sheet).
   // vehicle_ownership / vehicle_N_ownership: leave blank — wait for Javy (no Heather defaults).
   // vehicle_lienholder / vehicle_N_lienholder: leave blank — set per deal (Heather Acura Financial Services).
+  // vehicle_ownership_length / commute_days_week / vehicle_lienholder_other: leave blank until Javy answers.
 };
 
 
