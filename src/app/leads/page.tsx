@@ -131,7 +131,7 @@ export default async function LeadsPage({
       />
       <div className="mb-4 flex flex-wrap gap-2">
         <Link href="/leads/new">
-          <Button type="button" size="sm" variant="outline">
+          <Button type="button" size="sm">
             New lead
           </Button>
         </Link>
