@@ -567,6 +567,16 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "building_sqft", label: "Building square footage", group: "Property", input: "number" },
   { key: "number_of_floors", label: "Number of floors (excl. basement)", group: "Property", input: "number" },
   { key: "construction_type", label: "Construction type", group: "Property", input: "select", options: [...CONSTRUCTION_OPTIONS] },
+  { key: "has_garage", label: "Garage / attached garage", group: "Property", input: "select", options: [...YES_NO_OPTIONS] },
+  {
+    key: "building_type",
+    label: "Building type",
+    group: "Property",
+    input: "select",
+    options: ["Single-family", "Townhouse", "Condo", "2-4 family", "Other"],
+  },
+  { key: "live_over_50_pct", label: "Insured lives in building >50% of year", group: "Property", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "building_description", label: "Building description", group: "Property", input: "textarea" },
   {
     key: "foundation",
     label: "Foundation type",
@@ -598,6 +608,14 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "contents_deductible", label: "Contents deductible", group: "Coverages" },
   { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
   { key: "prior_flood_losses", label: "Any prior flood losses?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "effective_date", label: "Effective date", group: "Current policy" },
+  {
+    key: "effective_date_type",
+    label: "Effective date type",
+    group: "Current policy",
+    input: "select",
+    options: ["New business", "Renewal", "Rewrite", "Other"],
+  },
   {
     key: "flood_quote_reason",
     label: "Why are you requesting this quote?",
