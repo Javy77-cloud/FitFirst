@@ -21,7 +21,7 @@ describe("insurance cascade", () => {
   it("Home subtypes are HO forms; Landlord gets DP; Renters has its own", () => {
     expect(policySubtypesForType("pc", "home").map((s) => s.id)).toEqual(["HO3", "HO5", "HO6"]);
     expect(policySubtypesForType("pc", "landlord").map((s) => s.id)).toEqual(["DP1", "DP3"]);
-    expect(policySubtypesForType("pc", "renters").map((s) => s.id)).toEqual(["RENTERS"]);
+    expect(policySubtypesForType("pc", "renters").map((s) => s.id)).toEqual(["HO4"]);
   });
 
   it("Commercial subtypes are GL/WC/BOP", () => {

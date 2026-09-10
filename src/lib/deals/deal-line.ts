@@ -46,7 +46,7 @@ const PRODUCT_TO_LINE: Record<SheetProduct, ShopLine> = {
 
 const PRODUCT_TO_FORM: Partial<Record<SheetProduct, string>> = {
   homeowners: "HO3",
-  renters: "HO3",
+  renters: "HO4",
   landlord: "DP3",
   auto: "PA",
   motorcycle: "PA",
@@ -65,7 +65,7 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   HO6: "homeowners",
   DP1: "landlord",
   DP3: "landlord",
-  RENTERS: "renters",
+  HO4: "renters",
   PA: "auto",
   RV: "rv",
   UMBRELLA: "umbrella",

@@ -53,7 +53,8 @@ export function quotingUnlockedForDeal(deal: {
 const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
   Home: "HO3",
   Homeowners: "HO3",
-  Renters: "RENTERS",
+  Renters: "HO4",
+  HO4: "HO4",
   Landlord: "DP3",
   Auto: "PA",
   "Personal auto": "PA",

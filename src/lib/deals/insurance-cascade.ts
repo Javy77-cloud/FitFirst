@@ -41,7 +41,7 @@ const FORM_TYPE: Record<QuotingFormId, InsuranceTypeId> = {
   HO6: "home",
   DP1: "landlord",
   DP3: "landlord",
-  RENTERS: "renters",
+  HO4: "renters",
   PA: "auto",
   RV: "rec",
   UMBRELLA: "umbrella",
@@ -55,7 +55,7 @@ const TYPE_FORMS: Record<Exclude<InsuranceTypeId, "life" | "health">, QuotingFor
   // Home / Landlord / Renters subtype lists — Javy refining next; interim seeds below.
   home: ["HO3", "HO5", "HO6"],
   landlord: ["DP1", "DP3"],
-  renters: ["RENTERS"],
+  renters: ["HO4"],
   auto: ["PA"],
   rec: ["RV"],
   flood: ["FLOOD"],
