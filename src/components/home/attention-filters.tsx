@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import {
   ATTENTION_WINDOW_LABEL,
   ATTENTION_WINDOWS,
@@ -21,7 +21,7 @@ export function AttentionFilters({
   ];
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className={FF_CHIP_TAB_GROUP}>
       {chips.map((chip) => {
         const href = chip.id
           ? `${basePath}${basePath.includes("?") ? "&" : "?"}attention=${chip.id}${extra ? `&${extra}` : ""}`
@@ -33,10 +33,8 @@ export function AttentionFilters({
           <Link
             key={chip.label}
             href={href}
-            className={cn(
-              "rounded-md px-2 py-1 text-caption font-semibold",
-              active ? "bg-primary text-primary-foreground" : "bg-secondary text-navy hover:bg-secondary/80",
-            )}
+            className={chipTabClass(active)}
+            data-active={active ? "true" : "false"}
           >
             {chip.label}
           </Link>

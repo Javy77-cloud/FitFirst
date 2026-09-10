@@ -13,6 +13,7 @@ import type { SerializedActivity } from "@/lib/db/queries";
 import { type MeetingType } from "@/lib/meetings/types";
 
 const QC_MEETING_ORDER: MeetingType[] = ["in_office", "in_home", "video"];
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 const KIND_TONE: Record<ActivityKind, string> = {
@@ -61,22 +62,21 @@ function Segmented({
   onChange: (next: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            "h-7 rounded-md px-2 text-[11px] font-medium",
-            value === opt.value
-              ? "bg-primary text-primary-foreground"
-              : "border border-border bg-card text-navy hover:bg-muted",
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
+    <div className={FF_CHIP_TAB_GROUP}>
+      {options.map((opt) => {
+        const selected = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={chipTabClass(selected)}
+            data-active={selected ? "true" : "false"}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

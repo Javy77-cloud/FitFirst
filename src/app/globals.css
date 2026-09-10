@@ -802,12 +802,18 @@ body[data-ff-col-resize] {
   margin-top: 0 !important;
 }
 
-/* Deal SectionTabs: selected Old Glory; idle white + gray box (not black). */
+/* Sitewide chip tabs + deal SectionTabs — Old Glory on / gray idle box.
+   Only force when selected/idle is explicit (data-active / aria) so Tailwind chipTabClass can win otherwise. */
+.ff-chip-tab[data-active="true"],
+.ff-chip-tab[aria-selected="true"],
+.ff-chip-tab[aria-current="page"],
 [role="tablist"] a[role="tab"][aria-selected="true"] {
   background: var(--ff-navy) !important;
   color: #ffffff !important;
   border-color: var(--ff-navy) !important;
 }
+.ff-chip-tab[data-active="false"],
+[role="tablist"] a[role="tab"][aria-selected="false"],
 [role="tablist"] a[role="tab"]:not([aria-selected="true"]) {
   background: #ffffff !important;
   color: #4b5563 !important;

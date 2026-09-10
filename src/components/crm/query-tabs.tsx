@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
 export type QueryTab = {
   id: string;
@@ -33,7 +33,7 @@ export function QueryTabs({
 
   return (
     <div>
-      <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-muted p-1">
+      <div role="tablist" className={FF_CHIP_TAB_GROUP}>
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
           const params = new URLSearchParams();
@@ -50,12 +50,8 @@ export function QueryTabs({
               scroll={false}
               role="tab"
               aria-selected={selected}
-              className={cn(
-                "rounded-sm px-2.5 py-1 text-sm font-medium",
-                selected
-                  ? "bg-card text-navy shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              data-active={selected ? "true" : "false"}
+              className={chipTabClass(selected)}
             >
               {tab.label}
             </Link>

@@ -5,7 +5,7 @@ import {
   parseAgentDealTab,
   type AgentDealTab,
 } from "@/lib/deals/tabs";
-import { cn } from "@/lib/utils";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
 export type DealTabId = AgentDealTab;
 
@@ -26,7 +26,7 @@ export function DealTabs({
     <div>
       <nav
         aria-label="Deal sections"
-        className="inline-flex flex-wrap gap-1.5"
+        className={FF_CHIP_TAB_GROUP}
       >
         {AGENT_DEAL_TABS.map((tab) => {
           const selected = tab === active;
@@ -36,12 +36,7 @@ export function DealTabs({
               href={`/deals/${dealId}?tab=${tab}`}
               scroll={false}
               prefetch
-              className={cn(
-                "rounded-sm px-2.5 py-1 text-xs font-medium border",
-                selected
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-white text-gray-600 border-gray-400 hover:bg-gray-50",
-              )}
+              className={chipTabClass(selected)}
             >
               {AGENT_DEAL_TAB_LABELS[tab]}
             </Link>

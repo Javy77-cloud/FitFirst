@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
 import {
   COMMISSION_STATUS_TAB_LABEL,
   COMMISSION_STATUS_TABS,
   commissionsHref,
   type CommissionStatusTab,
 } from "@/lib/commissions/filters";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 export function CommissionStatusTabs({
@@ -24,18 +24,24 @@ export function CommissionStatusTabs({
   allLabel?: string;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-1" role="tablist" aria-label="Commission status">
-      {COMMISSION_STATUS_TABS.map((value) => (
-        <Link
-          key={value}
-          href={commissionsHref({ status: value, family, sub, range })}
-          className={cn(buttonVariants({ size: "sm", variant: status === value ? "default" : "outline" }))}
-          aria-current={status === value ? "page" : undefined}
-        >
-          {value === "all" ? allLabel : COMMISSION_STATUS_TAB_LABEL[value]}
-          <span className="ml-1 text-[11px] opacity-80">{counts[value]}</span>
-        </Link>
-      ))}
+    <div className={cn("mb-4", FF_CHIP_TAB_GROUP)} role="tablist" aria-label="Commission status">
+      {COMMISSION_STATUS_TABS.map((value) => {
+        const selected = status === value;
+        return (
+          <Link
+            key={value}
+            href={commissionsHref({ status: value, family, sub, range })}
+            className={chipTabClass(selected)}
+            role="tab"
+            aria-selected={selected}
+            aria-current={selected ? "page" : undefined}
+            data-active={selected ? "true" : "false"}
+          >
+            {value === "all" ? allLabel : COMMISSION_STATUS_TAB_LABEL[value]}
+            <span className="ml-1 text-[11px] opacity-80">{counts[value]}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 }

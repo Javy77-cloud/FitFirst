@@ -8,6 +8,7 @@ import {
   pipelineTabLabel,
   type PipelineViewId,
 } from "@/lib/wire/pipeline";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
 type BoardTab = { slug: string; name: string };
 
@@ -29,9 +30,7 @@ const PC_SUBS = [
 ] as const;
 
 function chipClass(on: boolean) {
-  return on
-    ? "rounded-md bg-primary px-2.5 py-1 text-primary-foreground"
-    : "rounded-md border border-border bg-card px-2.5 py-1 text-navy hover:border-primary";
+  return chipTabClass(on);
 }
 
 export function DealWorkspaceBar({
@@ -85,8 +84,8 @@ export function DealWorkspaceBar({
   return (
     <div className="mb-1 space-y-2">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="deal-line-filters">
-          <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)}>
+        <div className={FF_CHIP_TAB_GROUP} data-testid="deal-line-filters">
+          <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)} data-active={!pipeline ? "true" : "false"}>
             All
           </Link>
           {left.map((item) => (
@@ -100,14 +99,14 @@ export function DealWorkspaceBar({
                 healthSub: item.slug === "health" ? healthSub : null,
                 pcSub: item.slug === "p-c" ? pcSub : null,
               })}
-              className={chipClass(item.slug === pipeline)}
+              className={chipClass(item.slug === pipeline)} data-active={item.slug === pipeline ? "true" : "false"}
             >
               {pipelineTabLabel(item)}
             </Link>
           ))}
         </div>
         {right.length > 0 ? <span className="mx-2 h-6 w-px self-center bg-border" aria-hidden /> : null}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2" data-testid="deal-closed-filters">
+        <div className={FF_CHIP_TAB_GROUP} data-testid="deal-closed-filters">
           {right.map((item) => (
             <Link
               key={item.slug}
@@ -119,13 +118,13 @@ export function DealWorkspaceBar({
                 healthSub: null,
                 pcSub: null,
               })}
-              className={chipClass(item.slug === pipeline)}
+              className={chipClass(item.slug === pipeline)} data-active={item.slug === pipeline ? "true" : "false"}
             >
               {pipelineTabLabel(item)}
             </Link>
           ))}
         </div>
-        <span className="ml-auto flex items-center gap-3" data-testid="deal-pipeline-views" aria-label="List Grid Board Funnel">
+        <span className={`ml-auto ${FF_CHIP_TAB_GROUP}`} data-testid="deal-pipeline-views" aria-label="List Grid Board Funnel">
           {VIEWS.map(([id, label]) => (
             <Link
               key={id}
@@ -135,7 +134,8 @@ export function DealWorkspaceBar({
                 view: id,
                 stage: isPipelineSheetView(id) ? stage : null,
               })}
-              className={parsedView === id ? "font-semibold text-primary" : "text-muted-foreground"}
+              className={chipTabClass(parsedView === id)}
+              data-active={parsedView === id ? "true" : "false"}
             >
               {label}
             </Link>
@@ -144,7 +144,7 @@ export function DealWorkspaceBar({
         </span>
       </div>
       {subtypeChips.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm" aria-label="Subtype">
+        <div className={FF_CHIP_TAB_GROUP} aria-label="Subtype">
           {subtypeChips.map((item) => {
             const on =
               item.key === "pcSub"
@@ -163,7 +163,7 @@ export function DealWorkspaceBar({
                   healthSub: item.key === "healthSub" && !on ? item.id : null,
                   lifeSub: item.key === "lifeSub" && !on ? item.id : null,
                 })}
-                className={chipClass(on)}
+                className={chipClass(on)} data-active={on ? "true" : "false"}
               >
                 {item.label}
               </Link>

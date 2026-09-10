@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -10,7 +11,7 @@ const TABS = [
 
 export function LogsTabs({ current }: { current: "appetite" | "fill-learning" | "synonym-candidates" | "compliance" }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-1">
+    <div className={cn("mb-4", FF_CHIP_TAB_GROUP)}>
       {TABS.map((tab) => {
         const active =
           (current === "appetite" && tab.href === "/carriers/logs") ||
@@ -21,10 +22,8 @@ export function LogsTabs({ current }: { current: "appetite" | "fill-learning" | 
           <Link
             key={tab.href}
             href={tab.href}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-sm",
-              active ? "bg-primary text-primary-foreground" : "bg-secondary text-navy hover:bg-secondary/70",
-            )}
+            className={chipTabClass(active)}
+            data-active={active ? "true" : "false"}
           >
             {tab.label}
           </Link>

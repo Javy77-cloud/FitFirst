@@ -19,6 +19,7 @@ import {
   FILL_FROM_DOCS_LABEL,
   SEND_FIELD_SHEET_HINT,
 } from "@/lib/quote-sheet/toolbar";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 export function QuoteSheetPanel({
@@ -73,7 +74,7 @@ export function QuoteSheetPanel({
           </div>
         </div>
 
-        <nav aria-label="Quote Sheet lines" className="mt-4 flex flex-wrap items-center gap-1">
+        <nav aria-label="Quote Sheet lines" className={`mt-4 ${FF_CHIP_TAB_GROUP}`}>
           {tabs.map((item) => {
             const selected = item === line;
             return (
@@ -81,12 +82,8 @@ export function QuoteSheetPanel({
                 key={item}
                 href={`/deals/${dealId}?tab=quote-sheet&line=${item}`}
                 scroll={false}
-                className={cn(
-                  "rounded-sm px-2.5 py-1 text-sm font-medium",
-                  selected
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground",
-                )}
+                className={chipTabClass(selected)}
+                data-active={selected ? "true" : "false"}
               >
                 {SHOP_LINE_LABELS[item]}
               </Link>

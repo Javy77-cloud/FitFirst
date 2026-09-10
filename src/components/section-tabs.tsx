@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 export type SectionTab = {
@@ -57,21 +58,12 @@ export function SectionTabs({
     return `?${query.toString()}`;
   }
 
-  function tabClass(selected: boolean) {
-    return cn(
-      "rounded-sm px-2.5 py-1 text-xs font-medium border",
-      selected
-        ? "bg-primary text-primary-foreground border-primary"
-        : "bg-white text-gray-600 border-gray-400 hover:bg-gray-50",
-    );
-  }
-
   const tabList = (
     <div className="flex flex-wrap items-center justify-between gap-2" data-ff-deal-tab-row="">
-      <div role="tablist" className="inline-flex flex-wrap gap-1.5">
+      <div role="tablist" className={FF_CHIP_TAB_GROUP}>
         {tabs.map((tab) => {
           const selected = tab.id === current.id;
-          const className = tabClass(selected);
+          const className = chipTabClass(selected);
           if (tab.href) {
             return (
               <Link key={tab.id} href={tab.href} role="tab" aria-selected={selected} className={className}>
