@@ -9,6 +9,7 @@ import { GLOBAL_LIST_KEYS, type GlobalListKey } from "@/lib/desk/global-lists";
 import { currentDeskSession } from "@/lib/auth/session";
 import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
 import { flashAction } from "@/lib/flash-action";
+import { syncDealSellingAgencyFromGlobalLists } from "@/lib/custom-fields/sync-deal-selling-agency";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -46,8 +47,10 @@ export async function addGlobalListItem(formData: FormData) {
     color: colorFrom(formData),
     active: true,
   });
+  if (listKey === "selling_agency") await syncDealSellingAgencyFromGlobalLists();
   revalidatePath("/settings/lists");
   revalidatePath("/policies");
+  revalidatePath("/settings/field-builder");
 }
 
 export async function updateGlobalListItemColor(formData: FormData) {
@@ -70,11 +73,14 @@ export async function deleteGlobalListItem(formData: FormData) {
   if (!id) return;
   // Soft-delete: ensureDefaultGlobalLists keys off slug presence, so a hard
   // delete of a seed value (e.g. Monthly) would resurrect on the next page load.
-  await db
+  const [row] = await db
     .update(globalLists)
     .set({ active: false, updatedAt: new Date() })
-    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
+    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)))
+    .returning({ listKey: globalLists.listKey });
+  if (row?.listKey === "selling_agency") await syncDealSellingAgencyFromGlobalLists();
   revalidatePath("/settings/lists");
+  revalidatePath("/settings/field-builder");
   flashAction("/settings/lists", "list-item-deleted");
 }
 

@@ -4,13 +4,10 @@ import { DEAL_LINE_OPTIONS } from "@/lib/deals/deal-line";
 export const STARTER_PICKLIST_US_STATES = "US states";
 export const STARTER_PICKLIST_LINES = "Lines of business";
 export const STARTER_PICKLIST_CARRIERS = "Common carriers";
-export const STARTER_PICKLIST_SELLING = "Selling agencies";
-
 export const STARTER_PICKLIST_NAMES = [
   STARTER_PICKLIST_US_STATES,
   STARTER_PICKLIST_LINES,
   STARTER_PICKLIST_CARRIERS,
-  STARTER_PICKLIST_SELLING,
 ] as const;
 
 /** 50 states + DC. Code first so a State field can store FL. */
@@ -116,10 +113,6 @@ export const STARTER_FIELD_PICKLISTS: StarterFieldPicklist[] = [
   { name: STARTER_PICKLIST_US_STATES, options: US_STATE_OPTIONS },
   { name: STARTER_PICKLIST_LINES, options: LINE_OF_BUSINESS_OPTIONS },
   { name: STARTER_PICKLIST_CARRIERS, options: COMMON_CARRIER_OPTIONS },
-  {
-    name: STARTER_PICKLIST_SELLING,
-    options: ["AFA", "Agentero", "Agility", "BackNine", "First Connect"],
-  },
 ];
 
 export function starterPicklistByName(name: string): StarterFieldPicklist | undefined {

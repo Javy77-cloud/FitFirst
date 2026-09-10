@@ -29,7 +29,6 @@ import {
   STARTER_FIELD_PICKLISTS,
   STARTER_PICKLIST_CARRIERS,
   STARTER_PICKLIST_LINES,
-  STARTER_PICKLIST_SELLING,
   STARTER_PICKLIST_US_STATES,
   US_STATE_OPTIONS,
   missingStarterPicklistNames,
@@ -233,8 +232,7 @@ describe("deal field builder", () => {
       STARTER_PICKLIST_US_STATES,
       STARTER_PICKLIST_LINES,
       STARTER_PICKLIST_CARRIERS,
-      STARTER_PICKLIST_SELLING,
-    ]);
+        ]);
     expect(US_STATE_OPTIONS).toHaveLength(51);
     expect(US_STATE_OPTIONS).toContain("FL — Florida");
     expect(LINE_OF_BUSINESS_OPTIONS).toEqual(expect.arrayContaining(["Homeowners", "Auto", "Flood", "Workers Comp"]));
@@ -242,7 +240,7 @@ describe("deal field builder", () => {
     expect(LINE_OF_BUSINESS_OPTIONS).not.toContain("Workers' Comp");
     expect(COMMON_CARRIER_OPTIONS).toEqual(expect.arrayContaining(["Tailrow", "Progressive", "Citizens"]));
     expect(missingStarterPicklistNames([])).toEqual([...STARTER_FIELD_PICKLISTS.map((list) => list.name)]);
-    expect(missingStarterPicklistNames(["US states", "Lines of business", "Common carriers", "Selling agencies"])).toEqual([]);
+    expect(missingStarterPicklistNames(["US states", "Lines of business", "Common carriers"])).toEqual([]);
     expect(formatCurrencyDisplay("321000")).toBe("321,000.00");
     expect(parseNumericInput("$321,000.00")).toBe("321000");
   });
