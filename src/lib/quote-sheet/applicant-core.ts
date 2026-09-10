@@ -18,6 +18,19 @@ export const MARITAL_STATUS_OPTIONS = [
   "Separated",
 ] as const;
 
+/** Named-insured / applicant entity — common P&C application set. */
+export const ENTITY_TYPE_OPTIONS = [
+  "Individual",
+  "Joint",
+  "LLC",
+  "Corporation",
+  "Partnership",
+  "Trust",
+  "Estate",
+  "Association",
+  "Other",
+] as const;
+
 /** Co-applicant relationship to the named insured / applicant. */
 export const RELATIONSHIP_TO_INSURED_OPTIONS = [
   "Spouse",
@@ -138,7 +151,14 @@ export const APPLICANT_CORE_FIELDS: QuoteFieldDef[] = [
     options: [...OCCUPATION_OPTIONS],
     extractKey: "applicant_occupation",
   },
-  { key: "entity_type", label: "Entity type", group: "Applicant", extractKey: "entity_type" },
+  {
+    key: "entity_type",
+    label: "Entity type",
+    group: "Applicant",
+    input: "select",
+    options: [...ENTITY_TYPE_OPTIONS],
+    extractKey: "entity_type",
+  },
 ];
 
 /**

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   APPLICANT_CORE_FIELDS,
   CO_APPLICANT_FIELDS,
+  ENTITY_TYPE_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
   RELATIONSHIP_TO_INSURED_OPTIONS,
@@ -15,6 +16,19 @@ describe("applicant / co-applicant household", () => {
     const keys = APPLICANT_CORE_FIELDS.map((f) => f.key);
     expect(keys).toContain("applicant_marital_status");
     expect(keys).toContain("applicant_occupation");
+    expect(keys).toContain("entity_type");
+    expect([...ENTITY_TYPE_OPTIONS]).toEqual([
+      "Individual",
+      "Joint",
+      "LLC",
+      "Corporation",
+      "Partnership",
+      "Trust",
+      "Estate",
+      "Association",
+      "Other",
+    ]);
+    expect(APPLICANT_CORE_FIELDS.find((f) => f.key === "entity_type")?.input).toBe("select");
     expect([...MARITAL_STATUS_OPTIONS]).toEqual([
       "Single",
       "Married",
