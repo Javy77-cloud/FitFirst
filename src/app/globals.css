@@ -193,7 +193,7 @@
   overflow: visible;
   margin-bottom: 0 !important;
   /* Tip sep7hw: empty air UNDER the chips (not a sibling spacer). ~2+ lines. */
-  padding-bottom: 4.5rem !important;
+  padding-bottom: 2.5rem !important;
   transform: none !important;
 }
 .deal-activity-list-spacer {
