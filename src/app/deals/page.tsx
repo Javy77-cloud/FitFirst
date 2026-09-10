@@ -162,6 +162,9 @@ export default async function DealsPage({
           flexWrap: "nowrap",
           alignItems: "center",
           gap: 4,
+          marginBottom: 0,
+          paddingBottom: "4.5rem",
+          transform: "none",
         }}
       >
         <div

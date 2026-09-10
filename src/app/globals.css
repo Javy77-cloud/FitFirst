@@ -191,19 +191,17 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
+  /* Tip sep7hw: empty air UNDER the chips (not a sibling spacer). ~2+ lines. */
+  padding-bottom: 4.5rem !important;
+  transform: none !important;
 }
-/* Tip sep7hv: hard spacer — margins kept collapsing against the list card. */
 .deal-activity-list-spacer {
-  display: block !important;
-  height: 3rem !important;
-  min-height: 3rem !important;
-  width: 100%;
-  flex-shrink: 0;
-  pointer-events: none;
+  display: none !important;
 }
 .deal-list-below-activity {
-  margin-top: 0;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 .deal-today-slot {
   flex: 1;
