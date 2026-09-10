@@ -578,9 +578,9 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
     options: ["Primary / Owner", "Secondary", "Seasonal", "Rental", "Vacant", "Other"],
   },
   { key: "year_built", label: "Year built", group: "Property", input: "number", extractKey: "year_built" },
-  { key: "building_sqft", label: "Building square footage", group: "Property", input: "number" },
-  { key: "number_of_floors", label: "Number of floors (excl. basement)", group: "Property", input: "number" },
-  { key: "construction_type", label: "Construction type", group: "Property", input: "select", options: [...CONSTRUCTION_OPTIONS] },
+  { key: "building_sqft", label: "Building square footage", group: "Property", input: "number", extractKey: "square_feet" },
+  { key: "number_of_floors", label: "Number of floors (excl. basement)", group: "Property", input: "number", extractKey: "stories" },
+  { key: "construction_type", label: "Construction type", group: "Property", input: "select", options: [...CONSTRUCTION_OPTIONS], extractKey: "construction" },
   { key: "has_garage", label: "Garage / attached garage", group: "Property", input: "select", options: [...YES_NO_OPTIONS] },
   {
     key: "building_type",
@@ -900,7 +900,26 @@ const EXTRACT_ALIASES: Record<string, string> = {
   mortgagee: "mortgagee_name",
 };
 
+/** Home-style property keys → Flood catalog keys (GetParcel / county PA emit Home names). */
+const LINE_SHEET_KEY_ALIASES: Partial<Record<ShopLine, Record<string, string>>> = {
+  flood: {
+    construction: "construction_type",
+    square_feet: "building_sqft",
+    living_area: "building_sqft",
+    square_footage: "building_sqft",
+    stories: "number_of_floors",
+    num_stories: "number_of_floors",
+    number_of_stories: "number_of_floors",
+    floors: "number_of_floors",
+  },
+};
+
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {
+  const lineAlias = LINE_SHEET_KEY_ALIASES[line]?.[extractKey];
+  if (lineAlias) {
+    const fields = fieldsForLine(line);
+    if (fields.some((field) => field.key === lineAlias)) return lineAlias;
+  }
   const aliased = EXTRACT_ALIASES[extractKey] ?? extractKey;
   const fields = fieldsForLine(line);
   const exact = fields.find((field) => field.key === extractKey || field.key === aliased);

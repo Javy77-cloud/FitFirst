@@ -1,6 +1,6 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
-import { extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
+import { extractKeyToSheetKey, fieldsForLine } from "@/lib/quote-sheet/catalog";
 import { fieldIsBlank, neverCheckCoverageA, type ApplyFillResult } from "@/lib/quote-sheet/apply";
 import {
   appendRecordsCheck,
@@ -31,9 +31,11 @@ export function applyPropertyRecordsToSheet(
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
 
+  const catalogKeys = new Set(fieldsForLine(line).map((field) => field.key));
+
   for (const fact of facts) {
     const key = extractKeyToSheetKey(line, fact.sheetKey || fact.fieldKey) ?? fact.sheetKey ?? fact.fieldKey;
-    if (!key) continue;
+    if (!key || !catalogKeys.has(key)) continue;
     if (key === "coverage_a" || fact.kind === "zestimate" || fact.kind === "list_price") {
       skippedKeys.push(key);
       continue;

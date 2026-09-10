@@ -93,3 +93,50 @@ describe("Fill from property records — empty-only apply", () => {
     expect(result.values.named_insured.source).toBe(PROPERTY_RECORDS_SOURCE);
   });
 });
+
+describe("Flood property fill — Home key aliases", () => {
+  it("maps construction / sqft / stories onto Flood catalog keys", () => {
+    const facts = factsFromFloridaParcel(SAMPLE_HIT);
+    const result = applyPropertyRecordsToSheet("flood", emptySheetValues("flood"), facts);
+    expect(result.values.construction_type.value).toBe("masonry");
+    expect(result.values.building_sqft.value).toBe("1840");
+    expect(result.values.number_of_floors.value).toBe("1");
+    expect(result.values.year_built.value).toBe("1982");
+    expect(result.values.county.value).toBe("Hillsborough");
+    expect(result.values.parcel_id.value).toBe("192829-5040-001000-0010");
+    expect(result.values.assessed_value.value).toBe("412300");
+    expect(result.filledKeys).toEqual(
+      expect.arrayContaining([
+        "construction_type",
+        "building_sqft",
+        "number_of_floors",
+        "year_built",
+        "county",
+        "parcel_id",
+        "assessed_value",
+      ]),
+    );
+    // Home-only keys must not land as orphans on Flood
+    expect(result.values.construction).toBeUndefined();
+    expect(result.values.square_feet).toBeUndefined();
+    expect(result.values.stories).toBeUndefined();
+    expect(result.values.roof_covering).toBeUndefined();
+    expect(result.values.named_insured).toBeUndefined();
+    expect(result.values.applicant_name.value).toBe("SMITH JOHN A");
+  });
+
+  it("empty-only: keeps existing Flood construction_type", () => {
+    const existing = emptySheetValues("flood");
+    existing.construction_type = {
+      value: "Frame-Stucco",
+      status: "confirmed",
+      source: "manual",
+      sourceLabel: "agent",
+    };
+    const result = applyPropertyRecordsToSheet("flood", existing, factsFromFloridaParcel(SAMPLE_HIT));
+    expect(result.values.construction_type.value).toBe("Frame-Stucco");
+    expect(result.skippedKeys).toContain("construction_type");
+    expect(result.filledKeys).toContain("building_sqft");
+  });
+});
+
