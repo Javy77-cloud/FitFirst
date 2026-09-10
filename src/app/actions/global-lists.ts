@@ -68,8 +68,11 @@ export async function deleteGlobalListItem(formData: FormData) {
   if (!session.isAdmin) return;
   const id = str(formData, "id");
   if (!id) return;
+  // Soft-delete: ensureDefaultGlobalLists keys off slug presence, so a hard
+  // delete of a seed value (e.g. Monthly) would resurrect on the next page load.
   await db
-    .delete(globalLists)
+    .update(globalLists)
+    .set({ active: false, updatedAt: new Date() })
     .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
   revalidatePath("/settings/lists");
   flashAction("/settings/lists", "list-item-deleted");

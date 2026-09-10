@@ -116,7 +116,7 @@ function ListCard({
   canEdit: boolean;
   familyPicker: boolean;
 }) {
-  const sorted = [...rows].sort((a, b) => a.label.localeCompare(b.label));
+  const sorted = [...rows].filter((row) => row.active).sort((a, b) => a.label.localeCompare(b.label));
   return (
     <section className="ff-card space-y-3 p-4" data-ff-global-list={listKey}>
       <div>

@@ -72,7 +72,7 @@ export type PolicySubType = (typeof POLICY_SUB_TYPES)[number];
 export const PREMIUM_FREQUENCIES = ["Monthly", "Quarterly", "Semi-Annual", "Annual"] as const;
 export type PremiumFrequency = (typeof PREMIUM_FREQUENCIES)[number];
 
-export const PAYMENT_STATUSES = ["Outstanding", "Paid", "Pending", "Monthly"] as const;
+export const PAYMENT_STATUSES = ["Outstanding", "Paid", "Pending"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 const LIFE_SUBS = new Set([
