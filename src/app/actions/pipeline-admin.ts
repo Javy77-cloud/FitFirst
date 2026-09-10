@@ -10,7 +10,7 @@ import { accounts, contacts, deals, pipelineStages, pipelines } from "@/lib/db/s
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatPersonName } from "@/lib/crm/display";
 import { formatDealTitle } from "@/lib/deals/deal-title";
-import { defaultStageColor } from "@/lib/desk/status-colors";
+import { defaultStageColor, STATUS_COLOR_KEYS, type StatusColorKey } from "@/lib/desk/status-colors";
 import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { listDealLookup } from "@/lib/db/queries";
@@ -163,6 +163,20 @@ export async function relabelPipelineStage(formData: FormData) {
     .set({ name })
     .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
   revalidatePath("/deals");
+}
+
+/** Tip sep7gs: Admin can set stage pill color from Edit stages. */
+export async function setPipelineStageColor(formData: FormData) {
+  await assertAdmin();
+  const id = str(formData, "stageId");
+  const color = str(formData, "color").toLowerCase();
+  if (!id || !(STATUS_COLOR_KEYS as readonly string[]).includes(color)) return;
+  await db
+    .update(pipelineStages)
+    .set({ color: color as StatusColorKey })
+    .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
+  revalidatePath("/deals");
+  flashAction("/deals", "stage-color-saved");
 }
 
 export async function deletePipelineStage(formData: FormData) {

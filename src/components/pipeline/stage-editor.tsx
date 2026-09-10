@@ -5,11 +5,13 @@ import {
   deletePipelineStage,
   relabelPipelineStage,
   reorderPipelineStage,
+  setPipelineStageColor,
 } from "@/app/actions/pipeline-admin";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { StagePill } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
 import type { PipelineStageView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineStageEditor({
@@ -25,7 +27,7 @@ export function PipelineStageEditor({
     <details className="rounded-md border border-border bg-card p-3 text-sm">
       <summary className="cursor-pointer font-medium text-navy">Edit stages</summary>
       <p className="mt-2 text-xs text-muted-foreground">
-        Add, rename, remove, or reorder columns on this board. Deals on a removed stage move to the
+        Add, rename, recolor, remove, or reorder columns on this board. Deals on a removed stage move to the
         next remaining column.
       </p>
       <form action={addPipelineStage} className="mt-3 flex flex-wrap gap-2">
@@ -67,6 +69,28 @@ export function PipelineStageEditor({
               <Input name="name" defaultValue={stage.name} className="h-8 w-40" />
               <button type="submit" className="text-xs text-primary hover:underline">
                 Rename
+              </button>
+            </form>
+            <form action={setPipelineStageColor} className="flex items-center gap-2">
+              <input type="hidden" name="stageId" value={stage.id} />
+              <label className="sr-only" htmlFor={`stage-color-${stage.id}`}>
+                Color for {stage.name}
+              </label>
+              <select
+                id={`stage-color-${stage.id}`}
+                name="color"
+                defaultValue={stage.color ?? "slate"}
+                className="h-8 rounded-md border border-input bg-card px-2 text-xs capitalize"
+                aria-label={`Color for ${stage.name}`}
+              >
+                {STATUS_COLOR_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {key}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="text-xs text-primary hover:underline">
+                Save color
               </button>
             </form>
             {canDelete ? (
