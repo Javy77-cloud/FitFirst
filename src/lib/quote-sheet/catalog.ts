@@ -135,10 +135,6 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "coverage_f", label: "Coverage F (medical payments)", group: "Coverages", input: "number", extractKey: "coverage_f" },
   { key: "ordinance_or_law", label: "Ordinance or law", group: "Coverages", extractKey: "ordinance_or_law" },
   { key: "water_backup", label: "Water backup", group: "Coverages", extractKey: "water_backup" },
-  { key: "scheduled_personal", label: "Scheduled personal property", group: "Coverages", extractKey: "scheduled_personal_property" },
-  { key: "jewelry_limit", label: "Jewelry limit", group: "Coverages" },
-  { key: "identity_theft", label: "Identity theft", group: "Coverages" },
-  { key: "loss_assessment", label: "Loss assessment", group: "Coverages", extractKey: "loss_assessment" },
   {
     key: "hurricane_deductible",
     label: "Hurricane deductible",
@@ -383,7 +379,6 @@ const EXTRACT_ALIASES: Record<string, string> = {
   current_carrier: "current_carrier",
   mortgagee_address: "mortgagee_address",
   secondary_named_insured: "secondary_named_insured",
-  scheduled_personal_property: "scheduled_personal",
   mortgagee: "mortgagee_name",
 };
 

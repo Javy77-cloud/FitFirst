@@ -30,7 +30,6 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "coverage_a",
   "ordinance_law",
   "water_backup",
-  "scheduled_personal_property",
   "hurricane_deductible",
   "aop_deductible",
   "wind_hail_deductible",
@@ -67,9 +66,6 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "coverage_d",
   "coverage_e",
   "coverage_f",
-  "jewelry_limit",
-  "identity_theft",
-  "loss_assessment",
   "sinkhole_deductible",
   "current_carrier",
   "secondary_named_insured",
@@ -114,7 +110,7 @@ Field meaning guidance (from desk synonym brief):
 - Four-point: Insured/Applicant Name; Address Inspected; year built; stories (MUST when labeled); roof covering / year; construction_type; electrical_year / plumbing_year / hvac_year / water_heater_year (MUST when labeled — year of last update, age, or approx year); electrical_updated (MUST when labeled); electrical_circuit_amps (MUST when labeled — total/circuit amps as digits only, e.g. 200); occupancy / months_occupied when on the form; roof_condition; date_inspected (prefer label "Date Inspected" at top of 4pt — not a stale form stamp); four_point_date; license_number; inspection_company.
 - Dec: Named insured; Residence premises / Location; Coverage A; hurricane / AOP / wind-hail deductibles;
   policy number; premium; effective/expiration; mortgagee + mortgagee_address; loan number; ordinance or law; water backup; scheduled personal property;
-  Cov B–F when printed; jewelry_limit; identity_theft; loss_assessment; sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured.
+  Cov B–F when printed; sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured.
 `;
 }
 
@@ -130,7 +126,7 @@ export function buildGeminiUserPrompt(docType?: string | null): string {
       "This is a four-point inspection. MUST fill when labeled on the form: applicant_name, property_address, year_built, stories, roof_covering, roof_year, construction_type, electrical_year, plumbing_year, hvac_year, water_heater_year, electrical_updated, electrical_circuit_amps, license_number, inspection_company, occupancy, months_occupied. Also fill when present: roof_condition, date_inspected (MUST when 'Date Inspected' / 'Date of Inspection' is labeled at top), four_point_date, usage. Prefer date_inspected from the top Date Inspected label over any other date stamp. stories / water_heater_year / electrical_updated / electrical_circuit_amps are required when the form shows them. electrical_circuit_amps: digits only from Total Amps / Circuit Amps / Amps = N (e.g. 200 amps → 200). For system years use the printed year of last update / age / approx year (convert age-in-years to an approximate calendar year when the form shows age only).";
   } else if (kind === "dec" || kind.includes("dec") || kind.includes("declar") || kind === "policy") {
     focus =
-      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, property_address, coverage_a, coverage_b, coverage_c, coverage_d, coverage_e, coverage_f, hurricane_deductible, aop_deductible, wind_hail_deductible, ordinance_law, water_backup, scheduled_personal_property, jewelry_limit, identity_theft, loss_assessment, sinkhole_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, mortgagee, mortgagee_address, loan_number. Cov A alone is OK when B–F are missing.";
+      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, property_address, coverage_a, coverage_b, coverage_c, coverage_d, coverage_e, coverage_f, hurricane_deductible, aop_deductible, wind_hail_deductible, ordinance_law, water_backup, sinkhole_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, mortgagee, mortgagee_address, loan_number. Cov A alone is OK when B–F are missing.";
   } else if (kind === "photo" || kind.includes("photo") || kind === "inspection" || kind.includes("inspect")) {
     focus =
       "This may be a phone photo (JPEG/PNG/HEIC) of a dec, wind mit, 4-point, or inspection — not a PDF. Read the visible text from the image and fill every labeled field you can see. Prefer the same keys as dec / wind mit / four-point when the form type is clear from the page.";
