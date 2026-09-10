@@ -12,6 +12,7 @@ import {
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
+  EMPLOYMENT_STATUS_OPTIONS,
   YES_NO_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -112,7 +113,8 @@ export const DRIVER_BLOCK_FIELDS: RepeatableField[] = [
   { suffix: "name", label: "Name" },
   { suffix: "dob", label: "DOB" },
   { suffix: "gender", label: "Gender", input: "select", options: GENDER_OPTIONS },
-  { suffix: "occupation", label: "Occupation", input: "select", options: OCCUPATION_OPTIONS },
+  { suffix: "occupation", label: "Occupation / job category", input: "select", options: OCCUPATION_OPTIONS },
+  { suffix: "employment", label: "Employment", input: "select", options: EMPLOYMENT_STATUS_OPTIONS },
   { suffix: "education_level", label: "Education level", input: "select", options: EDUCATION_LEVEL_OPTIONS },
   { suffix: "license", label: "License" },
   { suffix: "status", label: "Status" },
@@ -228,7 +230,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|education_level|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|employment|education_level|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }

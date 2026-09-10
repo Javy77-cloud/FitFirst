@@ -47,8 +47,9 @@ export const RELATIONSHIP_TO_INSURED_OPTIONS = [
 export const GENDER_OPTIONS = ["Male", "Female"] as const;
 
 /**
- * FL Auto / Allstate-style occupation & employment categories (portal-mapped).
- * Employment statuses + common job categories portals accept — not a lone Other.
+ * FL Auto / Allstate-style occupation / job categories (portal-mapped).
+ * Mixes employment statuses + common job categories portals accept — not a lone Other.
+ * Progressive portal "Employment" uses applicant_employment (EMPLOYMENT_STATUS_OPTIONS) instead.
  */
 
 /**
@@ -101,6 +102,23 @@ export const OCCUPATION_OPTIONS = [
   "Other",
 ] as const;
 
+/**
+ * Progressive-style Employment status (portal "Employment" / employment category).
+ * Separate from applicant_occupation (which mixes status + job categories for Allstate-style).
+ * No default — wait for Javy / Heather.
+ */
+export const EMPLOYMENT_STATUS_OPTIONS = [
+  "Employed",
+  "Self-employed",
+  "Retired",
+  "Homemaker",
+  "Student",
+  "Unemployed",
+  "Disabled",
+  "Military",
+  "Other",
+] as const;
+
 /** @deprecated use RELATIONSHIP_TO_INSURED_OPTIONS */
 export const CO_APPLICANT_RELATIONSHIP_OPTIONS = RELATIONSHIP_TO_INSURED_OPTIONS;
 
@@ -129,11 +147,19 @@ export const APPLICANT_CORE_FIELDS: QuoteFieldDef[] = [
   },
   {
     key: "applicant_occupation",
-    label: "Occupation",
+    label: "Occupation / job category",
     group: "Applicant",
     input: "select",
     options: [...OCCUPATION_OPTIONS],
     extractKey: "applicant_occupation",
+  },
+  {
+    key: "applicant_employment",
+    label: "Employment",
+    group: "Applicant",
+    input: "select",
+    options: [...EMPLOYMENT_STATUS_OPTIONS],
+    extractKey: "applicant_employment",
   },
   {
     key: "applicant_education_level",
@@ -177,7 +203,7 @@ export const CO_APPLICANT_FIELDS: QuoteFieldDef[] = [
   },
   {
     key: "co_applicant_occupation",
-    label: "Occupation",
+    label: "Occupation / job category",
     group: "Co-applicant",
     input: "select",
     options: [...OCCUPATION_OPTIONS],

@@ -12,7 +12,7 @@ export const SHEET_DEFAULT_SOURCE_LABEL = "default";
 export const YES_NO_OPTIONS = ["yes", "no"] as const;
 
 /** Allstate FL Auto accepts Male/Female only (M/F) — Javy 2026-09-10. */
-export { GENDER_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_LEVEL_OPTIONS } from "./applicant-core";
+export { GENDER_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_LEVEL_OPTIONS, EMPLOYMENT_STATUS_OPTIONS } from "./applicant-core";
 
 /** Normalize M/F / male/female into Male | Female picklist values. */
 export function normalizeGender(raw: string | null | undefined): string {
@@ -288,6 +288,7 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // applicant_gender / driver_1_gender / applicant_occupation / driver_1_occupation:
   // leave blank — agent answers (no Heather defaults).
   // applicant_education_level / driver_1_education_level: leave blank — wait for Javy (Geico blocked when blank; no Heather defaults).
+  // applicant_employment / driver_1_employment: leave blank — Progressive Employment required; wait for Javy (no Heather defaults).
   // own_rent: leave blank — set per deal (Heather Own on deal sheet).
   // years_at_address / address_same_6_months / prior_address: leave blank —
   // set per deal (Heather ~1yr Tallwood + address_same_6_months yes).
