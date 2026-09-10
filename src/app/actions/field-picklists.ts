@@ -7,7 +7,11 @@ import {
   getFieldPicklist,
   updateFieldPicklist,
 } from "@/lib/custom-fields/picklist-store";
-import { sanitizeRichPicklistOptions, type PicklistOption } from "@/lib/custom-fields/picklists";
+import {
+  clearAllPicklistOptionColors,
+  sanitizeRichPicklistOptions,
+  type PicklistOption,
+} from "@/lib/custom-fields/picklists";
 import { flashAction } from "@/lib/flash-action";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
@@ -25,10 +29,11 @@ function optionsFrom(form: FormData): PicklistOption[] {
   for (let i = 0; i < values.length; i++) {
     const value = values[i]?.trim() ?? "";
     if (!value) continue;
-    const colorRaw = colors[i]?.trim() ?? "";
-    const color = (STATUS_COLOR_KEYS as readonly string[]).includes(colorRaw)
-      ? (colorRaw as PicklistOption["color"])
-      : null;
+    const colorRaw = (colors[i]?.trim() ?? "").toLowerCase();
+    const color =
+      colorRaw && colorRaw !== "none" && (STATUS_COLOR_KEYS as readonly string[]).includes(colorRaw)
+        ? (colorRaw as PicklistOption["color"])
+        : null;
     raw.push({
       value,
       color,
@@ -102,6 +107,26 @@ export async function removeFieldPicklistOption(formData: FormData) {
   } catch (error) {
     if (isRedirectError(error)) throw error;
     const message = error instanceof Error ? error.message : "Could not delete value.";
+    flashAction("/settings/picklists", message, "error");
+  }
+}
+
+export async function clearFieldPicklistColors(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) return;
+  try {
+    const existing = await getFieldPicklist(id);
+    if (!existing) {
+      flashAction("/settings/picklists", "Picklist not found.", "error");
+      return;
+    }
+    const next = clearAllPicklistOptionColors(existing.options);
+    await updateFieldPicklist(id, { options: next });
+    revalidatePicklists();
+    flashAction("/settings/picklists", "colors-cleared");
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    const message = error instanceof Error ? error.message : "Could not clear colors.";
     flashAction("/settings/picklists", message, "error");
   }
 }

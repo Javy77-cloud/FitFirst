@@ -25,7 +25,7 @@ function slugify(value: string): string {
 
 function colorFrom(form: FormData): string | null {
   const color = str(form, "color");
-  if (!color) return null;
+  if (!color || color.toLowerCase() === "none") return null;
   return (STATUS_COLOR_KEYS as readonly string[]).includes(color) ? color : null;
 }
 
@@ -99,4 +99,21 @@ export async function toggleGlobalListItem(formData: FormData) {
     .set({ active, updatedAt: new Date() })
     .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
   revalidatePath("/settings/lists");
+}
+
+export async function clearGlobalListColors(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.isAdmin) return;
+  const listKey = str(formData, "listKey") as GlobalListKey;
+  if (!(GLOBAL_LIST_KEYS as readonly string[]).includes(listKey)) return;
+  await db
+    .update(globalLists)
+    .set({ color: null, updatedAt: new Date() })
+    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.listKey, listKey)));
+  if (listKey === "selling_agency") await syncDealSellingAgencyFromGlobalLists();
+  revalidatePath("/settings/lists");
+  revalidatePath("/policies");
+  revalidatePath("/deals");
+  revalidatePath("/settings/field-builder");
+  flashAction("/settings/lists", "colors-cleared");
 }

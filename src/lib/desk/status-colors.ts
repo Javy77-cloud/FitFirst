@@ -242,6 +242,13 @@ export function resolveColorKey(color: string | null | undefined): StatusColorKe
   return isStatusColorKey(key) ? key : "slate";
 }
 
+/** Select value for StatusColorSelect: null/empty/"none" → "" (None). Never coerces to slate. */
+export function statusColorSelectValue(defaultValue?: string | null): string {
+  const raw = String(defaultValue ?? "").trim().toLowerCase();
+  if (!raw || raw === "none") return "";
+  return isStatusColorKey(raw) ? raw : "";
+}
+
 export function defaultStageColor(
   sortOrder = 0,
   slug?: string | null,

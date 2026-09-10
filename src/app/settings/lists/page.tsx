@@ -1,8 +1,10 @@
 import Link from "next/link";
 import {
   addGlobalListItem,
+  clearGlobalListColors,
   deleteGlobalListItem,
 } from "@/app/actions/global-lists";
+import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { GlobalListColorForm } from "@/components/desk/global-list-color-form";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
@@ -119,9 +121,19 @@ function ListCard({
   const sorted = [...rows].filter((row) => row.active).sort((a, b) => a.label.localeCompare(b.label));
   return (
     <section className="ff-card space-y-3 p-4" data-ff-global-list={listKey}>
-      <div>
-        <h2 className="text-sm font-semibold text-navy">{title}</h2>
-        <p className="text-helper text-muted-foreground">{sorted.length} values · A–Z · full color palette</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-semibold text-navy">{title}</h2>
+          <p className="text-helper text-muted-foreground">{sorted.length} values · A–Z · full color palette</p>
+        </div>
+        {canEdit && sorted.length > 0 ? (
+          <ClearAllColorsForm action={clearGlobalListColors} subject={title} className="shrink-0">
+            <input type="hidden" name="listKey" value={listKey} />
+            <Button type="submit" size="sm" variant="outline" data-ff-none-for-all="">
+              None for all
+            </Button>
+          </ClearAllColorsForm>
+        ) : null}
       </div>
       {sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground">No values yet.</p>
@@ -165,7 +177,7 @@ function ListCard({
           <Input name="label" required placeholder="Add a value" className="h-8 min-w-40 flex-1" />
           <label className="text-xs text-muted-foreground">
             Color
-            <StatusColorSelect className="mt-0.5 block" defaultValue="slate" />
+            <StatusColorSelect className="mt-0.5 block" defaultValue={null} />
           </label>
           <Button type="submit" size="sm" variant="outline">
             Add

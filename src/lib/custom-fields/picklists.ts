@@ -155,3 +155,8 @@ export function parseFieldPicklist(raw: unknown): FieldPicklist | null {
     options: sanitizeRichPicklistOptions(row.options),
   };
 }
+
+/** Set every option color to null (None) — start-over for list color pickers. */
+export function clearAllPicklistOptionColors(options: PicklistOption[]): PicklistOption[] {
+  return options.map((option) => ({ ...option, color: null }));
+}

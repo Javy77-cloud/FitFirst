@@ -13,6 +13,7 @@ export const FLASH_COPY = {
   "layout-saved": "Deal layout saved",
   "home-layout-saved": "Layout saved",
   "list-saved": "List saved",
+  "colors-cleared": "Colors cleared",
   "lead-saved": "Lead saved",
   "contact-saved": "Contact saved",
   "business-saved": "Business saved",

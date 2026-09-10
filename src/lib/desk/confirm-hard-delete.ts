@@ -9,3 +9,10 @@ export function confirmHardDelete(subject: string): boolean {
 export function confirmDeleteOnce(subject: string): boolean {
   return confirmHardDelete(subject);
 }
+
+/** One confirm before clearing every value’s color to None on a list. */
+export function confirmClearAllColors(subject: string): boolean {
+  const ask = typeof globalThis.confirm === "function" ? globalThis.confirm.bind(globalThis) : null;
+  if (!ask) return false;
+  return ask(`Clear all colors on ${subject}? Every value will have no color.`);
+}

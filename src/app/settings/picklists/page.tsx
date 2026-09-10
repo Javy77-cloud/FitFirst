@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
+  clearFieldPicklistColors,
   createEmptyFieldPicklist,
   deleteFieldPicklistAction,
   removeFieldPicklistOption,
   saveFieldPicklist,
 } from "@/app/actions/field-picklists";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
+import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { SettingsShell } from "@/components/settings/settings-shell";
@@ -65,7 +67,7 @@ export default async function FieldPicklistsPage() {
                 data-ff-picklist-list={list.id}
                 data-ff-picklist-name={list.name}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <FieldTypeIcon type="picklist" />
                     <h2 className="text-sm font-semibold text-navy">{list.name}</h2>
@@ -73,10 +75,24 @@ export default async function FieldPicklistsPage() {
                       {list.options.length} values · A–Z · colors · default
                     </span>
                   </div>
-                  <HardDeleteForm action={deleteFieldPicklistAction} subject={`picklist ${list.name}`}>
-                    <input type="hidden" name="id" value={list.id} />
-                    <FileDeleteIcon label={`Delete list ${list.name}`} />
-                  </HardDeleteForm>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {list.options.length > 0 ? (
+                      <ClearAllColorsForm
+                        action={clearFieldPicklistColors}
+                        subject={list.name}
+                        className="shrink-0"
+                      >
+                        <input type="hidden" name="id" value={list.id} />
+                        <Button type="submit" size="sm" variant="outline" data-ff-none-for-all="">
+                          None for all
+                        </Button>
+                      </ClearAllColorsForm>
+                    ) : null}
+                    <HardDeleteForm action={deleteFieldPicklistAction} subject={`picklist ${list.name}`}>
+                      <input type="hidden" name="id" value={list.id} />
+                      <FileDeleteIcon label={`Delete list ${list.name}`} />
+                    </HardDeleteForm>
+                  </div>
                 </div>
 
                 {/* Save form owns id/name/submit; option inputs associate via form= to avoid nested forms. */}
@@ -106,7 +122,7 @@ export default async function FieldPicklistsPage() {
                         <StatusColorSelect
                           form={saveFormId}
                           name="optionColors"
-                          defaultValue={option.color ?? "slate"}
+                          defaultValue={option.color}
                           aria-label={`Color for option ${index + 1}`}
                         />
                         <label className="flex items-center gap-1 text-xs text-muted-foreground">
