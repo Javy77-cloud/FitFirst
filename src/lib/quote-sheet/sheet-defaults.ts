@@ -132,6 +132,14 @@ export const OCCUPANCY_OPTIONS = ["Owner", "Tenant"] as const;
 /** Auto residence Own / Rent (Javy 2026-09-10). */
 export const OWN_RENT_OPTIONS = ["Own", "Rent"] as const;
 
+/**
+ * Auto residence tenure (Gaya standing):
+ * - years_at_address (number) — how long at current address
+ * - address_same_6_months (yes/no) — same as current for 6+ months
+ * - prior_address (text) — only when address_same_6_months is no
+ * Do not add SSN here.
+ */
+
 /** Auto vehicle ownership (Javy 2026-09-10). */
 export const VEHICLE_OWNERSHIP_OPTIONS = ["Owned", "Financed", "Leased"] as const;
 
@@ -280,6 +288,8 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // applicant_gender / driver_1_gender / applicant_occupation / driver_1_occupation:
   // leave blank — agent answers (no Heather defaults).
   // own_rent: leave blank — set per deal (Heather Own on deal sheet).
+  // years_at_address / address_same_6_months / prior_address: leave blank —
+  // set per deal (Heather ~1yr Tallwood + address_same_6_months yes).
   // vehicle_ownership / vehicle_N_ownership: leave blank — wait for Javy (no Heather defaults).
   // vehicle_lienholder / vehicle_N_lienholder: leave blank — set per deal (Heather Acura Financial Services).
   // vehicle_ownership_length / commute_days_week / vehicle_lienholder_other: leave blank until Javy answers.
