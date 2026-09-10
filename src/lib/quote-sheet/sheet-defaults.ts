@@ -11,8 +11,21 @@ export const SHEET_DEFAULT_SOURCE_LABEL = "default";
 /** Yes/no picklist options shared by protection / hazard / dwelling flags. */
 export const YES_NO_OPTIONS = ["yes", "no"] as const;
 
-/** Months occupied — only two desk buckets (not free 12). */
-export const MONTHS_OCCUPIED_OPTIONS = ["0-9", "9-12"] as const;
+/** Months occupied — three desk buckets (Javy 2026-09-09). */
+export const MONTHS_OCCUPIED_OPTIONS = [
+  "0 to 3 months",
+  "4 to 8 months",
+  "9 months or more",
+] as const;
+
+/** Usage / how the dwelling is used (Javy 2026-09-09). */
+export const USAGE_OPTIONS = [
+  "Primary",
+  "Secondary",
+  "Seasonal",
+  "Rental",
+  "Vacant",
+] as const;
 
 /** Exterior = wall type (Javy 2026-09-09 night lock). */
 export const EXTERIOR_OPTIONS = [
@@ -69,18 +82,74 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   business_on_premises: "no",
 };
 
-/** Normalize free months (e.g. 12) into the two picklist buckets. */
+const MONTHS_0_3 = "0 to 3 months";
+const MONTHS_4_8 = "4 to 8 months";
+const MONTHS_9_PLUS = "9 months or more";
+
+/** Normalize free months / legacy buckets into the three picklist options. */
 export function normalizeMonthsOccupied(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";
-  const lower = text.toLowerCase().replace(/\s+/g, "");
-  if (lower === "0-9" || lower === "0–9" || lower === "0to9") return "0-9";
-  if (lower === "9-12" || lower === "9–12" || lower === "9to12" || lower === "9+") return "9-12";
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const compact = lower.replace(/\s+/g, "");
+  if (
+    compact === "0to3" ||
+    compact === "0-3" ||
+    compact === "0–3" ||
+    lower === "0 to 3 months" ||
+    lower === "0-3 months"
+  ) {
+    return MONTHS_0_3;
+  }
+  if (
+    compact === "4to8" ||
+    compact === "4-8" ||
+    compact === "4–8" ||
+    lower === "4 to 8 months" ||
+    lower === "4-8 months"
+  ) {
+    return MONTHS_4_8;
+  }
+  if (
+    compact === "9+" ||
+    compact === "9or more" ||
+    compact === "9monthsormore" ||
+    compact === "9-12" ||
+    compact === "9–12" ||
+    compact === "9to12" ||
+    lower === "9 months or more" ||
+    lower.includes("9 months or more")
+  ) {
+    return MONTHS_9_PLUS;
+  }
+  // Legacy two-bucket desk values
+  if (compact === "0-9" || compact === "0–9" || compact === "0to9") return MONTHS_4_8;
   const n = Number(text.replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(n)) return text;
-  if (n >= 9) return "9-12";
-  if (n >= 0) return "0-9";
+  if (n >= 9) return MONTHS_9_PLUS;
+  if (n >= 4) return MONTHS_4_8;
+  if (n >= 0) return MONTHS_0_3;
   return text;
+}
+
+/** Normalize usage into the five desk picklist values. */
+export function normalizeUsage(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  const map: Record<string, (typeof USAGE_OPTIONS)[number]> = {
+    primary: "Primary",
+    "owner occupied": "Primary",
+    owner: "Primary",
+    secondary: "Secondary",
+    "second home": "Secondary",
+    seasonal: "Seasonal",
+    rental: "Rental",
+    tenant: "Rental",
+    "tenant occupied": "Rental",
+    vacant: "Vacant",
+  };
+  return map[lower] ?? text;
 }
 
 export type ApplyDefaultsResult = {

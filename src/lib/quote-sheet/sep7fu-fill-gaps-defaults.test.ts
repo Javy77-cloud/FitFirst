@@ -10,7 +10,9 @@ import {
   applyMasterSheetDefaults,
   MASTER_SHEET_EMPTY_DEFAULTS,
   MONTHS_OCCUPIED_OPTIONS,
+  USAGE_OPTIONS,
   normalizeMonthsOccupied,
+  normalizeUsage,
 } from "@/lib/quote-sheet/sheet-defaults";
 import { MASTER_FILL_BUSY_COPY } from "@/lib/quote-sheet/master-fill";
 import { sheetKeysForGeminiKey, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
@@ -72,10 +74,24 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
   });
 
   it("applies empty-only defaults and normalizes months_occupied picklist", () => {
-    expect([...MONTHS_OCCUPIED_OPTIONS]).toEqual(["0-9", "9-12"]);
-    expect(normalizeMonthsOccupied("12")).toBe("9-12");
-    expect(normalizeMonthsOccupied("8")).toBe("0-9");
-    expect(normalizeMonthsOccupied("9-12")).toBe("9-12");
+    expect([...MONTHS_OCCUPIED_OPTIONS]).toEqual([
+      "0 to 3 months",
+      "4 to 8 months",
+      "9 months or more",
+    ]);
+    expect([...USAGE_OPTIONS]).toEqual([
+      "Primary",
+      "Secondary",
+      "Seasonal",
+      "Rental",
+      "Vacant",
+    ]);
+    expect(normalizeMonthsOccupied("12")).toBe("9 months or more");
+    expect(normalizeMonthsOccupied("8")).toBe("4 to 8 months");
+    expect(normalizeMonthsOccupied("2")).toBe("0 to 3 months");
+    expect(normalizeMonthsOccupied("9-12")).toBe("9 months or more");
+    expect(normalizeUsage("tenant occupied")).toBe("Rental");
+    expect(normalizeUsage("primary")).toBe("Primary");
 
     const blank = emptySheetValues("home");
     const applied = applyMasterSheetDefaults(blank);
@@ -98,7 +114,18 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     const home = fieldsForLine("home", "homeowners");
     expect(home.find((f) => f.key === "claims_3yr")).toBeUndefined();
     expect(home.find((f) => f.key === "claims_5yr")).toBeTruthy();
-    expect(home.find((f) => f.key === "months_occupied")?.options).toEqual(["0-9", "9-12"]);
+    expect(home.find((f) => f.key === "months_occupied")?.options).toEqual([
+      "0 to 3 months",
+      "4 to 8 months",
+      "9 months or more",
+    ]);
+    expect(home.find((f) => f.key === "usage")?.options).toEqual([
+      "Primary",
+      "Secondary",
+      "Seasonal",
+      "Rental",
+      "Vacant",
+    ]);
     expect(home.find((f) => f.key === "exterior")?.options).toEqual([
       "Masonry",
       "Frame",
@@ -152,7 +179,7 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), [
       { fieldKey: "months_occupied", normalizedValue: "12", sourceLabel: "dec page" },
     ]);
-    expect(applied.values.months_occupied.value).toBe("9-12");
+    expect(applied.values.months_occupied.value).toBe("9 months or more");
   });
 
   it("synonyms prefer Date Inspected for date_inspected", () => {
