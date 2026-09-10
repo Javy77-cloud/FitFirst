@@ -9,8 +9,8 @@ function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("sep7fw Confirm → Markets; empty Quotes/Markets show zeros + add list", () => {
-  it("FW1 — Confirm & request quotes redirects to Markets, not empty Quotes", () => {
+describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () => {
+  it("FW1 — Documents Confirm lands Markets; Markets Approve & request lands Quotes", () => {
     const quoting = source("src/app/actions/quoting.ts");
     expect(quoting).toMatch(
       /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=markets&line=\$\{line\}`, "quotes-requested"\)\)/,
@@ -20,6 +20,9 @@ describe("sep7fw Confirm → Markets; empty Quotes/Markets show zeros + add list
     );
     const quotes = source("src/app/actions/quotes.ts");
     expect(quotes).toMatch(
+      /flashAction\(`\/deals\/\$\{dealId\}\?tab=quotes`, "quotes-requested"\)/,
+    );
+    expect(quotes).not.toMatch(
       /flashAction\(`\/deals\/\$\{dealId\}\?tab=markets`, "quotes-requested"\)/,
     );
   });
