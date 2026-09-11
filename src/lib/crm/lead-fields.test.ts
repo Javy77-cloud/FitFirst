@@ -33,6 +33,8 @@ describe("lead form fields", () => {
       insuranceTypeDesired: "HO",
       source: "referral",
       preferredLanguage: "es",
+      status: null,
+      temperature: null,
       notes: "Asked for an HO3.",
     });
   });

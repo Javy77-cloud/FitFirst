@@ -121,6 +121,8 @@ export async function updateLeadRecord(formData: FormData) {
       dateOfBirth: values.dateOfBirth || existing.dateOfBirth,
       insuranceTypeDesired: values.insuranceTypeDesired || existing.insuranceTypeDesired,
       preferredLanguage: values.preferredLanguage || existing.preferredLanguage,
+      status: values.status || existing.status,
+      temperature: values.temperature || existing.temperature,
       source: values.source || existing.source,
       notes: values.notes || existing.notes,
       updatedAt: new Date(),

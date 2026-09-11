@@ -64,6 +64,12 @@ export async function applyModuleSystemValues(
           str(values, "preferred_language", "preferredLanguage"),
           existing.preferredLanguage,
         ) as typeof existing.preferredLanguage,
+        insuranceTypeDesired: keep(
+          str(values, "insurance_type_desired", "insuranceTypeDesired"),
+          existing.insuranceTypeDesired,
+        ) as typeof existing.insuranceTypeDesired,
+        status: keep(str(values, "status"), existing.status) as typeof existing.status,
+        temperature: keep(str(values, "temperature"), existing.temperature) as typeof existing.temperature,
         updatedAt: new Date(),
       })
       .where(eq(leads.id, recordId));

@@ -7,13 +7,16 @@ export const LEAD_CARRY_FIELDS = [
   { key: "dateOfBirth", label: "Date of birth" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
-  { key: "mailingAddress", label: "Address" },
+  { key: "mailingAddress", label: "Insured Address" },
   { key: "city", label: "City" },
   { key: "state", label: "State" },
   { key: "zip", label: "ZIP" },
   { key: "notes", label: "Notes" },
   { key: "source", label: "Source" },
   { key: "preferredLanguage", label: "Language" },
+  { key: "status", label: "Status" },
+  { key: "temperature", label: "Temperature" },
+  { key: "insuranceTypeDesired", label: "Insurance desired" },
 ] as const;
 
 export type LeadCarryKey = (typeof LEAD_CARRY_FIELDS)[number]["key"];
@@ -61,6 +64,13 @@ export function filterLeadForCarry(
     notes: pick("notes", lead.notes ?? null, null),
     source: pick("source", lead.source ?? null, null),
     preferredLanguage: pick("preferredLanguage", lead.preferredLanguage ?? null, null),
+    status: pick("status", (lead as { status?: string | null }).status ?? null, null),
+    temperature: pick("temperature", (lead as { temperature?: string | null }).temperature ?? null, null),
+    insuranceTypeDesired: pick(
+      "insuranceTypeDesired",
+      lead.insuranceTypeDesired ?? null,
+      null,
+    ),
   };
 }
 
@@ -78,6 +88,9 @@ const SYSTEM_TO_CARRY: Record<string, LeadCarryKey> = {
   notes: "notes",
   source: "source",
   preferredLanguage: "preferredLanguage",
+  status: "status",
+  temperature: "temperature",
+  insuranceTypeDesired: "insuranceTypeDesired",
   primaryNamedInsured: "firstName",
 };
 
@@ -116,12 +129,24 @@ export const LEAD_TO_DEAL_FIELD_KEYS: Array<{ key: string; systemKey: string }> 
   { key: "named_insured", systemKey: "primaryNamedInsured" },
   { key: "source", systemKey: "source" },
   { key: "preferred_language", systemKey: "preferredLanguage" },
+  { key: "status", systemKey: "status" },
+  { key: "temperature", systemKey: "temperature" },
+  { key: "insurance_type_desired", systemKey: "insuranceTypeDesired" },
 ];
+
+/** Custom-field keys that copy Lead → Deal by the same field key (no native column). */
+export const LEAD_TO_DEAL_CUSTOM_KEYS = [
+  "contact_mailing_address",
+  "pipeline",
+  "insurance_type",
+  "insurance_subtype",
+] as const;
 
 export function dealValuesFromLead(
   lead: ConvertLead,
   fields: ReadonlyArray<{ key: string; systemKey?: string | null }>,
   carry?: readonly string[] | null,
+  leadCustom?: Record<string, string> | null,
 ): Record<string, string> {
   const filtered = filterLeadForCarry(lead, carry);
   const values: Record<string, string> = {};
@@ -137,6 +162,13 @@ export function dealValuesFromLead(
     if (values[row.key]) continue;
     const value = systemValueFromLead(filtered, row.systemKey, carry);
     if (value) values[row.key] = value;
+  }
+
+  if (leadCustom) {
+    for (const key of LEAD_TO_DEAL_CUSTOM_KEYS) {
+      const raw = (leadCustom[key] ?? "").trim();
+      if (raw && !values[key]) values[key] = raw;
+    }
   }
 
   return values;

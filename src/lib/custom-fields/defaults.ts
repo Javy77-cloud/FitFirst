@@ -12,13 +12,43 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "date_of_birth", label: "Date of birth", type: "dob", systemKey: "dateOfBirth" },
-  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
+  { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
+  { key: "contact_mailing_address", label: "Mailing Address", type: "address" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
   { key: "named_insured", label: "Named insured", type: "single_line", systemKey: "primaryNamedInsured" },
-  { key: "preferred_language", label: "Preferred language", type: "single_line", systemKey: "preferredLanguage" },
+  {
+    key: "preferred_language",
+    label: "Preferred language",
+    type: "picklist",
+    options: ["en", "es", "ht"],
+    systemKey: "preferredLanguage",
+  },
+  {
+    key: "pipeline",
+    label: "Pipeline",
+    type: "picklist",
+    options: ["P&C", "Life", "Health", "Flood"],
+  },
+  {
+    key: "insurance_type",
+    label: "Insurance Type",
+    type: "picklist",
+    options: [
+      "Home",
+      "Landlord",
+      "Renters",
+      "Auto",
+      "Rec / RV",
+      "Flood",
+      "Umbrella",
+      "Commercial",
+      "Life",
+      "Health",
+    ],
+  },
 ];
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
@@ -103,7 +133,15 @@ export const STRIPPED_DEAL_SECTION_IDS = [
 function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } {
   return {
     left: [section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS])],
-    right: [section("address", "Address", [...ESSENTIAL_ADDRESS_KEYS])],
+    right: [
+      section("address", "Address", [
+        "mailing_address",
+        "contact_mailing_address",
+        "city",
+        "state",
+        "zip",
+      ]),
+    ],
   };
 }
 

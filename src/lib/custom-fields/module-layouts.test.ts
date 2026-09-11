@@ -147,5 +147,8 @@ describe("sep7hk module Edit Layout includes full catalogs", () => {
     const store = source("src/lib/custom-fields/store.ts");
     expect(store).toMatch(/Always seed any new module defaults/);
     expect(store).toMatch(/ensureLayoutIncludesCatalogFields/);
+    // Tip sep7jr: only carriers force-include catalog fields; leads keep agency removals.
+    expect(store).toMatch(/module === "carriers"/);
+    expect(store).toMatch(/do not resurrect deleted fields/);
   });
 });

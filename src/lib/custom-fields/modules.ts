@@ -1,4 +1,14 @@
 import { CORE_FIELDS, defaultLayoutForLine } from "./defaults";
+import {
+  LEAD_INSURANCE_DESIRE_OPTIONS,
+  LEAD_INSURANCE_SUBTYPE_OPTIONS,
+  LEAD_INSURANCE_TYPE_OPTIONS,
+  LEAD_LANGUAGE_OPTIONS,
+  LEAD_PIPELINE_OPTIONS,
+  LEAD_STATUS_OPTIONS,
+  LEAD_TEMPERATURE_OPTIONS,
+} from "./lead-picklist-options";
+import { LEAD_SOURCES } from "@/lib/crm/sources";
 import { emptyLayout, type CustomFieldDef, type FieldLayout, type LayoutSection } from "./types";
 
 export const FIELD_LAYOUT_MODULES = [
@@ -52,17 +62,48 @@ const LEAD_FIELDS: CustomFieldDef[] = [
   { key: "last_name", label: "Last name", type: "single_line", systemKey: "lastName" },
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
-  { key: "source", label: "Source", type: "single_line", systemKey: "source" },
-  { key: "status", label: "Status", type: "single_line", systemKey: "status" },
-  { key: "temperature", label: "Temperature", type: "single_line", systemKey: "temperature" },
+  { key: "source", label: "Source", type: "picklist", options: [...LEAD_SOURCES], systemKey: "source" },
+  { key: "status", label: "Status", type: "picklist", options: [...LEAD_STATUS_OPTIONS], systemKey: "status" },
+  { key: "temperature", label: "Temperature", type: "picklist", options: [...LEAD_TEMPERATURE_OPTIONS], systemKey: "temperature" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
-  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
+  { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
+  { key: "contact_mailing_address", label: "Mailing Address", type: "address" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
   { key: "date_of_birth", label: "DOB", type: "dob", systemKey: "dateOfBirth" },
-  { key: "insurance_type_desired", label: "Insurance desired", type: "single_line", systemKey: "insuranceTypeDesired" },
-  { key: "preferred_language", label: "Language", type: "single_line", systemKey: "preferredLanguage" },
+  {
+    key: "pipeline",
+    label: "Pipeline",
+    type: "picklist",
+    options: [...LEAD_PIPELINE_OPTIONS],
+  },
+  {
+    key: "insurance_type",
+    label: "Insurance Type",
+    type: "picklist",
+    options: [...LEAD_INSURANCE_TYPE_OPTIONS],
+  },
+  {
+    key: "insurance_subtype",
+    label: "Insurance Subtype",
+    type: "picklist",
+    options: [...LEAD_INSURANCE_SUBTYPE_OPTIONS],
+  },
+  {
+    key: "insurance_type_desired",
+    label: "Insurance desired",
+    type: "picklist",
+    options: [...LEAD_INSURANCE_DESIRE_OPTIONS],
+    systemKey: "insuranceTypeDesired",
+  },
+  {
+    key: "preferred_language",
+    label: "Language",
+    type: "picklist",
+    options: [...LEAD_LANGUAGE_OPTIONS],
+    systemKey: "preferredLanguage",
+  },
 ];
 
 const CONTACT_FIELDS: CustomFieldDef[] = [
@@ -194,10 +235,20 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     return twoCol(
       [
         section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone", "date_of_birth"]),
-        section("address", "Address", ["mailing_address", "city", "state", "zip"]),
+        section("address", "Address", ["mailing_address", "contact_mailing_address", "city", "state", "zip"]),
       ],
       [
-        section("details", "Details", ["source", "status", "temperature", "insurance_type_desired", "preferred_language", "notes"]),
+        section("details", "Details", [
+          "source",
+          "status",
+          "temperature",
+          "pipeline",
+          "insurance_type",
+          "insurance_subtype",
+          "insurance_type_desired",
+          "preferred_language",
+          "notes",
+        ]),
       ],
     );
   }

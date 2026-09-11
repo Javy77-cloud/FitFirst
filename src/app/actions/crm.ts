@@ -58,7 +58,7 @@ import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
-import { writeCarriedLeadValues } from "@/lib/custom-fields/store";
+import { loadRecordValues, writeCarriedLeadValues } from "@/lib/custom-fields/store";
 import {
   documentLinesFromDocs,
   parseSelectedShopLines,
@@ -194,7 +194,8 @@ export async function convertLeadToDeal(
   if (lead.convertedDealId) return lead.convertedDealId;
 
   const dealLine = resolveConvertLine(line, lead.insuranceTypeDesired);
-  const copy = convertFieldCopy(lead, dealLine, state, carryFields);
+  const leadCustom = await loadRecordValues(leadId, "leads").catch(() => ({} as Record<string, string>));
+  const copy = convertFieldCopy(lead, dealLine, state, carryFields, leadCustom);
   const leadDocs = await db
     .select()
     .from(documents)
@@ -252,6 +253,8 @@ export async function convertLeadToDeal(
       state: copy.dealState,
       primaryNamedInsured: copy.primaryNamedInsured,
       source: copy.source,
+      quotingForm: copy.quotingForm,
+      policySubType: copy.policySubType,
       tags: carryLeadTagsToContact(lead.tags),
     })
     .returning();
@@ -273,7 +276,7 @@ export async function convertLeadToDeal(
     values: copy.sheetValues as typeof quoteSheets.$inferInsert.values,
   });
   await insertSheetsForDeal(deal.id, shopLines);
-  await writeCarriedLeadValues(deal.id, lead, carryFields).catch(() => null);
+  await writeCarriedLeadValues(deal.id, { ...lead, id: leadId }, carryFields, leadCustom).catch(() => null);
 
   if (risk && leadDocs.length > 0) {
     await db

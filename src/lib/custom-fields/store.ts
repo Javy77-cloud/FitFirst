@@ -115,6 +115,7 @@ export async function ensureDealFieldCatalog() {
   } else {
     await insertMissingDealFields(CORE_FIELDS);
   }
+  await ensureDealCoreLabelUpgrades();
   await ensureInsuranceSubtypeField();
   const rows = await db
     .select()
@@ -159,10 +160,67 @@ export async function listDealFieldDefs(): Promise<CustomFieldDef[]> {
   return listFieldDefs("deals");
 }
 
+/** Keys that must leave free-text: upgrade type/options/label without inventing duplicate lists. */
+const LEAD_CATALOG_UPGRADE_KEYS = new Set([
+  "status",
+  "temperature",
+  "insurance_type_desired",
+  "preferred_language",
+  "source",
+  "mailing_address",
+  "contact_mailing_address",
+  "pipeline",
+  "insurance_type",
+  "insurance_subtype",
+]);
+
+async function ensureLeadCatalogUpgrades() {
+  const defaults = defaultFieldsForModule("leads");
+  const existing = await db
+    .select()
+    .from(deskCustomFields)
+    .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "leads")));
+  const byKey = new Map(existing.map((row) => [row.key, row]));
+  for (const field of defaults) {
+    const row = byKey.get(field.key);
+    if (!row) continue;
+    if (!LEAD_CATALOG_UPGRADE_KEYS.has(field.key)) continue;
+    const typeMismatch = row.type !== field.type;
+    const labelMismatch = field.label && row.label !== field.label;
+    const needsOptions =
+      field.type === "picklist" &&
+      Array.isArray(field.options) &&
+      field.options.length > 0 &&
+      (row.type !== "picklist" || !Array.isArray(row.options) || (row.options as unknown[]).length === 0);
+    if (typeMismatch || labelMismatch || needsOptions) {
+      await upsertFieldDef(field, "leads");
+    }
+  }
+}
+
+async function ensureDealCoreLabelUpgrades() {
+  const existing = await db
+    .select()
+    .from(deskCustomFields)
+    .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
+  const byKey = new Map(existing.map((row) => [row.key, row]));
+  for (const field of CORE_FIELDS) {
+    const row = byKey.get(field.key);
+    if (!row) continue;
+    if (field.key === "mailing_address" && row.label === "Address") {
+      await upsertFieldDef({ ...toFieldDef(row), label: "Insured Address", type: "address" }, "deals");
+    }
+    if (field.key === "preferred_language" && row.type === "single_line") {
+      await upsertFieldDef(field, "deals");
+    }
+  }
+}
+
 export async function ensureModuleFieldCatalog(module: FieldLayoutModule) {
   if (module === "deals") return ensureDealFieldCatalog();
   // Always seed any new module defaults — sparse catalogs from early tips stay incomplete otherwise.
   await insertMissingFields(module, defaultFieldsForModule(module));
+  if (module === "leads") await ensureLeadCatalogUpgrades();
   const rows = await db
     .select()
     .from(deskCustomFields)
@@ -288,9 +346,13 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
     const picked = pickSavedModuleLayout(rows, module, preferred);
     if (picked) {
       if (module === "deals") return migratePackedDealLayouts(rows, picked);
-      // Tip sep7hk: Edit Layout shows every catalog field for the module, not only the sparse seed.
-      const catalog = await listFieldDefs(module);
-      return ensureLayoutIncludesCatalogFields(picked, catalog);
+      // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
+      // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.
+      if (module === "carriers") {
+        const catalog = await listFieldDefs(module);
+        return ensureLayoutIncludesCatalogFields(picked, catalog);
+      }
+      return picked;
     }
     const layout = defaultLayoutForModule(module);
     if (rows.length === 0) {
@@ -408,9 +470,15 @@ export async function writeCarriedLeadValues(
   dealId: string,
   lead: ConvertLead,
   carry?: readonly string[] | null,
+  leadCustom?: Record<string, string> | null,
 ) {
   const fields = await listDealFieldDefs().catch(() => CORE_FIELDS);
-  const values = dealValuesFromLead(lead, fields, carry);
+  let custom = leadCustom ?? null;
+  if (!custom) {
+    const leadId = (lead as { id?: string }).id;
+    custom = leadId ? await loadRecordValues(leadId, "leads").catch(() => ({})) : {};
+  }
+  const values = dealValuesFromLead(lead, fields, carry, custom);
   if (Object.keys(values).length === 0) return;
   await writeRecordValues(dealId, values);
 }

@@ -23,6 +23,8 @@ export type LeadFormValues = {
   insuranceTypeDesired: string | null;
   source: string | null;
   preferredLanguage: string | null;
+  status: string | null;
+  temperature: string | null;
   notes: string | null;
 };
 
@@ -59,6 +61,8 @@ export function leadValuesFromForm(form: FormData): LeadFormValues {
     insuranceTypeDesired: insuranceTypeFromForm(formStr(form, "insuranceTypeDesired", "field_insurance_type_desired")),
     source: normalizeRecordSource(formStr(form, "source", "field_source")),
     preferredLanguage: emptyToNull(formStr(form, "preferredLanguage", "field_preferred_language")),
+    status: emptyToNull(formStr(form, "status", "field_status")),
+    temperature: emptyToNull(formStr(form, "temperature", "field_temperature")),
     notes: emptyToNull(formStr(form, "notes", "field_notes")),
   };
 }
