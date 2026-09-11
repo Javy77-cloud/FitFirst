@@ -11,7 +11,6 @@ import { AccountGlance } from "@/components/crm/account-glance";
 import { BusinessDetailWorkspace } from "@/components/businesses/business-detail-workspace";
 import { BusinessHealthBadge } from "@/components/businesses/business-health-badge";
 import { BusinessOverflowMenu } from "@/components/businesses/business-overflow-menu";
-import { BusinessQuickActions } from "@/components/businesses/business-quick-actions";
 import { BusinessInlineFields } from "@/components/businesses/business-inline-fields";
 import { LinkedContactsSection } from "@/components/businesses/linked-contacts-section";
 import { BusinessLocationsSection } from "@/components/businesses/business-locations-section";
@@ -120,12 +119,6 @@ export default async function AccountDetailPage({
             />
           </div>
         </div>
-        <BusinessQuickActions
-          accountId={account.id}
-          phone={account.phone}
-          email={account.email}
-          contactId={contacts[0]?.id}
-        />
       </div>
 
       <BusinessDetailWorkspace
