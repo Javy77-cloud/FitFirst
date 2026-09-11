@@ -38,6 +38,7 @@ import {
   clientHistory,
   commissions,
   contactAccounts,
+  contactCoapplicants,
   contacts,
   deals,
   documents,
@@ -56,7 +57,18 @@ import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
+import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { applySystemDealValues } from "@/app/actions/custom-fields";
+import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
+import { normalizeLeadCadence } from "@/lib/leads/queue";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
+import {
+  contactCustomPatchFromValues,
+  contactSystemPatchFromValues,
+  emptyOnlyCoApplicantContactValues,
+  emptyOnlyContactValues,
+  hasCoApplicantIdentity,
+} from "@/lib/crm/contact-bind-transfer";
 import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
 import { loadRecordValues, writeCarriedLeadValues } from "@/lib/custom-fields/store";
 import {
@@ -153,7 +165,8 @@ export async function findOrCreateLead(
       preferredLanguage: input.preferredLanguage || null,
       source: input.source || "manual",
       notes: input.notes || null,
-      status: "new",
+      status: "in_progress",
+      cadence: "new",
       temperature: "hot",
     })
     .returning();
@@ -172,13 +185,61 @@ export async function findOrCreateLead(
 export async function createLead(formData: FormData) {
   const values = leadValuesFromForm(formData);
   const autoRoute = str(formData, "autoRoute") === "1";
-  const { lead } = await findOrCreateLead({
+  const { lead, created } = await findOrCreateLead({
     ...values,
     ownerId: autoRoute ? null : undefined,
     autoRoute,
   });
+  if (!lead) return;
+
+  const cadence = values.cadence ? normalizeLeadCadence(values.cadence) : (lead as { cadence?: string }).cadence ?? "new";
+  const temperature = values.temperature || (lead as { temperature?: string | null }).temperature || "hot";
+  const status = values.status || lead.status || "in_progress";
+
+  // Apply layout system fields that findOrCreateLead may have defaulted.
+  await db
+    .update(leads)
+    .set({
+      firstName: values.firstName || lead.firstName,
+      middleName: values.middleName ?? lead.middleName,
+      lastName: values.lastName || lead.lastName,
+      email: values.email ?? lead.email,
+      phone: values.phone ?? lead.phone,
+      mailingAddress: values.mailingAddress ?? lead.mailingAddress,
+      city: values.city ?? lead.city,
+      state: values.state ?? lead.state,
+      zip: values.zip ?? lead.zip,
+      dateOfBirth: values.dateOfBirth ?? lead.dateOfBirth,
+      insuranceTypeDesired: values.insuranceTypeDesired ?? lead.insuranceTypeDesired,
+      preferredLanguage: values.preferredLanguage ?? lead.preferredLanguage,
+      source: values.source ?? lead.source,
+      notes: values.notes ?? lead.notes,
+      status,
+      cadence,
+      temperature,
+      updatedAt: new Date(),
+    } as any)
+    .where(eq(leads.id, lead.id));
+
+  const linkedContactId = isUuid(str(formData, "contactId")) ? str(formData, "contactId") : "";
+  const defs = await listFieldDefs("leads").catch(() => []);
+  const custom = customValuesFromForm(formData, defs);
+  delete custom.cadence;
+  delete custom.status;
+  delete custom.temperature;
+  if (linkedContactId) custom.linked_contact_id = linkedContactId;
+  if (Object.keys(custom).length) {
+    await writeRecordValues(lead.id, custom, "leads");
+  }
+
+  if (created || values.cadence) {
+    const { fireLeadFollowUpForStatus } = await import("@/lib/leads/apply-follow-up");
+    await fireLeadFollowUpForStatus(lead.id, cadence).catch(() => null);
+  }
+
   revalidatePath("/leads");
-  flashAction("/leads", "lead-saved");
+  revalidatePath(`/leads/${lead.id}`);
+  flashAction(`/leads/${lead.id}?saved=1`, "lead-saved");
 }
 
 export async function convertLeadToDeal(
@@ -355,38 +416,79 @@ export async function createDeal(formData: FormData) {
   const typed = splitTypedPartyName(dealName);
   const firstName =
     str(formData, "firstName") ||
+    str(formData, "field_first_name") ||
     pickedContact?.firstName ||
     typed.firstName ||
     (pickedAccount ? "Shop" : "New");
   const lastName =
     str(formData, "lastName") ||
+    str(formData, "field_last_name") ||
     pickedContact?.lastName ||
     typed.lastName ||
     pickedAccount?.name ||
     "Shop";
+  const email =
+    str(formData, "email") ||
+    str(formData, "field_email") ||
+    pickedContact?.email ||
+    pickedAccount?.email ||
+    null;
+  const phone =
+    str(formData, "phone") ||
+    str(formData, "field_phone") ||
+    pickedContact?.phone ||
+    pickedAccount?.phone ||
+    null;
+  const mailingAddress =
+    str(formData, "address1") ||
+    str(formData, "mailingAddress") ||
+    str(formData, "field_mailing_address") ||
+    pickedContact?.mailingAddress ||
+    pickedAccount?.mailingAddress ||
+    null;
+  const city =
+    str(formData, "city") ||
+    str(formData, "field_city") ||
+    pickedContact?.city ||
+    pickedAccount?.city ||
+    null;
+  const state =
+    str(formData, "state") ||
+    str(formData, "field_state") ||
+    pickedContact?.state ||
+    pickedAccount?.state ||
+    null;
+  const zip =
+    str(formData, "zip") ||
+    str(formData, "field_zip") ||
+    pickedContact?.zip ||
+    pickedAccount?.zip ||
+    null;
+  const source =
+    str(formData, "source") ||
+    str(formData, "field_source") ||
+    "manual";
   const { lead } = await findOrCreateLead({
     firstName,
     lastName,
-    email: str(formData, "email") || pickedContact?.email || pickedAccount?.email || null,
-    phone: str(formData, "phone") || pickedContact?.phone || pickedAccount?.phone || null,
-    mailingAddress:
-      str(formData, "address1") ||
-      str(formData, "mailingAddress") ||
-      pickedContact?.mailingAddress ||
-      pickedAccount?.mailingAddress ||
-      null,
-    city: str(formData, "city") || pickedContact?.city || pickedAccount?.city || null,
-    state: str(formData, "state") || pickedContact?.state || pickedAccount?.state || null,
-    zip: str(formData, "zip") || pickedContact?.zip || pickedAccount?.zip || null,
-    source: str(formData, "source") || "manual",
+    email,
+    phone,
+    mailingAddress,
+    city,
+    state,
+    zip,
+    source,
   });
   if (lead.convertedDealId) {
     revalidatePath("/deals");
-    redirect("/deals?saved=1");
+    flashAction(`/deals/${lead.convertedDealId}?saved=1`, "deal-saved");
   }
 
   const formRaw =
     str(formData, "quotingForm") ||
+    str(formData, "field_insurance_subtype") ||
+    str(formData, "field_quoting_form") ||
+    str(formData, "field_insurance_type") ||
     str(formData, "policySubType") ||
     str(formData, "line") ||
     "HO3";
@@ -403,6 +505,13 @@ export async function createDeal(formData: FormData) {
   );
   const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
+  const namedFromLayout = str(formData, "field_named_insured");
+  const primaryNamedInsured =
+    namedFromLayout ||
+    (pickedContact ? formatPersonName(pickedContact) : null) ||
+    pickedAccount?.name ||
+    [firstName, lastName].filter(Boolean).join(" ").trim() ||
+    null;
   const [deal] = await db
     .insert(deals)
     .values({
@@ -422,15 +531,14 @@ export async function createDeal(formData: FormData) {
       lineOfBusiness: line,
       quotingForm: picked.quotingForm,
       quotingLine: picked.quotingLine,
-      source: lead.source ?? (str(formData, "source") || "manual"),
+      source: lead.source ?? source,
       policySubType,
-      state: str(formData, "state") || pickedContact?.state || pickedAccount?.state || "FL",
+      state: state || "FL",
       ownerId: actor.id,
       accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
       bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
-      primaryNamedInsured: pickedContact
-        ? formatPersonName(pickedContact)
-        : pickedAccount?.name ?? null,
+      primaryNamedInsured,
+      notes: str(formData, "notes") || str(formData, "field_notes") || null,
     })
     .returning();
 
@@ -447,11 +555,11 @@ export async function createDeal(formData: FormData) {
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
-    address1: str(formData, "address1") || fromLead.address1,
-    city: str(formData, "city") || fromLead.city,
-    county: str(formData, "county") || null,
-    state: str(formData, "state") || fromLead.state,
-    zip: str(formData, "zip") || fromLead.zip,
+    address1: mailingAddress || fromLead.address1,
+    city: city || fromLead.city,
+    county: str(formData, "county") || str(formData, "field_county") || null,
+    state: state || fromLead.state,
+    zip: zip || fromLead.zip,
   });
 
   await db.insert(quoteSheets).values({
@@ -462,9 +570,26 @@ export async function createDeal(formData: FormData) {
   });
   await insertSheetsForDeal(deal.id, shopLines);
 
+  const defs = await listFieldDefs("deals").catch(() => []);
+  const custom = customValuesFromForm(formData, defs);
+  if (Object.keys(custom).length) {
+    await writeRecordValues(deal.id, custom, "deals");
+  }
+  const system: Record<string, string> = {};
+  for (const field of defs) {
+    if (!field.systemKey) continue;
+    if (custom[field.key] != null && custom[field.key] !== "") {
+      system[field.systemKey] = custom[field.key];
+    }
+  }
+  if (Object.keys(system).length) {
+    await applySystemDealValues(deal.id, system);
+  }
+
   revalidatePath("/");
   revalidatePath("/deals");
-  redirect("/deals?saved=1");
+  revalidatePath(`/deals/${deal.id}`);
+  flashAction(`/deals/${deal.id}?saved=1`, "deal-saved");
 }
 
 export async function createDealFromDecDrop(formData: FormData) {
@@ -755,9 +880,12 @@ export async function findMatchingContact(input: {
   lastName: string;
   email?: string | null;
   phone?: string | null;
+  middleName?: string | null;
 }) {
+  const { findExistingContactMatch } = await import("@/lib/crm/existing-contact-match");
   const rows = await db.select().from(contacts).where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
-  return rows.find((row) => isSameContact(row, input)) ?? null;
+  const hit = findExistingContactMatch(rows, input);
+  return hit?.contact ?? null;
 }
 
 export async function findMatchingAccount(input: { name: string; ein?: string | null }) {
@@ -773,32 +901,68 @@ export async function findMatchingAccount(input: { name: string; ein?: string | 
 }
 
 export async function createContact(formData: FormData) {
+  const firstName =
+    str(formData, "firstName") || str(formData, "field_first_name") || "Unknown";
+  const lastName =
+    str(formData, "lastName") || str(formData, "field_last_name") || "Client";
+  const email =
+    str(formData, "email") || str(formData, "field_email") || null;
+  const phone =
+    str(formData, "phone") || str(formData, "field_phone") || null;
+  const mailingAddress =
+    str(formData, "mailingAddress") ||
+    str(formData, "field_mailing_address") ||
+    null;
+  const city = str(formData, "city") || str(formData, "field_city") || null;
+  const state = str(formData, "state") || str(formData, "field_state") || "FL";
+  const zip = str(formData, "zip") || str(formData, "field_zip") || null;
+  const forceCreate = str(formData, "forceCreate") === "1";
+
+  if (!forceCreate) {
+    const { findExistingContactMatch } = await import("@/lib/crm/existing-contact-match");
+    const rows = await db.select().from(contacts).where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
+    const hit = findExistingContactMatch(rows, { firstName, lastName, email, phone });
+    if (hit) {
+      revalidatePath("/contacts");
+      flashAction(`/contacts/${hit.contact.id}?saved=1`, "contact-exists");
+    }
+  }
+
   const [row] = await db
     .insert(contacts)
     .values({
       tenantId: DEFAULT_TENANT_ID,
-      firstName: str(formData, "firstName") || "Unknown",
-      lastName: str(formData, "lastName") || "Client",
-      email: str(formData, "email") || null,
-      phone: str(formData, "phone") || null,
-      mailingAddress: str(formData, "mailingAddress") || null,
-      city: str(formData, "city") || null,
-      state: str(formData, "state") || "FL",
-      zip: str(formData, "zip") || null,
-      lifeNotes: str(formData, "lifeNotes") || null,
-      healthNotes: str(formData, "healthNotes") || null,
-      notes: str(formData, "notes") || null,
-      source: str(formData, "source") || "manual",
-      ...writeSsn(str(formData, "ssn") || null),
+      firstName,
+      lastName,
+      email,
+      phone,
+      mailingAddress,
+      city,
+      state,
+      zip,
+      dateOfBirth: str(formData, "dateOfBirth") || str(formData, "field_date_of_birth") || null,
+      lifeNotes: str(formData, "lifeNotes") || str(formData, "field_life_notes") || null,
+      healthNotes: str(formData, "healthNotes") || str(formData, "field_health_notes") || null,
+      notes: str(formData, "notes") || str(formData, "field_notes") || null,
+      source: str(formData, "source") || str(formData, "field_source") || "manual",
+      ...writeSsn(str(formData, "ssn") || str(formData, "field_ssn") || null),
     })
     .returning();
+
+  const defs = await listFieldDefs("contacts").catch(() => []);
+  const custom = customValuesFromForm(formData, defs);
+  if (Object.keys(custom).length) {
+    await writeRecordValues(row.id, custom, "contacts");
+  }
+
   await emitDeskEvent("record.created", {
     entityType: "contact",
     entityId: row.id,
     name: `${row.firstName} ${row.lastName}`.trim(),
   });
   revalidatePath("/contacts");
-  flashAction("/contacts", "contact-saved");
+  revalidatePath(`/contacts/${row.id}`);
+  flashAction(`/contacts/${row.id}?saved=1`, "contact-saved");
 }
 
 async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteSheetFieldValue>> {
@@ -808,6 +972,201 @@ async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteS
     .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
   const home = sheets.find((s) => s.line === "home");
   return (home ?? sheets[0])?.values ?? {};
+}
+
+
+async function applyEmptyOnlyContactBind(opts: {
+  contactId: string;
+  dealId: string;
+  leadId?: string | null;
+  sheetValues: Record<string, QuoteSheetFieldValue>;
+  lead?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    middleName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    mailingAddress?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    dateOfBirth?: string | null;
+    source?: string | null;
+    preferredLanguage?: string | null;
+    lifeNotes?: string | null;
+    healthNotes?: string | null;
+    notes?: string | null;
+    tags?: string[] | null;
+  } | null;
+  dealSource?: string | null;
+  risk?: { address1?: string | null; city?: string | null; state?: string | null; zip?: string | null } | null;
+}) {
+  const [existing] = await db.select().from(contacts).where(eq(contacts.id, opts.contactId));
+  if (!existing) return;
+
+  const dealCustom = await loadRecordValues(opts.dealId, "deals").catch(() => ({} as Record<string, string>));
+  const leadCustom = opts.leadId
+    ? await loadRecordValues(opts.leadId, "leads").catch(() => ({} as Record<string, string>))
+    : {};
+  const contactCustom = await loadRecordValues(opts.contactId, "contacts").catch(
+    () => ({} as Record<string, string>),
+  );
+
+  const sheetStr = (key: string) => {
+    const cell = opts.sheetValues[key];
+    if (!cell) return "";
+    return String((cell as { value?: unknown }).value ?? cell ?? "").trim();
+  };
+
+  const incoming: Record<string, string | null | undefined> = {
+    ...leadCustom,
+    ...dealCustom,
+    first_name: opts.lead?.firstName ?? sheetStr("first_name"),
+    middle_name: opts.lead?.middleName ?? sheetStr("middle_name"),
+    last_name: opts.lead?.lastName ?? sheetStr("last_name"),
+    email: opts.lead?.email ?? sheetStr("email"),
+    phone: opts.lead?.phone ?? sheetStr("phone"),
+    date_of_birth: opts.lead?.dateOfBirth ?? sheetStr("date_of_birth"),
+    mailing_address: opts.risk?.address1 || opts.lead?.mailingAddress || sheetStr("mailing_address"),
+    city: opts.risk?.city || opts.lead?.city || sheetStr("city"),
+    state: opts.risk?.state || opts.lead?.state || sheetStr("state"),
+    zip: opts.risk?.zip || opts.lead?.zip || sheetStr("zip"),
+    preferred_language: opts.lead?.preferredLanguage,
+    life_notes: opts.lead?.lifeNotes,
+    health_notes: opts.lead?.healthNotes,
+    notes: opts.lead?.notes,
+    source: opts.dealSource || opts.lead?.source,
+  };
+
+  const existingValues: Record<string, string> = {
+    ...contactCustom,
+    first_name: existing.firstName ?? "",
+    last_name: existing.lastName ?? "",
+    email: existing.email ?? "",
+    phone: existing.phone ?? "",
+    date_of_birth: existing.dateOfBirth ?? "",
+    mailing_address: existing.mailingAddress ?? "",
+    city: existing.city ?? "",
+    state: existing.state ?? "",
+    zip: existing.zip ?? "",
+    marital_status: existing.maritalStatus ?? "",
+    preferred_language: existing.preferredLanguage ?? "",
+    life_notes: existing.lifeNotes ?? "",
+    health_notes: existing.healthNotes ?? "",
+    notes: existing.notes ?? "",
+    source: existing.source ?? "",
+  };
+
+  const patch = emptyOnlyContactValues(existingValues, incoming);
+  const systemPatch = contactSystemPatchFromValues(patch);
+  const customPatch = contactCustomPatchFromValues(patch);
+
+  if (Object.keys(systemPatch).length) {
+    await db
+      .update(contacts)
+      .set({
+        ...systemPatch,
+        source: existing.source || opts.dealSource || opts.lead?.source || null,
+        tags: mergeTags(existing.tags, carryLeadTagsToContact(opts.lead?.tags)),
+        updatedAt: new Date(),
+      })
+      .where(eq(contacts.id, opts.contactId));
+  } else if (opts.lead?.tags?.length) {
+    await db
+      .update(contacts)
+      .set({
+        tags: mergeTags(existing.tags, carryLeadTagsToContact(opts.lead?.tags)),
+        source: existing.source || opts.dealSource || opts.lead?.source || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(contacts.id, opts.contactId));
+  }
+
+  if (Object.keys(customPatch).length) {
+    await writeRecordValues(opts.contactId, customPatch, "contacts");
+  }
+
+  // Co-applicant → separate contact + M2M (never dump into primary)
+  if (hasCoApplicantIdentity(incoming)) {
+    const coIdentity = {
+      firstName: String(incoming.co_applicant_first_name ?? "").trim() || "Co",
+      lastName: String(incoming.co_applicant_last_name ?? "").trim() || "Applicant",
+      email: String(incoming.co_applicant_email ?? "").trim() || null,
+      phone: String(incoming.co_applicant_phone ?? "").trim() || null,
+    };
+    let coId: string | null = null;
+    const matchedCo = await findMatchingContact(coIdentity);
+    if (matchedCo) {
+      coId = matchedCo.id;
+    } else {
+      const [created] = await db
+        .insert(contacts)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          firstName: coIdentity.firstName,
+          lastName: coIdentity.lastName,
+          email: coIdentity.email,
+          phone: coIdentity.phone,
+          dateOfBirth: String(incoming.co_applicant_dob ?? "").trim() || null,
+          maritalStatus: String(incoming.co_applicant_marital_status ?? "").trim() || null,
+          source: opts.dealSource || opts.lead?.source || null,
+          tenureStart: new Date(),
+        })
+        .returning();
+      coId = created.id;
+    }
+    const [co] = await db.select().from(contacts).where(eq(contacts.id, coId));
+    if (!co) return;
+    const coCustom = await loadRecordValues(co.id, "contacts").catch(() => ({} as Record<string, string>));
+    const coExisting: Record<string, string> = {
+      ...coCustom,
+      first_name: co.firstName ?? "",
+      last_name: co.lastName ?? "",
+      email: co.email ?? "",
+      phone: co.phone ?? "",
+      date_of_birth: co.dateOfBirth ?? "",
+      marital_status: co.maritalStatus ?? "",
+    };
+    const coPatch = emptyOnlyCoApplicantContactValues(coExisting, incoming);
+    const coSystem = contactSystemPatchFromValues(coPatch);
+    const coCustomPatch = contactCustomPatchFromValues(coPatch);
+    if (Object.keys(coSystem).length) {
+      await db
+        .update(contacts)
+        .set({ ...coSystem, updatedAt: new Date() })
+        .where(eq(contacts.id, co.id));
+    }
+    if (Object.keys(coCustomPatch).length) {
+      await writeRecordValues(co.id, coCustomPatch, "contacts");
+    }
+    const linkRows = await db
+      .select()
+      .from(contactCoapplicants)
+      .where(
+        and(
+          eq(contactCoapplicants.tenantId, DEFAULT_TENANT_ID),
+          eq(contactCoapplicants.contactId, opts.contactId),
+          eq(contactCoapplicants.linkedContactId, co.id),
+        ),
+      );
+    const reverse = await db
+      .select()
+      .from(contactCoapplicants)
+      .where(
+        and(
+          eq(contactCoapplicants.tenantId, DEFAULT_TENANT_ID),
+          eq(contactCoapplicants.contactId, co.id),
+          eq(contactCoapplicants.linkedContactId, opts.contactId),
+        ),
+      );
+    if (linkRows.length === 0 && reverse.length === 0 && co.id !== opts.contactId) {
+      await db.insert(contactCoapplicants).values({
+        tenantId: DEFAULT_TENANT_ID,
+        contactId: opts.contactId,
+        linkedContactId: co.id,
+      });
+    }
+  }
 }
 
 export async function bindDeal(formData: FormData) {
@@ -909,22 +1268,6 @@ export async function bindDeal(formData: FormData) {
     });
     if (existing) {
       contactId = existing.id;
-      const filled = fillBlankParty(existing, copied);
-      await db
-        .update(contacts)
-        .set({
-          mailingAddress: filled.mailingAddress,
-          city: filled.city,
-          state: filled.state,
-          zip: filled.zip,
-          phone: filled.phone,
-          email: filled.email,
-          dateOfBirth: filled.dateOfBirth,
-          source: existing.source || deal.source || lead?.source || null,
-          tags: mergeTags(existing.tags, carryLeadTagsToContact(lead?.tags)),
-          updatedAt: new Date(),
-        })
-        .where(eq(contacts.id, existing.id));
     } else {
       const [contact] = await db
         .insert(contacts)
@@ -938,6 +1281,29 @@ export async function bindDeal(formData: FormData) {
         .returning();
       contactId = contact.id;
     }
+  }
+
+  if (contactId && bindTarget !== "account") {
+    await applyEmptyOnlyContactBind({
+      contactId,
+      dealId,
+      leadId: deal.leadId,
+      sheetValues,
+      lead,
+      dealSource: deal.source,
+      risk,
+    });
+  } else if (contactId && bindTarget === "account") {
+    // Commercial bind may still carry a personal contact — empty-only pull + co-app link.
+    await applyEmptyOnlyContactBind({
+      contactId,
+      dealId,
+      leadId: deal.leadId,
+      sheetValues,
+      lead,
+      dealSource: deal.source,
+      risk,
+    });
   }
 
   if (contactId && accountId) {

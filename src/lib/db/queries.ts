@@ -69,6 +69,7 @@ import {
   carriers,
   clientHistory,
   contactAccounts,
+  contactCoapplicants,
   contacts,
   deals,
   documents,
@@ -739,16 +740,42 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
     .select()
     .from(policies)
     .where(eq(policies.tenantId, tenant()));
+  const allDeals = await db
+    .select({ id: deals.id, contactId: deals.contactId, updatedAt: deals.updatedAt })
+    .from(deals)
+    .where(eq(deals.tenantId, tenant()));
+  const activityRows = await db
+    .select({ contactId: activities.contactId, updatedAt: activities.updatedAt, startAt: activities.startAt })
+    .from(activities)
+    .where(eq(activities.tenantId, tenant()));
+  const lastByContact = new Map<string, Date>();
+  for (const row of activityRows) {
+    if (!row.contactId) continue;
+    const at = row.startAt ?? row.updatedAt;
+    if (!at) continue;
+    const prev = lastByContact.get(row.contactId);
+    if (!prev || at.getTime() > prev.getTime()) lastByContact.set(row.contactId, at);
+  }
+  for (const row of allDeals) {
+    if (!row.contactId || !row.updatedAt) continue;
+    const prev = lastByContact.get(row.contactId);
+    if (!prev || row.updatedAt.getTime() > prev.getTime()) lastByContact.set(row.contactId, row.updatedAt);
+  }
   return rows.map((contact) => {
     const related = allPolicies.filter((p) => p.contactId === contact.id);
+    const relatedDeals = allDeals.filter((d) => d.contactId === contact.id);
     const counts = {
       lifetime: related.length,
       inForce: related.filter((p) => isInForcePolicyStatus(p.status)).length,
+      lifetimeDeals: relatedDeals.length,
     };
+    const lastActivityAt = lastByContact.get(contact.id) ?? contact.updatedAt ?? null;
     return {
       ...contact,
       policyCount: counts.lifetime,
       activePolicyCount: counts.inForce,
+      lifetimeDealCount: counts.lifetimeDeals,
+      lastActivityAt,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {
@@ -962,6 +989,28 @@ export async function getContactWorkspace(id: string) {
     .from(contactAccounts)
     .innerJoin(accounts, eq(contactAccounts.accountId, accounts.id))
     .where(and(eq(contactAccounts.tenantId, tenant()), eq(contactAccounts.contactId, id)));
+  const coLinks = await db
+    .select({
+      link: contactCoapplicants,
+      linked: contacts,
+    })
+    .from(contactCoapplicants)
+    .innerJoin(contacts, eq(contactCoapplicants.linkedContactId, contacts.id))
+    .where(and(eq(contactCoapplicants.tenantId, tenant()), eq(contactCoapplicants.contactId, id)));
+  const reverseCoLinks = await db
+    .select({
+      link: contactCoapplicants,
+      linked: contacts,
+    })
+    .from(contactCoapplicants)
+    .innerJoin(contacts, eq(contactCoapplicants.contactId, contacts.id))
+    .where(and(eq(contactCoapplicants.tenantId, tenant()), eq(contactCoapplicants.linkedContactId, id)));
+  const coApplicantsMap = new Map<string, (typeof coLinks)[number]["linked"]>();
+  for (const row of [...coLinks, ...reverseCoLinks]) {
+    if (row.linked.id === id) continue;
+    coApplicantsMap.set(row.linked.id, row.linked);
+  }
+  const coApplicants = [...coApplicantsMap.values()];
   const originDealId = relatedDeals[0]?.id;
   const [originLead] = originDealId
     ? await db
@@ -979,6 +1028,7 @@ export async function getContactWorkspace(id: string) {
     policies: relatedPolicies,
     deals: relatedDeals,
     businesses: linked.map((row) => row.account),
+    coApplicants,
     lead: originLead ?? null,
     originRisk: originRisk ?? null,
     policyCount: lifetime,
