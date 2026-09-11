@@ -1283,18 +1283,8 @@ export async function bindDeal(formData: FormData) {
     }
   }
 
+  // Contact bind only — Business/Accounts owns account empty-only separately.
   if (contactId && bindTarget !== "account") {
-    await applyEmptyOnlyContactBind({
-      contactId,
-      dealId,
-      leadId: deal.leadId,
-      sheetValues,
-      lead,
-      dealSource: deal.source,
-      risk,
-    });
-  } else if (contactId && bindTarget === "account") {
-    // Commercial bind may still carry a personal contact — empty-only pull + co-app link.
     await applyEmptyOnlyContactBind({
       contactId,
       dealId,
