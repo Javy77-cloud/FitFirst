@@ -24,6 +24,7 @@ import {
   resolveLayoutFields,
 } from "./resolve-layout";
 import type { CustomFieldDef, FieldLayout } from "./types";
+import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./split-address-sections";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
 import {
@@ -310,6 +311,25 @@ async function migratePackedDealLayouts(
   return stripped;
 }
 
+async function migrateAddressSections(
+  module: FieldLayoutModule,
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (module !== "leads" && module !== "deals") return picked;
+  if (!needsAddressSectionSplit(picked)) return picked;
+  const split = splitInsuredMailingAddressSections(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    if (!needsAddressSectionSplit(parsed)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: splitInsuredMailingAddressSections(parsed), updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return split;
+}
+
 export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
   return loadLayoutForModule("deals", line);
 }
@@ -345,13 +365,17 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
     const rows = await loadSavedLayoutRows(module);
     const picked = pickSavedModuleLayout(rows, module, preferred);
     if (picked) {
-      if (module === "deals") return migratePackedDealLayouts(rows, picked);
+      if (module === "deals") {
+        const dealLayout = await migratePackedDealLayouts(rows, picked);
+        return migrateAddressSections(module, rows, dealLayout);
+      }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.
       if (module === "carriers") {
         const catalog = await listFieldDefs(module);
         return ensureLayoutIncludesCatalogFields(picked, catalog);
       }
+      if (module === "leads") return migrateAddressSections(module, rows, picked);
       return picked;
     }
     const layout = defaultLayoutForModule(module);

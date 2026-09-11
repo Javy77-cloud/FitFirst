@@ -134,13 +134,8 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
   return {
     left: [section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS])],
     right: [
-      section("address", "Address", [
-        "mailing_address",
-        "contact_mailing_address",
-        "city",
-        "state",
-        "zip",
-      ]),
+      section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
+      section("mailing_address", "Mailing Address", ["contact_mailing_address"]),
     ],
   };
 }

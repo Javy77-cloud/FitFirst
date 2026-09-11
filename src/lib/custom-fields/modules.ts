@@ -235,7 +235,8 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     return twoCol(
       [
         section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone", "date_of_birth"]),
-        section("address", "Address", ["mailing_address", "contact_mailing_address", "city", "state", "zip"]),
+        section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
+        section("mailing_address", "Mailing Address", ["contact_mailing_address"]),
       ],
       [
         section("details", "Details", [
