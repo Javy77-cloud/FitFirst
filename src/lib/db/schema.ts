@@ -1090,6 +1090,8 @@ export const accounts = pgTable(
     pcNotes: text("pc_notes"),
     isExample: boolean("is_example").notNull().default(false),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    mergedIntoId: uuid("merged_into_id"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [

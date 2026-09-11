@@ -687,7 +687,13 @@ export async function listPartyTypeahead(): Promise<PartyRecord[]> {
         phone: accounts.phone,
       })
       .from(accounts)
-      .where(eq(accounts.tenantId, tenant()))
+      .where(
+        and(
+          eq(accounts.tenantId, tenant()),
+          isNull(accounts.archivedAt),
+          isNull(accounts.mergedIntoId),
+        ),
+      )
       .orderBy(asc(accounts.name)),
     session.isAdmin
       ? Promise.resolve([] as Array<{ accountId: string | null; ownerId: string | null }>)
@@ -798,7 +804,13 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
   const rows = await db
     .select()
     .from(accounts)
-    .where(eq(accounts.tenantId, tenant()))
+    .where(
+      and(
+        eq(accounts.tenantId, tenant()),
+        isNull(accounts.archivedAt),
+        isNull(accounts.mergedIntoId),
+      ),
+    )
     .orderBy(asc(accounts.name));
   const allPolicies = await db
     .select()

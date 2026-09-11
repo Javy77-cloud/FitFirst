@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts } from "@/lib/db/schema";
@@ -10,6 +10,9 @@ import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { normalizeTags, parseTagsFromForm } from "@/lib/tags/module-tags";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { executeMerge } from "@/lib/merge/execute";
+import { MergeLockError } from "@/lib/merge/lock";
+import { fieldPreview } from "@/lib/merge/preview";
 
 function keepInt(next: string, existing: number | null): number | null {
   if (!next.trim()) return null;
@@ -168,3 +171,165 @@ export async function createBusinessPopup(formData: FormData) {
   revalidatePath(`/accounts/${row.id}`);
   return { ok: true as const, id: row.id };
 }
+
+/** Search active businesses for Merge dialog (excludes archived / self). */
+export async function searchBusinessesForMerge(query: string, excludeId?: string) {
+  const q = query.trim().toLowerCase();
+  const clauses = [
+    eq(accounts.tenantId, DEFAULT_TENANT_ID),
+    isNull(accounts.archivedAt),
+    isNull(accounts.mergedIntoId),
+  ];
+  if (excludeId) clauses.push(ne(accounts.id, excludeId));
+  const rows = await db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      dba: accounts.dba,
+      email: accounts.email,
+      phone: accounts.phone,
+      city: accounts.city,
+      state: accounts.state,
+    })
+    .from(accounts)
+    .where(and(...clauses))
+    .limit(80);
+  if (!q) return rows.slice(0, 20);
+  return rows
+    .filter((row) => {
+      const hay = `${row.name} ${row.dba ?? ""} ${row.email ?? ""} ${row.phone ?? ""} ${row.city ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    })
+    .slice(0, 20);
+}
+
+/** Side-by-side merge preview for Business overflow Merge dialog. */
+export async function loadBusinessMergePreview(keeperId: string, duplicateId: string) {
+  const [keeper] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, keeperId)));
+  const [duplicate] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, duplicateId)));
+  if (!keeper || !duplicate) return { ok: false as const, error: "Business Not Found." };
+  if (keeper.archivedAt || keeper.mergedIntoId || duplicate.archivedAt || duplicate.mergedIntoId) {
+    return { ok: false as const, error: "Cannot Merge An Archived Business." };
+  }
+  const rows = fieldPreview(
+    "account",
+    keeper as unknown as Record<string, unknown>,
+    duplicate as unknown as Record<string, unknown>,
+  );
+  return {
+    ok: true as const,
+    keeper: {
+      id: keeper.id,
+      name: keeper.name,
+      dba: keeper.dba,
+      email: keeper.email,
+      phone: keeper.phone,
+    },
+    duplicate: {
+      id: duplicate.id,
+      name: duplicate.name,
+      dba: duplicate.dba,
+      email: duplicate.email,
+      phone: duplicate.phone,
+    },
+    rows,
+  };
+}
+
+/**
+ * Merge duplicate business into survivor.
+ * Linked contacts / policies / deals / locations / timeline move to survivor;
+ * duplicate is archived (not deleted). Empty-only field fill on survivor.
+ */
+export async function mergeBusinessIntoSurvivor(formData: FormData) {
+  const keeperId = str(formData, "keeperId");
+  const duplicateId = str(formData, "duplicateId");
+  if (!keeperId || !duplicateId || keeperId === duplicateId) {
+    return { ok: false as const, error: "Pick A Different Business To Merge." };
+  }
+  const picksRaw = str(formData, "picks");
+  let picks: Record<string, "keeper" | "duplicate"> = {};
+  if (picksRaw) {
+    try {
+      picks = JSON.parse(picksRaw) as Record<string, "keeper" | "duplicate">;
+    } catch {
+      picks = {};
+    }
+  }
+
+  try {
+    if (Object.keys(picks).length > 0) {
+      const [keeper] = await db
+        .select()
+        .from(accounts)
+        .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, keeperId)));
+      const [duplicate] = await db
+        .select()
+        .from(accounts)
+        .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, duplicateId)));
+      if (keeper && duplicate) {
+        const patch: Record<string, unknown> = {};
+        const systemKeys = [
+          "name",
+          "legalName",
+          "dba",
+          "email",
+          "phone",
+          "mailingAddress",
+          "city",
+          "state",
+          "zip",
+          "website",
+          "entityType",
+          "industry",
+          "naics",
+          "employeeCount",
+          "annualSales",
+          "payrollW2",
+          "yearsInBusiness",
+          "source",
+          "referral",
+          "notes",
+          "lifeNotes",
+          "healthNotes",
+          "pcNotes",
+        ] as const;
+        for (const key of systemKeys) {
+          if (picks[key] === "duplicate") {
+            const val = (duplicate as Record<string, unknown>)[key];
+            // Never blank out survivor name.
+            if (key === "name" && (val == null || String(val).trim() === "")) continue;
+            patch[key] = val;
+          }
+        }
+        if (Object.keys(patch).length) {
+          await db
+            .update(accounts)
+            .set({ ...patch, updatedAt: new Date() } as never)
+            .where(eq(accounts.id, keeperId));
+        }
+      }
+    }
+    await executeMerge({ entityType: "account", keeperId, duplicateId });
+  } catch (error) {
+    if (error instanceof MergeLockError) {
+      return { ok: false as const, error: error.message };
+    }
+    throw error;
+  }
+
+  revalidatePath("/accounts");
+  revalidatePath("/businesses");
+  revalidatePath(`/accounts/${keeperId}`);
+  revalidatePath(`/businesses/${keeperId}`);
+  revalidatePath(`/accounts/${duplicateId}`);
+  revalidatePath("/merge");
+  return { ok: true as const, keeperId };
+}
+

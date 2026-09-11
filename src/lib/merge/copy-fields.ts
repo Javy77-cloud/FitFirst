@@ -16,6 +16,48 @@ export const CONTACT_COPY_FIELDS = [
   "healthNotes",
 ] as const;
 
+
+export const ACCOUNT_COPY_FIELDS = [
+  "email",
+  "phone",
+  "mailingAddress",
+  "city",
+  "state",
+  "zip",
+  "dba",
+  "legalName",
+  "website",
+  "entityType",
+  "industry",
+  "naics",
+  "operations",
+  "operationsDescription",
+  "source",
+  "referral",
+  "employeeCount",
+  "annualSales",
+  "payrollTotal",
+  "payrollW2",
+  "payroll1099",
+  "yearsInBusiness",
+  "wcClassCode",
+  "primaryAddress1",
+  "primaryCity",
+  "primaryCounty",
+  "primaryState",
+  "primaryZip",
+  "ein",
+  "einEnc",
+  "einIv",
+  "einLast4",
+  "einLookup",
+  "tenureStart",
+  "clientSince",
+  "lifeNotes",
+  "healthNotes",
+  "pcNotes",
+] as const;
+
 export const LEAD_COPY_FIELDS = [
   "email",
   "phone",
@@ -31,7 +73,7 @@ export const LEAD_COPY_FIELDS = [
   "convertedDealId",
 ] as const;
 
-export const NOTE_FIELDS = ["notes", "lifeNotes", "healthNotes"] as const;
+export const NOTE_FIELDS = ["notes", "lifeNotes", "healthNotes", "pcNotes"] as const;
 
 export type FieldPatch = Record<string, unknown>;
 

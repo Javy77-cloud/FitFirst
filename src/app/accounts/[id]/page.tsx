@@ -115,6 +115,7 @@ export default async function AccountDetailPage({
           <div className="ml-auto">
             <BusinessOverflowMenu
               accountId={account.id}
+              accountName={account.name}
               tags={account.tags}
               tagExtra={tagExtra}
             />
