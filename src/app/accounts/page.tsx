@@ -13,6 +13,7 @@ import { haystack } from "@/lib/search/live-query";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
+import { AddBusinessDialog } from "@/components/businesses/add-business-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -25,17 +26,26 @@ export default async function AccountsPage({
   const filter = pickFilterParams(params, ["status"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
+  const openNew = firstParam(params.new) === "1";
   const [all, tagCatalog] = await Promise.all([
     listAccounts(),
     listModuleTags("accounts").catch(() => []),
   ]);
   const rows = all.filter((account) => matchesField(account.clientStatus, filter.status));
+  const businessBook = all.map((row) => ({
+    id: row.id,
+    name: row.name,
+    legalName: row.legalName,
+    dba: row.dba,
+    einLast4: row.einLast4,
+    einLookup: row.einLookup,
+  }));
   return (
     <AppShell title="Businesses">
       <SavedToast show={saved} message="Business saved." listHref="/accounts" />
       <p className="mb-3 text-base text-muted-foreground">
         Commercial bind creates a Business (Account). Personal HO stays on a Contact. The same
-        person can be linked here without moving their personal policies.
+        person can be linked here without moving their personal policies. New Business uses a popup.
       </p>
       <SavedFiltersBar
         moduleId="businesses"
@@ -51,7 +61,13 @@ export default async function AccountsPage({
           },
         ]}
       />
-      <section className="ff-card overflow-hidden">
+      <section className="ff-card overflow-hidden" data-ff-businesses-list="">
+        <div
+          className="flex items-center justify-end border-b border-border px-3 py-2"
+          data-ff-businesses-list-actions=""
+        >
+          <AddBusinessDialog businesses={businessBook} defaultOpen={openNew} />
+        </div>
         <ModuleListActions
           module="businesses"
           recordIds={rows.map((account) => account.id)}

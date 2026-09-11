@@ -5,7 +5,11 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts } from "@/lib/db/schema";
-import { replaceEin } from "@/lib/pii/write";
+import { replaceEin, writeEin } from "@/lib/pii/write";
+import { emitDeskEvent } from "@/lib/developer-hub/events";
+import { normalizeTags, parseTagsFromForm } from "@/lib/tags/module-tags";
+import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
+import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 
 function keepInt(next: string, existing: number | null): number | null {
   if (!next.trim()) return null;
@@ -20,10 +24,14 @@ function keepMoney(next: string, existing: string | null): string | null {
   return Number.isFinite(n) ? cleaned : existing;
 }
 
+function str(form: FormData, key: string) {
+  return String(form.get(key) ?? "").trim();
+}
+
 const FIELD_MAP = {
   ein: "ein",
   entity_type: "entityType",
-  industry: "naics",
+  industry: "industry",
   naics: "naics",
   annual_sales: "annualSales",
   employee_count: "employeeCount",
@@ -34,6 +42,9 @@ const FIELD_MAP = {
   email: "email",
   name: "name",
   dba: "dba",
+  website: "website",
+  source: "source",
+  referral: "referral",
 } as const;
 
 type FieldKey = keyof typeof FIELD_MAP;
@@ -84,4 +95,76 @@ export async function updateAccountField(input: {
   revalidatePath(`/accounts/${accountId}`);
   revalidatePath(`/businesses/${accountId}`);
   return { ok: true };
+}
+
+/** Popup create — returns id, does not redirect (caller router.refresh / push). */
+export async function createBusinessPopup(formData: FormData) {
+  const name =
+    str(formData, "name") ||
+    str(formData, "legalName") ||
+    str(formData, "business_name") ||
+    str(formData, "legal_name");
+  if (!name) return { ok: false as const, error: "Business name is required." };
+
+  const legalName = str(formData, "legalName") || str(formData, "legal_name") || name;
+  const dba = str(formData, "dba") || null;
+  const ein = str(formData, "ein") || null;
+  const entityType = str(formData, "entityType") || str(formData, "entity_type") || null;
+  const industry = str(formData, "industry") || null;
+  const phone = str(formData, "phone") || null;
+  const email = str(formData, "email") || null;
+  const website = str(formData, "website") || null;
+  const mailingAddress =
+    str(formData, "mailingAddress") || str(formData, "mailing_address") || null;
+  const city = str(formData, "city") || null;
+  const state = str(formData, "state") || "FL";
+  const zip = str(formData, "zip") || null;
+  const source = str(formData, "source") || "manual";
+  const referral = str(formData, "referral") || null;
+  const lifeNotes = str(formData, "lifeNotes") || str(formData, "life_notes") || null;
+  const healthNotes = str(formData, "healthNotes") || str(formData, "health_notes") || null;
+  const pcNotes = str(formData, "pcNotes") || str(formData, "pc_notes") || null;
+  const tags = normalizeTags(parseTagsFromForm(formData));
+
+  const [row] = await db
+    .insert(accounts)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      name,
+      legalName,
+      dba,
+      ...writeEin(ein),
+      entityType,
+      industry,
+      phone,
+      email,
+      website,
+      mailingAddress,
+      city,
+      state,
+      zip,
+      source,
+      referral,
+      lifeNotes,
+      healthNotes,
+      pcNotes,
+      tags,
+    })
+    .returning();
+
+  const defs = await listFieldDefs("businesses").catch(() => []);
+  const custom = customValuesFromForm(formData, defs);
+  if (Object.keys(custom).length) {
+    await writeRecordValues(row.id, custom, "businesses");
+  }
+
+  await emitDeskEvent("record.created", {
+    entityType: "account",
+    entityId: row.id,
+    name: row.name,
+  });
+  revalidatePath("/accounts");
+  revalidatePath("/businesses");
+  revalidatePath(`/accounts/${row.id}`);
+  return { ok: true as const, id: row.id };
 }

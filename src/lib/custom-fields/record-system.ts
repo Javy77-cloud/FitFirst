@@ -152,10 +152,20 @@ export async function applyModuleSystemValues(
           existing.yearsInBusiness,
         ),
         naics: keep(str(values, "naics"), existing.naics) as typeof existing.naics,
+        industry: keep(str(values, "industry"), existing.industry) as typeof existing.industry,
+        website: keep(str(values, "website"), existing.website) as typeof existing.website,
+        source: keep(str(values, "source"), existing.source) as typeof existing.source,
+        referral: keep(str(values, "referral"), existing.referral) as typeof existing.referral,
         operationsDescription: keep(
           str(values, "operations", "operationsDescription"),
           existing.operationsDescription,
         ) as typeof existing.operationsDescription,
+        lifeNotes: keep(str(values, "life_notes", "lifeNotes"), existing.lifeNotes) as typeof existing.lifeNotes,
+        healthNotes: keep(
+          str(values, "health_notes", "healthNotes"),
+          existing.healthNotes,
+        ) as typeof existing.healthNotes,
+        pcNotes: keep(str(values, "pc_notes", "pcNotes"), existing.pcNotes) as typeof existing.pcNotes,
         notes: keep(str(values, "notes"), existing.notes) as typeof existing.notes,
         updatedAt: new Date(),
       })

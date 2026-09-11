@@ -11,6 +11,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, activities, deals } from "@/lib/db/schema";
 import { writeEin } from "@/lib/pii/write";
+import { normalizeTags, parseTagsFromForm } from "@/lib/tags/module-tags";
 import { ADMIN_NAME, ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import {
   completeDeskActivity,
@@ -126,21 +127,40 @@ export async function addTimelineNote(formData: FormData) {
 }
 
 export async function createBusiness(formData: FormData) {
-  const name = str(formData, "name") || str(formData, "legalName");
+  const name =
+    str(formData, "name") ||
+    str(formData, "legalName") ||
+    str(formData, "business_name") ||
+    str(formData, "legal_name");
   if (!name) throw new Error("Business name is required.");
   const [row] = await db
     .insert(accounts)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       name,
-      legalName: str(formData, "legalName") || name,
+      legalName: str(formData, "legalName") || str(formData, "legal_name") || name,
+      dba: str(formData, "dba") || null,
       ...writeEin(str(formData, "ein") || null),
+      entityType: str(formData, "entityType") || str(formData, "entity_type") || null,
+      industry: str(formData, "industry") || null,
+      phone: str(formData, "phone") || null,
+      email: str(formData, "email") || null,
+      website: str(formData, "website") || null,
+      mailingAddress: str(formData, "mailingAddress") || str(formData, "mailing_address") || null,
       city: str(formData, "city") || null,
       state: str(formData, "state") || "FL",
+      zip: str(formData, "zip") || null,
+      source: str(formData, "source") || "manual",
+      referral: str(formData, "referral") || null,
+      lifeNotes: str(formData, "lifeNotes") || str(formData, "life_notes") || null,
+      healthNotes: str(formData, "healthNotes") || str(formData, "health_notes") || null,
+      pcNotes: str(formData, "pcNotes") || str(formData, "pc_notes") || null,
+      tags: normalizeTags(parseTagsFromForm(formData)),
     })
     .returning();
   revalidatePath("/accounts");
   revalidatePath("/businesses");
+  revalidatePath(`/accounts/${row.id}`);
   flashAction("/accounts", "business-saved");
 }
 

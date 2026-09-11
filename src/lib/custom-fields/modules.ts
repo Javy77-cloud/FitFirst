@@ -11,6 +11,10 @@ import {
   LEAD_TEMPERATURE_OPTIONS,
 } from "./lead-picklist-options";
 import { LEAD_SOURCES } from "@/lib/crm/sources";
+import {
+  BUSINESS_ENTITY_TYPE_OPTIONS,
+  BUSINESS_INDUSTRY_OPTIONS,
+} from "@/lib/businesses/entity-industry";
 import { emptyLayout, type CustomFieldDef, type FieldLayout, type LayoutSection } from "./types";
 import {
   CONTACT_MODULE_FIELDS,
@@ -136,12 +140,28 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "legal_name", label: "Legal name", type: "single_line", systemKey: "legalName" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "email", label: "Email", type: "email", systemKey: "email" },
+  { key: "website", label: "Website", type: "single_line", systemKey: "website" },
   { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
   { key: "ein", label: "EIN", type: "single_line", systemKey: "ein" },
-  { key: "entity_type", label: "Entity type", type: "single_line", systemKey: "entityType" },
+  {
+    key: "entity_type",
+    label: "Business type",
+    type: "picklist",
+    options: [...BUSINESS_ENTITY_TYPE_OPTIONS],
+    systemKey: "entityType",
+  },
+  {
+    key: "industry",
+    label: "Industry",
+    type: "picklist",
+    options: [...BUSINESS_INDUSTRY_OPTIONS],
+    systemKey: "industry",
+  },
+  { key: "source", label: "Source", type: "picklist", options: [...LEAD_SOURCES], systemKey: "source" },
+  { key: "referral", label: "Referral", type: "single_line", systemKey: "referral" },
   { key: "employee_count", label: "Employees", type: "number", systemKey: "employeeCount" },
   { key: "annual_sales", label: "Annual sales", type: "currency", systemKey: "annualSales" },
   { key: "payroll_w2", label: "W-2 payroll", type: "currency", systemKey: "payrollW2" },
@@ -149,6 +169,9 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "years_in_business", label: "Years in business", type: "number", systemKey: "yearsInBusiness" },
   { key: "naics", label: "NAICS", type: "single_line", systemKey: "naics" },
   { key: "operations", label: "Operations", type: "multi_line", systemKey: "operationsDescription" },
+  { key: "life_notes", label: "Life Notes (CRM Only)", type: "multi_line", systemKey: "lifeNotes" },
+  { key: "health_notes", label: "Health Notes (CRM Only)", type: "multi_line", systemKey: "healthNotes" },
+  { key: "pc_notes", label: "P&C Notes (CRM Only)", type: "multi_line", systemKey: "pcNotes" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
 ];
 
@@ -268,11 +291,31 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
   if (module === "businesses") {
     return twoCol(
       [
-        section("business", "Business", ["business_name", "dba", "legal_name", "phone", "email", "ein", "entity_type"]),
+        section("business", "Business", [
+          "business_name",
+          "dba",
+          "legal_name",
+          "phone",
+          "email",
+          "website",
+          "ein",
+          "entity_type",
+          "industry",
+        ]),
         section("location", "Location", ["mailing_address", "city", "state", "zip"]),
       ],
       [
-        section("operations", "Operations", ["employee_count", "annual_sales", "payroll_w2", "payroll_1099", "years_in_business", "naics", "operations", "notes"]),
+        section("intake", "Intake", ["source", "referral"]),
+        section("operations", "Operations", [
+          "employee_count",
+          "annual_sales",
+          "payroll_w2",
+          "payroll_1099",
+          "years_in_business",
+          "naics",
+          "operations",
+        ]),
+        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"]),
       ],
     );
   }

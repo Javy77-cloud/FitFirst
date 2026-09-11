@@ -72,7 +72,7 @@ export default async function AccountDetailPage({
   const inlineValues: Record<string, string> = {
     ein: account.ein ?? (account.einLast4 ? `•••-••-${account.einLast4}` : ""),
     entity_type: account.entityType ?? "",
-    industry: account.naics ?? account.operations ?? "",
+    industry: account.industry ?? account.naics ?? account.operations ?? "",
     annual_sales: account.annualSales != null ? String(account.annualSales) : "",
     employee_count: account.employeeCount != null ? String(account.employeeCount) : "",
     payroll:
