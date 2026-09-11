@@ -1,43 +1,64 @@
 import Link from "next/link";
 import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
-import { SourceSelect } from "@/components/crm/source-select";
-import { FormPrimaryActions } from "@/components/desk/form-actions";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { LinkExistingContactGuard } from "@/components/crm/link-existing-contact-guard";
+import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
+import { Button } from "@/components/ui/button";
+import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
+import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
+import { allLayoutFieldKeys } from "@/lib/custom-fields/types";
+import { listContacts } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
-export default function NewContactPage() {
+export default async function NewContactPage() {
+  const [bundle, contactRows] = await Promise.all([
+    loadModuleLayoutBundle("contacts").catch(() => null),
+    listContacts().catch(() => []),
+  ]);
+  const layout = bundle?.layout ?? defaultLayoutForModule("contacts");
+  const fields = bundle?.fields ?? [];
+  const values = Object.fromEntries(allLayoutFieldKeys(layout).map((key) => [key, ""]));
+  const contacts = contactRows.map((row) => ({
+    id: row.id,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    phone: row.phone,
+    mailingAddress: row.mailingAddress,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+  }));
+
   return (
-    <AppShell title="Add contact" eyebrow="New">
-      <form action={createContact} className="ff-card max-w-xl space-y-3 p-4">
+    <AppShell title="Add Contact">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Person on the book. Bind still creates a contact when a shopping deal is written.
-          Ana stays Quote Sent / unbound.
+          Same Contact layout as detail — fill what you know, Save Contact opens the record.
         </p>
-        <div>
-          <Label className="text-xs">First name</Label>
-          <Input name="firstName" required className="mt-1 h-8" />
+        <EditLayoutLink module="contacts" />
+      </div>
+
+      <LinkExistingContactGuard
+        module="contacts"
+        contacts={contacts}
+        action={createContact}
+        className="w-full space-y-3"
+        data-ff="new-contact-layout"
+      >
+        <input type="hidden" name="state" value="FL" />
+        <RecordLayoutFields module="contacts" layout={layout} fields={fields} values={values} />
+        <div className="flex items-center justify-end gap-3 pt-1" data-ff-contact-actions="">
+          <Link href="/contacts" className="text-sm text-primary hover:underline">
+            Back To Contacts
+          </Link>
+          <Button type="submit" data-ff-save-contact="">
+            Save Contact
+          </Button>
         </div>
-        <div>
-          <Label className="text-xs">Last name</Label>
-          <Input name="lastName" required className="mt-1 h-8" />
-        </div>
-        <div>
-          <Label className="text-xs">Phone</Label>
-          <Input name="phone" className="mt-1 h-8" />
-        </div>
-        <div>
-          <Label className="text-xs">Email</Label>
-          <Input name="email" type="email" className="mt-1 h-8" />
-        </div>
-        <SourceSelect defaultValue="referral" />
-        <FormPrimaryActions
-          submitLabel="Save contact"
-          secondary={<Link href="/contacts">Back to contacts</Link>}
-        />
-      </form>
+      </LinkExistingContactGuard>
     </AppShell>
   );
 }

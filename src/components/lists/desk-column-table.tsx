@@ -10,6 +10,7 @@ export async function DeskColumnTable({
   columns,
   rows,
   empty,
+  defaultSort,
 }: {
   moduleId: string;
   searchModuleId?: string;
@@ -17,6 +18,7 @@ export async function DeskColumnTable({
   columns: ListColumn[];
   rows: ColumnRow[];
   empty?: ReactNode;
+  defaultSort?: { key: string; dir: "asc" | "desc" } | null;
 }) {
   const stored = await loadListColumnLayout(moduleId);
   const initialVisible = stored?.columns ? mergeVisibleColumns(columns, stored.columns) : undefined;
@@ -31,7 +33,7 @@ export async function DeskColumnTable({
       empty={empty}
       initialVisible={initialVisible}
       initialWidths={initialWidths}
-      initialSort={stored?.sort ?? null}
+      initialSort={stored?.sort ?? defaultSort ?? null}
     />
   );
 }

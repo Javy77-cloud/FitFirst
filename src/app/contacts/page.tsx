@@ -1,24 +1,20 @@
-import { createContact } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
-import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { listContacts } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { CONTACTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { SourceSelect } from "@/components/crm/source-select";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
-import { CLIENT_STATUSES } from "@/lib/domain";
+import { CLIENT_STATUSES, formatDay } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
+import { AddContactDialog } from "@/components/contacts/add-contact-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +35,24 @@ export default async function ContactsPage({
     (contact) =>
       matchesField(contact.clientStatus, filter.status) && matchesField(contact.source, filter.source),
   );
+  const contactBook = all.map((row) => ({
+    id: row.id,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    phone: row.phone,
+    mailingAddress: row.mailingAddress,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+  }));
+
   return (
     <AppShell title="Contacts">
       <SavedToast show={saved} message="Contact saved." listHref="/contacts" />
       <p className="mb-3 text-base text-muted-foreground">
-        Personal-lines bind creates a Contact and copies lead/risk fields. Client = any related
-        policy is Active, Bound, or Pending.
+        Clients on the book. Bind / Closed Won creates or links a Contact (empty-only field copy).
+        New Contact uses a popup — full layout is one click away.
       </p>
       <SavedFiltersBar
         moduleId="contacts"
@@ -68,62 +76,56 @@ export default async function ContactsPage({
           },
         ]}
       />
-      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <form action={createContact} className="ff-card space-y-3 p-4">
-          <h2 className="text-base font-semibold text-navy">Add contact</h2>
-          <div>
-            <Label className="text-xs">First name</Label>
-            <Input name="firstName" required className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Last name</Label>
-            <Input name="lastName" required className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Phone</Label>
-            <Input name="phone" className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Life notes (CRM only)</Label>
-            <Input name="lifeNotes" className="mt-1 h-8" />
-          </div>
-          <div>
-            <Label className="text-xs">Health notes (CRM only)</Label>
-            <Input name="healthNotes" className="mt-1 h-8" />
-          </div>
-          <SourceSelect defaultValue="referral" />
-          <FormPrimaryActions submitLabel="Save contact" />
-        </form>
-        <section className="ff-card overflow-hidden">
-          <ModuleListActions
-            module="contacts"
-            recordIds={rows.map((c) => c.id)}
-            records={rows.map((c) => ({
-              id: c.id,
-              label: `${c.lastName}, ${c.firstName}`,
-              email: c.email,
-              phone: c.phone,
-              archivedAt: c.archivedAt,
-              contactId: c.id,
-              accountId: c.accountId,
-            }))}
-          >
+      <section className="ff-card overflow-hidden" data-ff-contacts-list="">
+        <div
+          className="flex items-center justify-end border-b border-border px-3 py-2"
+          data-ff-contacts-list-actions=""
+        >
+          <AddContactDialog contacts={contactBook} />
+        </div>
+        <ModuleListActions
+          module="contacts"
+          recordIds={rows.map((c) => c.id)}
+          records={rows.map((c) => ({
+            id: c.id,
+            label: `${c.lastName}, ${c.firstName}`,
+            email: c.email,
+            phone: c.phone,
+            archivedAt: c.archivedAt,
+            contactId: c.id,
+            
+          }))}
+        >
           <DeskColumnTable
             moduleId="contacts"
             initialQuery={q}
             columns={CONTACTS_LIST_COLUMNS}
+            defaultSort={{ key: "lastActivity", dir: "desc" }}
             empty="Empty book. Bind a deal or add an existing client."
             rows={rows.map((c) => ({
               key: c.id,
-              hay: haystack([c.firstName, c.lastName, c.email, c.phone, c.city, c.source, c.clientStatus, ...(c.tags ?? [])]),
+              hay: haystack([
+                c.firstName,
+                c.lastName,
+                c.email,
+                c.phone,
+                c.city,
+                c.source,
+                c.clientStatus,
+                ...(c.tags ?? []),
+              ]),
               sort: {
                 pick: "",
                 name: `${c.lastName}, ${c.firstName}`,
+                phone: c.phone ?? "",
+                email: c.email ?? "",
                 status: c.clientStatus,
-                source: sourceLabel(c.source),
-                lifetime: c.policyCount,
+                lifetime: c.lifetimeDealCount ?? c.policyCount,
                 inForce: c.activePolicyCount,
                 tags: tagSortText(c.tags),
+                lastActivity: c.lastActivityAt
+                  ? new Date(c.lastActivityAt).getTime()
+                  : 0,
               },
               cells: {
                 pick: <SelectRowCheckbox id={c.id} />,
@@ -134,9 +136,10 @@ export default async function ContactsPage({
                     </RecordLink>
                   </span>
                 ),
+                phone: c.phone ?? "—",
+                email: c.email ?? "—",
                 status: <ClientStatusPill status={c.clientStatus} />,
-                source: sourceLabel(c.source),
-                lifetime: c.policyCount,
+                lifetime: c.lifetimeDealCount ?? 0,
                 inForce: c.activePolicyCount,
                 tags: (
                   <AssignRecordTags
@@ -146,12 +149,12 @@ export default async function ContactsPage({
                     catalog={tagCatalog}
                   />
                 ),
+                lastActivity: c.lastActivityAt ? formatDay(c.lastActivityAt) : "—",
               },
             }))}
           />
-          </ModuleListActions>
-        </section>
-      </div>
+        </ModuleListActions>
+      </section>
     </AppShell>
   );
 }
