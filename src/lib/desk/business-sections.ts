@@ -9,9 +9,7 @@ export type BusinessSectionId =
   | "deals"
   | "people"
   | "locations"
-  | "certificates"
   | "ask"
-  | "work"
   | "timeline";
 
 export type BusinessSectionDef = {
@@ -26,19 +24,17 @@ export type RecordSectionDef = {
   adminOnly?: boolean;
 };
 
-/** Zoho-style Business jump list. Mirrors Contact. Ask a teammate stays Admin-only. */
+/** Zoho-style Business jump list. Certificates / Email-SMS queue removed from detail. */
 export const BUSINESS_SECTIONS: BusinessSectionDef[] = [
   { id: "overview", label: "Overview" },
-  { id: "gaps", label: "Coverage gaps" },
-  { id: "information", label: "Business information" },
+  { id: "gaps", label: "Coverage Gaps" },
+  { id: "information", label: "Business Information" },
   { id: "address", label: "Address" },
   { id: "policies", label: "Policies" },
   { id: "deals", label: "Deals" },
   { id: "people", label: "People" },
   { id: "locations", label: "Locations" },
-  { id: "certificates", label: "Certificates" },
-  { id: "ask", label: "Ask a teammate", adminOnly: true },
-  { id: "work", label: "Email, SMS, calls" },
+  { id: "ask", label: "Ask A Teammate", adminOnly: true },
   { id: "timeline", label: "Timeline" },
 ];
 
