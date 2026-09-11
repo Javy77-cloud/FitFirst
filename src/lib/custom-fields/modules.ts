@@ -1,4 +1,5 @@
 import { CORE_FIELDS, defaultLayoutForLine } from "./defaults";
+import { APPLICANT_CRM_FIELDS, applicantLayoutSection } from "./applicant-fields";
 import {
   LEAD_INSURANCE_DESIRE_OPTIONS,
   LEAD_INSURANCE_SUBTYPE_OPTIONS,
@@ -104,6 +105,7 @@ const LEAD_FIELDS: CustomFieldDef[] = [
     options: [...LEAD_LANGUAGE_OPTIONS],
     systemKey: "preferredLanguage",
   },
+  ...APPLICANT_CRM_FIELDS,
 ];
 
 const CONTACT_FIELDS: CustomFieldDef[] = [
@@ -234,7 +236,8 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
   if (module === "leads") {
     return twoCol(
       [
-        section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone", "date_of_birth"]),
+        section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone"]),
+        applicantLayoutSection(),
         section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
         section("mailing_address", "Mailing Address", ["contact_mailing_address"]),
       ],

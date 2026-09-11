@@ -25,6 +25,7 @@ import {
 } from "./resolve-layout";
 import type { CustomFieldDef, FieldLayout } from "./types";
 import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./split-address-sections";
+import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
 import {
@@ -173,6 +174,7 @@ const LEAD_CATALOG_UPGRADE_KEYS = new Set([
   "pipeline",
   "insurance_type",
   "insurance_subtype",
+  ...APPLICANT_CUSTOM_KEYS,
 ]);
 
 async function ensureLeadCatalogUpgrades() {
@@ -205,6 +207,7 @@ async function ensureDealCoreLabelUpgrades() {
     .from(deskCustomFields)
     .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
   const byKey = new Map(existing.map((row) => [row.key, row]));
+  const applicantKeys = new Set<string>(APPLICANT_CUSTOM_KEYS);
   for (const field of CORE_FIELDS) {
     const row = byKey.get(field.key);
     if (!row) continue;
@@ -212,6 +215,15 @@ async function ensureDealCoreLabelUpgrades() {
       await upsertFieldDef({ ...toFieldDef(row), label: "Insured Address", type: "address" }, "deals");
     }
     if (field.key === "preferred_language" && row.type === "single_line") {
+      await upsertFieldDef(field, "deals");
+    }
+    if (
+      applicantKeys.has(field.key) &&
+      (row.type !== "picklist" ||
+        !Array.isArray(row.options) ||
+        (row.options as unknown[]).length === 0 ||
+        row.label !== field.label)
+    ) {
       await upsertFieldDef(field, "deals");
     }
   }

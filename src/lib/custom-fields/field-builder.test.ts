@@ -10,6 +10,7 @@ import {
   defaultFieldsForLine,
   defaultLayoutForLine,
 } from "./defaults";
+import { APPLICANT_SECTION_FIELD_KEYS } from "./applicant-fields";
 import { formatCurrencyDisplay, parseNumericInput } from "./format";
 import { evaluateFormula, extractFormulaFields } from "./formula";
 import { FIELD_TYPE_ICON_NAMES, iconNameForType } from "./icons";
@@ -362,19 +363,29 @@ describe("deal field builder", () => {
     expect(html.match(/value="Masonry"/g)?.length).toBe(1);
   });
 
-  it("defaults every line of business to Contact essentials + Address only", () => {
+  it("defaults every line of business to Contact + Applicant + Insured/Mailing Address", () => {
     const home = defaultLayoutForLine("HO");
     const salon = defaultLayoutForLine("GL");
     expect(home.columns).toHaveLength(2);
     expect(salon.columns).toHaveLength(2);
     const homeKeys = home.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys));
     const salonKeys = salon.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys));
-    expect(homeKeys).toEqual([...ESSENTIAL_CONTACT_KEYS, ...ESSENTIAL_ADDRESS_KEYS]);
+    expect(homeKeys).toEqual(
+      expect.arrayContaining([
+        ...ESSENTIAL_CONTACT_KEYS,
+        ...ESSENTIAL_ADDRESS_KEYS,
+        "contact_mailing_address",
+        ...APPLICANT_SECTION_FIELD_KEYS,
+      ]),
+    );
     expect(salonKeys).toEqual(homeKeys);
     expect(homeKeys).not.toContain("roof_year");
     expect(homeKeys).not.toContain("occupancy");
-    expect(home.columns[0].sections.map((section) => section.label)).toEqual(["Contact"]);
-    expect(home.columns[1].sections.map((section) => section.label)).toEqual(["Address"]);
+    expect(home.columns[0].sections.map((section) => section.label)).toEqual(["Contact", "Applicant"]);
+    expect(home.columns[1].sections.map((section) => section.label)).toEqual([
+      "Insured Address",
+      "Mailing Address",
+    ]);
   });
 
   it("keeps LOB field catalogs so the builder can add them later", () => {

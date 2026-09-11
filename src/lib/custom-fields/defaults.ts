@@ -1,5 +1,6 @@
 import type { LineOfBusiness } from "@/lib/domain";
 import type { CustomFieldDef, FieldLayout, LayoutSection } from "./types";
+import { APPLICANT_CRM_FIELDS, applicantLayoutSection } from "./applicant-fields";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -49,6 +50,7 @@ export const CORE_FIELDS: CustomFieldDef[] = [
       "Health",
     ],
   },
+  ...APPLICANT_CRM_FIELDS,
 ];
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
@@ -112,7 +114,7 @@ const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
 
 export const ESSENTIAL_CONTACT_KEYS = ["first_name", "last_name", "email", "phone"] as const;
 export const ESSENTIAL_ADDRESS_KEYS = ["mailing_address", "city", "state", "zip"] as const;
-export const OPTIONAL_CONTACT_KEYS = ["middle_name", "date_of_birth"] as const;
+export const OPTIONAL_CONTACT_KEYS = ["middle_name"] as const;
 
 /** Old sep7as default sections that no longer belong on Deal Details. */
 export const STRIPPED_DEAL_SECTION_IDS = [
@@ -132,7 +134,10 @@ export const STRIPPED_DEAL_SECTION_IDS = [
 
 function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } {
   return {
-    left: [section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS])],
+    left: [
+      section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS]),
+      applicantLayoutSection(),
+    ],
     right: [
       section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
       section("mailing_address", "Mailing Address", ["contact_mailing_address"]),

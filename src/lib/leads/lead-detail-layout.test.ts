@@ -6,7 +6,7 @@ function source(file: string) {
 }
 
 describe("lead detail layout + per-line documents", () => {
-  it("keeps a two-column desk that does not stack at normal widths", () => {
+  it("keeps layout + narrow docs + context rail that does not stack at normal widths", () => {
     const page = source("src/app/leads/[id]/page.tsx");
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const form = source("src/components/crm/lead-form-fields.tsx");
@@ -21,9 +21,15 @@ describe("lead detail layout + per-line documents", () => {
     expect(page).toMatch(/View related deal/);
     expect(page).toMatch(/LeadDetailWorkspace/);
     expect(page).not.toMatch(/uploadDocument/);
-    expect(desk).toMatch(/data-ff-lead-layout="two-col"/);
-    expect(desk).toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
+    expect(desk).toMatch(/data-ff-lead-layout="layout-docs-rail"/);
+    expect(desk).toMatch(/grid-cols-\[minmax\(0,1\.4fr\)_minmax\(0,0\.7fr\)_minmax\(280px,320px\)\]/);
+    expect(desk).toMatch(/data-ff-lead-edit-layout/);
+    expect(desk).toMatch(/data-ff-lead-docs-col/);
+    expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(desk).not.toMatch(/lg:grid-cols/);
+    expect(page).toMatch(/RecordContextRail/);
+    expect(page).toMatch(/loadRecordContext/);
+    expect(page).toMatch(/leadId: lead\.id/);
     expect(page).toMatch(/RecordLayoutFields/);
     expect(page).toMatch(/loadModuleLayoutBundle\("leads"/);
     expect(layoutForm).toMatch(/data-ff-record-layout=\{module\}/);

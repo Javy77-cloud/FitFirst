@@ -5,6 +5,7 @@ import {
   ESSENTIAL_CONTACT_KEYS,
   defaultLayoutForLine,
 } from "@/lib/custom-fields/defaults";
+import { APPLICANT_SECTION_FIELD_KEYS } from "@/lib/custom-fields/applicant-fields";
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "@/lib/custom-fields/layout";
 import { AGENT_DEAL_TAB_LABELS, AGENT_DEAL_TABS, parseAgentDealTab } from "./tabs";
 
@@ -24,13 +25,13 @@ describe("Deal Details tab", () => {
     expect(page.indexOf('"details"')).toBeLessThan(page.indexOf('"documents"'));
   });
 
-  it("shows only Contact essentials, Address, and Edit layout — no Property / Photos / Notes / inline add-field", () => {
+  it("shows Contact + Applicant + Insured/Mailing Address, and Edit layout — no Property / Photos / Notes / inline add-field", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     expect(panel).toMatch(/data-ff-deal-details-layout="two-col"/);
     expect(panel).toMatch(/grid-cols-2/);
     expect(panel).not.toMatch(/grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
-    expect(panel).toMatch(/EditLayoutLink/);
-    expect(panel).toMatch(/module="deals"/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/EditLayoutLink/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/module="deals"/);
     expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(/Edit Layout/);
     expect(source("src/components/custom-fields/edit-layout-link.tsx")).toMatch(/data-ff-open-field-builder/);
     expect(source("src/lib/custom-fields/modules.ts")).toMatch(/\/settings\/field-builder\?/);
@@ -50,20 +51,30 @@ describe("Deal Details tab", () => {
 
     const layout = defaultLayoutForLine("HO");
     const keys = layout.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys));
-    expect(keys).toEqual([...ESSENTIAL_CONTACT_KEYS, ...ESSENTIAL_ADDRESS_KEYS]);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        ...ESSENTIAL_CONTACT_KEYS,
+        ...ESSENTIAL_ADDRESS_KEYS,
+        "contact_mailing_address",
+        ...APPLICANT_SECTION_FIELD_KEYS,
+      ]),
+    );
     expect(keys).not.toContain("middle_name");
-    expect(keys).not.toContain("date_of_birth");
+    expect(keys).toContain("date_of_birth");
     expect(keys).not.toContain("year_built");
     expect(keys).not.toContain("roof_photo");
     expect(keys).not.toContain("notes");
-    expect(layout.columns[0].sections.map((section) => section.id)).toEqual(["contact"]);
-    expect(layout.columns[1].sections.map((section) => section.id)).toEqual(["address"]);
+    expect(layout.columns[0].sections.map((section) => section.id)).toEqual(["contact", "applicant"]);
+    expect(layout.columns[1].sections.map((section) => section.id)).toEqual([
+      "insured_address",
+      "mailing_address",
+    ]);
   });
 
   it("colors Edit layout as a filled primary action, still opening the field builder", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     const link = source("src/components/custom-fields/edit-layout-link.tsx");
-    expect(panel).toMatch(/<EditLayoutLink module="deals" line=\{line\} \/>/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/<EditLayoutLink module="deals" line=\{deal\.lineOfBusiness\} \/>/);
     expect(link).toMatch(/buttonVariants\(\{ variant: "default", size \}\)/);
     expect(link).not.toMatch(/variant: "outline"/);
     expect(link).not.toMatch(/variant: "ghost"/);
@@ -77,7 +88,7 @@ describe("Deal Details tab", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     const page = source("src/app/deals/[id]/page.tsx");
     const builderPage = source("src/app/settings/field-builder/page.tsx");
-    expect(panel).toMatch(/EditLayoutLink/);
+    expect(page).toMatch(/EditLayoutLink/);
     expect(panel).not.toMatch(/<FieldBuilder/);
     expect(page).not.toMatch(/<FieldBuilder/);
     expect(builderPage).toMatch(/FieldBuilder/);
@@ -125,14 +136,16 @@ describe("Deal Details tab", () => {
     expect(keys).toEqual(expect.arrayContaining([...ESSENTIAL_CONTACT_KEYS, ...ESSENTIAL_ADDRESS_KEYS]));
     expect(stripped.columns[0].sections.map((section) => section.id)).toEqual(["contact"]);
     expect(stripped.columns[1].sections.map((section) => section.id)).toEqual(["address"]);
+    // sep7js splits Address → Insured + Mailing on load; strip keeps legacy id until migrate
   });
 
   it("leaves Documents, Markets, Quotes, and the deal rail wired on the deal page", () => {
     const page = source("src/app/deals/[id]/page.tsx");
+    const tabs = source("src/components/section-tabs.tsx");
     expect(page).toMatch(/<DocumentsPanel/);
     expect(page).toMatch(/<MarketsPanel/);
     expect(page).toMatch(/<QuotesPanel/);
-    expect(page).toMatch(/data-ff-deal-right-rail/);
+    expect(tabs).toMatch(/data-ff-deal-right-rail/);
     expect(page).toMatch(/QuickCommsBoard/);
     expect(page).toMatch(/RecordContextRail/);
     expect(page.indexOf("<DocumentsPanel")).toBeLessThan(page.indexOf("<MarketsPanel"));

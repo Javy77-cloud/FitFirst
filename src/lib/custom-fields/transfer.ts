@@ -1,4 +1,5 @@
 import type { ConvertLead } from "@/lib/crm/convert";
+import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 
 export const LEAD_CARRY_FIELDS = [
   { key: "firstName", label: "First name" },
@@ -140,6 +141,7 @@ export const LEAD_TO_DEAL_CUSTOM_KEYS = [
   "pipeline",
   "insurance_type",
   "insurance_subtype",
+  ...APPLICANT_CUSTOM_KEYS,
 ] as const;
 
 export function dealValuesFromLead(

@@ -20,6 +20,7 @@ export function LeadDetailWorkspace({
   state,
   canConvert,
   docs,
+  rail,
   children,
 }: {
   leadId: string;
@@ -28,6 +29,7 @@ export function LeadDetailWorkspace({
   state: string;
   canConvert: boolean;
   docs: LeadLineDoc[];
+  rail?: ReactNode;
   children: ReactNode;
 }) {
   const [extraKeys, setExtraKeys] = useState<string[]>([]);
@@ -53,10 +55,10 @@ export function LeadDetailWorkspace({
 
   return (
     <div
-      className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 max-[699px]:grid-cols-1"
-      data-ff-lead-layout="two-col"
+      className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(280px,320px)] gap-4 max-[999px]:grid-cols-1"
+      data-ff-lead-layout="layout-docs-rail"
     >
-      <div className="min-w-0">
+      <div className="min-w-0" data-ff-lead-edit-layout="">
         <form action={updateLeadRecord} className="space-y-3">
           <input type="hidden" name="leadId" value={leadId} />
           <input type="hidden" name="state" value={state} />
@@ -81,16 +83,23 @@ export function LeadDetailWorkspace({
           </div>
         </form>
       </div>
-      <LeadLineDocuments
-        leadId={leadId}
-        dealId={dealId}
-        insuranceTypeDesired={insuranceTypeDesired}
-        docs={docs}
-        extraKeys={extraKeys}
-        onExtraKeys={setExtraKeys}
-        hiddenKeys={hiddenKeys}
-        onHiddenKeys={setHiddenKeys}
-      />
+      <div className="min-w-0" data-ff-lead-docs-col="">
+        <LeadLineDocuments
+          leadId={leadId}
+          dealId={dealId}
+          insuranceTypeDesired={insuranceTypeDesired}
+          docs={docs}
+          extraKeys={extraKeys}
+          onExtraKeys={setExtraKeys}
+          hiddenKeys={hiddenKeys}
+          onHiddenKeys={setHiddenKeys}
+        />
+      </div>
+      {rail ? (
+        <aside className="min-w-0 w-full" data-ff-lead-context-rail="">
+          {rail}
+        </aside>
+      ) : null}
     </div>
   );
 }

@@ -12,6 +12,8 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { loadRecordContext } from "@/lib/record-context";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
 import { routeLeadNow } from "@/app/actions/lead-routing";
 import { latestRoutingLog } from "@/lib/leads/apply-routing";
@@ -57,6 +59,10 @@ export default async function LeadDetailPage({
     ]);
   if (!row) notFound();
   const { lead, deal, docs } = row;
+  const context = await loadRecordContext({
+    leadId: lead.id,
+    dealId: deal?.id ?? null,
+  });
   const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
   const lineLabel = lead.insuranceTypeDesired
     ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
@@ -169,7 +175,7 @@ export default async function LeadDetailPage({
       <RecordSection
         id="record"
         title="This lead"
-        summary="Person on the left. Files sit on each line of interest to the right."
+        summary="Edit layout, documents by line, and info/comms rail."
       >
         <LeadDetailWorkspace
           leadId={lead.id}
@@ -178,6 +184,7 @@ export default async function LeadDetailPage({
           state={lead.state ?? "FL"}
           canConvert={!deal}
           docs={docs}
+          rail={<RecordContextRail context={context} />}
         >
           <RecordLayoutFields
             module="leads"

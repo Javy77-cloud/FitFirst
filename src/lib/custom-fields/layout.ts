@@ -253,7 +253,14 @@ export function stripLegacyDealLayout(layout: FieldLayout): FieldLayout {
     }
   }
   const hasContact = next.columns.some((column) => column.sections.some((section) => section.id === "contact"));
-  const hasAddress = next.columns.some((column) => column.sections.some((section) => section.id === "address"));
+  const hasAddress = next.columns.some((column) =>
+    column.sections.some(
+      (section) =>
+        section.id === "address" ||
+        section.id === "insured_address" ||
+        section.id === "mailing_address",
+    ),
+  );
   if (!hasContact || !hasAddress) return defaultLayoutForLine();
   const right = next.columns[1];
   if (right && right.sections.length === 0) {
