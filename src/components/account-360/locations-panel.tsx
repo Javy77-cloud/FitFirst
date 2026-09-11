@@ -1,4 +1,4 @@
-// @ts-nocheck — leftover 360 writer; desk 360 reads LocationsList from desk-ams-panels.
+// @ts-nocheck — leftover 360 writer; business detail uses BusinessLocationsSection.
 import { AddLocationForm } from "@/components/account-360/add-location-form";
 import { PropertyAddressLine } from "@/components/address-links";
 import { formatMoney, lineLabel } from "@/lib/domain";
