@@ -1,33 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { clientStatusFromCounts } from "@/lib/lifecycle/client-status";
 import {
+  BUSINESS_SECTION_POOL,
   BUSINESS_SECTIONS,
   businessSectionsForRole,
   canAskTeammateOnBusiness,
+  normalizeBusinessSectionNavIds,
   relatedIdsFromEntity,
 } from "./business-sections";
 
 describe("business record sections", () => {
-  it("lists a left-nav jump set that includes timeline and hides Ask for agents", () => {
-    const admin = businessSectionsForRole(true);
+  it("mirrors Contacts tip chip pool (At a Glance + Details + accordion)", () => {
+    const ids = BUSINESS_SECTION_POOL.map((s) => s.id);
+    expect(ids).toEqual([
+      "at-a-glance",
+      "business-details",
+      "locations",
+      "policies",
+      "deals",
+      "timeline",
+      "emails",
+      "sms",
+      "meetings",
+      "documents",
+      "notes",
+    ]);
+    expect(BUSINESS_SECTIONS).toBe(BUSINESS_SECTION_POOL);
     const agent = businessSectionsForRole(false);
-    expect(admin.map((s) => s.id)).toEqual(BUSINESS_SECTIONS.map((s) => s.id));
-    expect(admin.some((s) => s.id === "ask")).toBe(true);
-    expect(agent.some((s) => s.id === "ask")).toBe(false);
-    expect(agent.some((s) => s.id === "timeline")).toBe(true);
-    expect(agent.some((s) => s.id === "gaps")).toBe(true);
-    expect(agent.find((s) => s.id === "gaps")?.label).toBe("Coverage Gaps");
-    expect(admin.map((s) => s.id)).not.toContain("certificates");
-    expect(admin.map((s) => s.id)).not.toContain("work");
-    expect(admin.map((s) => s.label).join(" ")).not.toMatch(/certificate/i);
-    expect(admin.map((s) => s.label).join(" ")).not.toMatch(/Email, SMS/i);
-    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/activity log/i);
-    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/quick log/i);
-    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/log on this record/i);
+    expect(agent.map((s) => s.id)).toEqual(ids);
+    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/certificate/i);
+    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/co-applicant/i);
   });
 
-  it("keeps Ask a teammate Admin-only", () => {
-    expect(canAskTeammateOnBusiness(true)).toBe(true);
+  it("normalizes agency nav prefs and Ask teammate stays off", () => {
+    expect(normalizeBusinessSectionNavIds(["policies", "bogus", "deals"])).toEqual([
+      "policies",
+      "deals",
+    ]);
+    expect(canAskTeammateOnBusiness(true)).toBe(false);
     expect(canAskTeammateOnBusiness(false)).toBe(false);
   });
 

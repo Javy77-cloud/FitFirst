@@ -291,6 +291,10 @@ export const agencySettings = pgTable(
     /** Admin must enable this before agents can see GBP pulse / inquiries. */
     allowAgentsMonitorGbp: boolean("allow_agents_monitor_gbp").notNull().default(false),
     macContinuity: boolean("mac_continuity").notNull().default(false),
+    /** Contact detail left-nav selected section ids (agency-wide, max 8). */
+    contactSectionNav: jsonb("contact_section_nav").$type<string[] | null>(),
+    /** Business detail chip-nav selected section ids (agency-wide, max 12). */
+    businessSectionNav: jsonb("business_section_nav").$type<string[] | null>(),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],

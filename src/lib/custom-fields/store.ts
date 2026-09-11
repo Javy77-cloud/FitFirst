@@ -24,10 +24,20 @@ import {
   resolveLayoutFields,
 } from "./resolve-layout";
 import type { CustomFieldDef, FieldLayout } from "./types";
+import { allLayoutFieldKeys } from "./types";
 import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./split-address-sections";
+import { migrateDealLayoutParity, needsDealLayoutParity } from "./migrate-deal-layout-parity";
+import { migrateLeadLayout, needsLeadLayoutMigration } from "./migrate-lead-layout";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
+import { occupationPicklistId } from "@/lib/contacts/occupation-picklist";
+import {
+  CONTACT_DETAIL_PICKLIST_BINDINGS,
+  ensureContactDetailPicklists,
+} from "@/lib/contacts/contact-detail-picklists";
+import { ensureBusinessDetailPicklists } from "@/lib/businesses/business-detail-picklists";
+import { contactCardLayout, CONTACT_MODULE_FIELDS } from "@/lib/contacts/contact-field-catalog";
 import {
   optionColorMap,
   resolveFieldOptions,
@@ -152,7 +162,7 @@ async function applyPicklists(fields: CustomFieldDef[]): Promise<CustomFieldDef[
     const rich = resolveRichFieldOptions(field, lists);
     return {
       ...field,
-      options: rich.map((option) => option.value),
+      options: resolveFieldOptions(field, lists),
       optionColors: optionColorMap(rich),
     };
   });
@@ -165,6 +175,7 @@ export async function listDealFieldDefs(): Promise<CustomFieldDef[]> {
 /** Keys that must leave free-text: upgrade type/options/label without inventing duplicate lists. */
 const LEAD_CATALOG_UPGRADE_KEYS = new Set([
   "status",
+  "cadence",
   "temperature",
   "insurance_type_desired",
   "preferred_language",
@@ -229,11 +240,140 @@ async function ensureDealCoreLabelUpgrades() {
   }
 }
 
+
+const OCCUPATION_FIELD_KEYS_BY_MODULE: Partial<Record<FieldLayoutModule, string[]>> = {
+  contacts: ["occupation"],
+  leads: ["applicant_occupation", "co_applicant_occupation"],
+  deals: ["applicant_occupation", "co_applicant_occupation"],
+};
+
+/** Bind CRM occupation fields to the shared Occupations global picklist. */
+async function ensureOccupationFieldBindings(module: FieldLayoutModule) {
+  const keys = OCCUPATION_FIELD_KEYS_BY_MODULE[module];
+  if (!keys?.length) return;
+  const picklistId = await occupationPicklistId().catch(() => null);
+  if (!picklistId) return;
+  for (const key of keys) {
+    const [row] = await db
+      .select()
+      .from(deskCustomFields)
+      .where(
+        and(
+          eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID),
+          eq(deskCustomFields.module, module),
+          eq(deskCustomFields.key, key),
+        ),
+      );
+    if (!row) continue;
+    if (row.picklistId === picklistId && row.type === "picklist") continue;
+    await db
+      .update(deskCustomFields)
+      .set({ type: "picklist", picklistId, updatedAt: new Date() })
+      .where(eq(deskCustomFields.id, row.id));
+  }
+}
+
+
+async function ensureContactDetailPicklistBindings() {
+  const ids = await ensureContactDetailPicklists().catch(() => ({} as Record<string, string>));
+  for (const row of CONTACT_DETAIL_PICKLIST_BINDINGS) {
+    const picklistId = ids[row.fieldKey];
+    if (!picklistId) continue;
+    const [existing] = await db
+      .select()
+      .from(deskCustomFields)
+      .where(
+        and(
+          eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID),
+          eq(deskCustomFields.module, "contacts"),
+          eq(deskCustomFields.key, row.fieldKey),
+        ),
+      );
+    if (!existing) continue;
+    if (existing.picklistId === picklistId && existing.type === row.type) continue;
+    await db
+      .update(deskCustomFields)
+      .set({ type: row.type, picklistId, updatedAt: new Date() })
+      .where(eq(deskCustomFields.id, existing.id));
+  }
+}
+
+async function ensureContactCatalogUpgrades() {
+  for (const field of CONTACT_MODULE_FIELDS) {
+    if (
+      field.key === "source" ||
+      field.key === "referral" ||
+      field.key === "mailing_address" ||
+      field.key === "recent_life_events" ||
+      field.key === "existing_coverage_types" ||
+      field.key === "cross_selling_opportunity" ||
+      field.key === "is_homeowner" ||
+      field.key === "is_business_owner"
+    ) {
+      await upsertFieldDef(field, "contacts");
+    }
+  }
+  await ensureContactDetailPicklistBindings();
+}
+
+/** Force Contact Details Edit Layout to the two-column card when missing new fields. */
+export async function ensureContactDetailLayout(): Promise<FieldLayout> {
+  const next = contactCardLayout();
+  const rows = await loadSavedLayoutRows("contacts").catch(() => []);
+  const preferred = MODULE_LAYOUT_LINE;
+  const picked = pickSavedModuleLayout(rows, "contacts", preferred);
+  const keys = new Set(allLayoutFieldKeys(picked ?? { columns: [] }));
+  const needed = [
+    "marital_status",
+    "recent_life_events",
+    "existing_coverage_types",
+    "cross_selling_opportunity",
+    "is_homeowner",
+    "is_business_owner",
+  ];
+  const missing = needed.some((key) => !keys.has(key));
+  const rightEmpty = !(picked?.columns?.[1]?.sections?.length);
+  if (missing || rightEmpty || !picked) {
+    await saveLayoutForModule("contacts", next);
+    return next;
+  }
+  return picked;
+}
+
+/** Force Business Edit Layout to the two-column Business Details card. */
+export async function ensureBusinessDetailLayout(force = false): Promise<FieldLayout> {
+  await ensureBusinessDetailPicklists().catch(() => null);
+  const next = defaultLayoutForModule("businesses");
+  const rows = await loadSavedLayoutRows("businesses").catch(() => []);
+  const preferred = MODULE_LAYOUT_LINE;
+  const picked = pickSavedModuleLayout(rows, "businesses", preferred);
+  const keys = new Set(allLayoutFieldKeys(picked ?? ({ columns: [] } as FieldLayout)));
+  const needed = allLayoutFieldKeys(next);
+  const missing = needed.some((key) => !keys.has(key));
+  const rightEmpty = !(picked?.columns?.[1]?.sections?.length);
+  if (force || missing || rightEmpty || !picked) {
+    await saveLayoutForModule("businesses", next);
+    return next;
+  }
+  return picked;
+}
+
 export async function ensureModuleFieldCatalog(module: FieldLayoutModule) {
-  if (module === "deals") return ensureDealFieldCatalog();
+  if (module === "deals") {
+    await ensureDealFieldCatalog();
+    await ensureOccupationFieldBindings("deals");
+    const rows = await db
+      .select()
+      .from(deskCustomFields)
+      .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
+    return applyPicklists(rows.map(toFieldDef));
+  }
   // Always seed any new module defaults — sparse catalogs from early tips stay incomplete otherwise.
   await insertMissingFields(module, defaultFieldsForModule(module));
   if (module === "leads") await ensureLeadCatalogUpgrades();
+  if (module === "contacts") await ensureContactCatalogUpgrades();
+  if (module === "businesses") await ensureBusinessDetailPicklists().catch(() => null);
+  await ensureOccupationFieldBindings(module);
   const rows = await db
     .select()
     .from(deskCustomFields)
@@ -323,6 +463,24 @@ async function migratePackedDealLayouts(
   return stripped;
 }
 
+
+async function migrateLeadLayouts(
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (!needsLeadLayoutMigration(picked)) return picked;
+  const migrated = migrateLeadLayout(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    if (!needsLeadLayoutMigration(parsed)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: migrateLeadLayout(parsed), updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return migrated;
+}
+
 async function migrateAddressSections(
   module: FieldLayoutModule,
   rows: { id: string; columns: unknown }[],
@@ -340,6 +498,23 @@ async function migrateAddressSections(
       .where(eq(deskFieldLayouts.id, row.id));
   }
   return split;
+}
+
+async function migrateDealParityLayouts(
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (!needsDealLayoutParity(picked)) return picked;
+  const migrated = migrateDealLayoutParity(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    if (!needsDealLayoutParity(parsed)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: migrateDealLayoutParity(parsed), updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return migrated;
 }
 
 export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
@@ -363,7 +538,7 @@ export async function saveLayoutForLine(line: string, layout: FieldLayout) {
     });
 }
 
-/** One builder layout applies to every deal, every line. */
+/** MODULE ISOLATION: deals only. Never call from leads/contacts/etc. One layout → every deal LOB line. */
 export async function saveLayoutForEveryLine(layout: FieldLayout) {
   for (const line of DEAL_LAYOUT_LINES) {
     await saveLayoutForLine(line, layout);
@@ -379,7 +554,8 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
     if (picked) {
       if (module === "deals") {
         const dealLayout = await migratePackedDealLayouts(rows, picked);
-        return migrateAddressSections(module, rows, dealLayout);
+        const withAddresses = await migrateAddressSections(module, rows, dealLayout);
+        return migrateDealParityLayouts(rows, withAddresses);
       }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.
@@ -387,7 +563,16 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
         const catalog = await listFieldDefs(module);
         return ensureLayoutIncludesCatalogFields(picked, catalog);
       }
-      if (module === "leads") return migrateAddressSections(module, rows, picked);
+      if (module === "leads") {
+        const leadLayout = await migrateLeadLayouts(rows, picked);
+        return migrateAddressSections(module, rows, leadLayout);
+      }
+      if (module === "contacts") {
+        return ensureContactDetailLayout();
+      }
+      if (module === "businesses") {
+        return ensureBusinessDetailLayout();
+      }
       return picked;
     }
     const layout = defaultLayoutForModule(module);

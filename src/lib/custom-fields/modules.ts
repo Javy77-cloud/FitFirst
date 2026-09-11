@@ -135,9 +135,9 @@ const POLICY_FIELDS: CustomFieldDef[] = [
 ];
 
 const BUSINESS_FIELDS: CustomFieldDef[] = [
-  { key: "business_name", label: "Business name", type: "single_line", systemKey: "name" },
+  { key: "business_name", label: "Business Name", type: "single_line", systemKey: "name" },
   { key: "dba", label: "DBA", type: "single_line", systemKey: "dba" },
-  { key: "legal_name", label: "Legal name", type: "single_line", systemKey: "legalName" },
+  { key: "legal_name", label: "Legal Name", type: "single_line", systemKey: "legalName" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "website", label: "Website", type: "single_line", systemKey: "website" },
@@ -148,7 +148,7 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "ein", label: "EIN", type: "single_line", systemKey: "ein" },
   {
     key: "entity_type",
-    label: "Business type",
+    label: "Business Type",
     type: "picklist",
     options: [...BUSINESS_ENTITY_TYPE_OPTIONS],
     systemKey: "entityType",
@@ -163,10 +163,10 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "source", label: "Source", type: "picklist", options: [...LEAD_SOURCES], systemKey: "source" },
   { key: "referral", label: "Referral", type: "single_line", systemKey: "referral" },
   { key: "employee_count", label: "Employees", type: "number", systemKey: "employeeCount" },
-  { key: "annual_sales", label: "Annual sales", type: "currency", systemKey: "annualSales" },
-  { key: "payroll_w2", label: "W-2 payroll", type: "currency", systemKey: "payrollW2" },
-  { key: "payroll_1099", label: "1099 payroll", type: "currency", systemKey: "payroll1099" },
-  { key: "years_in_business", label: "Years in business", type: "number", systemKey: "yearsInBusiness" },
+  { key: "annual_sales", label: "Annual Sales", type: "currency", systemKey: "annualSales" },
+  { key: "payroll_w2", label: "W-2 Payroll", type: "currency", systemKey: "payrollW2" },
+  { key: "payroll_1099", label: "1099 Payroll", type: "currency", systemKey: "payroll1099" },
+  { key: "years_in_business", label: "Years In Business", type: "number", systemKey: "yearsInBusiness" },
   { key: "naics", label: "NAICS", type: "single_line", systemKey: "naics" },
   { key: "operations", label: "Operations", type: "multi_line", systemKey: "operationsDescription" },
   { key: "life_notes", label: "Life Notes (CRM Only)", type: "multi_line", systemKey: "lifeNotes" },
