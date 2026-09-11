@@ -17,6 +17,19 @@ function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
+function keepIntForm(next: string, existing: number | null): number | null {
+  if (!next) return existing;
+  const n = Number(next.replace(/[,\s]/g, ""));
+  return Number.isFinite(n) ? Math.trunc(n) : existing;
+}
+
+function keepMoneyForm(next: string, existing: string | null): string | null {
+  if (!next) return existing;
+  const cleaned = next.replace(/[$,\s]/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? cleaned : existing;
+}
+
 /** Save fields already on the record. Never blank the values the desk already has. */
 export async function updateContactRecord(formData: FormData) {
   const id = str(formData, "contactId");
@@ -77,6 +90,8 @@ export async function updateAccountRecord(formData: FormData) {
     .update(accounts)
     .set({
       name: str(formData, "name") || existing.name,
+      dba: str(formData, "dba") || existing.dba,
+      legalName: str(formData, "legalName") || existing.legalName,
       ...replaceEin(str(formData, "ein"), {
         ein: null,
         einEnc: existing.einEnc,
@@ -90,6 +105,16 @@ export async function updateAccountRecord(formData: FormData) {
       city: str(formData, "city") || existing.city,
       state: str(formData, "state") || existing.state,
       zip: str(formData, "zip") || existing.zip,
+      entityType: str(formData, "entityType") || existing.entityType,
+      employeeCount: keepIntForm(str(formData, "employeeCount"), existing.employeeCount),
+      annualSales: keepMoneyForm(str(formData, "annualSales"), existing.annualSales),
+      payrollW2: keepMoneyForm(str(formData, "payrollW2"), existing.payrollW2),
+      payroll1099: keepMoneyForm(str(formData, "payroll1099"), existing.payroll1099),
+      yearsInBusiness: keepIntForm(str(formData, "yearsInBusiness"), existing.yearsInBusiness),
+      naics: str(formData, "naics") || existing.naics,
+      operationsDescription:
+        str(formData, "operationsDescription") || existing.operationsDescription,
+      notes: str(formData, "notes") || existing.notes,
       updatedAt: new Date(),
     })
     .where(eq(accounts.id, id));

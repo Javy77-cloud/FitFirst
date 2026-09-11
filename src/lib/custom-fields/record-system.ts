@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { accounts, carriers, contacts, deals, leads, policies } from "@/lib/db/schema";
 import type { FieldLayoutModule } from "./modules";
 import type { CustomFieldDef } from "./types";
+import { replaceEin } from "@/lib/pii/write";
 
 function str(values: Record<string, string>, ...keys: Array<string | null | undefined>) {
   for (const key of keys) {
@@ -16,6 +17,19 @@ function str(values: Record<string, string>, ...keys: Array<string | null | unde
 
 function keep<T>(next: string, existing: T): T | string {
   return next || existing;
+}
+
+function keepInt(next: string, existing: number | null): number | null {
+  if (!next) return existing;
+  const n = Number(next.replace(/[,\s]/g, ""));
+  return Number.isFinite(n) ? Math.trunc(n) : existing;
+}
+
+function keepMoney(next: string, existing: string | null): string | null {
+  if (!next) return existing;
+  const cleaned = next.replace(/[$,\s]/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? cleaned : existing;
 }
 
 function asDate(value: string): Date | undefined {
@@ -110,10 +124,39 @@ export async function applyModuleSystemValues(
       .update(accounts)
       .set({
         name: keep(str(values, "business_name", "name"), existing.name) as string,
+        dba: keep(str(values, "dba"), existing.dba) as typeof existing.dba,
+        legalName: keep(str(values, "legal_name", "legalName"), existing.legalName) as typeof existing.legalName,
         phone: keep(str(values, "phone"), existing.phone) as typeof existing.phone,
         email: keep(str(values, "email"), existing.email) as typeof existing.email,
+        mailingAddress: keep(
+          str(values, "mailing_address", "mailingAddress"),
+          existing.mailingAddress,
+        ) as typeof existing.mailingAddress,
         city: keep(str(values, "city"), existing.city) as typeof existing.city,
         state: keep(str(values, "state"), existing.state) as typeof existing.state,
+        zip: keep(str(values, "zip"), existing.zip) as typeof existing.zip,
+        ...replaceEin(str(values, "ein"), {
+          ein: null,
+          einEnc: existing.einEnc,
+          einIv: existing.einIv,
+          einLast4: existing.einLast4,
+          einLookup: existing.einLookup,
+        }),
+        entityType: keep(str(values, "entity_type", "entityType"), existing.entityType) as typeof existing.entityType,
+        employeeCount: keepInt(str(values, "employee_count", "employeeCount"), existing.employeeCount),
+        annualSales: keepMoney(str(values, "annual_sales", "annualSales"), existing.annualSales),
+        payrollW2: keepMoney(str(values, "payroll_w2", "payrollW2"), existing.payrollW2),
+        payroll1099: keepMoney(str(values, "payroll_1099", "payroll1099"), existing.payroll1099),
+        yearsInBusiness: keepInt(
+          str(values, "years_in_business", "yearsInBusiness"),
+          existing.yearsInBusiness,
+        ),
+        naics: keep(str(values, "naics"), existing.naics) as typeof existing.naics,
+        operationsDescription: keep(
+          str(values, "operations", "operationsDescription"),
+          existing.operationsDescription,
+        ) as typeof existing.operationsDescription,
+        notes: keep(str(values, "notes"), existing.notes) as typeof existing.notes,
         updatedAt: new Date(),
       })
       .where(eq(accounts.id, recordId));
