@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { ClientStatusPill } from "@/components/record-links";
-import { getAccountWorkspace } from "@/lib/db/queries";
+import { getAccountWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { isCertifiableLine } from "@/lib/domain";
+import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { loadRecordContext } from "@/lib/record-context";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { listModuleTags } from "@/app/actions/record-tags";
-import { AccountGlance } from "@/components/crm/account-glance";
 import { BusinessDetailWorkspace } from "@/components/businesses/business-detail-workspace";
 import { BusinessHealthBadge } from "@/components/businesses/business-health-badge";
 import { BusinessOverflowMenu } from "@/components/businesses/business-overflow-menu";
@@ -15,17 +14,16 @@ import { BusinessInlineFields } from "@/components/businesses/business-inline-fi
 import { LinkedContactsSection } from "@/components/businesses/linked-contacts-section";
 import { BusinessLocationsSection } from "@/components/businesses/business-locations-section";
 import { BusinessPolicyRows } from "@/components/businesses/business-policy-rows";
+import {
+  coAppliesWithFromPolicy,
+  formatPolicyCoApplicantName,
+  namedInsuredCoApplicantContacts,
+} from "@/lib/contacts/policy-co-applicants";
 import { BusinessDealRows } from "@/components/businesses/business-deal-rows";
 import { BusinessTimelineSection } from "@/components/businesses/business-timeline-section";
 import { CollapsibleSection } from "@/components/contacts/collapsible-section";
 
 export const dynamic = "force-dynamic";
-
-function moneyNumber(value: string | number | null | undefined): number {
-  if (value == null || value === "") return 0;
-  const n = typeof value === "number" ? value : Number(String(value).replace(/[$,\s]/g, ""));
-  return Number.isFinite(n) ? n : 0;
-}
 
 export default async function AccountDetailPage({
   params,
@@ -40,15 +38,22 @@ export default async function AccountDetailPage({
     policies,
     deals,
     contacts,
+    namedInsuredById,
     policyCount,
     activePolicyCount,
-    clientStatus,
     timeline,
     locations,
   } = workspace;
 
-  const [tagExtra] = await Promise.all([
+  const coAppCandidates = contacts.map((c) => ({
+    id: c.id,
+    firstName: c.firstName,
+    lastName: c.lastName,
+  }));
+
+  const [tagExtra, quickComms] = await Promise.all([
     listModuleTags("accounts").catch(() => [] as { name: string; color: string | null }[]),
+    listRecordActivities({ accountId: account.id }),
   ]);
 
   const context = await loadRecordContext({
@@ -63,10 +68,6 @@ export default async function AccountDetailPage({
       ? ((timeline[0] as { occurredAt?: Date | string }).occurredAt ?? account.updatedAt)
       : account.updatedAt;
 
-  const lifetimeValue = policies.reduce(
-    (sum, row) => sum + moneyNumber(row.policy.premium),
-    0,
-  );
 
   const inlineValues: Record<string, string> = {
     ein: account.ein ?? (account.einLast4 ? `•••-••-${account.einLast4}` : ""),
@@ -124,24 +125,24 @@ export default async function AccountDetailPage({
       <BusinessDetailWorkspace
         rail={
           <>
-            <AccountGlance
-              policyCount={policyCount}
-              activePolicyCount={activePolicyCount}
-              dealCount={deals.length}
-              activityCount={timeline.length}
-              lifetimeValue={lifetimeValue}
-            />
-            <div className="ff-card space-y-2 p-3" data-ff-business-rail-meta="">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <ClientStatusPill status={clientStatus} />
-                <span className="text-muted-foreground">
-                  {activePolicyCount} In Force · {policyCount} Lifetime
-                </span>
-              </div>
+            <div className="min-w-0 w-full max-w-full" data-ff-business-quick-comms="">
+              <QuickCommsBoard
+                items={quickComms}
+                accountId={account.id}
+                contactId={contacts[0]?.id}
+                dealId={deals[0]?.id}
+                contactName={
+                  contacts[0]
+                    ? `${contacts[0].firstName} ${contacts[0].lastName}`.trim()
+                    : account.name
+                }
+                contactPhone={contacts[0]?.phone ?? account.phone}
+                contactEmail={contacts[0]?.email ?? account.email}
+              />
             </div>
             <RecordContextRail
               context={context}
-              defaultTab="conversations"
+              defaultTab="info"
               headingName={account.name}
             />
           </>
@@ -184,17 +185,38 @@ export default async function AccountDetailPage({
           >
             <BusinessPolicyRows
               accountId={account.id}
-              policies={policies.map(({ policy, carrier }) => ({
-                id: policy.id,
-                policyNumber: policy.policyNumber,
-                status: policy.status,
-                premium: policy.premium,
-                renewalDate: policy.renewalDate,
-                expirationDate: policy.expirationDate,
-                lineOfBusiness: policy.lineOfBusiness,
-                carrierName: carrier?.name ?? null,
-                certifiable: isCertifiableLine(policy.lineOfBusiness),
-              }))}
+              policies={policies.map(({ policy, carrier, deal }) => {
+                const primaryId = policy.contactId ?? null;
+                const primary = primaryId ? namedInsuredById.get(primaryId) ?? null : null;
+                const secondaryHits = namedInsuredCoApplicantContacts({
+                  primaryContactId: primaryId,
+                  secondaryNamedInsured: deal?.secondaryNamedInsured ?? null,
+                  candidates: coAppCandidates,
+                });
+                const fromSecondary = coAppliesWithFromPolicy({
+                  excludeContactId: primaryId ?? account.id,
+                  linkedContacts: secondaryHits,
+                  ownsPolicies: true,
+                });
+                // Fallback: policy named-insured contact (policy.contactId) — no M2M, no Business linker.
+                const coAppliesWith =
+                  fromSecondary ??
+                  (primary
+                    ? { id: primary.id, label: formatPolicyCoApplicantName(primary) }
+                    : null);
+                return {
+                  id: policy.id,
+                  policyNumber: policy.policyNumber,
+                  status: policy.status,
+                  premium: policy.premium,
+                  renewalDate: policy.renewalDate,
+                  expirationDate: policy.expirationDate,
+                  lineOfBusiness: policy.lineOfBusiness,
+                  carrierName: carrier?.name ?? null,
+                  certifiable: isCertifiableLine(policy.lineOfBusiness),
+                  coAppliesWith,
+                };
+              })}
             />
           </CollapsibleSection>
 

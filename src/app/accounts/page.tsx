@@ -7,12 +7,11 @@ import { listAccounts } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { ACCOUNTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { CLIENT_STATUSES } from "@/lib/domain";
-import { firstParam, matchesField, pickFilterParams } from "@/lib/saved-filters";
+import { CLIENT_STATUSES, formatDay } from "@/lib/domain";
+import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
-import { AssignRecordTags } from "@/components/tags/assign-record-tags";
-import { tagSortText } from "@/lib/tags/module-tags";
-import { listModuleTags } from "@/app/actions/record-tags";
+import { sourceLabel } from "@/lib/crm/sources";
+import { BUSINESS_INDUSTRY_OPTIONS } from "@/lib/businesses/entity-industry";
 import { AddBusinessDialog } from "@/components/businesses/add-business-dialog";
 
 export const dynamic = "force-dynamic";
@@ -23,15 +22,16 @@ export default async function AccountsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const filter = pickFilterParams(params, ["status"]);
+  const filter = pickFilterParams(params, ["status", "industry"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
   const openNew = firstParam(params.new) === "1";
-  const [all, tagCatalog] = await Promise.all([
-    listAccounts(),
-    listModuleTags("accounts").catch(() => []),
-  ]);
-  const rows = all.filter((account) => matchesField(account.clientStatus, filter.status));
+  const [all] = await Promise.all([listAccounts()]);
+  const rows = all.filter(
+    (account) =>
+      matchesField(account.clientStatus, filter.status) &&
+      matchesField(account.industry, filter.industry),
+  );
   const businessBook = all.map((row) => ({
     id: row.id,
     name: row.name,
@@ -49,15 +49,23 @@ export default async function AccountsPage({
       </p>
       <SavedFiltersBar
         moduleId="businesses"
-        searchPlaceholder="Contains business, phone, city…"
+        searchPlaceholder="Search by name, EIN, or phone…"
         fields={[
           {
             key: "status",
             label: "Status",
             options: CLIENT_STATUSES.map((value) => ({
               value,
-              label: value.replaceAll("_", " "),
+              label: value === "client" ? "Client" : value === "not_a_client" ? "Not a client" : "Former Client",
             })),
+          },
+          {
+            key: "industry",
+            label: "Industry",
+            options: uniqueOptions(
+              all.map((account) => account.industry),
+              BUSINESS_INDUSTRY_OPTIONS.map((value) => ({ value, label: value })),
+            ),
           },
         ]}
       />
@@ -79,55 +87,57 @@ export default async function AccountsPage({
             accountId: account.id,
           }))}
         >
-        <DeskColumnTable
-          moduleId="businesses"
-          initialQuery={q}
-          columns={ACCOUNTS_LIST_COLUMNS}
-          empty="No businesses yet. Bind a commercial deal as a Business, or open the Elena Ruiz personal path — she is linked to Ruiz Tile LLC with zero commercial policies."
-          rows={rows.map((account) => ({
-            key: account.id,
-            hay: haystack([
-              account.name,
-              account.legalName,
-              account.dba,
-              account.phone,
-              account.email,
-              account.city,
-              account.einLast4,
-              ...(account.tags ?? []),
-            ]),
-            sort: {
-              pick: "",
-              business: account.name,
-              status: account.clientStatus,
-              lifetime: account.policyCount,
-              inForce: account.activePolicyCount,
-              tags: tagSortText(account.tags),
-            },
-            cells: {
-              pick: <SelectRowCheckbox id={account.id} />,
-              business: (
-                <>
-                  <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
-                  <div className="text-base text-muted-foreground">
-                    {account.phone ?? account.email}
-                  </div>
-                </>
-              ),
-              status: <ClientStatusPill status={account.clientStatus} />,
-              lifetime: account.policyCount,
-              inForce: account.activePolicyCount,
-              tags: (
-                <AssignRecordTags
-                  module="accounts"
-                  recordId={account.id}
-                  tags={account.tags}
-                  catalog={tagCatalog}
-                />
-              ),
-            },
-          }))}
-        />
+          <DeskColumnTable
+            moduleId="businesses"
+            initialQuery={q}
+            columns={ACCOUNTS_LIST_COLUMNS}
+            defaultSort={{ key: "lastActivity", dir: "desc" }}
+            empty="No businesses yet. Bind a commercial deal as a Business, or open the Elena Ruiz personal path — she is linked to Ruiz Tile LLC with zero commercial policies."
+            rows={rows.map((account) => ({
+              key: account.id,
+              hay: haystack([
+                account.name,
+                account.legalName,
+                account.dba,
+                account.phone,
+                account.ein,
+                account.einLast4,
+                account.einLookup,
+                account.industry,
+                account.source,
+                account.clientStatus,
+              ]),
+              sort: {
+                pick: "",
+                business: account.name,
+                status: account.clientStatus,
+                industry: account.industry ?? "",
+                source: account.source ?? "",
+                linkedContacts: account.linkedContactsCount,
+                policies: account.policyCount,
+                lastActivity: account.lastActivityAt
+                  ? new Date(account.lastActivityAt).getTime()
+                  : 0,
+              },
+              cells: {
+                pick: <SelectRowCheckbox id={account.id} />,
+                business: (
+                  <>
+                    <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
+                    <div className="text-base text-muted-foreground">
+                      {account.phone ?? account.email}
+                    </div>
+                  </>
+                ),
+                status: <ClientStatusPill status={account.clientStatus} />,
+                industry: account.industry || "—",
+                source: account.source ? sourceLabel(account.source) : "—",
+                linkedContacts: account.linkedContactsCount,
+                policies: account.policyCount,
+                lastActivity: account.lastActivityAt ? formatDay(account.lastActivityAt) : "—",
+              },
+            }))}
+          />
         </ModuleListActions>
       </section>
     </AppShell>

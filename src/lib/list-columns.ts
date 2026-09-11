@@ -447,11 +447,13 @@ export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
 
 export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
-  { id: "business", label: "Business", locked: true },
+  { id: "business", label: "Business Name", locked: true },
   { id: "status", label: "Status" },
-  { id: "lifetime", label: "Lifetime" },
-  { id: "inForce", label: "In-force" },
-  { id: "tags", label: "Tags" },
+  { id: "industry", label: "Industry" },
+  { id: "source", label: "Source" },
+  { id: "linkedContacts", label: "Linked Contacts" },
+  { id: "policies", label: "Policies" },
+  { id: "lastActivity", label: "Last Activity" },
 ];
 
 export const POLICIES_LIST_COLUMNS: ListColumn[] = [

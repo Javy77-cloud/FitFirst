@@ -275,10 +275,17 @@ export function serializeActivity(row: typeof activities.$inferSelect) {
 
 export type SerializedActivity = ReturnType<typeof serializeActivity>;
 
-export async function listRecordActivities(filter: { dealId?: string; leadId?: string }) {
+export async function listRecordActivities(filter: {
+  dealId?: string;
+  leadId?: string;
+  accountId?: string;
+  contactId?: string;
+}) {
   const clauses = [eq(activities.tenantId, tenant())];
   if (filter.dealId) clauses.push(eq(activities.dealId, filter.dealId));
   if (filter.leadId) clauses.push(eq(activities.leadId, filter.leadId));
+  if (filter.accountId) clauses.push(eq(activities.accountId, filter.accountId));
+  if (filter.contactId) clauses.push(eq(activities.contactId, filter.contactId));
   const rows = await db
     .select()
     .from(activities)
@@ -786,7 +793,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
   });
 }
 
-export async function listAccounts(filter: { status?: string; city?: string } = {}) {
+export async function listAccounts(filter: { status?: string; city?: string; industry?: string } = {}) {
   const session = await currentDeskSession();
   const rows = await db
     .select()
@@ -797,33 +804,65 @@ export async function listAccounts(filter: { status?: string; city?: string } = 
     .select()
     .from(policies)
     .where(eq(policies.tenantId, tenant()));
-  const linkedContacts = session.isAdmin
-    ? []
-    : await db
-        .select({ accountId: contactAccounts.accountId, ownerId: contacts.ownerId })
-        .from(contactAccounts)
-        .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
-        .where(eq(contactAccounts.tenantId, tenant()));
+  const allLinks = await db
+    .select({ accountId: contactAccounts.accountId, ownerId: contacts.ownerId })
+    .from(contactAccounts)
+    .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
+    .where(eq(contactAccounts.tenantId, tenant()));
+  const linkCountByAccount = new Map<string, number>();
+  for (const link of allLinks) {
+    linkCountByAccount.set(link.accountId, (linkCountByAccount.get(link.accountId) ?? 0) + 1);
+  }
+  const activityRows = await db
+    .select({
+      accountId: activities.accountId,
+      updatedAt: activities.updatedAt,
+      startAt: activities.startAt,
+    })
+    .from(activities)
+    .where(eq(activities.tenantId, tenant()));
+  const lastByAccount = new Map<string, Date>();
+  for (const row of activityRows) {
+    if (!row.accountId) continue;
+    const at = row.startAt ?? row.updatedAt;
+    if (!at) continue;
+    const prev = lastByAccount.get(row.accountId);
+    if (!prev || at.getTime() > prev.getTime()) lastByAccount.set(row.accountId, at);
+  }
+  for (const p of allPolicies) {
+    if (!p.accountId || !p.updatedAt) continue;
+    const prev = lastByAccount.get(p.accountId);
+    if (!prev || p.updatedAt.getTime() > prev.getTime()) lastByAccount.set(p.accountId, p.updatedAt);
+  }
   return rows.map((account) => {
     const related = allPolicies.filter((p) => p.accountId === account.id);
     const counts = {
       lifetime: related.length,
       inForce: related.filter((p) => isInForcePolicyStatus(p.status)).length,
     };
+    const industry = account.industry || account.naics || account.operations || null;
+    const lastActivityAt = lastByAccount.get(account.id) ?? account.updatedAt ?? null;
     return {
       ...account,
+      industry,
       policyCount: counts.lifetime,
       activePolicyCount: counts.inForce,
+      linkedContactsCount: linkCountByAccount.get(account.id) ?? 0,
+      lastActivityAt,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {
     if (!session.isAdmin) {
       const policyHit = allPolicies.some((p) => p.accountId === row.id && p.ownerId === session.userId);
-      const contactHit = linkedContacts.some((link) => link.accountId === row.id && link.ownerId === session.userId);
+      const contactHit = allLinks.some((link) => link.accountId === row.id && link.ownerId === session.userId);
       if (!policyHit && !contactHit) return false;
     }
     if (filter.status && row.clientStatus !== filter.status) return false;
     if (filter.city && (row.city ?? "").toLowerCase() !== filter.city.toLowerCase()) return false;
+    if (filter.industry) {
+      const ind = (row.industry ?? "").toLowerCase();
+      if (ind !== filter.industry.toLowerCase()) return false;
+    }
     return true;
   });
 }
@@ -1105,6 +1144,26 @@ export async function getAccountWorkspace(id: string) {
     .from(contactAccounts)
     .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
     .where(and(eq(contactAccounts.tenantId, tenant()), eq(contactAccounts.accountId, id)));
+  // Named-insured contacts on account policies (policy.contactId) — not contact_coapplicants.
+  const namedInsuredIds = [
+    ...new Set(
+      relatedPolicies
+        .map((row) => row.policy.contactId)
+        .filter((cid): cid is string => Boolean(cid)),
+    ),
+  ];
+  const namedInsuredRows =
+    namedInsuredIds.length > 0
+      ? await db
+          .select({
+            id: contacts.id,
+            firstName: contacts.firstName,
+            lastName: contacts.lastName,
+          })
+          .from(contacts)
+          .where(and(eq(contacts.tenantId, tenant()), inArray(contacts.id, namedInsuredIds)))
+      : [];
+  const namedInsuredById = new Map(namedInsuredRows.map((row) => [row.id, row]));
   const [originRisk] = relatedDeals[0]
     ? await db.select().from(risks).where(eq(risks.dealId, relatedDeals[0].id))
     : [];
@@ -1123,6 +1182,8 @@ export async function getAccountWorkspace(id: string) {
     policies: relatedPolicies,
     deals: relatedDeals,
     contacts: linked.map((row) => row.contact),
+    /** Policy named-insured contacts by contact id (for coAppliesWith reverse lookup). */
+    namedInsuredById,
     originRisk: originRisk ?? null,
     policyCount: lifetime,
     activePolicyCount: inForce,
