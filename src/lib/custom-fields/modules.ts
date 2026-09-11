@@ -6,11 +6,16 @@ import {
   LEAD_INSURANCE_TYPE_OPTIONS,
   LEAD_LANGUAGE_OPTIONS,
   LEAD_PIPELINE_OPTIONS,
+  LEAD_CADENCE_OPTIONS,
   LEAD_STATUS_OPTIONS,
   LEAD_TEMPERATURE_OPTIONS,
 } from "./lead-picklist-options";
 import { LEAD_SOURCES } from "@/lib/crm/sources";
 import { emptyLayout, type CustomFieldDef, type FieldLayout, type LayoutSection } from "./types";
+import {
+  CONTACT_MODULE_FIELDS,
+  contactCardLayout,
+} from "@/lib/contacts/contact-field-catalog";
 
 export const FIELD_LAYOUT_MODULES = [
   "leads",
@@ -65,6 +70,7 @@ const LEAD_FIELDS: CustomFieldDef[] = [
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "source", label: "Source", type: "picklist", options: [...LEAD_SOURCES], systemKey: "source" },
   { key: "status", label: "Status", type: "picklist", options: [...LEAD_STATUS_OPTIONS], systemKey: "status" },
+  { key: "cadence", label: "Cadence", type: "picklist", options: [...LEAD_CADENCE_OPTIONS], systemKey: "cadence" },
   { key: "temperature", label: "Temperature", type: "picklist", options: [...LEAD_TEMPERATURE_OPTIONS], systemKey: "temperature" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
   { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
@@ -87,7 +93,7 @@ const LEAD_FIELDS: CustomFieldDef[] = [
   },
   {
     key: "insurance_subtype",
-    label: "Insurance Subtype",
+    label: "Insurance subtype",
     type: "picklist",
     options: [...LEAD_INSURANCE_SUBTYPE_OPTIONS],
   },
@@ -106,24 +112,6 @@ const LEAD_FIELDS: CustomFieldDef[] = [
     systemKey: "preferredLanguage",
   },
   ...APPLICANT_CRM_FIELDS,
-];
-
-const CONTACT_FIELDS: CustomFieldDef[] = [
-  { key: "first_name", label: "First name", type: "single_line", systemKey: "firstName" },
-  { key: "last_name", label: "Last name", type: "single_line", systemKey: "lastName" },
-  { key: "email", label: "Email", type: "email", systemKey: "email" },
-  { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
-  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
-  { key: "city", label: "City", type: "single_line", systemKey: "city" },
-  { key: "state", label: "State", type: "single_line", systemKey: "state" },
-  { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
-  { key: "date_of_birth", label: "DOB", type: "dob", systemKey: "dateOfBirth" },
-  { key: "marital_status", label: "Marital status", type: "single_line", systemKey: "maritalStatus" },
-  { key: "preferred_language", label: "Language", type: "single_line", systemKey: "preferredLanguage" },
-  { key: "client_status", label: "Client status", type: "single_line", systemKey: "clientStatus" },
-  { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
-  { key: "life_notes", label: "Life notes", type: "multi_line", systemKey: "lifeNotes" },
-  { key: "health_notes", label: "Health notes", type: "multi_line", systemKey: "healthNotes" },
 ];
 
 const POLICY_FIELDS: CustomFieldDef[] = [
@@ -205,7 +193,19 @@ export function parseLayoutModule(value: string | null | undefined): FieldLayout
     .toLowerCase();
   if (raw === "accounts" || raw === "business" || raw === "account") return "businesses";
   if (isFieldLayoutModule(raw)) return raw;
+  // Nav/UI fallback only — mutations must use requireLayoutModule so a blank
+  // module never silently rewrites Deals.
   return "deals";
+}
+
+/** Hard fail for Save/delete/upsert — never guess "deals". */
+export function requireLayoutModule(value: string | null | undefined): FieldLayoutModule {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (raw === "accounts" || raw === "business" || raw === "account") return "businesses";
+  if (isFieldLayoutModule(raw)) return raw;
+  throw new Error("Layout module is required (leads, deals, policies, contacts, businesses, or carriers).");
 }
 
 export function fieldLayoutModuleLabel(module: FieldLayoutModule): string {
@@ -225,7 +225,7 @@ export function fieldBuilderHref(module: FieldLayoutModule, line?: string): stri
 export function defaultFieldsForModule(module: FieldLayoutModule): CustomFieldDef[] {
   if (module === "deals") return CORE_FIELDS;
   if (module === "leads") return LEAD_FIELDS;
-  if (module === "contacts") return CONTACT_FIELDS;
+  if (module === "contacts") return CONTACT_MODULE_FIELDS;
   if (module === "policies") return POLICY_FIELDS;
   if (module === "businesses") return BUSINESS_FIELDS;
   return CARRIER_FIELDS;
@@ -236,20 +236,20 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
   if (module === "leads") {
     return twoCol(
       [
-        section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone"]),
+        section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone", "date_of_birth"]),
         applicantLayoutSection(),
         section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
-        section("mailing_address", "Mailing Address", ["contact_mailing_address"]),
+        section("mailing_address", "Mailing Address", ["contact_mailing_address", "contact_mailing_city", "contact_mailing_state", "contact_mailing_zip"]),
       ],
       [
         section("details", "Details", [
           "source",
+          "cadence",
           "status",
           "temperature",
           "pipeline",
           "insurance_type",
           "insurance_subtype",
-          "insurance_type_desired",
           "preferred_language",
           "notes",
         ]),
@@ -257,15 +257,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     );
   }
   if (module === "contacts") {
-    return twoCol(
-      [
-        section("contact", "Contact", ["first_name", "last_name", "email", "phone", "date_of_birth", "marital_status"]),
-        section("address", "Address", ["mailing_address", "city", "state", "zip"]),
-      ],
-      [
-        section("details", "Details", ["client_status", "preferred_language", "notes", "life_notes", "health_notes"]),
-      ],
-    );
+    return contactCardLayout();
   }
   if (module === "policies") {
     return twoCol(

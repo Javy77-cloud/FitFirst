@@ -541,7 +541,8 @@ export const leads = pgTable(
     email: text("email"),
     phone: text("phone"),
     source: text("source"),
-    status: text("status").notNull().default("new"),
+    status: text("status").notNull().default("in_progress"),
+    cadence: text("cadence").notNull().default("none"),
     notes: text("notes"),
     convertedDealId: uuid("converted_deal_id"),
     mailingAddress: text("mailing_address"),
@@ -1089,6 +1090,29 @@ export const accounts = pgTable(
     index("accounts_tenant_idx").on(t.tenantId),
     index("accounts_ein_idx").on(t.tenantId, t.ein),
     index("accounts_ein_lookup_idx").on(t.tenantId, t.einLookup),
+  ],
+);
+
+export const contactCoapplicants = pgTable(
+  "contact_coapplicants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id),
+    linkedContactId: uuid("linked_contact_id")
+      .notNull()
+      .references(() => contacts.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("contact_coapplicants_tenant_idx").on(t.tenantId),
+    index("contact_coapplicants_contact_idx").on(t.tenantId, t.contactId),
+    index("contact_coapplicants_linked_idx").on(t.tenantId, t.linkedContactId),
+    uniqueIndex("contact_coapplicants_pair_uidx").on(t.tenantId, t.contactId, t.linkedContactId),
   ],
 );
 
@@ -2869,6 +2893,7 @@ export type Deal = typeof deals.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type ContactAccount = typeof contactAccounts.$inferSelect;
+export type ContactCoapplicant = typeof contactCoapplicants.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type Risk = typeof risks.$inferSelect;
 export type DocumentFolder = typeof documentFolders.$inferSelect;

@@ -91,7 +91,21 @@ export function mergeVisibleColumns(
   const missingLocked = locked.filter((id) => !visible.includes(id));
   const next = missingLocked.length ? [...missingLocked, ...visible] : visible;
   const result = next.length ? next : defaults;
-  return isDealsListColumns(columns) ? normalizeDealsVisibleColumns(result) : result;
+  const normalized = isDealsListColumns(columns)
+    ? normalizeDealsVisibleColumns(result)
+    : result;
+  // Deals: only auto-restore defaults when prefs collapsed to locked shells after dead keys dropped.
+  // Do not override an intentional custom set (e.g. Priority / Pipeline / Selling Agency).
+  if (isDealsListColumns(columns)) {
+    const unlockedVisible = normalized.filter((id) => id !== "pick");
+    const lockedShell = new Set(["title", "stage", "tags"]);
+    const onlyLockedShell =
+      unlockedVisible.length > 0 && unlockedVisible.every((id) => lockedShell.has(id));
+    if (onlyLockedShell && defaults.filter((id) => id !== "pick").length > unlockedVisible.length) {
+      return defaults;
+    }
+  }
+  return normalized;
 }
 
 export function isPickColumn(columnId: string): boolean {
@@ -294,7 +308,8 @@ export function columnMenuLabel(column: ListColumn): string {
 export const LEADS_DEFAULT_WIDTHS = {
   pick: DEFAULT_PICK_COLUMN_WIDTH,
   name: 340,
-  status: 170,
+  cadence: 150,
+  status: 150,
   source: 160,
   timer: 150,
   heat: 210,
@@ -310,6 +325,7 @@ export const LEADS_DEFAULT_WIDTHS = {
 export const LOCKED_LEADS_LIST_COLUMN_IDS = [
   "pick",
   "name",
+  "cadence",
   "status",
   "timer",
   "tags",
@@ -318,6 +334,7 @@ export const LOCKED_LEADS_LIST_COLUMN_IDS = [
 const LEADS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.pick },
   { id: "name", label: "Name", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.name },
+  { id: "cadence", label: "Cadence", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.cadence },
   { id: "status", label: "Status", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.status },
   { id: "timer", label: "Response", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.timer },
   { id: "heat", label: "Temp", defaultWidth: LEADS_DEFAULT_WIDTHS.heat },
@@ -326,12 +343,13 @@ const LEADS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "tags", label: "Tags", locked: true, defaultWidth: LEADS_DEFAULT_WIDTHS.tags },
 ];
 
-/** Layout keys already covered by the Name / Status / queue system columns. */
+/** Layout keys already covered by the Name / Cadence / Status / queue system columns. */
 const LEADS_LAYOUT_COVERED = new Set([
   "first_name",
   "last_name",
   "middle_name",
   "status",
+  "cadence",
   "stage",
 ]);
 
@@ -355,7 +373,7 @@ export function leadsListColumnsFromLayout(
   const extras: ListColumn[] = [];
   const seen = new Set(LEADS_SYSTEM_COLUMNS.map((column) => column.id));
 
-  // Source sits after status when the layout includes it (default lead layout does).
+  // Source sits after Cadence/Status when the layout includes it (default lead layout does).
   if (layoutKeys.has("source") && !seen.has("source")) {
     extras.push({
       id: "source",
@@ -386,10 +404,11 @@ export function leadsListColumnsFromLayout(
 
   const sourceCol = extras.find((column) => column.id === "source");
   const otherExtras = extras.filter((column) => column.id !== "source");
-  const [pick, name, status, ...restSystem] = LEADS_SYSTEM_COLUMNS;
+  const [pick, name, cadence, status, ...restSystem] = LEADS_SYSTEM_COLUMNS;
   return [
     pick,
     name,
+    cadence,
     status,
     ...(sourceCol ? [sourceCol] : []),
     ...restSystem,
@@ -402,11 +421,13 @@ export const LEADS_LIST_COLUMNS: ListColumn[] = leadsListColumnsFromLayout();
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "name", label: "Name", locked: true },
-  { id: "status", label: "Status" },
-  { id: "source", label: "Source" },
-  { id: "lifetime", label: "Lifetime" },
-  { id: "inForce", label: "In-force" },
+  { id: "phone", label: "Phone" },
+  { id: "email", label: "Email" },
+  { id: "status", label: "Client Status" },
+  { id: "lifetime", label: "Lifetime Deals" },
+  { id: "inForce", label: "In-Force" },
   { id: "tags", label: "Tags" },
+  { id: "lastActivity", label: "Last Activity" },
 ];
 
 export function dealsListColumnsFromFields(
