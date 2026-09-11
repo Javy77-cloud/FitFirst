@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   linkContactBusiness,
   searchContactsForLink,
@@ -26,6 +26,7 @@ type LinkedContact = {
   email?: string | null;
 };
 
+/** Compact linked-contacts glance line — mirrors Contacts LinkedBusinessLine chrome. */
 export function LinkedContactsSection({
   accountId,
   contacts,
@@ -54,28 +55,16 @@ export function LinkedContactsSection({
     };
   }, [open, q, contacts]);
 
+  const primary = contacts[0];
   return (
-    <div data-ff-linked-contacts="">
-      {contacts.length === 0 ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span>No Linked Contacts Yet — Link One.</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1"
-            onClick={() => setOpen(true)}
-          >
-            <Plus className="size-3.5" />
-            Link Contact
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 text-sm" data-ff-linked-contacts="">
+      <span className="text-muted-foreground">Contacts</span>
+      {primary ? (
+        <>
           {contacts.map((c) => (
             <span
               key={c.id}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-sm"
+              className="inline-flex items-center gap-1"
               data-ff-linked-contact-chip={c.id}
             >
               <RecordLink href={`/contacts/${c.id}`}>
@@ -90,13 +79,14 @@ export function LinkedContactsSection({
                   router.refresh();
                 }}
               >
-                <button
+                <Button
                   type="submit"
-                  className="rounded-full p-0.5 text-muted-foreground hover:bg-[#BF0A30]/10 hover:text-[#BF0A30]"
-                  aria-label={`Unlink ${c.firstName} ${c.lastName}`}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-[#BF0A30]"
                 >
-                  <X className="size-3.5" />
-                </button>
+                  Unlink
+                </Button>
               </form>
             </span>
           ))}
@@ -110,7 +100,21 @@ export function LinkedContactsSection({
             <Plus className="size-3.5" />
             Link Contact
           </Button>
-        </div>
+        </>
+      ) : (
+        <>
+          <span className="text-muted-foreground">No Linked Contacts Yet — Link One.</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1"
+            onClick={() => setOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Link Contact
+          </Button>
+        </>
       )}
 
       <Dialog

@@ -148,15 +148,18 @@ export function BusinessInlineFields({
   values: Record<string, string>;
 }) {
   return (
-    <div className="space-y-0" data-ff-business-inline-fields="">
-      {FIELDS.map((field) => (
-        <InlineRow
-          key={field.key}
-          accountId={accountId}
-          field={field}
-          value={values[field.key] ?? ""}
-        />
-      ))}
-    </div>
+    <section className="ff-card p-3" data-ff-business-inline-fields="">
+      <h2 className="mb-2 text-base font-semibold text-[#002868]">Account 360</h2>
+      <div className="space-y-0">
+        {FIELDS.map((field) => (
+          <InlineRow
+            key={field.key}
+            accountId={accountId}
+            field={field}
+            value={values[field.key] ?? ""}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

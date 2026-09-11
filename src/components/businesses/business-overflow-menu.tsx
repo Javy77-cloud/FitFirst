@@ -54,10 +54,7 @@ export function BusinessOverflowMenu({
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[11rem]">
-          <DropdownMenuItem onClick={() => setAssignOpen(true)}>Assign</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTagsOpen(true)}>Tag</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setArchiveOpen(true)}>Archive</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setReminderOpen(true)}>Set Reminder</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTagsOpen(true)}>Tags</DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               window.location.href = fieldBuilderHref("businesses");
@@ -65,6 +62,9 @@ export function BusinessOverflowMenu({
           >
             Edit Layout
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setAssignOpen(true)}>Assign</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setReminderOpen(true)}>Set Reminder</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setArchiveOpen(true)}>Archive</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setMergeOpen(true)}>Merge</DropdownMenuItem>
         </DropdownMenuContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
@@ -16,7 +17,59 @@ type PolicyRow = {
   lineOfBusiness: string;
   carrierName?: string | null;
   certifiable?: boolean;
+  /** Policy reverse-lookup only — never a manual Business co-app field. */
+  coAppliesWith?: { id: string; label: string } | null;
 };
+
+function Row({ row }: { row: PolicyRow }) {
+  const [open, setOpen] = useState(false);
+  const renewal = row.renewalDate ?? row.expirationDate;
+  return (
+    <li className="border-b border-border last:border-b-0" data-ff-business-policy-row={row.id}>
+      <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-1 py-2 text-sm">
+        <button
+          type="button"
+          className="text-left text-xs text-muted-foreground hover:text-[#002868]"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-label={open ? "Collapse Policy" : "Expand Policy"}
+        >
+          {open ? "▾" : "▸"}
+        </button>
+        <RecordLink href={`/policies/${row.id}`}>{row.policyNumber}</RecordLink>
+        <PolicyStatusBadge status={row.status} />
+        <span className="text-muted-foreground">{formatMoney(row.premium)}</span>
+        <span className="text-xs text-muted-foreground">Renewal {formatDay(renewal)}</span>
+        {row.carrierName ? (
+          <span className="text-xs text-muted-foreground">{row.carrierName}</span>
+        ) : null}
+        {row.certifiable ? (
+          <Link
+            href={`/policies/${row.id}`}
+            className="text-xs font-semibold text-[#002868] hover:underline"
+            data-ff-view-coi=""
+          >
+            View COI
+          </Link>
+        ) : null}
+      </div>
+      {open ? (
+        <div className="space-y-1 px-6 pb-2 text-xs text-muted-foreground">
+          <div>Type · {row.lineOfBusiness || "—"}</div>
+          <div>Expires · {formatDay(row.expirationDate)}</div>
+          {row.coAppliesWith ? (
+            <div data-ff-policy-coapplies="">
+              Co-Applies With:{" "}
+              <RecordLink href={`/contacts/${row.coAppliesWith.id}`}>
+                {row.coAppliesWith.label}
+              </RecordLink>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
+  );
+}
 
 export function BusinessPolicyRows({
   accountId,
@@ -44,34 +97,10 @@ export function BusinessPolicyRows({
   }
 
   return (
-    <ul className="divide-y divide-border" data-ff-business-policies="">
-      {policies.map((row) => {
-        const renewal = row.renewalDate ?? row.expirationDate;
-        return (
-          <li
-            key={row.id}
-            className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
-            data-ff-business-policy-row={row.id}
-          >
-            <RecordLink href={`/policies/${row.id}`}>{row.policyNumber}</RecordLink>
-            <PolicyStatusBadge status={row.status} />
-            <span className="text-muted-foreground">{formatMoney(row.premium)}</span>
-            <span className="text-xs text-muted-foreground">Renewal {formatDay(renewal)}</span>
-            {row.carrierName ? (
-              <span className="text-xs text-muted-foreground">{row.carrierName}</span>
-            ) : null}
-            {row.certifiable ? (
-              <Link
-                href={`/policies/${row.id}`}
-                className="text-xs font-semibold text-[#002868] hover:underline"
-                data-ff-view-coi=""
-              >
-                View COI
-              </Link>
-            ) : null}
-          </li>
-        );
-      })}
+    <ul data-ff-business-policies="">
+      {policies.map((row) => (
+        <Row key={row.id} row={row} />
+      ))}
     </ul>
   );
 }

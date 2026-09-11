@@ -1,10 +1,8 @@
 import type { ReactNode } from "react";
-import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 
 /**
- * Business detail: full-width layout fields + 420px Conversations/Info rail.
- * Save stays with the form in children — never under the rail.
- * Mirrors ContactDetailWorkspace; Edit Layout stays businesses-module isolated.
+ * Business detail: full-width main column + 420px Conversations/Info rail.
+ * Mirrors ContactDetailWorkspace chrome — Edit Layout lives in the overflow menu.
  */
 export function BusinessDetailWorkspace({
   rail,
@@ -20,9 +18,6 @@ export function BusinessDetailWorkspace({
       data-ff-business-layout="layout-rail"
     >
       <div className="min-w-0 w-full" data-ff-business-main="">
-        <div className="mb-2 flex items-center justify-end" data-ff-business-edit-layout-bar="">
-          <EditLayoutLink module="businesses" />
-        </div>
         {children}
       </div>
       {rail ? (

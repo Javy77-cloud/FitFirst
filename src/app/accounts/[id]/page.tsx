@@ -112,23 +112,6 @@ export default async function AccountDetailPage({
             lastActivityAt={lastActivityAt}
           />
           <span>{account.name}</span>
-          <ClientStatusPill status={clientStatus} />
-          {account.phone ? (
-            <a
-              href={`tel:${account.phone.replace(/\D/g, "")}`}
-              className="text-sm font-normal text-muted-foreground hover:text-[#002868] hover:underline"
-            >
-              {account.phone}
-            </a>
-          ) : null}
-          {account.email ? (
-            <a
-              href={`mailto:${account.email}`}
-              className="text-sm font-normal text-muted-foreground hover:text-[#002868] hover:underline"
-            >
-              {account.email}
-            </a>
-          ) : null}
           <div className="ml-auto">
             <BusinessOverflowMenu
               accountId={account.id}
@@ -148,6 +131,13 @@ export default async function AccountDetailPage({
       <BusinessDetailWorkspace
         rail={
           <>
+            <AccountGlance
+              policyCount={policyCount}
+              activePolicyCount={activePolicyCount}
+              dealCount={deals.length}
+              activityCount={timeline.length}
+              lifetimeValue={lifetimeValue}
+            />
             <div className="ff-card space-y-2 p-3" data-ff-business-rail-meta="">
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <ClientStatusPill status={clientStatus} />
@@ -164,42 +154,22 @@ export default async function AccountDetailPage({
           </>
         }
       >
-        <AccountGlance
-          policyCount={policyCount}
-          activePolicyCount={activePolicyCount}
-          dealCount={deals.length}
-          activityCount={timeline.length}
-          lifetimeValue={lifetimeValue}
-        />
+        <div className="mb-3" data-ff-at-a-glance="">
+          <LinkedContactsSection
+            accountId={account.id}
+            contacts={contacts.map((c) => ({
+              id: c.id,
+              firstName: c.firstName,
+              lastName: c.lastName,
+              email: c.email,
+            }))}
+          />
+        </div>
 
+        <BusinessInlineFields accountId={account.id} values={inlineValues} />
         <RecordModuleMacros module="businesses" recordId={account.id} />
 
         <div className="mt-4 space-y-3">
-          <CollapsibleSection
-            title="Account 360"
-            defaultOpen={false}
-            data-ff="business-account-360"
-          >
-            <BusinessInlineFields accountId={account.id} values={inlineValues} />
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Linked Contacts"
-            badge={contacts.length || undefined}
-            defaultOpen={false}
-            data-ff="business-linked-contacts"
-          >
-            <LinkedContactsSection
-              accountId={account.id}
-              contacts={contacts.map((c) => ({
-                id: c.id,
-                firstName: c.firstName,
-                lastName: c.lastName,
-                email: c.email,
-              }))}
-            />
-          </CollapsibleSection>
-
           <CollapsibleSection
             title="Insured Locations"
             badge={locations.length || undefined}
@@ -253,22 +223,14 @@ export default async function AccountDetailPage({
             />
           </CollapsibleSection>
 
-          <CollapsibleSection
-            title="Timeline"
-            badge={timeline.length || undefined}
-            defaultOpen={false}
-            data-ff="business-timeline"
-          >
-            <BusinessTimelineSection
-              items={timeline}
-              accountId={account.id}
-              contactId={contacts[0]?.id}
-              policyId={policies[0]?.policy.id}
-              dealId={deals[0]?.id}
-            />
-          </CollapsibleSection>
+          <BusinessTimelineSection
+            items={timeline}
+            accountId={account.id}
+            contactId={contacts[0]?.id}
+            policyId={policies[0]?.policy.id}
+            dealId={deals[0]?.id}
+          />
         </div>
-
       </BusinessDetailWorkspace>
     </AppShell>
   );

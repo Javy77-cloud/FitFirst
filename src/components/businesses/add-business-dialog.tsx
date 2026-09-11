@@ -168,7 +168,7 @@ export function AddBusinessDialog({
         }}
       >
         <DialogContent
-          className="w-[min(100%-2rem,640px)] max-h-[90vh] max-w-[640px] gap-3 overflow-y-auto p-5 sm:max-w-[640px]"
+          className="w-[min(100%-2rem,520px)] max-h-[90vh] max-w-[520px] gap-3 overflow-y-auto p-5 sm:max-w-[520px]"
           data-ff-add-business-dialog=""
         >
           <DialogHeader>
@@ -389,18 +389,19 @@ export function AddBusinessDialog({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <Link
+                href="/accounts/new"
+                className="text-sm text-primary hover:underline"
+                onClick={() => setOpen(false)}
+              >
+                Use Full Layout
+              </Link>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={busy}
-                  data-ff-save-business-popup=""
-                  className="bg-[#002868] text-white hover:bg-[#BF0A30]"
-                >
+                <Button type="submit" size="sm" disabled={busy} data-ff-save-business-popup="">
                   Save Business
                 </Button>
               </div>
