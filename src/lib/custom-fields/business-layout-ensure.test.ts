@@ -67,6 +67,28 @@ describe("business detail layout feel-pass", () => {
     expect(ops?.fieldKeys).toContain("notes");
   });
 
+
+  it("migrate creates right column when agency left everything in one column", () => {
+    const agency = twoCol(
+      [
+        {
+          id: "business",
+          label: "Business",
+          fieldKeys: ["business_name", "dba", "phone", "email", "website"],
+        },
+      ],
+      [],
+    );
+    const next = migrateBusinessPhoneOppositeColumn(agency);
+    expect(next.columns.length).toBeGreaterThanOrEqual(2);
+    const left = new Set(next.columns[0].sections.flatMap((s) => s.fieldKeys));
+    const right = new Set(next.columns[1].sections.flatMap((s) => s.fieldKeys));
+    expect(left.has("business_name")).toBe(true);
+    expect(left.has("phone")).toBe(false);
+    expect(right.has("phone")).toBe(true);
+    expect(next.columns.flatMap((c) => c.sections.map((s) => s.id))).not.toContain("crm_notes");
+  });
+
   it("migrate is a no-op when name and phone already opposite", () => {
     const layout = defaultLayoutForModule("businesses");
     const next = migrateBusinessPhoneOppositeColumn(layout);

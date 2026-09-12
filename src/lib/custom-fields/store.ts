@@ -416,8 +416,10 @@ export async function ensureBusinessDetailLayout(force = false): Promise<FieldLa
   const rows = await loadSavedLayoutRows("businesses").catch(() => []);
   const preferred = MODULE_LAYOUT_LINE;
   const picked = pickSavedModuleLayout(rows, "businesses", preferred);
-  const rightEmpty = !(picked?.columns?.[1]?.sections?.length);
-  if (force || !picked || rightEmpty) {
+  // Agency-saved layouts win. An empty right column can be intentional — do NOT
+  // reseed stock (that re-injects CRM Notes). Only seed when missing or force.
+  // Phone/name same-column is handled by migrate below (creates right if needed).
+  if (force || !picked) {
     await saveLayoutForModule("businesses", next);
     return next;
   }
