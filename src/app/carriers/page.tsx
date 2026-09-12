@@ -309,6 +309,7 @@ export default async function CarriersPage({
                 activePolicyCount,
                 premiumVolume,
                 lastQuoteAt,
+                lastIssuedAt,
                 portalCredStatus,
                 hitRate,
                 avgDaysToBind,
@@ -356,6 +357,7 @@ export default async function CarriersPage({
                       ? ""
                       : String(Math.round(avgDaysToBind * 100)).padStart(10, "0"),
                   lastQuote: lastQuoteAt ? new Date(lastQuoteAt).toISOString() : "",
+                  lastIssued: lastIssuedAt ? new Date(lastIssuedAt).toISOString() : "",
                   // Empty last contacted sorts first (ascending = nobody talked to first).
                   lastContacted: carrier.lastContactedAt
                     ? new Date(carrier.lastContactedAt).toISOString()
@@ -411,6 +413,11 @@ export default async function CarriersPage({
                   lastQuote: (
                     <span className="text-xs">
                       {lastQuoteAt ? formatDisplayDate(lastQuoteAt) : "—"}
+                    </span>
+                  ),
+                  lastIssued: (
+                    <span className="text-xs">
+                      {lastIssuedAt ? formatDisplayDate(lastIssuedAt) : "—"}
                     </span>
                   ),
                   lastContacted: (

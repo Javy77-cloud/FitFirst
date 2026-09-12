@@ -1427,6 +1427,7 @@ export type CarrierDeskRow = {
   activePolicyCount: number;
   premiumVolume: number;
   lastQuoteAt: Date | null;
+  lastIssuedAt: Date | null;
   hasActiveBusiness: boolean;
   portalCredStatus: "connected" | "missing_credentials" | "no_portal";
   hitRate: number | null;
@@ -1453,6 +1454,7 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
       carrierId: policies.carrierId,
       activeCount: sql<number>`count(*) filter (where lower(${policies.status}) in ('active', 'in_force', 'in-force'))::int`,
       premiumVolume: sql<string>`coalesce(sum(case when lower(${policies.status}) in ('active', 'in_force', 'in-force') then ${policies.premium}::numeric else 0 end), 0)`,
+      lastIssuedAt: sql<Date>`max(${policies.effectiveDate})`,
     })
     .from(policies)
     .where(and(eq(policies.tenantId, tenant()), sql`${policies.carrierId} is not null`))
@@ -1475,6 +1477,7 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
         {
           activeCount: Number(r.activeCount ?? 0),
           premiumVolume: Number(r.premiumVolume ?? 0),
+          lastIssuedAt: r.lastIssuedAt ? new Date(r.lastIssuedAt) : null,
         },
       ]),
   );
@@ -1540,8 +1543,9 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
 
   return rows.map(({ carrier, rule }) => {
     const pub = publicCarrierView(carrier, session.isAdmin);
-    const agg = policyMap.get(carrier.id) ?? { activeCount: 0, premiumVolume: 0 };
+    const agg = policyMap.get(carrier.id) ?? { activeCount: 0, premiumVolume: 0, lastIssuedAt: null as Date | null };
     const lastQuoteAt = quoteMap.get(carrier.id) ?? null;
+    const lastIssuedAt = agg.lastIssuedAt ?? null;
     const portalCredStatus = portalCredentialStatus({
       portalUrl: carrier.portalUrl,
       hasPortalUsername: Boolean(carrier.portalUsernameEnc && carrier.portalUsernameIv),
@@ -1562,6 +1566,7 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
       activePolicyCount: agg.activeCount,
       premiumVolume: agg.premiumVolume,
       lastQuoteAt,
+      lastIssuedAt,
       hasActiveBusiness,
       portalCredStatus,
       hitRate: computeHitRate(qs.requested, qs.bound),
@@ -1676,26 +1681,39 @@ export async function getCarrierWorkspace(id: string) {
     .limit(40);
 
   const timeline = [
-    ...revealLogs.map((log) => {
+    // Skip readiness_check_fail here — companion activity row carries the one-line reason.
+    ...revealLogs
+      .filter((log) => log.fieldKey !== "readiness_check_fail")
+      .map((log) => {
       const key = log.fieldKey;
-      const fail = key === "readiness_check_fail";
+      const fail = key.endsWith("_reveal_fail") || /fail/i.test(key);
+      const reason = fail ? key.replaceAll("_", " ") : null;
       return {
         id: log.id,
         kind: "credential" as const,
         title: key.replaceAll("_", " "),
         actorName: log.actorName,
         occurredAt: log.createdAt,
-        reason: fail ? "Portal URL unreachable or returned an error." : null,
+        reason,
+        failed: fail,
       };
     }),
-    ...activityRows.map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      title: row.title,
-      actorName: row.actorName,
-      occurredAt: row.occurredAt,
-      reason: row.detail,
-    })),
+    ...activityRows.map((row) => {
+      const detail = row.detail?.trim() || null;
+      const failed =
+        /fail|unreachable|error|denied|rejected/i.test(row.title) ||
+        (row.kind === "credential" && /fail|unreachable|error/i.test(detail ?? ""));
+      return {
+        id: row.id,
+        kind: row.kind,
+        title: row.title,
+        actorName: row.actorName,
+        occurredAt: row.occurredAt,
+        // One-line context for field updates; red failure line only when failed.
+        reason: detail,
+        failed,
+      };
+    }),
   ].sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt));
 
   const amBestHistory = amBestHistoryRows.map((row) => ({

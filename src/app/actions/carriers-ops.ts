@@ -186,6 +186,16 @@ export async function updateCarrierField(input: {
   const carrierId = (input.carrierId ?? "").trim();
   const fieldKey = (input.fieldKey ?? "").trim() as FieldKey;
   if (!isUuid(carrierId) || !(fieldKey in FIELD_MAP)) {
+    if (isUuid(carrierId)) {
+      await recordCarrierEvent({
+        carrierId,
+        kind: "field_update",
+        title: "Field update failed",
+        detail: "Unknown Field.",
+        actorId: admin.userId,
+        actorName: admin.name,
+      });
+    }
     return { ok: false, error: "Unknown Field." };
   }
 

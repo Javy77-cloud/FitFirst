@@ -10,7 +10,7 @@ import {
 } from "@/lib/carriers/secrets";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { carrierSecretRevealLogs, carriers } from "@/lib/db/schema";
+import { carrierActivityEvents, carrierSecretRevealLogs, carriers } from "@/lib/db/schema";
 import { decryptSecret } from "@/lib/secrets/vault";
 
 export type CarrierSecretField = "username" | "password";
@@ -36,6 +36,26 @@ async function writeRevealLog(input: {
   });
 }
 
+
+async function recordCredentialFailure(input: {
+  carrierId: string;
+  actorId: string | null;
+  actorName: string;
+  title: string;
+  reason: string;
+}) {
+  await db.insert(carrierActivityEvents).values({
+    tenantId: DEFAULT_TENANT_ID,
+    carrierId: input.carrierId,
+    kind: "credential",
+    title: input.title,
+    detail: input.reason.slice(0, 200),
+    actorId: input.actorId,
+    actorName: input.actorName,
+    occurredAt: new Date(),
+  });
+}
+
 export async function revealCarrierPortalSecret(input: {
   carrierId: string;
   field: CarrierSecretField;
@@ -58,12 +78,28 @@ export async function revealCarrierPortalSecret(input: {
   let plaintext: string | null = null;
   if (input.field === "username") {
     if (!row.portalUsernameEnc || !row.portalUsernameIv) {
-      return { ok: false, error: "No portal username on file." };
+      const error = "No portal username on file.";
+      await recordCredentialFailure({
+        carrierId: input.carrierId,
+        actorId: session.userId,
+        actorName: session.name,
+        title: "Credential reveal failed",
+        reason: error,
+      });
+      return { ok: false, error };
     }
     plaintext = decryptSecret(row.portalUsernameEnc, row.portalUsernameIv);
   } else if (input.field === "password") {
     if (!row.portalPasswordEnc || !row.portalPasswordIv) {
-      return { ok: false, error: "No portal password on file." };
+      const error = "No portal password on file.";
+      await recordCredentialFailure({
+        carrierId: input.carrierId,
+        actorId: session.userId,
+        actorName: session.name,
+        title: "Credential reveal failed",
+        reason: error,
+      });
+      return { ok: false, error };
     }
     plaintext = decryptSecret(row.portalPasswordEnc, row.portalPasswordIv);
   } else {
@@ -118,6 +154,23 @@ export async function logQuoteHandoffCheck(carrierId: string): Promise<{
     actorName: session.name,
     fieldKey: ping.reachable ? "readiness_check_ok" : "readiness_check_fail",
   });
+
+  if (!ping.reachable) {
+    const bits = [
+      ping.error?.trim() || "Portal URL unreachable or returned an error.",
+      ping.statusCode != null ? `HTTP ${ping.statusCode}` : null,
+    ].filter(Boolean);
+    await db.insert(carrierActivityEvents).values({
+      tenantId: DEFAULT_TENANT_ID,
+      carrierId,
+      kind: "credential",
+      title: "Readiness check failed",
+      detail: bits.join(" · ").slice(0, 200),
+      actorId: session.userId,
+      actorName: session.name,
+      occurredAt: new Date(),
+    });
+  }
 
   await writeRevealLog({
     carrierId,

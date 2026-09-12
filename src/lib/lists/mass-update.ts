@@ -77,6 +77,7 @@ const SYSTEM_DISPLAY_ONLY_IDS = new Set([
   "lastActivity",
   "activePolicies",
   "lastQuote",
+  "lastIssued",
   "hitRate",
   "avgDays",
   "commission",

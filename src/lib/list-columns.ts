@@ -480,6 +480,7 @@ export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
   { id: "hitRate", label: "Hit Rate", defaultOn: false },
   { id: "avgDays", label: "Average Days To Bind", defaultOn: false },
   { id: "lastQuote", label: "Last Quote Date" },
+  { id: "lastIssued", label: "Last Issued Date" },
   { id: "lastContacted", label: "Last Contacted" },
   { id: "amBest", label: "AM Best Rating", defaultOn: false },
   { id: "portal", label: "Portal Status" },

@@ -9,7 +9,10 @@ export type CarrierTimelineRow = {
   title: string;
   actorName: string | null;
   occurredAt: Date | string;
+  /** One-line context (field update detail or failure reason). */
   reason?: string | null;
+  /** When true, reason renders as a red failure line. */
+  failed?: boolean;
 };
 
 type Group = {
@@ -47,14 +50,27 @@ function groupTimeline(rows: CarrierTimelineRow[]): Group[] {
 }
 
 function failureReason(row: CarrierTimelineRow): string | null {
-  if (row.reason?.trim()) return row.reason.trim();
-  if (row.kind === "credential" && /fail|unreachable|missing/i.test(row.title)) {
-    return row.title;
+  if (!row.failed) {
+    // Infer failure for older rows that predate the failed flag.
+    if (row.kind === "credential" && /fail|unreachable|missing/i.test(row.title)) {
+      return row.reason?.trim() || row.title;
+    }
+    if (/readiness_check_fail|unreachable|fail/i.test(row.title)) {
+      return row.reason?.trim() || "Portal URL unreachable or returned an error.";
+    }
+    return null;
   }
+  if (row.reason?.trim()) return row.reason.trim();
   if (/readiness_check_fail|unreachable|fail/i.test(row.title)) {
     return "Portal URL unreachable or returned an error.";
   }
-  return null;
+  return row.title.trim() || "Failed.";
+}
+
+function contextLine(row: CarrierTimelineRow): string | null {
+  if (failureReason(row)) return null;
+  const detail = row.reason?.trim();
+  return detail || null;
 }
 
 export function CarrierTimelineSection({
@@ -79,6 +95,7 @@ export function CarrierTimelineSection({
         const expanded = Boolean(open[group.key]);
         const primary = group.items[0];
         const fail = group.items.map(failureReason).find(Boolean) ?? null;
+        const note = fail ? null : group.items.map(contextLine).find(Boolean) ?? null;
         const multi = group.items.length > 1;
         return (
           <li
@@ -115,6 +132,10 @@ export function CarrierTimelineSection({
                   <div className="mt-1 text-xs text-[#BF0A30]" data-ff-carrier-timeline-fail="">
                     {fail}
                   </div>
+                ) : note ? (
+                  <div className="mt-1 text-xs text-muted-foreground" data-ff-carrier-timeline-note="">
+                    {note}
+                  </div>
                 ) : null}
               </div>
               {multi ? (
@@ -123,17 +144,23 @@ export function CarrierTimelineSection({
             </button>
             {multi && expanded ? (
               <ul className="mt-2 space-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-                {group.items.map((item) => (
-                  <li key={item.id}>
-                    {item.title}
-                    {item.actorName ? ` · ${item.actorName}` : ""}
-                    {" · "}
-                    {new Date(item.occurredAt).toLocaleString()}
-                    {failureReason(item) ? (
-                      <span className="block text-[#BF0A30]">{failureReason(item)}</span>
-                    ) : null}
-                  </li>
-                ))}
+                {group.items.map((item) => {
+                  const itemFail = failureReason(item);
+                  const itemNote = contextLine(item);
+                  return (
+                    <li key={item.id}>
+                      {item.title}
+                      {item.actorName ? ` · ${item.actorName}` : ""}
+                      {" · "}
+                      {new Date(item.occurredAt).toLocaleString()}
+                      {itemFail ? (
+                        <span className="block text-[#BF0A30]">{itemFail}</span>
+                      ) : itemNote ? (
+                        <span className="block">{itemNote}</span>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </li>
