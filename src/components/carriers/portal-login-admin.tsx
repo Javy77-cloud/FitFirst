@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { logQuoteHandoffCheck, revealCarrierPortalSecret } from "@/app/actions/carrier-secrets";
+import {
+  logQuoteHandoffCheck,
+  revealCarrierPortalSecret,
+  saveCarrierPortalCredentials,
+} from "@/app/actions/carrier-secrets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +24,7 @@ function auditLabel(fieldKey: string) {
   if (fieldKey === "handoff_check") return "Quote handoff readiness check";
   if (fieldKey === "readiness_check_ok") return "Readiness check · reachable Y";
   if (fieldKey === "readiness_check_fail") return "Readiness check · reachable N";
+  if (fieldKey === "credentials_saved") return "Portal credentials saved";
   return fieldKey;
 }
 
@@ -38,6 +43,8 @@ export function PortalLoginAdmin({
   readiness: QuoteHandoffReadiness;
   audits: AuditRow[];
 }) {
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [passwordDraft, setPasswordDraft] = useState("");
   const [username, setUsername] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +52,10 @@ export function PortalLoginAdmin({
   const [check, setCheck] = useState<QuoteHandoffReadiness>(readiness);
   const [localAudits, setLocalAudits] = useState(audits);
   const [reachable, setReachable] = useState<boolean | null>(null);
+  const [storedUser, setStoredUser] = useState(hasUsername);
+  const [storedPass, setStoredPass] = useState(hasPassword);
+  const [hint, setHint] = useState(usernameHint);
+  const [savedFlash, setSavedFlash] = useState<string | null>(null);
 
   async function reveal(field: "username" | "password") {
     setBusy(field);
@@ -61,6 +72,44 @@ export function PortalLoginAdmin({
       {
         id: `local-${field}-${Date.now()}`,
         fieldKey: field,
+        actorName: "You",
+        createdAt: new Date().toISOString(),
+      },
+      ...rows,
+    ]);
+  }
+
+  async function saveCredentials() {
+    setBusy("save");
+    setError(null);
+    setSavedFlash(null);
+    const result = await saveCarrierPortalCredentials({
+      carrierId,
+      username: usernameDraft,
+      password: passwordDraft,
+    });
+    setBusy(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setStoredUser(result.hasUsername);
+    setStoredPass(result.hasPassword);
+    setHint(result.usernameHint);
+    setCheck({
+      ...check,
+      username: result.hasUsername,
+      password: result.hasPassword,
+      ready: result.ready,
+      missing: result.missing,
+    });
+    setUsernameDraft("");
+    setPasswordDraft("");
+    setSavedFlash("Credentials saved to admin vault.");
+    setLocalAudits((rows) => [
+      {
+        id: `local-save-${Date.now()}`,
+        fieldKey: "credentials_saved",
         actorName: "You",
         createdAt: new Date().toISOString(),
       },
@@ -95,7 +144,7 @@ export function PortalLoginAdmin({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-ff-carrier-portal-login="">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label className="text-xs">Portal username</Label>
@@ -103,15 +152,18 @@ export function PortalLoginAdmin({
             <Input
               name="portalUsername"
               autoComplete="off"
-              defaultValue=""
-              placeholder={hasUsername ? usernameHint || "On file — leave blank to keep" : "Agency portal user"}
+              value={usernameDraft}
+              onChange={(e) => setUsernameDraft(e.target.value)}
+              placeholder={
+                storedUser ? hint || "On file — leave blank to keep" : "Agency portal user"
+              }
               className="h-8"
             />
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={!hasUsername || busy === "username"}
+              disabled={!storedUser || busy === "username"}
               onClick={() => void reveal("username")}
             >
               {username ? "Shown" : "Reveal"}
@@ -120,8 +172,8 @@ export function PortalLoginAdmin({
           <p className="mt-1 text-xs text-muted-foreground">
             {username ? (
               <span className="font-medium text-navy">{username}</span>
-            ) : hasUsername ? (
-              <>On file as {usernameHint || "••••"}. Reveal is Admin-only and writes an audit stub.</>
+            ) : storedUser ? (
+              <>On file as {hint || "••••"}. Reveal is Admin-only and writes an audit stub.</>
             ) : (
               "No username stored."
             )}
@@ -134,15 +186,16 @@ export function PortalLoginAdmin({
               name="portalPassword"
               type="password"
               autoComplete="new-password"
-              defaultValue=""
-              placeholder={hasPassword ? "••••••••  leave blank to keep" : "Agency portal password"}
+              value={passwordDraft}
+              onChange={(e) => setPasswordDraft(e.target.value)}
+              placeholder={storedPass ? "••••••••  leave blank to keep" : "Agency portal password"}
               className="h-8"
             />
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={!hasPassword || busy === "password"}
+              disabled={!storedPass || busy === "password"}
               onClick={() => void reveal("password")}
             >
               {password ? "Shown" : "Reveal"}
@@ -151,7 +204,7 @@ export function PortalLoginAdmin({
           <p className="mt-1 text-xs text-muted-foreground">
             {password ? (
               <span className="font-medium text-navy">{password}</span>
-            ) : hasPassword ? (
+            ) : storedPass ? (
               "Masked at rest. Reveal is Admin-only and writes an audit stub."
             ) : (
               "No password stored."
@@ -159,6 +212,23 @@ export function PortalLoginAdmin({
           </p>
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          className="bg-[#002868] text-white hover:bg-[#002868]/90"
+          disabled={busy === "save"}
+          onClick={() => void saveCredentials()}
+          data-ff-carrier-portal-save=""
+        >
+          {busy === "save" ? "Saving…" : "Save"}
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Explicit Save required — credentials do not auto-save.
+        </span>
+      </div>
+      {savedFlash ? <p className="text-xs font-medium text-green-800">{savedFlash}</p> : null}
 
       <div className="rounded-md border border-border bg-secondary/40 px-3 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

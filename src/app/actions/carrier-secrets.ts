@@ -1,8 +1,13 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { and, desc, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
-import { quoteHandoffReadiness } from "@/lib/carriers/secrets";
+import {
+  quoteHandoffReadiness,
+  replacePortalPassword,
+  replacePortalUsername,
+} from "@/lib/carriers/secrets";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { carrierSecretRevealLogs, carriers } from "@/lib/db/schema";
@@ -148,4 +153,105 @@ export async function listCarrierSecretAudits(carrierId: string) {
     )
     .orderBy(desc(carrierSecretRevealLogs.createdAt))
     .limit(40);
+}
+
+
+export async function saveCarrierPortalCredentials(input: {
+  carrierId: string;
+  username?: string | null;
+  password?: string | null;
+}): Promise<
+  | {
+      ok: true;
+      hasUsername: boolean;
+      hasPassword: boolean;
+      usernameHint: string | null;
+      ready: boolean;
+      missing: string[];
+    }
+  | { ok: false; error: string }
+> {
+  const session = await currentDeskSession();
+  if (!session.isAdmin) return { ok: false, error: "Admin only." };
+
+  const carrierId = (input.carrierId ?? "").trim();
+  if (!carrierId) return { ok: false, error: "Carrier required." };
+
+  const [row] = await db
+    .select({
+      id: carriers.id,
+      portalUrl: carriers.portalUrl,
+      agencyCode: carriers.agencyCode,
+      portalUsernameEnc: carriers.portalUsernameEnc,
+      portalUsernameIv: carriers.portalUsernameIv,
+      portalUsernameHint: carriers.portalUsernameHint,
+      portalPasswordEnc: carriers.portalPasswordEnc,
+      portalPasswordIv: carriers.portalPasswordIv,
+    })
+    .from(carriers)
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, carrierId)));
+
+  if (!row) return { ok: false, error: "Carrier not found." };
+
+  const usernameIn = (input.username ?? "").trim();
+  const passwordIn = (input.password ?? "").trim();
+  const usernameTouched = Boolean(usernameIn);
+  const passwordTouched = Boolean(passwordIn);
+
+  const usernamePatch = usernameTouched
+    ? replacePortalUsername(usernameIn, row)
+    : {
+        portalUsernameEnc: row.portalUsernameEnc,
+        portalUsernameIv: row.portalUsernameIv,
+        portalUsernameHint: row.portalUsernameHint,
+      };
+  const passwordPatch = passwordTouched
+    ? replacePortalPassword(passwordIn, row)
+    : {
+        portalPasswordEnc: row.portalPasswordEnc,
+        portalPasswordIv: row.portalPasswordIv,
+      };
+
+  if (!usernameTouched && !passwordTouched) {
+    return { ok: false, error: "Enter a username and/or password to save." };
+  }
+
+  const now = new Date();
+  await db
+    .update(carriers)
+    .set({
+      ...usernamePatch,
+      ...passwordPatch,
+      portalSecretsUpdatedAt: now,
+      updatedAt: now,
+    })
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, carrierId)));
+
+  await writeRevealLog({
+    carrierId,
+    actorId: session.userId,
+    actorName: session.name,
+    fieldKey: "credentials_saved",
+  });
+
+  const hasUsername = Boolean(usernamePatch.portalUsernameEnc && usernamePatch.portalUsernameIv);
+  const hasPassword = Boolean(passwordPatch.portalPasswordEnc && passwordPatch.portalPasswordIv);
+  const readiness = quoteHandoffReadiness({
+    portalUrl: row.portalUrl,
+    agencyCode: row.agencyCode,
+    hasPortalUsername: hasUsername,
+    hasPortalPassword: hasPassword,
+  });
+
+  revalidatePath("/carriers");
+  revalidatePath(`/carriers/${carrierId}`);
+
+  return {
+    ok: true,
+    hasUsername,
+    hasPassword,
+    usernameHint: usernamePatch.portalUsernameHint,
+    ready: readiness.ready,
+    missing: readiness.missing,
+  };
 }

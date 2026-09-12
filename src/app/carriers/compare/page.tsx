@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  normalizeAppetiteRows,
+  normalizeDontWriteRows,
+} from "@/lib/carriers/appetite-rows";
 import { AppShell } from "@/components/app-shell";
 import { MarketCompareTable } from "@/components/carriers/market-compare-table";
 import {
@@ -33,6 +37,8 @@ export default async function CarrierMarketToolsPage({
       writtenLines: carrier.writtenLines,
       appetiteNotes: carrier.appetiteNotes,
       dontWriteNotes: carrier.dontWriteNotes,
+      appetiteRows: normalizeAppetiteRows((carrier as { appetiteRows?: unknown }).appetiteRows),
+      dontWriteRows: normalizeDontWriteRows((carrier as { dontWriteRows?: unknown }).dontWriteRows),
       amBestRating: carrier.amBestRating,
       amBestOutlook: carrier.amBestOutlook,
       commissionSchedule: (carrier.commissionSchedule ?? []) as CommissionScheduleRow[],

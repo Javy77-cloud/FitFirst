@@ -4,14 +4,18 @@ import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { formatMoney } from "@/lib/domain";
 import { listCarriersDesk } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
-import { CARRIERS_LIST_COLUMNS } from "@/lib/list-columns";
+import { CARRIERS_LIST_COLUMNS, type ListColumn } from "@/lib/list-columns";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { LINES } from "@/lib/domain";
 import { firstParam, matchesField, pickFilterParams } from "@/lib/saved-filters";
 import {
   carrierListHaystack,
   matchAppetiteSearch,
 } from "@/lib/carriers/appetite-search";
+import {
+  normalizeAppetiteRows,
+  normalizeDontWriteRows,
+} from "@/lib/carriers/appetite-rows";
+import { formatHitRatePct, formatDays } from "@/lib/carriers/metrics";
 import { RecordLink } from "@/components/record-links";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
@@ -22,6 +26,37 @@ import { portalCredentialLabel } from "@/lib/carriers/portal-status";
 import { formatDisplayDate } from "@/lib/dates/display-format";
 
 export const dynamic = "force-dynamic";
+
+const LOB_FILTERS = [
+  { value: "HO", label: "Homeowners" },
+  { value: "AUTO", label: "Auto" },
+  { value: "FLOOD", label: "Flood" },
+  { value: "LIFE", label: "Life" },
+  { value: "BOP", label: "BOP" },
+  { value: "GL", label: "GL" },
+  { value: "WC", label: "WC" },
+  { value: "RV", label: "RV" },
+  { value: "UMBRELLA", label: "Umbrella" },
+  { value: "HEALTH", label: "Health" },
+  { value: "DP", label: "DP" },
+];
+
+function columnsForData(has: {
+  label: boolean;
+  commission: boolean;
+  hitRate: boolean;
+  avgDays: boolean;
+  amBest: boolean;
+}): ListColumn[] {
+  return CARRIERS_LIST_COLUMNS.map((col) => {
+    if (col.id === "label") return { ...col, defaultOn: has.label };
+    if (col.id === "commission") return { ...col, defaultOn: has.commission };
+    if (col.id === "hitRate") return { ...col, defaultOn: has.hitRate };
+    if (col.id === "avgDays") return { ...col, defaultOn: has.avgDays };
+    if (col.id === "amBest") return { ...col, defaultOn: has.amBest };
+    return col;
+  });
+}
 
 export default async function CarriersPage({
   searchParams,
@@ -57,6 +92,13 @@ export default async function CarriersPage({
       if (filter.business === "directory" && hasActiveBusiness) return false;
       if (filter.portal === "connected" && portalCredStatus !== "connected") return false;
       if (filter.portal === "missing" && portalCredStatus !== "missing_credentials") return false;
+      if (filter.portal === "none" && portalCredStatus !== "no_portal") return false;
+      const appetiteRows = normalizeAppetiteRows(
+        (carrier as { appetiteRows?: unknown }).appetiteRows,
+      );
+      const dontWriteRows = normalizeDontWriteRows(
+        (carrier as { dontWriteRows?: unknown }).dontWriteRows,
+      );
       if (q) {
         const hay = carrierListHaystack({
           name: carrier.name,
@@ -65,20 +107,41 @@ export default async function CarriersPage({
           tags: carrier.tags,
           appetiteNotes: carrier.appetiteNotes,
           dontWriteNotes: carrier.dontWriteNotes,
+          appetiteRows,
+          dontWriteRows,
+          autoLabel: row.autoLabel,
         });
         if (!hay.includes(q.toLowerCase())) return false;
       }
       return true;
     })
-    .sort((a, b) => b.premiumVolume - a.premiumVolume || a.carrier.name.localeCompare(b.carrier.name));
+    .sort((a, b) => {
+      // Default: last contacted ascending (nobody talked to first).
+      const aT = a.carrier.lastContactedAt
+        ? new Date(a.carrier.lastContactedAt).getTime()
+        : 0;
+      const bT = b.carrier.lastContactedAt
+        ? new Date(b.carrier.lastContactedAt).getTime()
+        : 0;
+      if (aT !== bT) return aT - bT;
+      return a.carrier.name.localeCompare(b.carrier.name);
+    });
 
   const appetiteHits = q
     ? rows
         .map((row) => {
+          const appetiteRows = normalizeAppetiteRows(
+            (row.carrier as { appetiteRows?: unknown }).appetiteRows,
+          );
+          const dontWriteRows = normalizeDontWriteRows(
+            (row.carrier as { dontWriteRows?: unknown }).dontWriteRows,
+          );
           const hit = matchAppetiteSearch(
             q,
             row.carrier.appetiteNotes,
             row.carrier.dontWriteNotes,
+            appetiteRows,
+            dontWriteRows,
           );
           return { row, hit };
         })
@@ -88,6 +151,15 @@ export default async function CarriersPage({
   const excludesHits = appetiteHits.filter(
     (x) => x.hit.side === "excludes" || x.hit.side === "both",
   );
+
+  const hasData = {
+    label: rows.some((r) => Boolean(r.autoLabel)),
+    commission: rows.some((r) => r.commissionEarned > 0),
+    hitRate: rows.some((r) => r.hitRate != null),
+    avgDays: rows.some((r) => r.avgDaysToBind != null),
+    amBest: rows.some((r) => Boolean(r.carrier.amBestRating)),
+  };
+  const listColumns = columnsForData(hasData);
 
   return (
     <AppShell
@@ -185,8 +257,8 @@ export default async function CarriersPage({
           },
           {
             key: "line",
-            label: "Written lines",
-            options: LINES.map((value) => ({ value, label: value })),
+            label: "LOB",
+            options: LOB_FILTERS,
           },
           {
             key: "business",
@@ -202,6 +274,7 @@ export default async function CarriersPage({
             options: [
               { value: "connected", label: "Connected" },
               { value: "missing", label: "Missing credentials" },
+              { value: "none", label: "No portal linked" },
             ],
           },
         ]}
@@ -218,7 +291,11 @@ export default async function CarriersPage({
                   id: carrier.id,
                   label: carrier.name,
                   email: carrier.email ?? carrier.underwriterEmail ?? carrier.accountManagerEmail,
-                  phone: carrier.phone ?? carrier.agentPhone ?? carrier.customerServicePhone ?? carrier.underwriterPhone,
+                  phone:
+                    carrier.phone ??
+                    carrier.agentPhone ??
+                    carrier.customerServicePhone ??
+                    carrier.underwriterPhone,
                 },
               ]),
             ).values(),
@@ -227,8 +304,8 @@ export default async function CarriersPage({
           <DeskColumnTable
             moduleId="carriers"
             initialQuery={q}
-            columns={CARRIERS_LIST_COLUMNS}
-            defaultSort={{ key: "premium", dir: "desc" }}
+            columns={listColumns}
+            defaultSort={{ key: "lastContacted", dir: "asc" }}
             empty={
               <div className="space-y-2 py-6 text-center">
                 <p className="text-sm text-muted-foreground">No carriers match this filter.</p>
@@ -238,7 +315,30 @@ export default async function CarriersPage({
               </div>
             }
             rows={rows.map((row) => {
-              const { carrier, activePolicyCount, premiumVolume, lastQuoteAt, portalCredStatus } = row;
+              const {
+                carrier,
+                activePolicyCount,
+                premiumVolume,
+                lastQuoteAt,
+                portalCredStatus,
+                hitRate,
+                avgDaysToBind,
+                commissionEarned,
+                autoLabel,
+              } = row;
+              const appetiteRows = normalizeAppetiteRows(
+                (carrier as { appetiteRows?: unknown }).appetiteRows,
+              );
+              const dontWriteRows = normalizeDontWriteRows(
+                (carrier as { dontWriteRows?: unknown }).dontWriteRows,
+              );
+              const rawDesk = (carrier as { deskStatus?: string | null }).deskStatus?.toLowerCase();
+              const statusLabel =
+                rawDesk === "pending"
+                  ? "Pending"
+                  : rawDesk === "inactive" || (!rawDesk && !carrier.active)
+                    ? "Inactive"
+                    : "Active";
               return {
                 key: carrier.id,
                 hay: carrierListHaystack({
@@ -248,18 +348,30 @@ export default async function CarriersPage({
                   tags: carrier.tags,
                   appetiteNotes: carrier.appetiteNotes,
                   dontWriteNotes: carrier.dontWriteNotes,
+                  appetiteRows,
+                  dontWriteRows,
+                  autoLabel,
                 }),
                 sort: {
                   pick: "",
                   carrier: carrier.name,
-                  status: carrier.active ? "Active" : "Inactive",
+                  label: autoLabel,
+                  status: statusLabel,
                   lines: (carrier.writtenLines ?? []).join(", "),
                   activePolicies: String(activePolicyCount).padStart(8, "0"),
                   premium: String(Math.round(premiumVolume * 100)).padStart(16, "0"),
+                  commission: String(Math.round(commissionEarned * 100)).padStart(16, "0"),
+                  hitRate: hitRate == null ? "" : String(Math.round(hitRate * 10000)).padStart(8, "0"),
+                  avgDays:
+                    avgDaysToBind == null
+                      ? ""
+                      : String(Math.round(avgDaysToBind * 100)).padStart(10, "0"),
                   lastQuote: lastQuoteAt ? new Date(lastQuoteAt).toISOString() : "",
+                  // Empty last contacted sorts first (ascending = nobody talked to first).
                   lastContacted: carrier.lastContactedAt
                     ? new Date(carrier.lastContactedAt).toISOString()
-                    : "",
+                    : "0000-01-01T00:00:00.000Z",
+                  amBest: carrier.amBestRating ?? "",
                   portal: portalCredStatus,
                   tags: tagSortText(carrier.tags),
                 },
@@ -273,15 +385,18 @@ export default async function CarriersPage({
                       ) : null}
                     </div>
                   ),
+                  label: <span className="text-xs text-muted-foreground">{autoLabel}</span>,
                   status: (
                     <span
                       className={
-                        carrier.active
+                        statusLabel === "Active"
                           ? "rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800"
-                          : "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+                          : statusLabel === "Pending"
+                            ? "rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                            : "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
                       }
                     >
-                      {carrier.active ? "Active" : "Inactive"}
+                      {statusLabel}
                     </span>
                   ),
                   lines: (
@@ -292,6 +407,17 @@ export default async function CarriersPage({
                     <span className="text-xs tabular-nums">
                       {premiumVolume > 0 ? formatMoney(premiumVolume) : "—"}
                     </span>
+                  ),
+                  commission: (
+                    <span className="text-xs tabular-nums">
+                      {commissionEarned > 0 ? formatMoney(commissionEarned) : "—"}
+                    </span>
+                  ),
+                  hitRate: (
+                    <span className="text-xs tabular-nums">{formatHitRatePct(hitRate)}</span>
+                  ),
+                  avgDays: (
+                    <span className="text-xs tabular-nums">{formatDays(avgDaysToBind)}</span>
                   ),
                   lastQuote: (
                     <span className="text-xs">
@@ -305,12 +431,17 @@ export default async function CarriersPage({
                         : "—"}
                     </span>
                   ),
+                  amBest: (
+                    <span className="text-xs">{carrier.amBestRating || "—"}</span>
+                  ),
                   portal: (
                     <span
                       className={
                         portalCredStatus === "connected"
                           ? "text-xs font-medium text-green-800"
-                          : "text-xs font-medium text-amber-800"
+                          : portalCredStatus === "no_portal"
+                            ? "text-xs text-muted-foreground"
+                            : "text-xs font-medium text-amber-800"
                       }
                     >
                       {portalCredentialLabel(portalCredStatus)}

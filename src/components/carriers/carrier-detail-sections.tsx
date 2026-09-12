@@ -8,13 +8,17 @@ import {
   CarrierAmBestFields,
   CarrierContactFields,
   CarrierIdentityFields,
-  CarrierRichTextField,
   CarrierPortalUrlField,
 } from "@/components/carriers/carrier-inline-fields";
 import { CarrierCommissionTable } from "@/components/carriers/carrier-commission-table";
 import { CarrierTimelineSection } from "@/components/carriers/carrier-timeline-section";
+import { StructuredAppetiteTable } from "@/components/carriers/structured-appetite-table";
+import { StructuredDontWriteTable } from "@/components/carriers/structured-dont-write-table";
+import { CarrierScorecardSection } from "@/components/carriers/carrier-kpi-strip";
 import { normalizeCommissionSchedule, type CommissionScheduleRow } from "@/lib/carriers/commission";
+import type { AppetiteNoteRow, DontWriteNoteRow } from "@/lib/carriers/appetite-rows";
 import type { QuoteHandoffReadiness } from "@/lib/carriers/secrets";
+import type { CarrierKpiSnapshot } from "@/lib/carriers/metrics";
 
 type AuditRow = {
   id: string;
@@ -38,8 +42,8 @@ export function CarrierDetailSections({
   admin,
   identity,
   contact,
-  appetiteNotes,
-  dontWriteNotes,
+  appetiteRows,
+  dontWriteRows,
   amBest,
   commissionRows,
   newBusinessCommPct,
@@ -48,14 +52,15 @@ export function CarrierDetailSections({
   related,
   timeline,
   amBestHistory = [],
+  kpi,
 }: {
   carrierId: string;
   carrierName: string;
   admin: boolean;
   identity: Record<string, string>;
   contact: Record<string, string>;
-  appetiteNotes: string;
-  dontWriteNotes: string;
+  appetiteRows: AppetiteNoteRow[];
+  dontWriteRows: DontWriteNoteRow[];
   amBest: Record<string, string>;
   commissionRows: CommissionScheduleRow[];
   newBusinessCommPct: string;
@@ -78,6 +83,7 @@ export function CarrierDetailSections({
   };
   timeline: TimelineRow[];
   amBestHistory?: { rating: string; outlook: string; date: string }[];
+  kpi: CarrierKpiSnapshot;
 }) {
   const schedule = normalizeCommissionSchedule(commissionRows, {
     newBusinessPct: newBusinessCommPct,
@@ -132,40 +138,14 @@ export function CarrierDetailSections({
       )}
 
       <CollapsibleSection id="appetite" title="Appetite Notes" defaultOpen={false}>
-        <CarrierRichTextField
-          carrierId={carrierId}
-          fieldKey="appetite_notes"
-          value={appetiteNotes}
-          admin={admin}
-        />
+        <StructuredAppetiteTable carrierId={carrierId} rows={appetiteRows} admin={admin} />
       </CollapsibleSection>
 
       <CollapsibleSection id="dont-write" title="Don't Write" defaultOpen={false}>
-        <CarrierRichTextField
-          carrierId={carrierId}
-          fieldKey="dont_write_notes"
-          value={dontWriteNotes}
-          admin={admin}
-        />
+        <StructuredDontWriteTable carrierId={carrierId} rows={dontWriteRows} admin={admin} />
       </CollapsibleSection>
 
       <CollapsibleSection id="commission" title="Commission Schedule" defaultOpen={false}>
-        <div className="mb-2 flex flex-wrap gap-2">
-          <Link
-            href={`/carriers/calculator?carrier=${carrierId}`}
-            className="inline-flex h-7 items-center rounded-md border border-[#002868]/30 bg-[#002868]/5 px-2 text-xs font-medium text-[#002868] hover:bg-[#002868]/10"
-            data-ff-carrier-tool="calculator"
-          >
-            Commission Calculator
-          </Link>
-          <Link
-            href="/carriers/compare"
-            className="inline-flex h-7 items-center rounded-md border border-border bg-background px-2 text-xs font-medium hover:bg-muted"
-            data-ff-carrier-tool="compare"
-          >
-            Market Comparison
-          </Link>
-        </div>
         <CarrierCommissionTable carrierId={carrierId} rows={schedule} admin={admin} />
       </CollapsibleSection>
 
@@ -173,7 +153,7 @@ export function CarrierDetailSections({
         <CarrierAmBestFields carrierId={carrierId} values={amBest} admin={admin} />
         <div className="mt-3 border-t border-border/60 pt-3" data-ff-carrier-ambest-history="">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#002868]">
-            Rating history
+            Rating History
           </p>
           {amBestHistory.length === 0 ? (
             <p className="text-xs text-muted-foreground">
@@ -199,19 +179,17 @@ export function CarrierDetailSections({
             <Link
               href={`/policies?carrier=${encodeURIComponent(carrierId)}`}
               className="font-medium text-primary hover:underline"
+              data-ff-carrier-related-policies=""
             >
               Policies · {related.policyCount}
             </Link>
-            {related.recentPolicy ? (
-              <div className="text-xs text-muted-foreground">
-                Latest:{" "}
-                <Link href={`/policies/${related.recentPolicy.id}`} className="text-primary hover:underline">
-                  {related.recentPolicy.label}
-                </Link>
-              </div>
-            ) : related.policyCount === 0 ? (
+            {related.policyCount === 0 ? (
               <div className="text-xs text-muted-foreground">No linked policies yet.</div>
-            ) : null}
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                Opens Policies filtered to this carrier (all linked records).
+              </div>
+            )}
           </li>
           <li className="space-y-0.5">
             <Link
@@ -220,14 +198,7 @@ export function CarrierDetailSections({
             >
               Contacts · {related.contactCount}
             </Link>
-            {related.recentContact ? (
-              <div className="text-xs text-muted-foreground">
-                Latest:{" "}
-                <Link href={`/contacts/${related.recentContact.id}`} className="text-primary hover:underline">
-                  {related.recentContact.label}
-                </Link>
-              </div>
-            ) : related.contactCount === 0 ? (
+            {related.contactCount === 0 ? (
               <div className="text-xs text-muted-foreground">No linked contacts yet.</div>
             ) : null}
           </li>
@@ -238,14 +209,7 @@ export function CarrierDetailSections({
             >
               Deals · {related.dealCount}
             </Link>
-            {related.recentDeal ? (
-              <div className="text-xs text-muted-foreground">
-                Latest:{" "}
-                <Link href={`/deals/${related.recentDeal.id}`} className="text-primary hover:underline">
-                  {related.recentDeal.label}
-                </Link>
-              </div>
-            ) : related.dealCount === 0 ? (
+            {related.dealCount === 0 ? (
               <div className="text-xs text-muted-foreground">No linked deals yet.</div>
             ) : null}
           </li>
@@ -254,10 +218,12 @@ export function CarrierDetailSections({
 
       <CollapsibleSection id="activity" title="Activity & Timeline" defaultOpen={false}>
         <CarrierTimelineSection
-          rows={
-            admin ? timeline : timeline.filter((row) => row.kind !== "credential")
-          }
+          rows={admin ? timeline : timeline.filter((row) => row.kind !== "credential")}
         />
+      </CollapsibleSection>
+
+      <CollapsibleSection id="scorecard" title="Carrier Scorecard" defaultOpen={false}>
+        <CarrierScorecardSection kpi={kpi} />
       </CollapsibleSection>
     </div>
   );

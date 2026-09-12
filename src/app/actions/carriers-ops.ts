@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { parseCommissionScheduleJson } from "@/lib/carriers/commission";
+import {
+  normalizeAppetiteRows,
+  normalizeDontWriteRows,
+  type AppetiteNoteRow,
+  type DontWriteNoteRow,
+} from "@/lib/carriers/appetite-rows";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -429,4 +435,57 @@ export async function mergeCarrierIntoSurvivor(input: {
   revalidatePath(`/carriers/${keepId}`);
   revalidatePath(`/carriers/${dropId}`);
   return { ok: true, survivorId: keepId };
+}
+
+
+export async function saveCarrierAppetiteRows(input: {
+  carrierId: string;
+  rows: AppetiteNoteRow[];
+}): Promise<{ ok: true; rows: AppetiteNoteRow[] } | { ok: false; error: string }> {
+  const admin = await assertAdmin();
+  if (!admin.ok) return admin;
+  const carrierId = (input.carrierId ?? "").trim();
+  if (!isUuid(carrierId)) return { ok: false, error: "Invalid Carrier." };
+  const rows = normalizeAppetiteRows(input.rows);
+  await db
+    .update(carriers)
+    .set({ appetiteRows: rows, updatedAt: new Date() })
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, carrierId)));
+  await recordCarrierEvent({
+    carrierId,
+    kind: "appetite",
+    title: "Appetite Rows Updated",
+    detail: `${rows.length} row(s)`,
+    actorId: admin.userId,
+    actorName: admin.name,
+  });
+  revalidatePath("/carriers");
+  revalidatePath(`/carriers/${carrierId}`);
+  return { ok: true, rows };
+}
+
+export async function saveCarrierDontWriteRows(input: {
+  carrierId: string;
+  rows: DontWriteNoteRow[];
+}): Promise<{ ok: true; rows: DontWriteNoteRow[] } | { ok: false; error: string }> {
+  const admin = await assertAdmin();
+  if (!admin.ok) return admin;
+  const carrierId = (input.carrierId ?? "").trim();
+  if (!isUuid(carrierId)) return { ok: false, error: "Invalid Carrier." };
+  const rows = normalizeDontWriteRows(input.rows);
+  await db
+    .update(carriers)
+    .set({ dontWriteRows: rows, updatedAt: new Date() })
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, carrierId)));
+  await recordCarrierEvent({
+    carrierId,
+    kind: "dont_write",
+    title: "Don't Write Rows Updated",
+    detail: `${rows.length} row(s)`,
+    actorId: admin.userId,
+    actorName: admin.name,
+  });
+  revalidatePath("/carriers");
+  revalidatePath(`/carriers/${carrierId}`);
+  return { ok: true, rows };
 }

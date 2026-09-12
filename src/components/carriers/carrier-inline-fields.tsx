@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from "react";
 import { updateCarrierField } from "@/app/actions/carriers-ops";
 import { flashAction } from "@/lib/flash-client";
-import { LINES } from "@/lib/domain";
 import { formatDisplayDate } from "@/lib/dates/display-format";
 import { cn } from "@/lib/utils";
 
@@ -186,7 +185,7 @@ export function CarrierIdentityFields({
         />
       ))}
       <p className="pt-2 text-[11px] text-muted-foreground">
-        Lines hint: {LINES.join(", ")} (comma-separated).
+        Lines hint: HO, DP, AUTO, FLOOD, UMBRELLA, GL, BOP, LIFE, RV, WC (comma-separated).
       </p>
     </div>
   );
@@ -230,20 +229,49 @@ export function CarrierContactFields({
 }) {
   return (
     <div className="space-y-4" data-ff-carrier-contact="">
+      {/* Fixed three roles only — no Add Contact. Names are static text (never open a contact record). */}
       {CONTACT_GROUPS.map((group) => (
         <div key={group.title} className="rounded-md border border-border/70 px-3 py-2" data-ff-carrier-contact-group={group.title}>
           <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#002868]">
             {group.title}
           </div>
-          {group.fields.map((field) => (
-            <InlineRow
-              key={field.key}
-              carrierId={carrierId}
-              field={field}
-              value={values[field.key] ?? ""}
-              admin={admin}
-            />
-          ))}
+          {group.fields.map((field) => {
+            const isName = field.key.endsWith("_name") || field.key === "underwriter_name";
+            if (isName && !admin) {
+              return (
+                <div
+                  key={field.key}
+                  className="grid grid-cols-[9rem_minmax(0,1fr)] items-start gap-2 border-b border-border/70 py-1.5 last:border-b-0"
+                >
+                  <div className="text-xs font-medium text-muted-foreground">{field.label}</div>
+                  <div className="text-sm text-[#002868]" data-ff-carrier-contact-name="">
+                    {(values[field.key] ?? "").trim() || "—"}
+                  </div>
+                </div>
+              );
+            }
+            if (isName && admin) {
+              // Admin blur-save edit stays on this carrier record — no /contacts navigation.
+              return (
+                <InlineRow
+                  key={field.key}
+                  carrierId={carrierId}
+                  field={field}
+                  value={values[field.key] ?? ""}
+                  admin={admin}
+                />
+              );
+            }
+            return (
+              <InlineRow
+                key={field.key}
+                carrierId={carrierId}
+                field={field}
+                value={values[field.key] ?? ""}
+                admin={admin}
+              />
+            );
+          })}
         </div>
       ))}
     </div>

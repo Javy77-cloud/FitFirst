@@ -13,7 +13,18 @@ describe("portalCredentialStatus", () => {
     expect(portalCredentialLabel("connected")).toBe("Connected");
   });
 
-  it("missing when any piece absent", () => {
+  it("no_portal when nothing started", () => {
+    expect(
+      portalCredentialStatus({
+        portalUrl: null,
+        hasPortalUsername: false,
+        hasPortalPassword: false,
+      }),
+    ).toBe("no_portal");
+    expect(portalCredentialLabel("no_portal")).toBe("No portal linked");
+  });
+
+  it("missing when any piece started but incomplete", () => {
     expect(
       portalCredentialStatus({
         portalUrl: "https://agents.example",

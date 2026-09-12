@@ -471,12 +471,17 @@ export const POLICIES_LIST_COLUMNS: ListColumn[] = [
 export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "carrier", label: "Carrier Name", locked: true },
+  { id: "label", label: "Label", defaultOn: false },
   { id: "status", label: "Status" },
   { id: "lines", label: "Written Lines" },
   { id: "activePolicies", label: "Active Policies" },
   { id: "premium", label: "Premium Volume" },
+  { id: "commission", label: "Commission Earned", defaultOn: false },
+  { id: "hitRate", label: "Hit Rate", defaultOn: false },
+  { id: "avgDays", label: "Average Days To Bind", defaultOn: false },
   { id: "lastQuote", label: "Last Quote Date" },
   { id: "lastContacted", label: "Last Contacted" },
+  { id: "amBest", label: "AM Best Rating", defaultOn: false },
   { id: "portal", label: "Portal Status" },
   { id: "tags", label: "Tags" },
 ];
@@ -718,6 +723,7 @@ export const CERTIFICATES_LIST_COLUMNS = labeledColumns([
   ["number", "Number", true],
   ["holder", "Holder"],
   ["business", "Business"],
+  ["status", "Status"],
   ["issued", "Issued"],
   ["flags", "Flags"],
 ]);

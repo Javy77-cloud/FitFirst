@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
@@ -6,6 +7,7 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { CarrierDetailWorkspace } from "@/components/carriers/carrier-detail-workspace";
 import { CarrierDetailSections } from "@/components/carriers/carrier-detail-sections";
 import { CarrierOverflowMenu } from "@/components/carriers/carrier-overflow-menu";
+import { CarrierKpiStrip } from "@/components/carriers/carrier-kpi-strip";
 import {
   CarrierStatusDot,
   carrierDeskStatusFromFlags,
@@ -16,6 +18,11 @@ import { listCarrierSecretAudits } from "@/app/actions/carrier-secrets";
 import { currentDeskSession } from "@/lib/auth/session";
 import { quoteHandoffReadiness } from "@/lib/carriers/secrets";
 import { normalizeCommissionSchedule } from "@/lib/carriers/commission";
+import {
+  normalizeAppetiteRows,
+  normalizeDontWriteRows,
+} from "@/lib/carriers/appetite-rows";
+import { emptyCarrierKpi } from "@/lib/carriers/metrics";
 import { getCarrierWorkspace } from "@/lib/db/queries";
 import { loadRecordContext } from "@/lib/record-context";
 import { isUuid } from "@/lib/ids";
@@ -32,7 +39,7 @@ export default async function CarrierRecordPage({
   if (id === "logs") redirect("/settings/developer/appetite-log");
   if (id === "compare") redirect("/carriers/compare");
   if (id === "calculator") redirect("/carriers/calculator");
-  
+
   if (!isUuid(id)) notFound();
 
   const [workspace, session, tagExtra] = await Promise.all([
@@ -53,7 +60,8 @@ export default async function CarrierRecordPage({
     recentPolicy,
     recentContact,
     recentDeal,
-  } = workspace;
+    kpi = emptyCarrierKpi(),
+  } = workspace as typeof workspace & { kpi?: ReturnType<typeof emptyCarrierKpi> };
   const deskStatus = carrierDeskStatusFromFlags({
     active: carrier.active,
     deskStatus: (carrier as { deskStatus?: string | null }).deskStatus,
@@ -113,6 +121,13 @@ export default async function CarrierRecordPage({
     renewalPct: carrier.renewalCommPct,
   });
 
+  const appetiteRows = normalizeAppetiteRows(
+    (carrier as { appetiteRows?: unknown }).appetiteRows,
+  );
+  const dontWriteRows = normalizeDontWriteRows(
+    (carrier as { dontWriteRows?: unknown }).dontWriteRows,
+  );
+
   const autoLabelParts = [
     carrier.name,
     carrier.agencyCode?.trim() || null,
@@ -151,7 +166,21 @@ export default async function CarrierRecordPage({
                   </span>
                 ))}
               </div>
-              <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+                <Link
+                  href={`/carriers/calculator?carrier=${carrier.id}`}
+                  className="inline-flex h-8 items-center rounded-md border border-[#002868]/30 bg-[#002868]/5 px-2.5 text-sm font-medium text-[#002868] hover:bg-[#002868]/10"
+                  data-ff-carrier-header-calculator=""
+                >
+                  Commission Calculator
+                </Link>
+                <Link
+                  href={`/carriers/compare?lob=${encodeURIComponent((carrier.writtenLines ?? [])[0] ?? "HO")}`}
+                  className="inline-flex h-8 items-center rounded-md border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
+                  data-ff-carrier-header-compare=""
+                >
+                  Market Comparison
+                </Link>
                 <EditLayoutLink module="carriers" />
                 <CarrierOverflowMenu
                   carrierId={carrier.id}
@@ -182,6 +211,8 @@ export default async function CarrierRecordPage({
         </div>
       </div>
 
+      <CarrierKpiStrip kpi={kpi} />
+
       <CarrierDetailWorkspace
         rail={
           <>
@@ -204,8 +235,8 @@ export default async function CarrierRecordPage({
           admin={admin}
           identity={identity}
           contact={contact}
-          appetiteNotes={carrier.appetiteNotes ?? ""}
-          dontWriteNotes={carrier.dontWriteNotes ?? ""}
+          appetiteRows={appetiteRows}
+          dontWriteRows={dontWriteRows}
           amBest={amBest}
           commissionRows={schedule}
           newBusinessCommPct={carrier.newBusinessCommPct ?? ""}
@@ -240,6 +271,7 @@ export default async function CarrierRecordPage({
                   ]
                 : []
           }
+          kpi={kpi}
         />
       </CarrierDetailWorkspace>
     </AppShell>

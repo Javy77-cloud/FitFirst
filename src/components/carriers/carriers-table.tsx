@@ -58,6 +58,7 @@ export function CarriersTable({
           rule={notesRow.rule}
           appointments={notesRow.appointments}
           closeHref={closeHref}
+          carrierId={notesRow.id}
         />
       ) : null}
       <section className="ff-card overflow-x-auto">

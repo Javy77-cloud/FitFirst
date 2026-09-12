@@ -94,6 +94,10 @@ export type PolicyCoverageLine = {
   key: string;
   label: string;
   value: string;
+  deductible?: string;
+  premium?: string;
+  /** carrier_download | manual */
+  source?: string;
 };
 
 export type CoverageLimits = {
@@ -694,6 +698,29 @@ export type CommissionScheduleRow = {
   bonusThresholds: string;
 };
 
+/** Structured Appetite Notes row — searchable across carriers. */
+export type AppetiteNoteRow = {
+  id: string;
+  dateRequested: string;
+  lob: string;
+  roofAge: string;
+  waterHeater: string;
+  hvac: string;
+  electrical: string;
+  claimsHistory: string;
+  acceptDecline: "accept" | "decline" | "";
+  notes: string;
+};
+
+/** Structured Don't Write / decline row. */
+export type DontWriteNoteRow = {
+  id: string;
+  date: string;
+  lob: string;
+  reason: string;
+  notes: string;
+};
+
 export const carriers = pgTable(
   "carriers",
   {
@@ -747,6 +774,16 @@ export const carriers = pgTable(
     preferredSubmission: text("preferred_submission"),
     bindingAuthority: text("binding_authority"),
     appetiteNotes: text("appetite_notes"),
+    /** Structured appetite rows (date, LOB, risk factors, accept/decline, notes). */
+    appetiteRows: jsonb("appetite_rows")
+      .$type<AppetiteNoteRow[]>()
+      .notNull()
+      .default([]),
+    /** Structured don't-write / decline rows (date, LOB, reason, notes). */
+    dontWriteRows: jsonb("dont_write_rows")
+      .$type<DontWriteNoteRow[]>()
+      .notNull()
+      .default([]),
     active: boolean("active").notNull().default(true),
     /** Desk lifecycle: active | pending | inactive. Null → derive from `active`. */
     deskStatus: text("desk_status"),
@@ -942,6 +979,8 @@ export const policies = pgTable(
     esignSignerName: text("esign_signer_name"),
     esignDocumentId: uuid("esign_document_id"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    /** Admin-only manual display name; empty = use agency auto-label template. */
+    labelOverride: text("label_override"),
     ...timestamps,
   },
   (t) => [
@@ -1068,6 +1107,8 @@ export const documents = pgTable(
     library: text("library").notNull().default("shared"),
     fillable: boolean("fillable").notNull().default(false),
     formTemplateId: uuid("form_template_id"),
+    /** Optional expiry for ID / COI / inspection — 30-day warning on policy docs. */
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -1103,6 +1144,26 @@ export const documentVersions = pgTable(
   (t) => [
     index("document_versions_doc_idx").on(t.tenantId, t.documentId, t.versionNumber),
     uniqueIndex("document_versions_doc_ver_uidx").on(t.tenantId, t.documentId, t.versionNumber),
+  ],
+);
+
+export const documentAccessLogs = pgTable(
+  "document_access_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    policyId: uuid("policy_id"),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name").notNull(),
+    action: text("action").notNull().default("view"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("document_access_logs_doc_idx").on(t.tenantId, t.documentId, t.createdAt),
+    index("document_access_logs_policy_idx").on(t.tenantId, t.policyId, t.createdAt),
   ],
 );
 
@@ -2071,6 +2132,9 @@ export const claims = pgTable(
     reporterPhone: text("reporter_phone"),
     producerId: uuid("producer_id"),
     producerNotifiedAt: timestamp("producer_notified_at", { withTimezone: true }),
+    /** FNOL severity stub: low | moderate | high | critical */
+    severity: text("severity").notNull().default("moderate"),
+    carrierNotifiedAt: timestamp("carrier_notified_at", { withTimezone: true }),
     status: text("status").notNull().default("inquiry"),
     ...timestamps,
   },
@@ -3340,6 +3404,7 @@ export const endorsementDrafts = pgTable(
     wording: text("wording").notNull(),
     effectiveOn: timestamp("effective_on", { withTimezone: true }).notNull(),
     notes: text("notes"),
+    premiumImpact: numeric("premium_impact", { precision: 12, scale: 2 }),
     ...timestamps,
   },
   (t) => [
@@ -3432,6 +3497,8 @@ export const policyInspections = pgTable(
     scheduledOn: timestamp("scheduled_on", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     notes: text("notes"),
+    result: text("result"),
+    inspectorUserId: uuid("inspector_user_id"),
     ...timestamps,
   },
   (t) => [

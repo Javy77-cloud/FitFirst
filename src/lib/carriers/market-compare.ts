@@ -3,6 +3,13 @@ import {
   pickScheduleRowForLob,
   type CommissionScheduleRow,
 } from "@/lib/carriers/commission";
+import {
+  appetiteSearchBlob,
+  normalizeAppetiteRows,
+  normalizeDontWriteRows,
+  type AppetiteNoteRow,
+  type DontWriteNoteRow,
+} from "@/lib/carriers/appetite-rows";
 
 export type MarketCompareCarrierInput = {
   id: string;
@@ -11,6 +18,8 @@ export type MarketCompareCarrierInput = {
   writtenLines: string[] | null | undefined;
   appetiteNotes: string | null | undefined;
   dontWriteNotes: string | null | undefined;
+  appetiteRows?: AppetiteNoteRow[] | null | undefined;
+  dontWriteRows?: DontWriteNoteRow[] | null | undefined;
   amBestRating: string | null | undefined;
   amBestOutlook: string | null | undefined;
   commissionSchedule: CommissionScheduleRow[] | null | undefined;
@@ -70,13 +79,21 @@ export function buildMarketCompareRows(
     if (line && !writesLine && !hasSchedule) continue;
 
     const picked = pickScheduleRowForLob(schedule, line);
+    const blob = appetiteSearchBlob({
+      appetiteNotes: carrier.appetiteNotes,
+      dontWriteNotes: carrier.dontWriteNotes,
+      appetiteRows: normalizeAppetiteRows(carrier.appetiteRows),
+      dontWriteRows: normalizeDontWriteRows(carrier.dontWriteRows),
+    });
+    const appetiteLine = blob.writes.trim() || (carrier.appetiteNotes ?? "").trim();
+    const dontLine = blob.excludes.trim() || (carrier.dontWriteNotes ?? "").trim();
     rows.push({
       carrierId: carrier.id,
       carrierName: carrier.name,
       active: carrier.active,
       writesLine,
-      appetite: (carrier.appetiteNotes ?? "").trim(),
-      dontWrite: (carrier.dontWriteNotes ?? "").trim(),
+      appetite: appetiteLine.slice(0, 160),
+      dontWrite: dontLine.slice(0, 160),
       newBusinessPct: picked?.newBusinessPct?.trim() || "—",
       renewalPct: picked?.renewalPct?.trim() || "—",
       bonusThresholds: picked?.bonusThresholds?.trim() || "—",

@@ -12,7 +12,7 @@ import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule } from "@/lib/lists/selection-actions";
 import { pipelineSlugForDealStage } from "@/lib/wire/pipeline";
 
-/** @deprecated Legacy fixed menu — Mass Update now follows visible list columns. */
+/** @deprecated Legacy fixed menu — Mass Update now follows available list columns. */
 export const MASS_UPDATE_FIELDS = ["status", "source", "follow_up_template", "owner", "custom"] as const;
 export type MassUpdateField = (typeof MASS_UPDATE_FIELDS)[number] | string;
 
@@ -37,8 +37,8 @@ const PRIMARY_LINK_IDS = new Set([
 ]);
 
 /**
- * Locked system-only display columns that cannot be mass-written.
- * Stage/status stay editable when visible (tip sep7gj).
+ * Locked system-only display / computed columns that cannot be mass-written.
+ * Stage/status stay editable when present in the catalog (tip sep7gj / catalog rule).
  */
 const SYSTEM_DISPLAY_ONLY_IDS = new Set([
   "pick",
@@ -72,6 +72,20 @@ const SYSTEM_DISPLAY_ONLY_IDS = new Set([
   "counts",
   "missing",
   "age",
+  "linkedContacts",
+  "policies",
+  "lastActivity",
+  "activePolicies",
+  "lastQuote",
+  "hitRate",
+  "avgDays",
+  "commission",
+  "label",
+  "amBest",
+  "lastContacted",
+  "party",
+  // Carrier premium volume is computed; policy premium stays writable (not listed here).
+  // Policy expires is writable via expirationDate — keep out of this set.
 ]);
 
 const MANUAL_BIND_STAGES = new Set(["bound", "closed_won"]);
@@ -80,7 +94,7 @@ export function isManualBindStage(value: string): boolean {
   return MANUAL_BIND_STAGES.has(value);
 }
 
-/** True when this visible list column can appear in Mass Update. */
+/** True when this available list column can appear in Mass Update. */
 export function isMassUpdateColumn(column: Pick<ListColumn, "id" | "label">): boolean {
   if (!column.label.trim()) return false;
   if (PRIMARY_LINK_IDS.has(column.id)) return false;
@@ -89,24 +103,33 @@ export function isMassUpdateColumn(column: Pick<ListColumn, "id" | "label">): bo
 }
 
 /**
- * Mass Update field menu = current visible column ids (minus non-editable).
- * Same set as Columns picker visibility, filtered to writable columns.
+ * Mass Update field menu = every available list column (Columns picker catalog),
+ * filtered to writable columns. Not gated on current visibility.
+ * Stable order = catalog order.
+ */
+export function massUpdateColumnsFromCatalog(columns: readonly ListColumn[]): ListColumn[] {
+  return columns.filter((column) => isMassUpdateColumn(column));
+}
+
+/**
+ * @deprecated Prefer massUpdateColumnsFromCatalog — Mass Update follows the full catalog.
+ * Thin wrapper: FromCatalog on the visible subset only.
  */
 export function massUpdateColumnsFromVisible(
   columns: readonly ListColumn[],
   visibleIds: readonly string[],
 ): ListColumn[] {
   const byId = new Map(columns.map((column) => [column.id, column]));
-  const out: ListColumn[] = [];
+  const visible: ListColumn[] = [];
   const seen = new Set<string>();
   for (const id of visibleIds) {
     if (seen.has(id)) continue;
     const column = byId.get(id);
-    if (!column || !isMassUpdateColumn(column)) continue;
+    if (!column) continue;
     seen.add(id);
-    out.push(column);
+    visible.push(column);
   }
-  return out;
+  return massUpdateColumnsFromCatalog(visible);
 }
 
 export function massUpdateStatusOptions(module: CrmListModule): MassUpdateOption[] {
@@ -119,11 +142,18 @@ export function massUpdateStatusOptions(module: CrmListModule): MassUpdateOption
   if (module === "leads") {
     return LEAD_STATUSES.map((value) => ({ value, label: value.replaceAll("_", " ") }));
   }
-  if (module === "contacts") {
+  if (module === "contacts" || module === "businesses") {
     return CLIENT_STATUSES.map((value) => ({ value, label: value.replaceAll("_", " ") }));
   }
   if (module === "policies") {
     return POLICY_STATUSES.map((value) => ({ value, label: value.replaceAll("_", " ") }));
+  }
+  if (module === "carriers") {
+    return [
+      { value: "Active", label: "Active" },
+      { value: "Pending", label: "Pending" },
+      { value: "Inactive", label: "Inactive" },
+    ];
   }
   return [];
 }
@@ -198,9 +228,9 @@ export function dealStagePatch(status: string): { pipelineStage: string; pipelin
   };
 }
 
-/** @deprecated Prefer visible-column menu via massUpdateColumnsFromVisible. */
+/** @deprecated Prefer catalog menu via massUpdateColumnsFromCatalog. */
 export function massUpdateAppliesTo(module: CrmListModule, field: MassUpdateField): boolean {
-  if (field === "source") return module === "leads" || module === "deals" || module === "contacts";
+  if (field === "source") return module === "leads" || module === "deals" || module === "contacts" || module === "businesses";
   if (field === "follow_up_template") return module === "leads" || module === "deals";
   if (field === "owner") return module === "leads" || module === "deals" || module === "contacts" || module === "policies";
   if (field === "status") return massUpdateStatusOptions(module).length > 0;

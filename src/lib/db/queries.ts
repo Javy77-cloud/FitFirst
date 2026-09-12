@@ -77,6 +77,7 @@ import {
   deals,
   documents,
   documentVersions,
+  documentAccessLogs,
   emailSendJobs,
   emailTemplates,
   emailTriggers,
@@ -1298,6 +1299,28 @@ export async function listDocumentVersionsForIds(documentIds: string[]) {
     .orderBy(desc(documentVersions.versionNumber));
 }
 
+
+export async function listDocumentAccessLogsForPolicy(policyId: string) {
+  if (!isUuid(policyId)) return [];
+  return db
+    .select({
+      id: documentAccessLogs.id,
+      actorName: documentAccessLogs.actorName,
+      action: documentAccessLogs.action,
+      createdAt: documentAccessLogs.createdAt,
+      documentId: documentAccessLogs.documentId,
+    })
+    .from(documentAccessLogs)
+    .where(
+      and(
+        eq(documentAccessLogs.tenantId, tenant()),
+        eq(documentAccessLogs.policyId, policyId),
+      ),
+    )
+    .orderBy(desc(documentAccessLogs.createdAt))
+    .limit(50);
+}
+
 export async function getPolicyWorkspace(id: string) {
   if (!isUuid(id)) return null;
   const [row] = await db
@@ -1405,7 +1428,11 @@ export type CarrierDeskRow = {
   premiumVolume: number;
   lastQuoteAt: Date | null;
   hasActiveBusiness: boolean;
-  portalCredStatus: "connected" | "missing_credentials";
+  portalCredStatus: "connected" | "missing_credentials" | "no_portal";
+  hitRate: number | null;
+  avgDaysToBind: number | null;
+  commissionEarned: number;
+  autoLabel: string;
 };
 
 /** List carriers with policy/premium/last-quote aggregates for the desk list. */
@@ -1457,6 +1484,60 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
 
   const { portalCredentialStatus } = await import("@/lib/carriers/portal-status");
 
+  const quoteStats = await db
+    .select({
+      carrierId: quoteAttemptLogs.carrierId,
+      requested: sql<number>`count(*)::int`,
+      bound: sql<number>`count(*) filter (where ${quoteAttemptLogs.bindable} = true or lower(${quoteAttemptLogs.result}) ~ '(bound|won|issued|bound_policy)')::int`,
+    })
+    .from(quoteAttemptLogs)
+    .where(eq(quoteAttemptLogs.tenantId, tenant()))
+    .groupBy(quoteAttemptLogs.carrierId);
+  const quoteStatMap = new Map(
+    quoteStats.map((r) => [
+      r.carrierId,
+      { requested: Number(r.requested ?? 0), bound: Number(r.bound ?? 0) },
+    ]),
+  );
+
+  const daysAgg = await db
+    .select({
+      carrierId: policies.carrierId,
+      avgDays: sql<string>`avg(extract(epoch from (${policies.createdAt} - ${quoteAttemptLogs.attemptedAt})) / 86400.0)`,
+    })
+    .from(policies)
+    .innerJoin(
+      quoteAttemptLogs,
+      and(
+        eq(quoteAttemptLogs.carrierId, policies.carrierId),
+        eq(quoteAttemptLogs.tenantId, policies.tenantId),
+        sql`${quoteAttemptLogs.dealId} is not null and ${quoteAttemptLogs.dealId} = ${policies.dealId}`,
+      ),
+    )
+    .where(and(eq(policies.tenantId, tenant()), sql`${policies.carrierId} is not null`))
+    .groupBy(policies.carrierId);
+  const daysMap = new Map(
+    daysAgg
+      .filter((r) => r.carrierId)
+      .map((r) => [r.carrierId as string, r.avgDays != null ? Number(r.avgDays) : null]),
+  );
+
+  const commAgg = await db
+    .select({
+      carrierId: policies.carrierId,
+      earned: sql<string>`coalesce(sum(coalesce(${policies.commission4}::numeric, 0)), 0)`,
+    })
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), sql`${policies.carrierId} is not null`))
+    .groupBy(policies.carrierId);
+  const commMap = new Map(
+    commAgg
+      .filter((r) => r.carrierId)
+      .map((r) => [r.carrierId as string, Number(r.earned ?? 0)]),
+  );
+
+  const { computeHitRate } = await import("@/lib/carriers/metrics");
+
   return rows.map(({ carrier, rule }) => {
     const pub = publicCarrierView(carrier, session.isAdmin);
     const agg = policyMap.get(carrier.id) ?? { activeCount: 0, premiumVolume: 0 };
@@ -1467,6 +1548,14 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
       hasPortalPassword: Boolean(carrier.portalPasswordEnc && carrier.portalPasswordIv),
     });
     const hasActiveBusiness = agg.activeCount > 0 || agg.premiumVolume > 0;
+    const qs = quoteStatMap.get(carrier.id) ?? { requested: 0, bound: 0 };
+    const autoLabel = [
+      carrier.name,
+      carrier.agencyCode?.trim() || null,
+      (carrier.writtenLines ?? []).slice(0, 2).join(", ") || null,
+    ]
+      .filter(Boolean)
+      .join(" / ");
     return {
       carrier: pub,
       rule,
@@ -1475,6 +1564,10 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
       lastQuoteAt,
       hasActiveBusiness,
       portalCredStatus,
+      hitRate: computeHitRate(qs.requested, qs.bound),
+      avgDaysToBind: daysMap.get(carrier.id) ?? null,
+      commissionEarned: commMap.get(carrier.id) ?? 0,
+      autoLabel,
     };
   });
 }
@@ -1665,6 +1758,103 @@ export async function getCarrierWorkspace(id: string) {
     recentDeal = null;
   }
 
+  const [quoteKpi] = await db
+    .select({
+      requested: sql<number>`count(*)::int`,
+      bound: sql<number>`count(*) filter (where ${quoteAttemptLogs.bindable} = true or lower(${quoteAttemptLogs.result}) ~ '(bound|won|issued|bound_policy)')::int`,
+    })
+    .from(quoteAttemptLogs)
+    .where(and(eq(quoteAttemptLogs.tenantId, tenant()), eq(quoteAttemptLogs.carrierId, id)));
+
+  const [daysNow] = await db
+    .select({
+      avgDays: sql<string>`avg(extract(epoch from (${policies.createdAt} - ${quoteAttemptLogs.attemptedAt})) / 86400.0)`,
+    })
+    .from(policies)
+    .innerJoin(
+      quoteAttemptLogs,
+      and(
+        eq(quoteAttemptLogs.carrierId, policies.carrierId),
+        eq(quoteAttemptLogs.tenantId, policies.tenantId),
+        sql`${quoteAttemptLogs.dealId} is not null and ${quoteAttemptLogs.dealId} = ${policies.dealId}`,
+      ),
+    )
+    .where(
+      and(
+        eq(policies.tenantId, tenant()),
+        eq(policies.carrierId, id),
+        sql`${policies.createdAt} >= date_trunc('quarter', now())`,
+      ),
+    );
+
+  const [daysPrev] = await db
+    .select({
+      avgDays: sql<string>`avg(extract(epoch from (${policies.createdAt} - ${quoteAttemptLogs.attemptedAt})) / 86400.0)`,
+    })
+    .from(policies)
+    .innerJoin(
+      quoteAttemptLogs,
+      and(
+        eq(quoteAttemptLogs.carrierId, policies.carrierId),
+        eq(quoteAttemptLogs.tenantId, policies.tenantId),
+        sql`${quoteAttemptLogs.dealId} is not null and ${quoteAttemptLogs.dealId} = ${policies.dealId}`,
+      ),
+    )
+    .where(
+      and(
+        eq(policies.tenantId, tenant()),
+        eq(policies.carrierId, id),
+        sql`${policies.createdAt} >= date_trunc('quarter', now()) - interval '3 months'`,
+        sql`${policies.createdAt} < date_trunc('quarter', now())`,
+      ),
+    );
+
+  const [commTotal] = await db
+    .select({
+      earned: sql<string>`coalesce(sum(coalesce(${policies.commission4}::numeric, 0)), 0)`,
+    })
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.carrierId, id)));
+
+  const commByLine = await db
+    .select({
+      lob: policies.lineOfBusiness,
+      amount: sql<string>`coalesce(sum(coalesce(${policies.commission4}::numeric, 0)), 0)`,
+    })
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.carrierId, id)))
+    .groupBy(policies.lineOfBusiness);
+
+  const sparkRows = await db
+    .select({
+      month: sql<string>`to_char(date_trunc('month', ${policies.createdAt}), 'YYYY-MM')`,
+      amount: sql<string>`coalesce(sum(coalesce(${policies.commission4}::numeric, 0)), 0)`,
+    })
+    .from(policies)
+    .where(
+      and(
+        eq(policies.tenantId, tenant()),
+        eq(policies.carrierId, id),
+        sql`${policies.createdAt} >= now() - interval '8 months'`,
+      ),
+    )
+    .groupBy(sql`date_trunc('month', ${policies.createdAt})`)
+    .orderBy(sql`date_trunc('month', ${policies.createdAt})`);
+
+  const { buildCarrierKpi } = await import("@/lib/carriers/metrics");
+  const kpi = buildCarrierKpi({
+    quotesRequested: Number(quoteKpi?.requested ?? 0),
+    quotesBound: Number(quoteKpi?.bound ?? 0),
+    avgDaysToBind: daysNow?.avgDays != null ? Number(daysNow.avgDays) : null,
+    avgDaysToBindPrevQuarter: daysPrev?.avgDays != null ? Number(daysPrev.avgDays) : null,
+    commissionEarned: Number(commTotal?.earned ?? 0),
+    commissionByLine: commByLine
+      .filter((r) => r.lob)
+      .map((r) => ({ lob: r.lob, amount: Number(r.amount ?? 0) }))
+      .filter((r) => r.amount > 0),
+    commissionSpark: sparkRows.map((r) => Number(r.amount ?? 0)),
+  });
+
   return {
     carrier: publicCarrierView(row.carrier, session.isAdmin),
     rule: row.rule,
@@ -1673,6 +1863,7 @@ export async function getCarrierWorkspace(id: string) {
     premiumVolume: Number(policyStats?.premiumVolume ?? 0),
     dealCount,
     contactCount,
+    kpi,
     recentPolicy: recentPolicyRow
       ? {
           id: recentPolicyRow.id,

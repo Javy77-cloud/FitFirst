@@ -1,66 +1,47 @@
+/**
+ * Legacy plain-text Appetite panel — replaced by StructuredAppetiteTable /
+ * StructuredDontWriteTable on the carrier record. Kept as a thin stub so old
+ * deep-links to ?notes= do not crash if CarriersTable is still mounted.
+ */
 import Link from "next/link";
-import { AppointmentRows, type AppointmentRowInput } from "@/components/carriers/appointment-rows";
-import { buttonVariants } from "@/components/ui/button";
-import { formatMoney } from "@/lib/domain";
-import { cn } from "@/lib/utils";
+import type { AppetiteNotesRule } from "@/components/carriers/appetite-notes-types";
 
-export type AppetiteNotesRule = {
-  minCovA: number | null;
-  maxCovA: number | null;
-  maxRoofAge: number | null;
-  minMilesToCoast: number | null;
-  mobileAllowed: boolean;
-  notes: string | null;
-};
+export type { AppetiteNotesRule };
 
 export function AppetiteNotesPanel({
   carrierName,
-  dontWriteNotes,
-  rule,
-  appointments,
   closeHref,
-  showSellingAgency = true,
+  carrierId,
 }: {
   carrierName: string;
-  dontWriteNotes: string | null;
-  rule: AppetiteNotesRule | null;
-  appointments: AppointmentRowInput[];
+  dontWriteNotes?: string | null;
+  rule?: AppetiteNotesRule | null;
+  appointments?: unknown;
   closeHref: string;
-  showSellingAgency?: boolean;
+  carrierId?: string;
 }) {
   return (
-    <section className="ff-card mb-3 p-4">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold text-navy">{carrierName} — internal appetite</h2>
-          <p className="text-xs text-muted-foreground">
-            Matching notes only. Not a main-table column.
-          </p>
-        </div>
-        <Link href={closeHref} className={cn(buttonVariants({ variant: "outline", size: "xs" }))}>
+    <section className="ff-card space-y-2 p-4" data-ff-carrier-appetite-legacy="">
+      <div className="flex items-start justify-between gap-2">
+        <h2 className="text-sm font-semibold text-[#002868]">
+          {carrierName} — Appetite &amp; Don&apos;t Write
+        </h2>
+        <Link href={closeHref} className="text-xs text-muted-foreground hover:underline">
           Close
         </Link>
       </div>
-      <dl className="grid grid-cols-[8.5rem_1fr] gap-x-3 gap-y-2 text-sm">
-        <dt className="text-muted-foreground">Cov A</dt>
-        <dd>
-          {rule ? `${formatMoney(rule.minCovA)} – ${formatMoney(rule.maxCovA)}` : "—"}
-        </dd>
-        <dt className="text-muted-foreground">Roof / coast / mobile</dt>
-        <dd>
-          {rule
-            ? `max roof ${rule.maxRoofAge ?? "—"}y · coast ${rule.minMilesToCoast ?? 0}+ mi · mobile ${rule.mobileAllowed ? "yes" : "no"}`
-            : "—"}
-        </dd>
-        <dt className="text-muted-foreground">Don&apos;t write</dt>
-        <dd>{dontWriteNotes || "—"}</dd>
-        <dt className="text-muted-foreground">Rule notes</dt>
-        <dd>{rule?.notes || "—"}</dd>
-      </dl>
-      <div className="mt-4">
-        <h3 className="mb-2 text-sm font-semibold text-navy">Appointments</h3>
-        <AppointmentRows appointments={appointments} showSellingAgency={showSellingAgency} />
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Plain-text Appetite / Don&apos;t Write was replaced by structured rows on the carrier
+        record (date, LOB, risk factors, accept/decline).
+      </p>
+      {carrierId ? (
+        <Link
+          href={`/carriers/${carrierId}`}
+          className="inline-flex text-sm font-medium text-[#002868] hover:underline"
+        >
+          Open Carrier Record
+        </Link>
+      ) : null}
     </section>
   );
 }

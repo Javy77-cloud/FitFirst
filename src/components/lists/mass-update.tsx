@@ -30,6 +30,7 @@ import {
   massUpdateSourceOptions,
   massUpdateStatusOptions,
 } from "@/lib/lists/mass-update";
+import { withNoneOption } from "@/lib/ui/select-options";
 import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule } from "@/lib/lists/selection-actions";
 
@@ -51,7 +52,7 @@ export function MassUpdateMenu({
 }: {
   module: CrmListModule;
   selected: string[];
-  /** Visible editable list columns — same set as Columns picker (minus non-writable). */
+  /** Available editable list columns — full Columns picker catalog (minus non-writable). */
   fields?: ListColumn[];
   fieldOptions?: MassUpdateFieldOptionMap;
   owners?: MassUpdateOwner[];
@@ -68,36 +69,39 @@ export function MassUpdateMenu({
 
   const options = useMemo(() => {
     if (!columnId) return [];
-    if (isStatusLikeColumn(columnId)) return massUpdateStatusOptions(module);
-    if (columnId === "source") return massUpdateSourceOptions();
-    if (isOwnerLikeColumn(columnId)) return owners.map((row) => ({ value: row.id, label: row.name }));
-    if (isFollowUpTemplateColumn(columnId)) {
-      return [{ value: "", label: "Default playbook" }, ...templates.map((row) => ({ value: row.id, label: row.name }))];
+    let raw: Array<{ value: string; label: string }> = [];
+    let isSelect = false;
+    if (isStatusLikeColumn(columnId)) {
+      raw = massUpdateStatusOptions(module);
+      isSelect = true;
+    } else if (columnId === "source") {
+      raw = massUpdateSourceOptions();
+      isSelect = true;
+    } else if (isOwnerLikeColumn(columnId)) {
+      raw = owners.map((row) => ({ value: row.id, label: row.name }));
+      isSelect = true;
+    } else if (isFollowUpTemplateColumn(columnId)) {
+      return [{ value: "", label: "None" }, ...templates.map((row) => ({ value: row.id, label: row.name }))];
+    } else if (columnId === "line" || columnId === "lines") {
+      raw = massUpdateLineOptions();
+      isSelect = true;
+    } else if (isSellingAgencyColumn(columnId)) {
+      raw = fieldOptions[columnId]?.length ? fieldOptions[columnId] : massUpdateSellingAgencyOptions();
+      isSelect = true;
+    } else if (fieldOptions[columnId]?.length) {
+      raw = fieldOptions[columnId];
+      isSelect = true;
     }
-    if (columnId === "line") return massUpdateLineOptions();
-    if (isSellingAgencyColumn(columnId)) {
-      return fieldOptions[columnId]?.length
-        ? fieldOptions[columnId]
-        : massUpdateSellingAgencyOptions();
-    }
-    if (fieldOptions[columnId]?.length) return fieldOptions[columnId];
-    return [];
+    if (!isSelect) return []; // free-text columns stay Input (empty allowed by typing clear)
+    return withNoneOption(raw);
   }, [columnId, fieldOptions, module, owners, templates]);
 
   if (selected.length === 0) return null;
 
   function open(next: string) {
     setColumnId(next);
-    if (isStatusLikeColumn(next)) setValue(massUpdateStatusOptions(module)[0]?.value ?? "");
-    else if (next === "source") setValue(massUpdateSourceOptions()[0]?.value ?? "");
-    else if (isOwnerLikeColumn(next)) setValue(owners[0]?.id ?? "");
-    else if (isFollowUpTemplateColumn(next)) setValue("");
-    else if (next === "line") setValue(massUpdateLineOptions()[0]?.value ?? "");
-    else if (isSellingAgencyColumn(next)) {
-      const opts = fieldOptions[next]?.length ? fieldOptions[next] : massUpdateSellingAgencyOptions();
-      setValue(opts[0]?.value ?? "");
-    } else if (fieldOptions[next]?.length) setValue(fieldOptions[next][0]?.value ?? "");
-    else setValue("");
+    // Default to None/empty — never force the first real option.
+    setValue("");
   }
 
   async function apply() {
@@ -130,7 +134,7 @@ export function MassUpdateMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-48" data-testid="mass-update-menu">
           {fields.length === 0 ? (
-            <DropdownMenuItem disabled>No editable visible columns</DropdownMenuItem>
+            <DropdownMenuItem disabled>No editable columns</DropdownMenuItem>
           ) : (
             fields.map((item) => (
               <DropdownMenuItem key={item.id} disabled={busy} onClick={() => open(item.id)}>
@@ -180,7 +184,7 @@ export function MassUpdateMenu({
             <Button type="button" variant="outline" size="sm" onClick={() => setColumnId(null)}>
               Cancel
             </Button>
-            <Button type="button" size="sm" disabled={busy || (!value && !isFollowUpTemplateColumn(columnId ?? ""))} onClick={() => void apply()}>
+            <Button type="button" size="sm" disabled={busy} onClick={() => void apply()}>
               Update {selected.length}
             </Button>
           </DialogFooter>
