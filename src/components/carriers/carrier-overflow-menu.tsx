@@ -26,20 +26,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { flashAction } from "@/lib/flash-client";
+import { RecordTags } from "@/components/tags/record-tags";
+import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
+import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export function CarrierOverflowMenu({
   carrierId,
   carrierName,
   admin,
+  tags,
+  tagExtra = [],
 }: {
   carrierId: string;
   carrierName: string;
   admin: boolean;
+  tags?: string[] | null;
+  tagExtra?: { name: string; color: string | null }[];
 }) {
   const router = useRouter();
   const [reminderOpen, setReminderOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [reminderNote, setReminderNote] = useState("");
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<{ id: string; name: string; agencyCode: string | null }[]>([]);
@@ -113,6 +122,8 @@ export function CarrierOverflowMenu({
           >
             Edit
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTagsOpen(true)}>Tags</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setAssignOpen(true)}>Assign</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setReminderOpen(true)}>Set reminder</DropdownMenuItem>
           {admin ? (
             <>
@@ -208,6 +219,40 @@ export function CarrierOverflowMenu({
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={tagsOpen} onOpenChange={setTagsOpen}>
+        <DialogContent className="sm:max-w-md" data-ff-carrier-tags-dialog="">
+          <DialogHeader>
+            <DialogTitle>Tags</DialogTitle>
+            <DialogDescription>Assign tags for this carrier.</DialogDescription>
+          </DialogHeader>
+          <RecordTags
+            module="carriers"
+            recordId={carrierId}
+            tags={tags}
+            suggestions={suggestedTagsFor(
+              "carriers",
+              tagExtra.map((row) => row.name),
+            )}
+            colors={colorsFromModuleTags(tagExtra)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="sm:max-w-sm" data-ff-carrier-assign-dialog="">
+          <DialogHeader>
+            <DialogTitle>Assign</DialogTitle>
+            <DialogDescription>
+              Carriers stay on the shared appetite book — no owner to assign.
+            </DialogDescription>
+          </DialogHeader>
+          <Button type="button" size="sm" variant="outline" onClick={() => setAssignOpen(false)}>
+            Close
+          </Button>
+        </DialogContent>
+      </Dialog>
+
     </>
   );
 }

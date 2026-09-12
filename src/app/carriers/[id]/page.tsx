@@ -186,6 +186,8 @@ export default async function CarrierRecordPage({
                   carrierId={carrier.id}
                   carrierName={carrier.name}
                   admin={admin}
+                  tags={carrier.tags}
+                  tagExtra={tagExtra}
                 />
               </div>
             </div>

@@ -39,7 +39,7 @@ describe("mass update", () => {
     expect(massUpdateAppliesTo("deals", "custom")).toBe(true);
   });
 
-  it("offers client statuses for contacts and businesses; Active/Inactive for carriers", () => {
+  it("offers client statuses for contacts and businesses; Active/Pending/Inactive for carriers", () => {
     expect(massUpdateStatusOptions("contacts").map((row) => row.value)).toEqual([
       "client",
       "former_client",
@@ -50,7 +50,11 @@ describe("mass update", () => {
       "former_client",
       "not_a_client",
     ]);
-    expect(massUpdateStatusOptions("carriers").map((row) => row.value)).toEqual(["Active", "Inactive"]);
+    expect(massUpdateStatusOptions("carriers").map((row) => row.value)).toEqual([
+      "Active",
+      "Pending",
+      "Inactive",
+    ]);
   });
 });
 

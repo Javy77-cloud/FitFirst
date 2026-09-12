@@ -12,6 +12,8 @@ import {
   type CrmListModule,
   type SelectionRecord,
 } from "@/lib/lists/selection-actions";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { tagModuleForCrmList } from "@/lib/lists/list-bulk";
 
 export async function ModuleListActions({
   module,
@@ -28,7 +30,8 @@ export async function ModuleListActions({
   showMacrosLink?: boolean;
   showFollowUp?: boolean;
 }) {
-  const [macros, buttons, userRows, templateRows, fieldDefs] = await Promise.all([
+  const tagModule = tagModuleForCrmList(module);
+  const [macros, buttons, userRows, templateRows, fieldDefs, tagCatalog] = await Promise.all([
     isDevHubModule(module) ? listEnabledMacrosFor(module) : Promise.resolve([]),
     isDevHubModule(module)
       ? listVisibleButtons({ module, placement: ["list", "mass_action"] })
@@ -36,6 +39,7 @@ export async function ModuleListActions({
     listUsers(),
     listFollowUpTemplates().catch(() => []),
     isFieldLayoutModule(module) ? listFieldDefs(module).catch(() => []) : Promise.resolve([]),
+    tagModule ? listModuleTags(tagModule).catch(() => []) : Promise.resolve([]),
   ]);
   const fieldOptions = Object.fromEntries(
     fieldDefs
@@ -55,6 +59,7 @@ export async function ModuleListActions({
           owners={userRows.map((user) => ({ id: user.id, name: user.name }))}
           templates={templateRows.map((row) => ({ id: row.id, name: row.name }))}
           fieldOptions={fieldOptions}
+          tagCatalog={tagCatalog}
           showFollowUp={showFollowUp ?? module === "leads"}
           showMacrosLink={showMacrosLink}
           macros={macros.map((macro) => ({

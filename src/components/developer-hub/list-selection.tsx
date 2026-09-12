@@ -1,7 +1,11 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SelectionActionsMenu } from "@/components/lists/selection-actions-menu";
+import { MassTagMenu, type MassTagCatalogRow } from "@/components/lists/mass-tag-menu";
+import { ListExportButton } from "@/components/lists/list-export-button";
+import { MassAssignMenu } from "@/components/lists/mass-assign-menu";
+import { tagModuleForCrmList } from "@/lib/lists/list-bulk";
 import {
   MassUpdateMenu,
   type MassUpdateFieldOptionMap,
@@ -9,7 +13,7 @@ import {
   type MassUpdateTemplate,
 } from "@/components/lists/mass-update";
 import { WidgetHost } from "@/components/developer-hub/widget-host";
-import { massUpdateColumnsFromVisible, selectAllMode } from "@/lib/lists/mass-update";
+import { massUpdateColumnsFromCatalog, selectAllMode } from "@/lib/lists/mass-update";
 import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule, SelectionRecord } from "@/lib/lists/selection-actions";
 
@@ -85,10 +89,39 @@ function useSelection() {
 
 export function SelectRowCheckbox({ id }: { id: string }) {
   const { selected, toggle } = useSelection();
+  const checked = selected.includes(id);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Paint the row from the checkbox so highlight always tracks selection
+  // (works for single clicks and select-all, any list using SelectRowCheckbox).
+  // Inline styles beat sticky-cell / cached CSS so the wash is always visible.
+  useEffect(() => {
+    const tr = inputRef.current?.closest("tr");
+    if (!tr) return;
+    const cells = tr.querySelectorAll("td");
+    const wash = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ff-wash")
+      .trim() || "#f3eee6";
+    if (checked) {
+      tr.setAttribute("data-ff-row-selected", "true");
+      tr.classList.add("ff-row-selected");
+      cells.forEach((td) => {
+        (td as HTMLTableCellElement).style.setProperty("background", wash, "important");
+      });
+    } else {
+      tr.removeAttribute("data-ff-row-selected");
+      tr.classList.remove("ff-row-selected");
+      cells.forEach((td) => {
+        (td as HTMLTableCellElement).style.removeProperty("background");
+      });
+    }
+  }, [checked]);
+
   return (
     <input
+      ref={inputRef}
       type="checkbox"
-      checked={selected.includes(id)}
+      checked={checked}
       onChange={() => toggle(id)}
       aria-label="Select row"
     />
@@ -140,6 +173,7 @@ export function ListMassBar({
   owners = [],
   templates = [],
   fieldOptions = {},
+  tagCatalog = [],
   showMacrosLink = true,
 }: {
   module: CrmListModule;
@@ -150,20 +184,19 @@ export function ListMassBar({
   owners?: MassUpdateOwner[];
   templates?: MassUpdateTemplate[];
   fieldOptions?: MassUpdateFieldOptionMap;
+  tagCatalog?: MassTagCatalogRow[];
   showFollowUp?: boolean;
   showMacrosLink?: boolean;
 }) {
-  const { selected, clear, listColumns, visibleColumnIds } = useSelection();
+  const { selected, clear, listColumns } = useSelection();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [widget, setWidget] = useState<{ name: string; url: string | null } | null>(null);
   const resolvedRecords = records.length
     ? records
     : recordIds.map((id) => ({ id, label: id }));
-  const massFields = useMemo(
-    () => massUpdateColumnsFromVisible(listColumns, visibleColumnIds),
-    [listColumns, visibleColumnIds],
-  );
+  // Mass Update offers the full Columns picker catalog (not visible-only).
+  const massFields = useMemo(() => massUpdateColumnsFromCatalog(listColumns), [listColumns]);
 
   return (
     <div className="mb-3 space-y-2 print:hidden">
@@ -196,6 +229,35 @@ export function ListMassBar({
           fieldOptions={fieldOptions}
           owners={owners}
           templates={templates}
+          busy={busy}
+          onBusy={setBusy}
+          onMessage={setMessage}
+          onClear={clear}
+        />
+        {tagModuleForCrmList(module) ? (
+          <MassTagMenu
+            module={module}
+            tagModule={tagModuleForCrmList(module)!}
+            selected={selected}
+            catalog={tagCatalog}
+            busy={busy}
+            onBusy={setBusy}
+            onMessage={setMessage}
+            onClear={clear}
+          />
+        ) : null}
+        <ListExportButton
+          module={module}
+          selected={selected}
+          filteredIds={recordIds}
+          busy={busy}
+          onBusy={setBusy}
+          onMessage={setMessage}
+        />
+        <MassAssignMenu
+          module={module}
+          selected={selected}
+          owners={owners}
           busy={busy}
           onBusy={setBusy}
           onMessage={setMessage}
