@@ -9,13 +9,21 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { accountsListColumnsFromLayout } from "@/lib/list-columns";
 import { listFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
-import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { CLIENT_STATUSES, formatDay } from "@/lib/domain";
-import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
+import { PageFiltersBar } from "@/components/filters/page-filters-bar";
+import { formatDay } from "@/lib/domain";
+import { firstParam, pickFilterParams } from "@/lib/saved-filters";
+import {
+  enabledPageFilters,
+  mergeLiveOptions,
+  matchesPageFilters,
+  pageFilterParamKeys,
+} from "@/lib/page-filters";
+import { loadPageFilterPrefs } from "@/lib/page-filters/store";
+import { currentDeskSession } from "@/lib/auth/session";
 import { haystack } from "@/lib/search/live-query";
 import { sourceLabel } from "@/lib/crm/sources";
-import { BUSINESS_INDUSTRY_OPTIONS } from "@/lib/businesses/entity-industry";
 import { AddBusinessDialog } from "@/components/businesses/add-business-dialog";
+import { formatPhoneDisplay } from "@/lib/phone/format";
 
 export const dynamic = "force-dynamic";
 
@@ -36,25 +44,45 @@ export default async function AccountsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const filter = pickFilterParams(params, ["status", "industry"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
   const openNew = firstParam(params.new) === "1";
-  const [all, businessLayout, businessFields] = await Promise.all([
+  const [all, businessLayout, businessFields, pageFilters, session] = await Promise.all([
     listAccounts(),
     loadLayoutForModule("businesses").catch(() => null),
     listFieldDefs("businesses").catch(() => []),
+    loadPageFilterPrefs("businesses"),
+    currentDeskSession(),
   ]);
+  const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
+    industry: all.map((account) => account.industry),
+    source: all.map((account) => account.source),
+    status: all.map((account) => account.clientStatus),
+  });
+  const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
   const accountColumns = accountsListColumnsFromLayout(businessLayout, businessFields);
   const customById = await loadRecordValuesForIds(
     all.map((row) => row.id),
     "businesses",
   ).catch(() => new Map<string, Record<string, string>>());
-  const rows = all.filter(
-    (account) =>
-      matchesField(account.clientStatus, filter.status) &&
-      matchesField(account.industry, filter.industry),
-  );
+  const rows = all.filter((account) => {
+    const custom = customById.get(account.id) ?? {};
+    const fieldValues = mergeRecordSystemValues(
+      account as unknown as Record<string, unknown>,
+      custom,
+      businessFields,
+    );
+    return matchesPageFilters(
+      {
+        status: account.clientStatus,
+        industry: account.industry ?? "",
+        source: account.source ?? "",
+        business: account.name,
+        ...fieldValues,
+      },
+      filter,
+    );
+  });
   const businessBook = all.map((row) => ({
     id: row.id,
     name: row.name,
@@ -70,32 +98,11 @@ export default async function AccountsPage({
         Commercial bind creates a Business (Account). Personal HO stays on a Contact. The same
         person can be linked here without moving their personal policies. New Business uses a popup.
       </p>
-      <SavedFiltersBar
+      <PageFiltersBar
         moduleId="businesses"
-        searchPlaceholder="Search by name, EIN, or phone…"
-        fields={[
-          {
-            key: "status",
-            label: "Status",
-            options: CLIENT_STATUSES.map((value) => ({
-              value,
-              label:
-                value === "client"
-                  ? "Client"
-                  : value === "not_a_client"
-                    ? "Not a client"
-                    : "Former Client",
-            })),
-          },
-          {
-            key: "industry",
-            label: "Industry",
-            options: uniqueOptions(
-              all.map((account) => account.industry),
-              BUSINESS_INDUSTRY_OPTIONS.map((value) => ({ value, label: value })),
-            ),
-          },
-        ]}
+        filters={visibleFilters}
+        searchPlaceholder="Contains Name, EIN, Or Phone…"
+        canConfigure={session.isAdmin}
       />
       <section className="ff-card overflow-hidden" data-ff-businesses-list="">
         <div
@@ -132,7 +139,7 @@ export default async function AccountsPage({
               for (const column of accountColumns) {
                 if (SYSTEM_CELL_IDS.has(column.id)) continue;
                 if (column.id === "phone") {
-                  layoutCells.phone = account.phone ?? "—";
+                  layoutCells.phone = formatPhoneDisplay(account.phone);
                   layoutSort.phone = account.phone ?? "";
                   continue;
                 }
@@ -177,12 +184,7 @@ export default async function AccountsPage({
                 cells: {
                   pick: <SelectRowCheckbox id={account.id} />,
                   business: (
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
-                      {(account.phone ?? account.email) ? (
-                        <div className="text-base text-muted-foreground">{account.phone ?? account.email}</div>
-                      ) : null}
-                    </div>
+                    <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
                   ),
                   status: <ClientStatusPill status={account.clientStatus} />,
                   industry: account.industry || "—",

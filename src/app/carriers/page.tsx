@@ -5,8 +5,15 @@ import { formatMoney } from "@/lib/domain";
 import { listCarriersDesk } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { CARRIERS_LIST_COLUMNS, type ListColumn } from "@/lib/list-columns";
-import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { firstParam, matchesField, pickFilterParams } from "@/lib/saved-filters";
+import { PageFiltersBar } from "@/components/filters/page-filters-bar";
+import { firstParam, pickFilterParams } from "@/lib/saved-filters";
+import {
+  enabledPageFilters,
+  matchesPageFilters,
+  pageFilterParamKeys,
+} from "@/lib/page-filters";
+import { loadPageFilterPrefs } from "@/lib/page-filters/store";
+import { currentDeskSession } from "@/lib/auth/session";
 import {
   carrierListHaystack,
   matchAppetiteSearch,
@@ -27,19 +34,47 @@ import { formatDisplayDate } from "@/lib/dates/display-format";
 
 export const dynamic = "force-dynamic";
 
-const LOB_FILTERS = [
-  { value: "HO", label: "Homeowners" },
-  { value: "AUTO", label: "Auto" },
-  { value: "FLOOD", label: "Flood" },
-  { value: "LIFE", label: "Life" },
-  { value: "BOP", label: "BOP" },
-  { value: "GL", label: "GL" },
-  { value: "WC", label: "WC" },
-  { value: "RV", label: "RV" },
-  { value: "UMBRELLA", label: "Umbrella" },
-  { value: "HEALTH", label: "Health" },
-  { value: "DP", label: "DP" },
-];
+
+function carrierDeskStatus(carrier: { active?: boolean | null; deskStatus?: string | null }): string {
+  const rawDesk = carrier.deskStatus?.toLowerCase();
+  if (rawDesk === "pending") return "Pending";
+  if (rawDesk === "inactive" || (!rawDesk && !carrier.active)) return "Inactive";
+  return "Active";
+}
+
+function carrierPortalKey(status: string): string {
+  if (status === "connected") return "connected";
+  if (status === "missing_credentials") return "missing";
+  return "none";
+}
+
+function carrierFilterValues(row: {
+  carrier: {
+    name: string;
+    active?: boolean | null;
+    deskStatus?: string | null;
+    writtenLines?: string[] | null;
+    amBestRating?: string | null;
+    tags?: string[] | null;
+  };
+  hasActiveBusiness: boolean;
+  portalCredStatus: string;
+  autoLabel?: string | null;
+}) {
+  const { carrier, hasActiveBusiness, portalCredStatus } = row;
+  const lines = carrier.writtenLines ?? [];
+  return {
+    status: carrierDeskStatus(carrier),
+    line: lines,
+    lines,
+    business: hasActiveBusiness ? "active" : "directory",
+    portal: carrierPortalKey(portalCredStatus),
+    amBest: carrier.amBestRating ?? "",
+    label: row.autoLabel ?? "",
+    carrier: carrier.name,
+    tags: carrier.tags ?? [],
+  };
+}
 
 function columnsForData(has: {
   label: boolean;
@@ -64,35 +99,20 @@ export default async function CarriersPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const filter = pickFilterParams(params, ["status", "line", "business", "portal"]);
   const q = firstParam(params.q) ?? "";
-  const [all, tagCatalog] = await Promise.all([
+  const [all, tagCatalog, pageFilters, session] = await Promise.all([
     listCarriersDesk(),
     listModuleTags("carriers").catch(() => []),
+    loadPageFilterPrefs("carriers"),
+    currentDeskSession(),
   ]);
+  const visibleFilters = enabledPageFilters(pageFilters);
+  const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
 
   const rows = all
     .filter((row) => {
-      const { carrier, hasActiveBusiness, portalCredStatus } = row;
-      const rawDesk = (carrier as { deskStatus?: string | null }).deskStatus?.toLowerCase();
-      const statusLabel =
-        rawDesk === "pending"
-          ? "Pending"
-          : rawDesk === "inactive" || (!rawDesk && !carrier.active)
-            ? "Inactive"
-            : "Active";
-      if (!matchesField(statusLabel, filter.status)) return false;
-      if (
-        filter.line &&
-        !(carrier.writtenLines ?? []).some((line) => line.toUpperCase() === filter.line.toUpperCase())
-      ) {
-        return false;
-      }
-      if (filter.business === "active" && !hasActiveBusiness) return false;
-      if (filter.business === "directory" && hasActiveBusiness) return false;
-      if (filter.portal === "connected" && portalCredStatus !== "connected") return false;
-      if (filter.portal === "missing" && portalCredStatus !== "missing_credentials") return false;
-      if (filter.portal === "none" && portalCredStatus !== "no_portal") return false;
+      const { carrier } = row;
+      if (!matchesPageFilters(carrierFilterValues(row), filter)) return false;
       const appetiteRows = normalizeAppetiteRows(
         (carrier as { appetiteRows?: unknown }).appetiteRows,
       );
@@ -242,42 +262,11 @@ export default async function CarriersPage({
           </div>
         </section>
       ) : null}
-      <SavedFiltersBar
+      <PageFiltersBar
         moduleId="carriers"
-        searchPlaceholder="Search Name, Agency Code, Appetite, Or Don't Write…"
-        fields={[
-          {
-            key: "status",
-            label: "Status",
-            options: [
-              { value: "Active", label: "Active" },
-              { value: "Pending", label: "Pending" },
-              { value: "Inactive", label: "Inactive" },
-            ],
-          },
-          {
-            key: "line",
-            label: "LOB",
-            options: LOB_FILTERS,
-          },
-          {
-            key: "business",
-            label: "Book",
-            options: [
-              { value: "active", label: "Has active business" },
-              { value: "directory", label: "Directory only" },
-            ],
-          },
-          {
-            key: "portal",
-            label: "Portal",
-            options: [
-              { value: "connected", label: "Connected" },
-              { value: "missing", label: "Missing credentials" },
-              { value: "none", label: "No portal linked" },
-            ],
-          },
-        ]}
+        filters={visibleFilters}
+        searchPlaceholder="Contains Name, Agency Code, Appetite, Or Don't Write…"
+        canConfigure={session.isAdmin}
       />
       <section className="ff-card overflow-hidden">
         <ModuleListActions

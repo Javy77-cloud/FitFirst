@@ -304,6 +304,8 @@ export const agencySettings = pgTable(
       fields: string[];
       separator: string;
     } | null>(),
+    /** When false (default), admins cannot rename/override auto-labels on policy detail. */
+    allowPolicyLabelOverride: boolean("allow_policy_label_override").notNull().default(false),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
@@ -2272,6 +2274,27 @@ export const deskColumnPrefs = pgTable(
   (t) => [uniqueIndex("desk_column_prefs_uidx").on(t.tenantId, t.userId, t.tableKey)],
 );
 
+export type StoredPageFilter = {
+  id: string;
+  label: string;
+  fieldKey: string;
+  enabled: boolean;
+  options: { value: string; label: string; color?: string | null }[];
+};
+
+/** Agency-wide list chips per module (contacts / businesses / policies / carriers). */
+export const agencyPageFilterPrefs = pgTable(
+  "agency_page_filter_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    module: text("module").notNull(),
+    filters: jsonb("filters").$type<StoredPageFilter[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("agency_page_filter_prefs_uidx").on(t.tenantId, t.module)],
+);
+
 /** Configurable commission rates. No official carrier/CMS rates hardcoded. */
 export const commissionRateSettings = pgTable("commission_rate_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -3093,6 +3116,7 @@ export type PolicyWorkFlag = typeof policyWorkFlags.$inferSelect;
 export type PolicyWorkNote = typeof policyWorkNotes.$inferSelect;
 export type DeskUser = User;
 export type DeskColumnPref = typeof deskColumnPrefs.$inferSelect;
+export type AgencyPageFilterPref = typeof agencyPageFilterPrefs.$inferSelect;
 export type CommissionRateSetting = typeof commissionRateSettings.$inferSelect;
 export type PolicyAutomation = typeof policyAutomations.$inferSelect;
 export type PipelineStageRow = PipelineStage;
