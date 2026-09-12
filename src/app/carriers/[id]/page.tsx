@@ -30,6 +30,9 @@ export default async function CarrierRecordPage({
 }) {
   const { id } = await params;
   if (id === "logs") redirect("/settings/developer/appetite-log");
+  if (id === "compare") redirect("/carriers/compare");
+  if (id === "calculator") redirect("/carriers/calculator");
+  
   if (!isUuid(id)) notFound();
 
   const [workspace, session, tagExtra] = await Promise.all([

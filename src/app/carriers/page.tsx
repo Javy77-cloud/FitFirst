@@ -16,6 +16,7 @@ import { RecordLink } from "@/components/record-links";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
+import Link from "next/link";
 import { AddCarrierDialog } from "@/components/carriers/add-carrier-dialog";
 import { portalCredentialLabel } from "@/lib/carriers/portal-status";
 import { formatDisplayDate } from "@/lib/dates/display-format";
@@ -92,7 +93,21 @@ export default async function CarriersPage({
     <AppShell
       title="Carriers"
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/carriers/compare"
+            className="inline-flex h-8 items-center rounded-md border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
+            data-ff-carrier-tool="compare"
+          >
+            Market Comparison
+          </Link>
+          <Link
+            href="/carriers/calculator"
+            className="inline-flex h-8 items-center rounded-md border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
+            data-ff-carrier-tool="calculator"
+          >
+            Commission Calculator
+          </Link>
           <AddCarrierDialog />
         </div>
       }

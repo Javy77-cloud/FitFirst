@@ -17,6 +17,8 @@ describe("isInvalidDeskRecordPath", () => {
     expect(isInvalidDeskRecordPath("/certificates/holders")).toBe(false);
     expect(isInvalidDeskRecordPath("/renewals/queue")).toBe(false);
     expect(isInvalidDeskRecordPath("/carriers/logs")).toBe(false);
+    expect(isInvalidDeskRecordPath("/carriers/compare")).toBe(false);
+    expect(isInvalidDeskRecordPath("/carriers/calculator")).toBe(false);
     expect(isInvalidDeskRecordPath("/deals/22222222-2222-4222-8222-222222222222")).toBe(false);
     expect(isInvalidDeskRecordPath("/automations/functions")).toBe(false);
     expect(isDeskUuid("22222222-2222-4222-8222-222222222222")).toBe(true);

@@ -150,6 +150,22 @@ export function CarrierDetailSections({
       </CollapsibleSection>
 
       <CollapsibleSection id="commission" title="Commission Schedule" defaultOpen={false}>
+        <div className="mb-2 flex flex-wrap gap-2">
+          <Link
+            href={`/carriers/calculator?carrier=${carrierId}`}
+            className="inline-flex h-7 items-center rounded-md border border-[#002868]/30 bg-[#002868]/5 px-2 text-xs font-medium text-[#002868] hover:bg-[#002868]/10"
+            data-ff-carrier-tool="calculator"
+          >
+            Commission Calculator
+          </Link>
+          <Link
+            href="/carriers/compare"
+            className="inline-flex h-7 items-center rounded-md border border-border bg-background px-2 text-xs font-medium hover:bg-muted"
+            data-ff-carrier-tool="compare"
+          >
+            Market Comparison
+          </Link>
+        </div>
         <CarrierCommissionTable carrierId={carrierId} rows={schedule} admin={admin} />
       </CollapsibleSection>
 
