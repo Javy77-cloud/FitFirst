@@ -177,12 +177,12 @@ export default async function AccountsPage({
                 cells: {
                   pick: <SelectRowCheckbox id={account.id} />,
                   business: (
-                    <>
+                    <div className="flex min-w-0 flex-col gap-0.5">
                       <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
-                      <div className="text-base text-muted-foreground">
-                        {account.phone ?? account.email}
-                      </div>
-                    </>
+                      {(account.phone ?? account.email) ? (
+                        <div className="text-base text-muted-foreground">{account.phone ?? account.email}</div>
+                      ) : null}
+                    </div>
                   ),
                   status: <ClientStatusPill status={account.clientStatus} />,
                   industry: account.industry || "—",
