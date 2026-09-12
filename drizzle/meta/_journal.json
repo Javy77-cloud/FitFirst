@@ -736,6 +736,13 @@
       "when": 1789040000000,
       "tag": "0104_business_section_nav",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1789050000000,
+      "tag": "0105_carriers_module",
+      "breakpoints": true
     }
   ]
 }

@@ -60,6 +60,7 @@ export function AppointmentRows({
                 className="h-6 rounded-sm border border-input bg-background px-1 text-xs"
                 aria-label={`${writtenLineLabel(appt.writtenLine)} selling agency`}
               >
+                <option value="">None</option>
                 {SELLING_AGENCIES.map((agency) => (
                   <option key={agency} value={agency}>
                     {agency}

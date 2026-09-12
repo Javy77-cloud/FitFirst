@@ -67,6 +67,7 @@ import {
   appetiteRules,
   carrierAppointments,
   carriers,
+  carrierSecretRevealLogs,
   clientHistory,
   contactAccounts,
   contactCoapplicants,
@@ -280,12 +281,14 @@ export async function listRecordActivities(filter: {
   leadId?: string;
   accountId?: string;
   contactId?: string;
+  policyId?: string;
 }) {
   const clauses = [eq(activities.tenantId, tenant())];
   if (filter.dealId) clauses.push(eq(activities.dealId, filter.dealId));
   if (filter.leadId) clauses.push(eq(activities.leadId, filter.leadId));
   if (filter.accountId) clauses.push(eq(activities.accountId, filter.accountId));
   if (filter.contactId) clauses.push(eq(activities.contactId, filter.contactId));
+  if (filter.policyId) clauses.push(eq(activities.policyId, filter.policyId));
   const rows = await db
     .select()
     .from(activities)
@@ -1391,6 +1394,246 @@ export async function listCarriers() {
     rule,
   }));
 }
+
+
+export type CarrierDeskRow = {
+  carrier: Awaited<ReturnType<typeof listCarriers>>[number]["carrier"];
+  rule: Awaited<ReturnType<typeof listCarriers>>[number]["rule"];
+  activePolicyCount: number;
+  premiumVolume: number;
+  lastQuoteAt: Date | null;
+  hasActiveBusiness: boolean;
+  portalCredStatus: "connected" | "missing_credentials";
+};
+
+/** List carriers with policy/premium/last-quote aggregates for the desk list. */
+export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
+  const session = await currentDeskSession();
+  const rows = await db
+    .select({
+      carrier: carriers,
+      rule: appetiteRules,
+    })
+    .from(carriers)
+    .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
+    .where(eq(carriers.tenantId, tenant()))
+    .orderBy(asc(carriers.name));
+
+  const policyAgg = await db
+    .select({
+      carrierId: policies.carrierId,
+      activeCount: sql<number>`count(*) filter (where lower(${policies.status}) in ('active', 'in_force', 'in-force'))::int`,
+      premiumVolume: sql<string>`coalesce(sum(case when lower(${policies.status}) in ('active', 'in_force', 'in-force') then ${policies.premium}::numeric else 0 end), 0)`,
+    })
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), sql`${policies.carrierId} is not null`))
+    .groupBy(policies.carrierId);
+
+  const quoteAgg = await db
+    .select({
+      carrierId: quoteAttemptLogs.carrierId,
+      lastQuoteAt: sql<Date>`max(${quoteAttemptLogs.attemptedAt})`,
+    })
+    .from(quoteAttemptLogs)
+    .where(eq(quoteAttemptLogs.tenantId, tenant()))
+    .groupBy(quoteAttemptLogs.carrierId);
+
+  const policyMap = new Map(
+    policyAgg
+      .filter((r) => r.carrierId)
+      .map((r) => [
+        r.carrierId as string,
+        {
+          activeCount: Number(r.activeCount ?? 0),
+          premiumVolume: Number(r.premiumVolume ?? 0),
+        },
+      ]),
+  );
+  const quoteMap = new Map(
+    quoteAgg.map((r) => [r.carrierId, r.lastQuoteAt ? new Date(r.lastQuoteAt) : null]),
+  );
+
+  const { portalCredentialStatus } = await import("@/lib/carriers/portal-status");
+
+  return rows.map(({ carrier, rule }) => {
+    const pub = publicCarrierView(carrier, session.isAdmin);
+    const agg = policyMap.get(carrier.id) ?? { activeCount: 0, premiumVolume: 0 };
+    const lastQuoteAt = quoteMap.get(carrier.id) ?? null;
+    const portalCredStatus = portalCredentialStatus({
+      portalUrl: carrier.portalUrl,
+      hasPortalUsername: Boolean(carrier.portalUsernameEnc && carrier.portalUsernameIv),
+      hasPortalPassword: Boolean(carrier.portalPasswordEnc && carrier.portalPasswordIv),
+    });
+    const hasActiveBusiness = agg.activeCount > 0 || agg.premiumVolume > 0;
+    return {
+      carrier: pub,
+      rule,
+      activePolicyCount: agg.activeCount,
+      premiumVolume: agg.premiumVolume,
+      lastQuoteAt,
+      hasActiveBusiness,
+      portalCredStatus,
+    };
+  });
+}
+
+export async function getCarrierWorkspace(id: string) {
+  if (!isUuid(id)) return null;
+  const session = await currentDeskSession();
+  const [row] = await db
+    .select({ carrier: carriers, rule: appetiteRules })
+    .from(carriers)
+    .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
+    .where(and(eq(carriers.tenantId, tenant()), eq(carriers.id, id)));
+  if (!row) return null;
+
+  const [policyStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      activeCount: sql<number>`count(*) filter (where lower(${policies.status}) in ('active', 'in_force', 'in-force'))::int`,
+      premiumVolume: sql<string>`coalesce(sum(case when lower(${policies.status}) in ('active', 'in_force', 'in-force') then ${policies.premium}::numeric else 0 end), 0)`,
+    })
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.carrierId, id)));
+
+  let dealCount = 0;
+  try {
+    const byName = await db
+      .select({ id: deals.id })
+      .from(deals)
+      .where(
+        and(
+          eq(deals.tenantId, tenant()),
+          sql`lower(coalesce(${deals.currentCarrier}, '')) = lower(${row.carrier.name})`,
+        ),
+      );
+    dealCount = byName.length;
+  } catch {
+    dealCount = 0;
+  }
+
+  const contactCountRows = await db
+    .select({ contactId: policies.contactId })
+    .from(policies)
+    .where(
+      and(
+        eq(policies.tenantId, tenant()),
+        eq(policies.carrierId, id),
+        sql`${policies.contactId} is not null`,
+      ),
+    );
+  const contactCount = new Set(contactCountRows.map((r) => r.contactId).filter(Boolean)).size;
+
+  const revealLogs = session.isAdmin
+    ? await db
+        .select({
+          id: carrierSecretRevealLogs.id,
+          fieldKey: carrierSecretRevealLogs.fieldKey,
+          actorName: carrierSecretRevealLogs.actorName,
+          createdAt: carrierSecretRevealLogs.createdAt,
+        })
+        .from(carrierSecretRevealLogs)
+        .where(
+          and(
+            eq(carrierSecretRevealLogs.tenantId, tenant()),
+            eq(carrierSecretRevealLogs.carrierId, id),
+          ),
+        )
+        .orderBy(desc(carrierSecretRevealLogs.createdAt))
+        .limit(40)
+    : [];
+
+  const timeline = [
+    ...revealLogs.map((log) => {
+      const key = log.fieldKey;
+      const fail = key === "readiness_check_fail";
+      return {
+        id: log.id,
+        kind: "credential" as const,
+        title: key.replaceAll("_", " "),
+        actorName: log.actorName,
+        occurredAt: log.createdAt,
+        reason: fail ? "Portal URL unreachable or returned an error." : null,
+      };
+    }),
+  ].sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt));
+
+  const [recentPolicyRow] = await db
+    .select({
+      id: policies.id,
+      policyNumber: policies.policyNumber,
+      lineOfBusiness: policies.lineOfBusiness,
+      updatedAt: policies.updatedAt,
+    })
+    .from(policies)
+    .where(and(eq(policies.tenantId, tenant()), eq(policies.carrierId, id)))
+    .orderBy(desc(policies.updatedAt))
+    .limit(1);
+
+  let recentContact: { id: string; label: string } | null = null;
+  if (recentPolicyRow) {
+    const [polContact] = await db
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+      })
+      .from(policies)
+      .innerJoin(contacts, eq(policies.contactId, contacts.id))
+      .where(and(eq(policies.tenantId, tenant()), eq(policies.id, recentPolicyRow.id)))
+      .limit(1);
+    if (polContact) {
+      recentContact = {
+        id: polContact.id,
+        label: `${polContact.lastName}, ${polContact.firstName}`.trim(),
+      };
+    }
+  }
+
+  let recentDeal: { id: string; label: string } | null = null;
+  try {
+    const [dealRow] = await db
+      .select({ id: deals.id, title: deals.title, updatedAt: deals.updatedAt })
+      .from(deals)
+      .where(
+        and(
+          eq(deals.tenantId, tenant()),
+          sql`lower(coalesce(${deals.currentCarrier}, '')) = lower(${row.carrier.name})`,
+        ),
+      )
+      .orderBy(desc(deals.updatedAt))
+      .limit(1);
+    if (dealRow) {
+      recentDeal = { id: dealRow.id, label: dealRow.title || "Deal" };
+    }
+  } catch {
+    recentDeal = null;
+  }
+
+  return {
+    carrier: publicCarrierView(row.carrier, session.isAdmin),
+    rule: row.rule,
+    activePolicyCount: Number(policyStats?.activeCount ?? 0),
+    policyCount: Number(policyStats?.total ?? 0),
+    premiumVolume: Number(policyStats?.premiumVolume ?? 0),
+    dealCount,
+    contactCount,
+    recentPolicy: recentPolicyRow
+      ? {
+          id: recentPolicyRow.id,
+          label:
+            [recentPolicyRow.policyNumber, recentPolicyRow.lineOfBusiness]
+              .filter(Boolean)
+              .join(" · ") || "Policy",
+        }
+      : null,
+    recentContact,
+    recentDeal,
+    timeline,
+    isAdmin: session.isAdmin,
+  };
+}
+
 
 export async function listCarrierAppointments() {
   return db

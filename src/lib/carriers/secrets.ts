@@ -130,3 +130,53 @@ export function assertNoSecretPlaintext(payload: unknown): void {
     throw new Error("Carrier secret ciphertext must not leave the vault mapper.");
   }
 }
+
+export type UrlReachability = {
+  reachable: boolean;
+  statusCode: number | null;
+  error: string | null;
+};
+
+/** Best-effort HEAD/GET ping of a portal URL. Never follows auth; never logs secrets. */
+export async function pingPortalUrl(url: string | null | undefined): Promise<UrlReachability> {
+  const target = (url ?? "").trim();
+  if (!target) {
+    return { reachable: false, statusCode: null, error: "No portal URL on file." };
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return { reachable: false, statusCode: null, error: "Invalid portal URL." };
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return { reachable: false, statusCode: null, error: "Portal URL must be http(s)." };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    let res = await fetch(parsed.toString(), {
+      method: "HEAD",
+      redirect: "follow",
+      signal: controller.signal,
+    });
+    if (res.status === 405 || res.status === 501) {
+      res = await fetch(parsed.toString(), {
+        method: "GET",
+        redirect: "follow",
+        signal: controller.signal,
+        headers: { Accept: "text/html" },
+      });
+    }
+    return {
+      reachable: res.status > 0 && res.status < 500,
+      statusCode: res.status,
+      error: null,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unreachable";
+    return { reachable: false, statusCode: null, error: message };
+  } finally {
+    clearTimeout(timer);
+  }
+}

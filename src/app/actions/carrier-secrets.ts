@@ -79,6 +79,8 @@ export async function logQuoteHandoffCheck(carrierId: string): Promise<{
   ok: true;
   ready: boolean;
   missing: string[];
+  reachable: boolean;
+  statusCode: number | null;
 } | { ok: false; error: string }> {
   const session = await currentDeskSession();
   if (!session.isAdmin) return { ok: false, error: "Admin only." };
@@ -102,6 +104,16 @@ export async function logQuoteHandoffCheck(carrierId: string): Promise<{
     hasPortalPassword: Boolean(row.portalPasswordEnc),
   });
 
+  const { pingPortalUrl } = await import("@/lib/carriers/secrets");
+  const ping = await pingPortalUrl(row.portalUrl);
+
+  await writeRevealLog({
+    carrierId,
+    actorId: session.userId,
+    actorName: session.name,
+    fieldKey: ping.reachable ? "readiness_check_ok" : "readiness_check_fail",
+  });
+
   await writeRevealLog({
     carrierId,
     actorId: session.userId,
@@ -109,7 +121,13 @@ export async function logQuoteHandoffCheck(carrierId: string): Promise<{
     fieldKey: "handoff_check",
   });
 
-  return { ok: true, ready: readiness.ready, missing: readiness.missing };
+  return {
+    ok: true,
+    ready: readiness.ready,
+    missing: readiness.missing,
+    reachable: ping.reachable,
+    statusCode: ping.statusCode,
+  };
 }
 
 export async function listCarrierSecretAudits(carrierId: string) {
@@ -129,5 +147,5 @@ export async function listCarrierSecretAudits(carrierId: string) {
       ),
     )
     .orderBy(desc(carrierSecretRevealLogs.createdAt))
-    .limit(8);
+    .limit(40);
 }

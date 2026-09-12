@@ -295,6 +295,11 @@ export const agencySettings = pgTable(
     contactSectionNav: jsonb("contact_section_nav").$type<string[] | null>(),
     /** Business detail chip-nav selected section ids (agency-wide, max 12). */
     businessSectionNav: jsonb("business_section_nav").$type<string[] | null>(),
+    /** Agency policy display-name template: ordered field ids + separator. */
+    policyLabelTemplate: jsonb("policy_label_template").$type<{
+      fields: string[];
+      separator: string;
+    } | null>(),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
@@ -682,6 +687,13 @@ export const deals = pgTable(
   ],
 );
 
+export type CommissionScheduleRow = {
+  lob: string;
+  newBusinessPct: string;
+  renewalPct: string;
+  bonusThresholds: string;
+};
+
 export const carriers = pgTable(
   "carriers",
   {
@@ -701,27 +713,43 @@ export const carriers = pgTable(
     portalPasswordEnc: text("portal_password_enc"),
     portalPasswordIv: text("portal_password_iv"),
     portalSecretsUpdatedAt: timestamp("portal_secrets_updated_at", { withTimezone: true }),
+    phone: text("phone"),
+    email: text("email"),
+    mailingAddress: text("mailing_address"),
     customerServicePhone: text("customer_service_phone"),
     agentPhone: text("agent_phone"),
     website: text("website"),
     agentPortalUrl: text("agent_portal_url"),
     carrierInfo: text("carrier_info"),
     amBestRating: text("am_best_rating"),
+    amBestOutlook: text("am_best_outlook"),
+    amBestDate: timestamp("am_best_date", { withTimezone: true }),
     underwriterName: text("underwriter_name"),
     underwriterEmail: text("underwriter_email"),
     underwriterPhone: text("underwriter_phone"),
     accountManagerName: text("account_manager_name"),
     accountManagerEmail: text("account_manager_email"),
     accountManagerPhone: text("account_manager_phone"),
+    claimsContactName: text("claims_contact_name"),
+    claimsContactEmail: text("claims_contact_email"),
     claimsPhone: text("claims_phone"),
+    marketingContactName: text("marketing_contact_name"),
+    marketingContactPhone: text("marketing_contact_phone"),
+    marketingContactEmail: text("marketing_contact_email"),
     billingPhone: text("billing_phone"),
     newBusinessCommPct: text("new_business_comm_pct"),
     renewalCommPct: text("renewal_comm_pct"),
+    commissionSchedule: jsonb("commission_schedule")
+      .$type<CommissionScheduleRow[]>()
+      .notNull()
+      .default([]),
     territory: text("territory"),
     preferredSubmission: text("preferred_submission"),
     bindingAuthority: text("binding_authority"),
     appetiteNotes: text("appetite_notes"),
     active: boolean("active").notNull().default(true),
+    /** Desk lifecycle: active | pending | inactive. Null → derive from `active`. */
+    deskStatus: text("desk_status"),
     fixtureTag: text("fixture_tag"),
     zohoId: text("zoho_id"),
     sourceId: text("source_id"),

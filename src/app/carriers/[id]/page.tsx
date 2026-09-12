@@ -1,55 +1,26 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { listCarrierSecretAudits } from "@/app/actions/carrier-secrets";
-import { updateCarrierContact } from "@/app/actions/pipeline-admin";
-import { PortalLoginAdmin } from "@/components/carriers/portal-login-admin";
 import { AppShell } from "@/components/app-shell";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
-import { RecordLayoutForm } from "@/components/custom-fields/record-layout-form";
-import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
-import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
-import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
-import { RecordAskPanel } from "@/components/record-ask";
-import { RecordSection } from "@/components/record-section";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { CarrierDetailWorkspace } from "@/components/carriers/carrier-detail-workspace";
+import { CarrierDetailSections } from "@/components/carriers/carrier-detail-sections";
+import { CarrierOverflowMenu } from "@/components/carriers/carrier-overflow-menu";
+import {
+  CarrierStatusDot,
+  carrierDeskStatusFromFlags,
+} from "@/components/carriers/carrier-status-dot";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
+import { listCarrierSecretAudits } from "@/app/actions/carrier-secrets";
 import { currentDeskSession } from "@/lib/auth/session";
 import { quoteHandoffReadiness } from "@/lib/carriers/secrets";
-import { listDeskUsers } from "@/lib/db/activity-queries";
-import { getCarrier, listRecordAsks } from "@/lib/db/queries";
-import { CARRIER_BINDING, CARRIER_BINDING_LABEL, CARRIER_SUBMISSION_METHODS, formatMoney } from "@/lib/domain";
+import { normalizeCommissionSchedule } from "@/lib/carriers/commission";
+import { getCarrierWorkspace } from "@/lib/db/queries";
+import { loadRecordContext } from "@/lib/record-context";
 import { isUuid } from "@/lib/ids";
-import { RecordTags } from "@/components/tags/record-tags";
-import { listModuleTags } from "@/app/actions/record-tags";
-import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
-import { suggestedTagsFor } from "@/lib/tags/module-tags";
 
 export const dynamic = "force-dynamic";
-
-function Field({
-  label,
-  name,
-  defaultValue,
-  admin,
-}: {
-  label: string;
-  name: string;
-  defaultValue?: string | null;
-  admin: boolean;
-}) {
-  return (
-    <div>
-      <Label className="text-xs">{label}</Label>
-      {admin ? (
-        <Input name={name} defaultValue={defaultValue ?? ""} className="mt-1 h-8" />
-      ) : (
-        <p className="mt-1 text-sm">{defaultValue || "—"}</p>
-      )}
-    </div>
-  );
-}
 
 export default async function CarrierRecordPage({
   params,
@@ -59,16 +30,31 @@ export default async function CarrierRecordPage({
   const { id } = await params;
   if (id === "logs") redirect("/settings/developer/appetite-log");
   if (!isUuid(id)) notFound();
-  const [row, asks, users, session, tagExtra, carrierLayout] = await Promise.all([
-    getCarrier(id),
-    listRecordAsks("carrier", id),
-    listDeskUsers(),
+
+  const [workspace, session, tagExtra] = await Promise.all([
+    getCarrierWorkspace(id),
     currentDeskSession(),
     listModuleTags("carriers").catch(() => [] as { name: string; color: string | null }[]),
-    loadModuleLayoutBundle("carriers", id).catch(() => null),
   ]);
-  if (!row) notFound();
-  const { carrier, rule } = row;
+  if (!workspace) notFound();
+
+  const {
+    carrier,
+    timeline,
+    activePolicyCount,
+    policyCount,
+    dealCount,
+    contactCount,
+    recentPolicy,
+    recentContact,
+    recentDeal,
+  } = workspace;
+  const deskStatus = carrierDeskStatusFromFlags({
+    active: carrier.active,
+    deskStatus: (carrier as { deskStatus?: string | null }).deskStatus,
+  });
+  const statusLabel =
+    deskStatus === "pending" ? "Pending" : deskStatus === "inactive" ? "Inactive" : "Active";
   const admin = session.isAdmin;
   const audits = admin ? await listCarrierSecretAudits(id) : [];
   const readiness = quoteHandoffReadiness({
@@ -78,226 +64,171 @@ export default async function CarrierRecordPage({
     hasPortalPassword: carrier.hasPortalPassword,
   });
 
+  const context = await loadRecordContext({});
+  const phone =
+    carrier.phone ?? carrier.underwriterPhone ?? carrier.agentPhone ?? carrier.customerServicePhone;
+  const email = carrier.email ?? carrier.underwriterEmail ?? carrier.accountManagerEmail;
+
+  const identity = {
+    name: carrier.name ?? "",
+    agency_code: carrier.agencyCode ?? "",
+    website: carrier.website ?? "",
+    phone: carrier.phone || carrier.customerServicePhone || carrier.agentPhone || "",
+    email: carrier.email || carrier.underwriterEmail || "",
+    mailing_address: carrier.mailingAddress ?? "",
+    written_lines: (carrier.writtenLines ?? []).join(", "),
+    status: statusLabel,
+  };
+
+  const contact = {
+    underwriter_name: carrier.underwriterName ?? "",
+    underwriter_phone: carrier.underwriterPhone ?? "",
+    underwriter_email: carrier.underwriterEmail ?? "",
+    claims_contact_name: carrier.claimsContactName ?? "",
+    claims_phone: carrier.claimsPhone ?? "",
+    claims_contact_email: carrier.claimsContactEmail ?? "",
+    marketing_contact_name: carrier.marketingContactName ?? "",
+    marketing_contact_phone: carrier.marketingContactPhone ?? "",
+    marketing_contact_email: carrier.marketingContactEmail ?? "",
+  };
+
+  const amBestDate =
+    carrier.amBestDate != null
+      ? new Date(carrier.amBestDate).toISOString().slice(0, 10)
+      : "";
+
+  const amBest = {
+    am_best_rating: carrier.amBestRating ?? "",
+    am_best_outlook: carrier.amBestOutlook ?? "",
+    am_best_date: amBestDate,
+  };
+
+  const schedule = normalizeCommissionSchedule(carrier.commissionSchedule, {
+    newBusinessPct: carrier.newBusinessCommPct,
+    renewalPct: carrier.renewalCommPct,
+  });
+
+  const autoLabelParts = [
+    carrier.name,
+    carrier.agencyCode?.trim() || null,
+    (carrier.writtenLines ?? []).slice(0, 2).join(", ") || null,
+  ].filter(Boolean);
+  const displayLabel = autoLabelParts.join(" / ");
+
   return (
-    <AppShell title={carrier.name}>
-      <div className="mb-3 flex justify-end">
-        <EditLayoutLink module="carriers" />
-      </div>
-      <div className="mb-4">
-        <RecordLayoutForm
-          module="carriers"
-          recordId={carrier.id}
-          layout={carrierLayout?.layout ?? defaultLayoutForModule("carriers")}
-          fields={carrierLayout?.fields ?? []}
-          values={mergeRecordSystemValues(
-            {
-              ...carrier,
-              phone: carrier.customerServicePhone,
-              email: carrier.underwriterEmail,
-            } as Record<string, unknown>,
-            carrierLayout?.stored ?? {},
-            carrierLayout?.fields ?? [],
-          )}
-          saveLabel="Save carrier fields"
-        />
-      </div>
-      <div className="mb-4 max-w-lg">
-        <RecordTags
-          module="carriers"
-          recordId={carrier.id}
-          tags={carrier.tags}
-          suggestions={suggestedTagsFor("carriers", tagExtra.map((row) => row.name))}
-          colors={colorsFromModuleTags(tagExtra)}
-        />
-      </div>
-      <form action={updateCarrierContact} className="space-y-4">
-        <input type="hidden" name="carrierId" value={carrier.id} />
-
-        <RecordSection id="identity" title="Carrier identity" summary="NAIC, rating, lines, and appetite notes">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="NAIC" name="naic" defaultValue={carrier.naic} admin={admin} />
-            <Field label="AM Best" name="amBestRating" defaultValue={carrier.amBestRating} admin={admin} />
-            <Field label="Territory" name="territory" defaultValue={carrier.territory} admin={admin} />
-            <div>
-              <Label className="text-xs">Written lines</Label>
-              {admin ? (
-                <Input
-                  name="writtenLines"
-                  defaultValue={(carrier.writtenLines ?? []).join(", ")}
-                  className="mt-1 h-8"
-                  placeholder="HO, DP3"
+    <AppShell title="Carriers">
+      <div className="mb-3 space-y-1" data-ff-carrier-header-bar="">
+        <div className="flex flex-wrap items-start gap-2">
+          <div className="mt-2 shrink-0">
+            <CarrierStatusDot status={deskStatus} />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <h2 className="text-xl font-semibold text-[#002868]">{displayLabel}</h2>
+              <div className="flex min-w-0 flex-wrap items-center gap-2 pl-1">
+                <span
+                  className={
+                    deskStatus === "active"
+                      ? "rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800"
+                      : deskStatus === "pending"
+                        ? "rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                        : "rounded-full bg-[#FCE8EC] px-2 py-0.5 text-xs font-medium text-[#BF0A30]"
+                  }
+                >
+                  {statusLabel}
+                </span>
+                {(carrier.writtenLines ?? []).slice(0, 4).map((line) => (
+                  <span
+                    key={line}
+                    className="rounded-full border border-[#002868]/40 bg-[#002868]/5 px-2 py-0.5 text-xs font-medium text-[#002868]"
+                  >
+                    {line}
+                  </span>
+                ))}
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <EditLayoutLink module="carriers" />
+                <CarrierOverflowMenu
+                  carrierId={carrier.id}
+                  carrierName={carrier.name}
+                  admin={admin}
                 />
-              ) : (
-                <p className="mt-1 text-sm">{(carrier.writtenLines ?? []).join(", ") || "—"}</p>
-              )}
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Preferred submission</Label>
-              {admin ? (
-                <select
-                  name="preferredSubmission"
-                  defaultValue={carrier.preferredSubmission ?? "portal"}
-                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-                >
-                  {CARRIER_SUBMISSION_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="mt-1 text-sm capitalize">{carrier.preferredSubmission ?? "—"}</p>
-              )}
+            <div className="max-w-xl" data-ff-carrier-header-tags="">
+              <AssignRecordTags
+                module="carriers"
+                recordId={carrier.id}
+                tags={carrier.tags}
+                catalog={tagExtra.map((row) => ({ name: row.name, color: row.color }))}
+                appearance="addLink"
+              />
             </div>
-            <div>
-              <Label className="text-xs">Binding authority</Label>
-              {admin ? (
-                <select
-                  name="bindingAuthority"
-                  defaultValue={carrier.bindingAuthority ?? "none"}
-                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-                >
-                  {CARRIER_BINDING.map((m) => (
-                    <option key={m} value={m}>
-                      {CARRIER_BINDING_LABEL[m]}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="mt-1 text-sm">
-                  {carrier.bindingAuthority
-                    ? CARRIER_BINDING_LABEL[carrier.bindingAuthority as keyof typeof CARRIER_BINDING_LABEL] ??
-                      carrier.bindingAuthority
-                    : "—"}
-                </p>
-              )}
-            </div>
-            <div className="sm:col-span-2 lg:col-span-3">
-              <Label className="text-xs">Appetite notes</Label>
-              {admin ? (
-                <Textarea name="appetiteNotes" defaultValue={carrier.appetiteNotes ?? ""} className="mt-1 min-h-16" />
-              ) : (
-                <p className="mt-1 text-sm">{carrier.appetiteNotes || "—"}</p>
-              )}
-            </div>
-            <div className="sm:col-span-2 lg:col-span-3">
-              <Label className="text-xs">Don&apos;t write</Label>
-              {admin ? (
-                <Textarea name="dontWriteNotes" defaultValue={carrier.dontWriteNotes ?? ""} className="mt-1 min-h-16" />
-              ) : (
-                <p className="mt-1 text-sm">{carrier.dontWriteNotes || "—"}</p>
-              )}
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Active policies {activePolicyCount}
+              {policyCount !== activePolicyCount ? ` · ${policyCount} total` : ""}
+            </p>
           </div>
-        </RecordSection>
+        </div>
+      </div>
 
-        <RecordSection id="commission" title="Commission" summary="Desk hints — not a carrier contract">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              label="New business %"
-              name="newBusinessCommPct"
-              defaultValue={carrier.newBusinessCommPct}
-              admin={admin}
-            />
-            <Field label="Renewal %" name="renewalCommPct" defaultValue={carrier.renewalCommPct} admin={admin} />
-          </div>
-        </RecordSection>
-
-        <RecordSection id="contacts" title="Carrier contacts" summary="UW, AM, service, claims, billing">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Underwriter" name="underwriterName" defaultValue={carrier.underwriterName} admin={admin} />
-            <Field label="UW email" name="underwriterEmail" defaultValue={carrier.underwriterEmail} admin={admin} />
-            <Field label="UW phone" name="underwriterPhone" defaultValue={carrier.underwriterPhone} admin={admin} />
-            <Field
-              label="Account manager"
-              name="accountManagerName"
-              defaultValue={carrier.accountManagerName}
-              admin={admin}
-            />
-            <Field label="AM email" name="accountManagerEmail" defaultValue={carrier.accountManagerEmail} admin={admin} />
-            <Field label="AM phone" name="accountManagerPhone" defaultValue={carrier.accountManagerPhone} admin={admin} />
-            <Field
-              label="Customer service"
-              name="customerServicePhone"
-              defaultValue={carrier.customerServicePhone}
-              admin={admin}
-            />
-            <Field label="Agent phone" name="agentPhone" defaultValue={carrier.agentPhone} admin={admin} />
-            <Field label="Claims" name="claimsPhone" defaultValue={carrier.claimsPhone} admin={admin} />
-            <Field label="Billing" name="billingPhone" defaultValue={carrier.billingPhone} admin={admin} />
-          </div>
-        </RecordSection>
-
-        <RecordSection id="portal" title="Portal and info" summary="Login URL, agency code, website, and desk notes">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Portal URL" name="portalUrl" defaultValue={carrier.portalUrl} admin={admin} />
-            <Field label="Agency code" name="agencyCode" defaultValue={carrier.agencyCode} admin={admin} />
-            <Field label="Portal name" name="portalLogin" defaultValue={carrier.portalLogin} admin={admin} />
-            <Field label="Website" name="website" defaultValue={carrier.website} admin={admin} />
-            <Field label="Agent portal" name="agentPortalUrl" defaultValue={carrier.agentPortalUrl} admin={admin} />
-            <div className="sm:col-span-2">
-              <Label className="text-xs">Carrier info</Label>
-              {admin ? (
-                <Textarea name="carrierInfo" defaultValue={carrier.carrierInfo ?? ""} className="mt-1 min-h-20" />
-              ) : (
-                <p className="mt-1 text-sm">{carrier.carrierInfo ?? "—"}</p>
-              )}
+      <CarrierDetailWorkspace
+        rail={
+          <>
+            <div className="min-w-0 w-full max-w-full" data-ff-carrier-quick-comms="">
+              <QuickCommsBoard
+                items={[]}
+                contactName={carrier.underwriterName ?? carrier.name}
+                contactPhone={phone}
+                contactEmail={email}
+              />
             </div>
-          </div>
-        </RecordSection>
-
-        {admin ? (
-          <RecordSection
-            id="portal-login"
-            title="Portal login (Admin only)"
-            summary="Encrypted quoting-portal username and password. Agents never see these fields."
-          >
-            <PortalLoginAdmin
-              carrierId={carrier.id}
-              usernameHint={carrier.portalUsernameHint}
-              hasUsername={carrier.hasPortalUsername}
-              hasPassword={carrier.hasPortalPassword}
-              readiness={readiness}
-              audits={audits}
-            />
-          </RecordSection>
-        ) : null}
-
-        {admin ? (
-          <Button type="submit" size="sm">
-            Save carrier
-          </Button>
-        ) : null}
-      </form>
-
-      {admin ? <RecordAskPanel entityType="carrier" entityId={carrier.id} asks={asks} users={users} /> : null}
-
-      <RecordSection id="related" title="Related" summary="Appetite rule and decline log">
-        <p className="mb-3 text-sm">
-          <Link href="/logs" className="text-primary hover:underline">
-            Decline log
-          </Link>
-        </p>
-        {rule ? (
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">Cov A</dt>
-              <dd>
-                {formatMoney(rule.minCovA)} – {formatMoney(rule.maxCovA)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Roof / coast / mobile</dt>
-              <dd>
-                max roof {rule.maxRoofAge ?? "—"}y · coast {rule.minMilesToCoast ?? 0}+ mi · mobile{" "}
-                {rule.mobileAllowed ? "yes" : "no"}
-              </dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="text-sm text-muted-foreground">No appetite rule on this carrier.</p>
-        )}
-      </RecordSection>
+            <RecordContextRail context={context} defaultTab="info" headingName={carrier.name} />
+          </>
+        }
+      >
+        <CarrierDetailSections
+          carrierId={carrier.id}
+          carrierName={carrier.name}
+          admin={admin}
+          identity={identity}
+          contact={contact}
+          appetiteNotes={carrier.appetiteNotes ?? ""}
+          dontWriteNotes={carrier.dontWriteNotes ?? ""}
+          amBest={amBest}
+          commissionRows={schedule}
+          newBusinessCommPct={carrier.newBusinessCommPct ?? ""}
+          renewalCommPct={carrier.renewalCommPct ?? ""}
+          portal={{
+            usernameHint: carrier.portalUsernameHint,
+            hasUsername: carrier.hasPortalUsername,
+            hasPassword: carrier.hasPortalPassword,
+            readiness,
+            audits,
+            portalUrl: carrier.portalUrl,
+          }}
+          related={{
+            policyCount,
+            contactCount,
+            dealCount,
+            recentPolicy,
+            recentContact,
+            recentDeal,
+          }}
+          timeline={timeline}
+          amBestHistoryStub={
+            amBest.am_best_rating
+              ? [
+                  {
+                    rating: amBest.am_best_rating,
+                    outlook: amBest.am_best_outlook,
+                    date: amBest.am_best_date,
+                  },
+                ]
+              : []
+          }
+        />
+      </CarrierDetailWorkspace>
     </AppShell>
   );
 }

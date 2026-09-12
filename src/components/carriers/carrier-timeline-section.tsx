@@ -1,0 +1,144 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
+
+export type CarrierTimelineRow = {
+  id: string;
+  kind: string;
+  title: string;
+  actorName: string | null;
+  occurredAt: Date | string;
+  reason?: string | null;
+};
+
+type Group = {
+  key: string;
+  kind: string;
+  title: string;
+  items: CarrierTimelineRow[];
+  latest: Date;
+};
+
+function dayKey(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function groupTimeline(rows: CarrierTimelineRow[]): Group[] {
+  const map = new Map<string, Group>();
+  for (const row of rows) {
+    const when = new Date(row.occurredAt);
+    const key = `${row.kind}|${dayKey(when)}|${row.title.toLowerCase()}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.items.push(row);
+      if (when > existing.latest) existing.latest = when;
+    } else {
+      map.set(key, {
+        key,
+        kind: row.kind,
+        title: row.title,
+        items: [row],
+        latest: when,
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => +b.latest - +a.latest);
+}
+
+function failureReason(row: CarrierTimelineRow): string | null {
+  if (row.reason?.trim()) return row.reason.trim();
+  if (row.kind === "credential" && /fail|unreachable|missing/i.test(row.title)) {
+    return row.title;
+  }
+  if (/readiness_check_fail|unreachable|fail/i.test(row.title)) {
+    return "Portal URL unreachable or returned an error.";
+  }
+  return null;
+}
+
+export function CarrierTimelineSection({
+  rows,
+}: {
+  rows: CarrierTimelineRow[];
+}) {
+  const groups = useMemo(() => groupTimeline(rows), [rows]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  if (groups.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground" data-ff-carrier-timeline-empty="">
+        No carrier activity yet. Credential reveals, readiness checks, and field updates will show here.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-2 text-sm" data-ff-carrier-timeline="">
+      {groups.map((group) => {
+        const expanded = Boolean(open[group.key]);
+        const primary = group.items[0];
+        const fail = group.items.map(failureReason).find(Boolean) ?? null;
+        const multi = group.items.length > 1;
+        return (
+          <li
+            key={group.key}
+            className="rounded-md border border-border/70 px-3 py-2"
+            data-ff-carrier-timeline-group={group.kind}
+          >
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-start justify-between gap-2 text-left",
+                multi ? "cursor-pointer" : "cursor-default",
+              )}
+              onClick={() => {
+                if (!multi) return;
+                setOpen((prev) => ({ ...prev, [group.key]: !expanded }));
+              }}
+              aria-expanded={multi ? expanded : undefined}
+            >
+              <div className="min-w-0">
+                <div className="font-medium text-[#002868]">
+                  {group.title}
+                  {multi ? (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      · {group.items.length} related
+                    </span>
+                  ) : null}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {primary.actorName ? `${primary.actorName} · ` : ""}
+                  {new Date(group.latest).toLocaleString()}
+                </div>
+                {fail ? (
+                  <div className="mt-1 text-xs text-[#BF0A30]" data-ff-carrier-timeline-fail="">
+                    {fail}
+                  </div>
+                ) : null}
+              </div>
+              {multi ? (
+                <span className="shrink-0 text-xs text-muted-foreground">{expanded ? "Hide" : "Show"}</span>
+              ) : null}
+            </button>
+            {multi && expanded ? (
+              <ul className="mt-2 space-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+                {group.items.map((item) => (
+                  <li key={item.id}>
+                    {item.title}
+                    {item.actorName ? ` · ${item.actorName}` : ""}
+                    {" · "}
+                    {new Date(item.occurredAt).toLocaleString()}
+                    {failureReason(item) ? (
+                      <span className="block text-[#BF0A30]">{failureReason(item)}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

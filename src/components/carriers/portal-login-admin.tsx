@@ -18,6 +18,8 @@ function auditLabel(fieldKey: string) {
   if (fieldKey === "username") return "Revealed username";
   if (fieldKey === "password") return "Revealed password";
   if (fieldKey === "handoff_check") return "Quote handoff readiness check";
+  if (fieldKey === "readiness_check_ok") return "Readiness check · reachable Y";
+  if (fieldKey === "readiness_check_fail") return "Readiness check · reachable N";
   return fieldKey;
 }
 
@@ -42,6 +44,7 @@ export function PortalLoginAdmin({
   const [busy, setBusy] = useState<string | null>(null);
   const [check, setCheck] = useState<QuoteHandoffReadiness>(readiness);
   const [localAudits, setLocalAudits] = useState(audits);
+  const [reachable, setReachable] = useState<boolean | null>(null);
 
   async function reveal(field: "username" | "password") {
     setBusy(field);
@@ -79,6 +82,7 @@ export function PortalLoginAdmin({
       ready: result.ready,
       missing: result.missing,
     });
+    if ("reachable" in result) setReachable(Boolean((result as { reachable?: boolean }).reachable));
     setLocalAudits((rows) => [
       {
         id: `local-handoff-${Date.now()}`,
@@ -194,6 +198,9 @@ export function PortalLoginAdmin({
         >
           Log readiness check
         </Button>
+        {reachable != null ? (
+          <p className="mt-2 text-xs text-muted-foreground">URL reachable: {reachable ? "Y" : "N"}</p>
+        ) : null}
       </div>
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
