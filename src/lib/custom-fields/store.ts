@@ -340,20 +340,91 @@ export async function ensureContactDetailLayout(): Promise<FieldLayout> {
   return picked;
 }
 
-/** Force Business Edit Layout to the two-column Business Details card. */
+/** True when business_name and phone sit in the same layout column (feel-pass bug). */
+function businessNamePhoneSameColumn(layout: FieldLayout | null | undefined): boolean {
+  if (!layout?.columns?.length) return false;
+  let nameCol = -1;
+  let phoneCol = -1;
+  layout.columns.forEach((column, index) => {
+    const keys = new Set(column.sections.flatMap((section) => section.fieldKeys));
+    if (keys.has("business_name")) nameCol = index;
+    if (keys.has("phone")) phoneCol = index;
+  });
+  if (nameCol < 0 || phoneCol < 0) return false;
+  return nameCol === phoneCol;
+}
+
+/**
+ * One-time feel migrate: move phone to the opposite column from business_name.
+ * Preserves every other agency section/field — never re-injects deleted sections
+ * (e.g. CRM Notes) from the stock default.
+ */
+export function migrateBusinessPhoneOppositeColumn(layout: FieldLayout): FieldLayout {
+  if (!businessNamePhoneSameColumn(layout)) return layout;
+  const moveKeys = ["phone", "email", "website"] as const;
+  const columns = layout.columns.map((column) => ({
+    ...column,
+    sections: column.sections.map((section) => ({
+      ...section,
+      fieldKeys: [...section.fieldKeys],
+    })),
+  }));
+  let nameCol = 0;
+  columns.forEach((column, index) => {
+    if (column.sections.some((section) => section.fieldKeys.includes("business_name"))) {
+      nameCol = index;
+    }
+  });
+  const phoneCol = nameCol === 0 ? 1 : 0;
+  while (columns.length < 2) {
+    columns.push({ id: columns.length === 0 ? "left" : "right", sections: [] });
+  }
+  const moving: string[] = [];
+  const nameKeys = new Set(columns[nameCol].sections.flatMap((section) => section.fieldKeys));
+  for (const key of moveKeys) {
+    if (nameKeys.has(key)) moving.push(key);
+  }
+  if (!moving.includes("phone")) moving.unshift("phone");
+  const drop = new Set(moving);
+  for (const column of columns) {
+    for (const section of column.sections) {
+      section.fieldKeys = section.fieldKeys.filter((key) => !drop.has(key));
+    }
+    column.sections = column.sections.filter((section) => section.fieldKeys.length > 0);
+  }
+  const target = columns[phoneCol] ?? columns[1];
+  const contact = target.sections.find((section) => section.id === "contact");
+  if (contact) {
+    for (const key of [...moving].reverse()) {
+      if (!contact.fieldKeys.includes(key)) contact.fieldKeys.unshift(key);
+    }
+  } else {
+    target.sections.unshift({ id: "contact", label: "Contact", fieldKeys: [...moving] });
+  }
+  return { columns };
+}
+
+/**
+ * Business Edit Layout: seed stock default only when missing/broken or force=true.
+ * Agency-saved layouts win — deleted sections/fields must stay deleted.
+ * Does NOT re-merge default keys on every desk load (that brought CRM Notes back).
+ * One-time feel migrate moves phone opposite business_name without clobbering the rest.
+ */
 export async function ensureBusinessDetailLayout(force = false): Promise<FieldLayout> {
   await ensureBusinessDetailPicklists().catch(() => null);
   const next = defaultLayoutForModule("businesses");
   const rows = await loadSavedLayoutRows("businesses").catch(() => []);
   const preferred = MODULE_LAYOUT_LINE;
   const picked = pickSavedModuleLayout(rows, "businesses", preferred);
-  const keys = new Set(allLayoutFieldKeys(picked ?? ({ columns: [] } as FieldLayout)));
-  const needed = allLayoutFieldKeys(next);
-  const missing = needed.some((key) => !keys.has(key));
   const rightEmpty = !(picked?.columns?.[1]?.sections?.length);
-  if (force || missing || rightEmpty || !picked) {
+  if (force || !picked || rightEmpty) {
     await saveLayoutForModule("businesses", next);
     return next;
+  }
+  if (businessNamePhoneSameColumn(picked)) {
+    const migrated = migrateBusinessPhoneOppositeColumn(picked);
+    await saveLayoutForModule("businesses", migrated);
+    return migrated;
   }
   return picked;
 }

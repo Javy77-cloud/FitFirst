@@ -289,22 +289,23 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     );
   }
   if (module === "businesses") {
+    // Even left|right like Contacts. Keep Business Name on left; Phone (and
+    // email/website) on right so name + phone are not stacked in one column.
     return twoCol(
       [
         section("business", "Business", [
           "business_name",
           "dba",
           "legal_name",
-          "phone",
-          "email",
-          "website",
           "ein",
           "entity_type",
           "industry",
         ]),
         section("location", "Location", ["mailing_address", "city", "state", "zip"]),
+        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"]),
       ],
       [
+        section("contact", "Contact", ["phone", "email", "website"]),
         section("intake", "Intake", ["source", "referral"]),
         section("operations", "Operations", [
           "employee_count",
@@ -315,7 +316,6 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
           "naics",
           "operations",
         ]),
-        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"]),
       ],
     );
   }
