@@ -750,6 +750,8 @@ export const carriers = pgTable(
     active: boolean("active").notNull().default(true),
     /** Desk lifecycle: active | pending | inactive. Null → derive from `active`. */
     deskStatus: text("desk_status"),
+    /** Last agency contact (Quick Comms / logged activity). */
+    lastContactedAt: timestamp("last_contacted_at", { withTimezone: true }),
     fixtureTag: text("fixture_tag"),
     zohoId: text("zoho_id"),
     sourceId: text("source_id"),
@@ -777,6 +779,44 @@ export const carrierSecretRevealLogs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("carrier_secret_reveal_logs_carrier_idx").on(t.tenantId, t.carrierId, t.createdAt)],
+);
+
+export const carrierAmBestHistory = pgTable(
+  "carrier_am_best_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id, { onDelete: "cascade" }),
+    rating: text("rating"),
+    outlook: text("outlook"),
+    ratedAt: timestamp("rated_at", { withTimezone: true }),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("carrier_am_best_history_carrier_idx").on(t.tenantId, t.carrierId, t.createdAt)],
+);
+
+/** Appetite / status / AM Best / Quick Comms events for carrier Activity timeline. */
+export const carrierActivityEvents = pgTable(
+  "carrier_activity_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id")
+      .notNull()
+      .references(() => carriers.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    detail: text("detail"),
+    actorId: uuid("actor_id"),
+    actorName: text("actor_name"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("carrier_activity_events_carrier_idx").on(t.tenantId, t.carrierId, t.occurredAt)],
 );
 
 export const carrierAppointments = pgTable(
@@ -2945,6 +2985,8 @@ export type DocumentFieldMapRow = typeof documentFieldMaps.$inferSelect;
 export type PropertyEnrichmentCacheRow = typeof propertyEnrichmentCache.$inferSelect;
 export type Carrier = typeof carriers.$inferSelect;
 export type CarrierSecretRevealLog = typeof carrierSecretRevealLogs.$inferSelect;
+export type CarrierAmBestHistory = typeof carrierAmBestHistory.$inferSelect;
+export type CarrierActivityEvent = typeof carrierActivityEvents.$inferSelect;
 export type CarrierAppointment = typeof carrierAppointments.$inferSelect;
 export type AppetiteRule = typeof appetiteRules.$inferSelect;
 export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;

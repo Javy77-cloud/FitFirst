@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { completeDeskActivity, logDeskActivity } from "@/app/actions/activities-desk";
+import { touchCarrierLastContacted } from "@/app/actions/carriers-ops";
 import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,8 @@ export function QuickCommsBoard({
   contactPhone,
   contactEmail,
   accountId,
+  policyId,
+  carrierId = null,
   quoteFiles = [],
   officeAddress = null,
   clientAddress = null,
@@ -102,6 +105,9 @@ export function QuickCommsBoard({
   contactPhone?: string | null;
   contactEmail?: string | null;
   accountId?: string | null;
+  policyId?: string | null;
+  /** When set (carrier detail), orphan log + bump last contacted. */
+  carrierId?: string | null;
   quoteFiles?: QuickCommsQuoteFile[];
   /** Agency / agent office from Settings → Communications */
   officeAddress?: string | null;
@@ -116,7 +122,7 @@ export function QuickCommsBoard({
   const [callBusy, setCallBusy] = useState(false);
 
   const filtered = items.filter((item) => item.kind === kind);
-  const party = (contactName ?? "").trim() || (dealId ? "this deal" : "this lead");
+  const party = (contactName ?? "").trim() || (carrierId ? "this carrier" : dealId ? "this deal" : "this lead");
   const toLine = contextLine([contactName, contactPhone, contactEmail]);
   const dial = telHref(contactPhone);
   const firstName = party.split(" ")[0] || party;
@@ -155,6 +161,18 @@ export function QuickCommsBoard({
     if (leadId) formData.set("leadId", leadId);
     if (contactId) formData.set("contactId", contactId);
     if (accountId) formData.set("accountId", accountId);
+    if (policyId) formData.set("policyId", policyId);
+    if (carrierId) formData.set("allowOrphan", "1");
+  }
+
+  async function afterCarrierComms(kindLabel: string) {
+    if (!carrierId) return;
+    await touchCarrierLastContacted({
+      carrierId,
+      kind: "comms",
+      title: kindLabel,
+      detail: "Logged from Quick Comms",
+    });
   }
 
   async function submitKind(formData: FormData) {
@@ -182,7 +200,9 @@ export function QuickCommsBoard({
         formData.set("status", "open");
         formData.set("createReminder", "1");
         formData.set("direction", "outbound");
+        stampRelated(formData);
         await logDeskActivity(formData);
+        await afterCarrierComms("Email Reminder");
         return;
       }
 
@@ -190,7 +210,9 @@ export function QuickCommsBoard({
       if (!formData.get("dueAt")) {
         throw new Error("Pick Send at date and time to schedule the email.");
       }
+      stampRelated(formData);
       await sendDeskEmail(formData);
+      await afterCarrierComms("Email");
       return;
     }
 
@@ -207,7 +229,9 @@ export function QuickCommsBoard({
         formData.delete("dueAt");
         formData.delete("startAt");
       }
+      stampRelated(formData);
       await sendDeskSms(formData);
+      await afterCarrierComms("SMS");
       return;
     }
 
@@ -247,7 +271,17 @@ export function QuickCommsBoard({
       }
     }
 
+    stampRelated(formData);
     await logDeskActivity(formData);
+    const label =
+      kind === "call"
+        ? "Call"
+        : kind === "meeting"
+          ? "Meeting"
+          : kind === "task"
+            ? "Task"
+            : "Quick Comms";
+    await afterCarrierComms(label);
   }
 
   async function callNow() {
@@ -263,6 +297,7 @@ export function QuickCommsBoard({
       if (contactPhone) formData.set("phone", contactPhone);
       formData.set("notes", "Click-to-call from Quick Comms");
       await logDeskActivity(formData);
+      await afterCarrierComms("Click-To-Call");
       if (dial) {
         window.location.href = dial;
       }
@@ -275,8 +310,9 @@ export function QuickCommsBoard({
     <section className="ff-card min-w-0 w-full max-w-full p-4" data-ff-quick-comms-board="">
       <h2 className="text-base font-semibold text-navy">Quick Communications</h2>
       <p className="mt-1 text-base text-muted-foreground">
-        Task, meeting, call, email, and SMS on this {dealId ? "deal" : "lead"}. Not a carrier
-        portal and not a live mail trunk.
+        {carrierId
+          ? "Task, meeting, call, email, and SMS on this carrier. Updates Last Contacted."
+          : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : "lead"}. Not a carrier portal and not a live mail trunk.`}
       </p>
 
       <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-hidden">
@@ -311,6 +347,7 @@ export function QuickCommsBoard({
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
+        {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         <input type="hidden" name="kind" value={kind} />
 
         {kind === "task" ? (

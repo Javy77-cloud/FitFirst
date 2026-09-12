@@ -19,6 +19,7 @@ import { normalizeCommissionSchedule } from "@/lib/carriers/commission";
 import { getCarrierWorkspace } from "@/lib/db/queries";
 import { loadRecordContext } from "@/lib/record-context";
 import { isUuid } from "@/lib/ids";
+import { formatDisplayDate } from "@/lib/dates/display-format";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export default async function CarrierRecordPage({
   const {
     carrier,
     timeline,
+    amBestHistory,
     activePolicyCount,
     policyCount,
     dealCount,
@@ -165,8 +167,13 @@ export default async function CarrierRecordPage({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Active policies {activePolicyCount}
-              {policyCount !== activePolicyCount ? ` · ${policyCount} total` : ""}
+              Active Policies {activePolicyCount}
+              {policyCount !== activePolicyCount ? ` · ${policyCount} Total` : ""}
+              {" · "}
+              Last Contacted{" "}
+              {carrier.lastContactedAt
+                ? formatDisplayDate(carrier.lastContactedAt)
+                : "—"}
             </p>
           </div>
         </div>
@@ -178,6 +185,7 @@ export default async function CarrierRecordPage({
             <div className="min-w-0 w-full max-w-full" data-ff-carrier-quick-comms="">
               <QuickCommsBoard
                 items={[]}
+                carrierId={carrier.id}
                 contactName={carrier.underwriterName ?? carrier.name}
                 contactPhone={phone}
                 contactEmail={email}
@@ -216,16 +224,18 @@ export default async function CarrierRecordPage({
             recentDeal,
           }}
           timeline={timeline}
-          amBestHistoryStub={
-            amBest.am_best_rating
-              ? [
-                  {
-                    rating: amBest.am_best_rating,
-                    outlook: amBest.am_best_outlook,
-                    date: amBest.am_best_date,
-                  },
-                ]
-              : []
+          amBestHistory={
+            amBestHistory.length > 0
+              ? amBestHistory
+              : amBest.am_best_rating
+                ? [
+                    {
+                      rating: amBest.am_best_rating,
+                      outlook: amBest.am_best_outlook,
+                      date: amBest.am_best_date,
+                    },
+                  ]
+                : []
           }
         />
       </CarrierDetailWorkspace>

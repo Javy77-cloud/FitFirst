@@ -65,6 +65,8 @@ import {
   alerts,
   calendarInvites,
   appetiteRules,
+  carrierActivityEvents,
+  carrierAmBestHistory,
   carrierAppointments,
   carriers,
   carrierSecretRevealLogs,
@@ -1543,6 +1545,43 @@ export async function getCarrierWorkspace(id: string) {
         .limit(40)
     : [];
 
+  const activityRows = await db
+    .select({
+      id: carrierActivityEvents.id,
+      kind: carrierActivityEvents.kind,
+      title: carrierActivityEvents.title,
+      detail: carrierActivityEvents.detail,
+      actorName: carrierActivityEvents.actorName,
+      occurredAt: carrierActivityEvents.occurredAt,
+    })
+    .from(carrierActivityEvents)
+    .where(
+      and(
+        eq(carrierActivityEvents.tenantId, tenant()),
+        eq(carrierActivityEvents.carrierId, id),
+      ),
+    )
+    .orderBy(desc(carrierActivityEvents.occurredAt))
+    .limit(80);
+
+  const amBestHistoryRows = await db
+    .select({
+      id: carrierAmBestHistory.id,
+      rating: carrierAmBestHistory.rating,
+      outlook: carrierAmBestHistory.outlook,
+      ratedAt: carrierAmBestHistory.ratedAt,
+      createdAt: carrierAmBestHistory.createdAt,
+    })
+    .from(carrierAmBestHistory)
+    .where(
+      and(
+        eq(carrierAmBestHistory.tenantId, tenant()),
+        eq(carrierAmBestHistory.carrierId, id),
+      ),
+    )
+    .orderBy(desc(carrierAmBestHistory.createdAt))
+    .limit(40);
+
   const timeline = [
     ...revealLogs.map((log) => {
       const key = log.fieldKey;
@@ -1556,7 +1595,23 @@ export async function getCarrierWorkspace(id: string) {
         reason: fail ? "Portal URL unreachable or returned an error." : null,
       };
     }),
+    ...activityRows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      actorName: row.actorName,
+      occurredAt: row.occurredAt,
+      reason: row.detail,
+    })),
   ].sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt));
+
+  const amBestHistory = amBestHistoryRows.map((row) => ({
+    rating: row.rating ?? "",
+    outlook: row.outlook ?? "",
+    date: row.ratedAt
+      ? new Date(row.ratedAt).toISOString().slice(0, 10)
+      : new Date(row.createdAt).toISOString().slice(0, 10),
+  }));
 
   const [recentPolicyRow] = await db
     .select({
@@ -1630,6 +1685,7 @@ export async function getCarrierWorkspace(id: string) {
     recentContact,
     recentDeal,
     timeline,
+    amBestHistory,
     isAdmin: session.isAdmin,
   };
 }

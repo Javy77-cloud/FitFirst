@@ -47,7 +47,7 @@ export function CarrierDetailSections({
   portal,
   related,
   timeline,
-  amBestHistoryStub = [],
+  amBestHistory = [],
 }: {
   carrierId: string;
   carrierName: string;
@@ -77,7 +77,7 @@ export function CarrierDetailSections({
     recentDeal?: { id: string; label: string } | null;
   };
   timeline: TimelineRow[];
-  amBestHistoryStub?: { rating: string; outlook: string; date: string }[];
+  amBestHistory?: { rating: string; outlook: string; date: string }[];
 }) {
   const schedule = normalizeCommissionSchedule(commissionRows, {
     newBusinessPct: newBusinessCommPct,
@@ -159,13 +159,13 @@ export function CarrierDetailSections({
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#002868]">
             Rating history
           </p>
-          {amBestHistoryStub.length === 0 ? (
+          {amBestHistory.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              History timeline stub — next wave will persist rating changes when AM Best fields update.
+              No Rating History Yet. Updates Persist When AM Best Fields Change.
             </p>
           ) : (
             <ol className="space-y-1 text-xs text-muted-foreground">
-              {amBestHistoryStub.map((row, i) => (
+              {amBestHistory.map((row, i) => (
                 <li key={`${row.date}-${i}`}>
                   <span className="font-medium text-[#002868]">{row.rating || "—"}</span>
                   {row.outlook ? ` · ${row.outlook}` : ""}
