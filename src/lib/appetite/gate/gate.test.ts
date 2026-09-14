@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CITIZENS_SLUG, CITIZENS_WITHIN_PCT, DEFAULT_FL_HO_ORDER, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
+import { CITIZENS_SLUG, DEFAULT_FL_HO_ORDER, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
 import { runQuoteGate } from "./gate";
 import { slugFromCarrierName } from "./identity";
 import { APPETITE_CSV_RELATIVE_PATH, parseAppetiteCsv } from "./parse";
@@ -77,7 +77,7 @@ describe("state expand", () => {
 
 describe("hard_decline evaluation", () => {
   it("implements every required token against the snapshot", () => {
-    expect(REQUIRED_HARD_DECLINE_TOKENS).toHaveLength(27);
+    expect(REQUIRED_HARD_DECLINE_TOKENS).toHaveLength(29);
 
     const mobile = flHo3({ isMobile: true });
     expect(tokenHits("mobile_home", mobile)).toBe(true);
@@ -130,6 +130,10 @@ describe("hard_decline evaluation", () => {
     expect(tokenHits("FL_primary_book_assumption", flHo3())).toBe(true);
     expect(tokenHits("clean_preferred_better_priced_elsewhere", emptySnapshot({ line: "PAP" }))).toBe(true);
     expect(tokenHits("none_standard", flHo3({ isStandardPreferredNewConstruction: true }))).toBe(true);
+    expect(tokenHits("no_new_dp3", emptySnapshot({ line: "DP3" }))).toBe(true);
+    expect(tokenHits("no_new_dp3", flHo3())).toBe(false);
+    expect(tokenHits("new_homeowners", flHo3({ state: "CA" }))).toBe(true);
+    expect(tokenHits("new_homeowners", emptySnapshot({ state: "CA", line: "PAP" }))).toBe(false);
   });
 
   it("Skip-Decline logs the matching hard_decline token", () => {
@@ -166,8 +170,7 @@ describe("quote-gate routing", () => {
     expect(["state_not_available", "FL_primary_book_assumption"]).toContain(uicna?.matchingRule);
   });
 
-  it("encodes Citizens last + within-20% as a documented stub", () => {
-    expect(CITIZENS_WITHIN_PCT).toBe(20);
+  it("does not force Citizens last — no last-resort ranking", () => {
     expect(CITIZENS_SLUG).toBe("citizens");
     const catalog = loadCatalog();
     expect(catalog.some((c) => c.carrierId === CITIZENS_SLUG)).toBe(false);
@@ -175,7 +178,7 @@ describe("quote-gate routing", () => {
       ...catalog,
       {
         carrierId: CITIZENS_SLUG,
-        legalName: "Citizens Property Insurance (stub)",
+        legalName: "Citizens Property Insurance Corporation",
         segment: "fl_property",
         linesOffered: ["HO3"],
         linesNotOffered: [],
@@ -190,15 +193,22 @@ describe("quote-gate routing", () => {
         softCautions: [],
         preferredSignals: [],
         catPosture: "selective",
-        notesForAgent: "Stub — within 20% of cheapest admitted. Not in this CSV.",
-        quotePriority: 999,
-        flHoOrder: 999,
+        notesForAgent: "Normal catalog row.",
+        quotePriority: null,
+        flHoOrder: null,
         needsStateConfirm: false,
       },
     ];
-    const result = runQuoteGate(flHo3(), withCitizens);
-    const lastQuote = result.quote[result.quote.length - 1];
-    expect(lastQuote?.carrierId).toBe(CITIZENS_SLUG);
+    const sentinel: AppetiteCarrier = {
+      ...withCitizens[withCitizens.length - 1]!,
+      carrierId: "zzz_national",
+      legalName: "ZZZ Sentinel",
+    };
+    const result = runQuoteGate(flHo3(), [...withCitizens, sentinel]);
+    const citizens = result.quote.find((d) => d.carrierId === CITIZENS_SLUG);
+    expect(citizens?.status).toBe("Quote");
+    expect(result.quote[result.quote.length - 1]?.carrierId).toBe("zzz_national");
+    expect(citizens!.rank).toBeGreaterThan(result.quote.find((d) => d.carrierId === "universal_pc")!.rank);
   });
 
   it("collector auto is Hagerty-only", () => {

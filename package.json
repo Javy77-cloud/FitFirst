@@ -14,6 +14,7 @@
     "db:wipe-crm": "tsx --env-file=.env scripts/wipe-crm.ts",
     "db:import-zoho": "tsx --env-file=.env scripts/import-zoho.ts",
     "appetite:import": "tsx --env-file=.env scripts/import-appetite.ts",
+    "appetite:import-nationals": "tsx --env-file=.env scripts/import-appetite.ts data/appetite/fitfirst-nationals-appetite.csv data/appetite/fitfirst-nationals-state-rules.csv",
     "db:assign-owner": "tsx --env-file=.env scripts/assign-owner.ts",
     "fixtures:pdf": "tsx scripts/generate-pdfs.ts"
   },

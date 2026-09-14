@@ -32,13 +32,13 @@ export const DEFAULT_FL_HO_ORDER = [
 export const APPOINTMENT_GATED_SLUGS = ["monarch", "loggerhead"] as const;
 
 /**
- * Citizens last + within-20% rule (business-rule stub).
- * Citizens is not in the FL specialty CSV — do not invent a full catalog row.
- * When an admitted quote exists, Citizens is last and only competitive within this % of the cheapest admitted premium.
+ * Citizens is a normal catalog row in the nationals pack (FL residual property).
+ * Do not special-case ranking or reintroduce last-resort / within-20% logic.
+ * Quoting still depends on agency appointment (sibling appointments work).
  */
 export const CITIZENS_SLUG = "citizens";
+/** @deprecated leftover v1 stub — ranking does not use this. Sibling PR removes the rule. */
 export const CITIZENS_WITHIN_PCT = 20;
-export const CITIZENS_FL_HO_ORDER = 999;
 
 export const NONSTANDARD_AUTO_SLUGS = [
   "dairyland",

@@ -4142,6 +4142,9 @@ export const appetiteShadowPredictions = pgTable(
     reasonCode: text("reason_code"),
     actualDisposition: text("actual_disposition"),
     scored: boolean("scored").notNull().default(false),
+    /** Additive nationwide key — same state, same carrier, across tenants at read-time. */
+    riskState: text("risk_state"),
+    riskLine: text("risk_line"),
     ...timestamps,
   },
   (t) => [
@@ -4151,6 +4154,11 @@ export const appetiteShadowPredictions = pgTable(
       t.scored,
     ),
     index("appetite_shadow_predictions_attempt_idx").on(t.tenantId, t.attemptId),
+    index("appetite_shadow_predictions_state_carrier_idx").on(
+      t.tenantId,
+      t.riskState,
+      t.carrierId,
+    ),
   ],
 );
 
@@ -4185,8 +4193,9 @@ export type AppetiteShadowPrediction = typeof appetiteShadowPredictions.$inferSe
 export type AppetiteEdgeCase = typeof appetiteEdgeCases.$inferSelect;
 
 /**
- * Carrier Appetite v1 — slug-keyed FL specialty catalog.
- * Identity is `carrier_id` (slide, universal_pc, uicna). Do not merge Universal P&C with UICNA.
+ * Carrier Appetite v1+ — slug-keyed catalog (FL specialty + nationals packs).
+ * Identity is `carrier_id` (slide, universal_pc, uicna, progressive, citizens).
+ * Do not merge Universal P&C with UICNA. Do not merge Liberty Mutual with Safeco.
  * Separate from UUID `carriers` so Carriers / Markets UI is unchanged.
  */
 export const carrierAppetite = pgTable(
@@ -4242,11 +4251,54 @@ export const appetiteQuoteDecisions = pgTable(
     /** Quote | Maybe | Skip-Decline */
     status: text("status").notNull(),
     matchingRule: text("matching_rule"),
+    /** 2-letter risk state. Tenant + state keyed so FL learning does not mix with CA. */
+    riskState: text("risk_state"),
+    riskLine: text("risk_line"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     index("appetite_quote_decisions_deal_idx").on(t.tenantId, t.dealId, t.createdAt),
     index("appetite_quote_decisions_carrier_idx").on(t.tenantId, t.carrierId, t.createdAt),
+    index("appetite_quote_decisions_tenant_state_carrier_idx").on(
+      t.tenantId,
+      t.riskState,
+      t.carrierId,
+      t.createdAt,
+    ),
+    index("appetite_quote_decisions_state_carrier_idx").on(t.riskState, t.carrierId, t.createdAt),
+  ],
+);
+
+/**
+ * Per-state posture overlay on carrier_appetite.
+ * CA HO closed_new_biz does not imply nationwide closed.
+ * Unique per (tenant_id, carrier_id, state); `lines` filters which snapshot lines the overlay applies to.
+ */
+export const appetiteStateRules = pgTable(
+  "appetite_state_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: text("carrier_id").notNull(),
+    /** 2-letter US code. */
+    state: text("state").notNull(),
+    /** Empty = all lines for that state. */
+    lines: jsonb("lines").$type<string[]>().notNull().default([]),
+    catPosture: text("cat_posture"),
+    hardDeclines: jsonb("hard_declines").$type<string[]>().notNull().default([]),
+    softCautions: jsonb("soft_cautions").$type<string[]>().notNull().default([]),
+    preferredSignals: jsonb("preferred_signals").$type<string[]>().notNull().default([]),
+    notes: text("notes"),
+    researchDated: text("research_dated"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("appetite_state_rules_tenant_carrier_state_uidx").on(
+      t.tenantId,
+      t.carrierId,
+      t.state,
+    ),
+    index("appetite_state_rules_state_idx").on(t.tenantId, t.state),
   ],
 );
 
@@ -4267,6 +4319,7 @@ export const appetiteGatePrefs = pgTable(
 export type CarrierAppetite = typeof carrierAppetite.$inferSelect;
 export type AppetiteQuoteDecision = typeof appetiteQuoteDecisions.$inferSelect;
 export type AppetiteGatePrefs = typeof appetiteGatePrefs.$inferSelect;
+export type AppetiteStateRuleRow = typeof appetiteStateRules.$inferSelect;
 
 export type ExtractionAttempt = typeof extractionAttempts.$inferSelect;
 export type ExtractionFieldAttempt = typeof extractionFieldAttempts.$inferSelect;

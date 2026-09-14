@@ -117,5 +117,7 @@ export type QuoteGateResult = {
 export type QuoteGateOptions = {
   /** Override FL HO slug order (Admin prefs). */
   flHoOrder?: string[] | null;
+  /** Per-state overlays (CA HO closed ≠ nationwide closed). */
+  stateRules?: import("./state-rules").AppetiteStateRule[] | null;
   asOfYear?: number;
 };

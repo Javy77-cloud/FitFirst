@@ -139,9 +139,23 @@ export function tokenHits(token: string, snap: MasterRiskSnapshot): boolean {
       return snap.admittedDeclinedCount === 0 && snap.isPreferredStandardHome === true;
     case "preferred_standard_new_construction_only":
       return snap.isStandardPreferredNewConstruction === true;
+    case "no_new_dp3":
+      return normalizeLineToken(snap.line) === "DP3";
+    case "new_homeowners":
+    case "ca_new_homeowners":
+      return isHomeownersLine(snap.line) && (token === "new_homeowners" || normState(snap.state) === "CA");
     default:
       return false;
   }
+}
+
+function normalizeLineToken(line: string): string {
+  return line.trim().toUpperCase().replace(/\s+/g, "_");
+}
+
+function isHomeownersLine(line: string): boolean {
+  const u = normalizeLineToken(line);
+  return u === "HO" || u === "HO3" || u === "HO4" || u === "HO5" || u === "HO6" || u === "HO_MP";
 }
 
 export function firstMatchingToken(tokens: string[], snap: MasterRiskSnapshot): string | null {
@@ -183,4 +197,6 @@ export const REQUIRED_HARD_DECLINE_TOKENS = [
   "FL_primary_book_assumption",
   "clean_preferred_better_priced_elsewhere",
   "none_standard",
+  "no_new_dp3",
+  "new_homeowners",
 ] as const;

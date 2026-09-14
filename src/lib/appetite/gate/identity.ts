@@ -40,6 +40,20 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
     "universal of north america",
   ],
   pacific_specialty: ["pacific specialty"],
+  progressive: ["progressive"],
+  geico: ["geico"],
+  state_farm: ["state farm"],
+  allstate: ["allstate"],
+  farmers: ["farmers insurance", "farmers"],
+  nationwide: ["nationwide"],
+  liberty_mutual: ["liberty mutual"],
+  safeco: ["safeco"],
+  travelers: ["travelers"],
+  usaa: ["usaa"],
+  chubb: ["chubb"],
+  hartford: ["the hartford", "hartford"],
+  american_family: ["american family"],
+  citizens: ["citizens property", "citizens"],
 };
 
 export function assertDistinctUniversalSlugs(a: string, b: string): boolean {
