@@ -32,13 +32,11 @@ export const DEFAULT_FL_HO_ORDER = [
 export const APPOINTMENT_GATED_SLUGS = ["monarch", "loggerhead"] as const;
 
 /**
- * Citizens last + within-20% rule (business-rule stub).
- * Citizens is not in the FL specialty CSV — do not invent a full catalog row.
- * When an admitted quote exists, Citizens is last and only competitive within this % of the cheapest admitted premium.
+ * Citizens is a normal catalog slug when present — not a residual last resort
+ * and not a slot in DEFAULT_FL_HO_ORDER. Quoting is appointment-gated like any
+ * other carrier (`not_appointed`), not a Citizens-last / within-% rank.
  */
 export const CITIZENS_SLUG = "citizens";
-export const CITIZENS_WITHIN_PCT = 20;
-export const CITIZENS_FL_HO_ORDER = 999;
 
 export const NONSTANDARD_AUTO_SLUGS = [
   "dairyland",

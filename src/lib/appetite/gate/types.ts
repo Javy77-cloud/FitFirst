@@ -117,5 +117,11 @@ export type QuoteGateResult = {
 export type QuoteGateOptions = {
   /** Override FL HO slug order (Admin prefs). */
   flHoOrder?: string[] | null;
+  /**
+   * Agency appointments keyed by appetite slug for this deal's written line.
+   * `false` → Skip-Decline `not_appointed` after appetite eligibility.
+   * Missing key → do not invent a skip (same as Markets matcher).
+   */
+  appointedByCarrier?: Record<string, boolean> | null;
   asOfYear?: number;
 };

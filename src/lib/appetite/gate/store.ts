@@ -5,8 +5,11 @@ import {
   appetiteGatePrefs,
   appetiteQuoteDecisions,
   carrierAppetite,
+  carrierAppointments,
+  carriers,
   type CarrierAppetite,
 } from "@/lib/db/schema";
+import { appointedBySlugFromRows, NOT_APPOINTED_RULE } from "./appointments";
 import { slugFromCarrierName } from "./identity";
 import { runQuoteGate, skipDeclineCarrierIds } from "./gate";
 import type { AppetiteCarrier, MasterRiskSnapshot, QuoteGateResult } from "./types";
@@ -153,7 +156,6 @@ export async function updateAppetiteRules(input: {
 export async function saveAppetiteFlHoOrder(
   slugs: string[],
   tenantId = DEFAULT_TENANT_ID,
-  citizensWithinPct?: number,
 ): Promise<void> {
   const [existing] = await db
     .select({ id: appetiteGatePrefs.id })
@@ -162,7 +164,6 @@ export async function saveAppetiteFlHoOrder(
     .limit(1);
   const patch = {
     flHoOrder: slugs,
-    ...(citizensWithinPct != null ? { citizensWithinPct } : {}),
     updatedAt: new Date(),
   };
   if (existing) {
@@ -170,6 +171,24 @@ export async function saveAppetiteFlHoOrder(
     return;
   }
   await db.insert(appetiteGatePrefs).values({ tenantId, ...patch });
+}
+
+/** Reuse `carrier_appointments` — map UUID + written line onto appetite slugs. */
+export async function loadAppointedByAppetiteSlug(
+  snapshotLine: string,
+  catalog: AppetiteCarrier[],
+  tenantId = DEFAULT_TENANT_ID,
+): Promise<Record<string, boolean>> {
+  const [rows, desk] = await Promise.all([
+    db.select().from(carrierAppointments).where(eq(carrierAppointments.tenantId, tenantId)),
+    db.select({ id: carriers.id, name: carriers.name }).from(carriers).where(eq(carriers.tenantId, tenantId)),
+  ]);
+  return appointedBySlugFromRows({
+    rows,
+    writtenLine: snapshotLine,
+    catalog,
+    deskCarriers: desk,
+  });
 }
 
 export async function persistQuoteGateDecisions(input: {
@@ -206,10 +225,16 @@ export async function runQuoteGateFromStore(
   snapshot: MasterRiskSnapshot,
   tenantId = DEFAULT_TENANT_ID,
 ): Promise<QuoteGateResult | null> {
-  const carriers = await loadRateableAppetite(tenantId);
-  if (carriers.length === 0) return null;
-  const prefs = await loadAppetiteGatePrefs(tenantId);
-  return runQuoteGate(snapshot, carriers, { flHoOrder: prefs?.flHoOrder ?? null });
+  const catalog = await loadRateableAppetite(tenantId);
+  if (catalog.length === 0) return null;
+  const [prefs, appointedByCarrier] = await Promise.all([
+    loadAppetiteGatePrefs(tenantId),
+    loadAppointedByAppetiteSlug(snapshot.line, catalog, tenantId),
+  ]);
+  return runQuoteGate(snapshot, catalog, {
+    flHoOrder: prefs?.flHoOrder ?? null,
+    appointedByCarrier,
+  });
 }
 
 export type QuoteGateShopFilter = {
@@ -237,6 +262,15 @@ export async function runAndPersistQuoteGate(input: {
   });
 
   const skipSlugs = skipDeclineCarrierIds(result);
+  for (const d of result.skipDecline) {
+    if (d.matchingRule === NOT_APPOINTED_RULE) {
+      console.info("appetite quote-gate skip", {
+        carrierId: d.carrierId,
+        matchingRule: NOT_APPOINTED_RULE,
+        dealId: input.snapshot.dealId ?? null,
+      });
+    }
+  }
   const skipSet = new Set(skipSlugs);
   const skipLinkedCarrierIds: string[] = [];
   const catalog = await loadRateableAppetite(tenantId);

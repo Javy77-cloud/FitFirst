@@ -1,5 +1,5 @@
+import { appointedForCarrier, NOT_APPOINTED_RULE } from "./appointments";
 import {
-  CITIZENS_SLUG,
   HAGERTY_SLUG,
   NONSTANDARD_AUTO_SLUGS,
   defaultFlHoIndex,
@@ -70,9 +70,7 @@ function sortKey(
   const statusRank = decision.status === "Quote" ? 0 : decision.status === "Maybe" ? 1 : 2;
   const isFlHo = snap.state?.toUpperCase() === "FL" && isHoDpLine(snap.line);
   let fl = 500;
-  if (decision.carrierId === CITIZENS_SLUG) {
-    fl = 999;
-  } else if (isFlHo && flHoEligible(decision.carrierId, snap)) {
+  if (isFlHo && flHoEligible(decision.carrierId, snap)) {
     const idx = flOrder.indexOf(decision.carrierId);
     if (idx >= 0) fl = idx;
     else {
@@ -96,6 +94,7 @@ export function runQuoteGate(
   options: QuoteGateOptions = {},
 ): QuoteGateResult {
   const flOrder = resolveFlHoOrder(options.flHoOrder);
+  const appointedByCarrier = options.appointedByCarrier ?? null;
   const rateable = carriers.filter((c) => c.rateable);
   const collector = collectorPath(snapshot);
   const nonstandardAuto = !collector && dirtyAutoRisk(snapshot);
@@ -168,6 +167,21 @@ export function runQuoteGate(
         legalName: carrier.legalName,
         status: "Skip-Decline",
         matchingRule: hard,
+        rank: 0,
+        preferredHit: false,
+        cautionHit: false,
+        appointmentGated,
+      });
+      continue;
+    }
+
+    // Appetite-eligible first; appointment is a separate skip — not a fake appetite decline.
+    if (appointedForCarrier(carrier.carrierId, appointedByCarrier) === false) {
+      decisions.push({
+        carrierId: carrier.carrierId,
+        legalName: carrier.legalName,
+        status: "Skip-Decline",
+        matchingRule: NOT_APPOINTED_RULE,
         rank: 0,
         preferredHit: false,
         cautionHit: false,
