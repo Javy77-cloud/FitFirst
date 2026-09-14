@@ -117,6 +117,8 @@ export type QuoteGateResult = {
 export type QuoteGateOptions = {
   /** Override FL HO slug order (Admin prefs). */
   flHoOrder?: string[] | null;
+  /** Per-state overlays (CA HO closed ≠ nationwide closed). */
+  stateRules?: import("./state-rules").AppetiteStateRule[] | null;
   /**
    * Agency appointments keyed by appetite slug for this deal's written line.
    * `false` → Skip-Decline `not_appointed` after appetite eligibility.

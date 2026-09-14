@@ -8,6 +8,7 @@ import {
   resolveFlHoOrder,
 } from "./fl-ho-order";
 import { lineMatchesOffered, occupancyLineMatch } from "./lines";
+import { applyStateRule, matchStateRule } from "./state-rules";
 import { anyTokenHits, firstMatchingToken } from "./tokens";
 import type {
   AppetiteCarrier,
@@ -83,10 +84,11 @@ function sortKey(
 }
 
 /**
- * Quote-gate v1 — Yes / Maybe / Skip-Decline before any portal opens.
+ * Quote-gate — Yes / Maybe / Skip-Decline before any portal opens.
  *
- * Nationals CSV (State Farm CA closed, Allstate CA closed, Progressive no DP-3)
- * is out of scope — hook only. Bot decline learning is out of scope.
+ * Nationals + per-state overlays (State Farm / Allstate CA HO closed, Progressive
+ * no new DP-3) are applied here. Citizens is a normal catalog row — no last-resort
+ * ranking. Bot decline learning is out of scope.
  */
 export function runQuoteGate(
   snapshot: MasterRiskSnapshot,
@@ -94,13 +96,16 @@ export function runQuoteGate(
   options: QuoteGateOptions = {},
 ): QuoteGateResult {
   const flOrder = resolveFlHoOrder(options.flHoOrder);
+  const stateRules = options.stateRules ?? [];
   const appointedByCarrier = options.appointedByCarrier ?? null;
   const rateable = carriers.filter((c) => c.rateable);
   const collector = collectorPath(snapshot);
   const nonstandardAuto = !collector && dirtyAutoRisk(snapshot);
   const decisions: QuoteGateDecision[] = [];
 
-  for (const carrier of rateable) {
+  for (const raw of rateable) {
+    const overlay = matchStateRule(stateRules, raw.carrierId, snapshot.state, snapshot.line);
+    const carrier = applyStateRule(raw, overlay);
     const appointmentGated = isAppointmentGated(carrier.carrierId);
 
     if (collector && carrier.carrierId !== HAGERTY_SLUG) {
@@ -152,6 +157,20 @@ export function runQuoteGate(
         legalName: carrier.legalName,
         status: "Skip-Decline",
         matchingRule: line.rule ?? "line_not_offered",
+        rank: 0,
+        preferredHit: false,
+        cautionHit: false,
+        appointmentGated,
+      });
+      continue;
+    }
+
+    if (carrier.catPosture === "closed_new_biz") {
+      decisions.push({
+        carrierId: carrier.carrierId,
+        legalName: carrier.legalName,
+        status: "Skip-Decline",
+        matchingRule: "closed_new_biz",
         rank: 0,
         preferredHit: false,
         cautionHit: false,

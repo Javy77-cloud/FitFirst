@@ -102,7 +102,7 @@ describe("state expand", () => {
 
 describe("hard_decline evaluation", () => {
   it("implements every required token against the snapshot", () => {
-    expect(REQUIRED_HARD_DECLINE_TOKENS).toHaveLength(27);
+    expect(REQUIRED_HARD_DECLINE_TOKENS).toHaveLength(29);
 
     const mobile = flHo3({ isMobile: true });
     expect(tokenHits("mobile_home", mobile)).toBe(true);
@@ -155,6 +155,10 @@ describe("hard_decline evaluation", () => {
     expect(tokenHits("FL_primary_book_assumption", flHo3())).toBe(true);
     expect(tokenHits("clean_preferred_better_priced_elsewhere", emptySnapshot({ line: "PAP" }))).toBe(true);
     expect(tokenHits("none_standard", flHo3({ isStandardPreferredNewConstruction: true }))).toBe(true);
+    expect(tokenHits("no_new_dp3", emptySnapshot({ line: "DP3" }))).toBe(true);
+    expect(tokenHits("no_new_dp3", flHo3())).toBe(false);
+    expect(tokenHits("new_homeowners", flHo3({ state: "CA" }))).toBe(true);
+    expect(tokenHits("new_homeowners", emptySnapshot({ state: "CA", line: "PAP" }))).toBe(false);
   });
 
   it("Skip-Decline logs the matching hard_decline token", () => {

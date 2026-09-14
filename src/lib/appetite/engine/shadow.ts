@@ -19,6 +19,9 @@ export type RecordShadowPredictionInput = {
   triggeringRuleId?: string | null;
   reasonCode?: string | null;
   tenantId?: string;
+  /** Additive nationwide keys — tenant stays on the row. */
+  riskState?: string | null;
+  riskLine?: string | null;
 };
 
 /** Insert a silent shadow prediction (call from quote-attempt write path or Gaya later). */
@@ -37,6 +40,8 @@ export async function recordShadowPrediction(input: RecordShadowPredictionInput)
       triggeringRuleId: input.triggeringRuleId ?? null,
       reasonCode: input.reasonCode ?? null,
       scored: false,
+      riskState: input.riskState ?? null,
+      riskLine: input.riskLine ?? null,
     })
     .returning();
   return row;

@@ -2,9 +2,14 @@ import { parseCsv, parseBool } from "@/lib/import-export/csv";
 import { defaultFlHoIndex } from "./fl-ho-order";
 import { splitPipeList } from "./lines";
 import { expandStatesAvailable, needsStateConfirmNote } from "./states";
+import type { AppetiteStateRule } from "./state-rules";
 import type { AppetiteCarrier, CarrierSegment, CatPosture } from "./types";
 
-export const APPETITE_CSV_RELATIVE_PATH = "data/appetite/fitfirst-fl-specialty-appetite.csv";
+export const APPETITE_FL_SPECIALTY_CSV = "data/appetite/fitfirst-fl-specialty-appetite.csv";
+export const APPETITE_NATIONALS_CSV = "data/appetite/fitfirst-nationals-appetite.csv";
+export const APPETITE_NATIONALS_STATE_RULES_CSV = "data/appetite/fitfirst-nationals-state-rules.csv";
+/** @deprecated use APPETITE_FL_SPECIALTY_CSV — kept so existing import/tests keep working. */
+export const APPETITE_CSV_RELATIVE_PATH = APPETITE_FL_SPECIALTY_CSV;
 
 export function parseAppetiteCsv(text: string): AppetiteCarrier[] {
   const { rows } = parseCsv(text);
@@ -46,4 +51,42 @@ export function parseAppetiteCsv(text: string): AppetiteCarrier[] {
   }
 
   return [...bySlug.values()];
+}
+
+export function parseAppetiteStateRulesCsv(text: string): AppetiteStateRule[] {
+  const { rows } = parseCsv(text);
+  const byKey = new Map<string, AppetiteStateRule>();
+
+  for (const row of rows) {
+    const carrierId = String(row.carrier_id ?? "").trim();
+    const state = String(row.state ?? "").trim().toUpperCase();
+    if (!carrierId || !state) continue;
+    const key = `${carrierId}:${state}`;
+    if (byKey.has(key)) {
+      throw new Error(`Duplicate appetite state rule in CSV: ${key}`);
+    }
+    const posture = String(row.cat_posture ?? "").trim();
+    byKey.set(key, {
+      carrierId,
+      state,
+      lines: splitPipeList(row.lines),
+      catPosture: posture || null,
+      hardDeclines: splitPipeList(row.hard_declines),
+      softCautions: splitPipeList(row.soft_cautions),
+      preferredSignals: splitPipeList(row.preferred_signals),
+      notes: String(row.notes ?? "").trim() || null,
+      researchDated: String(row.research_dated ?? "").trim() || null,
+    });
+  }
+
+  return [...byKey.values()];
+}
+
+/** Companion overlay file next to a nationals appetite CSV, if present. */
+export function companionStateRulesPath(csvPath: string): string | null {
+  const normalized = csvPath.replace(/\\/g, "/");
+  if (normalized.endsWith("fitfirst-nationals-appetite.csv")) {
+    return normalized.replace(/fitfirst-nationals-appetite\.csv$/, "fitfirst-nationals-state-rules.csv");
+  }
+  return null;
 }

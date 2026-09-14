@@ -1,0 +1,3 @@
+carrier_id,state,lines,cat_posture,hard_declines,soft_cautions,preferred_signals,notes,research_dated
+state_farm,CA,"HO3|HO4|HO5|HO6",closed_new_biz,new_homeowners,,,"CA new homeowners closed (State Farm General). Auto and other non-HO lines stay open. Do not treat this as a nationwide HO close.",2026-09
+allstate,CA,"HO3|HO4|HO5|HO6",closed_new_biz,new_homeowners,,,"CA new homeowners still closed as of 2026-09. Allstate has filed to reopen; not writing new CA HO until approved. Auto stays open.",2026-09

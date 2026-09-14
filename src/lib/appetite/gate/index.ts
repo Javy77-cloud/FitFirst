@@ -7,4 +7,6 @@ export * from "./appointments";
 export * from "./identity";
 export * from "./parse";
 export * from "./snapshot";
+export * from "./state-rules";
+export * from "./state-learning";
 export * from "./gate";

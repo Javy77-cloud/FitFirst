@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import {
   appetiteGatePrefs,
   appetiteQuoteDecisions,
+  appetiteStateRules,
   carrierAppetite,
+  type AppetiteStateRuleRow,
   carrierAppointments,
   carriers,
   type CarrierAppetite,
@@ -12,7 +14,23 @@ import {
 import { appointedBySlugFromRows, NOT_APPOINTED_RULE } from "./appointments";
 import { slugFromCarrierName } from "./identity";
 import { runQuoteGate, skipDeclineCarrierIds } from "./gate";
+import { quoteDecisionInserts } from "./state-learning";
+import type { AppetiteStateRule } from "./state-rules";
 import type { AppetiteCarrier, MasterRiskSnapshot, QuoteGateResult } from "./types";
+
+export function rowToStateRule(row: AppetiteStateRuleRow): AppetiteStateRule {
+  return {
+    carrierId: row.carrierId,
+    state: row.state,
+    lines: row.lines ?? [],
+    catPosture: row.catPosture,
+    hardDeclines: row.hardDeclines ?? [],
+    softCautions: row.softCautions ?? [],
+    preferredSignals: row.preferredSignals ?? [],
+    notes: row.notes,
+    researchDated: row.researchDated,
+  };
+}
 
 export function rowToAppetiteCarrier(row: CarrierAppetite): AppetiteCarrier {
   return {
@@ -61,6 +79,11 @@ export async function loadRateableAppetite(tenantId = DEFAULT_TENANT_ID): Promis
 export async function loadAllAppetite(tenantId = DEFAULT_TENANT_ID): Promise<AppetiteCarrier[]> {
   const rows = await db.select().from(carrierAppetite).where(eq(carrierAppetite.tenantId, tenantId));
   return rows.map(rowToAppetiteCarrier);
+}
+
+export async function loadAppetiteStateRules(tenantId = DEFAULT_TENANT_ID): Promise<AppetiteStateRule[]> {
+  const rows = await db.select().from(appetiteStateRules).where(eq(appetiteStateRules.tenantId, tenantId));
+  return rows.map(rowToStateRule);
 }
 
 export async function upsertAppetiteCarriers(
@@ -117,6 +140,43 @@ export async function upsertAppetiteCarriers(
           quotePriority: rec.quotePriority,
           flHoOrder: rec.flHoOrder,
           needsStateConfirm: rec.needsStateConfirm,
+          updatedAt: new Date(),
+        },
+      });
+  }
+  return { upserted: records.length };
+}
+
+export async function upsertAppetiteStateRules(
+  records: AppetiteStateRule[],
+  tenantId = DEFAULT_TENANT_ID,
+): Promise<{ upserted: number }> {
+  for (const rec of records) {
+    await db
+      .insert(appetiteStateRules)
+      .values({
+        tenantId,
+        carrierId: rec.carrierId,
+        state: rec.state,
+        lines: rec.lines,
+        catPosture: rec.catPosture,
+        hardDeclines: rec.hardDeclines,
+        softCautions: rec.softCautions,
+        preferredSignals: rec.preferredSignals,
+        notes: rec.notes,
+        researchDated: rec.researchDated,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [appetiteStateRules.tenantId, appetiteStateRules.carrierId, appetiteStateRules.state],
+        set: {
+          lines: rec.lines,
+          catPosture: rec.catPosture,
+          hardDeclines: rec.hardDeclines,
+          softCautions: rec.softCautions,
+          preferredSignals: rec.preferredSignals,
+          notes: rec.notes,
+          researchDated: rec.researchDated,
           updatedAt: new Date(),
         },
       });
@@ -196,21 +256,24 @@ export async function persistQuoteGateDecisions(input: {
   dealId?: string | null;
   riskId?: string | null;
   masterId?: string | null;
+  riskState?: string | null;
+  riskLine?: string | null;
+  snapshot?: MasterRiskSnapshot | null;
   tenantId?: string;
 }): Promise<void> {
   const tenantId = input.tenantId ?? DEFAULT_TENANT_ID;
-  if (input.result.decisions.length === 0) return;
-  await db.insert(appetiteQuoteDecisions).values(
-    input.result.decisions.map((d) => ({
-      tenantId,
-      carrierId: d.carrierId,
-      dealId: input.dealId ?? null,
-      riskId: input.riskId ?? null,
-      masterId: input.masterId ?? null,
-      status: d.status,
-      matchingRule: d.matchingRule,
-    })),
-  );
+  const rows = quoteDecisionInserts({
+    result: input.result,
+    tenantId,
+    snapshot: input.snapshot ?? null,
+    dealId: input.dealId,
+    riskId: input.riskId,
+    masterId: input.masterId,
+    riskState: input.riskState,
+    riskLine: input.riskLine,
+  });
+  if (rows.length === 0) return;
+  await db.insert(appetiteQuoteDecisions).values(rows);
 }
 
 export async function listQuoteGateDecisions(dealId: string, tenantId = DEFAULT_TENANT_ID) {
@@ -225,15 +288,17 @@ export async function runQuoteGateFromStore(
   snapshot: MasterRiskSnapshot,
   tenantId = DEFAULT_TENANT_ID,
 ): Promise<QuoteGateResult | null> {
-  const catalog = await loadRateableAppetite(tenantId);
-  if (catalog.length === 0) return null;
-  const [prefs, appointedByCarrier] = await Promise.all([
+  const carriers = await loadRateableAppetite(tenantId);
+  if (carriers.length === 0) return null;
+      const [prefs, appointedByCarrier, stateRules] = await Promise.all([
     loadAppetiteGatePrefs(tenantId),
-    loadAppointedByAppetiteSlug(snapshot.line, catalog, tenantId),
+              loadAppointedByAppetiteSlug(snapshot.line, carriers, tenantId),
+    loadAppetiteStateRules(tenantId),
   ]);
-  return runQuoteGate(snapshot, catalog, {
+  return runQuoteGate(snapshot, carriers, {
     flHoOrder: prefs?.flHoOrder ?? null,
-    appointedByCarrier,
+          appointedByCarrier,
+    stateRules,
   });
 }
 
@@ -255,6 +320,7 @@ export async function runAndPersistQuoteGate(input: {
 
   await persistQuoteGateDecisions({
     result,
+    snapshot: input.snapshot,
     dealId: input.snapshot.dealId,
     riskId: input.snapshot.riskId,
     masterId: input.snapshot.masterId,
