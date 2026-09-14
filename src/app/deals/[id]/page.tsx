@@ -10,20 +10,13 @@ import { DealMotivation } from "@/components/deal/deal-motivation";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
-import { RecordDeveloperActions } from "@/components/developer-hub/record-actions";
-import { WidgetHost } from "@/components/developer-hub/widget-host";
 import {
   getDealWorkspace,
   listCarriers,
   listQuoteLogs,
   listRecordActivities,
 } from "@/lib/db/queries";
-import {
-  listEnabledMacrosFor,
-  listEnabledScriptsFor,
-  listEnabledWidgetsByType,
-  listVisibleButtons,
-} from "@/lib/db/developer-hub-queries";
+import { listEnabledScriptsFor } from "@/lib/db/developer-hub-queries";
 import {
   AGENT_DEAL_TAB_LABELS,
   AGENT_DEAL_TABS,
@@ -99,13 +92,10 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, macros, buttons, scripts, relatedWidgets, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
-      listEnabledMacrosFor("deals"),
-      listVisibleButtons({ module: "deals", placement: "detail" }),
       listEnabledScriptsFor("deals", "edit"),
-      listEnabledWidgetsByType("related_list"),
       listCarriers(),
       listQuoteLogs(),
       loadDealMotivationStats(),
@@ -255,21 +245,9 @@ export default async function DealPage({
           panelClassName="mt-0"
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={deal.lineOfBusiness} /> : null}
           heading={
-            <>
-              <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
-                {deal.title}
-              </h1>
-              <RecordDeveloperActions
-                module="deals"
-                recordId={deal.id}
-                macros={macros.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind }))}
-                buttons={buttons.map((button) => ({
-                  id: button.id,
-                  label: button.label,
-                  actionKind: button.actionKind,
-                }))}
-              />
-            </>
+            <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
+              {deal.title}
+            </h1>
           }
           corner={
             <div
@@ -399,14 +377,6 @@ export default async function DealPage({
                         dealLine={deal.lineOfBusiness}
                       />
                     )}
-
-                    {relatedWidgets.length ? (
-                      <div className="mt-4 space-y-3">
-                        {relatedWidgets.map((widget) => (
-                          <WidgetHost key={widget.id} name={widget.name} url={widget.externalUrl} compact />
-                        ))}
-                      </div>
-                    ) : null}
 
                     <p className="mt-4 text-base text-muted-foreground">
                       Shopping lives here.{" "}
