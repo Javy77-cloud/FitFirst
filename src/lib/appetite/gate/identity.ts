@@ -8,6 +8,7 @@ import { UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
  * so a bare "Universal" name does not collapse the two legal entities.
  */
 export const SLUG_NAME_ALIASES: Record<string, string[]> = {
+  citizens: ["citizens property", "citizens"],
   slide: ["slide insurance", "slide"],
   american_integrity: ["american integrity"],
   foremost: ["foremost"],

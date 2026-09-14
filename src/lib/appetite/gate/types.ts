@@ -119,5 +119,11 @@ export type QuoteGateOptions = {
   flHoOrder?: string[] | null;
   /** Per-state overlays (CA HO closed ≠ nationwide closed). */
   stateRules?: import("./state-rules").AppetiteStateRule[] | null;
+  /**
+   * Agency appointments keyed by appetite slug for this deal's written line.
+   * `false` → Skip-Decline `not_appointed` after appetite eligibility.
+   * Missing key → do not invent a skip (same as Markets matcher).
+   */
+  appointedByCarrier?: Record<string, boolean> | null;
   asOfYear?: number;
 };

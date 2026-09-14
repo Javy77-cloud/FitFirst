@@ -4302,7 +4302,7 @@ export const appetiteStateRules = pgTable(
   ],
 );
 
-/** Admin-editable gate prefs (FL HO order override, Citizens within-% stub). No code deploy. */
+/** Admin-editable gate prefs (FL HO order override). No code deploy. */
 export const appetiteGatePrefs = pgTable(
   "appetite_gate_prefs",
   {
@@ -4310,6 +4310,10 @@ export const appetiteGatePrefs = pgTable(
     tenantId: tenantCol(),
     /** Override array of slugs. Null → use seeded fl_ho_order / DEFAULT_FL_HO_ORDER. */
     flHoOrder: jsonb("fl_ho_order").$type<string[] | null>(),
+    /**
+     * Deprecated. Citizens-last / within-% is no longer used by the quote-gate.
+     * Column kept so existing Neon rows are not dropped.
+     */
     citizensWithinPct: real("citizens_within_pct").notNull().default(20),
     ...timestamps,
   },

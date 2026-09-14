@@ -1,3 +1,4 @@
+import { appointedForCarrier, NOT_APPOINTED_RULE } from "./appointments";
 import {
   HAGERTY_SLUG,
   NONSTANDARD_AUTO_SLUGS,
@@ -96,6 +97,7 @@ export function runQuoteGate(
 ): QuoteGateResult {
   const flOrder = resolveFlHoOrder(options.flHoOrder);
   const stateRules = options.stateRules ?? [];
+  const appointedByCarrier = options.appointedByCarrier ?? null;
   const rateable = carriers.filter((c) => c.rateable);
   const collector = collectorPath(snapshot);
   const nonstandardAuto = !collector && dirtyAutoRisk(snapshot);
@@ -184,6 +186,21 @@ export function runQuoteGate(
         legalName: carrier.legalName,
         status: "Skip-Decline",
         matchingRule: hard,
+        rank: 0,
+        preferredHit: false,
+        cautionHit: false,
+        appointmentGated,
+      });
+      continue;
+    }
+
+    // Appetite-eligible first; appointment is a separate skip — not a fake appetite decline.
+    if (appointedForCarrier(carrier.carrierId, appointedByCarrier) === false) {
+      decisions.push({
+        carrierId: carrier.carrierId,
+        legalName: carrier.legalName,
+        status: "Skip-Decline",
+        matchingRule: NOT_APPOINTED_RULE,
         rank: 0,
         preferredHit: false,
         cautionHit: false,

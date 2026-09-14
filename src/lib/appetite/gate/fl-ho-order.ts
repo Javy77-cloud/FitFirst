@@ -32,13 +32,11 @@ export const DEFAULT_FL_HO_ORDER = [
 export const APPOINTMENT_GATED_SLUGS = ["monarch", "loggerhead"] as const;
 
 /**
- * Citizens is a normal catalog row in the nationals pack (FL residual property).
- * Do not special-case ranking or reintroduce last-resort / within-20% logic.
- * Quoting still depends on agency appointment (sibling appointments work).
+ * Citizens is a normal catalog slug when present — not a residual last resort
+ * and not a slot in DEFAULT_FL_HO_ORDER. Quoting is appointment-gated like any
+ * other carrier (`not_appointed`), not a Citizens-last / within-% rank.
  */
 export const CITIZENS_SLUG = "citizens";
-/** @deprecated leftover v1 stub — ranking does not use this. Sibling PR removes the rule. */
-export const CITIZENS_WITHIN_PCT = 20;
 
 export const NONSTANDARD_AUTO_SLUGS = [
   "dairyland",
