@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_TENANT_ID, envUuid, FALLBACK_TENANT_ID } from "./domain";
 
 const OVERRIDE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -18,6 +18,11 @@ describe("envUuid", () => {
 });
 
 describe("DEFAULT_TENANT_ID", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it("never resolves to an empty string", () => {
     expect(DEFAULT_TENANT_ID).toBeTruthy();
     expect(DEFAULT_TENANT_ID).not.toBe("");
@@ -27,5 +32,13 @@ describe("DEFAULT_TENANT_ID", () => {
     const fromEnv = process.env.TENANT_ID?.trim() ?? "";
     expect(DEFAULT_TENANT_ID).toBe(fromEnv || FALLBACK_TENANT_ID);
     expect(FALLBACK_TENANT_ID).toBe("11111111-1111-4111-8111-111111111111");
+  });
+
+  it("falls back when TENANT_ID is blank at import (Vercel empty env)", async () => {
+    vi.resetModules();
+    vi.stubEnv("TENANT_ID", "");
+    const { DEFAULT_TENANT_ID: resolved, FALLBACK_TENANT_ID: fallback } = await import("./domain");
+    expect(resolved).toBe(fallback);
+    expect(resolved).not.toBe("");
   });
 });
