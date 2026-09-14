@@ -47,8 +47,9 @@ export function addressReadyForPropertyRecords(address: PropertyAddressQuery): b
 type FetchLike = typeof fetch;
 
 /**
- * Fill-from-property-records via getparceldata.com:
+ * Live Fill-from-property-records via getparceldata.com (monthly API, not extracts).
  * geocode sheet address → GET /v1/parcels/point?lat=&lng= with Bearer auth.
+ * Never stubbed: missing key skips the call; a present key always hits HTTP.
  */
 export async function searchGetParcelDataRecords(
   address: PropertyAddressQuery,

@@ -10,6 +10,8 @@ import {
   FEDEX_VAULT_PROVIDER,
   GETPARCELDATA_VAULT_LABEL,
   GETPARCELDATA_VAULT_PROVIDER,
+  PERMITSTACK_VAULT_LABEL,
+  PERMITSTACK_VAULT_PROVIDER,
   publicVaultStatus,
   type VaultPublicStatus,
 } from "./vault-public";
@@ -19,6 +21,8 @@ export {
   FEDEX_VAULT_PROVIDER,
   GETPARCELDATA_VAULT_LABEL,
   GETPARCELDATA_VAULT_PROVIDER,
+  PERMITSTACK_VAULT_LABEL,
+  PERMITSTACK_VAULT_PROVIDER,
   FLORIDA_PROPERTY_VAULT_LABEL,
   FLORIDA_PROPERTY_VAULT_PROVIDER,
   SECRET_MASK,
@@ -303,5 +307,146 @@ export async function clearGetParcelDataVault(actorId: string | null): Promise<V
     source: "none",
     provider: GETPARCELDATA_VAULT_PROVIDER,
     label: GETPARCELDATA_VAULT_LABEL,
+  });
+}
+
+function envPermitStackKey(): string | null {
+  const key = process.env.PERMITSTACK_API_KEY?.trim() || "";
+  return key || null;
+}
+
+/** Server-only. Single-key paid plug. Never log the raw key. */
+export async function loadPermitStackVaultKey(): Promise<string | null> {
+  try {
+    const [row] = await db
+      .select()
+      .from(developerApiVault)
+      .where(
+        and(
+          eq(developerApiVault.tenantId, DEFAULT_TENANT_ID),
+          eq(developerApiVault.provider, PERMITSTACK_VAULT_PROVIDER),
+        ),
+      )
+      .limit(1);
+    if (!row?.configured || !row.apiKeyEnc || !row.apiKeyIv) return null;
+    const key = decryptSecret(row.apiKeyEnc, row.apiKeyIv).trim();
+    return key || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadPermitStackVaultRow() {
+  try {
+    const [row] = await db
+      .select()
+      .from(developerApiVault)
+      .where(
+        and(
+          eq(developerApiVault.tenantId, DEFAULT_TENANT_ID),
+          eq(developerApiVault.provider, PERMITSTACK_VAULT_PROVIDER),
+        ),
+      )
+      .limit(1);
+    return row ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadPermitStackPublicStatus(): Promise<VaultPublicStatus> {
+  const row = await loadPermitStackVaultRow();
+  if (row?.configured && row.apiKeyEnc && row.apiKeyIv) {
+    return publicVaultStatus({
+      configured: true,
+      source: "vault",
+      provider: PERMITSTACK_VAULT_PROVIDER,
+      label: PERMITSTACK_VAULT_LABEL,
+    });
+  }
+  if (envPermitStackKey()) {
+    return publicVaultStatus({
+      configured: true,
+      source: "env",
+      provider: PERMITSTACK_VAULT_PROVIDER,
+      label: PERMITSTACK_VAULT_LABEL,
+    });
+  }
+  return publicVaultStatus({
+    configured: false,
+    source: "none",
+    provider: PERMITSTACK_VAULT_PROVIDER,
+    label: PERMITSTACK_VAULT_LABEL,
+  });
+}
+
+export async function savePermitStackVault(input: {
+  apiKey: string;
+  actorId: string | null;
+}): Promise<VaultPublicStatus> {
+  if (isMaskedSecretInput(input.apiKey) || !input.apiKey.trim()) {
+    throw new Error("Enter a real PermitStack API key. Masked values are not saved.");
+  }
+  const key = encryptSecret(input.apiKey.trim());
+  const existing = await loadPermitStackVaultRow();
+  const values = {
+    tenantId: DEFAULT_TENANT_ID,
+    provider: PERMITSTACK_VAULT_PROVIDER,
+    label: PERMITSTACK_VAULT_LABEL,
+    configured: true,
+    apiKeyEnc: key.enc,
+    apiKeyIv: key.iv,
+    apiSecretEnc: null,
+    apiSecretIv: null,
+    accountNumberEnc: null,
+    accountNumberIv: null,
+    environment: "sandbox",
+    updatedBy: input.actorId,
+    updatedAt: new Date(),
+  };
+  if (existing) {
+    await db.update(developerApiVault).set(values).where(eq(developerApiVault.id, existing.id));
+  } else {
+    await db.insert(developerApiVault).values(values);
+  }
+  return publicVaultStatus({
+    configured: true,
+    source: "vault",
+    provider: PERMITSTACK_VAULT_PROVIDER,
+    label: PERMITSTACK_VAULT_LABEL,
+  });
+}
+
+export async function clearPermitStackVault(actorId: string | null): Promise<VaultPublicStatus> {
+  const existing = await loadPermitStackVaultRow();
+  if (existing) {
+    await db
+      .update(developerApiVault)
+      .set({
+        configured: false,
+        apiKeyEnc: null,
+        apiKeyIv: null,
+        apiSecretEnc: null,
+        apiSecretIv: null,
+        accountNumberEnc: null,
+        accountNumberIv: null,
+        updatedBy: actorId,
+        updatedAt: new Date(),
+      })
+      .where(eq(developerApiVault.id, existing.id));
+  }
+  if (envPermitStackKey()) {
+    return publicVaultStatus({
+      configured: true,
+      source: "env",
+      provider: PERMITSTACK_VAULT_PROVIDER,
+      label: PERMITSTACK_VAULT_LABEL,
+    });
+  }
+  return publicVaultStatus({
+    configured: false,
+    source: "none",
+    provider: PERMITSTACK_VAULT_PROVIDER,
+    label: PERMITSTACK_VAULT_LABEL,
   });
 }

@@ -1,7 +1,8 @@
 /**
- * Agency BYO GetParcelData API key.
+ * Agency BYO GetParcelData API key (monthly API at getparceldata.com/api).
  * Env first (GETPARCELDATA_API_KEY), then developer vault if a row exists.
- * Missing key is a hard wall — never invent a parcel.
+ * A present key always enables the live /v1/parcels/point path — never a stub.
+ * Missing key skips GetParcel only; free Fill sources still run.
  */
 
 export const GETPARCELDATA_ENV = "GETPARCELDATA_API_KEY";

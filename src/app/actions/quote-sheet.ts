@@ -87,6 +87,7 @@ import {
 } from "@/lib/geo/miles-to-coast";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import { loadGetParcelDataApiKey } from "@/lib/getparceldata/key";
+import { loadPermitStackApiKey } from "@/lib/permitstack/key";
 import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
 import { isZoneXNoBfe, toastForPropertyFill } from "@/lib/property-fill/merge";
 import {
@@ -402,7 +403,8 @@ export async function runFillFromPropertyRecords(
 ): Promise<PropertyFillRunResult> {
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   // Property Fill uses quote-sheet property address only (not applicant/Lead/PDF).
-  // One button → GetParcelData + County PA GIS + FEMA NFHL (empty-only merge).
+  // One button → County PA + FloodZoneMap + FEMA (free) → GetParcelData → PermitStack.
+  // Docs / Gemini stay on the separate docs Fill step.
   const sheetAddr = addressFromSheet(sheet.values);
   const address = {
     address1: sheetAddr.address1,
@@ -411,8 +413,11 @@ export async function runFillFromPropertyRecords(
     zip: sheetAddr.zip,
     county: sheet.values.county?.value?.trim() || "",
   };
-  const apiKey = await loadGetParcelDataApiKey();
-  const bundle = await orchestratePropertyFill({ address, apiKey });
+  const [apiKey, permitStackKey] = await Promise.all([
+    loadGetParcelDataApiKey(),
+    loadPermitStackApiKey(),
+  ]);
+  const bundle = await orchestratePropertyFill({ address, apiKey, permitStackKey });
   // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
   const freshPropertyValues = await loadFreshSheetValues(sheet.id, sheet.values);
   const applied =
@@ -469,6 +474,7 @@ export async function runFillFromPropertyRecords(
     qualityNotes: [
       "property_records_api",
       "getparceldata",
+      "permitstack",
       ...bundle.sourcesUsed,
     ],
   });

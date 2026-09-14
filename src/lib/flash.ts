@@ -95,6 +95,8 @@ export const FLASH_COPY = {
   "fedex-vault-cleared": "FedEx credentials cleared",
   "getparceldata-vault-saved": "GetParcelData API key saved",
   "getparceldata-vault-cleared": "GetParcelData API key cleared",
+  "permitstack-vault-saved": "PermitStack API key saved",
+  "permitstack-vault-cleared": "PermitStack API key cleared",
   "property-records-no-blanks": "Property records matched, but no blank fields to fill.",
 } as const;
 

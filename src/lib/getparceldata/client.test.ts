@@ -130,10 +130,12 @@ describe("GetParcelData client", () => {
     expect(summarizeGetParcelFill(hit, facts.length)).toMatch(/2025/);
   });
 
-  it("never logs the agency key", () => {
+  it("never logs the agency key and has no stub fallback when the key is present", () => {
     const source =
       readFileSync("src/lib/getparceldata/client.ts", "utf8") +
       readFileSync("src/lib/getparceldata/key.ts", "utf8");
     expect(source).not.toMatch(/console\.log/);
+    expect(source).not.toMatch(/stubPropertyFor|USE_STUB|fixtureParcel/);
+    expect(source).toMatch(/Never stubbed/);
   });
 });

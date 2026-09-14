@@ -4,6 +4,7 @@ export const COUNTY_PA_LABEL = "county PA";
 export const FEMA_LABEL = "FEMA";
 export const FLOODZONEMAP_LABEL = "FloodZoneMap";
 export const PROPERTY_RECORDS_LABEL = "property records";
+export const PERMITSTACK_LABEL = "PermitStack";
 
 export type PropertyFillAddress = {
   address1?: string | null;
@@ -13,7 +14,12 @@ export type PropertyFillAddress = {
   zip?: string | null;
 };
 
-export type PropertyFillSourceId = "property-records" | "county-pa" | "floodzonemap" | "fema";
+export type PropertyFillSourceId =
+  | "property-records"
+  | "county-pa"
+  | "floodzonemap"
+  | "fema"
+  | "permitstack";
 
 export type PropertyFillBundle = {
   facts: PropertyRecordsFact[];

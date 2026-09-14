@@ -4,8 +4,10 @@ import { useState } from "react";
 import {
   clearFedExVaultAction,
   clearGetParcelDataVaultAction,
+  clearPermitStackVaultAction,
   saveFedExVaultAction,
   saveGetParcelDataVaultAction,
+  savePermitStackVaultAction,
 } from "@/app/actions/developer-vault";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,12 +144,26 @@ function FedExVaultCard({ canEdit, fedex }: { canEdit: boolean; fedex: VaultPubl
   );
 }
 
-function GetParcelDataVaultCard({
+function SingleKeyVaultCard({
   canEdit,
-  getParcelData,
+  status,
+  provider,
+  envVar,
+  blurb,
+  inputId,
+  saveLabel,
+  saveAction,
+  clearAction,
 }: {
   canEdit: boolean;
-  getParcelData: VaultPublicStatus;
+  status: VaultPublicStatus;
+  provider: string;
+  envVar: string;
+  blurb: string;
+  inputId: string;
+  saveLabel: string;
+  saveAction: (formData: FormData) => void | Promise<void>;
+  clearAction: () => void | Promise<void>;
 }) {
   const [unlocked, setUnlocked] = useState(false);
 
@@ -155,25 +171,22 @@ function GetParcelDataVaultCard({
     <section
       className="ff-card space-y-4 p-4"
       data-ff-api-vault
-      data-ff-vault-provider="getparceldata"
+      data-ff-vault-provider={provider}
       data-ff-vault-can-edit={canEdit ? "1" : "0"}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-navy">{getParcelData.label}</h2>
+          <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Agency BYO. Paste a GetParcelData API key so &quot;Fill from property records&quot; can geocode the
-            quote-sheet address and pull parcel details when{" "}
-            <code className="text-[11px]">GETPARCELDATA_API_KEY</code> is not in{" "}
-            <code className="text-[11px]">.env</code>. FitFirst never invents parcels or Coverage A from
-            assessed value.
+            {blurb} When <code className="text-[11px]">{envVar}</code> is not in{" "}
+            <code className="text-[11px]">.env</code>, paste the key here.
           </p>
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
-          data-ff-vault-status={getParcelData.configured ? "configured" : "empty"}
+          data-ff-vault-status={status.configured ? "configured" : "empty"}
         >
-          {getParcelData.configured ? "Configured" : "Not configured"}
+          {status.configured ? "Configured" : "Not configured"}
         </span>
       </div>
 
@@ -181,33 +194,29 @@ function GetParcelDataVaultCard({
         <Label className="text-xs">API key</Label>
         <Input
           readOnly
-          value={getParcelData.configured ? SECRET_MASK : ""}
+          value={status.configured ? SECRET_MASK : ""}
           placeholder="Not configured"
           className="mt-1 h-8"
           data-ff-vault-mask="apiKey"
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        {getParcelData.source === "env" ? "Configured from server env (vault row empty). " : null}
+        {status.source === "env" ? "Configured from server env (vault row empty). " : null}
         Admins see this mask only — there is no reveal.
       </p>
 
       {canEdit ? (
         unlocked ? (
-          <form
-            action={saveGetParcelDataVaultAction}
-            className="space-y-3 border-t border-border pt-3"
-            data-ff-vault-unlock
-          >
+          <form action={saveAction} className="space-y-3 border-t border-border pt-3" data-ff-vault-unlock>
             <p className="text-xs text-muted-foreground">
               Vault unlocked. Enter a new key to rotate. Previous secrets are never shown.
             </p>
             <div className="max-w-md">
-              <Label htmlFor="getparceldata-api-key" className="text-xs">
+              <Label htmlFor={inputId} className="text-xs">
                 New API key
               </Label>
               <Input
-                id="getparceldata-api-key"
+                id={inputId}
                 name="apiKey"
                 type="password"
                 required
@@ -217,9 +226,9 @@ function GetParcelDataVaultCard({
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" size="sm">
-                Save GetParcelData key
+                {saveLabel}
               </Button>
-              <Button type="submit" size="sm" variant="outline" formAction={clearGetParcelDataVaultAction}>
+              <Button type="submit" size="sm" variant="outline" formAction={clearAction}>
                 Clear
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={() => setUnlocked(false)}>
@@ -243,15 +252,38 @@ export function ApiVaultPanel({
   canEdit,
   fedex,
   getParcelData,
+  permitStack,
 }: {
   canEdit: boolean;
   fedex: VaultPublicStatus;
   getParcelData: VaultPublicStatus;
+  permitStack: VaultPublicStatus;
 }) {
   return (
     <div className="space-y-4">
       <FedExVaultCard canEdit={canEdit} fedex={fedex} />
-      <GetParcelDataVaultCard canEdit={canEdit} getParcelData={getParcelData} />
+      <SingleKeyVaultCard
+        canEdit={canEdit}
+        status={getParcelData}
+        provider="getparceldata"
+        envVar="GETPARCELDATA_API_KEY"
+        blurb='Agency BYO monthly GetParcelData key so Fill can geocode the quote-sheet address and pull parcel details. FitFirst never invents parcels or Coverage A from assessed value.'
+        inputId="getparceldata-api-key"
+        saveLabel="Save GetParcelData key"
+        saveAction={saveGetParcelDataVaultAction}
+        clearAction={clearGetParcelDataVaultAction}
+      />
+      <SingleKeyVaultCard
+        canEdit={canEdit}
+        status={permitStack}
+        provider="permitstack"
+        envVar="PERMITSTACK_API_KEY"
+        blurb="Agency BYO PermitStack key so Fill can read property permit history and write roof / HVAC / water-heater years as CHECK when the category and date are confident."
+        inputId="permitstack-api-key"
+        saveLabel="Save PermitStack key"
+        saveAction={savePermitStackVaultAction}
+        clearAction={clearPermitStackVaultAction}
+      />
     </div>
   );
 }
