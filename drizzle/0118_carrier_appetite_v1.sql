@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS "appetite_gate_prefs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   "tenant_id" uuid NOT NULL REFERENCES "tenants"("id"),
   "fl_ho_order" jsonb,
+  -- citizens_within_pct: deprecated stub from v1. Quote-gate no longer reads it (Citizens is not last-resort). Do not DROP if Neon already has rows.
   "citizens_within_pct" real NOT NULL DEFAULT 20,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL

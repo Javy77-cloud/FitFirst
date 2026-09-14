@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CITIZENS_SLUG, CITIZENS_WITHIN_PCT, DEFAULT_FL_HO_ORDER, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
+import { appointedBySlugFromRows, gateWrittenLine, NOT_APPOINTED_RULE } from "./appointments";
+import { CITIZENS_SLUG, DEFAULT_FL_HO_ORDER, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
 import { runQuoteGate } from "./gate";
 import { slugFromCarrierName } from "./identity";
 import { APPETITE_CSV_RELATIVE_PATH, parseAppetiteCsv } from "./parse";
@@ -13,6 +14,30 @@ import type { AppetiteCarrier, MasterRiskSnapshot } from "./types";
 function loadCatalog(): AppetiteCarrier[] {
   const text = readFileSync(path.resolve(process.cwd(), APPETITE_CSV_RELATIVE_PATH), "utf8");
   return parseAppetiteCsv(text);
+}
+
+function stubCarrier(partial: Partial<AppetiteCarrier> & Pick<AppetiteCarrier, "carrierId" | "legalName">): AppetiteCarrier {
+  return {
+    segment: "fl_property",
+    linesOffered: ["HO3"],
+    linesNotOffered: [],
+    statesAvailable: ["FL"],
+    statesRestricted: [],
+    statesRaw: ["FL"],
+    portalName: null,
+    csPhone: null,
+    claimsPhone: null,
+    rateable: true,
+    hardDeclines: [],
+    softCautions: [],
+    preferredSignals: [],
+    catPosture: "selective",
+    notesForAgent: null,
+    quotePriority: null,
+    flHoOrder: null,
+    needsStateConfirm: false,
+    ...partial,
+  };
 }
 
 function flHo3(partial?: Partial<MasterRiskSnapshot>): MasterRiskSnapshot {
@@ -166,39 +191,65 @@ describe("quote-gate routing", () => {
     expect(["state_not_available", "FL_primary_book_assumption"]).toContain(uicna?.matchingRule);
   });
 
-  it("encodes Citizens last + within-20% as a documented stub", () => {
-    expect(CITIZENS_WITHIN_PCT).toBe(20);
-    expect(CITIZENS_SLUG).toBe("citizens");
+  it("does not force Citizens last when present in the catalog", () => {
+    expect(DEFAULT_FL_HO_ORDER).not.toContain(CITIZENS_SLUG);
     const catalog = loadCatalog();
     expect(catalog.some((c) => c.carrierId === CITIZENS_SLUG)).toBe(false);
     const withCitizens: AppetiteCarrier[] = [
       ...catalog,
-      {
+      stubCarrier({
         carrierId: CITIZENS_SLUG,
-        legalName: "Citizens Property Insurance (stub)",
-        segment: "fl_property",
-        linesOffered: ["HO3"],
-        linesNotOffered: [],
-        statesAvailable: ["FL"],
-        statesRestricted: [],
-        statesRaw: ["FL"],
-        portalName: null,
-        csPhone: null,
-        claimsPhone: null,
-        rateable: true,
-        hardDeclines: [],
-        softCautions: [],
-        preferredSignals: [],
-        catPosture: "selective",
-        notesForAgent: "Stub — within 20% of cheapest admitted. Not in this CSV.",
-        quotePriority: 999,
-        flHoOrder: 999,
-        needsStateConfirm: false,
-      },
+        legalName: "Citizens Property Insurance",
+        preferredSignals: ["florida_risk"],
+      }),
+      stubCarrier({
+        carrierId: "zzz_late_pack",
+        legalName: "Late Pack Mutual",
+      }),
     ];
     const result = runQuoteGate(flHo3(), withCitizens);
-    const lastQuote = result.quote[result.quote.length - 1];
-    expect(lastQuote?.carrierId).toBe(CITIZENS_SLUG);
+    const quoteIds = result.quote.map((d) => d.carrierId);
+    expect(quoteIds).toContain(CITIZENS_SLUG);
+    expect(quoteIds[quoteIds.length - 1]).not.toBe(CITIZENS_SLUG);
+    expect(quoteIds.indexOf(CITIZENS_SLUG)).toBeLessThan(quoteIds.indexOf("zzz_late_pack"));
+    expect(result.quote.find((d) => d.carrierId === CITIZENS_SLUG)?.status).toBe("Quote");
+  });
+
+  it("skips a not-appointed carrier with not_appointed even when appetite would Quote", () => {
+    const catalog = loadCatalog();
+    const withCitizens = [
+      ...catalog,
+      stubCarrier({
+        carrierId: CITIZENS_SLUG,
+        legalName: "Citizens Property Insurance",
+      }),
+    ];
+    const result = runQuoteGate(flHo3(), withCitizens, {
+      appointedByCarrier: {
+        [CITIZENS_SLUG]: false,
+        american_integrity: true,
+      },
+    });
+    const citizens = result.decisions.find((d) => d.carrierId === CITIZENS_SLUG);
+    expect(citizens?.status).toBe("Skip-Decline");
+    expect(citizens?.matchingRule).toBe(NOT_APPOINTED_RULE);
+    expect(result.skipDecline.some((d) => d.carrierId === CITIZENS_SLUG && d.matchingRule === NOT_APPOINTED_RULE)).toBe(
+      true,
+    );
+    expect(result.quote.some((d) => d.carrierId === CITIZENS_SLUG)).toBe(false);
+
+    const ai = result.decisions.find((d) => d.carrierId === "american_integrity");
+    expect(ai?.status).toBe("Quote");
+    expect(ai?.matchingRule).not.toBe(NOT_APPOINTED_RULE);
+  });
+
+  it("keeps an appointed carrier eligible after appetite", () => {
+    const catalog = loadCatalog();
+    const result = runQuoteGate(flHo3(), catalog, {
+      appointedByCarrier: { american_integrity: true, slide: false },
+    });
+    expect(result.quote.find((d) => d.carrierId === "american_integrity")?.status).toBe("Quote");
+    expect(result.skipDecline.find((d) => d.carrierId === "slide")?.matchingRule).toBe(NOT_APPOINTED_RULE);
   });
 
   it("collector auto is Hagerty-only", () => {
@@ -259,6 +310,8 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugFromCarrierName("Universal Insurance Company of North America")).toBe(UICNA_SLUG);
     expect(slugFromCarrierName("UICNA")).toBe(UICNA_SLUG);
     expect(slugFromCarrierName("Universal")).toBeNull();
+    expect(slugFromCarrierName("Citizens Property Insurance")).toBe(CITIZENS_SLUG);
+    expect(slugFromCarrierName("Citizens")).toBe(CITIZENS_SLUG);
   });
 
   it("does not merge the two Universals when parsing the committed CSV", () => {
@@ -269,6 +322,54 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(new Set(slugs).size).toBe(catalog.length);
     expect(catalog).toHaveLength(28);
     expect(catalog.every((c) => c.rateable)).toBe(true);
+  });
+});
+
+describe("appointment intersection (no DB)", () => {
+  it("maps HO3/DP and auto snapshot lines onto written_line HO / AUTO", () => {
+    expect(gateWrittenLine("HO3")).toBe("HO");
+    expect(gateWrittenLine("HO6")).toBe("HO");
+    expect(gateWrittenLine("DP3")).toBe("HO");
+    expect(gateWrittenLine("PAP")).toBe("AUTO");
+    expect(gateWrittenLine("COLLECTOR_AUTO")).toBe("AUTO");
+    expect(gateWrittenLine("FLOOD")).toBe("FLOOD");
+  });
+
+  it("maps desk appointment rows onto appetite slugs via linked id or name", () => {
+    const uuid = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const byLink = appointedBySlugFromRows({
+      rows: [{ carrierId: uuid, writtenLine: "HO", appointed: false }],
+      writtenLine: "HO3",
+      catalog: [{ carrierId: CITIZENS_SLUG, linkedCarrierId: uuid }],
+      deskCarriers: [{ id: uuid, name: "Citizens Property Insurance" }],
+    });
+    expect(byLink).toEqual({ [CITIZENS_SLUG]: false });
+
+    const byName = appointedBySlugFromRows({
+      rows: [{ carrierId: uuid, writtenLine: "HO", appointed: true }],
+      writtenLine: "DP3",
+      catalog: [{ carrierId: "slide", linkedCarrierId: null }],
+      deskCarriers: [{ id: uuid, name: "Citizens" }],
+    });
+    expect(byName).toEqual({ [CITIZENS_SLUG]: true });
+
+    const autoLine = appointedBySlugFromRows({
+      rows: [{ carrierId: uuid, writtenLine: "HO", appointed: false }],
+      writtenLine: "PAP",
+      catalog: [{ carrierId: CITIZENS_SLUG, linkedCarrierId: uuid }],
+      deskCarriers: [{ id: uuid, name: "Citizens" }],
+    });
+    expect(autoLine).toEqual({});
+  });
+
+  it("keeps the appetite hard-decline reason instead of overwriting with not_appointed", () => {
+    const catalog = loadCatalog();
+    const result = runQuoteGate(flHo3({ isMobile: true }), catalog, {
+      appointedByCarrier: { american_integrity: false },
+    });
+    const ai = result.decisions.find((d) => d.carrierId === "american_integrity");
+    expect(ai?.status).toBe("Skip-Decline");
+    expect(ai?.matchingRule).toBe("mobile_home");
   });
 });
 

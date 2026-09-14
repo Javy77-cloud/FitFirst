@@ -3,6 +3,7 @@ export * from "./states";
 export * from "./tokens";
 export * from "./lines";
 export * from "./fl-ho-order";
+export * from "./appointments";
 export * from "./identity";
 export * from "./parse";
 export * from "./snapshot";

@@ -56,12 +56,10 @@ export async function updateCarrierAppetiteRulesAction(formData: FormData) {
   revalidatePath("/settings");
 }
 
-/** Admin: replace the FL HO routing slug list (Citizens stays last via stub). */
+/** Admin: replace the FL HO routing slug list. Citizens is not a reserved last slot. */
 export async function saveAppetiteFlHoOrderAction(formData: FormData) {
   await assertAdmin();
   const slugs = list(formData, "flHoOrder").length ? list(formData, "flHoOrder") : list(formData, "fl_ho_order");
-  const pctRaw = str(formData, "citizensWithinPct") || str(formData, "citizens_within_pct");
-  const pct = pctRaw ? Number(pctRaw) : undefined;
-  await saveAppetiteFlHoOrder(slugs, undefined, pct != null && Number.isFinite(pct) ? pct : undefined);
+  await saveAppetiteFlHoOrder(slugs);
   revalidatePath("/settings");
 }
