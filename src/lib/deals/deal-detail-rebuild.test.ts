@@ -38,7 +38,12 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/-mt-5/);
     expect(page).not.toMatch(/-mt-3/);
     expect(page).not.toMatch(/RecordDetailLayout/);
-    expect(page.indexOf("data-ff-deal-flush-tabs")).toBeLessThan(page.lastIndexOf("<RecordDeveloperActions"));
+    expect(page).not.toMatch(/RecordDeveloperActions/);
+    expect(page).not.toMatch(/WidgetHost/);
+    expect(page).not.toMatch(/listEnabledMacrosFor/);
+    expect(page).not.toMatch(/listVisibleButtons/);
+    expect(page).not.toMatch(/listEnabledWidgetsByType/);
+    expect(page).not.toMatch(/relatedWidgets/);
     expect(page.indexOf("data-ff-deal-flush-tabs")).toBeLessThan(page.indexOf("banner="));
   });
 
@@ -234,6 +239,24 @@ describe("deal detail final rebuild", () => {
     expect(comms).toMatch(/ACTIVITY_KIND_LABEL/);
     expect(comms).toMatch(/task:|meeting:|call:|email:|sms:/);
     expect(comms).toMatch(/flex-nowrap/);
+  });
+
+  it("keeps the deal title and tabs without Developer Hub record chrome", () => {
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{deal\.title\}/);
+    expect(page).toMatch(/AGENT_DEAL_TABS/);
+    expect(page).not.toMatch(/RecordDeveloperActions/);
+    expect(page).not.toMatch(/WidgetHost/);
+    expect(page).not.toMatch(/Run Macro/);
+    expect(page).not.toMatch(/Open property map/);
+    expect(page).not.toMatch(/Open related widget/);
+    expect(page).not.toMatch(/relatedWidgets/);
+    expect(page).toMatch(/<DealDetailsPanel/);
+    expect(page).toMatch(/<DocumentsPanel/);
+    expect(page).toMatch(/<MarketsPanel/);
+    expect(page).toMatch(/<QuotesPanel/);
+    expect(page).toMatch(/EditLayoutLink/);
+    expect(page).toMatch(/QuickCommsBoard/);
   });
 
   it("does not add a carrier-history item to the sidebar catalog", () => {
